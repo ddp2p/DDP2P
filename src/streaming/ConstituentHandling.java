@@ -33,12 +33,12 @@ import com.almworks.sqlite4java.SQLiteException;
 
 import config.Application;
 import config.DD;
+import data.ASNConstituentOP;
 import data.D_Organization;
 import data.D_Constituent;
 import data.D_FieldValue;
 import data.D_Neighborhood;
 
-import registration.ASNConstituentOP;
 import util.Util;
 
 import ASN1.Encoder;

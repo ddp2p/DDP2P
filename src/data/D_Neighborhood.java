@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 import com.almworks.sqlite4java.SQLiteException;
 
 import registration.ASNNeighborhood;
-import registration.ASNNeighborhoodOP;
 import simulator.Fill_database;
 import streaming.ConstituentHandling;
 import streaming.NeighborhoodHandling;

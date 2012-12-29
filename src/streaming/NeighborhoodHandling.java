@@ -27,7 +27,6 @@ import hds.ASNSyncRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import registration.ASNNeighborhoodOP;
 
 import ASN1.Encoder;
 
@@ -35,6 +34,7 @@ import com.almworks.sqlite4java.SQLiteException;
 
 import config.Application;
 import config.DD;
+import data.ASNNeighborhoodOP;
 import data.D_Organization;
 import data.D_Constituent;
 import data.D_Neighborhood;

@@ -28,7 +28,6 @@ import hds.ASNSyncPayload;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import registration.ASNNeighborhoodOP;
 
 import config.DD;
 

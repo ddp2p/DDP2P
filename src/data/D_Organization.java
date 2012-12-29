@@ -34,8 +34,6 @@ import ciphersuits.SK;
 
 import com.almworks.sqlite4java.SQLiteException;
 
-import registration.ASNConstituentOP;
-import registration.ASNNeighborhoodOP;
 import registration.WB_ASN_Peer;
 import streaming.OrgHandling;
 import streaming.RequestData;

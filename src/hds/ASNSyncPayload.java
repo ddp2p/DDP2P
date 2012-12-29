@@ -22,7 +22,6 @@ package hds;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import registration.ASNNeighborhoodOP;
 import streaming.RequestData;
 import streaming.SpecificRequest;
 import streaming.WB_Messages;
@@ -32,6 +31,7 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 import config.DD;
+import data.ASNNeighborhoodOP;
 import data.D_Constituent;
 import data.D_FieldValue;
 import data.D_Justification;
@@ -143,7 +143,7 @@ public class ASNSyncPayload extends ASNObj{
 		prepareOrgDictionary(o, dictionary_GIDs);
 		
 		if(o.constituents != null)
-			for(registration.ASNConstituentOP c : o.constituents) {
+			for(data.ASNConstituentOP c : o.constituents) {
 				if(c.constituent==null) continue;
 				c.constituent.global_organization_ID = null;
 				if(!STREAMING_SEND_NEIGHBORHOOD_IN_CONSTITUENT) c.constituent.neighborhood = null;
@@ -188,7 +188,7 @@ public class ASNSyncPayload extends ASNObj{
 		expandOrgDictionariesAtDecoding(o, dictionary_GIDs);
 
 		if(o.constituents != null)
-			for(registration.ASNConstituentOP c : o.constituents) {
+			for(data.ASNConstituentOP c : o.constituents) {
 				if(c.constituent==null) continue;
 				expandConstDictionariesAtDecoding(c.constituent);
 				c.constituent.global_organization_ID = o.global_organization_ID;
