@@ -1,0 +1,15 @@
+START
+0.9.4
+00000000000000.000Z
+0000
+update
+ddp2p_0.9.4.jar
+http://localhost/DD/0.9.4/ddp2p_0.9.4.jar
+0000
+update.sh
+http://localhost/DD/0.9.4/update.sh
+0000
+update.bat
+http://localhost/DD/0.9.4/update.bat
+0000
+STOP
