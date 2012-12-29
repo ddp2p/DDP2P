@@ -1,0 +1,707 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2012 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
+package streaming;
+
+import static util.Util._;
+import static java.lang.System.out;
+import hds.ASNSyncRequest;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Iterator;
+
+import javax.swing.JOptionPane;
+
+import util.Util;
+import ASN1.Encoder;
+
+import ciphersuits.Cipher;
+import ciphersuits.SK;
+
+import com.almworks.sqlite4java.SQLiteException;
+
+import config.Application;
+import config.DD;
+import data.D_OrgConcepts;
+import data.D_Organization;
+import data.D_OrgParam;
+import data.D_OrgParams;
+import data.D_PeerAddress;
+import data.D_Motion;
+import data.D_FieldValue;
+import data.D_Neighborhood;
+public class OrgHandling {
+	
+	private static final boolean _DEBUG = true;
+	public static boolean DEBUG = false;
+	private static int LIMIT_CONSTITUENT_LOW = 5;
+	private static int LIMIT_CONSTITUENT_MAX = 200;
+	private static int LIMIT_NEIGH_LOW = 10;
+	private static int LIMIT_WITNESS_LOW = 10;
+	private static int LIMIT_MOTION_LOW = 10;
+	private static int LIMIT_JUST_LOW = 10;
+	private static int LIMIT_SIGN_LOW = 10;
+	private static int LIMIT_VOTE_LOW = 10;
+	private static int LIMIT_NEWS_LOW = 10;
+	private static int LIMIT_TRANS_LOW = 10;
+	private static int LIMIT_HASH_LOW = 100;
+	public static final String ORG_PEERS = "-20";
+	public static final String ORG_NEWS = "-21";
+	public static boolean SERVE_DIRECTLY_DATA = false;
+	/**
+	 * prepare GIDhash
+	 * Integrate newly arrived data for one organization
+	 * organizationID expected to be already set if org is not blocked
+	 * @param od
+	 * @param _orgID
+	 * @param arrival_time
+	 * @return
+	 * @throws SQLiteException
+	 */
+	public	static boolean updateOrg(D_Organization od, String[] _orgID, String arrival_time, RequestData _rq, D_PeerAddress peer) throws SQLiteException {
+		boolean changed=false;
+		//String id_hash;
+		if(DEBUG) out.println("OrgHandling:updateOrg: enter");
+		
+		/*
+		if((od.signature==null)||(od.signature.length==0)) {
+			if(DEBUG) out.println("OrgHandling:updateOrg: no signature, will integrate other data");
+			long local_org_ID = D_Organization.getLocalOrgID(od.global_organization_ID);
+			if(local_org_ID==-1){
+				rq.orgs.add(od.global_organization_ID);
+				//local_org_ID = OrgHandling.insertTemporaryOrganizationGID(od.global_organization_ID);
+				if(DEBUG) out.println("OrgHandling:updateOrg: fail because the organization is unknown");
+				return false;
+			}
+			integrateOtherOrgData(od, Util.getStringID(local_org_ID), arrival_time, false, rq);
+			return false;
+		}
+		*/
+		
+		if(od.global_organization_IDhash == null) od.global_organization_IDhash = od.getOrgGIDHashFromGID();
+		
+		boolean _changed[] = new boolean[1];
+		long id=-1;
+		if(od.creator != null){
+			//if(DEBUG) out.println("OrgHandling:updateOrg: store peer");
+			D_PeerAddress.storeReceived(od.creator, Util.getCalendar(arrival_time), arrival_time);
+			//if(DEBUG) out.println("OrgHandling:updateOrg: stored peer");
+			if((od.creator.globalID!=null)&&od.creator.globalID.equals(od.params.creator_global_ID)) od.creator_ID = od.creator.peer_ID;
+		}
+		if((od.signature!=null)&&((od.signature_initiator!=null)||!DD.ENFORCE_ORG_INITIATOR)) id = od.store(_changed, _rq); // should set blocking new orgs
+		if(id<=0){
+			id = D_Organization.getLocalOrgID(od.global_organization_ID);
+			if(id<=0) {
+				if(od.signature != null){
+					od.blocked = DD.BLOCK_NEW_ARRIVING_ORGS_WITH_BAD_SIGNATURE;
+					if(DD.WARN_OF_FAILING_SIGNATURE_ONRECEPTION) {
+						String peer_name = _("Unknown");
+						if(peer!=null){
+							peer_name = peer.name;
+							if(peer_name==null) peer_name = Util.trimmed(peer.globalID);
+							if(peer_name == null) peer_name = _("Unknown");
+						}
+						Application.warning(
+								_("Verification failure for incoming org:")+od.name+"\n"+
+										_("Arriving from peer:")+peer_name+"\n"+
+										_("You can disable such warnings from Control Panel, GUI"),
+										_("Failure signature organization"));
+					}
+				}
+				// created blocked on bad signature
+				String name = od.name;
+				id = D_Organization.insertTemporaryGID(od.global_organization_ID, od.global_organization_IDhash, od.blocked, od.name);
+			}
+			od._organization_ID = id;
+			od.organization_ID = Util.getStringID(od._organization_ID);
+		}
+		//if(id>0) od.organization_ID = Util.getStringID(id);
+		changed = _changed[0];
+		_orgID[0] = od.organization_ID;
+		//changed = (id>0);
+		
+		if((id > 0)&&(!od.blocked))
+			integrateOtherOrgData(od, _orgID[0], arrival_time, changed, _rq);
+		if(DEBUG) out.println("OrgHandling:updateOrg: return="+changed);
+		return changed;
+	}
+	private static boolean integrateOtherOrgData(D_Organization od, String org_local_ID,
+			String arrival_time, boolean recent_org_data, RequestData rq) throws SQLiteException {
+		boolean result = false;
+		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed start="+result);
+		result |= streaming.ConstituentHandling.integrateNewData(od.constituents, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed cons="+result);
+		result |= streaming.NeighborhoodHandling.integrateNewData(od.neighborhoods, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed neig="+result);
+		result |= streaming.WitnessingHandling.integrateNewData(od.witnesses, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed witn="+result);
+		result |= streaming.MotionHandling.integrateNewData(od.motions, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed moti="+result);
+		result |= streaming.JustificationHandling.integrateNewData(od.justifications, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		result |= streaming.SignatureHandling.integrateNewData(od.signatures, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		result |= streaming.TranslationHandling.integrateNewData(od.translations, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		result |= streaming.NewsHandling.integrateNewData(od.news, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		return result;
+	}
+	/**
+	 * Refines _maxDate to have a single organization or a single operation
+	 * 
+	 * if _maxDate ==null search from last_sync_date unlimited, 
+	 * else search an organization between last_sync_date and _maxDate
+	 * // Should integrate search for organization, constituents, etc...
+	 * 
+	 * @param last_sync_date
+	 * @param _maxDate
+	 * @param limitOrgMax 
+	 * @param limitOrgLow 
+	 * @return
+	 * @throws SQLiteException
+	 */
+	public static String getNextOrgDate(String last_sync_date, String _maxDate, HashSet<String> orgs, int limitOrgLow) throws SQLiteException {
+		// boolean DEBUG = true;
+		
+		if(DEBUG) out.println("OrgHandling:getNextOrgDate: start: between: "+last_sync_date+" : "+_maxDate);
+		String sql, result=null;
+
+		
+		int _LIMIT_CONSTITUENT_LOW;
+		int _LIMIT_NEIGH_LOW;
+		int _LIMIT_WITNESS_LOW;
+		int _LIMIT_MOTION_LOW;
+		int _LIMIT_JUST_LOW;
+		int _LIMIT_VOTE_LOW;
+		int _LIMIT_TRANS_LOW;
+		int _LIMIT_NEWS_LOW;
+		if(SERVE_DIRECTLY_DATA ) {
+			 _LIMIT_CONSTITUENT_LOW=LIMIT_CONSTITUENT_LOW;
+			 _LIMIT_NEIGH_LOW=LIMIT_NEIGH_LOW;
+			 _LIMIT_WITNESS_LOW=LIMIT_WITNESS_LOW;
+			 _LIMIT_MOTION_LOW=LIMIT_MOTION_LOW;
+			 _LIMIT_JUST_LOW=LIMIT_JUST_LOW;
+			 _LIMIT_VOTE_LOW=LIMIT_VOTE_LOW;
+			 _LIMIT_TRANS_LOW=LIMIT_TRANS_LOW;
+			 _LIMIT_NEWS_LOW=LIMIT_NEWS_LOW;			
+		}else{
+			_LIMIT_CONSTITUENT_LOW = LIMIT_HASH_LOW;
+			_LIMIT_NEIGH_LOW = LIMIT_HASH_LOW;
+			_LIMIT_WITNESS_LOW = LIMIT_HASH_LOW;
+			_LIMIT_MOTION_LOW = LIMIT_HASH_LOW;
+			_LIMIT_JUST_LOW = LIMIT_HASH_LOW;
+			_LIMIT_VOTE_LOW = LIMIT_HASH_LOW;
+			_LIMIT_TRANS_LOW = LIMIT_HASH_LOW;
+			_LIMIT_NEWS_LOW = LIMIT_HASH_LOW;			
+		}
+		
+		
+		ArrayList<ArrayList<Object>>p_data;
+		if(_maxDate == null) {
+			sql = "SELECT "+table.organization.arrival_date+", COUNT(*), " + table.organization.global_organization_ID+","+ table.organization.organization_ID+
+					" FROM "+table.organization.TNAME + " AS o "+
+			" WHERE "+table.organization.arrival_date+" > ? " +
+			" AND " +table.organization.signature+ " IS NOT NULL "+
+			 " AND o."+table.organization.broadcasted+" <> '0' " +
+					" GROUP BY "+table.organization.arrival_date+","+table.organization.global_organization_ID+" " +
+							" ORDER BY "+table.organization.arrival_date+" LIMIT "+(1+limitOrgLow)+";";
+			p_data = Application.db.select(sql, new String[]{last_sync_date}, DEBUG);
+		}else{
+			sql = "SELECT "+table.organization.arrival_date+", COUNT(*), " + table.organization.global_organization_ID+","+ table.organization.organization_ID+
+					" FROM "+table.organization.TNAME + " AS o "+
+				" WHERE "+table.organization.arrival_date+" > ? AND "+table.organization.arrival_date+" <= ? " +
+				" AND " +table.organization.signature+ " IS NOT NULL "+
+				 " AND o."+table.organization.broadcasted+" <> '0' " +
+						" GROUP BY "+table.organization.arrival_date+","+table.organization.global_organization_ID+" " +
+								" ORDER BY "+table.organization.arrival_date+" LIMIT "+(1+limitOrgLow)+";";
+			p_data = Application.db.select(sql, new String[]{last_sync_date,_maxDate},DEBUG);
+		}
+		if(p_data.size()<=0) result = null;
+		else{
+			if(p_data.size()>limitOrgLow) {
+				result = Util.getString(p_data.get(limitOrgLow-1).get(0));
+				if(DD.WARN_BROADCAST_LIMITS_REACHED || DEBUG) System.out.println("TranslationHandling: getNextTranslationDate: limits reached: "+limitOrgLow+" date="+result);
+				for (ArrayList<Object> a : p_data) {
+					orgs.add(Util.getString(a.get(3)));
+				}
+				if(DEBUG) out.println("OrgHandling:getNextOrgDate:>limitOrgLow In  getNextOrgDate orgs: "+Util.concat(orgs.toArray(),","));
+			}
+		}
+		if (result == null){
+			if(DEBUG) out.println("OrgHandling:getNextOrgDate: In  getNextOrgDate result: "+result);
+			result = _maxDate;
+		}
+		
+		// There should be at most LIMIT_CONSTITUENTS new constituents per organization transmitted;
+		if(DEBUG) System.out.println("OrgHandling:getNextOrgDate: orgs pre="+result+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+		result = ConstituentHandling.getConstituentOPsDate(last_sync_date, result, null, orgs, _LIMIT_CONSTITUENT_LOW);
+		if(DEBUG) System.out.println("OrgHandling:getNextOrgDate: orgs con="+result+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+		result = NeighborhoodHandling.getNextNeighborhoodDate(last_sync_date, result, null, orgs, _LIMIT_NEIGH_LOW);
+		if(DEBUG) System.out.println("OrgHandling:getNextOrgDate: orgs nei="+result+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+		result = WitnessingHandling.getNextWitnessingDate(last_sync_date, result, null, orgs, _LIMIT_WITNESS_LOW);
+		if(DEBUG) System.out.println("OrgHandling:getNextOrgDate: orgs wit="+result+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+		result = MotionHandling.getNextMotionDate(last_sync_date, result, null, orgs, _LIMIT_MOTION_LOW);
+		if(DEBUG) System.out.println("OrgHandling:getNextOrgDate: orgs mot="+result+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+		result = JustificationHandling.getNextJustificationDate(last_sync_date, result, null, orgs, _LIMIT_JUST_LOW);
+		if(DEBUG) System.out.println("OrgHandling:getNextOrgDate: orgs jus="+result+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+		result = SignatureHandling.getNextSignatureDate(last_sync_date, result, null, orgs, _LIMIT_VOTE_LOW);
+		if(DEBUG) System.out.println("OrgHandling:getNextOrgDate: orgs sig="+result+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+		result = TranslationHandling.getNextTranslationDate(last_sync_date, result, null, orgs, _LIMIT_TRANS_LOW);
+		if(DEBUG) System.out.println("OrgHandling:getNextOrgDate: orgs tra="+result+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+		result = NewsHandling.getNextNewsDate(last_sync_date, result, null, orgs, _LIMIT_NEWS_LOW);
+		if(DEBUG) System.out.println("OrgHandling:getNextOrgDate: orgs news="+result+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+		if(DEBUG) out.println("OrgHandling:getNextOrgDate: exit result: "+result);
+		if(DEBUG) out.println("**************");
+		return result;
+	}
+
+	private static String getNextFilteredOrgDate(String last_sync_date, OrgFilter ofi, HashSet<String> orgs) throws SQLiteException {
+		if(DEBUG) out.println("\n************\nOrgHandling:getNextFilteredOrgDate filter "+ofi+": "+last_sync_date+" ;");
+		String sql, result=null;
+		ArrayList<ArrayList<Object>>p_data;
+		sql = "SELECT "+table.organization.arrival_date+", COUNT(*) FROM "+table.organization.TNAME + " AS o "+
+			" WHERE ( ( "+table.organization.global_organization_ID+" = ? ) OR ( "+table.organization.global_organization_ID_hash+" = ? ) ) " +
+			 " AND o."+table.organization.broadcasted+" <> '0' " +
+					" AND "+table.organization.arrival_date+" > ? " +
+					" GROUP BY "+table.organization.arrival_date+" LIMIT 1;";
+		p_data = Application.db.select(sql, new String[]{ofi.orgGID, ofi.orgGID_hash, last_sync_date}, DEBUG);
+		if(p_data.size()<=0) result = null;
+		else result = Util.getString(p_data.get(0).get(0));
+		//if (result == null) result = _maxDate;
+		// There should be at most LIMIT_CONSTITUENTS new constituents per organization transmitted;
+		result = ConstituentHandling.getConstituentOPsDate(last_sync_date, result, ofi, orgs, LIMIT_CONSTITUENT_LOW);
+		result = NeighborhoodHandling.getNextNeighborhoodDate(last_sync_date, result, ofi, orgs, LIMIT_NEIGH_LOW);
+		result = WitnessingHandling.getNextWitnessingDate(last_sync_date, result, ofi, orgs, LIMIT_WITNESS_LOW);
+		result = MotionHandling.getNextMotionDate(last_sync_date, result, ofi, orgs, LIMIT_MOTION_LOW);
+		result = JustificationHandling.getNextJustificationDate(last_sync_date, result, ofi, orgs, LIMIT_JUST_LOW);
+		result = SignatureHandling.getNextSignatureDate(last_sync_date, result, ofi, orgs, LIMIT_VOTE_LOW);
+		result = TranslationHandling.getNextTranslationDate(last_sync_date, result, ofi, orgs, LIMIT_TRANS_LOW);
+		result = NewsHandling.getNextNewsDate(last_sync_date, result, ofi, orgs, LIMIT_NEWS_LOW);
+		if(DEBUG) out.println("OrgHandling:getNextFilteredOrgDate filtered result: "+result);
+		if(DEBUG) out.println("**************");
+		return result;
+	}
+	
+	@Deprecated
+	static D_Organization _signableOrgData(String ofi_orgID, String local_id, ArrayList<Object> row) throws SQLiteException {
+			if(DEBUG) out.println("\n****************\nOrgHandling:signOrgData: start organization orgID="+ofi_orgID);
+		//return new OrgData(row);
+		D_Organization od = new D_Organization();
+		od.global_organization_ID = ofi_orgID;
+		od.name = Util.getString(row.get(table.organization.ORG_COL_NAME),null);
+		od.params = new D_OrgParams();
+		//String languages_l = Util.getString(row.get(table.organization.ORG_COL_LANG));
+		//languages_l.split(table.organization.ORG_LANG_SEP);
+		//if(languages_l != null) 
+		od.params.languages = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(table.organization.ORG_COL_LANG)));
+		//else od.params.languages = new String[0];
+		od.params.instructions_registration = Util.getString(row.get(table.organization.ORG_COL_INSTRUC_REGIS),null);
+		od.params.instructions_new_motions = Util.getString(row.get(table.organization.ORG_COL_INSTRUC_MOTION),null);
+		od.params.description = Util.getString(row.get(table.organization.ORG_COL_DESCRIPTION),null);
+		//String scoring_l = Util.getString(row.get(table.organization.ORG_COL_SCORES));
+		//if(scoring_l!=null)od.params.default_scoring_options = scoring_l.split(table.organization.ORG_SCORE_SEP);
+		//else 
+		od.params.default_scoring_options = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(table.organization.ORG_COL_SCORES),null));//new String[0];//null;
+		od.params.category = Util.getString(row.get(table.organization.ORG_COL_CATEG),null);
+		
+		try{od.params.certifMethods = Integer.parseInt(Util.getString(row.get(table.organization.ORG_COL_CERTIF_METHODS)));}catch(NumberFormatException e){od.params.certifMethods = 0;}
+		od.params.hash_org_alg = Util.getString(row.get(table.organization.ORG_COL_HASH_ALG),null);
+		//try{od.params.hash_org = Util.hexToBytes(Util.getString(row.get(table.organization.ORG_COL_HASH)).split(table.organization.ORG_HASH_BYTE_SEP));}catch(Exception e){}
+		od.params.creation_time = Util.getCalendar(Util.getString(row.get(table.organization.ORG_COL_CREATION_DATE)), Util.CalendargetInstance());
+		od.params.certificate = Util.byteSignatureFromString(Util.getString(row.get(table.organization.ORG_COL_CERTIF_DATA),null));
+		String creator_ID=Util.getString(row.get(table.organization.ORG_COL_CREATOR_ID));
+		D_PeerAddress creator = D_PeerAddress.getPeerAddress(creator_ID,false, false); // for creator one alse needs _served
+		if(creator == null) {
+			if(DEBUG)Util.printCallPath("No creator:"+creator_ID);
+			Application.warning(Util._("Missing organization creator, or may have incomplete data. You should create a new one!"), Util._("Missing organization creator."));
+			return null;
+		}
+		od.params.creator_global_ID = creator.globalID;
+		od.params.orgParam = D_Organization.getOrgParams(local_id);
+		
+		od.concepts = new D_OrgConcepts();
+		/*
+		int languages=1;
+		if(od.params.languages!=null) {
+			languages = od.params.languages.length;
+			if(languages < 1) languages =1;
+		}
+		*/
+		od.concepts.name_organization = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(table.organization.ORG_COL_NAME_ORG),null));
+		//new String[languages];
+		od.concepts.name_forum = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(table.organization.ORG_COL_NAME_FORUM),null));
+		od.concepts.name_motion = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(table.organization.ORG_COL_NAME_MOTION),null));
+		od.concepts.name_justification = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(table.organization.ORG_COL_NAME_JUST),null));
+		
+		//if(od.concepts.name_organization.length!= od.params.languages);
+		//od.concepts.name_forum[0] = Util.getString(row.get(table.organization.ORG_COL_NAME_FORUM),null);
+		//od.concepts.name_motion[0] = Util.getString(row.get(table.organization.ORG_COL_NAME_MOTION),null);
+		//od.concepts.name_justification[0] = Util.getString(row.get(table.organization.ORG_COL_NAME_JUST),null);
+		if(DEBUG) out.println("OrgHandling:signOrgData: result="+od);
+		if(DEBUG) out.println("**************");
+		return od;
+	}	
+	
+		/**
+	 * Prepares the data that is signed/hashed for the signature
+	 * @param ofi_orgID
+	 * @param local_id
+	 * @param row
+	 * @return
+	 * @throws SQLiteException
+	 */
+	public static D_Organization signableOrgData(String ofi_orgID, String local_id, ArrayList<Object> row) throws SQLiteException {
+		if(DEBUG) out.println("\n****************\nOrgHandling:signOrgData: start organization orgID="+ofi_orgID);
+		D_Organization od = null;
+		try {
+			od = new D_Organization(row);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if(DEBUG) out.println("OrgHandling:signOrgData: result="+od);
+		if(DEBUG) out.println("**************");
+		return od;
+	}
+	/*
+		od.constituents = ConstituentHandling.getConstituentsModifs(local_id, last_sync_date);
+		
+		od.translations = new ASNTranslation[0];
+		od.witnesses = new ASNWitness[0];
+		od.news = new ASNNews[0];
+		od.motions = new ASNMotion[0];
+		od.justifications = new ASNJustificationSets[0];
+		od.signatures = new ASNSignature[0];
+		*/
+	static D_Organization getOrgData(String last_sync_date, String ofi_orgGID, ArrayList<Object> row) throws SQLiteException {
+		if(DEBUG) out.println("\n****************\nOrgHandling:getOrgData: start organization orgGID="+ofi_orgGID+" from date="+last_sync_date);
+		String local_id = Util.getString(row.get(table.organization.ORG_COL_ID),null);
+		D_Organization od = signableOrgData(ofi_orgGID, local_id, row);
+		if(DD.VERIFY_SENT_SIGNATURES && od.creator!=null){
+			if(!od.creator.verifySignature()) {
+				SK sk = Util.getStoredSK(od.creator.globalID);
+				if(sk!=null) {
+					int a = Application.ask(
+							_("Signature fails for peer:")+od.creator.name+"\n"+
+							_("Do you want to sign it now (YES)?, to not send the peer (NO)?")+"\n"+
+							_("or to send it with bad signature (Cancel)?"),
+							_("Verifying sent organization Initiator Signature"),
+							JOptionPane.YES_NO_CANCEL_OPTION);
+					switch(a) {
+					case 0: od.creator.sign(sk);od.creator.storeVerified();break;
+					case 1: od.creator = null; break;
+					default:
+					}
+				}else{
+					int a = Application.ask(
+							_("Signature fails for peer:")+od.creator.name+"\n"+
+							_("Do you want to drop  peer (OK)?")+"\n"+
+							_("or to send it with bad signature (Cancel)?"),
+							_("Verifying sent organization Initiator Signature"),
+							JOptionPane.OK_CANCEL_OPTION);
+					switch(a) {
+					case 0: od.creator = null; break;
+					default:
+					}
+				}
+			}
+		}
+		od.signature = D_Organization.getSignatureFromString(Util.getString(row.get(table.organization.ORG_COL_SIGN),null));
+		od.signature_initiator = D_Organization.getSignatureFromString(Util.getString(row.get(table.organization.ORG_COL_SIGN_INITIATOR),null));
+		
+		if(DD.VERIFY_SENT_SIGNATURES){
+			if(!od.verifySignature()){
+				Application.warning(_("Organization signature fails for:")+od.name, _("Verifying sent organization fails"));
+			}
+		}
+		
+		if(DEBUG) System.out.println("OrgHandling:getOrgData: exit with orgData="+od);
+		if(DEBUG) out.println("**************");
+		return od;
+	}
+
+/**
+ * @throws SQLiteException 
+ * @throws  
+ * @throws SQLiteException 
+ *  Get the OrgData starting last_sync_data and up to _maxData[0], or find _maxDate[]
+ *  such that the data to send it not too large
+ * @param asr
+ * @param last_sync_date
+ * @param _maxDate[0]     output if justData = true; else input
+ * @param justDate
+ * @param limitOrgMax 
+ * @param limitOrgLow 
+ * @return data, if justDate id false, else null
+ * @throws  
+ */
+	public static D_Organization[] getOrgData(ASNSyncRequest asr, String last_sync_date, String[] _maxDate, boolean justDate, HashSet<String> orgIDs,
+			int limitOrgLow, int limitOrgMax) throws SQLiteException {
+		//boolean DEBUG = true;
+		if(DEBUG) out.println("\n**************\nOrgHandling:getOrgData':start: "+_maxDate[0]+" justDate:"+justDate+" orgs="+orgIDs.size());//+" asr="+asr);
+		String maxDate=null;
+		if(!justDate) maxDate = _maxDate[0];
+		D_Organization[] orgData=null;
+		if(asr.orgFilter==null) {
+			if(DEBUG) out.println("OrgHandling:getOrgData: No filter!");
+			if(justDate) {
+				String max_Date = OrgHandling.getNextOrgDate(last_sync_date, _maxDate[0], orgIDs, limitOrgLow);
+				if(max_Date != null) _maxDate[0] = max_Date;
+				if(DEBUG) out.println("OrgHandling:getOrgData: Date (after org no filter): "+_maxDate[0]);
+				return null;
+			}
+			
+			/*
+			 * Next we check which org parameters are in the expected range, and add them to  orgGID_data and orgID_data
+			 */
+			
+			String sql = D_Organization.org_field +
+				" FROM "+table.organization.TNAME+ " AS o " +
+				" WHERE "+table.organization.arrival_date+" > ? "+
+					((maxDate!=null)?("AND "+table.organization.arrival_date+" <= ? "):"") +
+					" AND " +table.organization.global_organization_ID+ " IS NOT NULL "+
+					 " AND o."+table.organization.broadcasted+" <> '0' " +
+					" AND " +table.organization.creator_ID+ " IS NOT NULL "+
+					" AND " +table.organization.signature+ " IS NOT NULL "+
+				" ORDER BY "+table.organization.arrival_date+" LIMIT "+limitOrgMax+";";
+			ArrayList<ArrayList<Object>> p_data =
+				Application.db.select(sql,
+						((maxDate!=null)?(new String[]{last_sync_date, maxDate}):new String[]{last_sync_date}),
+						DEBUG);
+			if(DEBUG)out.println("OrgHandling:getOrgData: Valid Organizations for sending="+p_data.size());
+			
+			if ((orgIDs.size()==0) && (p_data.size()==0)){
+				if(DEBUG)out.println("OrgHandling:getOrgData: No new data from orgs.");
+				return new D_Organization[0];
+			}
+			Hashtable<String,Integer> orgGID_data = new Hashtable<String, Integer>();
+			Hashtable<String,Integer> orgID_data = new Hashtable<String, Integer>();
+			if(DEBUG) System.out.println("OrgHandling:getOrgData: orgs pre org="+Util.nullDiscrimArray(orgIDs.toArray(new String[0])," : "));
+			for(int k=0; k<p_data.size(); k++) {
+				ArrayList<Object> a = p_data.get(k);
+				String gid = Util.getString(a.get(table.organization.ORG_COL_GID));
+				orgGID_data.put(gid, new Integer(k));
+				if(DEBUG) System.out.println("OrgHandling:getOrgData: orgs place gid="+gid+" "+orgGID_data.get(gid));
+				String id = Util.getString(a.get(table.organization.ORG_COL_ID));
+				orgID_data.put(id, new Integer(k));
+				orgIDs.add(id); // add to orgs in strange case it was nor already
+			}
+			if(DEBUG) System.out.println("OrgHandling:getOrgData: orgs post org="+Util.nullDiscrimArray(orgIDs.toArray(new String[0])," : "));
+			
+			/*
+			 * Orgs with new parameters (ie in orgGID_data) will have all parameters sent,
+			 *  others just GID and certif_methods (to reconstruct hash)
+			 *  K stores the index in the sql result
+			 */
+			
+			orgData = new D_Organization[orgIDs.size()]; //p_data.size()];
+			int of = 0;
+			Iterator<String> orgIDs_iter = orgIDs.iterator();
+			do{ //int of=0; of<orgData.length; of++) {
+				String org_id =orgIDs_iter.next();
+				if(DEBUG) System.out.println("OrgHandling:getOrgData: orgs try ID="+org_id);
+				if(org_id==null) continue;
+				/*
+				long l_org_id = D_Organization.getLocalOrgID(org_gid);
+				String org_id = Util.getStringID(l_org_id);
+				*/
+				String org_gid = D_Organization.getGlobalOrgID(org_id);
+				if(DEBUG) System.out.println("OrgHandling:getOrgData: orgs try GID="+org_gid);
+				Integer K = null;
+				if(org_gid!=null) K = orgGID_data.get(org_gid);
+				else{
+					Util.printCallPath("OrgHandling: null GID for ID:"+org_id);
+				}
+								
+				if(DEBUG) System.out.println("OrgHandling:getOrgData: orgs try K="+K);
+				if(K!=null) {
+					int k = K.intValue();
+					//String signature = Util.getString(p_data.get(k).get(table.organization.ORG_COL_SIGN)); // only authoritarian
+					//String org_gid = Util.getString(p_data.get(k).get(table.organization.ORG_COL_GID));
+					//String org_id = Util.getString(p_data.get(k).get(table.organization.ORG_COL_ID));
+					
+					orgData[of] = OrgHandling.getOrgData(last_sync_date, org_gid, p_data.get(k));
+					if(DD.STREAM_SEND_ALL_ORG_CREATOR) {
+						try{orgData[of].creator = new D_PeerAddress(orgData[of].params.creator_global_ID);}
+						catch(Exception e){e.printStackTrace();}
+					}
+					if(DEBUG) out.println("OrgHandling:getOrgData: Prepared org: "+orgData[of]);
+				}else{
+					D_Organization all;
+					all = new D_Organization(org_gid, null, true, false); //false to not load extras
+					if(!DD.STREAM_SEND_ALL_FUTURE_ORG || all.arrival_date.before(Util.getCalendar(last_sync_date))){
+						orgData[of] = new D_Organization();
+						orgData[of].global_organization_ID = org_gid;
+						orgData[of].global_organization_IDhash = all.global_organization_IDhash;
+						orgData[of].params.certifMethods = all.params.certifMethods;
+					}else{
+						orgData[of] = all;
+						if(DD.STREAM_SEND_ALL_ORG_CREATOR) {
+							try{orgData[of].creator = new D_PeerAddress(orgData[of].params.creator_global_ID);}
+							catch(Exception e){e.printStackTrace();}
+						}
+					}
+					//orgData[of].version = table.organization.arrival_date;
+				}
+				
+				if(SERVE_DIRECTLY_DATA) {
+					if(DEBUG) out.println("OrgHandling:getOrgData: SERVE_DIRECTLY");
+					orgData[of].constituents = ConstituentHandling.getConstituentData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					orgData[of].neighborhoods = NeighborhoodHandling.getNeighborhoodOPs(asr,last_sync_date, org_gid, org_id, _maxDate);
+					orgData[of].witnesses = WitnessingHandling.getWitnessingData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					orgData[of].motions = MotionHandling.getMotionData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					orgData[of].justifications = JustificationHandling.getJustificationData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					orgData[of].signatures = SignatureHandling.getSignaturesData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					orgData[of].translations = TranslationHandling.getTranslationData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					orgData[of].news = NewsHandling.getNewsData(asr,last_sync_date, org_gid, org_id, _maxDate);
+				}else{
+					//boolean DEBUG = true;
+					if(DEBUG) out.println("OrgHandling:getOrgData: SERVE_INDIRECTLY:"+_maxDate[0]);
+					//SpecificRequest availableHashes = new SpecificRequest();
+					RequestData rq = new RequestData();
+					rq.global_organization_ID_hash = orgData[of].global_organization_IDhash;
+					if(rq.global_organization_ID_hash==null) rq.global_organization_ID_hash = D_Organization.getOrgGIDHashGuess(org_gid);
+					int BIG_LIMIT = 300;
+					if(DEBUG) out.println("\n\b******OrgHandling:getOrgData: get indirectly");
+					rq.cons = ConstituentHandling.getConstituentHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+					if(DEBUG) out.println("OrgHandling:getOrgData: got constituents: "+_maxDate[0]+" "+Util.concat(rq.cons,";","null"));
+					rq.neig = NeighborhoodHandling.getNeighborhoodHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+					if(DEBUG) out.println("OrgHandling:getOrgData: got neighborhoods: "+_maxDate[0]+" "+Util.concat(rq.neig,";","null"));
+					rq.witn = WitnessingHandling.getWitnessingHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+					if(DEBUG) out.println("OrgHandling:getOrgData: got witnessing: "+_maxDate[0]+" "+Util.concat(rq.witn,";","null"));
+					rq.moti = MotionHandling.getMotionHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+					rq.just = JustificationHandling.getJustificationHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+					rq.sign = SignatureHandling.getSignatureHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+					rq.tran = TranslationHandling.getTranslationHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+					rq.news = NewsHandling.getNewsHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+					if(DEBUG) out.println("OrgHandling:getOrgData: got advertising: "+_maxDate[0]+" "+rq);
+					orgData[of].availableHashes = rq;
+					maxDate = _maxDate[0];
+				}
+				orgData[of].setGT(maxDate);
+
+				if(DEBUG) out.println("OrgHandling:getOrgData: Prepared org components: "+orgData[of]);
+				
+				of++;
+			}while(orgIDs_iter.hasNext());
+		}else{
+			if(DEBUG)out.println("OrgHandling:getOrgData: Filter length: "+asr.orgFilter.length);
+			/*if(justDate){
+				_maxDate[0] = OrgHandling.getNextOrgDate(last_sync_date, _maxDate[0]);
+				if(DEBUG) out.println("Date after filter: "+_maxDate[0]); return null;
+			}*/
+
+			ArrayList<D_Organization> _orgData = new ArrayList<D_Organization>();
+			for(int of=0; of<asr.orgFilter.length; of++) {
+				OrgFilter ofi = asr.orgFilter[of];
+				String max_Date = OrgHandling.getNextFilteredOrgDate(last_sync_date, ofi, orgIDs);
+				if(max_Date == null) continue;
+				if(_maxDate[0] == null) _maxDate[0] = last_sync_date;
+				
+				String sql = D_Organization.org_field +
+						" FROM "+table.organization.TNAME +
+						" WHERE ( "+table.organization.global_organization_ID+" = ? OR "+table.organization.global_organization_ID_hash+" = ? ) " +
+								" ORDER BY "+table.organization.arrival_date+" LIMIT 100;";
+						//" AND arrival_time > ? AND arrival_time <= ? ORDER BY arrival_time LIMIT 100;";
+				
+				ArrayList<ArrayList<Object>>p_data =
+					Application.db.select(sql, new String[]{ofi.orgGID, ofi.orgGID_hash/*, last_sync_date, max_Date*/}, DEBUG);
+				if(p_data.size()>=1) {
+					//if(max_Date.equals(last_sync_date) && !Util.getString(p_data.get(0).get(ORG_COL_ARRIVAL)).compareTo(last_sync_date)) continue;
+					D_Organization od = OrgHandling.getOrgData(last_sync_date, ofi.orgGID, p_data.get(0));
+					od.setGT(max_Date);
+					_orgData.add(od);
+					String org_id = Util.getString(p_data.get(0).get(table.organization.ORG_COL_ID));
+
+
+					if(SERVE_DIRECTLY_DATA) {
+						if(DEBUG) out.println("OrgHandling:getOrgData: SERVE_DIRECTLY");
+						od.constituents = ConstituentHandling.getConstituentOPs(asr,last_sync_date, ofi.orgGID, org_id, _maxDate);
+						od.neighborhoods = NeighborhoodHandling.getNeighborhoodOPs(asr,last_sync_date, ofi.orgGID, org_id, _maxDate);
+						od.witnesses = WitnessingHandling.getWitnessingData(asr,last_sync_date, ofi.orgGID, org_id, _maxDate);
+						od.motions = MotionHandling.getMotionData(asr,last_sync_date, ofi.orgGID, org_id, _maxDate);
+						od.justifications = JustificationHandling.getJustificationData(asr,last_sync_date, ofi.orgGID, org_id, _maxDate);
+						od.signatures = SignatureHandling.getSignaturesData(asr,last_sync_date, ofi.orgGID, org_id, _maxDate);
+						od.translations = TranslationHandling.getTranslationData(asr,last_sync_date, ofi.orgGID, org_id, _maxDate);
+						od.news = NewsHandling.getNewsData(asr,last_sync_date, ofi.orgGID, org_id, _maxDate);
+						od.setGT(max_Date);
+					}else{
+						//boolean DEBUG = true;
+						if(DEBUG) out.println("OrgHandling:getOrgData: SERVE_INDIRECTLY:"+_maxDate[0]);
+						//SpecificRequest availableHashes = new SpecificRequest();
+						RequestData rq = new RequestData();
+						rq.global_organization_ID_hash = ofi.orgGID_hash; //;orgData[of].global_organization_IDhash;
+						if(rq.global_organization_ID_hash==null) rq.global_organization_ID_hash = D_Organization.getOrgGIDHashGuess(ofi.orgGID);
+						int BIG_LIMIT = 300;
+						if(DEBUG) out.println("\n\b******OrgHandling:getOrgData: get indirectly");
+						rq.cons = ConstituentHandling.getConstituentHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+						if(DEBUG) out.println("OrgHandling:getOrgData: got constituents: "+_maxDate[0]+" "+Util.concat(rq.cons,";","null"));
+						rq.neig = NeighborhoodHandling.getNeighborhoodHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+						if(DEBUG) out.println("OrgHandling:getOrgData: got neighborhoods: "+_maxDate[0]+" "+Util.concat(rq.neig,";","null"));
+						rq.witn = WitnessingHandling.getWitnessingHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+						if(DEBUG) out.println("OrgHandling:getOrgData: got witnessing: "+_maxDate[0]+" "+Util.concat(rq.witn,";","null"));
+						rq.moti = MotionHandling.getMotionHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+						rq.just = JustificationHandling.getJustificationHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+						rq.sign = SignatureHandling.getSignatureHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+						rq.tran = TranslationHandling.getTranslationHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+						rq.news = NewsHandling.getNewsHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
+						if(DEBUG) out.println("OrgHandling:getOrgData: got advertising: "+_maxDate[0]+" "+rq);
+						od.availableHashes = rq;
+						maxDate = _maxDate[0];
+					}
+				}
+			}
+			orgData = _orgData.toArray(new D_Organization[0]);
+		}
+		if(DEBUG) out.println("OrgHandling:getOrgData':exit: "+orgData);
+		if(DEBUG) out.println("***************");
+		return orgData;
+	}
+	void test(int of, long l_org_id, String org_gid, D_Organization[] orgData){
+		
+		if(orgData[of].constituents!=null)
+			for(int k=0; k<orgData[of].constituents.length; k++)
+				if(!orgData[of].constituents[k].constituent.verifySignature(org_gid))  {
+					if(DEBUG) System.err.println("OrgHandling:getOrgData: fail verifying const["+k+"]="+orgData[of].constituents[k].constituent);
+					Util.printCallPath("Failure signature const");
+					throw new RuntimeException("Failure signature const");
+				}
+		
+		if(orgData[of].neighborhoods!=null)
+			for(int k=0; k<orgData[of].neighborhoods.length; k++) {
+				orgData[of].neighborhoods[k].neighborhood.organization_ID = l_org_id;
+				orgData[of].neighborhoods[k].neighborhood.global_organization_ID = org_gid;
+				if(!orgData[of].neighborhoods[k].neighborhood.verifySign(org_gid)) {
+					if(DEBUG) System.err.println("OrgHandling:getOrgData: fail verifying neigh["+k+"]="+orgData[of].neighborhoods[k].neighborhood);
+					Util.printCallPath("Failure signature neigh");
+					throw new RuntimeException("Failure signature neigh");
+				}
+			}
+		
+		if(orgData[of].witnesses!=null)
+			for(int k=0; k<orgData[of].witnesses.length; k++)
+				if(!orgData[of].witnesses[k].verifySignature())  {
+					if(DEBUG) System.err.println("OrgHandling:getOrgData: fail verifying witn["+k+"]="+orgData[of].witnesses[k]);
+					Util.printCallPath("Failure signature witn");
+					throw new RuntimeException("Failure signature witness");
+				}	
+	}
+}
+
