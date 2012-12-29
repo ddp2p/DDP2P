@@ -1,0 +1,4 @@
+BEGIN TRANSACTION;
+CREATE TABLE registered (registeredID INTEGER PRIMARY KEY, global_peer_ID TEXT, certificate BLOB, addresses TEXT, signature BLOB, "timestamp" TIMESTAMP);
+COMMIT;
+
