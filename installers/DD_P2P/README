@@ -1,0 +1,14 @@
+To make package:
+copy DD.jar in 0.0.00/jars/
+run mk_dist.sh major.minor.release website
+or mk_dist_local.sh major.minor.release
+
+To install:
+
+
+FIRST unzip the ddp2p_VERSION.zip into some folder
+THEN change dir to that folder
+RUN dd_p2p.unzip.sh or dd_p2p.unzip.bat
+EVER AFTER, start the program with dd_p2p.sh or dd_p2p.bat (on Windows)
+YOU can even link the bat file with ashortcut on your Windows desktop
+Enjoy DD-ing
