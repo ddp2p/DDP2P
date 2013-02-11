@@ -20,7 +20,9 @@ CREATE TABLE updates (
 	"tester_info" TEXT,
 	"last_contact_date" TEXT,
 	"activity" TEXT,
-	"last_releaseQD" TEXT # last releaseQoT 
+	"public_key" TEXT,
+	"trust_weight" TEXT,
+	"reference_mirror" TEXT
 );
 CREATE TABLE updates_keys (
 	"updates_keys_ID" INTEGER PRIMARY KEY,
@@ -31,16 +33,14 @@ CREATE TABLE updates_keys (
 	"trusted_as_mirror" INTEGER,
 	"trusted_as_tester" INTEGER,
 	"trust_weight" TEXT,
-	"reference_tester" INTEGER,
-	"expected_test_thresholds" TEXT
+	"reference_tester" INTEGER
 );
 CREATE TABLE tester (
 	"tester_ID" INTEGER PRIMARY KEY,
 	"name"	TEXT,
-	"public_key" TEXT, # used only if pk available at "url" in <current>
+	"public_key" TEXT,
 	"email"	TEXT,
 	"url"	TEXT,
-	"revoked" INTEGER, # set if the pk is available at "url" in <revoked>
 	"description" TEXT
 );
 CREATE TABLE peer ( # peers -> peer
@@ -66,8 +66,6 @@ CREATE TABLE peer ( # peers -> peer
     "phones" TEXT,
     "urls" TEXT,
     "plugins_msg" BLOB, # An encoded array of messages (peer pluginGID,byte[]data)
-    "revoked" INTEGER DEFAULT (0), # once set, never clean
-    "hidden" INTEGER DEFAULT (0),
     "creation_date" TEXT, # date_creation -> creation_date ## when the peer was first created on its machine
     "arrival_date" TIMESTAMP # date -> arrival_date
 );
@@ -139,14 +137,10 @@ CREATE TABLE organization ( # organizations -> organization
 	requested TEXT DEFAULT (0),                      # request data about this item, in filters
 	broadcasted TEXT DEFAULT (0),        # send data for this
 	specific_requests TEXT,              # data specified by GIDhash
-	"revoked" INTEGER DEFAULT (0), # once set, never clean
-        "hidden" INTEGER DEFAULT (0),
-	"peer_source_ID" TEXT, # peer from which I got this
 	"creation_date" TEXT, # creation_time ->  creation_date
 	"arrival_date" TIMESTAMP, # arrival_time -> arrival_date
 	"reset_date" TEXT, # when data was unblocked
- 	FOREIGN KEY(creator_ID) REFERENCES peer(peer_ID),
- 	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
+ 	FOREIGN KEY(creator_ID) REFERENCES peer(peer_ID)
 );
 CREATE TABLE my_organization_data (
 	organization_ID INTEGER,
@@ -197,7 +191,7 @@ CREATE TABLE constituent ( # constituents -> constituent
     "certChain" BLOB,
     "certificate" BLOB, 
     "certRequest" BLOB, # not used
-    "email" TEXT,
+   "email" TEXT,
     "external" INTEGER NOT NULL DEFAULT (0),
     "weight" TEXT, # double -> weight in voting
     "forename" TEXT,
@@ -206,9 +200,6 @@ CREATE TABLE constituent ( # constituents -> constituent
    "slogan" TEXT,
     "picture" BLOB,
    "op" INTEGER NOT NULL DEFAULT (1),
-   "revoked" INTEGER DEFAULT (0), # once set, never clean// instead of op
-    "hidden" INTEGER DEFAULT (0),
-    "peer_transmitter_ID" INTEGER,
     "creation_date" TEXT, # date -> creation_date
     "arrival_date" TIMESTAMP,
 	requested INTEGER DEFAULT (0),
@@ -216,8 +207,7 @@ CREATE TABLE constituent ( # constituents -> constituent
 	blocked INTEGER DEFAULT (0),
 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
 	FOREIGN KEY(neighborhood_ID) REFERENCES neighborhood(neighborhood_ID),
-	FOREIGN KEY(submitter_ID) REFERENCES constituent(constituent_ID),
- 	FOREIGN KEY(peer_transmitter_ID) REFERENCES peer(peer_ID)
+	FOREIGN KEY(submitter_ID) REFERENCES constituent(constituent_ID)
 );
 CREATE TABLE motion (
 	motion_ID INTEGER PRIMARY KEY,
@@ -320,7 +310,6 @@ CREATE TABLE neighborhood ( # neighborhoods -> neighborhood
 	"organization_ID" INTEGER, # organizationID -> organization_ID
 	"signature" BLOB,
 	creation_date DATE, 
-        "hidden" INTEGER DEFAULT (0),
 	"blocked" INTEGER DEFAULT (0),
 	"requested" INTEGER DEFAULT (0),
 	"broadcasted" INTEGER DEFAULT (1),
@@ -462,14 +451,12 @@ CREATE TABLE "news" (
     "title" TEXT,
     "title_type" TEXT,
     "signature" BLOB, 
-	"peer_source_ID" TEXT, # peer from which I got this
 	requested INTEGER DEFAULT (0),
 	broadcasted INTEGER DEFAULT (1),
 	blocked INTEGER DEFAULT (0),
 	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
 	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID),
-	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
- 	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
 );
 CREATE TABLE my_news_data (
 	news_ID INTEGER,

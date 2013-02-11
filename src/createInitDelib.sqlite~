@@ -9,9 +9,11 @@ INSERT INTO "updates" ("updates_ID",
         "used",
         "tester_info",
         "last_contact_date",
-        "activity"
-        )
-	 VALUES(1,'Khalid',NULL,'wsdl:http://andrew.cs.fit.edu/~kalhamed2011/webservices/ddWS_doc5.php?wsdl&123331c847ba3a5d6a52e817a4d0109fe65ffbc2038f68c8db1c3f9793b50c0d',NULL,1,NULL,NULL,NULL);
+        "activity",
+        "public_key",
+        "trust_weight",
+        "reference_mirror")
+	 VALUES(1,'Khalid',NULL,'wsdl:http://andrew.cs.fit.edu/~kalhamed2011/webservices/ddWS_doc5.php?wsdl&123331c847ba3a5d6a52e817a4d0109fe65ffbc2038f68c8db1c3f9793b50c0d',NULL,1,NULL,NULL,NULL,NULL,NULL,NULL);
 
 INSERT INTO "updates"  ("updates_ID",
         "original_mirror_name",
@@ -21,9 +23,11 @@ INSERT INTO "updates"  ("updates_ID",
         "used",
         "tester_info",
         "last_contact_date",
-        "activity"
-	)
-	 VALUES(2,'Silaghi DD',NULL,'http://debatedecide.org/DD_Updates',NULL,1,NULL,NULL,NULL);
+        "activity",
+        "public_key",
+        "trust_weight",
+        "reference_mirror")
+	 VALUES(2,'Silaghi',NULL,'http://debatedecide.org/DD_Updates',NULL,1,NULL,NULL,NULL,NULL,NULL,NULL);
 
 INSERT INTO "updates"  ("updates_ID",
         "original_mirror_name",
@@ -33,9 +37,11 @@ INSERT INTO "updates"  ("updates_ID",
         "used",
         "tester_info",
         "last_contact_date",
-        "activity"
-        )
-	 VALUES(3,'Silaghi DC',NULL,'http://distributedcensus.com/DD_Updates',NULL,0,NULL,NULL,NULL);
+        "activity",
+        "public_key",
+        "trust_weight",
+        "reference_mirror")
+	 VALUES(3,'Silaghi',NULL,'http://distributedcensus.com/DD_Updates',NULL,0,NULL,NULL,NULL,NULL,NULL,NULL);
 
 INSERT INTO "updates_keys" ("updates_keys_ID",
         "original_tester_name",

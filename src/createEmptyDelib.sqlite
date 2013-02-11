@@ -20,9 +20,7 @@ CREATE TABLE updates (
 	"tester_info" TEXT,
 	"last_contact_date" TEXT,
 	"activity" TEXT,
-	"public_key" TEXT,
-	"trust_weight" TEXT,
-	"reference_mirror" TEXT
+	"last_releaseQD" TEXT 
 );
 CREATE TABLE updates_keys (
 	"updates_keys_ID" INTEGER PRIMARY KEY,
@@ -33,7 +31,17 @@ CREATE TABLE updates_keys (
 	"trusted_as_mirror" INTEGER,
 	"trusted_as_tester" INTEGER,
 	"trust_weight" TEXT,
-	"reference_tester" INTEGER
+	"reference_tester" INTEGER,
+	"expected_test_thresholds" TEXT
+);
+CREATE TABLE tester (
+	"tester_ID" INTEGER PRIMARY KEY,
+	"name"	TEXT,
+	"public_key" TEXT, 
+	"email"	TEXT,
+	"url"	TEXT,
+	"revoked" INTEGER, 
+	"description" TEXT
 );
 CREATE TABLE peer ( 
     "peer_ID" INTEGER PRIMARY KEY NOT NULL,
@@ -58,6 +66,8 @@ CREATE TABLE peer (
     "phones" TEXT,
     "urls" TEXT,
     "plugins_msg" BLOB, 
+    "revoked" INTEGER DEFAULT (0), 
+    "hidden" INTEGER DEFAULT (0),
     "creation_date" TEXT, 
     "arrival_date" TIMESTAMP 
 );
@@ -129,10 +139,14 @@ CREATE TABLE organization (
 	requested TEXT DEFAULT (0),                      
 	broadcasted TEXT DEFAULT (0),        
 	specific_requests TEXT,              
+	"revoked" INTEGER DEFAULT (0), 
+        "hidden" INTEGER DEFAULT (0),
+	"peer_source_ID" TEXT, 
 	"creation_date" TEXT, 
 	"arrival_date" TIMESTAMP, 
 	"reset_date" TEXT, 
- 	FOREIGN KEY(creator_ID) REFERENCES peer(peer_ID)
+ 	FOREIGN KEY(creator_ID) REFERENCES peer(peer_ID),
+ 	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
 );
 CREATE TABLE my_organization_data (
 	organization_ID INTEGER,
@@ -183,7 +197,7 @@ CREATE TABLE constituent (
     "certChain" BLOB,
     "certificate" BLOB, 
     "certRequest" BLOB, 
-   "email" TEXT,
+    "email" TEXT,
     "external" INTEGER NOT NULL DEFAULT (0),
     "weight" TEXT, 
     "forename" TEXT,
@@ -192,6 +206,9 @@ CREATE TABLE constituent (
    "slogan" TEXT,
     "picture" BLOB,
    "op" INTEGER NOT NULL DEFAULT (1),
+   "revoked" INTEGER DEFAULT (0), 
+    "hidden" INTEGER DEFAULT (0),
+    "peer_transmitter_ID" INTEGER,
     "creation_date" TEXT, 
     "arrival_date" TIMESTAMP,
 	requested INTEGER DEFAULT (0),
@@ -199,7 +216,8 @@ CREATE TABLE constituent (
 	blocked INTEGER DEFAULT (0),
 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
 	FOREIGN KEY(neighborhood_ID) REFERENCES neighborhood(neighborhood_ID),
-	FOREIGN KEY(submitter_ID) REFERENCES constituent(constituent_ID)
+	FOREIGN KEY(submitter_ID) REFERENCES constituent(constituent_ID),
+ 	FOREIGN KEY(peer_transmitter_ID) REFERENCES peer(peer_ID)
 );
 CREATE TABLE motion (
 	motion_ID INTEGER PRIMARY KEY,
@@ -302,6 +320,7 @@ CREATE TABLE neighborhood (
 	"organization_ID" INTEGER, 
 	"signature" BLOB,
 	creation_date DATE, 
+        "hidden" INTEGER DEFAULT (0),
 	"blocked" INTEGER DEFAULT (0),
 	"requested" INTEGER DEFAULT (0),
 	"broadcasted" INTEGER DEFAULT (1),
@@ -443,12 +462,14 @@ CREATE TABLE "news" (
     "title" TEXT,
     "title_type" TEXT,
     "signature" BLOB, 
+	"peer_source_ID" TEXT, 
 	requested INTEGER DEFAULT (0),
 	broadcasted INTEGER DEFAULT (1),
 	blocked INTEGER DEFAULT (0),
 	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
 	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID),
-	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
+ 	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
 );
 CREATE TABLE my_news_data (
 	news_ID INTEGER,
