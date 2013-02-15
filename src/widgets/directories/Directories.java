@@ -220,13 +220,15 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 	@Override
 	public Object getValueAt(int row, int col) {
 		if((_ld==null)||(_ld.length<=row)) return null;
-		if(col == COL_UDP_ON)return this.onUDPByIPport.get(this.ipPort(row));
-		if(col == COL_TCP_ON)return this.onTCPByIPport.get(this.ipPort(row));
-		if(col == COL_NAT) return this.natByIPport.get(this.ipPort(row));
+		try{
+			if(col == COL_UDP_ON)return this.onUDPByIPport.get(this.ipPort(row));
+			if(col == COL_TCP_ON)return this.onTCPByIPport.get(this.ipPort(row));
+			if(col == COL_NAT) return this.natByIPport.get(this.ipPort(row));
 		
-		String[] el = _ld[row].split(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
-		if(el.length<=col) return null;
-		return el[col];
+			String[] el = _ld[row].split(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
+			if(el.length<=col) return null;
+			return el[col];
+		}catch(Exception e){e.printStackTrace(); return null;}
 	}
 	@Override
 	public String getColumnName(int col) {
