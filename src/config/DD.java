@@ -952,6 +952,30 @@ public class DD {
     	if(lang.length>=2)return new Language(lang[0],lang[1]);
     	return new Language(lang[0],lang[0]);
 	}
+
+	public static boolean test_proper_directory(String ld) {
+    	String dirs[] = ld.split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_SEP));
+    	//Identity.listing_directories_string.clear();
+    	for(int k=0; k<dirs.length; k++) {
+    		if(dirs[k] == null){
+    			Application.warning(_("Error for "+dirs[k]), _("Error installing directories"));
+    			return false;
+    		}
+    		String[] d=dirs[k].split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_ELEM_SEP));
+    		if(d.length!=2){
+    			Application.warning(_("Error for "+dirs[k]), _("Error installing directories"));
+    			return false;
+    		}
+    		//Identity.listing_directories_string.add(dirs[k]);
+    		try{
+    			new InetSocketAddress(InetAddress.getByName(d[0]),Integer.parseInt(d[1]));
+    		}catch(Exception e) {
+    			Application.warning(_("Error for "+dirs[k]+"\nError: "+e.getMessage()), _("Error installing directories"));
+    			return false;
+    		}
+    	}
+		return true;
+	}
 	public static void load_listing_directories() throws SQLiteException, NumberFormatException, UnknownHostException{
     	String ld = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
     	if(ld == null){
@@ -1798,4 +1822,5 @@ public class DD {
 		if (data_client_on_start) startClient(true);
 		*/
 	}
+
 }

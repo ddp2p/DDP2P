@@ -1430,7 +1430,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 							" IP1:port1,IP2:port2,....\n"
 							+("Previously:")+"\n "+listing_directories,
 							_("Listing Directories"), JOptionPane.QUESTION_MESSAGE);
-				if((val!=null)&&(!"".equals(val))){
+				if((val!=null)&&(!"".equals(val))&&(DD.test_proper_directory(val))) {
 					DD.setAppText(DD.APP_LISTING_DIRECTORIES, val);
 					DD.load_listing_directories();
 					if(Application.as!=null) {
