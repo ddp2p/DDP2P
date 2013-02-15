@@ -712,7 +712,10 @@ public class ASNSyncPayload extends ASNObj{
 		if(advertised_orgs_hash!=null) enc.addToSequence(Encoder.getEncoder(advertised_orgs_hash.toArray(new OrgsData_Hash[0])).setASN1Type(DD.TAG_AC15));
 		if(advertised_orgs!=null) enc.addToSequence(Encoder.getEncoder(advertised_orgs.toArray(new OrgInfo[0])).setASN1Type(DD.TAG_AC16));
 		if(dictionary_GIDs!=null) enc.addToSequence(Encoder.getStringEncoder(dictionary_GIDs.toArray(new String[0]), Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC17));
-		if(changed_orgs!=null) enc.addToSequence(Encoder.getEncoder(changed_orgs.toArray(new OrgInfo[0])).setASN1Type(DD.TAG_AC18));
+		if(changed_orgs!=null){
+			ResetOrgInfo[] ch_orgs = changed_orgs.toArray(new ResetOrgInfo[0]);
+			enc.addToSequence(Encoder.getEncoder(ch_orgs).setASN1Type(DD.TAG_AC18));
+		}
 		enc.setASN1Type(DD.TAG_AC8);
 		if(ASNSyncRequest.DEBUG)System.out.println("Encoded SyncAnswer");
 		return enc;

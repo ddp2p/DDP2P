@@ -135,10 +135,15 @@ public class Address extends ASNObj{
 	}
 	public static String joinAddresses(String addresses1, String addrSep,
 			String addresses2) {
+		if(addresses1==null) return addresses2;
+		if(addresses2==null) return addresses1;
 		return addresses1+addrSep+addresses2;
 	}
 	public static String joinAddresses(String addresses1,
 			String addresses2) {
+		if(addresses1==null) return addresses2;
+		if(addresses2==null) return addresses1;
+		//if((addresses1==null)&&(addresses2==null)) return null;
 		return addresses1+DirectoryServer.ADDR_SEP+addresses2;
 	}
 	public static String[] split(String address) {

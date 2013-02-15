@@ -19,5 +19,5 @@ make
 
 #scripts/addpaths.sh
 pwd
-./unit_test.sh widgets.wireless.WirelessSetup `pwd`/
+#./unit_test.sh widgets.wireless.WirelessSetup `pwd`/
 

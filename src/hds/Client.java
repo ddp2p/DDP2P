@@ -143,9 +143,12 @@ class Client extends Thread{
 	 * @param type
 	 * @param global_peer_ID
 	 * @param peer_name
+	 * @param peer_directories 
+	 * @param peer_directories_sockets 
 	 * @return true if a TCP connection was successful
 	 */
-	boolean try_connect(String s_address, String type, String global_peer_ID, String peer_name) {
+	boolean try_connect(String s_address, String type, String global_peer_ID, String peer_name,
+				ArrayList<InetSocketAddress> peer_directories_udp_sockets, ArrayList<String> peer_directories) {
 		String old_address = s_address;
 		if(DEBUG) out.println("Client:try_connect: Try to connect to: "+ s_address+" ty="+type+" ID="+Util.trimmed(global_peer_ID));
 		InetSocketAddress sock_addr;
@@ -163,7 +166,7 @@ class Client extends Thread{
 			PeerContacts.peer_contacts.put(peer_key, pc);
 		}
 		
-		if("DIR".equals(type)) {
+		if(Address.DIR.equals(type)) {
 			DD.ed.fireClientUpdate(new CommEvent(this, s_address,null,"DIR REQUEST", peer_name+" ("+global_peer_ID+")"));
 			if(DEBUG) out.println("Client: will getDir");
 			adr_addresses = getDirAddress(s_address, global_peer_ID, peer_name);
@@ -263,7 +266,7 @@ class Client extends Thread{
 					DD.ed.fireClientUpdate(new CommEvent(this, peer_name, sock_addr,"SERVER", "Connected: "+global_peer_ID));
 					
 					
-					String key = type+":"+s_address;
+					String key = type+":"+old_address;
 					Hashtable<String,String> value = pc.get(key);
 					if(value==null){
 						value = new Hashtable<String,String>();
@@ -303,17 +306,27 @@ class Client extends Thread{
 
 				if((Application.aus!=null)&&(!Application.aus.hasSyncRequests(global_peer_ID))) {
 					DD.ed.fireClientUpdate(new CommEvent(this, peer_name, null, "LOCAL", "Stop sending: Received ping confirmation already handled from peer"));
-					if(_DEBUG) System.out.println("UDPServer Ping already handled for: "+Util.trimmed(global_peer_ID));
+					if(DEBUG) System.out.println("UDPServer Ping already handled for: "+Util.trimmed(global_peer_ID));
+					{
+						String key = type+":"+old_address;
+						Hashtable<String,String> value = pc.get(key);
+						if(value==null){
+							value = new Hashtable<String,String>();
+							pc.put(key, value);
+						}
+						sock_addr=udp_sock_addresses.get(k);//getSockAddress(address);
+						value.put(sock_addr+" UDP-"+PeerContacts.ALREADY_CONTACTED, now);
+					}
 					return false;					
 				}
 			
 				sock_addr=udp_sock_addresses.get(k);//getSockAddress(address);
 				if(this.isMyself(Identity.udp_server_port, sock_addr)){
-					if(_DEBUG) out.println("Client: UPeer is myself!");
+					if(DEBUG) out.println("Client: UPeer is myself!"+sock_addr);
 					continue;
 				}
 				if(sock_addr.isUnresolved()) {
-					if(_DEBUG) out.println("Client: UPeer is unresolved!");
+					if(_DEBUG) out.println("Client: UPeer is unresolved! "+sock_addr);
 					continue;
 				}
 
@@ -332,14 +345,14 @@ class Client extends Thread{
 				try{
 					dp.setSocketAddress(sock_addr);
 					
-					String key = type+":"+s_address;
+					String key = type+":"+old_address;
 					Hashtable<String,String> value = pc.get(key);
 					if(value==null){
 						value = new Hashtable<String,String>();
 						pc.put(key, value);
 					}
 					value.put(sock_addr+":UDP***", now);
-					if(_DEBUG) out.println("Client: set adr="+type+":"+s_address+" val="+sock_addr+":UDP "+now);
+					if(DEBUG) out.println("Client: set adr="+type+":"+old_address+" val="+sock_addr+":UDP "+now);
 
 				}catch(Exception e){
 					System.err.println("Client is Skipping address: "+sock_addr+ " due to: "+e);
@@ -351,11 +364,16 @@ class Client extends Thread{
 					if(DEBUG)System.out.println("Fail to send ping to peer \""+peer_name+"\" at "+sock_addr);
 					continue;
 				}
+				ArrayList<InetSocketAddress> directories = peer_directories_udp_sockets; // Identity.listing_directories_inet
+				if((peer_directories.size()!=directories.size()) && (directories.size()==0) )
+					directories = getUDPDirectoriesSockets(peer_directories, directories);
 				if(DEBUG)System.out.println("I have sent to peer the UDP packet: "+aup);
-				if(DEBUG)System.out.println("I have sent the UDP ping packet to: "+Identity.listing_directories_inet.size());
-				for (int d=0; d<Identity.listing_directories_inet.size(); d++) {
+				if(DEBUG)System.out.println("I have sent the UDP ping packet to: "+directories.size()+" directories");
+				for (int d=0; d<directories.size(); d++) {
 					try {
-						dp.setSocketAddress((InetSocketAddress)Identity.listing_directories_inet.get(d));
+						InetSocketAddress dir_adr = (InetSocketAddress)directories.get(d);
+						if(dir_adr.isUnresolved()) continue;
+						dp.setSocketAddress(dir_adr);
 						Application.aus.send(dp);
 						if(DEBUG)System.out.println("I requested ping via: "+dp.getSocketAddress()+" ping="+aup);
 					} catch (IOException e) {
@@ -409,7 +427,8 @@ class Client extends Thread{
 	 * @param err
 	 */
 	public void reportDa(String dir_address, String global_peer_ID, String peer_name, DirectoryAnswer da, String err){
-		Hashtable<String,DirectoryAnswer> old_bag = DirectoriesData.dir_data.get(dir_address);
+		String key = "DIR:"+dir_address;
+		Hashtable<String,DirectoryAnswer> old_bag = DirectoriesData.dir_data.get(key);
 		if(da==null) {
 			da = new DirectoryAnswer();
 			da.addresses=new ArrayList<Address>();
@@ -418,7 +437,7 @@ class Client extends Thread{
 		if(old_bag == null) old_bag = new Hashtable<String,DirectoryAnswer>();
 		if(peer_name!=null) old_bag.put(peer_name, da);
 		else  old_bag.put(global_peer_ID, da);
-		DirectoriesData.dir_data.put("DIR:"+dir_address, old_bag);
+		DirectoriesData.dir_data.put(key, old_bag);
 		if(Application.directoriesData!=null){
 			Application.directoriesData.setData(DirectoriesData.dir_data);
 		}else{
@@ -458,12 +477,12 @@ class Client extends Thread{
 			//InetSocketAddress s= da.address.get(0);
 			//return s.getHostName()+":"+s.getPort();
 		}catch (IOException e) {
-			if(_DEBUG) out.println("Client: getDirAddress fail: "+e+" peer: "+peer_name+" DIR addr="+dir_address);
+			if(DEBUG) out.println("Client: getDirAddress fail: "+e+" peer: "+peer_name+" DIR addr="+dir_address);
 			reportDa(dir_address, global_peer_ID, peer_name, null, e.getLocalizedMessage());
 			//e.printStackTrace();
 			//Directories.setUDPOn(dir_address, new Boolean(false));
 		} catch (Exception e) {
-			if(_DEBUG) out.println("Client: getDirAddress fail: "+e+" peer: "+peer_name+" DIR addr="+dir_address);
+			if(DEBUG) out.println("Client: getDirAddress fail: "+e+" peer: "+peer_name+" DIR addr="+dir_address);
 			reportDa(dir_address, global_peer_ID, peer_name, null, e.getLocalizedMessage());
 			e.printStackTrace();
 		}
@@ -633,9 +652,9 @@ class Client extends Thread{
 		for(int p=0;;p++) {
 			if(turnOff) break;
 			// Avoid asking in parallel too many synchronizations (wait for answers)
-			if((Application.aus!=null)&&(Application.aus.threads > UDPServer.MAX_THREADS/2))
+			if((Application.aus!=null)&&(Application.aus.getThreads() > UDPServer.MAX_THREADS/2))
 				try {
-					System.out.println("Client: run: overloaded threads = "+Application.aus.threads);
+					System.out.println("Client: run: overloaded threads = "+Application.aus.getThreads());
 					this.wait(Client.PAUSE);
 				} catch (InterruptedException e2) {
 					//e2.printStackTrace();
@@ -701,6 +720,9 @@ class Client extends Thread{
 			
 			if(Application.aus!=null) Application.aus.addSyncRequests(global_peer_ID);
 			int p_addresses = peers_addr.size();
+			ArrayList<String> peer_directories = getDirectories(peers_addr);
+			ArrayList<InetSocketAddress> peer_directories_sockets = new ArrayList<InetSocketAddress>();
+			peer_directories_sockets = getUDPDirectoriesSockets(peer_directories, peer_directories_sockets);
 			Calendar _lastSnapshot=null;
 			if(p_addresses>0) _lastSnapshot = Util.getCalendar(_lastSnapshotString);
 			DD.ed.fireClientUpdate(new CommEvent(this, peer_name, null, "LOCAL", "Attempt to contact peer"));
@@ -711,8 +733,8 @@ class Client extends Thread{
 				String type=(String)peers_addr.get(a).get(1);
 				if((Application.aus!=null)&&!Application.aus.hasSyncRequests(global_peer_ID)) {
 					DD.ed.fireClientUpdate(new CommEvent(this, peer_name, null, "LOCAL", "Stop sending: Received ping confirmation already handled from peer"));
-					if(_DEBUG)System.out.println("Client:run: Ping already handled for: "+Util.trimmed(global_peer_ID));
-					if(_DEBUG)System.out.println("Client:run: will skip: "+address+":"+type);
+					if(DEBUG)System.out.println("Client:run: Ping already handled for: "+Util.trimmed(global_peer_ID));
+					if(DEBUG)System.out.println("Client:run: will skip: "+address+":"+type);
 					String peer_key = peer_name;
 					if(peer_key == null)peer_key = ""+Util.trimmed(global_peer_ID);
 					Hashtable<String, Hashtable<String, String>> pc = PeerContacts.peer_contacts.get(peer_key);
@@ -726,7 +748,7 @@ class Client extends Thread{
 						value = new Hashtable<String,String>();
 						pc.put(key, value);
 					}
-					value.put("Already contacted ***", Util.getGeneralizedTime());
+					value.put(PeerContacts.ALREADY_CONTACTED, Util.getGeneralizedTime());
 					PeerContacts.peer_contacts.put(peer_name, pc);
 					if(Application.peer!=null)Application.peer.update(PeerContacts.peer_contacts);
 					break;					
@@ -741,14 +763,14 @@ class Client extends Thread{
 			
 				DD.ed.fireClientUpdate(new CommEvent(this, peer_name, peer_sockaddr, "LOCAL", "Try to connect to: "+address));
 				// This function tried both TCP and UDP connections, based on the DD.ClientUDP and DD.ClientTCP, true if TCP
-				if(!try_connect(address, type, global_peer_ID, peer_name)){
-					if(_DEBUG)System.out.println("Client:run: Ping failed for: \""+peer_name+"\" at \""+address+"\" id="+Util.trimmed(global_peer_ID));
+				if(!try_connect(address, type, global_peer_ID, peer_name, peer_directories_sockets, peer_directories)){
+					if(DEBUG)System.out.println("Client:run: Ping failed for: \""+peer_name+"\" at \""+address+"\" id="+Util.trimmed(global_peer_ID));
 					if(Application.peer!=null) Application.peer.update(PeerContacts.peer_contacts);
 					continue;
 				}
 				if(Application.peer!=null)Application.peer.update(PeerContacts.peer_contacts);
 				if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_TCP);
-				if(_DEBUG) out.println("Client: Connected!");
+				if(DEBUG) out.println("Client: Connected!");
 				DD.ed.fireClientUpdate(new CommEvent(this, peer_name, s.getRemoteSocketAddress(), "Server", "Connected"));
 						
 				ASNSyncRequest sr = Client.buildRequest(_lastSnapshotString, _lastSnapshot, peer_ID);
@@ -834,6 +856,33 @@ class Client extends Thread{
 		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Stop"));
 		if(DEBUG) out.println("Client: turned Off");
 	}
+	/**
+	 * Resolve addresses for extracting UDP sockets 
+	 * used for directory servers requested to help with pierceNATs if needed
+	 * @param peer_directories
+	 * @return
+	 */
+	private ArrayList<InetSocketAddress> getUDPDirectoriesSockets(
+			ArrayList<String> peer_directories, ArrayList<InetSocketAddress> udp_sock_addresses) {
+		for(int i=0; i<peer_directories.size(); i++) {
+				String s_address = peer_directories.get(i);
+				InetSocketAddress sock_addr=getUDPSockAddress(s_address);
+			if(sock_addr!=null) udp_sock_addresses.add(sock_addr);
+		}
+		return udp_sock_addresses;
+	}
+
+	private ArrayList<String> getDirectories(
+			ArrayList<ArrayList<Object>> peers_addr) {
+		ArrayList<String> result = new ArrayList<String>();
+		for(int i=0; i<peers_addr.size(); i++) {
+			if(Address.DIR.equals(peers_addr.get(i).get(1))){
+				result.add(Util.getString(peers_addr.get(i).get(0)));
+			}
+		}
+		return result;
+	}
+
 	static String getString(byte[] bytes){
 		if(bytes==null) return null;
 		return new String(bytes);

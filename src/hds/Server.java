@@ -214,14 +214,24 @@ public class Server extends Thread {
 					D_PeerAddress local = new D_PeerAddress(pa.globalID, pa.globalIDhash, false, false, true);
 					if(local.peer_ID==null){
 						int i = 2;
-						if(DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME)
+						pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
+						pa.used = false; //DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
+						peer_ID = pa.storeVerified();
+
+						if(DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME) {
+							Object sync = _("Synchronize from")+" "+pa.name;
+							Object options[] = new Object[]{sync, _("No Sync from it"), _("Use defaults"), _("Use defaults, do not ask again")};
 							i = Application.ask(
-									_("A new peer is contacting you. Do you want to sync from him, too?")+" \n"+
-											_("Cancel for not being asked again, but using default/last:")+" "+DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME+" \n"+
-											_("Default for blocking (used at No and Cancel) is:")+" "+DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME+" \n"+
-											_("Peer name is:")+" \""+pa.name+"\" \nslogan=\""+pa.slogan+"\"",
-											_("Use new peer as sync?"),
-											JOptionPane.YES_NO_CANCEL_OPTION);
+								_("Use new peer for synchronization?"),
+								_("A new peer is contacting you. Do you want to sync from it, too?")+" \n"+
+								//_("Select \"Cancel\" for not being asked again, but using defaults.")+"\n"+
+								_("Defaults may be affected by the current choice.")+"\n"+
+								_("Current default for synchronizing with new peer is:")+" "+(DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME?_("Sync from this"):_("Do not sync from this"))+"\n"+
+								_("Default for blocking (employed at No Synchronizing) is:")+" "+(DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME?_("Blocked"):_("Not blocked"))+" \n"+
+								_("Name of Peer contacting you is:")+" \""+pa.name+"\" \n"+_("His current slogan is:")+" \""+pa.slogan+"\"",
+								options, sync, null);
+								//JOptionPane.YES_NO_CANCEL_OPTION);
+						}
 						switch(i) {
 						case 0:
 							pa.blocked = false;
@@ -233,12 +243,14 @@ public class Server extends Thread {
 							DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME = pa.used = false;
 							peer_ID = pa.storeVerified();
 							break;
+						case 3:
+							DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME = false;
 						case 2:
+						case JOptionPane.CLOSED_OPTION:
 						default:
 							pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
 							pa.used = DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
 							peer_ID = pa.storeVerified();
-							DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME = false;
 							break;
 						}
 					}else{

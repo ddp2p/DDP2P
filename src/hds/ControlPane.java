@@ -224,6 +224,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public JCheckBox m_dbgOrgs;
 	public JCheckBox m_dbgOrgsHandling;
 	public JCheckBox m_dbgPeers;
+	public JCheckBox m_dbgTesters;
 	public JCheckBox m_dbgPeersHandling;
 	public JCheckBox m_dbgStreamingHandling;
 	public Component makeDEBUGPanel(Container c) {
@@ -231,6 +232,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		m_dbgVerifySent = new JCheckBox("Verify sent signatures",DD.VERIFY_SENT_SIGNATURES);
 		c.add(m_dbgVerifySent);
 		m_dbgVerifySent.addItemListener(this);
+		
+		m_dbgTesters = new JCheckBox("DBG Testers",DD.DEBUG_PLUGIN);
+		c.add(m_dbgTesters);
+		m_dbgTesters.addItemListener(this);
 		
 		m_dbgPlugin = new JCheckBox("DBG Plugins",DD.DEBUG_PLUGIN);
 		c.add(m_dbgPlugin);
@@ -286,9 +291,19 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    if (source == this.m_dbgVerifySent) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	DD.VERIFY_SENT_SIGNATURES = val;
+	    } else if (source == this.m_dbgTesters) {
+	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
+	    	widgets.updatesKeys.UpdatesKeysModel.DEBUG = val;
+	    	widgets.updates.UpdatesModel.DEBUG = val;
+	    	widgets.updates.UpdatesTable.DEBUG = val;
+	    	data.D_TesterInfo.DEBUG = val;
+	    	data.D_UpdatesKeysInfo.DEBUG = val;
+	    	data.D_UpdatesInfo.DEBUG = val;
+	    	data.D_TesterDefinition.DEBUG = val;
 	    } else if (source == this.m_dbgUpdates) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	updates.ClientUpdates.DEBUG = val;
+	    	//WSupdate.HandleService.DEBUG = val;
 	    } else if (source == this.m_dbgUpdates) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	updates.ClientUpdates.DEBUG = val;
@@ -723,18 +738,19 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 //		addTabPeer.setActionCommand("tab_peer");
 		return c;
 	}
-	Component makeUpdatedPanel(){
+	Component makeUpdatesMirrorsPanel(){
 		if(DEBUG) System.out.println("ControlPane:makeUpdatedPanel: start");
 		JPanel panel = new JPanel(new BorderLayout());
 		
-		UpdatesTable t = new UpdatesTable();
+		//UpdatesTable t = new UpdatesTable();
+		widgets.updates.UpdatesPanel t = new widgets.updates.UpdatesPanel();
 		if(DEBUG) System.out.println("ControlPane:makeUpdatedPanel: constr");
 		//t.getColumnModel().getColumn(TABLE_COL_QOT_ROT).setCellRenderer(new ComboBoxRenderer());
 		panel.add(t);
 		//PeersTest newContentPane = new PeersTest(db);
 		//newContentPane.setOpaque(true);
 		//frame.setContentPane(t.getScrollPane());
-		panel.add(t.getTableHeader(),BorderLayout.NORTH);
+		//panel.add(t.getTableHeader(),BorderLayout.NORTH);
 		if(DEBUG) System.out.println("ControlPane:makeUpdatedPanel: done");
 		return panel;
 	}
@@ -757,7 +773,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		tabs.addTab("Paths", makePathsPanel(new JPanel(gl)));
 		tabs.addTab("Dirs", makeDirectoriesPanel(new JPanel(gl)));
 		tabs.addTab("Updates", makeUpdatesPanel(new JPanel(gl)));
-		tabs.addTab(_("Update Mirrors"), makeUpdatedPanel());
+		tabs.addTab(_("Update Mirrors"), makeUpdatesMirrorsPanel());
 		tabs.addTab("Wireless", makeWirelessPanel(new JPanel(gl)));
 		tabs.addTab("Simulator", makeSimulatorPanel(new JPanel(gl)));
 		tabs.addTab("GUI", makeGUIConfigPanel(new JPanel(gl)));

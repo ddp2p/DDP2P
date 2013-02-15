@@ -127,7 +127,7 @@ public class DirectoryServer extends Thread{
 						//da.address.domain+":"+da.address.port+ADDR_SEP+detected_sa,
 						Address.joinAddresses(detected_sa, da.address.domain),
 						(da.signature.length==0)?null:Util.stringSignatureFromByte(da.signature),
-								(Util.CalendargetInstance().getTimeInMillis()/1000)+""});//strftime('%s', 'now'));
+								(Util.CalendargetInstance().getTimeInMillis()/1000)+""}); // strftime('%s', 'now'));
 		if(DEBUG)out.println("inserted with ID="+id);
 		Encoder DAanswer = new Encoder().initSequence().addToSequence(new Encoder(true));
 		DAanswer.setASN1Type(DD.TAG_AC14);
@@ -200,7 +200,7 @@ public class DirectoryServer extends Thread{
 						System.out.println("This address: "+addresses);
 						String a[] = Address.split(addresses);
 						for(int k=0; k<a.length; k++) {
-							if((a[k]==null)||("".equals(a[k]))) continue;
+							if((a[k]==null)||("".equals(a[k]))||("null".equals(a[k]))) continue;
 							System.out.println("This address ["+k+"]"+a[k]);
 							da.addresses.add(new Address(a[k]));
 						}

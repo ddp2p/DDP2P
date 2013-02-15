@@ -318,6 +318,30 @@ public class StartUpThread extends Thread {
 					if(DEBUG) System.out.println("StartUpThread:run: IPBase later = "+DD.WIRELESS_ADHOC_DD_NET_IP_BASE);
 					Application.controlPane.m_area_ADHOC_Mask.setText(DD.WIRELESS_ADHOC_DD_NET_MASK);
 					Application.controlPane.m_area_ADHOC_SSID.setText(DD.DD_SSID);
+					
+					if(Application.panelUpdates!=null) {
+						try {
+							String testers_count_value=DD.getAppText(DD.UPDATES_TESTERS_THRESHOLD_COUNT_VALUE);
+							try{if(testers_count_value != null)
+									testers_count_value = ""+Integer.parseInt(testers_count_value);}catch(Exception e){};
+							if (testers_count_value == null) testers_count_value = "" + DD.UPDATES_TESTERS_THRESHOLD_COUNT_DEFAULT; 
+							Application.panelUpdates.numberTxt.setText(testers_count_value);
+							
+							String testers_count_weight = DD.getAppText(DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_VALUE);
+							try{if(testers_count_weight != null)
+								testers_count_weight = ""+Float.parseFloat(testers_count_weight);}catch(Exception e){};
+							if (testers_count_weight == null) testers_count_weight = "" + DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT; 							
+							Application.panelUpdates.percentageTxt.setText(testers_count_weight);
+							if(DD.getAppBoolean(DD.UPDATES_TESTERS_THRESHOLD_WEIGHT)){
+								Application.panelUpdates.percentageButton.setSelected(true);
+							}else{
+								Application.panelUpdates.numberButton.setSelected(true);								
+							}
+							Application.panelUpdates.absoluteCheckBox.setSelected(!DD.getAppBoolean(DD.UPDATES_TESTERS_THRESHOLDS_RELATIVE));
+						} catch (SQLiteException e) {
+							e.printStackTrace();
+						}
+					}
 				}
 			});
 

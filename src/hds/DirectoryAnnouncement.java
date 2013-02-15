@@ -66,7 +66,7 @@ public class DirectoryAnnouncement{
 		address.domain = addr.getFirstObject(true).getString();
 		//out.println("domain: "+address.domain);
 		//addr.printHex("addr=");
-		address.udp_port = addr.getInteger().intValue();
+		address.udp_port = addr.getFirstObject(true).getInteger().intValue();
 		//out.println("port: "+address.port);
 		//addr.printHex("addr=");
 		certificate = dec.getFirstObject(true).getBytes();

@@ -63,28 +63,27 @@ public class UDPServerThread extends Thread {
 			peer_address = sa.getAddress().getHostAddress()+DD.APP_LISTING_DIRECTORIES_ELEM_SEP+sa.getPort();
 		}catch(Exception e){};
 	}
-	void decThreads(){
-		us.threads--;
-		synchronized(us.lock){
-			us.lock.notify();
-		}
-	}
 	public void run() {
 		try{
-			us.threads++;
+			synchronized(us.lock){
+				us.incThreads();
+			}
 			try{
 				_run();
 			}catch(Exception e){
 				e.printStackTrace();
 			}
-			decThreads();
-			if(us.threads < 0) {
-				System.err.println("UDPServerThread:run:Threads number under 0");
+			synchronized(us.lock){
+				us.decThreads();
+				us.lock.notify();
+			}
+			if(us.getThreads() < 0) {
+				System.err.println("UDPServerThread:run:Threads number under 0: "+ us.getThreads()+"/"+UDPServer.MAX_THREADS);
 			}
 		}catch(Exception e){e.printStackTrace();}
 	}
 	public void _run() {
-		if(DEBUG)System.out.println("UDPServer:run: Running UDPHandler thread:"+us.threads+" from"+pak.getSocketAddress());
+		if(DEBUG)System.out.println("UDPServer:run: Running UDPHandler thread:"+us.getThreads()+" from"+pak.getSocketAddress());
 		byte[] buffer = pak.getData();
 		byte[] msg=null;
 		Decoder dec = new Decoder(pak.getData(),pak.getOffset(),pak.getLength());
@@ -202,7 +201,7 @@ public class UDPServerThread extends Thread {
 					boolean r = asreq.verifySignature();
 					if(!r) Util.printCallPath("failed verifying: "+asreq);
 					else
-						System.out.println("UDPServThread: _run: signature success");
+						if(DEBUG)System.out.println("UDPServThread: _run: signature success");
 				}
 				
 				byte[] buf = asreq.encode();

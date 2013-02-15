@@ -575,7 +575,10 @@ public class UDPServer extends Thread {
 		
 	}
 	boolean turnOff = false;
-	int threads=0;
+	private int _threads=0;
+	int getThreads(){return _threads;}
+	int incThreads(){synchronized(lock){return ++_threads;}}
+	int decThreads(){synchronized(lock){return --_threads;}}
 	public Object lock=new Object();
 	public Object lock_reply=new Object();
 	public void turnOff(){
@@ -584,12 +587,16 @@ public class UDPServer extends Thread {
 		this.interrupt();
 	}
 	synchronized void wait_if_needed() throws InterruptedException{
-		while(threads>=MAX_THREADS){
-			if(DEBUG) System.out.println("UDPServer:wait_if_needed: threads="+threads+"> max="+MAX_THREADS);
+		while(getThreads()>=MAX_THREADS){
+			if(DEBUG) System.out.println("UDPServer:wait_if_needed: threads="+getThreads()+"> max="+MAX_THREADS);
 			synchronized(lock){
-				lock.wait(DD.UDP_SERVER_WAIT_MILLISECONDS);
+				if (getThreads()>=MAX_THREADS)
+					lock.wait(DD.UDP_SERVER_WAIT_MILLISECONDS);
 			}
-			if(threads>=MAX_THREADS) Util.printCallPath("Threads="+threads+">MAX_THREADS="+MAX_THREADS);
+			if(getThreads()>=MAX_THREADS) {
+				if(DEBUG)System.out.println("UDPServer:wait_if_needed: crtThreads="+getThreads()+">MAX_THREADS="+MAX_THREADS);
+				// Util.printCallPath("Threads="+getThreads()+">MAX_THREADS="+MAX_THREADS);
+			}
 		}
 	}
 	public void send(DatagramPacket dp) throws IOException{

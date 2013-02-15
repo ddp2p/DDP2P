@@ -453,9 +453,9 @@ public class DDAddress {
 	 *  Convert stegano bytes in pure bytes
 	 * @param buffer
 	 * @param offset
-	 * @param word_bytes
-	 * @param bits
-	 * @param bytes_len
+	 * @param word_bytes : bytes/color (amount to jump before next byte)
+	 * @param bits : how many bits are used per word
+	 * @param bytes_len : how many bytes to extract
 	 * @return newly created buffer
 	 */
 	public static byte[] extractSteganoBytes(byte[]buffer, int offset, int word_bytes, int bits, int bytes_len){
