@@ -1,22 +1,3 @@
-/* ------------------------------------------------------------------------- */
-/*   Copyright (C) 2012 
-		Author: Khalid Alhamed
-		Florida Tech, Human Decision Support Systems Laboratory
-   
-       This program is free software; you can redistribute it and/or modify
-       it under the terms of the GNU Affero General Public License as published by
-       the Free Software Foundation; either the current version of the License, or
-       (at your option) any later version.
-   
-      This program is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-  
-      You should have received a copy of the GNU Affero General Public License
-      along with this program; if not, write to the Free Software
-      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package widgets.updatesKeys;
 
 import static util.Util._;
@@ -25,9 +6,15 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-
+import java.awt.Point;
+import java.awt.event.KeyEvent;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
+import javax.swing.JPopupMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JFileChooser;
+import javax.swing.ImageIcon;
+
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
@@ -37,6 +24,11 @@ import util.DBInterface;
 import widgets.components.BulletRenderer;
 import config.Application;
 import config.Identity;
+import config.DDIcons;
+
+import widgets.updates.PanelRenderer;
+import widgets.updates.MyPanelEditor;
+import widgets.updates.UpdateCustomAction;
 
 public class UpdatesKeysTable extends JTable implements MouseListener{
 	
@@ -63,18 +55,22 @@ public class UpdatesKeysTable extends JTable implements MouseListener{
 		return (UpdatesKeysModel)super.getModel();
 	}
 	void init(){
-		System.out.println("UpdateTable:init:start");
+		if(DEBUG) System.out.println("UpdateKeysTable:init:start");
 		getModel().setTable(this);
 		addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
 		//colorRenderer = new ColorRenderer(getModel());
 		centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment( JLabel.CENTER );
-		initColumnSizes();
+	//	initColumnSizes();
 		this.getTableHeader().setToolTipText(
         _("Click to sort; Shift-Click to sort in reverse order"));
 		this.setAutoCreateRowSorter(true);
-		System.out.println("UpdateTable:init:done");
+		
+		getColumnModel().getColumn(UpdatesKeysModel.TABLE_COL_NAME).setCellRenderer(new PanelRenderer());
+		getColumnModel().getColumn(UpdatesKeysModel.TABLE_COL_NAME).setCellEditor(new MyPanelEditor());
+		
+		if(DEBUG) System.out.println("UpdateKeysTable:init:done");
 		//his.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
   	}
 	public JScrollPane getScrollPane(){
@@ -84,11 +80,11 @@ public class UpdatesKeysTable extends JTable implements MouseListener{
 		//scrollPane.setMinimumSize(new Dimension(400,200));
 		return scrollPane;
 	}
-	public TableCellRenderer getCellRenderer(int row, int column) {
-		//if ((column == UpdatesKeysModel.TABLE_COL_NAME)) return colorRenderer;
-		if ((column == UpdatesKeysModel.TABLE_COL_ACTIVITY)) return bulletRenderer;// when successfully connect the server
-		return super.getCellRenderer(row, column);
-	}
+//	public TableCellRenderer getCellRenderer(int row, int column) {
+//		//if ((column == UpdatesKeysModel.TABLE_COL_NAME)) return colorRenderer;
+//		if ((column == UpdatesKeysModel.TABLE_COL_ACTIVITY)) return bulletRenderer;// when successfully connect the server
+//		return super.getCellRenderer(row, column);
+//	}
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
@@ -96,14 +92,17 @@ public class UpdatesKeysTable extends JTable implements MouseListener{
 
 	@Override
 	public void mousePressed(MouseEvent e) {
+		jtableMouseReleased(e);
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
+		jtableMouseReleased(e);
 	}
 
 	@Override
 	public void mouseEntered(MouseEvent e) {
+		jtableMouseReleased(e);
 	}
 
 	@Override
@@ -144,4 +143,43 @@ public class UpdatesKeysTable extends JTable implements MouseListener{
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
+    private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
+    	int row; //=this.getSelectedRow();
+    	int col; //=this.getSelectedColumn();
+    	if(!evt.isPopupTrigger()) return;
+    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
+    	Point point = evt.getPoint();
+        row=this.rowAtPoint(point);
+        col=this.columnAtPoint(point);
+        this.getSelectionModel().setSelectionInterval(row, row);
+        if(row>=0) row = this.convertRowIndexToModel(row);
+    	JPopupMenu popup = getPopup(row,col);
+    	if(popup == null) return;
+    	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
+    //	getModel().update(null, null);
+    }
+    JPopupMenu getPopup(int row, int col){
+		JMenuItem menuItem;
+    	
+    	ImageIcon addicon = DDIcons.getAddImageIcon(_("add an item")); 
+    	ImageIcon delicon = DDIcons.getDelImageIcon(_("delete an item")); 
+    	ImageIcon reseticon = DDIcons.getResImageIcon(_("reset item"));
+    	ImageIcon importicon = DDIcons.getImpImageIcon(_("import information"));
+    	JPopupMenu popup = new JPopupMenu();
+    	UpdateKeysCustomAction aAction;
+    	//System.out.println(importicon.toString());
+    	
+    	
+    	aAction = new UpdateKeysCustomAction(this, _("Import!"), importicon,_("Import Mirrors"), _("Import"),KeyEvent.VK_I, UpdateKeysCustomAction.M_IMPORT);
+    	aAction.putValue("row", new Integer(row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);
+    	
+    	aAction = new UpdateKeysCustomAction(this, _("Delete"), delicon,_("Delete Mirror"), _("Delete"),KeyEvent.VK_D, UpdateKeysCustomAction.M_DELETE);
+    	aAction.putValue("row", new Integer(row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);
+    	    
+    	return popup;
+	}
 }

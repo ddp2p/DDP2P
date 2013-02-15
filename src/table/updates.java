@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- */
-/*   Copyright (C) 2012 Marius C. Silaghi
+/*   Copyright (C) 2012 Khalid AlHamed and Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
    
@@ -32,6 +32,7 @@ public class updates {
 	public static final String url = "url";
 	public static final String last_version = "last_version";
 	public static final String used = "used";
+	public static final String last_releaseQD = "last_releaseQD";
 	public static final String tester_info = "tester_info";// string format {T1:QoT1:RoT1:QoT2:RoT2;T2:QoT1:RoT1:...}
 	public static final String last_contact_date = "last_contact_date";
 	public static final String activity = "activity";
@@ -42,6 +43,7 @@ public class updates {
 			url+","+
 			last_version+","+
 			used+","+
+			last_releaseQD+","+	
 			tester_info+","+
 			last_contact_date+","+
 			activity;
@@ -54,9 +56,10 @@ public class updates {
 	public static final int F_URL = 2;
 	public static final int F_LAST_VERSION = 3;
 	public static final int F_USED = 4;
-	public static final int F_TESTER_INFO = 5;
-	public static final int F_LAST_CONTACT = 6;
-	public static final int F_ACTIVITY = 7;
-	public static final int F_ID = 8;
+	public static final int F_RELEASE_QOT = 5;
+	public static final int F_TESTER_INFO = 6;
+	public static final int F_LAST_CONTACT = 7;
+	public static final int F_ACTIVITY = 8;
+	public static final int F_ID = 9;
 	
 }

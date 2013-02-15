@@ -24,6 +24,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.regex.Pattern;
 
+import javax.swing.Icon;
 import javax.swing.JOptionPane;
 
 //import registration.RegistrationServer;
@@ -38,6 +39,7 @@ import widgets.directories.DirectoriesData;
 import widgets.org.Orgs;
 import widgets.peers.PeerContacts;
 import widgets.peers.Peers;
+import widgets.updates.UpdatesPanel;
 import widgets.wireless.WLAN_widget;
 import wireless.BroadcastClient;
 import wireless.BroadcastServer;
@@ -220,6 +222,7 @@ public class Application{
 	public static ControlPane controlPane;
 	public static DirectoriesData directoriesData;
 	public static PeerContacts peer;
+	public static UpdatesPanel panelUpdates;
 	
 	public static void warning(String war, String title){
 		JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
@@ -238,6 +241,23 @@ public class Application{
 			JOptionPane.showConfirmDialog(JFrameDropCatch.mframe,
 				war,
 				title, type, JOptionPane.QUESTION_MESSAGE);
+	}
+	/**
+	 *  Returns the option of CLOSED_OPTION for default option
+	 * @param war
+	 * @param title
+	 * @param options
+	 * @param def_option
+	 * @param icon
+	 * @return
+	 */
+	public static int ask(String title, String war, Object[] options, Object def_option, Icon icon){
+		return
+//	JOptionPane.showConfirmDialog(JFrameDropCatch.mframe, war,
+//		title, type, JOptionPane.QUESTION_MESSAGE, options);
+		JOptionPane.showOptionDialog(JFrameDropCatch.mframe, war, title, 
+		        JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, //JOptionPane.PLAIN_MESSAGE,
+		        icon, options, options[0]);
 	}
 	public static void parseWindowsPaths(String val) {
 		//boolean DEBUG=true;

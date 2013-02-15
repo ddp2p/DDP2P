@@ -22,6 +22,8 @@
 
 import static java.lang.System.out;
 
+import handling_wb.BroadcastQueueRequested;
+import handling_wb.BroadcastQueueRequested.Received_Interest_Ad;
 import hds.OrgInfo;
 
 import javax.imageio.ImageIO;
@@ -1338,7 +1340,7 @@ public class Util {
 		return getHash(msg, DD.APP_ID_HASH);
 	}
 	/**
-	 * Callled when trasforming a GID to a GIDhash
+	 * Called when transforming a GID to a GIDhash
 	 * @param msg
 	 * @return
 	 */
@@ -1346,7 +1348,7 @@ public class Util {
 		return getGID_as_Hash(msg);
 	}
 	/**
-	 * Standard(?) algorithm to get a globalID_hash from a hex string, using DD.APP_OTHER_HASH
+	 * Standard(?) algorithm to get a globalID_hash from a signature string, using DD.APP_OTHER_HASH
 	 * @param globalID
 	 * @param verbose : false for silent on expected exceptions
 	 * @return
@@ -2006,6 +2008,40 @@ public class Util {
 		if((c1==null) && (c2==null)) return true;
 		if((c1==null) || (c2==null)) return false;
 		return c1.equals(c2);
+	}
+	public static int[] mkIntArray(String[] iDs_strings) {
+		if(_DEBUG&&(iDs_strings!=null))System.out.println("Util:mkIntArray: input #"+iDs_strings.length+"="+Util.concat(iDs_strings, ";"));
+		int[] result = new int[iDs_strings.length];
+		for(int i=0; i<result.length; i++)
+			try{result[i] = Integer.parseInt(iDs_strings[i]);}catch(Exception e){e.printStackTrace();}
+		return result;
+	}
+	public static String mkArrayCounter(int length, String sep) {
+		if(length<=0) return "";
+		String result="0";
+		for(int i=1;i<length; i++)
+			result+=sep+i;
+		return result;
+	}
+	public static String concat(float[] t, String sep) {
+		if(t.length<=0) return "";
+		String result=t[0]+"";
+		for(int i=1;i<t.length; i++)
+			result+=sep+t[i];
+		return result;
+	}
+	public static void insertSort(ArrayList<BroadcastQueueRequested.Received_Interest_Ad> list,
+			BroadcastQueueRequested.Received_Interest_Ad item, int i, int j) {
+		if(i==j){
+			list.add(i, item);
+			return;
+		}
+		int mid = (i+j)/2;
+		if(item.interest_expiration_date < list.get(mid).interest_expiration_date){
+			insertSort(list, item, 0, mid);
+		}else{
+			insertSort(list, item, mid+1, j);			
+		}
 	}
 }
 class GetHostName extends Thread{

@@ -245,7 +245,7 @@ public class Peers extends JTable implements MouseListener {
         scrollPane.setPreferredSize(new Dimension(400, 200));
         //jp.add(scrollPane, BorderLayout.CENTER);
         Application.peer = new PeerContacts();
-        jp.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, Application.peer), BorderLayout.CENTER);
+        jp.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, new JScrollPane(Application.peer)), BorderLayout.CENTER);
 		return jp;
     }
 
@@ -606,15 +606,20 @@ public class Peers extends JTable implements MouseListener {
 
 		public void run(){
 			PeersModel model = peers.getModel();
-			long id = Util.lval(model.getID(model_row), -1);
-			D_PeerAddress peer;
-			try {
-				peer = new D_PeerAddress(id, false, true, true);
-			} catch (SQLiteException e1) {
-				e1.printStackTrace();
-				return;
+			long id =-1;
+			D_PeerAddress peer = null;
+			String my_peer_name = null;
+			if(model_row>=0){
+				id = Util.lval(model.getID(model_row), -1);
+			
+				try {
+					peer = new D_PeerAddress(id, false, true, true);
+				} catch (SQLiteException e1) {
+					e1.printStackTrace();
+					return;
+				}
+				my_peer_name = Util.getString(model.getValueAt(model_row, PeersModel.TABLE_COL_NAME));
 			}
-			String my_peer_name = Util.getString(model.getValueAt(model_row, PeersModel.TABLE_COL_NAME));
 			for(PeerListener l : listeners) {
 				try{l.update(peer, my_peer_name);}catch(Exception e){e.printStackTrace();}
 			}
@@ -628,17 +633,17 @@ public class Peers extends JTable implements MouseListener {
     	int row; //=this.getSelectedRow();
     	int model_row=-1; //=this.getSelectedRow();
     	int col; //=this.getSelectedColumn();
-    	if(!evt.isPopupTrigger()) return;
     	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
         row=this.rowAtPoint(point);
         if(DEBUG) System.out.println("Peers:jTableMouseRelease: row="+row);
         col=this.columnAtPoint(point);
         this.getSelectionModel().setSelectionInterval(row, row);
-        if(row>=0){
+        if(row>=0)
         	model_row=this.convertRowIndexToModel(row);
-        	dispatchToListeners(model_row);
-        }
+        dispatchToListeners(model_row);
+        
+    	if(!evt.isPopupTrigger()) return;
     	JPopupMenu popup = getPopup(model_row,col);
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
@@ -853,18 +858,18 @@ class PeersRowAction extends DebateDecideAction {
 	public final JFileChooser filterUpdates = new JFileChooser();
     public void actionPerformed(ActionEvent e) {
     	Object src = e.getSource();
-        System.err.println("PeersRowAction:command property: " + command);
+        if(DEBUG)System.out.println("PeersRowAction:command property: " + command);
     	JMenuItem mnu;
     	int row =-1;
     	if(src instanceof JMenuItem){
     		mnu = (JMenuItem)src;
     		Action act = mnu.getAction();
     		row = ((Integer)act.getValue("row")).intValue();
-            System.err.println("PeersRowAction:row property: " + row);
+            if(DEBUG)System.out.println("PeersRowAction:row property: " + row);
     	}else {
     		row=tree.getSelectedRow();
     		row=tree.convertRowIndexToModel(row);
-    		System.err.println("PeersRowAction:Row selected: " + row);
+    		if(DEBUG)System.out.println("PeersRowAction:Row selected: " + row);
     	}
     	PeersModel model = (PeersModel)tree.getModel();
     	ArrayList<ArrayList<Object>> a;

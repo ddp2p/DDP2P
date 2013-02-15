@@ -23,6 +23,7 @@ package data;
 import static java.lang.System.out;
 
 import handling_wb.BroadcastQueueHandled;
+import handling_wb.PreparedMessage;
 import hds.Client;
 
 import java.util.ArrayList;
@@ -410,6 +411,9 @@ class D_Vote extends ASNObj{
 	 * @throws SQLiteException
 	 */
 	public long store(streaming.RequestData rq) throws SQLiteException {
+		return store(null, rq);
+	}
+	public long store(PreparedMessage pm, streaming.RequestData rq) throws SQLiteException {
 		if(DEBUG) System.out.println("D_Vote:store: signature start");
 		
 		boolean locals = fillLocals(rq, true, true, true, true, true);
@@ -471,7 +475,7 @@ class D_Vote extends ASNObj{
 
 		rq.sign.remove(this.global_vote_ID);
 		
-		return storeVerified();
+		return storePMVerified(pm);
 	
 	}
 	private static String getLocalIDandDateforGID(String global_vote_ID, String[]_date) throws SQLiteException {
@@ -579,10 +583,16 @@ class D_Vote extends ASNObj{
 			this.global_constituent_ID = D_Constituent.getConstituentGlobalID(this.constituent_ID);
 	}
 	public long storeVerified() throws SQLiteException {
+		return storePMVerified(null);
+	}
+	public long storePMVerified(PreparedMessage pm) throws SQLiteException {
 		Calendar now = Util.CalendargetInstance();
-		return storeVerified(now);
+		return storePMVerified(pm, now);
 	}
 	public long storeVerified(Calendar arrival_date) throws SQLiteException {
+		return storePMVerified(null, arrival_date);
+	}
+	public long storePMVerified(PreparedMessage pm, Calendar arrival_date) throws SQLiteException {
 		//boolean DEBUG = true;
 		long result = -1;
 		if(DEBUG) System.out.println("WB_Vote:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
@@ -653,7 +663,15 @@ class D_Vote extends ASNObj{
 				dm.sender.name = DD.getAppText(DD.APP_my_peer_name);
 
 				if((this.signature!=null) && (global_vote_ID != null)) {
-					BroadcastClient.msgs.registerRecent(dm.encode(), BroadcastQueueHandled.VOTE);
+					if(pm != null) {
+						if(pm.raw == null)pm.raw = dm.encode();
+						if(pm.motion_ID == null)pm.motion_ID=this.motion.global_motionID;
+						if(this.constituent.global_constituent_id_hash != null)pm.constituent_ID_hash.add(this.constituent.global_constituent_id_hash);
+						if(this.justification.global_justificationID != null)pm.justification_ID = this.justification.global_justificationID;
+						if(this.global_organization_ID !=null)pm.org_ID_hash = this.global_organization_ID;
+					
+						BroadcastClient.msgs.registerRecent(pm, BroadcastQueueHandled.VOTE);
+					}
 					Client.payload_recent.add(streaming.RequestData.SIGN, this.global_vote_ID, D_Organization.getOrgGIDHashGuess(this.global_organization_ID), Client.MAX_ITEMS_PER_TYPE_PAYLOAD);
 				}
 			}

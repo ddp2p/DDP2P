@@ -21,6 +21,7 @@
 package data;
 import static util.Util._;
 import handling_wb.BroadcastQueueHandled;
+import handling_wb.PreparedMessage;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -63,6 +64,7 @@ WB_Constituent ::= SEQUENCE {
 	signature OCTET_STRING 
 }
  */
+
 
 public class D_Constituent extends ASNObj implements Summary {
 	private static final boolean _DEBUG = true;
@@ -151,9 +153,10 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * @param i neighborhoods, e.g. EXPAND_ONE
 	 * @throws SQLiteException
 	 */
-	public D_Constituent(String c_GID, String c_GIDh, int neigh) throws SQLiteException {
+	public D_Constituent(String c_GID, String c_GIDh, int neigh) throws SQLiteException, D_NoDataException {
 		ArrayList<ArrayList<Object>> c;
 		c = Application.db.select(sql_get_const_by_GID, new String[]{c_GID, c_GIDh}, DEBUG);
+		if(c.size()==0) throw new D_NoDataException("No such constituent: +c_GID");
 		load(c.get(0), neigh);
 	}
 	D_Constituent(ArrayList<Object> alk) throws SQLiteException {
@@ -609,6 +612,9 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * @throws SQLiteException
 	 */
 	public long store(String orgGID, String org_local_ID, String arrival_time) throws SQLiteException {
+		return store(null, orgGID, org_local_ID, arrival_time);
+	}
+	public long store(PreparedMessage pm, String orgGID, String org_local_ID, String arrival_time) throws SQLiteException {
 		/**
 		 * inserts or updates
 		 * @param orgGID
@@ -632,12 +638,15 @@ public class D_Constituent extends ASNObj implements Summary {
 				return _constituent_ID;
 			}
 		}
-		return storeVerified(orgGID, org_local_ID, arrival_time);
+		return storeVerified(pm,orgGID, org_local_ID, arrival_time);
 	}
 	public void storeVerified() throws SQLiteException {
 		this.storeVerified(this.global_organization_ID, this.organization_ID, Util.getGeneralizedTime());
 	}
 	public long storeVerified(String orgGID, String org_local_ID, String arrival_time) throws SQLiteException {
+		return storeVerified(null, orgGID, org_local_ID, arrival_time);
+	}
+	public long storeVerified(PreparedMessage pm, String orgGID, String org_local_ID, String arrival_time) throws SQLiteException {
 		if(DEBUG) System.out.println("ConstituentHandling:storeVerified: start");
 		if((this.global_constituent_id!=null)&&(this.constituent_ID==null))
 			this.constituent_ID = this.getConstituentLocalID(global_constituent_id);
@@ -782,7 +791,18 @@ public class D_Constituent extends ASNObj implements Summary {
 				dm.sender = new D_PeerAddress();
 				dm.sender.globalID = global_sender_ID;
 				dm.sender.name = DD.getAppText(DD.APP_my_peer_name);
-				BroadcastClient.msgs.registerRecent(dm.encode(), BroadcastQueueHandled.CONSTITUENT);
+				
+				if(pm!=null){
+					pm.raw = dm.encode();
+					pm.constituent_ID_hash.add(this.global_constituent_id_hash);
+					pm.org_ID_hash = this.global_organization_ID;
+					if(this.neighborhood!=null){
+						for(int i=0;i<this.neighborhood.length;i++)
+							pm.neighborhood_ID.add(this.neighborhood[i].global_neighborhood_ID );
+					}
+					BroadcastClient.msgs.registerRecent(pm, BroadcastQueueHandled.CONSTITUENT);
+				}
+				
 			}
 		}
 		

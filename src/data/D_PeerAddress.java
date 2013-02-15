@@ -1498,10 +1498,10 @@ public class D_PeerAddress extends ASNObj {
 		DD.setAppText(DD.APP_my_peer_slogan, slogan);
 		Identity.current_peer_ID.name = name;
 		Identity.current_peer_ID.slogan = slogan;
-		if(name!=null)
-			Application.warning(_("Now you are:")+" \""+name+"\"", _("Peer Changed!"));
-		else{
-			Application.warning(_("Now have an anonymous identity. You have to choose a name!"), _("Peer Changed!"));			
+		if(DD.WARN_ON_IDENTITY_CHANGED_DETECTION) {
+			if(name!=null) Application.warning(_("Now you are:")+" \""+name+"\"", _("Peer Changed!"));
+			else{ Application.warning(_("Now have an anonymous identity. You have to choose a name!"), _("Peer Changed!"));			
+			}
 		}
 		//Application.warning(_("Now you are: \""+name+"\"\n with key:"+Util.trimmed(secret_key)), _("Peer Changed!"));
 		Server.set_my_peer_ID_TCP(Identity.current_peer_ID); // tell directories and save crt address, setting myself

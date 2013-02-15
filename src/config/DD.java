@@ -113,7 +113,9 @@ import data.D_PeerAddress;
 import ASN1.Encoder;
 
 public class DD {
-	public static final String VERSION = "0.9.3";
+	public static final String VERSION = "0.9.11";
+	public static String APP_NAME = _("Direct Democracy");
+	//public static String APP_NAME = _("La Bible A Petits Pas");
 	public static JTabbedPane tabbedPane = new JTabbedPane();
 
 	public static final boolean DEBUG = false;
@@ -328,6 +330,15 @@ public class DD {
 	public static final String DD_DB_VERSION = "DD_DB_VERSION";
 	public static final String EMPTYDATE = "";
 	public static final boolean ENFORCE_ORG_INITIATOR = false;
+	public static final String UPDATES_TESTERS_THRESHOLD_WEIGHT = "UPDATES_TESTERS_THRESHOLD_WEIGHT";
+	public static final String UPDATES_TESTERS_THRESHOLD_COUNT_VALUE = "UPDATES_TESTERS_THRESHOLD_COUNT_VALUE";
+	public static final String UPDATES_TESTERS_THRESHOLD_WEIGHT_VALUE = "UPDATES_TESTERS_THRESHOLD_WEIGHT_VALUE";
+	public static final String UPDATES_TESTERS_THRESHOLDS_RELATIVE = "UPDATES_TESTERS_THRESHOLDS_RELATIVE";
+	public static final int UPDATES_TESTERS_THRESHOLD_COUNT_DEFAULT = 1;
+	public static final float UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT = 0.0f;
+	public static final int MAX_DISPLAYED_CONSTITUENT_SLOGAN = 100;
+	public static final String WLAN_INTERESTS = "WLAN_INTERESTS";
+	public static boolean WARN_ON_IDENTITY_CHANGED_DETECTION = false;
 	public static boolean CONSTITUENTS_ORPHANS_SHOWN_BESIDES_NEIGHBORHOODS = true;
 	public static boolean CONSTITUENTS_ORPHANS_FILTER_BY_ORG = true;
 	public static boolean CONSTITUENTS_ORPHANS_SHOWN_IN_ROOT = false;
@@ -373,6 +384,7 @@ public class DD {
 	public static boolean DEFAULT_AUTO_CONSTITUENTS_REFRESH = false;
 	public static long UPDATES_WAIT_MILLISECONDS = 1000*60*10;
 	public static long UPDATES_WAIT_ON_STARTUP_MILLISECONDS = 1000*60*5;
+	public static boolean UPDATES_AUTOMATIC_VALITATION_AND_INSTALL = true;
 	public static boolean DELETE_UPGRADE_FILES_WITH_BAD_HASH = false;
 	public static boolean ADHOC_WINDOWS_DD_CONTINUOUS_REFRESH = true;
 	public static long ADHOC_EMPTY_TIMEOUT_MILLISECONDS = 1000*1; // 1 seconds
@@ -396,6 +408,10 @@ public class DD {
 	public static JTextField client_sockets_val = null;
 	public static JTextField client_sockets_cntr = null;
 	public static JTextField clientsockets_sleep = null;
+	public static long ADHOC_SENDER_SLEEP_SECONDS_DURATION_LONG_SLEEP = 0;
+	public static int ADHOC_SENDER_SLEEP_MINUTE_START_LONG_SLEEP = 1;
+	private static JTextField clientsockets_long_sleep_seconds;
+	private static JTextField clientsockets_long_sleep_minutes_start;
 
 
     
@@ -596,7 +612,65 @@ public class DD {
 		y++;
 		
 		c.gridx=0; c.gridy=y; c.anchor=GridBagConstraints.WEST;
-		dbg_panel.add(new JLabel(_("Adhoc intermessage delay")), c);
+		dbg_panel.add(new JLabel(_("Adhoc long intermessage delay (seconds (> 0))")), c);
+		c.gridx=1; c.gridy=y; c.anchor=GridBagConstraints.WEST; c.fill = GridBagConstraints.HORIZONTAL;
+		JTextField clientsockets_long_sleep_seconds = new JTextField();
+		DD.clientsockets_long_sleep_seconds  = clientsockets_long_sleep_seconds;
+		clientsockets_long_sleep_seconds.setText(""+DD.ADHOC_SENDER_SLEEP_SECONDS_DURATION_LONG_SLEEP);
+		clientsockets_long_sleep_seconds.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				long seconds = 0;
+				JTextField f = (JTextField)e.getSource();
+				try{seconds = Long.parseLong(f.getText());}catch(Exception i){}
+				f.setText(""+(DD.ADHOC_SENDER_SLEEP_SECONDS_DURATION_LONG_SLEEP = seconds));
+			}
+		});
+		clientsockets_long_sleep_seconds.addFocusListener(new FocusListener(){
+			@Override
+			public void focusGained(FocusEvent e) {}
+			@Override
+			public void focusLost(FocusEvent e) {
+				long seconds = 0;
+				JTextField f = (JTextField)e.getSource();
+				try{seconds = Long.parseLong(f.getText());}catch(Exception i){}
+				f.setText(""+(DD.ADHOC_SENDER_SLEEP_SECONDS_DURATION_LONG_SLEEP = seconds));
+			}
+		});
+		dbg_panel.add(clientsockets_long_sleep_seconds, c);
+		y++;
+		
+		c.gridx=0; c.gridy=y; c.anchor=GridBagConstraints.WEST;
+		dbg_panel.add(new JLabel(_("Adhoc long intermessage delay start (minutes modulus (> 1))")), c);
+		c.gridx=1; c.gridy=y; c.anchor=GridBagConstraints.WEST; c.fill = GridBagConstraints.HORIZONTAL;
+		JTextField clientsockets_long_sleep_minutes_start = new JTextField();
+		DD.clientsockets_long_sleep_minutes_start  = clientsockets_long_sleep_minutes_start;
+		clientsockets_long_sleep_minutes_start.setText(""+DD.ADHOC_SENDER_SLEEP_MINUTE_START_LONG_SLEEP);
+		clientsockets_long_sleep_minutes_start.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int minutes = 0;
+				JTextField f = (JTextField)e.getSource();
+				try{minutes = Integer.parseInt(f.getText());}catch(Exception i){}
+				f.setText(""+(DD.ADHOC_SENDER_SLEEP_MINUTE_START_LONG_SLEEP = minutes));
+			}
+		});
+		clientsockets_long_sleep_seconds.addFocusListener(new FocusListener(){
+			@Override
+			public void focusGained(FocusEvent e) {}
+			@Override
+			public void focusLost(FocusEvent e) {
+				int minutes = 0;
+				JTextField f = (JTextField)e.getSource();
+				try{minutes = Integer.parseInt(f.getText());}catch(Exception i){}
+				f.setText(""+(DD.ADHOC_SENDER_SLEEP_MINUTE_START_LONG_SLEEP = minutes));
+			}
+		});
+		dbg_panel.add(clientsockets_long_sleep_minutes_start, c);
+		y++;
+		
+		c.gridx=0; c.gridy=y; c.anchor=GridBagConstraints.WEST;
+		dbg_panel.add(new JLabel(_("Adhoc intermessage delay (milliseconds (> 0))")), c);
 		c.gridx=1; c.gridy=y; c.anchor=GridBagConstraints.WEST; c.fill = GridBagConstraints.HORIZONTAL;
 		JTextField clientsockets_sleep = new JTextField();
 		DD.clientsockets_sleep  = clientsockets_sleep;
@@ -622,7 +696,6 @@ public class DD {
 			}
 		});
 		clientsockets_sleep.getDocument().addDocumentListener(new DocumentListener(){
-
 			private void upd(DocumentEvent e) {
 				String text=null;
 				long millis = 0;
@@ -660,7 +733,7 @@ public class DD {
 		return wpanel;
 	}
 	public static JFrame initMainFrame(){
-		JFrame _frame = new JFrameDropCatch(_("Direct Democracy"));
+		JFrame _frame = new JFrameDropCatch(DD.APP_NAME);
 		_frame.getRootPane().addComponentListener(new ComponentAdapter() {
             public void componentResized(ComponentEvent e) {
             	if(_jbc!=null)_jbc.adjustSize();

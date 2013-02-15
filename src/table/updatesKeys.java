@@ -35,6 +35,7 @@ public class updatesKeys {
 	public static final String trusted_as_tester = "trusted_as_tester";
 	public static final String trust_weight = "trust_weight";
 	public static final String reference_tester = "reference_tester";
+	public static final String expected_test_thresholds = "expected_test_thresholds";
 	
 	public static final String fields_updates_keys_no_ID = 
 			original_tester_name+","+
@@ -44,21 +45,23 @@ public class updatesKeys {
 			trusted_as_mirror+","+
 			trusted_as_tester+","+
 			trust_weight+","+
-			reference_tester
+			reference_tester+","+
+			expected_test_thresholds
 			;
 //	+","+		last_contact_date+","+	activity;
 	public static final String[] _fields_updates_keys_no_ID = Util.trimmed(fields_updates_keys_no_ID.split(Pattern.quote(",")));
 	public static final String fields_updates_keys = fields_updates_keys_no_ID+","+updates_keys_ID;
-	public static final int F_FIELDS_NOID = _fields_updates_keys_no_ID.length+1;
+	public static final int F_FIELDS_NOID = _fields_updates_keys_no_ID.length;
 	public static final int F_FIELDS = fields_updates_keys.split(Pattern.quote(",")).length;
-	public static final int F_ORIGINAL_MIRROR_NAME = 0;
-	public static final int F_MY_MIRROR_NAME = 1;
+	public static final int F_ORIGINAL_TESTER_NAME = 0;
+	public static final int F_MY_TESTER_NAME = 1;
 	public static final int F_PUBLIC_KEY = 2;
 	public static final int F_PUBLIC_KEY_HASH = 3;
 	public static final int F_USED_MIRROR = 4;
 	public static final int F_USED_TESTER = 5;
 	public static final int F_WEIGHT = 6;
 	public static final int F_REFERENCE = 7;
-	public static final int F_ID = 8;
+	public static final int F_EXPECTED_TEST_THRESHOLDS = 8;
+	public static final int F_ID = 9;
 	
 }

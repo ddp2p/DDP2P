@@ -32,6 +32,7 @@ import util.Util;
 
 public class DDIcons{
 	private static String I_ADD="add.png"; // action
+	private static String I_IMP="ImportIcon.jpg"; // action
 	private static String I_DEL="remove.png"; //action
 	//private static String I_RES="neutral.smiley.gif"; // action
 	private static String I_RES="sad.smiley19.gif"; // action
@@ -80,6 +81,12 @@ public class DDIcons{
 		try{if(_II_ADD == null) _II_ADD= getImageIconFromResource(I_ADD, descr);}catch(Exception e){e.printStackTrace();}
 		if(_II_ADD == null) Util.printCallPath("null");
 		return _II_ADD;
+	}
+	private static ImageIcon _II_IMP = null;
+	public static ImageIcon getImpImageIcon(String descr){
+		try{if(_II_IMP == null) _II_IMP= getImageIconFromResource(I_IMP, descr);}catch(Exception e){e.printStackTrace();}
+		if(_II_IMP == null) Util.printCallPath("null");
+		return _II_IMP;
 	}
 	private static ImageIcon _II_RES = null;
 	public static ImageIcon getResImageIcon(String descr){

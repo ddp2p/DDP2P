@@ -174,6 +174,7 @@ class Decoder {
 		return al;
 	}
 	public ArrayList<String> getSequenceOfAL(byte type) throws ASN1DecoderFail{
+		if(getTypeByte()==Encoder.TAG_NULL) return null;
 		Decoder dec = getContent();
 		ArrayList<String> al= new ArrayList<String>();
 		for(;;) {
@@ -185,6 +186,7 @@ class Decoder {
 	}
 	@SuppressWarnings("unchecked")
 	public <T> ArrayList<T> getSequenceOfAL(byte type, T inst) throws ASN1DecoderFail{
+		if(getTypeByte()==Encoder.TAG_NULL) return null;
 		Decoder dec = getContent();
 		ArrayList<T> al= new ArrayList<T>();
 		for(;;) {
@@ -210,6 +212,7 @@ class Decoder {
 	public <T> T[] getSequenceOf(byte type, T[] temp, T inst) throws ASN1DecoderFail{
 		ArrayList<T> al;
 		al = getSequenceOfAL(type, inst);
+		if(al==null) return null;
 		return al.toArray(temp);
 	}
 	/**

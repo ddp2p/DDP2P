@@ -1,22 +1,3 @@
-/* ------------------------------------------------------------------------- */
-/*   Copyright (C) 2012 
-		Author: Khalid Alhamed
-		Florida Tech, Human Decision Support Systems Laboratory
-   
-       This program is free software; you can redistribute it and/or modify
-       it under the terms of the GNU Affero General Public License as published by
-       the Free Software Foundation; either the current version of the License, or
-       (at your option) any later version.
-   
-      This program is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-  
-      You should have received a copy of the GNU Affero General Public License
-      along with this program; if not, write to the Free Software
-      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package widgets.updates;
 
 import static util.Util._;
@@ -28,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.awt.Dimension;
+import javax.swing.SwingConstants;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.event.TableModelListener;
@@ -61,7 +43,7 @@ public class QualitiesModel extends AbstractTableModel implements TableModel{
 	public static final int TABLE_COL_PLATFORM = 2; // mirror url 
 	public static final int TABLE_COL_USEABILITY = 3; // downloaded info
 	public static final int TABLE_COL_TOTAL = 4;
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	String columnNames[];//={_("   "),_("Security"),_("Platform"),_("Useability"), _("Total")};
 	
 	D_ReleaseQuality[] releaseQoT ; // It should be part of D_UpdatesInfo
@@ -72,13 +54,15 @@ public class QualitiesModel extends AbstractTableModel implements TableModel{
 	public QualitiesModel(D_UpdatesInfo u) { // constructor with dataSource -> DBInterface _db
         data = u.testerInfo;
         this.releaseQoT = u.releaseQoT;
+        if(DEBUG) System.out.println("QualitiesModel(D_UpdatesInfo u):   u.releaseQoT = "+ u.releaseQoT);
         columnNames = new String[releaseQoT.length+2]; //first+last
-        columnNames[0]= _("   ");
+        columnNames[0]= _("Tester name");
         System.out.println("length = "+ columnNames.length);
         columnNames[columnNames.length-1]= _("Total");
         for(int i=1; i<columnNames.length-1; i++)
-        	columnNames[i] = releaseQoT[i-1].getQualityName();
+        	columnNames[i] = releaseQoT[i-1].getQualityName();//.substring(releaseQoT[i-1].getQualityName().indexOf("."));
         //build columns here
+        update();
 	}
 
 	@Override
@@ -99,50 +83,64 @@ public class QualitiesModel extends AbstractTableModel implements TableModel{
 
 	@Override
 	public Class<?> getColumnClass(int col) {
-		if(col == TABLE_COL_TESTERS || col == TABLE_COL_TOTAL ) return String.class;
+//		if(col == TABLE_COL_TESTERS || col == TABLE_COL_TOTAL ) return String.class;
 //		if(col == TABLE_COL_USED) return Boolean.class;
 //		if(col == TABLE_COL_QOT_ROT) return ComboBoxRenderer.class;
-		return PanelRenderer.class;
+		return String.class;//PanelRenderer.class;
 	}
 
 	@Override
 	public boolean isCellEditable(int rowIndex, int columnIndex) {
 		return false;
 	}
+
     public JPanel buildPanel(String[] d){
     	JPanel p = new JPanel(new GridLayout(1,d.length));
     	JLabel l=null;
     	for(int i =0; i<d.length; i++){
-    		l = new JLabel(d[i]);
+    		l = new JLabel("<html><center>"+d[i]+"</center></html>");
     		l.setSize(15,10);
+    		l.setHorizontalAlignment(SwingConstants.CENTER);
     		p.add(l);
     	}
     	return p; 
     }
+    public int sumQoT(D_TesterInfo t){
+    	int sum=0;
+    	if(t.tester_QoT!= null)
+    		for(int i=0; i< t.tester_QoT.length;i++)
+    			if(t.tester_QoT[i]!=0) sum++;
+    	
+    	return sum;
+    }
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {// a cell
-		if((rowIndex<0) || (rowIndex>=data.length+1)) return null;
+		if((rowIndex<0) || (rowIndex>=data.length)) return null;
 		if((columnIndex<0) || (columnIndex>this.getColumnCount())) return null;
-		D_TesterInfo crt = data[rowIndex];
-		if(crt==null) return null;
+		D_TesterInfo crt=null;
+		crt = data[rowIndex];
+		//System.out.println("RowInfo (crt): "+ rowIndex +"  "+ crt.name);
+		if( crt==null) return null;
 		switch(columnIndex){
 		case TABLE_COL_TESTERS:
-			if(rowIndex==0) return "";
+		//	if(rowIndex==0) return "";
 			return crt.name;
 		case TABLE_COL_TOTAL:
-			if(rowIndex==0) return "";
-			return 5; // sum(crt);
+		//	if(rowIndex==0) return "";
+			return  sumQoT(crt);
 
 		default :
-			 if(rowIndex==0){
-			 	for(int i=1; i<columnNames.length-1; i++)
-        	      if(columnNames[columnIndex] == releaseQoT[i-1].getQualityName()){
-        	      	return buildPanel(releaseQoT[i-1].subQualities);
-        	      }
-			 }
+//			 if(rowIndex+1 ){
+//			 	for(int i=1; i<columnNames.length-1; i++)
+//        	      if(columnNames[columnIndex] == releaseQoT[i-1].getQualityName()){
+//        	      	return buildPanel(releaseQoT[i-1].subQualities);
+//        	      }
+//			 }
 			 for(int i=1; i<columnNames.length-1; i++)
-        	      if(columnNames[columnIndex] == releaseQoT[i-1].getQualityName()){
-        	      	return buildPanel(new String[]{"0.5"}); // crt.RoT[i-1];
+        	      if(columnNames[columnIndex].equals( releaseQoT[i-1].getQualityName())){
+        	      	//return buildPanel(new String[]{"0.5"}); // crt.RoT[i-1];
+        	      if(crt.tester_QoT[i-1]==0) return null;
+        	      	return "QoT = " + crt.tester_QoT[i-1] + ", RoT = "+ crt.tester_RoT[i-1];
         	      }
 			 
 		}

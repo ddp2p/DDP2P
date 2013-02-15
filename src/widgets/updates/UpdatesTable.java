@@ -1,34 +1,28 @@
-/* ------------------------------------------------------------------------- */
-/*   Copyright (C) 2012 
-		Author: Khalid Alhamed and Marius Silaghi
-		Florida Tech, Human Decision Support Systems Laboratory
-   
-       This program is free software; you can redistribute it and/or modify
-       it under the terms of the GNU Affero General Public License as published by
-       the Free Software Foundation; either the current version of the License, or
-       (at your option) any later version.
-   
-      This program is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-  
-      You should have received a copy of the GNU Affero General Public License
-      along with this program; if not, write to the Free Software
-      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package widgets.updates;
 
 import static util.Util._;
+import java.io.File;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
 
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.ActionEvent;
+import java.awt.Point;
 
+import javax.swing.Action;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
+import javax.swing.JPopupMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JTable;
+import javax.swing.JFileChooser;
+import javax.swing.ImageIcon;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -37,21 +31,31 @@ import util.DBInterface;
 import widgets.components.BulletRenderer;
 import config.Application;
 import config.Identity;
+import config.DDIcons;
+import hds.DebateDecideAction;
+import data.D_UpdatesInfo;
+import data.D_TesterDefinition;
+import data.D_UpdatesKeysInfo;
+
+import com.almworks.sqlite4java.SQLiteException;
+
+import widgets.updatesKeys.UpdatesKeysTable;
+
 
 public class UpdatesTable extends JTable implements MouseListener{
 	
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static final int DIM_X = 400;
 	private static final int DIM_Y = 300;
 	BulletRenderer bulletRenderer = new BulletRenderer();
 	//private ColorRenderer colorRenderer;
 	private DefaultTableCellRenderer centerRenderer;
+	private UpdatesPanel updatesPanel;
 
-	public UpdatesTable() {
+	public UpdatesTable(UpdatesPanel updatesPanel) {
 		super(new UpdatesModel(Application.db));
-		if(DEBUG) System.out.println("UpdatesTable: <init>");
+		this.updatesPanel = updatesPanel;
 		init();
-		if(DEBUG) System.out.println("UpdatesTable: <inited>");
 	}
 	public UpdatesTable(DBInterface _db) {
 		super(new UpdatesModel(_db));
@@ -81,7 +85,6 @@ public class UpdatesTable extends JTable implements MouseListener{
 		getColumnModel().getColumn(UpdatesModel.TABLE_COL_QOT_ROT).setCellRenderer(new PanelRenderer());
 		getColumnModel().getColumn(UpdatesModel.TABLE_COL_QOT_ROT).setCellEditor(new MyPanelEditor());
 	
-		if(DEBUG) System.out.println("UpdatesTable: init: update");
 		getModel().update(null,null);
 		if(DEBUG) System.out.println("UpdateTable:init:done");
 		//his.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
@@ -101,23 +104,74 @@ public class UpdatesTable extends JTable implements MouseListener{
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
+		jtableMouseReleased(e);
 	}
 
 	@Override
 	public void mousePressed(MouseEvent e) {
+		jtableMouseReleased(e);
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
+		jtableMouseReleased(e);
 	}
 
 	@Override
 	public void mouseEntered(MouseEvent e) {
+		jtableMouseReleased(e);
 	}
 
 	@Override
 	public void mouseExited(MouseEvent e) {
 	}
+	private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
+		if(DEBUG) System.out.println("UpdatesTable:jtableMouseReleased: mouserelease");
+    	int _row; //=this.getSelectedRow();
+    	int model_row = -1;
+    	int col; //=this.getSelectedColumn();
+    	if(!evt.isPopupTrigger()){
+    		if(DEBUG) System.out.println("UpdatesTable:jtableMouseReleased: not popup");
+    		return;
+    	}
+    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
+    	Point point = evt.getPoint();
+        _row=this.rowAtPoint(point);
+        col=this.columnAtPoint(point);
+        this.getSelectionModel().setSelectionInterval(_row, _row);
+        if(_row>=0) model_row = this.convertRowIndexToModel(_row);
+    	JPopupMenu popup = getPopup(model_row,col);
+    	if(popup == null){
+    		if(DEBUG) System.out.println("UpdatesTable:jtableMouseReleased: popup null");
+    		return;
+    	}
+    	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
+    //	getModel().update(null, null);
+    }
+    JPopupMenu getPopup(int row, int col){
+		JMenuItem menuItem;
+    	
+    	ImageIcon addicon = DDIcons.getAddImageIcon(_("add an item")); 
+    	ImageIcon delicon = DDIcons.getDelImageIcon(_("delete an item")); 
+    	ImageIcon reseticon = DDIcons.getResImageIcon(_("reset item"));
+    	ImageIcon importicon = DDIcons.getImpImageIcon(_("import information"));
+    	JPopupMenu popup = new JPopupMenu();
+    	UpdateCustomAction aAction;
+    	//System.out.println(importicon.toString());
+    	aAction = new UpdateCustomAction(this, _("Import!"), importicon,_("Import Mirrors"), _("Import"),KeyEvent.VK_I, UpdateCustomAction.M_IMPORT);
+    	aAction.putValue("row", new Integer(row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);
+    	
+    	aAction = new UpdateCustomAction(this, _("Delete"), delicon,_("Delete Mirror"), _("Delete"),KeyEvent.VK_D, UpdateCustomAction.M_DELETE);
+    	aAction.putValue("row", new Integer(row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);
+    	
+    
+    	return popup;
+	}
+	
 	private void initColumnSizes() {
 		this.rowHeight=20;
         UpdatesModel model = (UpdatesModel)this.getModel();
@@ -154,4 +208,9 @@ public class UpdatesTable extends JTable implements MouseListener{
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
+	public JTable getSubTable() {
+		if(updatesPanel==null) return null;
+		return updatesPanel.getTestersTable();
+	}
 }
+

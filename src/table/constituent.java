@@ -42,6 +42,9 @@ public class constituent {
 	 public static final String picture = "picture";
 	 public static final String weight="weight";
 	 public static final String op = "op";
+	 public static final String revoked = "revoked";
+	 public static final String hidden = "hidden";
+	 public static final String peer_transmitter_ID = "peer_transmitter_ID"; // who gave it to me
 	 public static final String creation_date = "creation_date";
 	 public static final String arrival_date = "arrival_date";
 		public static final String blocked = "blocked";
@@ -78,6 +81,9 @@ public class constituent {
 		", "+blocked+
 		", "+requested+
 		", "+broadcasted+
+		", "+revoked+
+		", "+hidden+
+		", "+peer_transmitter_ID+
 		" ";
 	public static final String fields_constituents = 
 		_fields_constituents+", "+constituent_ID+
@@ -109,7 +115,10 @@ public class constituent {
 	public static final int CONST_COL_BLOCKED = 22;
 	public static final int CONST_COL_REQUESTED = 23;
 	public static final int CONST_COL_BROADCASTED = 24;
-	public static final int CONST_COL_ID = 25;
+	public static final int CONST_COL_REVOKED = 25;
+	public static final int CONST_COL_HIDDEN = 26;
+	public static final int CONST_COL_PEER_TRANSMITTER_ID = 27;
+	public static final int CONST_COL_ID = 28;
 
 	public static final String CURRENT_HASH_CONSTITUENT_ALG = "V1";
 	public static final int CONST_COLs = fields_constituents.split(",").length;

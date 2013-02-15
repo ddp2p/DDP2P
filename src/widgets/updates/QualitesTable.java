@@ -1,25 +1,4 @@
-/* ------------------------------------------------------------------------- */
-/*   Copyright (C) 2012 
-		Author: Khalid Alhamed
-		Florida Tech, Human Decision Support Systems Laboratory
-   
-       This program is free software; you can redistribute it and/or modify
-       it under the terms of the GNU Affero General Public License as published by
-       the Free Software Foundation; either the current version of the License, or
-       (at your option) any later version.
-   
-      This program is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-  
-      You should have received a copy of the GNU Affero General Public License
-      along with this program; if not, write to the Free Software
-      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
-
 /**
-
  * @(#)QualitesTable.java
  *
  *
@@ -52,8 +31,8 @@ import data.D_UpdatesInfo;
 public class  QualitesTable extends JTable{
 	
 	private static final boolean DEBUG = false;
-	private static final int DIM_X = 400;
-	private static final int DIM_Y = 300;
+//	private static final int DIM_X = 400;
+//	private static final int DIM_Y = 300;
 	BulletRenderer bulletRenderer = new BulletRenderer();
 	//private ColorRenderer colorRenderer;
 	private DefaultTableCellRenderer centerRenderer;
@@ -68,7 +47,7 @@ public class  QualitesTable extends JTable{
 		return (QualitiesModel)super.getModel();
 	}
 	void init(){
-		System.out.println("QualitiesModel:init:start");
+		if(DEBUG)System.out.println("QualitiesModel:init:start");
 		//getModel().setTable(this);
 		//addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
@@ -78,16 +57,17 @@ public class  QualitesTable extends JTable{
 		this.getTableHeader().setToolTipText(
         _("Click to sort; Shift-Click to sort in reverse order"));
 		this.setAutoCreateRowSorter(true);
-	//	getColumnModel().getColumn(QualitiesModel.TABLE_COL_QOT_ROT).setCellRenderer(new PanelRenderer());
-	//	getColumnModel().getColumn(QualitiesModel.TABLE_COL_QOT_ROT).setCellEditor(new MyPanelEditor());
-	
-		getModel().update();
-		System.out.println("UpdateTable:init:done");
+//		for(int i=1; i< getModel().getColumnCount()-1; i++ ){		
+//	    	getColumnModel().getColumn(i).setCellRenderer(new PanelRenderer());
+//	    	getColumnModel().getColumn(i).setCellEditor(new MyPanelEditor());
+//		}
+		//getModel().update();
+		if(DEBUG)System.out.println("UpdateTable:init:done");
 		//his.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
   	}
 	public JScrollPane getScrollPane(){
         JScrollPane scrollPane = new JScrollPane(this);
-		this.setFillsViewportHeight(true);
+		//this.setFillsViewportHeight(true);
 		return scrollPane;
 	}
 //	public TableCellRenderer getCellRenderer(int row, int column) {
@@ -131,6 +111,7 @@ public class  QualitesTable extends JTable{
             }
  
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
+            //column.setWidth(Math.max(headerWidth, cellWidth));
         }
     }
 }

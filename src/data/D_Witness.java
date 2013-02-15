@@ -484,13 +484,14 @@ class D_Witness extends ASNObj implements Summary {
 		
 		if((this.witnessed_global_constituentID!=null) && (witnessed_constituentID <= 0)) {
 			this.witnessed_constituentID = Util.lval(D_Constituent.getConstituentLocalID(witnessed_global_constituentID), this.witnessed_constituentID);
-			if(tempConst && (witnessing_constituentID <= 0 ))  {
+			if(tempConst && (witnessed_constituentID <= 0 ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(witnessed_global_constituentID);
 				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
 				witnessed_constituentID = D_Constituent.insertTemporaryConstituentGID(witnessed_global_constituentID, organization_ID);
 			}
 			if(witnessed_constituentID <= 0){
 				Util.printCallPath("cannot store witness with no witnessed constituent");
+				System.err.println("D_Witness: Since we cannot save temporary witnessed, we will not save witness: "+this);
 				return false;
 			}
 		}

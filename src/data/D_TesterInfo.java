@@ -19,24 +19,41 @@
 /* ------------------------------------------------------------------------- */
 package data;
 
+import util.Util;
 import config.DD;
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
+
 // comes with a new VersionInfo
 public class D_TesterInfo extends ASNObj{
-	private static final boolean DEBUG = false;
+	public static final String TEST_SEP = ";";
+	public static boolean DEBUG = false;
 	public String name;
 	public String public_key_hash;
 	public float[] tester_QoT;
 	public float[] tester_RoT;
+	public byte[] signature; // of signed structure
 	public static D_TesterInfo[] reconstructArrayFromString(String s) throws ASN1DecoderFail {
 		if (s==null) return null;
 		byte[] data = util.Base64Coder.decode(s);
 		Decoder dec = new Decoder(data);
 		D_TesterInfo result[] = dec.getSequenceOf(getASNType(), new D_TesterInfo[0], new D_TesterInfo());
+		return result;
+	}
+	public String toString() {
+		return this.toTXT();
+	}
+	public String toTXT() {
+		String result ="";
+		result += this.name+"\r\n";
+		result += this.public_key_hash+"\r\n";
+		result += Util.mkArrayCounter(this.tester_QoT.length, TEST_SEP)+"\r\n";
+		result += Util.concat(this.tester_QoT, TEST_SEP)+"\r\n";
+		result += Util.concat(this.tester_RoT, TEST_SEP)+"\r\n";
+		result += Util.stringSignatureFromByte(signature)+"\r\n";
 		return result;
 	}
 	public static String encodeArray(D_TesterInfo[] a) {
@@ -57,6 +74,16 @@ public class D_TesterInfo extends ASNObj{
 		enc.addToSequence(new Encoder(public_key_hash));
 		enc.addToSequence(Encoder.getEncoderArray(tester_QoT));
 		enc.addToSequence(Encoder.getEncoderArray(tester_RoT));
+		enc.addToSequence(new Encoder(signature));
+		enc.setASN1Type(getASNType());
+		return enc;
+	}
+	public Encoder getSignableEncoder() {
+		Encoder enc = new Encoder().initSequence();
+		enc.addToSequence(new Encoder(name));
+		enc.addToSequence(new Encoder(public_key_hash));
+		enc.addToSequence(Encoder.getEncoderArray(tester_QoT));
+		enc.addToSequence(Encoder.getEncoderArray(tester_RoT));
 		enc.setASN1Type(getASNType());
 		return enc;
 	}
@@ -67,6 +94,7 @@ public class D_TesterInfo extends ASNObj{
 		public_key_hash = d.getFirstObject(true).getString();
 		tester_QoT = d.getFirstObject(true).getFloatsArray();
 		tester_RoT = d.getFirstObject(true).getFloatsArray();
+		signature = d.getFirstObject(true).getBytes();
 		return this;
 	}
 	public ASNObj instance() throws CloneNotSupportedException{return new D_TesterInfo();}

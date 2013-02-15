@@ -109,6 +109,7 @@ class DNode implements TreeNode{
 public class PeerContacts extends JPanel implements MouseListener, PeerListener {
 	public static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
+	public static final String ALREADY_CONTACTED = _("Already contacted ***");
 	public static JTree jt = null;
 	public static JLabel l = null;
 	public static JTree old_jt = null;
@@ -122,6 +123,7 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 	
 	String my_peer_name;
 	D_PeerAddress dpa;
+	boolean pack_sockets = true;
 	public PeerContacts(){
 		this.setLayout(new BorderLayout());
 		old_l = new JLabel(_("Latest Contacts for this Peer"));
@@ -205,8 +207,9 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 			n.text = ":null";
 			return n;
 		}
-		if(p.startsWith(Address.SOCKET) && (da.size()==1)) {
+		if(pack_sockets && p.startsWith(Address.SOCKET) && (da.size()==1)) {
 			for(String ad: da.keySet()) {
+				if(PeerContacts.ALREADY_CONTACTED.equals(ad)) break;
 				DNode a = new DNode();
 				a.parent = n;
 				a.text = ad+" --- "+da.get(ad);
@@ -271,6 +274,22 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
     			_("No refresh!"), KeyEvent.VK_S, PeerContactsAction.NO_REFRESH);
     	popup.add(new JMenuItem(prAction));
 
+    	prAction = new PeerContactsAction(this, _("Filter by Peer!"), reseticon,_("Filter By Peer."),
+    			_("Filter!"), KeyEvent.VK_F, PeerContactsAction.FILTER);
+    	popup.add(new JMenuItem(prAction));
+
+    	prAction = new PeerContactsAction(this, _("Remove Filter by Peer!"), reseticon,_("Remove Filter By Peer."),
+    			_("Unfilter!"), KeyEvent.VK_U, PeerContactsAction.UNFILTER);
+    	popup.add(new JMenuItem(prAction));
+
+    	prAction = new PeerContactsAction(this, _("Delete Old data!"), reseticon,_("Delete old data."),
+    			_("Unfilter!"), KeyEvent.VK_D, PeerContactsAction.RESET);
+    	popup.add(new JMenuItem(prAction));
+
+    	prAction = new PeerContactsAction(this, _("Pack Socket entries!"), reseticon,_("Pack Socket entries."),
+    			_("Pack Socket!"), KeyEvent.VK_P, PeerContactsAction.PACK_SOCKET);
+    	popup.add(new JMenuItem(prAction));
+
     	return popup;
 	}
 
@@ -280,7 +299,6 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 		this.my_peer_name = my_peer_name;
 		this.update(PeerContacts.peer_contacts);
 	}
-
 }
 @SuppressWarnings("serial")
 class PeerContactsAction extends DebateDecideAction {
@@ -289,6 +307,7 @@ class PeerContactsAction extends DebateDecideAction {
 	public static final int RESET = 2;
 	public static final int UNFILTER = 3;
 	public static final int FILTER = 4;
+	public static final int PACK_SOCKET = 5;
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
 	PeerContacts tree; ImageIcon icon; int command;
@@ -333,6 +352,11 @@ class PeerContactsAction extends DebateDecideAction {
 			break;
 		case RESET:
 			PeerContacts.peer_contacts = new Hashtable<String, Hashtable<String, Hashtable<String, String>>>();
+			tree.update(PeerContacts.peer_contacts);
+			break;
+		case PACK_SOCKET:
+			tree.pack_sockets = !tree.pack_sockets;
+			tree.update(PeerContacts.peer_contacts);
 			break;
 		}
     }

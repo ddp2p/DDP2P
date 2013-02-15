@@ -22,10 +22,15 @@ package data;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import ciphersuits.Cipher;
+import ciphersuits.PK;
+
 import com.almworks.sqlite4java.SQLiteException;
 
 import config.Application;
 
+import table.updatesKeys;
+import updates.VersionInfo;
 import util.Util;
 
 import ASN1.ASN1DecoderFail;
@@ -33,35 +38,59 @@ import ASN1.Decoder;
 import ASN1.Encoder;
 
 public class D_UpdatesKeysInfo extends ASN1.ASNObj{
-	private static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
+	public static boolean DEBUG = false;
 	public String original_tester_name;
 	public String my_tester_name;
-	public String url;
+	//public String url;
 	//public String last_version;
 	//public boolean used;
 	public float weight;
 	public boolean reference;
 	public boolean trusted_as_tester;
 	public boolean trusted_as_mirror;
-	public long updates_ID;
+	public long updates_keys_ID = -1;
 	public String public_key;
 	public String public_key_hash;
-	public Calendar last_contact_date;
-	public String activity;
+	public String expected_test_thresholds;
+	//public Calendar last_contact_date;
+	//public String activity;
+		public D_UpdatesKeysInfo() {}
 	public D_UpdatesKeysInfo(ArrayList<Object> _u) {
-		updates_ID = Util.lval(_u.get(table.updatesKeys.F_ID),-1);
-		original_tester_name = Util.getString(_u.get(table.updatesKeys.F_ORIGINAL_MIRROR_NAME));
-		my_tester_name = Util.getString(_u.get(table.updatesKeys.F_MY_MIRROR_NAME));
+		init(_u);
+	}
+	public void init(ArrayList<Object> _u) {
+		updates_keys_ID = Util.lval(_u.get(table.updatesKeys.F_ID),-1);
+		original_tester_name = Util.getString(_u.get(table.updatesKeys.F_ORIGINAL_TESTER_NAME));
+		my_tester_name = Util.getString(_u.get(table.updatesKeys.F_MY_TESTER_NAME));
 		//url = Util.getString(_u.get(table.updatesKeys.F_URL));
 		public_key = Util.getString(_u.get(table.updatesKeys.F_PUBLIC_KEY));
+		public_key_hash = Util.getString(_u.get(table.updatesKeys.F_PUBLIC_KEY_HASH));
 		//last_version = Util.getString(_u.get(table.updatesKeys.F_LAST_VERSION));
 		//used = Util.stringInt2bool(_u.get(table.updatesKeys.F_USED), false);
 		trusted_as_tester = Util.stringInt2bool(_u.get(table.updatesKeys.F_USED_TESTER), false);
 		trusted_as_mirror = Util.stringInt2bool(_u.get(table.updatesKeys.F_USED_MIRROR), false);
 		weight = Util.fval(_u.get(table.updatesKeys.F_WEIGHT),1);
 		reference = Util.stringInt2bool(_u.get(table.updatesKeys.F_REFERENCE), false);
+		expected_test_thresholds = Util.getString(_u.get(table.updatesKeys.F_EXPECTED_TEST_THRESHOLDS));
 		//last_contact_date = Util.getCalendar(Util.getString(_u.get(table.updatesKeys.F_LAST_CONTACT)));
 		//activity = Util.getString(_u.get(table.updatesKeys.F_ACTIVITY));
+	}
+	public D_UpdatesKeysInfo(String public_key2) {
+		String sql = "SELECT "+updatesKeys.fields_updates_keys+" FROM "+updatesKeys.TNAME+" WHERE "+table.updatesKeys.public_key+"=?;";
+		String[]params = new String[]{public_key2};// where clause?
+		ArrayList<ArrayList<Object>> u;
+		try {
+			u = Application.db.select(sql, params, _DEBUG);
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+			return;
+		}
+		if(u.size()>0) init(u.get(0));
+	}
+	public boolean existsInDB() {
+		D_UpdatesKeysInfo old = new D_UpdatesKeysInfo(public_key);
+		return old.updates_keys_ID >=0 ;
 	}
 	@Override
 	public Encoder getEncoder() {
@@ -73,24 +102,103 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 		// TODO Auto-generated method stub
 		return null;
 	}
-	public void store() throws SQLiteException {
+	public void store(String cmd) throws SQLiteException {
+		if(DEBUG)System.out.println("in UpdateKeysInfo.store()");
 		String params[] = new String[table.updatesKeys.F_FIELDS];
-		params[table.updatesKeys.F_ORIGINAL_MIRROR_NAME] = this.original_tester_name;
-		params[table.updatesKeys.F_MY_MIRROR_NAME] = this.my_tester_name;
+		params[table.updatesKeys.F_ORIGINAL_TESTER_NAME] = this.original_tester_name;
+		params[table.updatesKeys.F_MY_TESTER_NAME] = this.my_tester_name;
 		//params[table.updatesKeys.F_URL] = this.url;
 		params[table.updatesKeys.F_PUBLIC_KEY] = this.public_key;
+		params[table.updatesKeys.F_PUBLIC_KEY_HASH] = this.public_key_hash;
 		//params[table.updatesKeys.F_LAST_VERSION] = this.last_version;
 		//if(this.used)params[table.updatesKeys.F_USED] = "1"; else params[table.updatesKeys.F_USED] = "0";
-		if(this.trusted_as_mirror)params[table.updatesKeys.F_USED_MIRROR] = "1"; else params[table.updatesKeys.F_USED_MIRROR] = "0";
-		if(this.trusted_as_tester)params[table.updatesKeys.F_USED_TESTER] = "1"; else params[table.updatesKeys.F_USED_TESTER] = "0";
+		params[table.updatesKeys.F_USED_MIRROR] = Util.bool2StringInt(trusted_as_mirror);
+		params[table.updatesKeys.F_USED_TESTER] = Util.bool2StringInt(trusted_as_tester);
 		params[table.updatesKeys.F_WEIGHT] = ""+this.weight;
+		params[table.updatesKeys.F_EXPECTED_TEST_THRESHOLDS] = this.expected_test_thresholds;
 		if(this.reference)params[table.updatesKeys.F_REFERENCE] = "1"; else params[table.updatesKeys.F_REFERENCE]="0";
 		//params[table.updatesKeys.F_LAST_CONTACT] = Encoder.getGeneralizedTime(this.last_contact_date);
 		//params[table.updatesKeys.F_ACTIVITY] = this.activity;
-		params[table.updatesKeys.F_ID] = Util.getStringID(this.updates_ID);
-	
-		Application.db.updateNoSync(table.updatesKeys.TNAME, table.updatesKeys._fields_updates_keys_no_ID,
-				new String[]{table.updatesKeys.updates_keys_ID},
-				params,DEBUG);
+		params[table.updatesKeys.F_ID] = Util.getStringID(this.updates_keys_ID);
+	    if(cmd.equals("update"))
+			Application.db.updateNoSync(table.updatesKeys.TNAME, table.updatesKeys._fields_updates_keys_no_ID,
+										new String[]{table.updatesKeys.updates_keys_ID},
+										params,DEBUG);
+				
+		if(cmd.equals("insert")){
+			if(DEBUG)System.out.println("in UpdateKeysInfo.store()/ insert");
+			// check the existance based on PK or url?
+			String params2[]=new String[table.updatesKeys.F_FIELDS_NOID];
+			System.arraycopy(params,0,params2,0,params2.length);
+			if(DEBUG)for(int i=0; i<params2.length;i++)
+						System.out.println("params2["+i+"]: "+ params2[i]);
+			this.updates_keys_ID = Application.db.insertNoSync(table.updatesKeys.TNAME, table.updatesKeys._fields_updates_keys_no_ID,params2, true);
+		}
+	}
+	// TODO Auto-generated method stub
+	//		for(PK pk : _trusted){
+	//			if(pk==null){
+	//				if(_DEBUG) System.out.println(" ClientUpdates: run: no key: ");
+	//				continue;
+	//			}
+	//			if(a.verifySignature(pk)){
+	//				if(DEBUG) System.out.println(" ClientUpdates: run: success with key: ");
+	//				signed = true; 
+	//				break;
+	//			}else{
+	//				if(_DEBUG) System.out.println(" ClientUpdates: run: fail with key: ");						
+	//			}
+	//		}
+	//TODO
+	public static boolean verifySignaturesOfVI(VersionInfo a) {
+		System.out.println("\nD_UpdatesKeyInfo: verifySignaturesOfVI: start ************************");
+		System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: input: VI="+a);
+		System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
+
+		for(int i=0; i<a.testers_data.length; i++ ){
+			D_TesterSignedData tsd = new D_TesterSignedData(a, i);
+		//	System.out.println("a.testers_data["+i+"].public_key_hash" + a.testers_data[i].public_key_hash);
+		//	System.out.println("a.testers_data["+i+"].signature" + Util.stringSignatureFromByte(a.testers_data[i].signature));
+			PK pk = getKey(a.testers_data[i].public_key_hash);
+			if(pk == null){
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: PK is null: VI="+a);
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: PK is null: VI="+tsd);
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: end null ************************\n");
+				return false;
+			}
+			if((pk!=null) && !tsd.verifySignature(pk)){
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: PK is not null: VI="+a);
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: PK is not null: VItester="+tsd);
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: end no null ************************\n");
+				return false;
+			}
+		}
+		System.out.println("\nD_UpdatesKeyInfo: verifySignaturesOfVI: success ************************");
+		return true;
+	}
+	/**
+	 * Gets the public key for the hash in the message
+	 * @param public_key_hash
+	 * @return
+	 */
+	public static PK getKey(String public_key_hash) {
+		ArrayList<ArrayList<Object>> a;
+		try {
+			a = Application.db.select(
+					"SELECT "+table.updatesKeys.public_key+
+					" FROM "+table.updatesKeys.TNAME+
+					" WHERE "+table.updatesKeys.public_key_hash+"=?;",
+					new String[]{public_key_hash}, _DEBUG);
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+			return null;
+		}
+		if (a.size()==0) return null;
+		return Cipher.getPK(Util.getString(a.get(0).get(0)));
 	}
 }
+

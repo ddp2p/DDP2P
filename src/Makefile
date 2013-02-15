@@ -10,7 +10,7 @@ all:
 	sudo find ./ -not -name '*.java' -exec touch -t 200012121212.12 \{\} \;
 
 	jar cmf MANIFEST.MF DD.jar */*.class */*/*.class *.properties p2pdd_resources/*.png p2pdd_resources/*.gif p2pdd_resources/*.ico p2pdd_resources/*.jpg p2pdd_resources/steag/* p2pdd_resources/census/*.jpg
-	-./unit_test.sh util.updateJARfile DD.jar
+	#-./unit_test.sh util.updateJARfile DD.jar
 	-cat dd_run_stub.sh DD.jar >dd_DD.sh
 	-mkdir -p jars
 	-cp DD.jar jars/

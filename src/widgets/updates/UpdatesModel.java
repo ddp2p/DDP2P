@@ -1,27 +1,9 @@
-/* ------------------------------------------------------------------------- */
-/*   Copyright (C) 2012 
-		Author: Khalid Alhamed and Marius Silaghi
-		Florida Tech, Human Decision Support Systems Laboratory
-   
-       This program is free software; you can redistribute it and/or modify
-       it under the terms of the GNU Affero General Public License as published by
-       the Free Software Foundation; either the current version of the License, or
-       (at your option) any later version.
-   
-      This program is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-  
-      You should have received a copy of the GNU Affero General Public License
-      along with this program; if not, write to the Free Software
-      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package widgets.updates;
 
 import static util.Util._;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -59,8 +41,9 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 	public static final int TABLE_COL_QOT_ROT = 4; // set true if has been used for update
 	public static final int TABLE_COL_DATE = 5; // Last contact date
 	public static final int TABLE_COL_ACTIVITY = 6; // connection status
-	private static final boolean DEBUG = false;
-	JComboBox<String> comboBox;
+	private static final boolean _DEBUG = true;
+	public static boolean DEBUG = false;
+	JComboBox comboBox;
 
 	private DBInterface db;
 	HashSet<Object> tables = new HashSet<Object>();
@@ -111,6 +94,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 		return false;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {// a cell
 		if((rowIndex<0) || (rowIndex>=data.size())) return null;
@@ -129,29 +113,30 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			return data.get(rowIndex).last_version;
 		case TABLE_COL_USED:
 			return data.get(rowIndex).used; 
-		case TABLE_COL_QOT_ROT:System.out.println("TABLE_COL_QOT_ROT");
-//			         //TableColumn testerColumn = table.getColumnModel().getColumn(TABLE_COL_QOT_ROT);
-			         if(data.get(rowIndex).testerInfo==null) return null;
-			         comboBox = new JComboBox<String>();
-			         for(int i=0; i<data.get(rowIndex).testerInfo.length; i++)
-			            comboBox.addItem(data.get(rowIndex).testerInfo[i].name);
-			         JPanel p = new JPanel(new BorderLayout());
-		             p.add(comboBox);
-		             TableJButton b = new TableJButton("...",rowIndex );
-		             b.addActionListener(this);
-		             System.out.println(b.rowNo); 
-		             b.setPreferredSize(new Dimension(20,30));
-		             p.add(b, BorderLayout.EAST);
-//			         comboBox.addItem("Ali");
-//			         comboBox.addItem("Ahmed");
-//			         comboBox.setSelectedIndex(1);
-//                  ComboBoxRenderer c = new ComboBoxRenderer();
-//                  c.addItem("Khalid");
-//                    ArrayList<String> a = new ArrayList<String>();
-//                    a.add("Ahmed");
-//                    a.add("Ali");
-                  return p;
-//			return new ComboBoxRenderer();////comboBox;//
+		case TABLE_COL_QOT_ROT:
+			if(DEBUG)System.out.println("UpdatesModel:getValueAt:TABLE_COL_QOT_ROT");
+			//			         //TableColumn testerColumn = table.getColumnModel().getColumn(TABLE_COL_QOT_ROT);
+			if(data.get(rowIndex).testerInfo==null) return null;
+			comboBox = new JComboBox();
+			for(int i=0; i<data.get(rowIndex).testerInfo.length; i++)
+				comboBox.addItem(data.get(rowIndex).testerInfo[i].name);
+			JPanel p = new JPanel(new BorderLayout());
+			p.add(comboBox);
+			TableJButton b = new TableJButton("...",rowIndex );
+			b.addActionListener(this);
+			if(DEBUG)System.out.println("UpdatesModel:getValueAt:TABLE_COL_QOT_ROT: row"+b.rowNo); 
+			b.setPreferredSize(new Dimension(20,30));
+			p.add(b, BorderLayout.EAST);
+			//			         comboBox.addItem("Ali");
+			//			         comboBox.addItem("Ahmed");
+			//			         comboBox.setSelectedIndex(1);
+			//                  ComboBoxRenderer c = new ComboBoxRenderer();
+			//                  c.addItem("Khalid");
+			//                    ArrayList<String> a = new ArrayList<String>();
+			//                    a.add("Ahmed");
+			//                    a.add("Ali");
+			return p;
+			//			return new ComboBoxRenderer();////comboBox;//
 		case TABLE_COL_DATE:
 			if(crt.last_contact_date == null) return null;
 			return Util.getString(crt.last_contact_date.getTime());
@@ -173,7 +158,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			if(crt.my_mirror_name!=null) crt.my_mirror_name = crt.my_mirror_name.trim();
 			if("".equals(crt.my_mirror_name)) crt.my_mirror_name = null;
 			try {
-				data.get(row).store();
+				data.get(row).store("update");
 			} catch (SQLiteException e) {
 				e.printStackTrace();
 			}
@@ -181,7 +166,15 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 		case TABLE_COL_URL:
 			data.get(row).url = Util.getString(aValue);
 			try {
-				data.get(row).store();
+				data.get(row).store("update");
+			} catch (SQLiteException e) {
+				e.printStackTrace();
+			}
+			break;
+		case TABLE_COL_USED:
+			data.get(row).used = ((Boolean) aValue).booleanValue();
+			try {
+				data.get(row).store("update");
 			} catch (SQLiteException e) {
 				e.printStackTrace();
 			}
@@ -204,17 +197,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 
 	@Override
 	public void update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
-		if(DEBUG) System.out.println("UpdatesModel: update: start");
-		try{
-		_update(table, info);
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-		if(DEBUG) System.out.println("UpdatesModel: update: done");
-		this.fireTableDataChanged();
-	}
-	public void _update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
-		if(DEBUG) System.out.println("UpdatesModel: update: start");
+		if(DEBUG) System.out.println("UpdatesModel: update: start:"+table);
 		String sql = "SELECT "+updates.fields_updates+" FROM "+updates.TNAME+";";
 		String[]params = new String[]{};// where clause?
 		ArrayList<ArrayList<Object>> u;
@@ -224,13 +207,18 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			e.printStackTrace();
 			return;
 		}
+		data = new ArrayList<D_UpdatesInfo>();
 		for(ArrayList<Object> _u :u){
-			if(DEBUG) System.out.println("UpdatesModel: update: "+_u);
 			D_UpdatesInfo ui = new D_UpdatesInfo(_u);
-			if(DEBUG) System.out.println("UpdatesModel: update: will add");
+			if(DEBUG) System.out.println("UpdatesModel: update: add: "+ui);
 			data.add(ui); // add a new item to data list (rows)
-			if(DEBUG) System.out.println("UpdatesModel: update: added");
 		}
+		this.fireTableDataChanged();
+	}
+	   
+    public void refresh() {
+		data.removeAll(data);
+		update(null, null);
 	}
 
 	public void setTable(UpdatesTable updatesTable) {
@@ -241,7 +229,29 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 	public void actionPerformed(ActionEvent e) {
 		TableJButton bb =(TableJButton)e.getSource();
 		QualitesTable q = new QualitesTable(data.get(bb.rowNo));
-		JOptionPane.showConfirmDialog(null,q);
+		JPanel p = new JPanel(new BorderLayout());
+		p.add(q.getScrollPane());
+	//	p.setSize(400,300);
+		final JFrame frame = new JFrame();
+		frame.setContentPane(p);
+		frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		frame.pack();
+		frame.setSize(600,300);
+		frame.setVisible(true);
+		
+//		p.setBackground(Color.BLUE);
+  //      p.setSize(new Dimension(200,200));
+        JButton okBt = new JButton("   OK   ");
+        okBt.addActionListener(new ActionListener() {
+         public void actionPerformed(ActionEvent e) {
+            frame.hide();
+           }
+        });
+
+		p.add(okBt,BorderLayout.SOUTH);
+//		JOptionPane.showMessageDialog(null,p);
+  //      JOptionPane.showMessageDialog(null,p,"Test Qualities Info", JOptionPane.DEFAULT_OPTION, null);
+        
 
 	}
 	public static void main(String args[]) {
@@ -251,7 +261,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			JPanel test = new JPanel();
 			//frame.add(test);
 			test.setLayout(new BorderLayout());
-			UpdatesTable t = new UpdatesTable();
+			UpdatesTable t = new UpdatesTable(Application.db);
 			//t.getColumnModel().getColumn(TABLE_COL_QOT_ROT).setCellRenderer(new ComboBoxRenderer());
 			test.add(t);
 			//PeersTest newContentPane = new PeersTest(db);
@@ -266,6 +276,16 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 		} catch (SQLiteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+	}
+
+	public long get_UpdatesID(int row) {
+		if(row<0) return -1;
+		try{
+			return data.get(row).updates_ID;
+		}catch(Exception e){
+			e.printStackTrace();
+			return -1;
 		}
 	}
 }

@@ -497,7 +497,33 @@ class Encoder{
 		bytes+=data.length;
 		assert(bytes==2+data.length);
 	}
+	public static Encoder getStringsEncoder(ArrayList<String> param, byte type) {
+		if(param == null) {
+			return Encoder.getNullEncoder();
+		}
+		Encoder enc = new Encoder().initSequence();
+		for(int k=0; k<param.size(); k++) {
+			String crt = param.get(k);
+			if(crt!=null) enc.addToSequence(new Encoder(crt, type));
+			else enc.addToSequence(Encoder.getNullEncoder());
+		}
+		return enc;
+	}
+	public static <T> Encoder getEncoder(ArrayList<T> param) {
+		if(param == null) {
+			return Encoder.getNullEncoder();
+		}
+		Encoder enc = new Encoder().initSequence();
+		for(int k=0; k<param.size(); k++) {
+			if(param.get(k)!=null) enc.addToSequence(((ASNObj)param.get(k)).getEncoder());
+			else enc.addToSequence(Encoder.getNullEncoder());
+		}
+		return enc;
+	}
 	public static <T> Encoder getEncoder(T[] param){
+		if(param == null) {
+			return Encoder.getNullEncoder();
+		}
 		Encoder enc = new Encoder().initSequence();
 		for(int k=0; k<param.length; k++) {
 			if(param[k]!=null) enc.addToSequence(((ASNObj)param[k]).getEncoder());
@@ -512,6 +538,9 @@ class Encoder{
 	 * @return, an Encoder 
 	 */
 	public static Encoder getStringEncoder(String[] param, byte type){
+		if(param == null) {
+			return Encoder.getNullEncoder();
+		}
 		Encoder enc = new Encoder().initSequence();
 		for(int k=0; k<param.length; k++) {
 			if(param[k]!=null) enc.addToSequence(new Encoder(param[k],type));
@@ -521,7 +550,10 @@ class Encoder{
 	}
 	public static Encoder getHashStringEncoder(Hashtable<String, String> param,
 			byte type) {
-        String[] keys = (String[]) param.keySet().toArray(new String[0]);  
+		if(param == null) {
+			return Encoder.getNullEncoder();
+		}
+       String[] keys = (String[]) param.keySet().toArray(new String[0]);  
         Arrays.sort(keys);  
 
 		Encoder enc = new Encoder().initSequence();
