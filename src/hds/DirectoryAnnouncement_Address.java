@@ -23,19 +23,26 @@ package hds;
 import java.math.BigInteger;
 
 import ASN1.Encoder;
-
+/**
+ * DirectoryAnnouncement_Address = SEQUENCE {
+ * 		addresses UTF8String,
+ * 		udp_port INTEGER
+ * }
+ * @author msilaghi
+ *
+ */
 public class DirectoryAnnouncement_Address{
-		public String domain; // will store a string of domain:port,domain:port...
+		public String addresses; // will store a string of domain:port,domain:port...
 		public int udp_port;
 		DirectoryAnnouncement_Address(){}
 		public String toString() {
 			//return domain+":"+port;
-			return domain+" (UDP port="+udp_port+")";
+			return addresses+" (UDP port="+udp_port+")";
 		}
 		Encoder getEncoder() {
 			Encoder enc = new Encoder()
 			.initSequence()
-			.addToSequence(new Encoder(domain))
+			.addToSequence(new Encoder(addresses))
 			.addToSequence(new Encoder(new BigInteger(""+udp_port)))
 			;
 			return enc;

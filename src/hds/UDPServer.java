@@ -498,7 +498,7 @@ public class UDPServer extends Thread {
 				da = new DirectoryAnnouncement();
 				da.globalID = Identity.current_peer_ID.globalID;
 				//da.address.domain=Identity.domain.toString().split("/")[1];
-				da.address.domain=Identity.current_server_addresses();
+				da.address.addresses=Identity.current_server_addresses();
 				da.address.udp_port=Identity.udp_server_port;
 				UDPServer.directoryAnnouncement = da;
 			} else {
@@ -517,14 +517,14 @@ public class UDPServer extends Thread {
 		prepareDirectoryAnnouncement();
 		if(DEBUG_DIR) out.println("UDPServer: announceMyselfToDirectory: prepeared");
 		DirectoryAnnouncement da = UDPServer.directoryAnnouncement;
-		if(DEBUG_DIR) out.println("UDPServer: announceMyselfToDirectory Registering: domain=\""+da.address.domain+"\" UDP port=\""+da.address.udp_port+"\"");
+		if(DEBUG_DIR) out.println("UDPServer: announceMyselfToDirectory Registering: domain=\""+da.address.addresses+"\" UDP port=\""+da.address.udp_port+"\"");
 		_announceMyselfToDirectories(UDPServer.directoryAnnouncement, ds);
 		if(DEBUG_DIR) out.println("UDPServer: announceMyselfToDirectory: done");
 	}	
 	public static void announceMyselfToDirectoriesTCP(){
 		if(DEBUG_DIR) out.println("Server: announceMyselfToDirectories");
 		DirectoryAnnouncement da = prepareDirectoryAnnouncement();
-		if(DEBUG_DIR) out.println("Server: Registering: "+da.address.domain+":"+da.address.udp_port);
+		if(DEBUG_DIR) out.println("Server: Registering: "+da.address.addresses+":"+da.address.udp_port);
 		Server.announceMyselfToDirectories(da);		
 	}
 	public void pingDirectories(){

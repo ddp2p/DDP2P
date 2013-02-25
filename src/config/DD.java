@@ -113,7 +113,7 @@ import data.D_PeerAddress;
 import ASN1.Encoder;
 
 public class DD {
-	public static final String VERSION = "0.9.11";
+	public static final String VERSION = "0.9.10";
 	public static String APP_NAME = _("Direct Democracy");
 	//public static String APP_NAME = _("La Bible A Petits Pas");
 	public static JTabbedPane tabbedPane = new JTabbedPane();

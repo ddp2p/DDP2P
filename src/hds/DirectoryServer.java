@@ -44,10 +44,57 @@ import config.DD;
 import util.DBInterface;
 import util.Util;
 import static java.lang.System.out;
+import ASN1.ASN1DecoderFail;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
-// TODO Make it iterative ... any takers?
+/**
+ * @author msilaghi
+ *
+ * DAAnswer = IMPLICIT [APPLICATION 14] SEQUENCE {
+ * 		result BOOLEAN,
+ * 		remote_IP OCTET STRING OPTIONAL,
+ *      remote_port INTEGER OPTIONAL
+ * }
+ */
+
+class D_DAAnswer extends ASN1.ASNObj{
+	boolean result = true;
+	byte[] remote_IP;
+	int remote_port = 0;
+	
+	@Override
+	public Encoder getEncoder() {
+		Encoder enc = new Encoder().initSequence();
+		enc.addToSequence(new Encoder(result));
+		if(remote_IP!=null) enc.addToSequence(new Encoder(remote_IP));
+		if(remote_port > 0) enc.addToSequence(new Encoder(remote_port));
+		enc.setASN1Type(DD.TAG_AC14);
+		return enc;
+	}
+
+	@Override
+	public D_DAAnswer decode(Decoder dec) throws ASN1DecoderFail {
+		Decoder d = dec.getContent();
+		result = d.getFirstObject(true).getBoolean();
+		Decoder rest = d.getFirstObject(true);
+		if(rest == null) return this;
+		if(rest.getTypeByte() == Encoder.TAG_OCTET_STRING){
+			remote_IP = rest.getBytes();
+			rest = d.getFirstObject(true);
+		}
+		if(rest == null) return this;
+		if(rest.getTypeByte() == Encoder.TAG_INTEGER){
+			remote_port = rest.getInteger().intValue();
+			rest = d.getFirstObject(true);
+		}
+		if(rest != null) throw new ASN1DecoderFail("Extra bytes in answer");
+		return this;
+	}
+	
+}
+
+// TODO Make it concurrent ... any takers?
 public class DirectoryServer extends Thread{
 	public static final int PORT = 25123;
 	static final int MAX_DR = 100000;
@@ -125,12 +172,13 @@ public class DirectoryServer extends Thread{
 				new String[]{da.globalID,
 				(da.certificate.length==0)?null:Util.stringSignatureFromByte(da.certificate),
 						//da.address.domain+":"+da.address.port+ADDR_SEP+detected_sa,
-						Address.joinAddresses(detected_sa, da.address.domain),
+						Address.joinAddresses(detected_sa, da.address.addresses),
 						(da.signature.length==0)?null:Util.stringSignatureFromByte(da.signature),
 								(Util.CalendargetInstance().getTimeInMillis()/1000)+""}); // strftime('%s', 'now'));
 		if(DEBUG)out.println("inserted with ID="+id);
-		Encoder DAanswer = new Encoder().initSequence().addToSequence(new Encoder(true));
-		DAanswer.setASN1Type(DD.TAG_AC14);
+		Encoder DAanswer = new D_DAAnswer().getEncoder();
+				// new Encoder().initSequence().addToSequence(new Encoder(true));
+		//DAanswer.setASN1Type(DD.TAG_AC14);
 		byte[] answer=DAanswer.getBytes();
 		if(DEBUG) out.println("sending answer: "+Util.byteToHexDump(answer));
 		return answer;

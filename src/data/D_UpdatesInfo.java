@@ -302,11 +302,14 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 	private static float threshold_testers_weight() {
 		try {
 			String testers_count_weight = DD.getAppText(DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_VALUE);
-			if (testers_count_weight == null) testers_count_weight = "" + DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_VALUE; 							
+			if (testers_count_weight == null){
+				return DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT;
+				// testers_count_weight = "" + DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT; 							
+			}
 			return Float.parseFloat(testers_count_weight);
 		} catch (Exception e) {
 			e.printStackTrace();
-			return 0.0f;
+			return DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT;
 		}
 	}
 	private static float threshold_testers_count() {

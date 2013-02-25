@@ -30,6 +30,22 @@ import ASN1.ASN1DecoderFail;
 import ASN1.Encoder;
 import ASN1.Decoder;
 import util.Util;
+/**
+ * 	 * DirectoryAnnouncement = IMPLICIT [APPLICATION 0] SEQUENCE {
+	 * 		globalID PrintableString,
+	 * 		date GeneralizedTime OPTIONAL,
+	 * 		address DirectoryAnnouncement_Address,
+	 * 		certificate OCTETSTRING,
+	 * 		signature OCTETSTRING
+	 * }
+	 * DirectoryRequest = SEQUENCE {
+	 * 		globalID PrintableString,
+	 * 		initiator_globalID PrintableString,
+	 * 		UDP_port INTEGER
+	 * }
+ * @author msilaghi
+ *
+ */
 public class DirectoryAnnouncement{
 	public final static byte TAG=0;
 	public String globalID;
@@ -63,7 +79,7 @@ public class DirectoryAnnouncement{
 		//out.println("ID="+globalID);
 		Decoder addr = dec.getFirstObject(true).getContent();
 		//addr.printHex("addr=");
-		address.domain = addr.getFirstObject(true).getString();
+		address.addresses = addr.getFirstObject(true).getString();
 		//out.println("domain: "+address.domain);
 		//addr.printHex("addr=");
 		address.udp_port = addr.getFirstObject(true).getInteger().intValue();
@@ -76,19 +92,21 @@ public class DirectoryAnnouncement{
 		String result=" ID="+Util.trimmed(globalID)+"\n address="+address+"\n certif='"+Util.byteToHexDump(certificate)+"'\n sign='"+Util.byteToHexDump(signature)+"'";
 		return result;
 	}
+	/**
+	 * @return
+	 */
 	public byte[] encode() {
 		Encoder da = new Encoder()
 		.initSequence()
-		.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, DirectoryAnnouncement.TAG);
+		.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, DirectoryAnnouncement.TAG);
 		//da.print();
-		Encoder enc=new Encoder(globalID);
+		Encoder enc=new Encoder(globalID, false);
 		//enc.print();
 		da.addToSequence(enc);
 		if(date!=null)  da.addToSequence(new Encoder(date));
 		da.addToSequence(address.getEncoder())
 		.addToSequence(new Encoder(certificate))
-		.addToSequence(new Encoder(signature))
-		;
+		.addToSequence(new Encoder(signature));
 		return da.getBytes();
 	}
 }
@@ -178,12 +196,15 @@ class DirectoryRequest {
 		initiator_globalID = dr.getFirstObject(true).getString();
 		this.UDP_port = dr.getFirstObject(true).getInteger().intValue();
 	}
+	/**
+	 * @return
+	 */
 	byte[] encode() {
 		return 
 		new Encoder().
 		initSequence().
-		addToSequence(new Encoder(globalID)).
-		addToSequence(new Encoder(this.initiator_globalID)).
+		addToSequence(new Encoder(globalID, false)).
+		addToSequence(new Encoder(this.initiator_globalID, false)).
 		addToSequence(new Encoder(this.UDP_port)).
 		getBytes();
 	}

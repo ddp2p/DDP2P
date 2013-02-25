@@ -29,7 +29,18 @@ import java.util.Calendar;
 import util.Util;
 import ASN1.Decoder;
 import ASN1.Encoder;
-
+/**
+ 	 * DirectoryAnswer = SEQUENCE {
+	 * 		timestamp GeneralizedTime,
+	 * 		addresses_enc SEQUENCE OF SEQUENCE {
+	 * 			domain UTF8String,
+	 * 			tcp_port INTEGER,
+	 * 			udp_port INTEGER
+	 * 		}
+	 * }
+ * @author msilaghi
+ *
+ */
 public class DirectoryAnswer {
 	static final int MAX_DA = 1000;
 	private static final int MAX_LEN = 10000;
@@ -83,6 +94,9 @@ public class DirectoryAnswer {
 			addresses.add(new Address(domain, tcp_port,udp_port));
 		}
 	}
+	/**
+	 * @return
+	 */
 	byte[] encode() {
 		Encoder da = new Encoder().initSequence().addToSequence(new Encoder(Util.CalendargetInstance()));
 		Encoder addresses_enc = new Encoder().initSequence();

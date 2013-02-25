@@ -101,6 +101,7 @@ class DNode implements TreeNode{
 @SuppressWarnings("serial")
 public class DirectoriesData extends JPanel implements MouseListener  {
 	public static final boolean _DEBUG = true;
+	private static final boolean DEBUG = false;
 	// dir_IP: (GID: ()addresses)
 	public static Hashtable<String,Hashtable<String,DirectoryAnswer>> dir_data = new Hashtable<String,Hashtable<String,DirectoryAnswer>>();
 
@@ -118,7 +119,7 @@ public class DirectoriesData extends JPanel implements MouseListener  {
 	}
 	//String colNames[] = {_("Directory"),_("Peer"),_("Date"),_("Address")};
 	public void setData(Hashtable<String,Hashtable<String,DirectoryAnswer>> ad) {
-		if(_DEBUG) System.out.println("DirectoriesData: setData: start");
+		if(DEBUG) System.out.println("DirectoriesData: setData: start");
 		if(!refresh){
 			if(_DEBUG) System.out.println("DirectoriesData: setData: norefresh");
 			return;
@@ -164,7 +165,7 @@ public class DirectoriesData extends JPanel implements MouseListener  {
 	}
 	private DNode getDANode(DirectoryAnswer da, String p) {
 		DNode n = new DNode();
-		n.text = Util.trimmed(p);
+		n.text = p; //Util.trimmed(p);
 		if(da==null){
 			n.text += ":null";
 			return n;
