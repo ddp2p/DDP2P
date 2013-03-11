@@ -1,0 +1,279 @@
+-- Database definitions of message payloads (old version)
+
+-- SyncRequest is the type of the payload of the message from a client
+-- Database is the type ofthe payload of the message from the server
+
+DatabaseMessagesModule {iso(1) identified-organization(3) dod(6) internet(1)
+  security(5) mechanisms(5) sqliteserver(108)}
+DEFINITIONS IMPLICIT TAGS ::=
+
+BEGIN
+SyncRequest ::= SEQUENCE {
+  lastSnapshot GeneralizedTime OPTIONAL,
+  tableNames [APPLICATION 0] SEQUENCE OF TableName OPTIONAL, -- peers, news
+  orgFilter  [APPLICATION 1] SEQUENCE OF OrgFilter OPTIONAL,
+  address    [APPLICATION 2] IMPLICIT PeerAddress OPTIONAL,
+  -- directory  [APPLICATION 3] IMPLICIT Address OPTIONAL
+  pushChanges SyncAnswer OPTIONAL
+}
+
+SyncAnswer ::= SEQUENCE {
+  tables Database OPTIONAL,
+  orgData OrgData OPTIONAL,
+  crl OrgCRL OPTIONAL,
+}
+
+OrgCRL ::= SEQUENCE {
+  org_id PrintableString,
+  crl OCTET STRING,
+  date GeneralizedTime
+}
+
+OrgData ::= SEQUENCE {
+  id PrintableString, -- global ID
+  name UTF8String OPTIONAL,
+  params OrgParams OPTIONAL,
+  concepts OrgConcepts OPTIONAL,
+  neighborhoods SEQUENCE OF NeighborhoodOP OPTIONAL,
+  constituents SEQUENCE OF ConstituentOP OPTIONAL,
+  witnesses SEQUENCE OF Witness OPTIONAL,
+  motions SEQUENCE OF Motion OPTIONAL,
+  justifications SEQUENCE OF JustificationSets OPTIONAL,
+  signatures SEQUENCE OF Signature OPTIONAL,
+  translations SEQUENCE OF Translation OPTIONAL,
+  news SEQUENCE OF News OPTIONAL,
+  plugins  SEQUENCE OF PluginInfo OPTIONAL,
+  plugin_data SEQUENCE OF PluginData OPTIONAL,
+}
+
+Signature ::= SEQUENCE {
+  id PrintableString,
+  hash_sig_alg PrintableString,
+  hash_sig OCTET STRING,
+  constituentID PrintableString,
+  date GeneralizedTime,
+  justificationID   PrintableString,
+  motionID PrintableString,
+  status Integer,
+}
+
+JustificationSets ::= SEQUENCE {
+ motion_id PrintableString,
+ justifications SEQUENCE OF Justifications,
+}
+
+Justifications ::= SEQUENCE {
+  id PrintableString,
+  hash_just_alg PrintableString,
+  hash_just OCTET STRING,
+  justification_title UTF8String,
+  justification_text UTF8String,
+  answerToID PrintableString,
+  constituentID PrintableString,
+  date GeneralizedTime,
+  signature OCTET STRING OPTIONAL
+}
+
+News ::= SEQUENCE {
+  id PrintableString,
+  date GeneralizedTime,
+  news UTF8String,
+  submitterID PrintableString,
+  signature OCTET STRING OPTIONAL
+}
+
+Translation ::= SEQUENCE {
+  id PrintableString,
+  object UTF8String,
+  object_lang PrintableString,
+  context PrintableString,
+  translation UTF8String,
+  translation_lang PrintableString,
+  translation_flavor PrintableString,
+  translation_charset PrintableString,
+  submitterID PrintableString,
+  signature OCTET STRING OPTIONAL
+}
+
+PluginInfo ::= SEQUENCE {
+  id PrintableString,
+  info UTF8String
+}
+PluginData ::= SEQUENCE {
+  id PrintableString,
+  data OCTET STRING
+}
+
+Motion ::= SEQUENCE {
+ id PrintableString,
+ hash_motion_alg PrintableString,
+ hash_motion OCTET STRING,
+ motion_title UTF8String,
+ constituentID PrintableString,
+ date GeneralizedTime,
+ enhancesID PrintableString,
+ formatType ENUMERATED { plain(0), preformated(1), PDF(2) },
+ -- status PrintableString,
+ motion_text UTF8String,
+ signature OCTET STRING
+}
+
+Witness ::= SEQUENCE {
+  id PrintableString,
+  hash_witness_alg PrintableString,
+  hash_witness OCTET STRING,
+  stance ENUMERATED { hearsay(0), known(1), inexistant_address(2), not_at_address(3) }
+  date GeneralizedTime,
+  neighborhoodID PrintableString OPTIONAL,
+  sense_Y_N BOOLEAN,
+  sourceID PrintableString,
+  targeID PrintableString OPTIONAL,
+  signature OCTET STRING OPTIONAL
+}
+
+ConstituentOP ::= SEQUENCE {
+  constituent Constituent,
+  op Operation DEFAULT add,
+}
+Constituent ::= SEQUENCE {
+  id PrintableString, -- global ID
+  forename ::= UTF8String,
+  surname ::= UTF8String,
+  gificon ::= OCTET STRING OPTIONAL,
+  neighID ::= PrintableString,
+  postalAddress ::= SEQUENCE OF LocationItem
+}
+LocationItem ::= SEQUENCE {
+  oid ::= OID,
+  name ::= UTF8String
+}
+NeighborhoodOP ::= SEQUENCE {
+  neighborhood Neighborhood,
+  op Operation DEFAULT add,
+}
+
+Neighborhood ::= SEQUENCE {
+  name ::= UTF8String,
+  description ::= UTF8String, -- hierarchy...
+  boundary ::= SEQUENCE OF Point
+}
+
+Point ::= SEQUENCE {
+  lat ::= REAL,
+  long ::= REAL
+}
+
+Operation ::= ENUMERATED { add(0), remove(1), change(2) }
+
+OrgParams ::= SEQUENCE {
+  certifMethod ENUMERATED { none(0), p12(1) },
+  hash_org_alg PrintableString,
+  hash_org OCTET STRING,
+  creation_time GeneralizedTime,
+  category UTF8String,
+  certificate  OCTET STRING,
+  default_scoring_options SEQUENCE OF UTF8String,
+  instructions_new_motions UTF8String,
+  instructions_registration UTF8String,
+  languages SEQUENCE OF PrintableString, --max size 2
+}
+OrgConcepts ::= SEQUENCE {
+  name_forum SEQUENCE OF UTF8String,
+  name_justification SEQUENCE OF UTF8String,
+  name_motion SEQUENCE OF UTF8String,
+  name_organization SEQUENCE OF UTF8String,
+}
+
+OrgParam ::= SEQUENCE {
+  label UTF8String,
+  label_lang PrintableString,
+  can_be_provided_later BOOLEAN,
+  certificated BOOLEAN,
+  entry_size INTEGER,
+  partNeigh INTEGER,
+  required BOOLEAN,
+  default_value UTF8String,
+  default_value_lang PrintableString,
+  list_of_values SEQUENCE OF UTF8String,
+  list_of_values_lang PrintableString,
+  tip UTF8String,
+  tip_lang PrintableString
+}
+
+OrgFilter ::= SEQUENCE {
+  orgID PrintableString,
+  motions :: SEQUENCE OF MotionID OPTIONAL
+  plugins :: [APPLICATION 2] SEQUENCE OF PrintableString OPTIONAL
+}
+
+DirectoryRequest ::= SEQUENCE {
+  globalID PrintableString
+}
+
+DirectoryAnswer ::= SEQUENCE {
+  address SEQUENCE OF Address,
+  date GeneralizedTime
+}
+
+DirectoryAnnouncement ::= [APPLICATION 0] IMPLICIT  SEQUENCE  {
+  globalID PrintableString,
+  address Address,
+  certificate OCTET STRING OPTIONAL,
+  signature  OCTET STRING OPTIONAL
+}
+
+DirectoryAnnouncementAnswer ::= SEQUENCE {
+  success BOOLEAN
+}
+
+PeerAddress ::= SEQUENCE {
+  globalID PrintableString, -- public key for signatures
+  name UTF8String OPTIONAL,
+  slogan [APPLICATION 0] UTF8String OPTIONAL,
+  address SEQUENCE OF TypedAddress,
+  broadcastable BOOLEAN OPTIONAL  -- recommend friends to broadcast or not
+  signature_alg SEQUENCE OF PrintableString OPTIONAL, -- names of fields in signature
+  signature OCTET STRING OPTIONAL -- of name, slogan, address
+}
+
+Address ::= SEQUENCE {
+  domain PrintableString, -- in dir announcement, this is a list domain1:port1,dom2:port2,...
+  port INTEGER
+}
+
+TypedAddress ::= SEQUENCE {
+  address UTF8String,
+  type PrintableString -- DIR, Socket, email, http, https, TEL, FAX
+}
+
+Database ::= SEQUENCE {
+  tables     SEQUENCE OF Table,
+  snapshot   GeneralizedTime
+}
+--  name       DatabaseName,
+
+Table ::= SEQUENCE {
+  name        TableName,
+  fields      SEQUENCE OF FieldName,
+  fieldTypes  SEQUENCE OF FieldType,
+  rows        SEQUENCE OF Row
+}
+
+Row ::= SEQUENCE OF FieldValue
+
+FieldValue ::= CHOICE {
+  value OCTET STRING,
+  empty NULL
+}
+
+TableName ::= [PRIVATE 0] IMPLICIT UTF8String
+DatabaseName ::= [PRIVATE 1] IMPLICIT UTF8String
+FieldName ::= [PRIVATE 2] IMPLICIT UTF8String
+FieldType ::= [PRIVATE 3] IMPLICIT PrintableString
+MotionID ::= [PRIVATE 4] IMPLICIT PrintableString
+
+UTF8String ::= [UNIVERSAL 12] IMPLICIT OCTET STRING
+        -- The content of this type conforms to RFC 2279.
+PrintableString ::= [UNIVERSAL 19] IMPLICIT OCTET STRING
+
+END

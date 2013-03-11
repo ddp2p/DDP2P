@@ -17,6 +17,11 @@
 --   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 --
 -- Messages for communication with the DirectoryServer
+DDP2PMessagesModule {iso(1) identified-organization(3) dod(6) internet(1)
+  security(5) mechanisms(5) ddp2p(109)}
+DEFINITIONS IMPLICIT TAGS ::=
+
+BEGIN
 
 DirectoryAnnouncement_Address = SEQUENCE {
 	addresses UTF8String,
@@ -218,3 +223,11 @@ UDPReclaim := IMPLICIT [APPLICATION 16] UDPFragmentNAck;
 -- sent when a fragment is reclaimed while it is no longer available (receiver should discard partial message)
 -- partial message may be due to a duplicate received after a message is fully processed
 UDPFragmentNAck := IMPLICIT [APPLICATION 15] UDPFragmentNAck;
+
+
+
+UTF8String ::= [UNIVERSAL 12] IMPLICIT OCTET STRING
+        -- The content of this type conforms to RFC 2279.
+PrintableString ::= [UNIVERSAL 19] IMPLICIT OCTET STRING
+
+END
