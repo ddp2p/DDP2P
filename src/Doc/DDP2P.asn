@@ -165,7 +165,6 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 	pushChanges ASNSyncPayload OPTIONAL,
 	signature NULLOCTETSTRING, -- prior to version 2 it was [APPLICATION 5] 
 }
-
 ASNSyncPayload := IMPLICIT [APPLICATION 8] SEQUENCE {
 	version UTF8String,
 	upToDate GeneralizedTime OPTIONAL,
@@ -182,6 +181,7 @@ ASNSyncPayload := IMPLICIT [APPLICATION 8] SEQUENCE {
 	dictionary_GIDs [APPLICATION 17] SEQUENCE OF PrintableString OPTIONAL,
 	changed_orgs [APPLICATION 18] SEQUENCE OF ResetOrgInfo OPTIONAL,
 }
+SyncAnswer := ASNSyncPayload;
 TableName := IMPLICIT [PRIVATE 0] UTF8String;
 FieldName := IMPLICIT [PRIVATE 2] UTF8String;
 FieldType := IMPLICIT [PRIVATE 3] UTF8String;
@@ -192,3 +192,29 @@ Table := SEQUENCE {
 	fieldTypes SEQUENCE OF FieldType,
 	rows SEQUENCE OF SEQUENCE OF NULLOCTETSTRING;
 }
+-- sent when message size is larger than DD.MTU = 32000
+UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
+	senderID UTF8String,
+	signature OCTET STRING,
+	destinationID UTF8String,
+	msgType INTEGER,
+	msgID UTF8String,  -- to know when a new message starts
+	fragments INTEGER, -- to know when all fragments are received
+	sequence INTEGER,  -- the id of the current fragment
+	data OCTET STRING -- message of type ASNSyncPayload or ASNSyncRequest
+}
+-- UDPFragmentAck sent any now and then to acknowledge the receipt of a UDPFragment
+-- currently each received fragment is acknowledges (may be inefficient ...)
+-- receiver discards sent message when all fragments are acknowledged
+UDPFragmentAck := IMPLICIT [APPLICATION 11] SEQUENCE {
+	senderID UTF8String,
+	signature OCTET STRING,
+	destinationID UTF8String,
+	msgID UTF8String,
+	transmitted OCTET STRING -- array of bytes, bytes set to 0 for a message not received and set to 1 for a message received
+}
+-- sent each Server.TIMEOUT_UDP_Reclaim = 2000 ms to tell that a message is not fully obtained
+UDPReclaim := IMPLICIT [APPLICATION 16] UDPFragmentNAck;
+-- sent when a fragment is reclaimed while it is no longer available (receiver should discard partial message)
+-- partial message may be due to a duplicate received after a message is fully processed
+UDPFragmentNAck := IMPLICIT [APPLICATION 15] UDPFragmentNAck;
