@@ -1,0 +1,194 @@
+--   Copyright (C) 2013 Marius C. Silaghi
+--		Author: Marius Silaghi: msilaghi@fit.edu
+--		Florida Tech, Human Decision Support Systems Laboratory
+--   
+--   This program is free software; you can redistribute it and/or modify
+--   it under the terms of the GNU Affero General Public License as published by
+--   the Free Software Foundation; either the current version of the License, or
+--   (at your option) any later version.
+--   
+--   This program is distributed in the hope that it will be useful,
+--   but WITHOUT ANY WARRANTY; without even the implied warranty of
+--   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--   GNU General Public License for more details.
+--  
+--   You should have received a copy of the GNU Affero General Public License
+--   along with this program; if not, write to the Free Software
+--   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+--
+-- Messages for communication with the DirectoryServer
+
+DirectoryAnnouncement_Address = SEQUENCE {
+	addresses UTF8String,
+	udp_port INTEGER
+}
+-- Used to tell a directory about one's address (detected from interfaces)
+DirectoryAnnouncement = IMPLICIT [APPLICATION 0] SEQUENCE {
+	globalID PrintableString,
+	date GeneralizedTime OPTIONAL,
+	address DirectoryAnnouncement_Address,
+	certificate OCTETSTRING,
+	signature OCTETSTRING
+}
+-- Used to request the address of globalID
+DirectoryRequest = SEQUENCE {
+	globalID PrintableString,
+	initiator_globalID PrintableString,
+	UDP_port INTEGER
+}
+-- Answer to DirectoryRequest
+DirectoryAnswer = SEQUENCE {
+	timestamp GeneralizedTime,
+	addresses_enc SEQUENCE OF SEQUENCE {
+		domain UTF8String,
+		tcp_port INTEGER,
+		udp_port INTEGER
+	}
+}
+-- Answer to DirectoryAnnouncement
+DAAnswer = IMPLICIT [APPLICATION 14] SEQUENCE {
+	result BOOLEAN,
+	remote_IP OCTET STRING OPTIONAL,
+	remote_port INTEGER OPTIONAL
+}
+-- Ping or request to forward PING
+ASNUDPPing = IMPLICIT [APPLICATION 13] SEQUENCE {
+	senderIsPeer BOOLEAN,
+	senderIsInitiator BOOLEAN,
+	peer_port INTEGER,
+	initiator_port INTEGER,
+	peer_domain UTF8String,
+	initiator_domain UTF8String,
+	peer_globalID	PrintableString OPTIONAL,
+	initiator_globalID	PrintableString OPTIONAL
+}
+-- keep NAT table entry alive 
+UDPEmptyPing = IMPLICIT [APPLICATION 20] SEQUENCE {}
+
+
+-- Constituent during transmission
+D_Constituent ::=  [APPLICATION 48] IMPLICIT SEQUENCE {
+	global_organization_ID PrintableString OPTIONAL,
+	global_constituent_id [APPLICATION 0] PrintableString OPTIONAL,
+	surname [APPLICATION 1] UTF8String OPTIONAL,
+	forename [APPLICATION 15] UTF8String OPTIONAL,
+	address [APPLICATION 2] SEQUENCE OF D_FieldValue OPTIONAL,
+	email [APPLICATION 3] PrintableString OPTIONAL,
+	creation_date [APPLICATION 4] GeneralizedDate OPTIONAL,
+	global_neighborhood_ID [APPLICATION 10] PrintableString OPTIONAL,
+	neighborhood [APPLICATION 5] SEQUENCE OF D_Neighborhood OPTIONAL,
+	picture [APPLICATION 6] OCTET_STRING OPTIONAL,
+	hash_alg PrintableString OPTIONAL,
+	signature [APPLICATION 7] OCTET_STRING OPTIONAL,
+	global_constituent_id_hash [APPLICATION 8] PrintableString OPTIONAL,
+	certificate [APPLICATION 9] OCTET_STRING OPTIONAL,
+	languages [APPLICATION 11] SEQUENCE OF PrintableString OPTIONAL,
+	global_submitter_id [APPLICATION 12] PrintableString OPTIONAL,
+	slogan [APPLICATION 13] UTF8String OPTIONAL,
+	weight [APPLICATION 14] UTF8String OPTIONAL,
+	submitter [APPLICATION 15] D_Constituent OPTIONAL,
+	external BOOLEAN,
+	revoked BOOLEAN
+}
+-- Signature for Constituent
+Sign_D_Constituent ::= IMPLICIT [UNIVERSAL 48] SEQUENCE {
+	version INTEGER DEFAULT 0,
+	global_organization_ID PrintableString,
+	global_constituent_id [APPLICATION 0] PrintableString OPTIONAL,
+	surname [APPLICATION 1] UTF8String OPTIONAL,
+	forename [APPLICATION 15] UTF8String OPTIONAL,
+	address [APPLICATION 2] SEQUENCE OF D_FieldValue OPTIONAL,
+	email [APPLICATION 3] PrintableString OPTIONAL,
+	creation_date [APPLICATION 4] GeneralizedDate OPTIONAL,
+	global_neighborhood_ID [APPLICATION 10] PrintableString OPTIONAL,
+	-- neighborhood [APPLICATION 5] SEQUENCE OF D_Neighborhood OPTIONAL,
+	picture [APPLICATION 6] OCTET_STRING OPTIONAL,
+	hash_alg PrintableString OPTIONAL,
+	-- signature [APPLICATION 7] OCTET_STRING OPTIONAL,
+	-- global_constituent_id_hash [APPLICATION 8] PrintableString OPTIONAL,
+	certificate [APPLICATION 9] OCTET_STRING OPTIONAL,
+	languages [APPLICATION 11] SEQUENCE OF PrintableString OPTIONAL,
+	global_submitter_id [APPLICATION 12] PrintableString OPTIONAL,
+	slogan [APPLICATION 13] UTF8String OPTIONAL,
+	weight [APPLICATION 14] UTF8String OPTIONAL,
+	-- submitter [APPLICATION 15] D_Constituent OPTIONAL,
+	external BOOLEAN,
+	revoked BOOLEAN OPTIONAL -- only if not external and versions past 2
+}
+
+-- Hash for externals Const
+HashExtern_D_Constituent ::= IMPLICIT [UNIVERSAL 48] SEQUENCE {
+	-- version INTEGER DEFAULT 0,
+	global_organization_ID PrintableString,
+	-- global_constituent_id [APPLICATION 0] PrintableString OPTIONAL,
+	surname [APPLICATION 1] UTF8String OPTIONAL,
+	forename [APPLICATION 15] UTF8String OPTIONAL,
+	address [APPLICATION 2] SEQUENCE OF D_FieldValue OPTIONAL,
+	email [APPLICATION 3] PrintableString OPTIONAL,
+	-- creation_date [APPLICATION 4] GeneralizedDate OPTIONAL,
+	global_neighborhood_ID [APPLICATION 10] PrintableString OPTIONAL,
+	-- neighborhood [APPLICATION 5] SEQUENCE OF D_Neighborhood OPTIONAL,
+	picture [APPLICATION 6] OCTET_STRING OPTIONAL,
+	hash_alg PrintableString OPTIONAL,
+	-- signature [APPLICATION 7] OCTET_STRING OPTIONAL,
+	-- global_constituent_id_hash [APPLICATION 8] PrintableString OPTIONAL,
+	certificate [APPLICATION 9] OCTET_STRING OPTIONAL,
+	languages [APPLICATION 11] SEQUENCE OF PrintableString OPTIONAL,
+	-- global_submitter_id [APPLICATION 12] PrintableString OPTIONAL,
+	-- slogan [APPLICATION 13] UTF8String OPTIONAL,
+	weight [APPLICATION 14] UTF8String OPTIONAL,
+	-- submitter [APPLICATION 15] D_Constituent OPTIONAL,
+	external BOOLEAN,
+	-- revoked BOOLEAN OPTIONAL -- only if not external and versions past 2
+}
+
+ASNDatabase := {
+	tables SEQUENCE OF Table,
+	snapshot GeneralizedTime OPTIONAL
+}
+
+TableName := IMPLICIT [PRIVATE 0] UTF8String
+NULLOCTETSTRING := CHOICE {
+	OCTET STRING,
+	NULL
+}
+
+ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
+	version UTF8String, -- currently 2
+	lastSnapshot GeneralizedTime OPTIONAL,
+	tableNames [APPLICATION 0] SEQUENCE OF TableName OPTIONAL,
+	orgFilter [APPLICATION 1] SEQUENCE OF OrgFilter OPTIONAL,
+	address [APPLICATION 2] D_PeerAddress OPTIONAL,
+	request [APPLICATION 3] SpecificRequest OPTIONAL,
+	plugin_msg [APPLICATION 4] D_PluginData OPTIONAL,
+	plugin_info [APPLICATION 6] SEQUENCE OF ASNPluginInfo OPTIONAL,
+	pushChanges ASNSyncPayload OPTIONAL,
+	signature NULLOCTETSTRING, -- prior to version 2 it was [APPLICATION 5] 
+}
+
+ASNSyncPayload := IMPLICIT [APPLICATION 8] SEQUENCE {
+	version UTF8String,
+	upToDate GeneralizedTime OPTIONAL,
+	tables [APPLICATION 0] ASNDatabase OPTIONAL,
+	orgData [APPLICATION 1] SEQUENCE OF D_Organization OPTIONAL,
+	orgCRL [APPLICATION 2] OrgCRL OPTIONAL,
+	responderID PrintableString OPTIONAL,
+	plugins [APPLICATION 11] SEQUENCE OF ASNPluginInfo OPTIONAL,
+	plugin_data_set [APPLICATION 12] D_PluginData OPTIONAL,
+	requested [APPLICATION 13] WB_Messages OPTIONAL,
+	advertised [APPLICATION 14] SpecificRequest OPTIONAL,
+	advertised_orgs_hash [APPLICATION 15] SEQUENCE OF OrgsData_Hash OPTIONAL,
+	advertised_orgs [APPLICATION 16] SEQUENCE OF OrgInfo OPTIONAL,
+	dictionary_GIDs [APPLICATION 17] SEQUENCE OF PrintableString OPTIONAL,
+	changed_orgs [APPLICATION 18] SEQUENCE OF ResetOrgInfo OPTIONAL,
+}
+TableName := IMPLICIT [PRIVATE 0] UTF8String;
+FieldName := IMPLICIT [PRIVATE 2] UTF8String;
+FieldType := IMPLICIT [PRIVATE 3] UTF8String;
+
+Table := SEQUENCE {
+	name TableName,
+	fields SEQUENCE OF FieldName,
+	fieldTypes SEQUENCE OF FieldType,
+	rows SEQUENCE OF SEQUENCE OF NULLOCTETSTRING;
+}
