@@ -24,6 +24,8 @@ package hds;
 
 import java.util.regex.Pattern;
 
+import util.Util;
+
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
@@ -69,6 +71,68 @@ public class Address extends ASNObj{
 	Address(String _domain, int _tcp_port, int _udp_port){
 		if(_domain == null) return;
 		domain = _domain; tcp_port = _tcp_port; udp_port = _udp_port;
+	}
+	/**
+	 *
+	 * @param _adr host:tcp:udp
+	 * @param _protocol type
+	 */
+	Address(String _adr, String _protocol){
+		if(_adr == null) return;
+		protocol = _protocol;
+		domain = Address.getDomain(_adr); tcp_port = Address.getTCP(_adr); udp_port = Address.getUDP(_adr);
+	}
+	public boolean equals(Object _a){
+		final boolean DBG = false;
+		if(DBG) System.out.print("Address:equals: "+this+" vs "+_a+" :");
+		if((!(_a instanceof Address)) || (_a == null)){
+			if(DBG) System.out.println("1->"+_a);
+			return false;
+		}
+		Address a=(Address)_a;
+		if((a.domain==null)||(this.domain==null))
+			if(! ((a.domain==null)&&(this.domain==null))){
+				if(DBG) System.out.println("2->"+a.domain+" or "+this.domain);
+				return false;
+			}
+		if((a.domain!=null) && !a.domain.equals(this.domain)){
+			if(DBG) System.out.println("3->");
+			return false;
+		}
+		if(a.tcp_port!=this.tcp_port){
+			if(DBG) System.out.println("4->"+a.tcp_port+" vs "+this.tcp_port);
+			return false;
+		}
+		if(a.udp_port!=this.udp_port){
+			if(DBG) System.out.println("5->"+a.udp_port+" vs "+this.udp_port);
+			return false;
+		}
+		if(DBG) if((a.protocol!=null)||(this.protocol!=null)) Util.printCallPath("adr?");
+		if((a.protocol==null)&&(this.protocol!=null))
+			if(!Address.SOCKET.equals(this.protocol)){
+				if(DBG) System.out.println("6a->"+a.protocol+" or "+this.protocol);
+				if(DBG) Util.printCallPath("adr?");
+				return false;
+			}
+		if((a.protocol!=null)&&(this.protocol==null))
+			if(!Address.SOCKET.equals(a.protocol)){
+				if(DBG) System.out.println("6b->"+a.protocol+" or "+this.protocol);
+				if(DBG) Util.printCallPath("adr?");
+				return false;
+			}
+		/*
+		if((a.protocol==null)||(this.protocol==null))
+			if(! ((a.protocol==null)&&(this.protocol==null))){
+				System.out.println("6->"+a.protocol+" or "+this.protocol);
+				return false;
+			}
+		*/
+		if((a.protocol!=null) && (this.protocol!=null) && !a.protocol.equals(this.protocol)){
+			if(DBG) System.out.println("7->");
+			return false;
+		}
+		if(DBG) System.out.println("=");
+		return true;
 	}
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();

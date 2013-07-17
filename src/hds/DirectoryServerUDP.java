@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.DD;
 import ASN1.ASN1DecoderFail;
@@ -93,7 +93,7 @@ public class DirectoryServerUDP extends Thread {
 				byte[] answer;
 				try {
 					answer = DirectoryServer.handleAnnouncement(da, detected_sa, ds.db);
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 					continue;
 				}

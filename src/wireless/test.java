@@ -1,22 +1,3 @@
-/* ------------------------------------------------------------------------- */
-/*   Copyright (C) 2012 
-		Author: Ossamah Dhannoon
-		Florida Tech, Human Decision Support Systems Laboratory
-   
-       This program is free software; you can redistribute it and/or modify
-       it under the terms of the GNU Affero General Public License as published by
-       the Free Software Foundation; either the current version of the License, or
-       (at your option) any later version.
-   
-      This program is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-  
-      You should have received a copy of the GNU Affero General Public License
-      along with this program; if not, write to the Free Software
-      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package wireless;
 
 
@@ -27,17 +8,25 @@ import java.awt.BorderLayout;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Random;
+import java.util.UUID;
 
 import javax.swing.JFrame;
 import javax.swing.JTable;
 
+import com.almworks.sqlite4java.SQLiteException;
+
 import ASN1.Encoder;
 
+import config.Application;
 import config.DD;
 
 import simulator.WirelessLog;
+import util.DBInterface;
+import util.P2PDDSQLException;
 import util.Util;
 
 
@@ -45,27 +34,29 @@ public class test
 {
 
 	
-	public static void main(String[]args) throws IOException
+	public static void main(String[]args) throws IOException, SQLiteException, P2PDDSQLException
 	{
-		/*String s = "1353446019094";
-	long milis = Long.parseLong(s);
-		Calendar c = Util.CalendargetInstance();
-		c.setTimeInMillis(milis);
-		String date = Encoder.getGeneralizedTime(c);
-		System.out.println(date);*/
-		JFrame frame = new JFrame("Table Demo");
-		String columns[] = {"Name","Age","Gender"};
-		Object data[][] = {
-				{"Tom",new Integer(20),"Male"},
-				{"Tina", new Integer(18), "Female"},
-				{"Raj",new Integer(19),"Male"}		
-		};
+		boolean _DEBUG = true;
+		
+		Application.db = new DBInterface("deliberation-app.db");
 		
 		
-		JTable table = new JTable(data,columns);
-		frame.setVisible(true);
-		frame.setBounds(0,0,500,500);
-		frame.add(table.getTableHeader(),BorderLayout.PAGE_START);
-		frame.add(table);
+		String sel_1 = "SELECT count(DISTINCT m.motion_ID)  FROM motion AS m  WHERE m.organization_ID=1 " +
+				"AND m.motion_ID NOT IN ( SELECT nm.motion_ID FROM motion AS nm LEFT JOIN signature AS s " +
+				"ON(s.motion_ID=nm.motion_ID)  WHERE nm.organization_ID=1 AND s.constituent_ID=23);";
+		    
+		String sel_2 = "SELECT DISTINCT m.motion_ID FROM motion AS m  WHERE m.organization_ID=1 AND " +
+				"m.motion_ID NOT IN ( SELECT nm.motion_ID FROM motion AS nm LEFT JOIN signature AS s" +
+				" ON(s.motion_ID=nm.motion_ID)  WHERE nm.organization_ID=1 AND s.constituent_ID=23) LIMIT 1 " +
+				"OFFSET 194;";
+		
+	
+		ArrayList<ArrayList<Object>> count_1 =
+				Application.db.select(sel_1, new String[]{},_DEBUG);
+		
+		ArrayList<ArrayList<Object>> count_2 =
+				Application.db.select(sel_2, new String[]{},_DEBUG);
+		
+		System.out.println();
 	}
 }

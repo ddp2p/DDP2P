@@ -29,7 +29,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -53,19 +53,80 @@ import ASN1.Decoder;
 import ASN1.Encoder;
 
 /**
-WB_Constituent ::= SEQUENCE {
-	global_constituent_id PrintableString,
-	name [0] UTF8String OPTIONAL,
-	address [1] SEQUENCE OF WB_FieldValue OPTIONAL,
-	email PrintableString,
-	creation_date GeneralizedDate,
-	neighborhood [2] SEQUENCE OF WB_Neighborhood OPTIONAL,
-	picture [3] OCTET_STRING OPTIONAL,
-	signature OCTET_STRING 
+D_Constituent ::= IMPLICIT [APPLICATION 48] SEQUENCE {
+	version INTEGER DEFAULT 0,
+	global_organization_ID PrintableString OPTIONAL,
+	global_constituent_id [APPLICATION 0] PrintableString OPTIONAL,
+	surname [APPLICATION 1] UTF8String OPTIONAL,
+	forename [APPLICATION 15] UTF8String OPTIONAL,
+	address [APPLICATION 2] SEQUENCE OF D_FieldValue OPTIONAL,
+	email [APPLICATION 3] PrintableString OPTIONAL,
+	creation_date [APPLICATION 4] GeneralizedDate OPTIONAL,
+	global_neighborhood_ID [APPLICATION 10] PrintableString OPTIONAL,
+	neighborhood [APPLICATION 5] SEQUENCE OF D_Neighborhood OPTIONAL,
+	picture [APPLICATION 6] OCTET_STRING OPTIONAL,
+	hash_alg PrintableString OPTIONAL,
+	signature [APPLICATION 7] OCTET_STRING OPTIONAL,
+	global_constituent_id_hash [APPLICATION 8] PrintableString OPTIONAL,
+	certificate [APPLICATION 9] OCTET_STRING OPTIONAL,
+	languages [APPLICATION 11] SEQUENCE OF PrintableString OPTIONAL,
+	global_submitter_id [APPLICATION 12] PrintableString OPTIONAL,
+	slogan [APPLICATION 13] UTF8String OPTIONAL,
+	weight [APPLICATION 14] UTF8String OPTIONAL,
+	valid_support [APPLICATION 16] D_Witness OPTIONAL,
+	submitter [APPLICATION 17] D_Constituent OPTIONAL,
+	external BOOLEAN,
+	revoked BOOLEAN
 }
- */
-
-
+Sign_D_Constituent ::= IMPLICIT [UNIVERSAL 48] SEQUENCE {
+	version INTEGER DEFAULT 0,
+	global_organization_ID PrintableString,
+	global_constituent_id [APPLICATION 0] PrintableString OPTIONAL,
+	surname [APPLICATION 1] UTF8String OPTIONAL,
+	forename [APPLICATION 15] UTF8String OPTIONAL,
+	address [APPLICATION 2] SEQUENCE OF D_FieldValue OPTIONAL,
+	email [APPLICATION 3] PrintableString OPTIONAL,
+	creation_date [APPLICATION 4] GeneralizedDate OPTIONAL,
+	global_neighborhood_ID [APPLICATION 10] PrintableString OPTIONAL,
+	-- neighborhood [APPLICATION 5] SEQUENCE OF D_Neighborhood OPTIONAL,
+	picture [APPLICATION 6] OCTET_STRING OPTIONAL,
+	hash_alg PrintableString OPTIONAL,
+	-- signature [APPLICATION 7] OCTET_STRING OPTIONAL,
+	-- global_constituent_id_hash [APPLICATION 8] PrintableString OPTIONAL,
+	certificate [APPLICATION 9] OCTET_STRING OPTIONAL,
+	languages [APPLICATION 11] SEQUENCE OF PrintableString OPTIONAL,
+	global_submitter_id [APPLICATION 12] PrintableString OPTIONAL,
+	slogan [APPLICATION 13] UTF8String OPTIONAL,
+	weight [APPLICATION 14] UTF8String OPTIONAL,
+	-- submitter [APPLICATION 15] D_Constituent OPTIONAL,
+	external BOOLEAN,
+	revoked BOOLEAN OPTIONAL -- only if not external and versions past 2
+}
+HashExtern_D_Constituent ::= IMPLICIT [UNIVERSAL 48] SEQUENCE {
+	-- version INTEGER DEFAULT 0,
+	global_organization_ID PrintableString,
+	-- global_constituent_id [APPLICATION 0] PrintableString OPTIONAL,
+	surname [APPLICATION 1] UTF8String OPTIONAL,
+	forename [APPLICATION 15] UTF8String OPTIONAL,
+	address [APPLICATION 2] SEQUENCE OF D_FieldValue OPTIONAL,
+	email [APPLICATION 3] PrintableString OPTIONAL,
+	-- creation_date [APPLICATION 4] GeneralizedDate OPTIONAL,
+	global_neighborhood_ID [APPLICATION 10] PrintableString OPTIONAL,
+	-- neighborhood [APPLICATION 5] SEQUENCE OF D_Neighborhood OPTIONAL,
+	picture [APPLICATION 6] OCTET_STRING OPTIONAL,
+	hash_alg PrintableString OPTIONAL,
+	-- signature [APPLICATION 7] OCTET_STRING OPTIONAL,
+	-- global_constituent_id_hash [APPLICATION 8] PrintableString OPTIONAL,
+	certificate [APPLICATION 9] OCTET_STRING OPTIONAL,
+	languages [APPLICATION 11] SEQUENCE OF PrintableString OPTIONAL,
+	-- global_submitter_id [APPLICATION 12] PrintableString OPTIONAL,
+	-- slogan [APPLICATION 13] UTF8String OPTIONAL,
+	weight [APPLICATION 14] UTF8String OPTIONAL,
+	-- submitter [APPLICATION 15] D_Constituent OPTIONAL,
+	external BOOLEAN,
+	-- revoked BOOLEAN OPTIONAL -- only if not external and versions past 2
+}
+*/
 public class D_Constituent extends ASNObj implements Summary {
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
@@ -73,6 +134,7 @@ public class D_Constituent extends ASNObj implements Summary {
 	public static final int EXPAND_ONE = 1;
 	public static final int EXPAND_ALL = 2;
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
+	public int version = 2;
 	public String global_constituent_id;//Printable
 	public String global_submitter_id;//Printable
 	public String global_constituent_id_hash;
@@ -85,6 +147,8 @@ public class D_Constituent extends ASNObj implements Summary {
 	public String email;//Printable
 	public Calendar creation_date;
 	public String weight;
+	public boolean revoked;
+	public D_Witness valid_support;
 	
 	public D_Neighborhood[] neighborhood;
 	public D_Constituent submitter;
@@ -123,6 +187,7 @@ public class D_Constituent extends ASNObj implements Summary {
 	
 	public D_Constituent instance() throws CloneNotSupportedException{return new D_Constituent();}
 	public D_Constituent() {}
+	/* 
 	@SuppressWarnings("deprecation")
 	public D_Constituent(registration.ASNConstituent constituent) {
 		global_constituent_id = constituent.id;
@@ -141,7 +206,8 @@ public class D_Constituent extends ASNObj implements Summary {
 		picture = constituent.gificon;
 		signature = constituent.signature;
 	}
-	public D_Constituent(long c_ID) throws SQLiteException {
+	*/
+	public D_Constituent(long c_ID) throws P2PDDSQLException {
 		ArrayList<ArrayList<Object>> c;
 		c = Application.db.select(sql_get_const_by_ID, new String[]{Util.getStringID(c_ID)}, DEBUG);
 		load(c.get(0),EXPAND_ONE);
@@ -151,23 +217,29 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * @param c_GID 
 	 * @param c_GIDh  / hash
 	 * @param i neighborhoods, e.g. EXPAND_ONE
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_Constituent(String c_GID, String c_GIDh, int neigh) throws SQLiteException, D_NoDataException {
+	public D_Constituent(String c_GID, String c_GIDh, int neigh) throws P2PDDSQLException, D_NoDataException {
 		ArrayList<ArrayList<Object>> c;
 		c = Application.db.select(sql_get_const_by_GID, new String[]{c_GID, c_GIDh}, DEBUG);
 		if(c.size()==0) throw new D_NoDataException("No such constituent: +c_GID");
 		load(c.get(0), neigh);
 	}
-	D_Constituent(ArrayList<Object> alk) throws SQLiteException {
+	D_Constituent(ArrayList<Object> alk) throws P2PDDSQLException {
 		load(alk,EXPAND_ONE);
 	}
-	public D_Constituent(String constituentID, int i) throws SQLiteException {
+	public D_Constituent(String constituentID, int i) throws P2PDDSQLException {
 		ArrayList<ArrayList<Object>> c;
 		c = Application.db.select(sql_get_const_by_ID, new String[]{constituentID}, DEBUG);
+		if(c.size() == 0) {
+			System.err.println("D_Constituent: fail to find "+sql_get_const_by_ID+
+					": cID="+constituentID);
+			Util.printCallPath("Unexpected failure");
+			return;
+		}
 		load(c.get(0),i);
 	}
-	static public D_Constituent get_WB_Constituent(ArrayList<Object> alk) throws SQLiteException {
+	static public D_Constituent get_WB_Constituent(ArrayList<Object> alk) throws P2PDDSQLException {
 			D_Constituent c = new D_Constituent(alk);
 			return c;
 	}
@@ -176,14 +248,14 @@ public class D_Constituent extends ASNObj implements Summary {
 		if(DEBUG) System.out.println("D_Constituents:verifySignature: orgGID="+_global_organization_id);
 		try {
 			this.fillGlobals();
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
 		if(global_organization_ID==null) global_organization_ID = _global_organization_id;
 		if((global_organization_ID==null)&&(organization_ID!=null)) {
 			try {
 				global_organization_ID = D_Organization.getGlobalOrgID(organization_ID);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -197,7 +269,10 @@ public class D_Constituent extends ASNObj implements Summary {
 			}
 		
 		String pk_ID = this.global_constituent_id;
-		if(external) pk_ID = this.global_submitter_id;
+		if(external){
+			pk_ID = this.global_submitter_id;
+			if(pk_ID == null) return true;
+		}
 		if(DEBUG) System.out.println("WB_Constituents:verifySignature: pk="+pk_ID);
 		byte[] msg = getSignableEncoder(global_organization_ID).getBytes();
 		boolean result = util.Util.verifySignByID(msg, pk_ID, signature);
@@ -253,9 +328,9 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * @param id
 	 * @param submitter_id
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String readSignSave(long id, long submitter_id) throws SQLiteException {
+	public static String readSignSave(long id, long submitter_id) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Constituents:readSignSave: subject="+id+" signer="+submitter_id);
 		byte[] _signature = null;
 		String gcd, gcdhash;
@@ -264,7 +339,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		if(id!=submitter_id){
 			if(DEBUG) System.out.println("WB_Constituents:readSignSave: subject details external="+wbc);
 			if(!wbc.external) Util.printCallPath("Should be external!");
-			if(wbc.submitter_ID==null) Util.printCallPath("Should have a submitter!");
+			if(DD.SUBMITTER_REQUIRED_FOR_EXTERNAL)if(wbc.submitter_ID==null) Util.printCallPath("Should have a submitter!");
 		}else{
 			if(DEBUG) System.out.println("WB_Constituents:readSignSave: subject details myself="+wbc);
 			if(wbc.external) Util.printCallPath("Shouldn't be external!");
@@ -299,8 +374,14 @@ public class D_Constituent extends ASNObj implements Summary {
 			wbc.global_constituent_id_hash = gcdhash;
 		}
 
-		_signature = wbc.sign(global_organization_id, submitter_GID);
-		String signature = Util.stringSignatureFromByte(_signature);
+		String signature;
+		if((submitter_id!=0)||(!wbc.external)){
+			_signature = wbc.sign(global_organization_id, submitter_GID);
+			signature = Util.stringSignatureFromByte(_signature);
+		}else{
+			_signature=null;
+			signature = null;
+		}
 		Application.db.updateNoSync(table.constituent.TNAME,
 				new String[]{table.constituent.sign, table.constituent.creation_date, table.constituent.arrival_date,
 				table.constituent.global_constituent_ID, table.constituent.global_constituent_ID_hash},
@@ -314,9 +395,9 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * Get the org global ID for this constituent id
 	 * @param id
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static String getOrgGIDforConstituent(long id) throws SQLiteException {
+	private static String getOrgGIDforConstituent(long id) throws P2PDDSQLException {
 		String result = null;
 		String sql = "SELECT o."+table.organization.global_organization_ID+
 			" FROM "+table.constituent.TNAME+" AS c "+
@@ -329,7 +410,8 @@ public class D_Constituent extends ASNObj implements Summary {
 		return result;
 	}
 	public String toString() {
-		String result="WB_Constituent: [";
+		String result="D_Constituent: [";
+		result += "\n version="+version;
 		result += "\n orgGID="+global_organization_ID;
 		result += "\n costGID="+global_constituent_id;
 		result += "\n surname="+surname;
@@ -345,7 +427,9 @@ public class D_Constituent extends ASNObj implements Summary {
 		result += "\n submitterGID="+global_submitter_id;
 		result += "\n submitter="+submitter;
 		result += "\n slogan="+slogan;
+		result += "\n weight="+weight;
 		result += "\n external="+external;
+		result += "\n revoked="+revoked;
 		result += "\n signature="+Util.byteToHexDump(signature);
 		if(neighborhood!=null) result += "\n neigh=["+Util.concat(neighborhood, "\n\n")+"]";
 		return result+"]";
@@ -358,33 +442,92 @@ public class D_Constituent extends ASNObj implements Summary {
 		if(neighborhood!=null) result += "\n neigh=["+Util.concatSummary(neighborhood, "\n\n", null)+"]";
 		return result+"]";
 	}
+	/**
+	Sign_D_Constituent ::= IMPLICIT [UNIVERSAL 48] SEQUENCE {
+		version INTEGER DEFAULT 0,
+		global_organization_ID PrintableString,
+		global_constituent_id [APPLICATION 0] PrintableString OPTIONAL,
+		surname [APPLICATION 1] UTF8String OPTIONAL,
+		forename [APPLICATION 15] UTF8String OPTIONAL,
+		address [APPLICATION 2] SEQUENCE OF D_FieldValue OPTIONAL,
+		email [APPLICATION 3] PrintableString OPTIONAL,
+		creation_date [APPLICATION 4] GeneralizedDate OPTIONAL,
+		global_neighborhood_ID [APPLICATION 10] PrintableString OPTIONAL,
+		-- neighborhood [APPLICATION 5] SEQUENCE OF D_Neighborhood OPTIONAL,
+		picture [APPLICATION 6] OCTET_STRING OPTIONAL,
+		hash_alg PrintableString OPTIONAL,
+		-- signature [APPLICATION 7] OCTET_STRING OPTIONAL,
+		-- global_constituent_id_hash [APPLICATION 8] PrintableString OPTIONAL,
+		certificate [APPLICATION 9] OCTET_STRING OPTIONAL,
+		languages [APPLICATION 11] SEQUENCE OF PrintableString OPTIONAL,
+		global_submitter_id [APPLICATION 12] PrintableString OPTIONAL,
+		slogan [APPLICATION 13] UTF8String OPTIONAL,
+		weight [APPLICATION 14] UTF8String OPTIONAL,
+		-- submitter [APPLICATION 15] D_Constituent OPTIONAL,
+		external BOOLEAN,
+		revoked BOOLEAN OPTIONAL -- only if not external and versions past 2
+	}
+	 */
+	/**
+	 * SIGN(C',<C,O,i,r>)
+	 * @param global_organization_id
+	 * @return
+	 */
 	private Encoder getSignableEncoder(String global_organization_id) {
 		this.global_organization_ID = global_organization_id;
 		Encoder enc = new Encoder().initSequence();
+		if(version>=2) enc.addToSequence(new Encoder(version));
 		enc.addToSequence(new Encoder(global_organization_id,Encoder.TAG_PrintableString));
 		if(global_constituent_id!=null)enc.addToSequence(new Encoder(global_constituent_id,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
 		if(surname!=null) enc.addToSequence(new Encoder(surname,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC1));
 		if(forename!=null) enc.addToSequence(new Encoder(forename,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC15));
 		if(address!=null) enc.addToSequence(Encoder.getEncoder(address).setASN1Type(DD.TAG_AC2));
-		if(email!=null)enc.addToSequence(new Encoder(email,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
-		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC4));
+		if(email!=null) enc.addToSequence(new Encoder(email,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
+		if(creation_date!=null) enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC4));
 		if(this.global_neighborhood_ID!=null)
 			enc.addToSequence(new Encoder(this.global_neighborhood_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC10));
 		//if(neighborhood!=null) enc.addToSequence(Encoder.getEncoder(neighborhood).setASN1Type(DD.TAG_AC5));
 		if(picture!=null) enc.addToSequence(new Encoder(picture).setASN1Type(DD.TAG_AC6));
-		if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,false));
+		if(version<2) if(hash_alg!=null) enc.addToSequence(new Encoder(hash_alg,false));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC7));
 		//if(global_constituent_id_hash!=null)enc.addToSequence(new Encoder(global_constituent_id_hash,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC8));
-		if(certificate!=null) enc.addToSequence(new Encoder(certificate).setASN1Type(DD.TAG_AC9));
+		if(version<2) if(certificate!=null) enc.addToSequence(new Encoder(certificate).setASN1Type(DD.TAG_AC9));
 		if(languages!=null) enc.addToSequence(Encoder.getStringEncoder(languages,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC11));
-		if(global_submitter_id!=null)enc.addToSequence(new Encoder(global_submitter_id,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
-		if(slogan!=null)enc.addToSequence(new Encoder(slogan).setASN1Type(DD.TAG_AC13));
-		if(weight!=null)enc.addToSequence(new Encoder(weight).setASN1Type(DD.TAG_AC14));
+		if(version<2) if(global_submitter_id!=null)enc.addToSequence(new Encoder(global_submitter_id,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
+		if(slogan!=null) enc.addToSequence(new Encoder(slogan).setASN1Type(DD.TAG_AC13));
+		if(weight!=null) enc.addToSequence(new Encoder(weight).setASN1Type(DD.TAG_AC14));
 		enc.addToSequence(new Encoder(external));
+		if(!external && version>=2) enc.addToSequence(new Encoder(revoked));
 		return enc;
 	}
 	/**
-	 * Make GID for external
+	HashExtern_D_Constituent ::= IMPLICIT [UNIVERSAL 48] SEQUENCE {
+		-- version INTEGER DEFAULT 0,
+		global_organization_ID PrintableString,
+		-- global_constituent_id [APPLICATION 0] PrintableString OPTIONAL,
+		surname [APPLICATION 1] UTF8String OPTIONAL,
+		forename [APPLICATION 15] UTF8String OPTIONAL,
+		address [APPLICATION 2] SEQUENCE OF D_FieldValue OPTIONAL,
+		email [APPLICATION 3] PrintableString OPTIONAL,
+		-- creation_date [APPLICATION 4] GeneralizedDate OPTIONAL,
+		global_neighborhood_ID [APPLICATION 10] PrintableString OPTIONAL,
+		-- neighborhood [APPLICATION 5] SEQUENCE OF D_Neighborhood OPTIONAL,
+		picture [APPLICATION 6] OCTET_STRING OPTIONAL,
+		hash_alg PrintableString OPTIONAL,
+		-- signature [APPLICATION 7] OCTET_STRING OPTIONAL,
+		-- global_constituent_id_hash [APPLICATION 8] PrintableString OPTIONAL,
+		certificate [APPLICATION 9] OCTET_STRING OPTIONAL,
+		languages [APPLICATION 11] SEQUENCE OF PrintableString OPTIONAL,
+		-- global_submitter_id [APPLICATION 12] PrintableString OPTIONAL,
+		-- slogan [APPLICATION 13] UTF8String OPTIONAL,
+		weight [APPLICATION 14] UTF8String OPTIONAL,
+		-- submitter [APPLICATION 15] D_Constituent OPTIONAL,
+		external BOOLEAN,
+		-- revoked BOOLEAN OPTIONAL -- only if not external and versions past 2
+	}
+	 */
+	/**
+	 * Make GID for external: HASH(O,i)
 	 * Without current GID, date, and slogan (externals should not have slogans?)
 	 * @param global_organization_id
 	 * @return
@@ -404,10 +547,10 @@ public class D_Constituent extends ASNObj implements Summary {
 			enc.addToSequence(new Encoder(this.global_neighborhood_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC10));
 		//if(neighborhood!=null) enc.addToSequence(Encoder.getEncoder(neighborhood).setASN1Type(DD.TAG_AC5));
 		if(picture!=null) enc.addToSequence(new Encoder(picture).setASN1Type(DD.TAG_AC6));
-		if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,false));
+		if(version<2)if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,false));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC7));
 		//if(global_constituent_id_hash!=null)enc.addToSequence(new Encoder(global_constituent_id_hash,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC8));
-		if(certificate!=null) enc.addToSequence(new Encoder(certificate).setASN1Type(DD.TAG_AC9));
+		if(version<2) if(certificate!=null) enc.addToSequence(new Encoder(certificate).setASN1Type(DD.TAG_AC9));
 		if(languages!=null) enc.addToSequence(Encoder.getStringEncoder(languages,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC11));
 		//if(global_submitter_id!=null)enc.addToSequence(new Encoder(global_submitter_id,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
 		//if(slogan!=null)enc.addToSequence(new Encoder(slogan).setASN1Type(DD.TAG_AC13));
@@ -416,9 +559,37 @@ public class D_Constituent extends ASNObj implements Summary {
 		return enc;
 		//if(true)return enc;
 	}
+	/**
+	D_Constituent ::= IMPLICIT [APPLICATION 48] SEQUENCE {
+		version INTEGER DEFAULT 0,
+		global_organization_ID PrintableString OPTIONAL,
+		global_constituent_id [APPLICATION 0] PrintableString OPTIONAL,
+		surname [APPLICATION 1] UTF8String OPTIONAL,
+		forename [APPLICATION 15] UTF8String OPTIONAL,
+		address [APPLICATION 2] SEQUENCE OF D_FieldValue OPTIONAL,
+		email [APPLICATION 3] PrintableString OPTIONAL,
+		creation_date [APPLICATION 4] GeneralizedDate OPTIONAL,
+		global_neighborhood_ID [APPLICATION 10] PrintableString OPTIONAL,
+		neighborhood [APPLICATION 5] SEQUENCE OF D_Neighborhood OPTIONAL,
+		picture [APPLICATION 6] OCTET_STRING OPTIONAL,
+		hash_alg PrintableString OPTIONAL,
+		signature [APPLICATION 7] OCTET_STRING OPTIONAL,
+		global_constituent_id_hash [APPLICATION 8] PrintableString OPTIONAL,
+		certificate [APPLICATION 9] OCTET_STRING OPTIONAL,
+		languages [APPLICATION 11] SEQUENCE OF PrintableString OPTIONAL,
+		global_submitter_id [APPLICATION 12] PrintableString OPTIONAL,
+		slogan [APPLICATION 13] UTF8String OPTIONAL,
+		weight [APPLICATION 14] UTF8String OPTIONAL,
+		valid_support [APPLICATION 16] D_Witness OPTIONAL,
+		submitter [APPLICATION 17] D_Constituent OPTIONAL,
+		external BOOLEAN,
+		revoked BOOLEAN
+	}
+	 */
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
+		if(version>=2) enc.addToSequence(new Encoder(version));
 		if(global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString));
 		if(global_constituent_id!=null)enc.addToSequence(new Encoder(global_constituent_id,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
 		if(surname!=null) enc.addToSequence(new Encoder(surname,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC1));
@@ -437,14 +608,19 @@ public class D_Constituent extends ASNObj implements Summary {
 		if(global_submitter_id!=null)enc.addToSequence(new Encoder(global_submitter_id,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
 		if(slogan!=null)enc.addToSequence(new Encoder(slogan).setASN1Type(DD.TAG_AC13));
 		if(weight!=null)enc.addToSequence(new Encoder(weight).setASN1Type(DD.TAG_AC14));
-		if(submitter!=null) enc.addToSequence(submitter.getEncoder().setASN1Type(DD.TAG_AC15));
+		if(valid_support!=null) enc.addToSequence(valid_support.getEncoder().setASN1Type(DD.TAG_AC16));
+		if(submitter!=null) enc.addToSequence(submitter.getEncoder().setASN1Type(DD.TAG_AC17));
 		enc.addToSequence(new Encoder(external));
+		if(!external)enc.addToSequence(new Encoder(revoked));
+		enc.setASN1Type(D_Constituent.getASN1Type());
 		return enc;
 	}
 
 	@Override
 	public D_Constituent decode(Decoder decoder) throws ASN1DecoderFail {
 		Decoder dec = decoder.getContent();
+		if(dec.getTypeByte()==Encoder.TAG_INTEGER) version = dec.getFirstObject(true).getInteger().intValue();
+		else version = 0;
 		if(dec.getTypeByte()==Encoder.TAG_PrintableString)global_organization_ID = dec.getFirstObject(true).getString();
 		if(dec.getTypeByte()==DD.TAG_AC0)global_constituent_id = dec.getFirstObject(true).getString(DD.TAG_AC0);
 		if(dec.getTypeByte()==DD.TAG_AC1)surname = dec.getFirstObject(true).getString(DD.TAG_AC1);
@@ -463,8 +639,12 @@ public class D_Constituent extends ASNObj implements Summary {
 		if(dec.getTypeByte()==DD.TAG_AC12) global_submitter_id = dec.getFirstObject(true).getString(DD.TAG_AC12);
 		if(dec.getTypeByte()==DD.TAG_AC13) slogan = dec.getFirstObject(true).getString(DD.TAG_AC13);
 		if(dec.getTypeByte()==DD.TAG_AC14) weight = dec.getFirstObject(true).getString(DD.TAG_AC14);
-		if(dec.getTypeByte()==DD.TAG_AC15) submitter = new D_Constituent().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC16) valid_support = new D_Witness().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC17) submitter = new D_Constituent().decode(dec.getFirstObject(true));
 		external = dec.getFirstObject(true).getBoolean();
+		if(!external)
+			if(dec.getTypeByte()==Encoder.TAG_BOOLEAN)
+				revoked = dec.getFirstObject(true).getBoolean();
 		try{
 			getGIDHashFromGID(false);
 		}catch(Exception e){global_constituent_id_hash = null;}
@@ -529,18 +709,18 @@ public class D_Constituent extends ASNObj implements Summary {
 	public String makeExternalGID() {
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		//return Util.getGlobalID("constituentID_neighbor",email+":"+forename+":"+surname);  
 		return "C:"+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
 	}
-	private void fillGlobals() throws SQLiteException {
+	private void fillGlobals() throws P2PDDSQLException {
 		if((this.organization_ID != null ) && (this.global_organization_ID == null))
 			this.global_organization_ID = D_Organization.getGlobalOrgID(this.organization_ID);
 	}
 
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempNeig) throws SQLiteException {
+	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempNeig) throws P2PDDSQLException {
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store constituent with not orgGID");
 			return false;
@@ -578,7 +758,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		return true;
 	}
 
-	public long store(RequestData rq) throws SQLiteException {
+	public long store(RequestData rq) throws P2PDDSQLException {
 		
 		boolean locals = fillLocals(rq, true, true, true, true);
 		if(!locals) return -1;
@@ -609,19 +789,19 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * @param org_local_ID
 	 * @param arrival_time
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long store(String orgGID, String org_local_ID, String arrival_time) throws SQLiteException {
+	public long store(String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
 		return store(null, orgGID, org_local_ID, arrival_time);
 	}
-	public long store(PreparedMessage pm, String orgGID, String org_local_ID, String arrival_time) throws SQLiteException {
+	public long store(PreparedMessage pm, String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
 		/**
 		 * inserts or updates
 		 * @param orgGID
 		 * @param org_local_ID
 		 * @param arrival_time
 		 * @return
-		 * @throws SQLiteException
+		 * @throws P2PDDSQLException
 		 */
 		
 		if((this.global_constituent_id!=null)&&(this.constituent_ID==null))
@@ -640,13 +820,13 @@ public class D_Constituent extends ASNObj implements Summary {
 		}
 		return storeVerified(pm,orgGID, org_local_ID, arrival_time);
 	}
-	public void storeVerified() throws SQLiteException {
+	public void storeVerified() throws P2PDDSQLException {
 		this.storeVerified(this.global_organization_ID, this.organization_ID, Util.getGeneralizedTime());
 	}
-	public long storeVerified(String orgGID, String org_local_ID, String arrival_time) throws SQLiteException {
+	public long storeVerified(String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
 		return storeVerified(null, orgGID, org_local_ID, arrival_time);
 	}
-	public long storeVerified(PreparedMessage pm, String orgGID, String org_local_ID, String arrival_time) throws SQLiteException {
+	public long storeVerified(PreparedMessage pm, String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:storeVerified: start");
 		if((this.global_constituent_id!=null)&&(this.constituent_ID==null))
 			this.constituent_ID = this.getConstituentLocalID(global_constituent_id);
@@ -663,8 +843,10 @@ public class D_Constituent extends ASNObj implements Summary {
 						submitter_ID = Util.getStringID(D_Constituent.insertTemporaryConstituentGID(global_submitter_id, org_local_ID));
 					}
 				}else{
-					Util.printCallPath("External without GID");
-					return _constituent_ID;
+					if(DD.SUBMITTER_REQUIRED_FOR_EXTERNAL) { // normally not
+						Util.printCallPath("External without GID");
+						return _constituent_ID;
+					}
 				}
 			}
 		}else{
@@ -683,8 +865,10 @@ public class D_Constituent extends ASNObj implements Summary {
 			neighborhood_ID = _neighborhood_ID;
 		}
 		String[]date = new String[1];
+		boolean[]_old_revoked = new boolean[]{false};
 		String[]_old_sign = new String[]{null};
-		constituent_ID = D_Constituent.getConstituentLocalIDAndDateAndSign(this.global_constituent_id, date, _old_sign);
+		constituent_ID = D_Constituent.getConstituentLocalIDAndDateAndSignRevoked(this.global_constituent_id, date, _old_sign, _old_revoked);
+		if(_old_revoked[0]) return Util.lval(constituent_ID, -1);
 		String new_creation_date = Encoder.getGeneralizedTime(creation_date);
 		if( (date[0] != null) && (date[0].compareTo(new_creation_date)>=0)){
 			//if(D_Constituent.isGID_or_Hash_available(global_constituent_id, DEBUG)==1) {
@@ -725,7 +909,9 @@ public class D_Constituent extends ASNObj implements Summary {
 		params[table.constituent.CONST_COL_SURNAME] = surname;
 		params[table.constituent.CONST_COL_FORENAME] = forename;
 		params[table.constituent.CONST_COL_SLOGAN] = slogan;
-		params[table.constituent.CONST_COL_EXTERNAL] = external?"1":"0";
+		params[table.constituent.CONST_COL_EXTERNAL] = Util.bool2StringInt(external);
+		params[table.constituent.CONST_COL_REVOKED] = Util.bool2StringInt(revoked);
+		params[table.constituent.CONST_COL_VERSION] = ""+version;
 		params[table.constituent.CONST_COL_LANG] = D_OrgConcepts.stringFromStringArray(languages);
 		params[table.constituent.CONST_COL_EMAIL] = email;
 		params[table.constituent.CONST_COL_PICTURE] = Util.stringSignatureFromByte(picture);
@@ -820,11 +1006,12 @@ public class D_Constituent extends ASNObj implements Summary {
 	loads orgID and orgGID
 	 * @param alk  result of the above select
 	 * @param _neighborhoods  (0 means none, 1 means 1, 2 means all)
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public void load(ArrayList<Object> alk, int _neighborhoods) throws SQLiteException {
+	public void load(ArrayList<Object> alk, int _neighborhoods) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:load: neigh="+_neighborhoods);		
 		String _constituentID = Util.getString(alk.get(table.constituent.CONST_COL_ID));
+		version = Util.ival(alk.get(table.constituent.CONST_COL_VERSION), 0);
 		submitter_ID = Util.getString(alk.get(table.constituent.CONST_COL_SUBMITTER));
 		if(submitter_ID !=null)
 			global_submitter_id = D_Constituent.getConstituentGlobalID(submitter_ID);
@@ -838,12 +1025,13 @@ public class D_Constituent extends ASNObj implements Summary {
 		weight = Util.getString(alk.get(table.constituent.CONST_COL_WEIGHT));
 		slogan = Util.getString(alk.get(table.constituent.CONST_COL_SLOGAN));
 		if(DEBUG) System.out.println("WB_Constituent:load: external="+alk.get(table.constituent.CONST_COL_EXTERNAL));
-		external = "1".equals(Util.getString(alk.get(table.constituent.CONST_COL_EXTERNAL)));
 		languages = D_OrgConcepts.stringArrayFromString(Util.getString(alk.get(table.constituent.CONST_COL_LANG)));
 		address = D_FieldValue.getFieldValues(_constituentID);		
 		email = Util.getString(alk.get(table.constituent.CONST_COL_EMAIL));
 		creation_date = Util.getCalendar(Util.getString(alk.get(table.constituent.CONST_COL_DATE)));
 		global_neighborhood_ID = Util.getString(alk.get(table.constituent.CONST_COLs+0));
+		this.external = Util.stringInt2bool(alk.get(table.constituent.CONST_COL_EXTERNAL), false);
+		this.revoked = Util.stringInt2bool(alk.get(table.constituent.CONST_COL_REVOKED), false);
 		this.blocked = Util.stringInt2bool(alk.get(table.constituent.CONST_COL_BLOCKED),false);
 		this.requested = Util.stringInt2bool(alk.get(table.constituent.CONST_COL_REQUESTED),false);
 		this.broadcasted = Util.stringInt2bool(alk.get(table.constituent.CONST_COL_BROADCASTED), D_Organization.DEFAULT_BROADCASTED_ORG_ITSELF);
@@ -867,9 +1055,9 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * Returns null on absence
 	 * @param submitter_global_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String getConstituentLocalID(String submitter_global_ID) throws SQLiteException {
+	public static String getConstituentLocalID(String submitter_global_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentLocalID: start");
 		String date[] = new String[1];
 		String result = getConstituentLocalIDAndDate(submitter_global_ID, date);
@@ -881,10 +1069,10 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * @param submitter_global_ID
 	 * @param date
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static String getConstituentLocalIDAndDate(
-			String submitter_global_ID, String[] date) throws SQLiteException {
+			String submitter_global_ID, String[] date) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentLocalIDAndDate: start");
 		if(submitter_global_ID==null) return null;
 		String sql = "SELECT "+table.constituent.constituent_ID+", "+table.constituent.creation_date+
@@ -897,22 +1085,25 @@ public class D_Constituent extends ASNObj implements Summary {
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentLocalIDAndDate: got="+result);
 		return result;
 	}
-	private static String getConstituentLocalIDAndDateAndSign(
-			String submitter_global_ID, String[] date, String[] _old_sign) throws SQLiteException {
+	private static String getConstituentLocalIDAndDateAndSignRevoked(
+			String submitter_global_ID, String[] date, String[] _old_sign, boolean[] _old_revoked) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentLocalIDAndDate: start");
 		if(submitter_global_ID==null) return null;
-		String sql = "SELECT "+table.constituent.constituent_ID+", "+table.constituent.creation_date+", "+table.constituent.sign+
+		String sql = 
+				"SELECT "+table.constituent.constituent_ID+", "+table.constituent.creation_date+
+				", "+table.constituent.sign+", "+table.constituent.revoked+
 		" FROM "+table.constituent.TNAME+
 		" WHERE "+table.constituent.global_constituent_ID+"=?;";
 		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{submitter_global_ID}, DEBUG);
 		if(n.size()==0) return null;
 		date[0]=Util.getString(n.get(0).get(1));
 		_old_sign[0]=Util.getString(n.get(0).get(2));
+		_old_revoked[0]=Util.stringInt2bool(n.get(0).get(3), false);
 		String result = Util.getString(n.get(0).get(0));
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentLocalIDAndDate: got="+result);
 		return result;
 	}
-	public static String getConstituentGlobalID(String submitter_ID) throws SQLiteException {
+	public static String getConstituentGlobalID(String submitter_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentGlobalID: start");
 		if(submitter_ID==null) return null;
 		String sql = "SELECT "+table.constituent.global_constituent_ID+
@@ -927,9 +1118,9 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * @param const_GID
 	 * @param org_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long insertTemporaryConstituentGID(String const_GID, String org_ID) throws SQLiteException{
+	public static long insertTemporaryConstituentGID(String const_GID, String org_ID) throws P2PDDSQLException{
 		if(DEBUG)Util.printCallPath("temp why");
 		if(DEBUG) System.out.println("ConstituentHandling:insertTemporaryConstituentGID: start ");
 		return Application.db.insert(table.constituent.TNAME,
@@ -937,34 +1128,12 @@ public class D_Constituent extends ASNObj implements Summary {
 				new String[]{const_GID, org_ID},
 				DEBUG);
 	}
-	public static void main(String[] args) {
-		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-			if(args.length>0){readSignSave(2,1); if(true) return;}
-			
-			D_Constituent c=new D_Constituent(2);
-			if(!c.verifySignature(c.global_organization_ID)) System.out.println("\n************Signature Failure\n**********\n"+c);
-			else System.out.println("\n************Signature Pass\n**********\n"+c);
-			Decoder dec = new Decoder(c.getEncoder().getBytes());
-			D_Constituent d = new D_Constituent().decode(dec);
-			if(d.global_organization_ID==null) d.global_organization_ID = D_Organization.getGlobalOrgID(d.organization_ID);
-			if(!d.verifySignature(c.global_organization_ID)) System.out.println("\n************Signature Failure\n**********\n"+d);
-			else System.out.println("\n************Signature Pass\n**********\n"+d);
-			d.global_constituent_id = d.makeExternalGID();
-			d.storeVerified(c.global_organization_ID, c.organization_ID, Util.getGeneralizedTime());
-		} catch (SQLiteException e) {
-			e.printStackTrace();
-		} catch (ASN1DecoderFail e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 	public static byte getASN1Type() {
-		return TAG;
+		return Encoder.buildASN1byteType(Encoder.CLASS_APPLICATION,
+				Encoder.PC_CONSTRUCTED, TAG);
 	}
 	public static Hashtable<String, String> checkAvailability(
-			Hashtable<String, String> cons, String orgID, boolean DBG) throws SQLiteException {
+			Hashtable<String, String> cons, String orgID, boolean DBG) throws P2PDDSQLException {
 		Hashtable<String, String> result = new Hashtable<String, String>();
 		for (String cHash : cons.keySet()) {
 			if(cHash == null) continue;
@@ -973,7 +1142,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		return result;
 	}
 	public static ArrayList<String> checkAvailability(ArrayList<String> cons,
-			String orgID, boolean DBG) throws SQLiteException {
+			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String cHash : cons) {
 			if(!available(cHash, orgID, DBG)) result.add(cHash);
@@ -985,9 +1154,9 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * @param cHash
 	 * @param orgID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static boolean available(String hash, String orgID, boolean DBG) throws SQLiteException {
+	private static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.constituent.constituent_ID+
 			" FROM "+table.constituent.TNAME+
@@ -1001,7 +1170,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		if(DEBUG||DBG) System.out.println("D_News:available: "+hash+" in "+orgID+" = "+result);
 		return result;
 	}
-	private static boolean available(String hash, String creation, String orgID, boolean DBG) throws SQLiteException {
+	private static boolean available(String hash, String creation, String orgID, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.constituent.constituent_ID+
 			" FROM "+table.constituent.TNAME+
@@ -1024,9 +1193,9 @@ public class D_Constituent extends ASNObj implements Summary {
 	 *  0 for absent,
 	 *  1 for present&signed,
 	 *  -1 for temporary
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static int isGID_or_Hash_available(String gID, boolean DBG) throws SQLiteException {
+	public static int isGID_or_Hash_available(String gID, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.constituent.constituent_ID+","+table.constituent.sign+
 			" FROM "+table.constituent.TNAME+
@@ -1045,7 +1214,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		if((signature!=null) && (signature.length()!=0)) return 1;
 		return -1;
 	}
-	public static int isGIDHash_available(String gIDhash, boolean DBG) throws SQLiteException {
+	public static int isGIDHash_available(String gIDhash, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.constituent.constituent_ID+","+table.constituent.sign+
 			" FROM "+table.constituent.TNAME+
@@ -1063,7 +1232,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		if((signature!=null) && (signature.length()!=0)) return 1;
 		return -1;
 	}
-	public static String getConstituentLocalIDByGID_or_Hash(String gID, boolean[] existingSigned) throws SQLiteException {
+	public static String getConstituentLocalIDByGID_or_Hash(String gID, boolean[] existingSigned) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.constituent.constituent_ID+","+table.constituent.sign+
 			" FROM "+table.constituent.TNAME+
@@ -1084,7 +1253,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		String id = Util.getString(a.get(0).get(0));
 		return id;
 	}
-	public static boolean toggleBlock(long constituentID) throws SQLiteException {
+	public static boolean toggleBlock(long constituentID) throws P2PDDSQLException {
 		String sql = 
 				"SELECT "+table.constituent.blocked+
 				" FROM "+table.constituent.TNAME+
@@ -1101,7 +1270,7 @@ public class D_Constituent extends ASNObj implements Summary {
 				new String[]{Util.bool2StringInt(result), Util.getStringID(constituentID)}, DEBUG);
 		return result;
 	}
-	public static boolean toggleBroadcast(long constituentID) throws SQLiteException {
+	public static boolean toggleBroadcast(long constituentID) throws P2PDDSQLException {
 		String sql = 
 				"SELECT "+table.constituent.broadcasted+
 				" FROM "+table.constituent.TNAME+
@@ -1117,5 +1286,57 @@ public class D_Constituent extends ASNObj implements Summary {
 				new String[]{table.constituent.constituent_ID},
 				new String[]{Util.bool2StringInt(result), Util.getStringID(constituentID)}, DEBUG);
 		return result;
+	}
+	/**
+	 * Tests
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		try {
+			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			//if(args.length>0){readSignSave(2,1); if(true) return;}
+			int id = Util.ival(args[0], 1);
+			long new_id = simulator.Fill_database.add_constituent(1);
+			D_Constituent c=new D_Constituent(new_id);
+			if(!c.verifySignature(c.global_organization_ID)) System.out.println("\n************Signature Failure\n**********\n"+c);
+			else System.out.println("\n************Signature Pass\n**********\n"+c);
+			Decoder dec = new Decoder(c.getEncoder().getBytes());
+			D_Constituent d = new D_Constituent().decode(dec);
+			if(d.global_organization_ID==null) d.global_organization_ID = D_Organization.getGlobalOrgID(d.organization_ID);
+			if(!d.verifySignature(c.global_organization_ID)) System.out.println("\n************Signature Failure\n**********\n"+d);
+			else System.out.println("\n************Signature Pass\n**********\n"+d);
+			d.global_constituent_id = d.makeExternalGID();
+			//d.storeVerified(c.global_organization_ID, c.organization_ID, Util.getGeneralizedTime());
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public static void zapp(long constituentID) {
+		// TODO Auto-generated method stub
+		try {
+			Application.db.delete(table.witness.TNAME,
+					new String[]{table.witness.source_ID},
+					new String[]{Util.getStringID(constituentID)},
+					DEBUG);
+			Application.db.delete(table.witness.TNAME,
+					new String[]{table.witness.target_ID},
+					new String[]{Util.getStringID(constituentID)},
+					DEBUG);
+			Application.db.delete(table.field_value.TNAME,
+					new String[]{table.field_value.constituent_ID},
+					new String[]{Util.getStringID(constituentID)},
+					DEBUG);
+			Application.db.delete(table.constituent.TNAME,
+					new String[]{table.constituent.constituent_ID},
+					new String[]{Util.getStringID(constituentID)},
+					DEBUG);
+		} catch (P2PDDSQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
 	}
 }

@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 
-		Author: Ossamah Dhannoon
+		Author: Osamah Dhannoon
 		Florida Tech, Human Decision Support Systems Laboratory
    
        This program is free software; you can redistribute it and/or modify
@@ -37,7 +37,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -48,8 +48,11 @@ import util.Util;
 public class Detect_interface {
 	final static boolean DEBUG = false;
 	final static boolean _DEBUG = true;
+	public static int Windows = 1;
+	public static int Linux = 2;
+	public static int Mac = 3;
 	public static final String WINDOWS_NO_IP = "No IP"; // to signal no IP4 in ipconfig
-	public Detect_interface() throws  IOException, SQLiteException{
+	public Detect_interface() throws  IOException, P2PDDSQLException{
 		String wlan = detect_os_and_load_wireless_data();
 		//Application.db=new DBInterface("deliberation-app.db");
 		
@@ -65,9 +68,9 @@ public class Detect_interface {
 	 *  i.e.
 	 *  Interface_name:IP:SSID:boolean_connected
 	 * @return
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	static public String detect_wlan() throws SQLiteException {
+	static public String detect_wlan() throws P2PDDSQLException {
 		try{
 			return detect_os_and_load_wireless_data();
 		}catch(IOException e){e.printStackTrace();}
@@ -80,9 +83,9 @@ public class Detect_interface {
 	 * then load wireless data
 	 * @return
 	 * @throws IOException
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	public static String detect_os_and_load_wireless_data()  throws IOException, SQLiteException{
+	public static String detect_os_and_load_wireless_data()  throws IOException, P2PDDSQLException{
 		String result = null;
 		ArrayList<String> os_Names=new ArrayList<String>();
 		os_Names.add("Windows");
@@ -90,9 +93,9 @@ public class Detect_interface {
 		String osName= System.getProperty("os.name");
 		
 		int ch=0;
-		if(osName.contains(os_Names.get(0))) ch=1;
-		else if(osName.contains(os_Names.get(1))) ch=2;
-		else if(osName.contains("Mac OS X")) ch=3;
+		if(osName.contains(os_Names.get(0))) ch=Windows;
+		else if(osName.contains(os_Names.get(1))) ch=Linux;
+		else if(osName.contains("Mac OS X")) ch=Mac;
 		switch(ch){
 		case 1:{
 			Application.switchToWindowsPaths();
@@ -119,9 +122,9 @@ public class Detect_interface {
 	 * Should load wireless data 
 	 * @return
 	 * @throws IOException
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	static public String win_detect_interf() throws IOException, SQLiteException{
+	static public String win_detect_interf() throws IOException, P2PDDSQLException{
 
 		if(DEBUG)System.out.println("It's Windows !");
 		ArrayList<InterfaceData> w_info ;
@@ -166,7 +169,7 @@ public class Detect_interface {
 	}
 	
 	public static HashSet<String> currentlySelected = null;
-	public static HashSet<String> getSelectedInterfaces() throws SQLiteException{
+	public static HashSet<String> getSelectedInterfaces() throws P2PDDSQLException{
 		if(DEBUG)System.out.println("Detect_interface:getSelectedInterfaces: start");
 		if(currentlySelected!=null){
 			if(DEBUG){
@@ -189,17 +192,17 @@ public class Detect_interface {
 		}
 		return currentlySelected = selected;
 	}
-	public static void setSelectedInterfaces(HashSet<String> selected) throws SQLiteException {
+	public static void setSelectedInterfaces(HashSet<String> selected) throws P2PDDSQLException {
 		setSelectedInterfaces(selected, true);
 	}
-	public static void setSelectedInterfaces(HashSet<String> selected, boolean sync) throws SQLiteException {
+	public static void setSelectedInterfaces(HashSet<String> selected, boolean sync) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("Detect_interface:setSelectedInterfaces: start");
 		String _selected = Util.concat(selected.toArray(), DD.WIRELESS_SELECTED_INTERFACES_SEP);
 		if(sync) DD.setAppText(DD.WIRELESS_SELECTED_INTERFACES, _selected);
 		else DD.setAppTextNoSync(DD.WIRELESS_SELECTED_INTERFACES, _selected);
 		if(DEBUG)System.out.println("Detect_interface:setSelectedInterfaces: set "+_selected);
 	}
-	private static String lin_detect_interf() throws IOException, SQLiteException {
+	private static String lin_detect_interf() throws IOException, P2PDDSQLException {
 		if(DEBUG)System.out.println("It's Linux !");
 		ArrayList<InterfaceData> Lin_wlan;
 		Lin_wlan=Linux_wlan_info.process();
@@ -257,7 +260,7 @@ public class Detect_interface {
 	}
 	
 	
-	public static void main(String[] args) throws  IOException, SQLiteException {
+	public static void main(String[] args) throws  IOException, P2PDDSQLException {
 		//Detect_interface d=new Detect_interface();
 	}
 	
@@ -299,7 +302,7 @@ public class Detect_interface {
 		}
 	}
 	
-	private static void initiat_broadcast_win(String Int_name) throws SQLiteException, IOException {
+	private static void initiat_broadcast_win(String Int_name) throws P2PDDSQLException, IOException {
 		if(_DEBUG)System.out.println(" Detect_interface : initiat_broadcast_win");
 		BroadcastServer.initAddresses();
 		InterfaceData id = new InterfaceData();

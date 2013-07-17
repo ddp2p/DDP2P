@@ -25,9 +25,12 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 
+import simulator.WirelessLog;
+import util.Util;
+
 import ASN1.ASN1DecoderFail;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.DD;
 
@@ -43,6 +46,7 @@ public class BroadcastConsummerBuffer extends Thread {
 		int msg_size;
 		String IP;
 		long counter;
+		String Msg_Time;
 	}
 	public BroadcastConsummerBuffer(){
 		this.start();
@@ -69,7 +73,7 @@ public class BroadcastConsummerBuffer extends Thread {
 	 */
 	public void add(byte[] obtained, int position_start,
 			SocketAddress clientAddress, int msg_size, String iP,
-			long cnter_val) {
+			long cnter_val, String msg_rcv_time) {
 		MSG item = new MSG();
 		item.data = obtained;
 		item.offset = position_start;
@@ -77,9 +81,17 @@ public class BroadcastConsummerBuffer extends Thread {
 		item.msg_size = msg_size;
 		item.IP = iP;
 		item.counter = cnter_val;
+		item.Msg_Time = msg_rcv_time;
 		synchronized(waiting){
 			if(waiting.size()<DD.ADHOC_SERVER_CONSUMMER_BUFFER_SIZE){
+				//System.out.print(" | ");
+				
 				waiting.add(item);
+				 int memsize=0;
+				 for(int k=0; k<waiting.size(); k++) {
+					 memsize += waiting.get(k).data.length;
+				 }
+				WirelessLog.Print_to_BS_log(Util.getGeneralizedTime()+"\t"+waiting.size()+"\t"+memsize);
 				waiting.notifyAll();
 			}
 		}
@@ -99,6 +111,7 @@ public class BroadcastConsummerBuffer extends Thread {
 	 */
 	public boolean _run(){
 		synchronized(monitor){
+			//System.out.println("Enter monitor block 1");
 			while(!running){
 				try {
 					monitor.wait();
@@ -107,12 +120,20 @@ public class BroadcastConsummerBuffer extends Thread {
 					return false;
 				}
 			}
+			//System.out.println("Exit monitor block 1");
 		}
 		MSG item = null;
 		try {
 			synchronized(waiting){
+				//System.out.println("Enter monitor block 2");
 				while(waiting.size()==0) waiting.wait();
 				item = waiting.remove(0);
+				 int memsize=0;
+				 for(int k=0; k<waiting.size(); k++) {
+					 memsize += waiting.get(k).data.length;
+				 }
+				 WirelessLog.Print_to_BS_log(Util.getGeneralizedTime()+"\t"+waiting.size()+"\t"+memsize);
+				 //System.out.println("Exit monitor block 2");
 			}
 			byte[] obtained = item.data;
 			
@@ -121,9 +142,11 @@ public class BroadcastConsummerBuffer extends Thread {
 			int msg_size = item.msg_size;
 			String IP = item.IP;
 			long cnter_val = item.counter;
-			ReceivedBroadcastableMessages.integrateMessage(obtained, position_start, cA, msg_size, IP, cnter_val);
+			String Msg_time = item.Msg_Time;
+			//System.out.println("Consuming msgs from the buffer calling integrateMessage!");
+			ReceivedBroadcastableMessages.integrateMessage(obtained, position_start, cA, msg_size, IP, cnter_val,Msg_time);
 			
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();

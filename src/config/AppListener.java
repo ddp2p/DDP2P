@@ -23,8 +23,9 @@ package config;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
+import util.P2PDDSQLException;
 import util.Util;
 
 public class AppListener implements ActionListener {
@@ -53,7 +54,7 @@ public class AppListener implements ActionListener {
 				Application.orgs.setCurrent(org_id);
 				//Application.orgs.revalidate();
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}

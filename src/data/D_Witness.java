@@ -33,7 +33,7 @@ import ASN1.Encoder;
 
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -46,24 +46,74 @@ import util.DBInterface;
 import util.Summary;
 import util.Util;
 
+class D_WitnessStatements extends ASNObj {
+	public int version = 1;
+	int[] sense_y = new int[0]; // 1=yes, 0=unknown, -1=no
+	String[] explanation = new String[0];
+	// index 0 (eligibility), index 1 (trustworthyness)
+	String[] color; // optional (other)
+	public D_WitnessStatements() {
+		
+	}
+	public D_WitnessStatements(Decoder decoder) {
+		try {
+			decode(decoder);
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+	}
+	@Override
+	public Encoder getEncoder() {
+		Encoder enc = new Encoder().initSequence();
+		enc.addToSequence(new Encoder(version));
+		enc.addToSequence(Encoder.getEncoderArray(sense_y));
+		enc.addToSequence(Encoder.getStringEncoder(explanation, Encoder.TAG_UTF8String));
+		if(color != null) enc.addToSequence(Encoder.getStringEncoder(color, Encoder.TAG_UTF8String));
+		return enc;
+	}
+	@Override
+	public D_WitnessStatements decode(Decoder dec) throws ASN1DecoderFail {
+		Decoder _d, d = dec.getContent();
+		version = d.getFirstObject(true).getInteger().intValue();
+		sense_y = d.getFirstObject(true).getIntsArray();
+		_d = d.getFirstObject(true);
+		if(_d!=null) explanation = _d.getSequenceOf(Encoder.TAG_UTF8String);
+		_d = d.getFirstObject(true);
+		if(_d != null) color = _d.getSequenceOf(Encoder.TAG_UTF8String);
+		return this;
+	}
+	public String toString(){
+		return "[Stat:] "+Util.concat(color, ":")+"\n"
+				+"sense="+Util.concat(sense_y, ":", "")+"\n"
+				+"expl=\n "+Util.concat(explanation, "\n ");
+	}
+}
+
 public
 class D_Witness extends ASNObj implements Summary {
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
+	public static final int FAVORABLE = 1;
+	public static final int UNFAVORABLE = -1;
+	public static final int UNKNOWN = 0;
+	public static final int UNSPECIFIED = -2;
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
 	public String hash_alg = "V0";
 	public String global_witness_ID; // hash (global key)
-	public String witness_category; // known, hearsay
 	public String witnessed_global_neighborhoodID;
 	public String witnessed_global_constituentID;
 	public String witnessing_global_constituentID;
 	public String global_organization_ID;
-	public int sense_y_n;
+	public String witness_eligibility_category; // known, hearsay
+	public int sense_y_n; // 1=positive; -1=negative; 0=unknown
+	public String witness_trustworthiness_category = null; // known, hearsay
+	public int sense_y_trustworthiness = 0;
 	public byte[] signature;
 	public Calendar creation_date;
 	public Calendar arrival_date;
 	public D_Constituent witnessed;
 	public D_Constituent witnessing;
+	public D_WitnessStatements statements;
 	
 	public void global_organization_ID(String val){
 		global_organization_ID = val;
@@ -81,7 +131,7 @@ class D_Witness extends ASNObj implements Summary {
 		return "D_Witness:["
 		+"\n hash_alg="+hash_alg
 		+"\n global_witness_ID="+global_witness_ID
-		+"\n witness_category="+witness_category
+		+"\n witness_category="+witness_eligibility_category
 		+"\n witnessed_global_neighborhoodID="+witnessed_global_neighborhoodID
 		+"\n witnessed_global_constituentID="+witnessed_global_constituentID
 		+"\n witnessing_global_constituentID="+witnessing_global_constituentID
@@ -98,6 +148,7 @@ class D_Witness extends ASNObj implements Summary {
 		+"\n witnessed_neighborhoodID="+witnessed_neighborhoodID
 		+"\n witnessed_constituentID="+witnessed_constituentID
 		+"\n witnessing_constituentID="+witnessing_constituentID
+		+"\n statements="+statements
 		;
 	}
 	
@@ -105,13 +156,13 @@ class D_Witness extends ASNObj implements Summary {
 		return "D_Witness:["
 				//+"\n witnessing_global_constituentID="+witnessing_global_constituentID
 				//+"\n witnessed_global_constituentID="+witnessed_global_constituentID
-				+" witness_category="+witness_category
+				+" witness_category="+witness_eligibility_category
 				//+"\n global_organization_ID="+global_organization_ID
 				+"]";
 	}
 	
 	public D_Witness(){}
-	public D_Witness(long witnessID) throws SQLiteException{
+	public D_Witness(long witnessID) throws P2PDDSQLException{
 		if(DEBUG) System.out.println("D_Witness:D_Witness: start wID="+witnessID);
 		String sql = 
 			"SELECT "
@@ -131,7 +182,7 @@ class D_Witness extends ASNObj implements Summary {
 		if(w.size()>0) init(w.get(0));
 		if(DEBUG) System.out.println("D_Witness:D_Witness: Done");
 	}
-	public D_Witness(String witnessGID) throws SQLiteException{
+	public D_Witness(String witnessGID) throws P2PDDSQLException{
 		if(DEBUG) System.out.println("D_Witness:D_Witness: start wGID="+witnessGID);
 		if(witnessGID==null) throw new D_NoDataException("null witnessGID");
 		String sql = 
@@ -213,12 +264,16 @@ class D_Witness extends ASNObj implements Summary {
 		global_witness_ID = Util.getString(w.get(table.witness.WIT_COL_GID));
 		creation_date = Util.getCalendar(Util.getString(w.get(table.witness.WIT_COL_CREATION_DATE)));
 		arrival_date = Util.getCalendar(Util.getString(w.get(table.witness.WIT_COL_ARRIVAL_DATE)));
-		witness_category = Util.getString(w.get(table.witness.WIT_COL_CAT));
+		witness_eligibility_category = Util.getString(w.get(table.witness.WIT_COL_CAT));
 		witnessed_global_neighborhoodID = Util.getString(w.get(table.witness.WIT_FIELDS+0));
 		witnessed_global_constituentID = Util.getString(w.get(table.witness.WIT_FIELDS+1));
 		witnessing_global_constituentID = Util.getString(w.get(table.witness.WIT_FIELDS+2));
 		global_organization_ID = Util.getString(w.get(table.witness.WIT_FIELDS+3));
-		sense_y_n = Util.ival(w.get(table.witness.WIT_COL_SENSE),-1);
+		sense_y_n = Util.ival(w.get(table.witness.WIT_COL_SENSE),UNKNOWN);
+		sense_y_trustworthiness = Util.ival(w.get(table.witness.WIT_COL_SENSE_TRUSTWORTHINESS),UNKNOWN);
+		this.witness_trustworthiness_category = Util.getString(w.get(table.witness.WIT_COL_CAT_TRUSTWORTHINESS));
+		byte[] _statements = Util.byteSignatureFromString(Util.getString(w.get(table.witness.WIT_COL_STATEMENTS)));
+		if(_statements != null) statements = new D_WitnessStatements(new Decoder(_statements));
 		signature = Util.byteSignatureFromString(Util.getString(w.get(table.witness.WIT_COL_SIGN)));
 		if(DEBUG)System.out.println("D_Witness:init: sign="+Util.byteToHexDump(signature, 10)+"  from sign="+w.get(table.witness.WIT_COL_SIGN));
 		witnessed_neighborhoodID = Util.lval(w.get(table.witness.WIT_COL_T_N_ID), -1);
@@ -235,7 +290,7 @@ class D_Witness extends ASNObj implements Summary {
 		Decoder d = dec.getContent();
 		hash_alg = d.getFirstObject(true).getString();
 		global_witness_ID = d.getFirstObject(true).getString();
-		witness_category = d.getFirstObject(true).getString();
+		witness_eligibility_category = d.getFirstObject(true).getString();
 		witnessed_global_neighborhoodID = d.getFirstObject(true).getString();
 		witnessed_global_constituentID = d.getFirstObject(true).getString();
 		witnessing_global_constituentID = d.getFirstObject(true).getString();
@@ -245,6 +300,9 @@ class D_Witness extends ASNObj implements Summary {
 		signature = d.getFirstObject(true).getBytes();
 		if(d.getTypeByte() == DD.TAG_AC0) witnessing = new D_Constituent().decode(d.getFirstObject(true));
 		if(d.getTypeByte() == DD.TAG_AC1) witnessed = new D_Constituent().decode(d.getFirstObject(true));
+		if(d.getTypeByte() == DD.TAG_AC2) statements = new D_WitnessStatements().decode(d.getFirstObject(true));
+		if(d.getTypeByte() == DD.TAG_AC3) witness_trustworthiness_category = d.getFirstObject(true).getString();
+		if(d.getTypeByte() == DD.TAG_AC4) sense_y_trustworthiness = d.getFirstObject(true).getInteger().intValue();
 		return this;
 	}
 	@Override
@@ -252,7 +310,7 @@ class D_Witness extends ASNObj implements Summary {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(hash_alg));
 		enc.addToSequence(new Encoder(global_witness_ID));
-		enc.addToSequence(new Encoder(witness_category));
+		enc.addToSequence(new Encoder(witness_eligibility_category));
 		enc.addToSequence(new Encoder(witnessed_global_neighborhoodID));
 		enc.addToSequence(new Encoder(witnessed_global_constituentID));
 		enc.addToSequence(new Encoder(witnessing_global_constituentID));
@@ -262,6 +320,9 @@ class D_Witness extends ASNObj implements Summary {
 		enc.addToSequence(new Encoder(signature));
 		if(witnessing!=null) enc.addToSequence(witnessing.getEncoder().setASN1Type(DD.TAG_AC0));
 		if(witnessed!=null) enc.addToSequence(witnessed.getEncoder().setASN1Type(DD.TAG_AC1));
+		if(statements!=null) enc.addToSequence(statements.getEncoder().setASN1Type(DD.TAG_AC2));
+		if(this.witness_trustworthiness_category!=null)  enc.addToSequence(new Encoder(witness_trustworthiness_category).setASN1Type(DD.TAG_AC3));
+		if(this.sense_y_trustworthiness!=0)  enc.addToSequence(new Encoder(sense_y_trustworthiness).setASN1Type(DD.TAG_AC4));
 		return enc;
 	}
 	public Encoder getSignableEncoder() {
@@ -269,13 +330,16 @@ class D_Witness extends ASNObj implements Summary {
 		//enc.addToSequence(new Encoder(global_organization_ID));
 		enc.addToSequence(new Encoder(hash_alg));
 		enc.addToSequence(new Encoder(global_witness_ID));
-		enc.addToSequence(new Encoder(witness_category));
+		enc.addToSequence(new Encoder(witness_eligibility_category));
 		enc.addToSequence(new Encoder(witnessed_global_neighborhoodID));
 		enc.addToSequence(new Encoder(witnessed_global_constituentID));
 		enc.addToSequence(new Encoder(witnessing_global_constituentID));
 		enc.addToSequence(new Encoder(global_organization_ID));
 		enc.addToSequence(new Encoder(new BigInteger(""+sense_y_n)));
 		enc.addToSequence(new Encoder(creation_date));
+		if(statements!=null)enc.addToSequence(statements.getEncoder());
+		if(this.witness_trustworthiness_category!=null)  enc.addToSequence(new Encoder(this.witness_trustworthiness_category).setASN1Type(DD.TAG_AC3));
+		if(this.sense_y_trustworthiness!=0)  enc.addToSequence(new Encoder(sense_y_trustworthiness).setASN1Type(DD.TAG_AC4));
 		//enc.addToSequence(new Encoder(signature));
 		return enc;
 	}
@@ -310,7 +374,7 @@ class D_Witness extends ASNObj implements Summary {
 	public byte[] sign(SK sk){
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if(DEBUG) System.out.println("D_Witness:sign: this="+this+"\nsk="+sk);
@@ -321,7 +385,7 @@ class D_Witness extends ASNObj implements Summary {
 	public String make_ID(){
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		// return this.global_witness_ID =  
@@ -331,7 +395,7 @@ class D_Witness extends ASNObj implements Summary {
 		if(DEBUG) System.out.println("D_Witness:D_Witness: start");
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		String pk_ID = this.witnessing_global_constituentID;//.submitter_global_ID;
@@ -367,9 +431,9 @@ class D_Witness extends ASNObj implements Summary {
 	 * Returns -1 if old or incomplete
 	 * @param rq
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long store(RequestData rq) throws SQLiteException {
+	public long store(RequestData rq) throws P2PDDSQLException {
 		if(DEBUG) out.println("D_Witness:store: start "+this.global_witness_ID);
 		
 		boolean locals = fillLocals(rq, true, true, true, true);
@@ -394,10 +458,10 @@ class D_Witness extends ASNObj implements Summary {
 			String old_date = getDateFor(this.witnessID);
 			String new_date = Encoder.getGeneralizedTime(this.creation_date);
 			if(new_date.compareTo(old_date)<=0) {
-				if(_DEBUG) out.println("D_Witness:store: date "+new_date+" old vs "+old_date);
+				if(DEBUG) out.println("D_Witness:store: date "+new_date+" old vs "+old_date);
 				D_Witness old = new D_Witness(this.witnessID);
-				if(_DEBUG) out.println("D_Witness:store: old= "+old);
-				if(_DEBUG) out.println("D_Witness:store: nou= "+this);
+				if(DEBUG) out.println("D_Witness:store: old= "+old);
+				if(DEBUG) out.println("D_Witness:store: nou= "+this);
 				return -1;
 			}
 		}
@@ -433,16 +497,16 @@ class D_Witness extends ASNObj implements Summary {
 	 * Get creation date in database for this ID
 	 * @param witnessID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static String getDateFor(long witnessID) throws SQLiteException {
+	private static String getDateFor(long witnessID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.witness.creation_date+" FROM "+table.witness.TNAME+
 		" WHERE "+table.witness.witness_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{""+witnessID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempNeig) throws SQLiteException {
+	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempNeig) throws P2PDDSQLException {
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
 			return false;
@@ -510,7 +574,7 @@ class D_Witness extends ASNObj implements Summary {
 		
 		return true;
 	}
-	private void fillGlobals() throws SQLiteException {
+	private void fillGlobals() throws P2PDDSQLException {
 		if((this.witnessed_neighborhoodID > 0 ) && (this.witnessed_global_neighborhoodID == null))
 			this.witnessed_global_neighborhoodID = D_Neighborhood.getGlobalID(Util.getStringID(this.witnessed_neighborhoodID));
 		
@@ -523,12 +587,12 @@ class D_Witness extends ASNObj implements Summary {
 		if((this.witnessed_constituentID > 0 ) && (this.witnessed_global_constituentID == null))
 			this.witnessed_global_constituentID = D_Constituent.getConstituentGlobalID(Util.getStringID(this.witnessed_constituentID));
 	}
-	public long storeVerified() throws SQLiteException {
+	public long storeVerified() throws P2PDDSQLException {
 		if(DEBUG) out.println("D_Witness:storeVerified: start");
 		Calendar now = Util.CalendargetInstance();
 		return storeVerified(now);
 	}
-	public long storeVerified(Calendar arrival_date) throws SQLiteException {
+	public long storeVerified(Calendar arrival_date) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("D_Witness:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		
@@ -589,6 +653,9 @@ class D_Witness extends ASNObj implements Summary {
 				table.witness.category,
 				table.witness.neighborhood_ID,
 				table.witness.sense_y_n,
+				table.witness.sense_y_trustworthiness,
+				table.witness.category_trustworthiness,
+				table.witness.statements,
 				table.witness.source_ID,
 				table.witness.target_ID,
 				table.witness.creation_date,
@@ -598,9 +665,12 @@ class D_Witness extends ASNObj implements Summary {
 				global_witness_ID,
 				hash_alg,
 				Util.stringSignatureFromByte(signature),
-				witness_category,
+				witness_eligibility_category,
 				witnessed_neighborhoodID+"",
 				sense_y_n+"",
+				sense_y_trustworthiness+"",
+				this.witness_trustworthiness_category,
+				((this.statements==null)?null:Util.stringSignatureFromByte(statements.getEncoder().getBytes())),
 				witnessing_constituentID+"",
 				witnessed_constituentID+"",
 				Encoder.getGeneralizedTime(creation_date),
@@ -621,6 +691,9 @@ class D_Witness extends ASNObj implements Summary {
 					table.witness.category,
 					table.witness.neighborhood_ID,
 					table.witness.sense_y_n,
+					table.witness.sense_y_trustworthiness,
+					table.witness.category_trustworthiness,
+					table.witness.statements,
 					table.witness.source_ID,
 					table.witness.target_ID,
 					table.witness.creation_date,
@@ -630,9 +703,12 @@ class D_Witness extends ASNObj implements Summary {
 					global_witness_ID,
 					hash_alg,
 					Util.stringSignatureFromByte(signature),
-					witness_category,
+					witness_eligibility_category,
 					witnessed_neighborhoodID+"",
 					sense_y_n+"",
+					sense_y_trustworthiness+"",
+					this.witness_trustworthiness_category+"",
+					((this.statements==null)?null:Util.stringSignatureFromByte(statements.getEncoder().getBytes())),
 					witnessing_constituentID+"",
 					witnessed_constituentID+"",
 					_creation_date,
@@ -641,7 +717,7 @@ class D_Witness extends ASNObj implements Summary {
 					witnessID+""
 					}, DEBUG);
 			}else{
-				if(_DEBUG) System.out.println("D_Witness:storeVerified:Old data!");
+				if(DEBUG) System.out.println("D_Witness:storeVerified:Old data!");
 			}
 		}
 		if(DEBUG) System.out.println("D_Witness:storeVerified: done result="+result);
@@ -652,16 +728,16 @@ class D_Witness extends ASNObj implements Summary {
 	 * @param witness_ID
 	 * @param signer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long readSignSave(long witness_ID, long signer_ID) throws SQLiteException {
+	public static long readSignSave(long witness_ID, long signer_ID) throws P2PDDSQLException {
 		D_Witness w=new D_Witness(witness_ID);
 		ciphersuits.SK sk = util.Util.getStoredSK(D_Constituent.getConstituentGlobalID(Util.getStringID(signer_ID)));
 		w.sign(sk);
 		return w.storeVerified();
 	}
 
-	public static long getLocalIDforGlobal(String global_witness_ID) throws SQLiteException {
+	public static long getLocalIDforGlobal(String global_witness_ID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.witness.witness_ID+" FROM "+table.witness.TNAME+
 		" WHERE "+table.witness.global_witness_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_witness_ID}, DEBUG);
@@ -670,7 +746,7 @@ class D_Witness extends ASNObj implements Summary {
 	}
 
 	public static ArrayList<String> checkAvailability(ArrayList<String> witn,
-			String orgID, boolean DBG) throws SQLiteException {
+			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String cHash : witn) {
 			if(!available(cHash, orgID, DBG)) result.add(cHash);
@@ -685,9 +761,9 @@ class D_Witness extends ASNObj implements Summary {
 	 * @param cHash
 	 * @param orgID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static boolean available(String hash, String orgID, boolean DBG) throws SQLiteException {
+	private static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
 		return isGIDavailable(hash, DBG)==1;
 	}
 	
@@ -699,9 +775,9 @@ class D_Witness extends ASNObj implements Summary {
 	 *  0 for absent,
 	 *  1 for present&signed,
 	 *  -1 for temporary
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static int isGIDavailable(String gID, boolean DBG) throws SQLiteException {
+	public static int isGIDavailable(String gID, boolean DBG) throws P2PDDSQLException {
 		int r;
 		String sql = 
 			"SELECT "+table.witness.witness_ID+","+table.witness.signature+
@@ -763,7 +839,7 @@ class D_Witness extends ASNObj implements Summary {
 			//d.storeVerified(arrival_date);
 			
 			//throw new ASN1DecoderFail("");
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();

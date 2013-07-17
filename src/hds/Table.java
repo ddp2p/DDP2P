@@ -28,6 +28,17 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 import config.DD;
+/**
+TableName := IMPLICIT [PRIVATE 0] UTF8String;
+FieldName := IMPLICIT [PRIVATE 2] UTF8String;
+FieldType := IMPLICIT [PRIVATE 3] UTF8String;
+Table := SEQUENCE {
+	name TableName,
+	fields SEQUENCE OF FieldName,
+	fieldTypes SEQUENCE OF FieldType,
+	rows SEQUENCE OF SEQUENCE OF NULLOCTETSTRING;
+}
+ */
 
 public class Table extends ASNObj { 
 	public String name; // TableName::= [PRIVATE 0] IMPLICIT UTF8String
@@ -87,6 +98,17 @@ public class Table extends ASNObj {
 			}
 		return result;
 	}
+	/**
+TableName := IMPLICIT [PRIVATE 0] UTF8String;
+FieldName := IMPLICIT [PRIVATE 2] UTF8String;
+FieldType := IMPLICIT [PRIVATE 3] UTF8String;
+Table := SEQUENCE {
+	name TableName,
+	fields SEQUENCE OF FieldName,
+	fieldTypes SEQUENCE OF FieldType,
+	rows SEQUENCE OF SEQUENCE OF NULLOCTETSTRING;
+}
+	 */
 	public Encoder getEncoder() {
 		if(ASNSyncRequest.DEBUG)System.out.println("Encoding Table: "+name);
 		Encoder enc = new Encoder().initSequence();

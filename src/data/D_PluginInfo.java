@@ -32,7 +32,7 @@ import plugin_data.PeerPlugin;
 import plugin_data.PeerPluginEditor;
 import plugin_data.PeerPluginRenderer;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -105,7 +105,7 @@ class D_PluginInfo{
 	}
 
 	public static void recordPluginInfo(ASNPluginInfo[] plugins,
-			String _global_peer_ID, String _peer_ID) throws SQLiteException {
+			String _global_peer_ID, String _peer_ID) throws P2PDDSQLException {
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nD_PluginInfo: recordPluginInfo: start from peer_ID="+_peer_ID+" gid="+Util.trimmed(_global_peer_ID));
 		if(plugins==null) {
 			if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nD_PluginInfo: recordPluginInfo: no plugin info received");

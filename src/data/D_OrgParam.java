@@ -23,7 +23,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import hds.ASNSyncRequest;
 import config.Application;
@@ -73,7 +73,7 @@ class D_OrgParam extends ASNObj{
 	}
 	
 	public D_OrgParam() {}
-	public D_OrgParam(String local_fe_ID) throws SQLiteException {
+	public D_OrgParam(String local_fe_ID) throws P2PDDSQLException {
 		String psql = "SELECT "+table.field_extra.org_field_extra +
 		" FROM "+table.field_extra.TNAME+
 		" WHERE "+table.field_extra.field_extra_ID+"=?";
@@ -87,14 +87,14 @@ class D_OrgParam extends ASNObj{
  * 
  * @param fe
  * @return
- * @throws SQLiteException
+ * @throws P2PDDSQLException
  */
-	public static D_OrgParam  getOrgParam(ArrayList<Object> fe) throws SQLiteException {
+	public static D_OrgParam  getOrgParam(ArrayList<Object> fe) throws P2PDDSQLException {
 		D_OrgParam op = new D_OrgParam();
 		init(op, fe);
 		return op;
 	}
-	public static D_OrgParam  init(D_OrgParam op, ArrayList<Object> fe) throws SQLiteException {
+	public static D_OrgParam  init(D_OrgParam op, ArrayList<Object> fe) throws P2PDDSQLException {
 			op.global_field_extra_ID = Util.getString(fe.get(table.field_extra.OPARAM_GID));
 			op.label = Util.getString(fe.get(table.field_extra.OPARAM_LABEL));
 			op.label_lang= Util.getString(fe.get(table.field_extra.OPARAM_LABEL_L));

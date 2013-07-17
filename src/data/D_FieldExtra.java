@@ -25,7 +25,7 @@ import java.util.ArrayList;
 
 import util.Util;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -117,7 +117,7 @@ public class D_FieldExtra extends ASNObj{
 		if(dec.getTypeByte()==DD.TAG_AC14)oid = dec.getFirstObject(true).getBNOID(Encoder.TAG_OID);
 		return this;
 	}
-	public static String getFieldExtraID(String field, long org_ID) throws SQLiteException {
+	public static String getFieldExtraID(String field, long org_ID) throws P2PDDSQLException {
 		if (field==null) return null;
 		field = field.trim();
 		if("".equals(field)) return null;
@@ -129,7 +129,7 @@ public class D_FieldExtra extends ASNObj{
 		if(n.size()!=0) return Util.getString(n.get(0).get(0));
 		return null;
 	}
-	public static String getFieldExtraID(String fieldGID, long org_ID, boolean insertTmp) throws SQLiteException, ExtraFieldException {
+	public static String getFieldExtraID(String fieldGID, long org_ID, boolean insertTmp) throws P2PDDSQLException, ExtraFieldException {
 		if(fieldGID==null) return null;
 		String id = getFieldExtraID(fieldGID, org_ID);
 		if(id!=null) return id;
@@ -139,7 +139,7 @@ public class D_FieldExtra extends ASNObj{
 		throw new ExtraFieldException("Unknown field type: \""+fieldGID+"\" for org \""+org_ID+"\"");
 	}
 
-	public static long insertTmpFieldExtra(String fieldGID, long org_ID) throws SQLiteException {
+	public static long insertTmpFieldExtra(String fieldGID, long org_ID) throws P2PDDSQLException {
 		if(_DEBUG) System.out.println("D_FieldExtra: insertTmpFieldExtra: start");
 		if(fieldGID==null) Util.printCallPath("Null field");
 		return Application.db.insert(table.field_extra.TNAME,

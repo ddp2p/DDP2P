@@ -42,6 +42,27 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
+/**
+UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
+	senderID UTF8String,
+	signature OCTET STRING,
+	destinationID UTF8String,
+	msgType INTEGER,
+	msgID UTF8String,
+	fragments INTEGER,
+	sequence INTEGER,
+	data OCTET STRING
+}
+UDPFragmentAck := IMPLICIT [APPLICATION 11] SEQUENCE {
+	senderID UTF8String,
+	signature OCTET STRING,
+	destinationID UTF8String,
+	msgID UTF8String,
+	transmitted OCTET STRING,
+}
+UDPFragmentNAck := IMPLICIT [APPLICATION 15] UDPFragmentNAck;
+UDPReclaim := IMPLICIT [APPLICATION 16] UDPFragmentNAck;
+ */
 /*
 class Address extends ASNObj{
 	String domain; //PrintableString
@@ -114,6 +135,15 @@ class UDPMessage {
 		return msg;
 	}
 }
+/**
+UDPFragmentAck := IMPLICIT [APPLICATION 11] SEQUENCE {
+	senderID UTF8String,
+	signature OCTET STRING,
+	destinationID UTF8String,
+	msgID UTF8String,
+	transmitted OCTET STRING,
+}
+ */
 class UDPFragmentAck extends ASNObj {
 	String senderID;
 	byte[] signature;
@@ -129,6 +159,17 @@ class UDPFragmentAck extends ASNObj {
 			res+="."+transmitted[k];
 		return res;
 	}
+/**
+UDPFragmentAck := IMPLICIT [APPLICATION 11] SEQUENCE {
+	senderID UTF8String,
+	signature OCTET STRING,
+	destinationID UTF8String,
+	msgID UTF8String,
+	transmitted OCTET STRING,
+}
+UDPFragmentNAck := IMPLICIT [APPLICATION 15] UDPFragmentNAck;
+UDPReclaim := IMPLICIT [APPLICATION 16] UDPFragmentNAck;
+ */
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
@@ -151,6 +192,9 @@ class UDPFragmentAck extends ASNObj {
 		return this;
 	}
 }
+/**
+UDPReclaim := IMPLICIT [APPLICATION 16] UDPFragmentNAck;
+*/
 class UDPReclaim extends UDPFragmentAck{
 	@Override
 	public Encoder getEncoder() {
@@ -168,6 +212,11 @@ class UDPReclaim extends UDPFragmentAck{
 		return res;
 	}
 }
+/**
+UDPFragmentNAck := IMPLICIT [APPLICATION 15] UDPFragmentNAck;
+ * @author msilaghi
+ *
+ */
 class UDPFragmentNAck extends UDPFragmentAck{
 	@Override
 	public Encoder getEncoder() {
@@ -185,6 +234,21 @@ class UDPFragmentNAck extends UDPFragmentAck{
 		return res;
 	}
 }
+/**
+UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
+	senderID UTF8String,
+	signature OCTET STRING,
+	destinationID UTF8String,
+	msgType INTEGER,
+	msgID UTF8String,
+	fragments INTEGER,
+	sequence INTEGER,
+	data OCTET STRING
+}
+ *
+ * @author msilaghi
+ *
+ */
 class UDPFragment extends ASNObj {
 	String senderID;
 	byte[] signature;
@@ -193,6 +257,18 @@ class UDPFragment extends ASNObj {
 	int sequence, fragments, msgType;
 	byte[] data;
 	//int offset, length;
+	/**
+UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
+	senderID UTF8String,
+	signature OCTET STRING,
+	destinationID UTF8String,
+	msgType INTEGER,
+	msgID UTF8String,
+	fragments INTEGER,
+	sequence INTEGER,
+	data OCTET STRING
+}
+	 */
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
@@ -232,6 +308,11 @@ class UDPFragment extends ASNObj {
 		"\n data["+data.length+"]="+Util.byteToHexDump(data);
 	}
 }
+/**
+ * UDPEmptyPing = IMPLICIT [APPLICATION 20] SEQUENCE {}
+ * @author msilaghi
+ *
+ */
 class UDPEmptyPing extends ASNObj{
 	public String toString() {
 		return "UDPEmptyPing: ping";
@@ -673,6 +754,20 @@ class DA_Answer extends ASNObj{
 		return this;
 	}
 }
+/**
+ * ASNUDPPing = IMPLICIT [APPLICATION 13] SEQUENCE {
+ * 		senderIsPeer BOOLEAN,
+ * 		senderIsInitiator BOOLEAN,
+ * 		peer_port INTEGER,
+ * 		initiator_port INTEGER,
+ * 		peer_domain UTF8String,
+ * 		initiator_domain UTF8String,
+ * 		peer_globalID	PrintableString OPTIONAL
+ * 		initiator_globalID	PrintableString OPTIONAL
+ * }
+ * @author msilaghi
+ *
+ */
 class ASNUDPPing extends ASNObj{
 	boolean senderIsPeer=false;
 	boolean senderIsInitiator=false;
@@ -696,8 +791,8 @@ class ASNUDPPing extends ASNObj{
 		enc.addToSequence(new Encoder(peer_domain));
 		//enc.addToSequence(Encoder.getStringEncoder(initiator_domains, Encoder.TAG_UTF8String));
 		enc.addToSequence(new Encoder(initiator_domain));
-		if(peer_globalID!=null) enc.addToSequence(new Encoder(peer_globalID));
-		if(initiator_globalID!=null) enc.addToSequence(new Encoder(initiator_globalID));
+		if(peer_globalID!=null) enc.addToSequence(new Encoder(peer_globalID, false));
+		if(initiator_globalID!=null) enc.addToSequence(new Encoder(initiator_globalID,false));
 		enc.setASN1Type(DD.TAG_AC13);
 		return enc;
 	}
@@ -730,10 +825,30 @@ class ASNUDPPing extends ASNObj{
 		+"\n initiator port:"+initiator_port+";\n     domains:"+initiator_domain+";\n     ID="+Util.trimmed(initiator_globalID);
 	}
 }
-public
-class ASNSyncRequest extends ASNObj implements Summary {
+/**
+TableName := IMPLICIT [PRIVATE 0] UTF8String
+NULLOCTETSTRING := CHOICE {
+	OCTET STRING,
+	NULL
+}
+ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
+	version UTF8String, -- currently 2
+	lastSnapshot GeneralizedTime OPTIONAL,
+	tableNames [APPLICATION 0] SEQUENCE OF TableName OPTIONAL,
+	orgFilter [APPLICATION 1] SEQUENCE OF OrgFilter OPTIONAL,
+	address [APPLICATION 2] D_PeerAddress OPTIONAL,
+	request [APPLICATION 3] SpecificRequest OPTIONAL,
+	plugin_msg [APPLICATION 4] D_PluginData OPTIONAL,
+	plugin_info [APPLICATION 6] SEQUENCE OF ASNPluginInfo OPTIONAL,
+	pushChanges ASNSyncPayload OPTIONAL,
+	signature NULLOCTETSTRING, -- prior to version 2 it was [APPLICATION 5] 
+}
+ * @author msilaghi
+ *
+ */
+public class ASNSyncRequest extends ASNObj implements Summary {
 	public static final boolean DEBUG = false;
-	public String version="1";
+	public String version="2";
 	public Calendar lastSnapshot;
 	public String[] tableNames;
 	public OrgFilter[] orgFilter;
@@ -831,12 +946,34 @@ class ASNSyncRequest extends ASNObj implements Summary {
 			this.pushChanges = new SyncAnswer().decode(dec.getFirstObject(true));
 		}
 		//System.out.println("Got to pushChanges: "+this);
-		if(dec.getTypeByte()==Encoder.buildASN1byteType(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5))
+		if(this.versionAfter(version,1)||
+				(dec.getTypeByte()==Encoder.buildASN1byteType(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5)))
 			signature= dec.getFirstObject(true).getBytes();
 		if(dec.getFirstObject(false)!=null)
 			throw new ASN1DecoderFail("Extra Objects in decoder");
 		return this;
 	}
+	/**
+TableName := IMPLICIT [PRIVATE 0] UTF8String
+NULLOCTETSTRING := CHOICE {
+	OCTET STRING,
+	NULL
+}
+ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
+	version UTF8String, -- currently 2
+	lastSnapshot GeneralizedTime OPTIONAL,
+	tableNames [APPLICATION 0] SEQUENCE OF TableName OPTIONAL,
+	orgFilter [APPLICATION 1] SEQUENCE OF OrgFilter OPTIONAL,
+	address [APPLICATION 2] D_PeerAddress OPTIONAL,
+	request [APPLICATION 3] SpecificRequest OPTIONAL,
+	plugin_msg [APPLICATION 4] D_PluginData OPTIONAL,
+	plugin_info [APPLICATION 6] SEQUENCE OF ASNPluginInfo OPTIONAL,
+	pushChanges ASNSyncPayload OPTIONAL,
+	signature NULLOCTETSTRING, -- prior to version 2 it was [APPLICATION 5] 
+}
+	 * @author msilaghi
+	 *
+	 */
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
@@ -880,10 +1017,30 @@ class ASNSyncRequest extends ASNObj implements Summary {
 		if(pushChanges!=null)
 			enc.addToSequence(pushChanges.getEncoder());
 		
-		enc.addToSequence(new Encoder(this.signature).setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5));
+		Encoder sign = new Encoder(this.signature);
+		if(!versionAfter(version,1))
+			sign.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5);
+		enc.addToSequence(sign);
 		
 		enc.setASN1Type(DD.TAG_AC7);
 		return enc;
+	}
+	private boolean versionAfter(String v1, String v2) {
+		if(v1==null) return false;
+		if(v2==null) return true;
+		try{
+			int V1 = Integer.parseInt(v1);
+			int V2 = Integer.parseInt(v2);
+			return V1>V2;
+		}catch(Exception e){return false;}
+	}
+	private boolean versionAfter(String v1, int V2) {
+		if(v1==null) return false;
+		if(V2<0) return true;
+		try{
+			int V1 = Integer.parseInt(v1);
+			return V1>V2;
+		}catch(Exception e){return false;}
 	}
 	public boolean verifySignature() {
 		if(address==null){

@@ -21,11 +21,15 @@
 import handling_wb.BroadcastQueues;
 
 import java.awt.BorderLayout;
+import java.awt.Insets;
+import java.awt.Font;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.GridLayout;
+import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -43,6 +47,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Scanner;
+import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 import javax.swing.Icon;
@@ -58,6 +63,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.BevelBorder;
 import javax.swing.filechooser.FileFilter;
+import java.awt.Color;
 
 import ASN1.ASN1DecoderFail;
 import ASN1.Encoder;
@@ -66,7 +72,6 @@ import ciphersuits.Cipher;
 import ciphersuits.PK;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
 
 import config.Application;
 import config.DD;
@@ -76,7 +81,10 @@ import data.D_PeerAddress;
 import streaming.OrgHandling;
 import updates.ClientUpdates;
 import util.BMP;
+import util.P2PDDSQLException;
 import util.Util;
+import util.GIF_Convert;
+import widgets.dir_management.DirPanel;
 import widgets.components.TranslatedLabel;
 import widgets.updates.UpdatesTable;
 import wireless.Broadcasting_Probabilities;
@@ -93,6 +101,7 @@ class DDAddressFilter extends FileFilter {
 	    	//System.out.println("Extension: "+extension);
 	    	if (extension.equals("txt") ||
 	    		extension.equals("bmp") ||
+	    		extension.equals("gif") ||
 	    		extension.equals("ddb")) {
 	    			//System.out.println("Extension: "+extension+" passes");
 		        	return true;
@@ -107,7 +116,7 @@ class DDAddressFilter extends FileFilter {
 
 	@Override
 	public String getDescription() {
-		return _("DD Address File Type (.txt, .bmp, .ddb)");
+		return _("DD Address File Type (.txt, .bmp, .gif, .ddb)");
 	}
 }
 
@@ -120,8 +129,8 @@ class UpdatesFilter extends FileFilter {
 	    String extension = Util.getExtension(f);
 	    if (extension != null) {
 	    	//System.out.println("Extension: "+extension);
-	    	if (extension.equals("txt") ||
-	    		extension.equals("xml")) {
+	    	if (extension.toLowerCase().equals("txt") ||
+	    		extension.toLowerCase().equals("xml")) {
 	    			//System.out.println("Extension: "+extension+" passes");
 		        	return true;
 	    	} else {
@@ -304,9 +313,9 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	updates.ClientUpdates.DEBUG = val;
 	    	//WSupdate.HandleService.DEBUG = val;
-	    } else if (source == this.m_dbgUpdates) {
+	    } else if (source == this.m_dbgPlugin) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
-	    	updates.ClientUpdates.DEBUG = val;
+	    	DD.DEBUG_PLUGIN = val;
 	    } else if (source == this.m_dbgClient) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	hds.Client.DEBUG = val;
@@ -506,6 +515,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public JCheckBox m_comm_Block_New_Orgs;
 	public JCheckBox m_comm_Block_New_Orgs_Bad_signature;
 	public JCheckBox m_comm_Warns_New_Wrong_Signature;
+	public JCheckBox m_comm_Fail_Frag_Wrong_Signature;
 	public JCheckBox m_comm_Accept_Unknown_Constituent_Fields;
 	public JCheckBox m_comm_Accept_Answer_From_New;
 	public JCheckBox m_comm_Accept_Answer_From_Anonymous;
@@ -537,6 +547,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    } else if (source == this.m_comm_Warns_New_Wrong_Signature) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	DD.WARN_OF_FAILING_SIGNATURE_ONRECEPTION = val;
+	    } else if (source == this.m_comm_Fail_Frag_Wrong_Signature) {
+	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
+	    	DD.PRODUCE_FRAGMENT_SIGNATURE = DD.VERIFY_FRAGMENT_SIGNATURE = val;
+	    	Application.warning(_("Currently this option is not saved"), _("Partial Implementation"));
 	    } else if (source == this.m_comm_Accept_Unsigned_Requests) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	DD.ACCEPT_STREAMING_REQUEST_UNSIGNED = val;
@@ -593,6 +607,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		m_comm_Warns_New_Wrong_Signature = new JCheckBox("Warn on incoming signature verification failure (if verified)", DD.WARN_OF_FAILING_SIGNATURE_ONRECEPTION);
 		c.add(m_comm_Warns_New_Wrong_Signature);
 		m_comm_Warns_New_Wrong_Signature.addItemListener(this);
+		
+		m_comm_Fail_Frag_Wrong_Signature = new JCheckBox("Fail on fragment signature verification failure", DD.VERIFY_FRAGMENT_SIGNATURE);
+		c.add(m_comm_Fail_Frag_Wrong_Signature);
+		m_comm_Fail_Frag_Wrong_Signature.addItemListener(this);
 		
 		m_comm_Accept_Unknown_Constituent_Fields = new JCheckBox("Accept temporary or new constituent data field types", DD.ACCEPT_TEMPORARY_AND_NEW_CONSTITUENT_FIELDS);
 		c.add(m_comm_Accept_Unknown_Constituent_Fields);
@@ -674,14 +692,21 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	}
 	public Container makeDirectoriesPanel(Container c){
 		
-		c.add(startDirectoryServer);
+		JPanel headerControls = new JPanel();
+		headerControls.add(startDirectoryServer);
 		startDirectoryServer.addActionListener(this);
 		startDirectoryServer.setActionCommand("directory");
 		
-		c.add(setListingDirectories);
+		headerControls.add(setListingDirectories);
 		setListingDirectories.addActionListener(this);
 		setListingDirectories.setActionCommand("listingDirectories");
+		headerControls.setBackground(Color.DARK_GRAY);
 		
+		JPanel p= new JPanel(new BorderLayout());
+		p.add(headerControls, BorderLayout.NORTH);
+		DirPanel dirPanel = new DirPanel();
+		p.add(dirPanel);
+		c.add(p); 
 		return c;
 	}
 	public Container makeUpdatesPanel(Container c){
@@ -705,38 +730,72 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		
 		return c;
 	}
-	public Container makePeerPanel(Container c){
-		c.add(toggleBroadcastable);
+	public Container makePeerPanel(Container cc){
+
+		JPanel p = new JPanel(new GridBagLayout());
+		//p.setBackground(Color.DARK_GRAY);
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridx = 0;
+        c.gridy = 0;
+        //c.weightx = 0.5;
+        //c.weighty = 0.5;
+        c.ipadx=40;
+        c.ipady=30;
+        c.insets= new Insets(5, 5, 5, 5);//Insets(int top, int left, int bottom, int right)  
+        c.fill = GridBagConstraints.BOTH;//.HORIZONTAL;
+        //pp.add(p,c);
+        toggleBroadcastable.setFont(new Font("Times New Roman",Font.BOLD,14));
+		p.add(toggleBroadcastable,c);
 		toggleBroadcastable.addActionListener(this);
 		toggleBroadcastable.setMnemonic(KeyEvent.VK_B);
 		toggleBroadcastable.setActionCommand("broadcastable");
 		boolean val = Identity.getAmIBroadcastable();
 		this.toggleBroadcastable.setText(val?this.BROADCASTABLE_YES:this.BROADCASTABLE_NO);
-		
-		c.add(setPeerName);
+		c.gridx = 1;
+		c.gridy = 0;
+		setPeerName.setFont(new Font("Times New Roman",Font.BOLD,14));
+		p.add(setPeerName, c);
 		setPeerName.addActionListener(this);
 		setPeerName.setActionCommand("peerName");
-		
-		c.add(setNewPeerID);
+		c.gridx = 0;
+        c.gridy = 1;
+        setNewPeerID.setFont(new Font("Times New Roman",Font.BOLD,14));
+		p.add(setNewPeerID, c);
 		setNewPeerID.addActionListener(this);
 		setNewPeerID.setActionCommand("peerID");
 		
-		c.add(setPeerSlogan);
+		c.gridx = 1;
+        c.gridy = 1;
+        setPeerSlogan.setFont(new Font("Times New Roman",Font.BOLD,14));
+		p.add(setPeerSlogan, c);
 		setPeerSlogan.addActionListener(this);
 		setPeerSlogan.setActionCommand("peerSlogan");
-		
-		c.add(saveMyAddress);
+		c.gridx = 0;
+        c.gridy = 2;
+        saveMyAddress.setFont(new Font("Times New Roman",Font.BOLD,14));
+		p.add(saveMyAddress, c);
 		saveMyAddress.addActionListener(this);
 		saveMyAddress.setActionCommand("export");
-		
-		c.add(loadPeerAddress);
+		c.gridx = 1;
+        c.gridy = 2;
+        loadPeerAddress.setFont(new Font("Times New Roman",Font.BOLD,14));
+		p.add(loadPeerAddress, c);
 		loadPeerAddress.addActionListener(this);
 		loadPeerAddress.setActionCommand("import");
+// only for test
+//        JButton convertGIT_BMP = new JButton(_("Convert GIF to BMP"));
+//        		
+//		c.add(convertGIT_BMP);
+//		convertGIT_BMP.addActionListener(this);
+//		convertGIT_BMP.setActionCommand("convert");
 		
 //		c.add(addTabPeer);
 //		addTabPeer.addActionListener(this);
 //		addTabPeer.setActionCommand("tab_peer");
-		return c;
+//        pBL.add(p, BorderLayout.CENTER);
+        cc.add(p);
+        JScrollPane js = new JScrollPane(cc);
+		return js;//pBL;
 	}
 	Component makeUpdatesMirrorsPanel(){
 		if(DEBUG) System.out.println("ControlPane:makeUpdatedPanel: start");
@@ -754,7 +813,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		if(DEBUG) System.out.println("ControlPane:makeUpdatedPanel: done");
 		return panel;
 	}
-	public ControlPane() throws SQLiteException {
+	public ControlPane() throws P2PDDSQLException {
 		//super(new GridLayout(0, 4, 5, 5));
 		JTabbedPane tabs = this; //new JTabbedPane();
 		//this.add(tabs);
@@ -819,7 +878,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 */
 
 	}
-	void actionImport() throws SQLiteException{
+	void actionImport() throws P2PDDSQLException{
 		if(DEBUG)System.err.println("ControlPane:actionImport: import file");
 		int returnVal = fc.showOpenDialog(this);
 		if(DEBUG)System.err.println("ControlPane:actionImport: Got: selected");
@@ -838,7 +897,45 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 						Application.warning(_("Failed to parse file: "+file), _("Failed to parse address!"));
 						return;
 					}
-				}else
+				}else if("gif".equals(Util.getExtension(file))){
+						if(DEBUG)System.err.println("ControlPane:actionImport: Got: gif");
+						FileInputStream fis=new FileInputStream(file);
+						boolean found = false;
+						byte[] b = new byte[(int) file.length()];  
+						fis.read(b);
+				    	fis.close();
+				    	int i=0;
+						while (i<b.length){
+							if(b[i]==(byte) 0x3B) {
+								found = true;
+								i++;
+								break;
+							}
+							i++;
+						}
+						if(i>=b.length){
+							JOptionPane.showMessageDialog(this,
+										_("Cannot Extract address in: ")+file+_("No valid data in the picture!"),
+										_("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
+									return;
+						}
+						byte[] addBy = new byte[b.length-i]; 
+						System.arraycopy(b,i,addBy,0,b.length-i);
+						// System.out.println("Got bytes ("+addBy.length+") to write: "+Util.byteToHex(addBy, " "));
+						
+						try {
+						adr.setBytes(addBy);
+						} catch (ASN1DecoderFail e1) {
+							e1.printStackTrace();
+							Application.warning(_("Failed to parse file: "+file+"\n"+e1.getMessage()), _("Failed to parse address!"));
+							return;
+						}
+						
+						
+					
+				
+				}
+				else
 				if("ddb".equals(Util.getExtension(file))){
 					if(DEBUG)System.err.println("ControlPane:actionImport: Got: ddb");
 					FileInputStream fis=new FileInputStream(file);
@@ -941,7 +1038,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				Util.storeStringInFile(fileTrustedSK.getAbsoluteFile()+".pk", Util.stringSignatureFromByte(pk.getEncoder().getBytes()));
 				try {
 					DD.setAppText(DD.TRUSTED_UPDATES_GID, DD.getAppText(DD.TRUSTED_UPDATES_GID)+DD.TRUSTED_UPDATES_GID_SEP+_pk);
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 				}
 			} catch (IOException e) {
@@ -987,7 +1084,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		DDAddress myAddress;
 		try {
 			myAddress = D_PeerAddress.getMyDDAddress();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
 		} 
@@ -995,16 +1092,25 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		BMP data=null;
 		byte[] b=null; // old .bmp file 
 		byte[] adr_bytes = myAddress.getBytes();
-		if(DEBUG) System.out.println("Got bytes to write: "+Util.byteToHex(adr_bytes, " "));
+		try{
+		DDAddress  x = new DDAddress();
+		 x.setBytes(adr_bytes);
+		}catch (ASN1DecoderFail e1) {
+							e1.printStackTrace();
+							Application.warning(_("Failed to parse file: \n"+e1.getMessage()), _("Failed to parse address!"));
+							return;
+						}
+		if(DEBUG) System.out.println("Got bytes("+adr_bytes.length+"): to write: "+Util.byteToHex(adr_bytes, " "));
 		int returnVal = fc.showSaveDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
         	fc.setName(_("Select file with image or text containing address"));
             File file = fc.getSelectedFile();
             String extension = Util.getExtension(file);
-            if(!"bmp".equals(extension)&&!"txt".equals(extension)&&!"ddb".equals(extension))  {
+            if(!"bmp".equals(extension)&&!"txt".equals(extension)&&!"ddb".equals(extension)&&!"gif".equals(extension))  {
             	file = new File(file.getPath()+".bmp");
             	extension = "bmp";
             }
+
            if(file.exists()){
             	//Application.warning(_("File exists!"));
             	
@@ -1012,6 +1118,17 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
             			JOptionPane.QUESTION_MESSAGE,
             			JOptionPane.YES_NO_OPTION);
             	int n;
+            	if("gif".equals(extension) && file.isFile()) {
+            		try{
+            			FileOutputStream fos = new FileOutputStream(file, true);
+            			fos.write(adr_bytes);
+            			fos.close();
+            		} catch(FileNotFoundException ex) {
+					    System.out.println("FileNotFoundException : " + ex);
+					} catch(IOException ioe){
+					    System.out.println("IOException : " + ioe);
+					}
+            	}
             	if("bmp".equals(extension) && file.isFile()) {
 					FileInputStream fis;
 					boolean fail= false;
@@ -1100,7 +1217,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			}
         }		
 	}
-	public void setServerStatus(boolean run) throws NumberFormatException, SQLiteException  {
+	public void setServerStatus(boolean run) throws NumberFormatException, P2PDDSQLException  {
 		if(DEBUG)System.out.println("Setting server running status to: "+run);
 		
 		if(EventQueue.isDispatchThread()) {
@@ -1147,7 +1264,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 
 		DD.setAppText(DD.DD_DATA_SERVER_ON_START, (Application.as==null)?"0":"1");
 	}
-	public void setUServerStatus(boolean _run) throws NumberFormatException, SQLiteException  {
+	public void setUServerStatus(boolean _run) throws NumberFormatException, P2PDDSQLException  {
 		if(DEBUG)System.out.println("ControlPane:Setting userver running status to: "+_run);
 		if(EventQueue.isDispatchThread()) {
 			if(_run)startUServer.setText(STARTING_USERVER);
@@ -1237,7 +1354,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		DD.setAppBoolean(DD.DD_DATA_CLIENT_UPDATES_INACTIVE_ON_START, DD.DD_DATA_CLIENT_UPDATES_ON_START_DEFAULT^(_run));	
 	}
 
-	public void setClientStatus(boolean _run) throws NumberFormatException, SQLiteException {
+	public void setClientStatus(boolean _run) throws NumberFormatException, P2PDDSQLException {
 		if(EventQueue.isDispatchThread()) {		
 			if(_run) startClient.setText(STARTING_CLIENT);
 			else startClient.setText(STOPPING_CLIENT);
@@ -1277,7 +1394,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		}
 		DD.setAppBoolean(DD.DD_DATA_CLIENT_INACTIVE_ON_START, DD.DD_DATA_CLIENT_ON_START_DEFAULT^(Application.ac!=null));	
 	}
-	public void setDirectoryStatus(boolean run) throws NumberFormatException, SQLiteException {
+	public void setDirectoryStatus(boolean run) throws NumberFormatException, P2PDDSQLException {
 				if(run) DD.startDirectoryServer(true, -1);
 				else DD.startDirectoryServer(false, -1);
 				
@@ -1376,6 +1493,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				D_PeerAddress.changeMyPeerName(this);
 			}else if("peerSlogan".equals(e.getActionCommand())){
 				D_PeerAddress.changeMyPeerSlogan(this);
+			}else if("convert".equals(e.getActionCommand())){
+				try{GIF_Convert.main(null);}catch(Exception eee){}
 			}else if("linuxScriptsPath".equals(e.getActionCommand())){
 				if(DEBUG)System.out.println("ControlPane: scripts: "+Identity.current_peer_ID.globalID);
 				String SEP = ",";
@@ -1526,7 +1645,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			}
 		} catch (NumberFormatException e1) {
 				e1.printStackTrace();
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 		} catch (UnknownHostException e3) {
 			e3.printStackTrace();
@@ -1548,7 +1667,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    	DD.ClientTCP = (e.getStateChange() == ItemEvent.SELECTED);
 	    	try {
 				DD.setAppText(DD.APP_ClientTCP, Util.bool2StringInt(DD.ClientTCP));
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
 	    } else if (source == udpButton) {
@@ -1556,7 +1675,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    	try {
 	    		if(DD.ClientUDP) DD.controlPane.setUServerStatus(true);
 				DD.setAppText(DD.APP_NON_ClientUDP, Util.bool2StringInt(DD.ClientUDP));
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
 	    	

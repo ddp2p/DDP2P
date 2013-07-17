@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.regex.Pattern;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -83,7 +83,7 @@ public class WirelessSetup {
 	static ArrayList<String> IPs = new ArrayList<String>();
 	static String bcast_add;
 	public static boolean _DEBUG = true;
-	static public void configureInterface(Object interf, boolean configured) throws SQLiteException, IOException, InterruptedException{	
+	static public void configureInterface(Object interf, boolean configured) throws P2PDDSQLException, IOException, InterruptedException{	
 		if(configured) {
 			return;
 		}
@@ -115,7 +115,7 @@ public class WirelessSetup {
 		}
 	}
 
-	static public void interfaceUp(Object interf, boolean configured) throws SQLiteException, IOException, InterruptedException {
+	static public void interfaceUp(Object interf, boolean configured) throws P2PDDSQLException, IOException, InterruptedException {
 		//if(!interfaceConfigured(interf)) 
 		configureInterface( interf, configured);
 
@@ -128,7 +128,7 @@ public class WirelessSetup {
 	static public void interfaceDown(Object interf) {
 
 	}
-	static public void DisconnectInterface(Object interf) throws IOException, SQLiteException, InterruptedException {
+	static public void DisconnectInterface(Object interf) throws IOException, P2PDDSQLException, InterruptedException {
 
 		ArrayList<String> os_Names=new ArrayList<String>();
 		os_Names.add("Windows 7");
@@ -186,7 +186,7 @@ public class WirelessSetup {
 
 
 	}
-	static public void disconnectWindows(Object interf) throws IOException, SQLiteException, InterruptedException{
+	static public void disconnectWindows(Object interf) throws IOException, P2PDDSQLException, InterruptedException{
 		EventQueue.invokeLater(new InstructWirelessDHCP(Util.getString(interf)));
 		String _interf=interf.toString();
 		//String disconnect="netsh wlan disconnect interface=\""+_interf+"\"";
@@ -262,9 +262,9 @@ public class WirelessSetup {
 	 * @param interf
 	 * @throws IOException
 	 * @throws InterruptedException
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	static public String Windows_IntConfigure(Object interf) throws IOException, InterruptedException, SQLiteException {
+	static public String Windows_IntConfigure(Object interf) throws IOException, InterruptedException, P2PDDSQLException {
 
 		s_interf=Util.getString(interf);
 		if(DEBUG)System.out.println("WirelessSetup : Windows_InetConfigure() : interf name : "+s_interf);
@@ -337,7 +337,7 @@ public class WirelessSetup {
 		*/
 	}
 	@SuppressWarnings("static-access")
-	static public String Linux_IntConfigure(Object interf) throws SQLiteException, IOException, InterruptedException {
+	static public String Linux_IntConfigure(Object interf) throws P2PDDSQLException, IOException, InterruptedException {
 		//System.out.println("I did it!!");
 		String w_name=interf.toString();
 		//in Linux laptop:
@@ -427,7 +427,7 @@ public class WirelessSetup {
 			StartUpThread.fill_OS_install_path(); // to be done before importing!!!
 			StartUpThread.fill_OS_scripts_path();		
 		
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}

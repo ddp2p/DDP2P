@@ -43,7 +43,7 @@ import ASN1.Encoder;
 import ciphersuits.Cipher;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -144,6 +144,16 @@ public class UDPServer extends Thread {
 		if(DEBUG)System.out.println(" result="+res);
 		return res;//synced.contains(gID);
 	}
+	/**
+	 * If message length larger than DD.MTU, then break it into fragments
+	 * else send in a single fragment
+	 * @param sa
+	 * @param msg
+	 * @param MTU
+	 * @param destGID
+	 * @param type
+	 * @throws IOException
+	 */
 	public void sendLargeMessage(SocketAddress sa, byte[] msg, int MTU, String destGID, int type) throws IOException {
 		if(MTU >= msg.length) {
 			DatagramPacket dp= new DatagramPacket(msg, msg.length);
@@ -171,6 +181,9 @@ public class UDPServer extends Thread {
 			uf.sequence = k;
 			uf.fragments = frags;
 			uf.signature = new byte[0];
+			if(DD.PRODUCE_FRAGMENT_SIGNATURE){
+				uf.signature = Util.sign_peer(uf.getEncoder().getBytes());
+			}
 			int len_this=Math.min(msg.length-MTU*k, MTU);
 			uf.data = new byte[len_this];
 			Util.copyBytes(uf.data, 0, msg, uf.data.length, MTU*k);
@@ -196,12 +209,13 @@ public class UDPServer extends Thread {
 		// prepare for verification
 		frag.signature = new byte[0];
 		frag.senderID = "";
-		if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
-			System.err.println("Failure verifying: "+frag+
+		if(DD.VERIFY_FRAGMENT_SIGNATURE)
+			if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
+				System.err.println("Failure verifying FragAck: "+frag+
 					"\n ID="+Util.trimmed(senderID)+ 
 					"\n sign="+Util.byteToHexDump(signature));
-			return;
-		}
+				return;
+			}
 		frag.signature = signature;
 		frag.senderID = senderID;
 		
@@ -226,12 +240,13 @@ public class UDPServer extends Thread {
 		// prepare for verification
 		frag.signature = new byte[0];
 		frag.senderID = "";
-		if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
-			System.err.println("Failure verifying: "+frag+
+		if(DD.VERIFY_FRAGMENT_SIGNATURE)
+			if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
+				System.err.println("Failure verifying FragNack: "+frag+
 					"\n ID="+Util.trimmed(senderID)+ 
 					"\n sign="+Util.byteToHexDump(signature));
-			return;
-		}
+				return;
+			}
 		frag.signature = signature;
 		frag.senderID = senderID;
 		
@@ -248,12 +263,13 @@ public class UDPServer extends Thread {
 		// prepare for verification
 		frag.signature = new byte[0];
 		frag.senderID = "";
-		if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
-			System.err.println("Failure verifying: "+frag+
+		if(DD.VERIFY_FRAGMENT_SIGNATURE)
+			if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
+				System.err.println("Failure verifying Reclaim: "+frag+
 					"\n ID="+Util.trimmed(senderID)+ 
 					"\n sign="+Util.byteToHexDump(signature));
-			return;
-		}
+				return;
+			}
 		
 		UDPMessage umsg = sentMessages.get(frag.msgID+"");
 		if(umsg == null) {
@@ -338,15 +354,21 @@ public class UDPServer extends Thread {
 		
 		byte[] signature = frag.signature;
 		String senderID = frag.senderID;
-		
+		//System.out.println("F");
 		// prepare for verification
 		frag.signature = new byte[0];
 		frag.senderID = "";
-		if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
-			System.err.println("Failure verifying: "+frag+
-					"\n ID="+Util.trimmed(senderID)+ 
+		if(DD.VERIFY_FRAGMENT_SIGNATURE) {
+			if((signature == null)||(signature.length==0)){
+				System.err.println("Fragment came unsigned: rejected\n"+frag);
+				return null;
+			}
+			if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
+				System.err.println("Failure verifying frag: "+frag+
+					"\n sender ID="+Util.trimmed(senderID)+ 
 					"\n sign="+Util.byteToHexDump(signature));
-			return null;
+				return null;
+			}
 		}
 		frag.signature = signature;
 		frag.senderID = senderID;
@@ -430,9 +452,9 @@ public class UDPServer extends Thread {
 	/**
 	 * The socket is allocated in the parent Server class. Here we only handle it.
 	 * @param _ser
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	public UDPServer(int _port) throws SQLiteException{
+	public UDPServer(int _port) throws P2PDDSQLException{
 		try {
 			try_connect(_port);
 			ds.setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
@@ -451,7 +473,7 @@ public class UDPServer extends Thread {
 			e.printStackTrace();
 		}
 	}
-	public UDPServer(Identity id) throws SQLiteException{
+	public UDPServer(Identity id) throws P2PDDSQLException{
 		//boolean DEBUG = true;
 		try {
 			int _port = Server.PORT;
@@ -470,7 +492,7 @@ public class UDPServer extends Thread {
 		}
 	}
 	/*
-	public void set_my_peer_ID (Identity id) throws SQLiteException {
+	public void set_my_peer_ID (Identity id) throws P2PDDSQLException {
 		if(DEBUG) out.println("userver: setID");
 		if(id==null) return;
 		if(id.globalID==null) return;
@@ -632,6 +654,7 @@ public class UDPServer extends Thread {
 				if(DEBUG) out.println("userver: ************ UDPServer accepted from "+pak.getSocketAddress()+", will launch!");
 				if(this.isInterrupted()) continue;
 				if(DEBUG) out.println("userver: ************* not interrupted, start!");
+				//System.out.println("U");
 				new UDPServerThread(pak, this).start();
 				if(DEBUG) out.println("userver: ************* UDPServer started!");
 			}
@@ -785,7 +808,7 @@ public class UDPServer extends Thread {
 				asr.decode(new Decoder(buf));
 				if(DEBUG)System.out.println("\n\n*****************\n*******************\n\nUDPServer:run: Request recv: "+asr.toSummaryString());
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();

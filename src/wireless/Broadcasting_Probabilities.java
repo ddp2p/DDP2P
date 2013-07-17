@@ -25,13 +25,13 @@ import hds.StartUpThread;
 
 import java.util.regex.Pattern;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.DD;
 
 public class Broadcasting_Probabilities {
 	public static float broadcast_constituent = 1/1000000.f;
-	public static float broadcast_witness = 30/100.f;  
+	public static float broadcast_witness =30/100.f;  
 	public static float broadcast_organization = 1/1000000.f;    
 	public static float broadcast_peer=1/1000000.f;  
 	public static float broadcast_neighborhood = 1/1000000.f;
@@ -51,12 +51,12 @@ public class Broadcasting_Probabilities {
 	private static float broadcast_queue_bh = 0.3f;
 	private static float broadcast_queue_br = 0.4f;
 	
-	public static final float F_MD = 0.1f;
-	public static final float F_C = 0.4f;
-	public static final float F_RA = 0.7f;
-	public static final float F_RE = 0.5f;
-	public static final float F_BH = 0.2f;
-	public static final float F_BR = 0.1f;
+	public static final float F_MD = 0.2f;//0.04f;
+	public static final float F_C = 0.8f;//0.04f;
+	public static final float F_RA = 0.04f;
+	public static final float F_RE = 0.8f;
+	public static final float F_BH = 0.04f;
+	public static final float F_BR = 0.04f;
 	// modified externally, with a probability for each
 	public static float __broadcast_queue_md = F_MD;
 	public static float __broadcast_queue_c = F_C;
@@ -124,7 +124,7 @@ public class Broadcasting_Probabilities {
 				Broadcasting_Probabilities.setCurrentProbabilities();
 				//System.out.println("scSelecting right check"+Broadcasting_Probabilities._broadcast_queue_re);
 				monitoredInited = true;
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}

@@ -79,6 +79,7 @@ import streaming.OrgHandling;
 import streaming.UpdateMessages;
 import table.HashConstituent;
 import util.DBInterface;
+import util.P2PDDSQLException;
 import util.Util;
 import widgets.components.DDTranslation;
 import widgets.components.Language;
@@ -104,7 +105,6 @@ import ciphersuits.Cipher;
 import ciphersuits.PK;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
 
 import data.D_Constituent;
 import data.D_PeerAddress;
@@ -113,7 +113,7 @@ import data.D_PeerAddress;
 import ASN1.Encoder;
 
 public class DD {
-	public static final String VERSION = "0.9.10";
+	public static final String VERSION = "0.9.11";
 	public static String APP_NAME = _("Direct Democracy");
 	//public static String APP_NAME = _("La Bible A Petits Pas");
 	public static JTabbedPane tabbedPane = new JTabbedPane();
@@ -137,6 +137,14 @@ public class DD {
     // in fields_extra deletable easier
 	public static boolean DELETE_COMBOBOX_WITHOUT_CTRL = true;
 	//public static final byte TAG_SyncReq_push = DD.asn1Type(Encoder.CLASS_UNIVERSAL, Encoder.PC_CONSTRUCTED, Encoder.TAG_SEQUENCE);
+	public static final byte TAG_AP0 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)0);
+	public static final byte TAG_AP1 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)1);
+	public static final byte TAG_AP2 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)2);
+	public static final byte TAG_AP3 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)3);
+	public static final byte TAG_AP4 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)4);
+	public static final byte TAG_AP5 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5);
+	public static final byte TAG_AP6 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)6);
+	
 	public static final byte TAG_AC0 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)0);
 	public static final byte TAG_AC1 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)1);
 	public static final byte TAG_AC2 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)2);
@@ -186,7 +194,7 @@ public class DD {
 	public static boolean WARN_OF_WRONG_SYNC_REQ_SK = false;
 	public static boolean EXPORT_DDADDRESS_WITH_LOCALHOST = false; // should localhost addresses be in exported images?
 	public static boolean VERIFY_SIGNATURE_MYPEER_IN_REQUEST = false; //for debugging my signature in requests
-	public static boolean ADHOC_MESSAGES_USE_DICTIONARIES = false;
+	public static boolean ADHOC_MESSAGES_USE_DICTIONARIES = true;
 	public static boolean ADHOC_DD_IP_WINDOWS_DETECTED_WITH_NETSH = true; //for seeing the network IP when nobody is present (will broadcast messages wildly in such cases)
 	public static boolean ADHOC_DD_IP_WINDOWS_DETECTED_ON_EACH_SEND = true;
 	public static String ADHOC_DD_IP_WINDOWS_NETSH_IP_IDENTIFIER = "IP";
@@ -338,6 +346,16 @@ public class DD {
 	public static final float UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT = 0.0f;
 	public static final int MAX_DISPLAYED_CONSTITUENT_SLOGAN = 100;
 	public static final String WLAN_INTERESTS = "WLAN_INTERESTS";
+	public static final boolean SUBMITTER_REQUIRED_FOR_EXTERNAL = false;
+	public static final String P2PDDSQLException = null;
+	public static boolean VERIFY_FRAGMENT_SIGNATURE = false;
+	public static boolean PRODUCE_FRAGMENT_SIGNATURE = false;
+	public static final boolean AVOID_REPEATING_AT_PING = false;
+	public static final boolean ORG_CREATOR_REQUIRED = false;
+	public static final boolean CONSTITUENTS_ADD_ASK_TRUSTWORTHINESS = false;
+	//public static int TCP_MAX_LENGTH = 10000000;
+	public static int UDP_MAX_FRAGMENT_LENGTH = 100000;
+	public static int UDP_MAX_FRAGMENTS = 100;
 	public static boolean WARN_ON_IDENTITY_CHANGED_DETECTION = false;
 	public static boolean CONSTITUENTS_ORPHANS_SHOWN_BESIDES_NEIGHBORHOODS = true;
 	public static boolean CONSTITUENTS_ORPHANS_FILTER_BY_ORG = true;
@@ -346,7 +364,7 @@ public class DD {
 	public static boolean ACCEPT_STREAMING_SYNC_REQUEST_PAYLOAD_DATA_FROM_UNKNOWN_PEERS = false;
 	public static boolean ACCEPT_TEMPORARY_AND_NEW_CONSTITUENT_FIELDS = true;
 	public static long UDP_SERVER_WAIT_MILLISECONDS = 1000;
-	public static long ADHOC_SENDER_SLEEP_MILLISECONDS = 500;
+	public static long ADHOC_SENDER_SLEEP_MILLISECONDS = 5;
 	public static boolean VERIFY_AFTER_SIGNING_NEIGHBORHOOD = true;
 	public static boolean EDIT_VIEW_UNEDITABLE_NEIGHBORHOODS = true;
 	public static boolean BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME = false;
@@ -389,7 +407,7 @@ public class DD {
 	public static boolean ADHOC_WINDOWS_DD_CONTINUOUS_REFRESH = true;
 	public static long ADHOC_EMPTY_TIMEOUT_MILLISECONDS = 1000*1; // 1 seconds
 	public static long ADHOC_REFRESH_TIMEOUT_MILLISECONDS = 1000*1;
-	public static int ADHOC_SERVER_CONSUMMER_BUFFER_SIZE = 500;
+	public static int ADHOC_SERVER_CONSUMMER_BUFFER_SIZE = 20000;
 	public static String TESTED_VERSION;
 	public static boolean ACCEPT_STREAMING_ANSWER_FROM_ANONYMOUS_PEERS = false;
 	public static boolean ACCEPT_STREAMING_ANSWER_FROM_NEW_PEERS = true;
@@ -412,6 +430,7 @@ public class DD {
 	public static int ADHOC_SENDER_SLEEP_MINUTE_START_LONG_SLEEP = 1;
 	private static JTextField clientsockets_long_sleep_seconds;
 	private static JTextField clientsockets_long_sleep_minutes_start;
+	public static byte[] Random_peer_Number;
 
 
     
@@ -760,7 +779,7 @@ public class DD {
 		_frame.setBounds(r.x, r.y, r.width, r.height);
 		return _frame;
 	}
-	private static void createAndShowGUI() throws SQLiteException{
+	private static void createAndShowGUI() throws P2PDDSQLException{
 		Application.appObject = new AppListener(); // will listen for buttons such as createOrg
         
         clientConsole = new Console();
@@ -870,22 +889,42 @@ public class DD {
 		r.width=DD.FRAME_HEIGHT;
 		frame.setBounds(r.x, r.y, r.width, r.height);
 		// if no identity, focus on identity
-		if(Identity.default_id_branch==null){ DD.tabbedPane.setSelectedComponent(DD.identitiesPane); return;}
+		if(Identity.default_id_branch==null){
+			if(_DEBUG) System.out.println("DD:createAndShowGUI:No default identity!");
+			DD.tabbedPane.setSelectedComponent(DD.identitiesPane);
+			return;
+		}
 		// no org focus on org
-		long _organizationID=-1;
-		if((_organizationID=Identity.getDefaultOrgID())<=0){ DD.tabbedPane.setSelectedComponent(DD.tab_organization); return;}
+		long _organizationID=Identity.getDefaultOrgID();
+		if(_organizationID<=0){
+			if(_DEBUG) System.out.println("DD:createAndShowGUI:No default organization!");
+			DD.tabbedPane.setSelectedComponent(DD.tab_organization);
+			return;
+		}
+		if(data.D_Organization.isIDavailable(_organizationID, DEBUG) != 1) {
+			if(_DEBUG) System.out.println("DD:createAndShowGUI: Temporary organization!");
+			DD.tabbedPane.setSelectedComponent(DD.tab_organization);
+			return;
+		}
+		
 		// if no constituent on constituent
-		if(Identity.getDefaultConstituentIDForOrg(_organizationID)<=0){ DD.tabbedPane.setSelectedComponent(DD.constituentsPane); return;}
+		long _constID=-1;
+		if((_constID=Identity.getDefaultConstituentIDForOrg(_organizationID))<=0){
+			if(_DEBUG) System.out.println("DD:createAndShowGUI:No default constituent!");
+			DD.tabbedPane.setSelectedComponent(DD.constituentsPane);
+			return;
+		}
 		// else on motions or news
+		if(_DEBUG) System.out.println("DD:createAndShowGUI:Default org="+_organizationID+" const="+_constID+" selected!");
 		DD.tabbedPane.setSelectedComponent(DD.jscm);
         //frame.pack();
 	}
 	/**
 	 * The preferred languages are specified in the (default) identity in the identities table
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	static Language[] get_preferred_languages() throws SQLiteException {
+	static Language[] get_preferred_languages() throws P2PDDSQLException {
     	ArrayList<ArrayList<Object>> id;
     	id=Application.db.select("SELECT "+table.identity.preferred_lang +
     			" FROM "+table.identity.TNAME+" AS i" +
@@ -911,7 +950,7 @@ public class DD {
 	    		*/
 		return result;
 	}
-	static String[] get_preferred_charsets() throws SQLiteException {
+	static String[] get_preferred_charsets() throws P2PDDSQLException {
     	ArrayList<ArrayList<Object>> id;
     	id=Application.db.select("SELECT "+table.identity.preferred_charsets +
     			" FROM "+table.identity.TNAME+" AS i" +
@@ -925,7 +964,7 @@ public class DD {
     	if(preferred_charsets == null) return new String[]{};
     	return preferred_charsets.split(Pattern.quote(":"));
 	}
-	static String get_authorship_charset() throws SQLiteException {
+	static String get_authorship_charset() throws P2PDDSQLException {
     	ArrayList<ArrayList<Object>> id;
     	id=Application.db.select("SELECT "+table.identity.authorship_charset +
     			" FROM "+table.identity.TNAME+" AS i" +
@@ -937,7 +976,7 @@ public class DD {
     	}
     	return Util.getString(id.get(0).get(0));
 	}
-	static Language get_authorship_lang() throws SQLiteException {
+	static Language get_authorship_lang() throws P2PDDSQLException {
     	ArrayList<ArrayList<Object>> id;
     	id=Application.db.select("SELECT "+table.identity.authorship_lang +
     			" FROM "+table.identity.TNAME+" AS i" +
@@ -976,7 +1015,7 @@ public class DD {
     	}
 		return true;
 	}
-	public static void load_listing_directories() throws SQLiteException, NumberFormatException, UnknownHostException{
+	public static void load_listing_directories() throws P2PDDSQLException, NumberFormatException, UnknownHostException{
     	String ld = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
     	if(ld == null){
     		Application.warning(_("No default listing_directories found!"), _("Configuration"));
@@ -994,7 +1033,7 @@ public class DD {
     		}
     	}
 	}
-	static public boolean setAppTextNoSync(String field, String value) throws SQLiteException{
+	static public boolean setAppTextNoSync(String field, String value) throws P2PDDSQLException{
 		synchronized(Application.db){
 			ArrayList<ArrayList<Object>> rows = Application.db.select("SELECT "+table.application.value+
 					" FROM "+table.application.TNAME+
@@ -1033,7 +1072,7 @@ public class DD {
 		}
 		return true;
 	}
-	static public boolean setAppText(String field, String value) throws SQLiteException{
+	static public boolean setAppText(String field, String value) throws P2PDDSQLException{
 		//boolean DEBUG = false;
 		if(DEBUG) System.err.println("DD:setAppText: field="+field+" new="+value);
     	Application.db.update(table.application.TNAME, new String[]{table.application.value}, new String[]{table.application.field},
@@ -1056,7 +1095,7 @@ public class DD {
 		String value = Util.bool2StringInt(val);
 		try {
 			return setAppText(field, value);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		return false;
@@ -1065,9 +1104,9 @@ public class DD {
 	 * For empty string "" it returns null;
 	 * @param field
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	static public String getAppText(String field) throws SQLiteException {
+	static public String getAppText(String field) throws P2PDDSQLException {
 		String result = getExactAppText(field);
    		if("".equals(result)) result = null;
    		return result;
@@ -1076,9 +1115,9 @@ public class DD {
 	 * Exact value needed for exact comparison with new valued to preclude reinsertion
 	 * @param field
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	static public String getExactAppText(String field) throws SQLiteException{
+	static public String getExactAppText(String field) throws P2PDDSQLException{
     	ArrayList<ArrayList<Object>> id;
     	id=Application.db.select("SELECT "+table.application.value +
     			" FROM "+table.application.TNAME+" AS a " +
@@ -1096,7 +1135,7 @@ public class DD {
     	String aval = null;
 		try {
 			aval = DD.getExactAppText(field);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}//Util.getString(id.get(0).get(0));
 		if (aval==null) return false;
@@ -1104,7 +1143,7 @@ public class DD {
 		return false;
 	}
 
-	static public boolean getAppBoolean(String field) throws SQLiteException{
+	static public boolean getAppBoolean(String field) throws P2PDDSQLException{
 		return getAppBoolean(field, false);
 		/*
     	ArrayList<ArrayList<Object>> id;
@@ -1118,7 +1157,7 @@ public class DD {
     	}
     	*/
 	}
-	static public boolean startDirectoryServer(boolean on, int port) throws NumberFormatException, SQLiteException {
+	static public boolean startDirectoryServer(boolean on, int port) throws NumberFormatException, P2PDDSQLException {
 		DirectoryServer ds= Application.ds;
 		
 		if((on == false)&&(ds!=null)) {
@@ -1146,7 +1185,7 @@ public class DD {
 		}
 		return true;
 	}
-	static public boolean startServer(boolean on, Identity peer_id) throws NumberFormatException, SQLiteException {
+	static public boolean startServer(boolean on, Identity peer_id) throws NumberFormatException, P2PDDSQLException {
 		Server as = Application.as;
 		if(DEBUG)System.err.println("Will set server as="+as+" id="+peer_id);
 		if((on == false)&&(as!=null)) {
@@ -1167,7 +1206,7 @@ public class DD {
 		}
 		return true;
 	}
-	static public boolean startUServer(boolean on, Identity peer_id) throws NumberFormatException, SQLiteException {
+	static public boolean startUServer(boolean on, Identity peer_id) throws NumberFormatException, P2PDDSQLException {
 		//boolean DEBUG = true;
 		UDPServer aus = Application.aus;
 		if(DEBUG) System.err.println("Will set server aus="+aus+" id="+peer_id);
@@ -1191,7 +1230,7 @@ public class DD {
 		}
 		return true;
 	}
-	static public boolean startClient(boolean on) throws NumberFormatException, SQLiteException {
+	static public boolean startClient(boolean on) throws NumberFormatException, P2PDDSQLException {
 		Client ac = Application.ac;
 		
 		if((on == false)&&(ac!=null)) {ac.turnOff(); Application.ac=null;}
@@ -1204,7 +1243,7 @@ public class DD {
 		}
 		return true;
 	}
-	static public void touchClient() throws NumberFormatException, SQLiteException {
+	static public void touchClient() throws NumberFormatException, P2PDDSQLException {
 		Client ac = Application.ac;
 		if(ac==null) {
 			startClient(true);
@@ -1217,7 +1256,7 @@ public class DD {
 		}
 	}
 
-	public static SK getConstituentSK(long constituentID) throws SQLiteException {
+	public static SK getConstituentSK(long constituentID) throws P2PDDSQLException {
 		String constGID = D_Constituent.getConstituentGlobalID(""+constituentID);
 		return Util.getStoredSK(constGID);
 	}
@@ -1243,7 +1282,7 @@ public class DD {
 			 if(d.size()==0) return null;
 			 mySecretID = (String)d.get(0).get(0);
 			 if(mySecretID==null) return null;
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -1255,7 +1294,7 @@ public class DD {
 	}
 	public static String getMyPeerName() {
 		try {return DD.getAppText(DD.APP_my_peer_name);
-		} catch (SQLiteException e) {}
+		} catch (P2PDDSQLException e) {}
 		return null;
 	}
 	/**
@@ -1267,7 +1306,7 @@ public class DD {
 			String result = DD.getAppText(DD.APP_my_global_peer_ID);
 			D_PeerAddress.init_myself(result);
 			return result;
-		} catch (SQLiteException e) {}
+		} catch (P2PDDSQLException e) {}
 		return null;
 	}
 	/**
@@ -1316,7 +1355,7 @@ public class DD {
 			//String gIDhash = Util.getHash(bPK);
 			DD.setAppText(DD.APP_my_global_peer_ID, gID);
 			DD.setAppText(DD.APP_my_global_peer_ID_hash, gIDhash);
-		} catch (SQLiteException e) {}
+		} catch (P2PDDSQLException e) {}
 		if(DEBUG) out.println("DD:setMyPeerID;: exit");
 		if(DEBUG) out.println("*********");
 		return;
@@ -1341,7 +1380,7 @@ public class DD {
 	 */
 	public static String getMyPeerIDhash() {
 		try {return DD.getAppText(DD.APP_my_global_peer_ID_hash);
-		} catch (SQLiteException e) {}
+		} catch (P2PDDSQLException e) {}
 		return null;
 	}
 
@@ -1353,7 +1392,7 @@ public class DD {
 			} catch (IOException e) {
 				e.printStackTrace();
 				return;
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return;
 			}
@@ -1389,7 +1428,7 @@ public class DD {
 			} catch (IOException e) {
 				e.printStackTrace();
 				return;
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return;
 			}
@@ -1444,10 +1483,10 @@ public class DD {
 			return;
 		}		
 	}
-	public static void storeSK(Cipher keys, String name) throws SQLiteException{
+	public static void storeSK(Cipher keys, String name) throws P2PDDSQLException{
 		storeSK(keys, name+Util.getGeneralizedTime(), null, null, null);
 	}
-	public static void storeSK(Cipher keys, String pGIDname, String public_key_ID, String secret_key, String pGIDhash) throws SQLiteException{
+	public static void storeSK(Cipher keys, String pGIDname, String public_key_ID, String secret_key, String pGIDhash) throws P2PDDSQLException{
 		if(public_key_ID==null){
 			byte[] pIDb = Util.getKeyedIDPKBytes(keys);
 			public_key_ID = Util.getKeyedIDPK(pIDb);
@@ -1465,7 +1504,7 @@ public class DD {
 	}
 	/**
 	 * Creates peer ID if empty (i,e, if none in the Identity.current_peer_ID)
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static void createMyPeerIDIfEmpty(){
 		try{
@@ -1480,7 +1519,7 @@ public class DD {
 				
 				D_PeerAddress.createMyPeerID();
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			Application.warning(_("Error accessing database!"), _("Database troubles"));
 		}	
 	}
@@ -1669,7 +1708,7 @@ public class DD {
 			return error;
 		}
 	}
-	static public void main(String arg[]) throws SQLiteException {
+	static public void main(String arg[]) throws util.P2PDDSQLException {
 		toolkit = Toolkit.getDefaultToolkit();
 		int screen_width = (int)toolkit.getScreenSize().getWidth();
 		int screen_height = (int)toolkit.getScreenSize().getHeight();

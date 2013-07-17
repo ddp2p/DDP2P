@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import streaming.NeighborhoodHandling;
 import util.Util;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -120,7 +120,7 @@ public class D_FieldValue extends ASNObj{
 	" WHERE v."+table.field_value.constituent_ID+" = ?"+
 		" ORDER BY e."+table.field_extra.global_field_extra_ID+";";
 	
-	static public D_FieldValue[] getFieldValues(String constituentID) throws SQLiteException{
+	static public D_FieldValue[] getFieldValues(String constituentID) throws P2PDDSQLException{
 		D_FieldValue[] result = null;
 		ArrayList<ArrayList<Object>> all = Application.db.select(sql_get_const_fields, new String[]{constituentID}, DEBUG);
 		int asz = all.size();
@@ -150,16 +150,16 @@ public class D_FieldValue extends ASNObj{
 		}
 		return result;
 	}
-	static D_FieldValue[] getFieldValues(long c_ID) throws SQLiteException {
+	static D_FieldValue[] getFieldValues(long c_ID) throws P2PDDSQLException {
 		return getFieldValues(Util.getStringID(c_ID));
 	}
-	public static void store(D_FieldValue[] address, String constituent_ID, long org_ID, boolean accept_new_fields) throws SQLiteException, ExtraFieldException {
+	public static void store(D_FieldValue[] address, String constituent_ID, long org_ID, boolean accept_new_fields) throws P2PDDSQLException, ExtraFieldException {
 		if(address == null) return;
 		Application.db.delete(table.field_value.TNAME, new String[]{table.field_value.constituent_ID}, new String[]{constituent_ID}, DEBUG);
 		for(int k=0; k< address.length; k++)
 			store(address[k], constituent_ID, org_ID, accept_new_fields);
 	}
-	private static long store(D_FieldValue wf, String constituent_ID, long org_ID, boolean accept_new_fields) throws SQLiteException, ExtraFieldException {
+	private static long store(D_FieldValue wf, String constituent_ID, long org_ID, boolean accept_new_fields) throws P2PDDSQLException, ExtraFieldException {
 		if(DEBUG) System.out.println("D_FieldValue:store: start wf="+wf+ " constID="+constituent_ID);
 		String[] fields = table.field_value.fields_list.split(",");
 		String[] params = new String[fields.length];

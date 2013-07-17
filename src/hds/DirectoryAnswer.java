@@ -26,29 +26,148 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import config.DD;
+
 import util.Util;
+import ASN1.ASN1DecoderFail;
+import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 /**
- 	 * DirectoryAnswer = SEQUENCE {
-	 * 		timestamp GeneralizedTime,
-	 * 		addresses_enc SEQUENCE OF SEQUENCE {
-	 * 			domain UTF8String,
-	 * 			tcp_port INTEGER,
-	 * 			udp_port INTEGER
-	 * 		}
-	 * }
+Payment_Request ::= SEQUENCE {
+  method INTEGER,
+  amount REAL
+}
+DIR_Terms_Requested ::= SEQUENCE {
+	version INTEGER DEFAULT 0,
+	topic [APPLICATION 1] BOOLEAN OPTIONAL,
+	payment [APPLICATION 2] Payment_Request OPTIONAL,
+	services_available [APPLICATION 3] BITSTRING OPTIONAL,
+	ad [APPLICATION 4] BOOLEAN OPTIONAL,
+	plaintext [APPLICATION 5] BOOLEAN OPTIONAL,
+}
+-- Answer to DirectoryRequest
+DirectoryAnswer ::= SEQUENCE {
+	version INTEGER DEFAULT 0,
+	timestamp GeneralizedTime,
+	remote_GIDhash PrintableString OPTIONAL,
+	addresses_enc SEQUENCE OF SEQUENCE {
+		domain UTF8String,
+		tcp_port INTEGER,
+		udp_port INTEGER
+	} OPTIONAL,
+	terms [APPLICATION 4] SEQUENCE OF DIR_Terms_Requested OPTIONAL
+}
  * @author msilaghi
  *
  */
-public class DirectoryAnswer {
+class DIR_Payment_Request extends ASNObj{
+	float amount;
+	String method;
+	@Override
+	public Encoder getEncoder() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public DIR_Payment_Request decode(Decoder dec) throws ASN1DecoderFail {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}
+class DIR_Terms_Requested extends ASNObj {
+	public int version=0;
+	public String topic;
+	public DIR_Payment_Request payment;
+	public byte[] services_available;
+	public int ad=-1, plaintext=-1;
+	@Override
+	public ASNObj instance() throws CloneNotSupportedException{return (ASNObj) new DIR_Terms_Requested();}
+	@Override
+	public Encoder getEncoder() {
+		Encoder enc = new Encoder().initSequence();
+		if(version != 0) enc.addToSequence(new Encoder(version));
+		if(topic != null) enc.addToSequence(new Encoder(topic).setASN1Type(DD.TAG_AP1));
+		if(payment != null) enc.addToSequence(payment.getEncoder().setASN1Type(DD.TAG_AC2));
+		if(services_available != null) enc.addToSequence(new Encoder(services_available).setASN1Type(DD.TAG_AP3));
+		if(ad > 0) enc.addToSequence(new Encoder(ad).setASN1Type(DD.TAG_AP4));
+		if(plaintext > 0) enc.addToSequence(new Encoder(plaintext).setASN1Type(DD.TAG_AP5));
+		return enc.setASN1Type(getASN1Type());
+	}
+	@Override
+	public DIR_Terms_Requested decode(Decoder dec) throws ASN1DecoderFail {
+		Decoder d = dec.getContent(); version = 0;
+		if(d.getTypeByte()==Encoder.TAG_INTEGER) version = d.getFirstObject(true).getInteger().intValue();
+		if(d.getTypeByte()==DD.TAG_AP1) topic = d.getFirstObject(true).getString();
+		if(d.getTypeByte()==DD.TAG_AC2) payment = new DIR_Payment_Request().decode(d.getFirstObject(true));
+		if(d.getTypeByte()==DD.TAG_AP3) services_available = d.getFirstObject(true).getBytesAnyType();
+		if(d.getTypeByte()==DD.TAG_AP4) ad = d.getFirstObject(true).getInteger().intValue();
+		if(d.getTypeByte()==DD.TAG_AP5) plaintext = d.getFirstObject(true).getInteger().intValue();
+		return this;
+	}
+	public static byte getASN1Type() {
+		return Encoder.TAG_SEQUENCE;
+	}
+}
+public class DirectoryAnswer extends ASNObj {
 	static final int MAX_DA = 1000;
 	private static final int MAX_LEN = 10000;
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
+	int version = 1;
+	String remote_GIDhash;
 	public Calendar date = Util.CalendargetInstance();
 	//ArrayList<Address> address=new ArrayList<InetSocketAddress>();
 	public ArrayList<Address> addresses=new ArrayList<Address>();
+	public DIR_Terms_Requested[] terms;
+	
+	@Override
+	public Encoder getEncoder() {
+		Encoder da = new Encoder().initSequence();
+		if(version != 0) da.addToSequence(new Encoder(version));
+		da.addToSequence(new Encoder(Util.CalendargetInstance()));
+		if((version>0)&&(remote_GIDhash != null)) da.addToSequence(new Encoder(remote_GIDhash, false));
+		Encoder addresses_enc = new Encoder().initSequence();
+		for(int k=0; k<this.addresses.size(); k++) {
+			Address cA = this.addresses.get(k);
+			Encoder crt = new Encoder().initSequence();
+			crt.addToSequence(new Encoder(cA.domain));//.toString().split(":")[0]));
+			crt.addToSequence(new Encoder(new BigInteger(""+cA.tcp_port)));
+			crt.addToSequence(new Encoder(new BigInteger(""+cA.udp_port)));
+			addresses_enc.addToSequence(crt);
+			if(DEBUG) out.println("Added: "+cA.domain+":"+cA.tcp_port+":"+cA.udp_port);
+		}
+		da.addToSequence(addresses_enc);
+		if((version!=0)&&(terms!=null)) da.addToSequence(Encoder.getEncoder(terms).setASN1Type(DD.TAG_AC4));
+		return da;
+	}
+	@Override
+	public Object decode(Decoder dec) throws ASN1DecoderFail {
+		Decoder dec_da_content=dec.getContent(); version = 0;
+		if(dec_da_content.getTypeByte()==Encoder.TAG_INTEGER) dec_da_content.getFirstObject(true).getInteger().intValue();
+		String gdate = dec_da_content.getFirstObject(true).getGeneralizedTime(Encoder.TAG_GeneralizedTime);
+		if(DEBUG) out.println("Record date: "+gdate);
+		//date.setTime(new Date(gdate));
+		date = Util.getCalendar(gdate);
+		if((version!=0)&&(dec_da_content.getTypeByte()==Encoder.TAG_PrintableString)) remote_GIDhash = dec_da_content.getFirstObject(true).getString();
+		Decoder dec_addresses = dec_da_content.getFirstObject(true).getContent();
+		while(dec_addresses.type()!=Encoder.TAG_EOC) {
+			if(DEBUG) out.println("Reading record: "+dec_addresses.dumpHex());
+			Decoder dec_addr = dec_addresses.getFirstObject(true).getContent();
+			String domain = dec_addr.getFirstObject(true).getString();
+			if(DEBUG) out.println("domain: "+domain);
+			if(DEBUG) out.println("port object: "+dec_addr.dumpHex());
+			int tcp_port = dec_addr.getFirstObject(true).getInteger().intValue();
+			if(DEBUG) out.println("tcp_port: "+tcp_port);
+			int udp_port = dec_addr.getInteger().intValue();
+			if(DEBUG) out.println("udp_port: "+udp_port);
+			//address.add(new InetSocketAddress(domain, port));
+			addresses.add(new Address(domain, tcp_port,udp_port));
+		}
+		if((version!=0)&&(dec_da_content.getTypeByte()==DD.TAG_AC4)) terms = dec_da_content.getFirstObject(true).getSequenceOf(DIR_Terms_Requested.getASN1Type(), new DIR_Terms_Requested[]{}, new DIR_Terms_Requested());
+		return this;
+	}
+	
 	public DirectoryAnswer() {}
 	public String toString() {
 		String result = Encoder.getGeneralizedTime(date)+" [";
@@ -74,42 +193,6 @@ public class DirectoryAnswer {
 			if(req_len!=len) throw new Exception("Not enough bytes received!");
 			dec_da = new Decoder(buffer);
 		}
-		Decoder dec_da_content=dec_da.getContent();
-		String gdate = dec_da_content.getFirstObject(true).getGeneralizedTime(Encoder.TAG_GeneralizedTime);
-		if(DEBUG) out.println("Record date: "+gdate);
-		//date.setTime(new Date(gdate));
-		date = Util.getCalendar(gdate);
-		Decoder dec_addresses = dec_da_content.getFirstObject(true).getContent();
-		while(dec_addresses.type()!=Encoder.TAG_EOC) {
-			if(DEBUG) out.println("Reading record: "+dec_addresses.dumpHex());
-			Decoder dec_addr = dec_addresses.getFirstObject(true).getContent();
-			String domain = dec_addr.getFirstObject(true).getString();
-			if(DEBUG) out.println("domain: "+domain);
-			if(DEBUG) out.println("port object: "+dec_addr.dumpHex());
-			int tcp_port = dec_addr.getFirstObject(true).getInteger().intValue();
-			if(DEBUG) out.println("tcp_port: "+tcp_port);
-			int udp_port = dec_addr.getInteger().intValue();
-			if(DEBUG) out.println("udp_port: "+udp_port);
-			//address.add(new InetSocketAddress(domain, port));
-			addresses.add(new Address(domain, tcp_port,udp_port));
-		}
-	}
-	/**
-	 * @return
-	 */
-	byte[] encode() {
-		Encoder da = new Encoder().initSequence().addToSequence(new Encoder(Util.CalendargetInstance()));
-		Encoder addresses_enc = new Encoder().initSequence();
-		for(int k=0; k<this.addresses.size(); k++) {
-			Address cA = this.addresses.get(k);
-			Encoder crt = new Encoder().initSequence();
-			crt.addToSequence(new Encoder(cA.domain));//.toString().split(":")[0]));
-			crt.addToSequence(new Encoder(new BigInteger(""+cA.tcp_port)));
-			crt.addToSequence(new Encoder(new BigInteger(""+cA.udp_port)));
-			addresses_enc.addToSequence(crt);
-			if(DEBUG) out.println("Added: "+cA.domain+":"+cA.tcp_port+":"+cA.udp_port);
-		}
-		da.addToSequence(addresses_enc);
-		return da.getBytes();
+		decode(dec_da);
 	}
 }

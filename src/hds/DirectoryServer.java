@@ -36,7 +36,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -165,7 +165,7 @@ public class DirectoryServer extends Thread{
 		//db.close();
 		out.println("Turning DS off");
 	}
-	public static byte[] handleAnnouncement(DirectoryAnnouncement da, String detected_sa, DBInterface db) throws SQLiteException{
+	public static byte[] handleAnnouncement(DirectoryAnnouncement da, String detected_sa, DBInterface db) throws P2PDDSQLException{
 		if(DEBUG)System.out.println("Got announcement: "+da);
 		db.delete("registered", new String[]{"global_peer_ID"}, new String[]{da.globalID});
 		long id=db.insert("registered", new String[]{"global_peer_ID","certificate","addresses","signature","timestamp"},
@@ -235,7 +235,7 @@ public class DirectoryServer extends Thread{
 					if(DEBUG)System.out.println("Found addresses #: "+adr.size());
 					DirectoryAnswer da = new DirectoryAnswer();
 					if (adr.size() != 0) {
-						Integer time= (Integer)adr.get(0).get(1);
+						Integer time= Util.Ival(adr.get(0).get(1));
 						if(time==null) {
 							time = new Integer(0);
 							out.println("EMPTY TIME. WHY?");

@@ -19,7 +19,7 @@ import javax.swing.SwingConstants;
 import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -147,7 +147,7 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 				catch(Exception e){numberTxt.setText(text=""+DD.UPDATES_TESTERS_THRESHOLD_COUNT_DEFAULT);};
 				if(text == null) text = ""+DD.UPDATES_TESTERS_THRESHOLD_COUNT_DEFAULT;
     			DD.setAppTextNoSync(DD.UPDATES_TESTERS_THRESHOLD_COUNT_VALUE, text);
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 				return;
 			}
@@ -160,7 +160,7 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 				catch(Exception e){percentageTxt.setText(text=""+DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT);};
 				if(text == null) text = ""+DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT;
 				DD.setAppTextNoSync(DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_VALUE, text);
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 				return;
 			}

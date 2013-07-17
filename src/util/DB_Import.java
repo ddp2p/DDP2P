@@ -31,7 +31,7 @@ import javax.swing.JOptionPane;
 
 import updates.ClientUpdates;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -40,7 +40,7 @@ import config.DD;
 public class DB_Import {
 	private static final boolean _DEBUG = true;
 	public static boolean DEBUG = false;
-	public static boolean import_db(String previous, String db_new) throws SQLiteException {
+	public static boolean import_db(String previous, String db_new) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("DB_Import: import_db: will import db indicated by "+previous+" into "+db_new);
 		File indicator_to_previous_db = new File(previous);

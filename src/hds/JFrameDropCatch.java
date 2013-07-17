@@ -49,7 +49,7 @@ import util.Util;
 
 import ASN1.ASN1DecoderFail;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -155,7 +155,7 @@ public class JFrameDropCatch extends JFrame {
             return true;
         }
 
-        boolean getFromInputStream(Transferable t, DataFlavor df, DDAddress data) throws SQLiteException{
+        boolean getFromInputStream(Transferable t, DataFlavor df, DDAddress data) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromInputStream: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -191,7 +191,7 @@ public class JFrameDropCatch extends JFrame {
        		return result;
         }
 
-        boolean getFromBMPStream(Transferable t, DataFlavor df, DDAddress data) throws SQLiteException{
+        boolean getFromBMPStream(Transferable t, DataFlavor df, DDAddress data) throws P2PDDSQLException{
         	//boolean DEBUG=true;
         	if(DEBUG) System.out.println("getFromBMPStream: "+df);
         	if(df==null) return false;
@@ -223,7 +223,7 @@ public class JFrameDropCatch extends JFrame {
           	return result;
         }
 
-        boolean getFromURIString(Transferable t, DataFlavor df, DDAddress data) throws SQLiteException{
+        boolean getFromURIString(Transferable t, DataFlavor df, DDAddress data) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromURIString: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -254,7 +254,7 @@ public class JFrameDropCatch extends JFrame {
           	return result;
         }
 
-        boolean getFromURIHTML(Transferable t, DataFlavor df, DDAddress data) throws SQLiteException{
+        boolean getFromURIHTML(Transferable t, DataFlavor df, DDAddress data) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromURIHTML: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -292,7 +292,7 @@ public class JFrameDropCatch extends JFrame {
        		return result;
         }
 
-        boolean getFromImage(Transferable t, DataFlavor df, DDAddress data) throws SQLiteException{
+        boolean getFromImage(Transferable t, DataFlavor df, DDAddress data) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromImage: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -358,7 +358,7 @@ public class JFrameDropCatch extends JFrame {
         		return false;
         	}
         }
-        boolean getFromFileList(Transferable t, DataFlavor df, DDAddress d) throws SQLiteException{
+        boolean getFromFileList(Transferable t, DataFlavor df, DDAddress d) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromFileList: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -455,7 +455,7 @@ public class JFrameDropCatch extends JFrame {
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: try textHTML!");
 				if(!result)result=getFromURIHTML(t, textHTML, data);
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: no try worked!");
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				Application.warning(_("Database Error: ")+e1, _("Importing Address From Image"));
 			}
            	/*
@@ -575,7 +575,7 @@ public class JFrameDropCatch extends JFrame {
                	System.err.println("IOE:" + e);
             } catch (ASN1DecoderFail e) {
 				e.printStackTrace();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			
@@ -602,7 +602,7 @@ public class JFrameDropCatch extends JFrame {
 						_("Cannot Extract address in: ")+e,
 						_("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
                 //return false;
-            } catch (SQLiteException e) {
+            } catch (P2PDDSQLException e) {
 				e.printStackTrace();
             }
             
@@ -639,7 +639,7 @@ public class JFrameDropCatch extends JFrame {
             } catch (ASN1DecoderFail e) {
             	Application.warning(_("Wrong URL.")+i+" -- "+e, _("Importing address"));
             	//return false;
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
             	Application.warning(_("Database error:")+e, _("Importing address"));
             	//return false;
 			}

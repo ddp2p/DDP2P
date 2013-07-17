@@ -9,7 +9,7 @@ import config.DD;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -32,7 +32,7 @@ public class D_TesterDefinition extends ASNObj{
 		ArrayList<ArrayList<Object>> result=null;
 		try{
 			result = Application.db.select(sql,new String[]{pk},DEBUG);
-		}catch(com.almworks.sqlite4java.SQLiteException e){
+		}catch(util.P2PDDSQLException e){
 			System.out.println(e);
 		}
 		if(result.size()>0) init(result.get(0));
@@ -82,7 +82,7 @@ public class D_TesterDefinition extends ASNObj{
 		if(DEBUG) System.out.println("DD.TAG_AC23= "+ DD.TAG_AC23);
 		return DD.TAG_AC23;
 	}
-	public void store() throws SQLiteException {
+	public void store() throws P2PDDSQLException {
 		boolean update;
 		
 		D_TesterDefinition t = new D_TesterDefinition(this.public_key);
@@ -131,7 +131,7 @@ public class D_TesterDefinition extends ASNObj{
 		ArrayList<ArrayList<Object>> result=null;
 		try{
 			result = Application.db.select(sql, params, DEBUG);
-		}catch(com.almworks.sqlite4java.SQLiteException e){
+		}catch(util.P2PDDSQLException e){
 			System.out.println(e);
 		}
 		if(result == null ) return null;

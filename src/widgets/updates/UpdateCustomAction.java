@@ -39,7 +39,7 @@ import data.D_UpdatesInfo;
 import data.D_TesterDefinition;
 import data.D_UpdatesKeysInfo;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import widgets.updatesKeys.UpdatesKeysTable;
 
@@ -98,7 +98,7 @@ public class UpdateCustomAction extends DebateDecideAction {
 							new String[]{updates_ID}, _DEBUG);
     	    	    ((UpdatesTable)tree).repaint();
     	    	    if(subTable!= null) subTable.repaint();
-				} catch (SQLiteException e1) {
+				} catch (P2PDDSQLException e1) {
 					e1.printStackTrace();
 				}
     	}

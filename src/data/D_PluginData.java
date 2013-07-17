@@ -30,7 +30,7 @@ import plugin_data.PeerPlugin;
 import plugin_data.PluginMethods;
 import plugin_data.PluginRequest;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -51,6 +51,10 @@ class Msg extends ASNObj{
 	Msg(String peer, byte[] _msg) {
 		id = peer;
 		msg = _msg;
+	}
+	public Msg(PluginRequest _msg) {
+		msg = _msg.msg;
+		id = _msg.plugin_GID;
 	}
 	@Override
 	public Msg instance() {
@@ -110,6 +114,10 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 		msgs_queue = m;
 	}
 
+	public void addMsg(PluginRequest msg) {
+		msgs_queue.add(new Msg(msg));
+	}
+	
 	public static PeerConnection getPeerConnection() {
 		return connection;
 	}
@@ -137,10 +145,10 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 	 * plugins should check that the data really arrived
 	 * @param peerID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 * @throws ASN1DecoderFail
 	 */
-	public static Encoder getMessages(String peerID) throws SQLiteException, ASN1DecoderFail {
+	public static Encoder getMessages(String peerID) throws P2PDDSQLException, ASN1DecoderFail {
 		Encoder enc;
 		ArrayList<Msg> result;
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: getMessages: for peerID="+peerID);
@@ -149,7 +157,7 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: getMessages: result enc #"+result.size());
 		return enc;
 	}
-	public static ArrayList<Msg> getPluginMsg(String peerID) throws SQLiteException {
+	public static ArrayList<Msg> getPluginMsg(String peerID) throws P2PDDSQLException {
 		ArrayList<Msg> result = null;
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: getPluginMsg: for peerID="+peerID);
 		synchronized(sync) {
@@ -173,10 +181,10 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 	 * plugins should check that the data really arrived
 	 * @param peerID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 * @throws ASN1DecoderFail
 	 */
-	public static D_PluginData getPluginMessages(String peerID) throws SQLiteException {
+	public static D_PluginData getPluginMessages(String peerID) throws P2PDDSQLException {
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: getPluginMessages: for peerID="+peerID);
 		ArrayList<Msg> result = getPluginMsg(peerID);
 		D_PluginData pdata = new D_PluginData(result);
@@ -250,7 +258,7 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 				qm.add(new Msg(plugin_GID, msg));
 				setEnqueuedMessages(qm, peerID);
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		} catch (ASN1DecoderFail e) {
@@ -265,9 +273,9 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 	 * use enqueueForSending() to append data
 	 * @param qm
 	 * @param peerID
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static void setEnqueuedMessages(ArrayList<Msg> qm, String peerID) throws SQLiteException {
+	private static void setEnqueuedMessages(ArrayList<Msg> qm, String peerID) throws P2PDDSQLException {
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: setEnqueuedMessages: for peerID="+peerID+" qm.length="+ qm.size());
 		Encoder enc = Encoder.getEncoder(qm.toArray(new Msg[0]));
 		byte[] b = enc.getBytes();
@@ -282,10 +290,10 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 	 *  Gets data from the database (put there by some plugin) that should be sent to peer
 	 * @param peerID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 * @throws ASN1DecoderFail
 	 */
-	private static  ArrayList<Msg> getEnqueuedMessages(String peerID) throws SQLiteException, ASN1DecoderFail {
+	private static  ArrayList<Msg> getEnqueuedMessages(String peerID) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: getEnqueuedMessages: for peerID="+peerID);
 		String sql="SELECT "+table.peer.plugins_msg+" FROM "+table.peer.TNAME+" WHERE "+table.peer.peer_ID+"=?;";
 		ArrayList<ArrayList<Object>> p = Application.db.select(sql, new String[]{peerID}, DEBUG || DD.DEBUG_PLUGIN);
@@ -349,14 +357,14 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 					new String[]{table.plugin_local_storage.plugin_ID,table.plugin_local_storage.plugin_key,table.plugin_local_storage.data}, 
 					new String[]{ID, key, _data}, DEBUG);
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		}
 		return true;
 	}
 
-	private static String getLocalPluginIDforGID(String pluginGID) throws SQLiteException {
+	private static String getLocalPluginIDforGID(String pluginGID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.plugin.plugin_ID+" FROM "+table.plugin.TNAME+
 		" WHERE "+table.plugin.global_plugin_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{pluginGID}, DEBUG);
@@ -377,7 +385,7 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 		try {
 			ID = getLocalPluginIDforGID(pluginGID);
 			return _getLData(key, ID);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -387,12 +395,12 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 	 * @param key
 	 * @param pluginID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public byte[] getLData(String key, String pluginID) throws SQLiteException {
+	public byte[] getLData(String key, String pluginID) throws P2PDDSQLException {
 		return _getLData(key, pluginID);
 	}
-	public static byte[] _getLData(String key, String pluginID) throws SQLiteException {
+	public static byte[] _getLData(String key, String pluginID) throws P2PDDSQLException {
 		String sql=
 			"SELECT "+table.plugin_local_storage.data+
 			" FROM "+table.plugin_local_storage.TNAME+

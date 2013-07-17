@@ -27,6 +27,12 @@ import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
+/**
+ASNDatabase := {
+tables SEQUENCE OF Table,
+snapshot GeneralizedTime OPTIONAL
+}
+ */
 
 public class ASNDatabase extends ASNObj{
 	public Table tables[];
@@ -47,6 +53,12 @@ public class ASNDatabase extends ASNObj{
 		}
 		return result;
 	}	
+	/**
+ASNDatabase := {
+	tables SEQUENCE OF Table,
+	snapshot GeneralizedTime OPTIONAL
+}
+	 */
 	public Encoder getEncoder() {
 		if(ASNSyncRequest.DEBUG)System.out.println("Encoding ASNDatabase");
 		Encoder enc = new Encoder().initSequence();

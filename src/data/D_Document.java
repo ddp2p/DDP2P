@@ -19,12 +19,31 @@
 /* ------------------------------------------------------------------------- */
 
 package data;
+import static util.Util._;
 
+import javax.swing.JOptionPane;
+
+import util.Util;
+import widgets.components.DocumentEditor;
+import config.Application;
 import config.DD;
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
+
+
+
+//Html2Text class imports
+import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.html.parser.ParserDelegator;
+
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringBufferInputStream;
+import java.io.StringReader;
+import java.io.IOException;
+
 
 /**
 Document ::= SEQUENCE{
@@ -40,11 +59,21 @@ public class D_Document extends ASNObj{
 	public String toString() {
 		return "D:"+format+":"+document;
 	}
+	public D_Document(){
+		format = DocumentEditor.DEFAULT_FORMAT;
+		document = ""; // "<html></html>";
+	}
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
 		if(format!=null)enc.addToSequence(new Encoder(format,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
-		if(document!=null)enc.addToSequence(new Encoder(document).setASN1Type(Encoder.TAG_OCTET_STRING).setASN1Type(DD.TAG_AC1));
+		if(document!=null){
+			if(format==DocumentEditor.PDF_BODY_FORMAT){
+				enc.addToSequence(new Encoder(Util.byteSignatureFromString(document)).setASN1Type(Encoder.TAG_OCTET_STRING).setASN1Type(DD.TAG_AC1));
+			}else{
+				enc.addToSequence(new Encoder(document).setASN1Type(Encoder.TAG_OCTET_STRING).setASN1Type(DD.TAG_AC1));
+			}
+		}
 		return enc;
 	}
 
@@ -52,7 +81,13 @@ public class D_Document extends ASNObj{
 	public D_Document decode(Decoder decoder) throws ASN1DecoderFail {
 		Decoder dec = decoder.getContent();
 		if(dec.getTypeByte()==DD.TAG_AC0)format = dec.getFirstObject(true).getString(DD.TAG_AC0);
-		if(dec.getTypeByte()==DD.TAG_AC1)document = dec.getFirstObject(true).getString(DD.TAG_AC1);
+		if(dec.getTypeByte()==DD.TAG_AC1){
+			if(format==DocumentEditor.PDF_BODY_FORMAT)
+				document = Util.stringSignatureFromByte(dec.getFirstObject(true).getBytes(DD.TAG_AC1));
+			else
+				//document = util.Util.readAll(new java.util.zip.GZIPInputStream(new StringBufferInputStream(dec.getFirstObject(true).getString(DD.TAG_AC1))));
+				document = dec.getFirstObject(true).getString(DD.TAG_AC1);
+		}
 		return this;
 	}
 
@@ -87,4 +122,77 @@ public class D_Document extends ASNObj{
 	public String getDocumentUTFString() {
 		return document;
 	}
+	public String convertTo(String newFormat) {
+		switch(format){
+		case DocumentEditor.TXT_BODY_FORMAT:
+			switch(newFormat){
+			case DocumentEditor.HTM_BODY_FORMAT:
+				document = "<html>"+document+"</html>";
+				format = newFormat;
+				break;
+			case DocumentEditor.TXT_BODY_FORMAT: break;
+			}
+			break;
+		case DocumentEditor.HTM_BODY_FORMAT:
+			switch(newFormat){
+			case DocumentEditor.HTM_BODY_FORMAT: break;
+			case DocumentEditor.TXT_BODY_FORMAT:
+				if(0 != Application.ask(_("You may lose data by switching to the new format!"),
+						_("Losing Data"), JOptionPane.OK_CANCEL_OPTION)){
+				    System.out.println("txt document conversion abandoned");
+					return null;
+				}
+				
+			//	document = "<html>"+document+"</html>";
+			    Html2Text parser = new Html2Text();
+			    try{
+			    	parser.parse(new StringReader(document));
+			    }catch(IOException e){
+			    	System.err.println(e);
+			    }
+			    document = parser.getText();
+			    System.out.println("txt document= "+document);
+				format = newFormat;
+				break;
+			}
+			break;
+		case DocumentEditor.PDF_BODY_FORMAT: break;
+		}
+		return document;
+	}
+	public String getDBDoc() {
+		return Util.stringSignatureFromByte(this.getEncoder().getBytes());
+	}
+	public void setDBDoc(String string) {
+		try {
+			decode(new Decoder(Util.byteSignatureFromString(string, false)));
+		} catch (Exception e) {
+			setDocumentString(string);
+			setFormatString(DocumentEditor.HTM_BODY_FORMAT);
+		}
+	}
+}
+
+
+class Html2Text extends HTMLEditorKit.ParserCallback {
+ StringBuffer s;
+
+ public Html2Text() {}
+
+ public void parse(Reader in) throws IOException {
+   s = new StringBuffer();
+   ParserDelegator delegator = new ParserDelegator();
+   // the third parameter is TRUE to ignore charset directive
+   delegator.parse(in, this, Boolean.TRUE);
+ }
+
+ public void handleText(char[] text, int pos) {
+ //System.out.println("pos: "+pos);
+ s.append(" ");
+   s.append(text);
+ }
+
+ public String getText() {
+   return s.toString();
+ }
 }

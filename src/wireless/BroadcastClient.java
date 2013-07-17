@@ -43,10 +43,11 @@ import util.Util;
 import widgets.wireless.WLAN_widget;
 
 import ASN1.ASN1DecoderFail;
+import ASN1.Encoder;
 
 import ciphersuits.Cipher;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -66,10 +67,10 @@ public class BroadcastClient extends Thread {
 	static boolean m_running = true;
 	public static BroadcastQueues msgs = null; //new BroadcastableMessages();
 	public static DatagramSocket[] broadcast_client_sockets;
-	int c = -1;
+	int c = -1,x=-1;
 	Refresh START_REFRESH;
 
-	public BroadcastClient() throws SocketException, SQLiteException {
+	public BroadcastClient() throws SocketException, P2PDDSQLException {
 		synchronized(msgs_monitor) {
 			msgs = new BroadcastQueues();
 			try {
@@ -78,7 +79,7 @@ public class BroadcastClient extends Thread {
 				byte[] wlan_interests = Util.byteSignatureFromString(interests);
 				RequestData rq;
 				rq = new RequestData().decode(new ASN1.Decoder(wlan_interests));
-				msgs.registerRequest(rq );
+				msgs.registerRequest(rq);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -129,6 +130,7 @@ public class BroadcastClient extends Thread {
 						//BD.bcs[i].connect(addresses[i], BroadcastServer.BROADCAST_SERVER_PORT);
 						try {
 							BD.bcs[i].connect(InetAddress.getByAddress(Util.getBytesFromCleanIPString(DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP)), BroadcastServer.BROADCAST_SERVER_PORT);
+							if(_DEBUG)System.out.println(DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP);
 							/*String bip = Util.get_IP_from_SocketAddress(addresses[i].getHostAddress());
 							if(!Util.equalStrings_null_or_not(
 									DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP,
@@ -157,6 +159,7 @@ public class BroadcastClient extends Thread {
 	 */
 	public static void stopClient() {
 		if(_DEBUG)System.out.println("Client Stop");
+		handling_wb.BroadcastQueueRequested.stopThread=true;
 		synchronized (run_monitor){
 			m_running = false;
 			run_monitor.notifyAll();
@@ -164,7 +167,7 @@ public class BroadcastClient extends Thread {
 		DD.START_REFRESH.START_REFRESH = false;
 	}
 	public void run() {
-		//boolean DEBUG=false;
+		boolean DEBUG=false;
 		// start time to measure the broadcast time.
 		if(DEBUG)System.out.println("Start time is : "+System.currentTimeMillis());
 		BroadcastData _BD = new BroadcastData();
@@ -175,7 +178,11 @@ public class BroadcastClient extends Thread {
 			DD.START_REFRESH = START_REFRESH = new Refresh();
 			START_REFRESH.start();
 		}
-		for(;;) {
+		long inc = 0;
+		long start = -1;
+		long timeout = 6000;
+		boolean check = false;
+		for(int i=0;;i++) {
 			synchronized (run_monitor){
 				if(!m_running){
 					try {
@@ -253,7 +260,9 @@ public class BroadcastClient extends Thread {
 				try {
 					// disconnect DD wireless
 					if(_DEBUG)System.out.println("Sleep");
+					x++;
 					Thread.sleep(DD.ADHOC_SENDER_SLEEP_SECONDS_DURATION_LONG_SLEEP*1000);
+					if(x==7) System.exit(0);
 					// reconnect DD wireless
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -285,7 +294,27 @@ public class BroadcastClient extends Thread {
 						if(DEBUG)System.out.println("sending: ["+j+"] from ="+broadcast_client_sockets[j].getLocalSocketAddress());
 						if(DEBUG)System.out.println("sending: ["+j+"] to ="+broadcast_client_sockets[j].getRemoteSocketAddress());
 					}catch(Exception e) {e.printStackTrace();}
+					//System.out.println("BroadcastClient : Socket calling send");
 					broadcast_client_sockets[j].send(dp);
+					
+					//Stopping the system after some time
+					/*
+					if(i==0) check = true;
+					if(check) start = System.currentTimeMillis();
+					check = false;
+					long elapsed =  System.currentTimeMillis() - start;
+					//System.out.println("Start="+start+"	elapsed="+elapsed);
+					if(elapsed > timeout){
+						inc++;
+						check = true;
+						System.out.println("BroadcastClient Sleeping for 3 mins");
+						Thread.sleep(1800000);
+					}
+					if(inc==10)
+						System.exit(1);
+					*/
+					
+					//System.out.println("BroadcastClient : Socket return from send");
 
 					EventQueue.invokeLater(new Runnable(){
 						public void run(){

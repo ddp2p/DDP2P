@@ -46,7 +46,7 @@ import ASN1.ASN1DecoderFail;
 import ASN1.Decoder;
 import ciphersuits.Cipher;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -74,7 +74,7 @@ public class BroadcastServer extends Thread {
 	ReceivedBroadcastableMessages bm = new ReceivedBroadcastableMessages();
 	private long TIMEOUT=10000; // each 10 seconds, retry
 	Selector selector;
-	public BroadcastServer() throws  IOException, SQLiteException{
+	public BroadcastServer() throws  IOException, P2PDDSQLException{
 		if(_DEBUG) System.out.println("Server START");
 		if(Application.g_BroadcastServer!=null) throw new RuntimeException("2nd Server");
 	}
@@ -278,7 +278,7 @@ public class BroadcastServer extends Thread {
 							handleRead(key);
 						} catch (ASN1DecoderFail e) {
 							e.printStackTrace();
-						} catch (SQLiteException e) {
+						} catch (P2PDDSQLException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
@@ -302,7 +302,7 @@ public class BroadcastServer extends Thread {
 	}
 
 	@SuppressWarnings("null")
-	private void handleRead(SelectionKey key) throws IOException, ASN1DecoderFail, SQLiteException {		
+	private void handleRead(SelectionKey key) throws IOException, ASN1DecoderFail, P2PDDSQLException {		
 		/*here*/
 		//if(DEBUG) System.out.println("BroadcastServer:handleRead: reading");
 		DatagramChannel channel = (DatagramChannel) key.channel();
@@ -315,6 +315,7 @@ public class BroadcastServer extends Thread {
 			byte[] obtained;
 			int position_start, msg_size;
 			String IP = Util.get_IP_from_SocketAddress(clntRec.clientAddress);
+			String Msg_rcv_time = Util.getGeneralizedTime();
 			long cnter_val; 
 			if(clntRec.buffer.hasArray()){
 				int pkt_size = clntRec.buffer.array().length - clntRec.buffer.remaining();				
@@ -358,12 +359,31 @@ public class BroadcastServer extends Thread {
 			if(msg_interests != null) {
 				data.D_Interests interests = new data.D_Interests();
 				interests.decode(new Decoder(msg_interests));
+
+				//comparing the two random peer numbers
+				if(Util.equalBytes(interests.Random_peer_number, DD.Random_peer_Number)){
+					if(DEBUG) System.out.println("BroadcastServer:handleRead: Receiving from my self");
+					return;
+					}
+				if(DEBUG)System.out.println("BroadcastServer:handleRead: Incoming="+interests.Random_peer_number+"  mine="+DD.Random_peer_Number);
+				else if(DEBUG)System.out.println("BroadcastServer:handleRead: Not Receiving from my self");
+
+
 				handling_wb.BroadcastQueueRequested.handleNewInterests(interests,  clntRec.clientAddress, IP);
+				//rcv=Util.byteSignatureFromString(interests.Random_peer_number);
+				//System.out.println("BroadcastServer: Rnd_peer_number="+Util.stringSignatureFromByte(rcv));
+				//if(DD.getAppText(DD.Random_peer_number).equals(interests.Random_peer_number)){
+				//System.out.println("BroadcastServer : My_Rnd_p_num="+DD.getAppText(DD.Random_peer_number)+
+				//	"	Recewived_rnd_p_num="+interests.Random_peer_number);
+				//System.out.println("BroadcastServer: Ignoring what I receivd from my self");
+				//return;
+				//}
 			}
 			if(BroadcastConsummerBuffer.queue == null) BroadcastConsummerBuffer.queue = new BroadcastConsummerBuffer();
 			
 			synchronized(BroadcastConsummerBuffer.queue) {
-				BroadcastConsummerBuffer.queue.add(msg_payload, position_start, clntRec.clientAddress,msg_size,IP,cnter_val);
+				//System.out.println("calling BroadcastConsumerBuffer");
+				BroadcastConsummerBuffer.queue.add(msg_payload, position_start, clntRec.clientAddress,msg_size,IP,cnter_val,Msg_rcv_time);
 			}
 		}
 	}
@@ -388,7 +408,7 @@ public class BroadcastServer extends Thread {
 		return result;
 	}
 	/*
-	public static void main(String[] args) throws  IOException, SQLiteException {
+	public static void main(String[] args) throws  IOException, P2PDDSQLException {
 		BroadcastServer b=new BroadcastServer();           		
 	}
 	*/

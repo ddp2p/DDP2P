@@ -25,7 +25,7 @@ import static util.Util._;
 import java.util.ArrayList;
 import java.util.Calendar;
 import ciphersuits.SK;
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 import streaming.JustificationHandling;
 import streaming.RequestData;
 import util.DBInterface;
@@ -83,7 +83,7 @@ public class D_Justification extends ASNObj{
 
 	
 	public D_Justification() {}
-	public D_Justification(long _justification_ID) throws SQLiteException {
+	public D_Justification(long _justification_ID) throws P2PDDSQLException {
 		if(_justification_ID<=0) throw new RuntimeException(Util._("No such justification"));
 		justification_ID = ""+_justification_ID;
 		String sql = 
@@ -107,9 +107,9 @@ public class D_Justification extends ASNObj{
 	/**
 	 * 
 	 * @param justification_GID : justification_global_ID
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_Justification(String justification_GID) throws SQLiteException {
+	public D_Justification(String justification_GID) throws P2PDDSQLException {
 		if(justification_GID == null) throw new RuntimeException(Util._("No such justification"));
 		this.global_motionID = justification_GID;
 		String sql = 
@@ -144,16 +144,16 @@ public class D_Justification extends ASNObj{
 			" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
 	 * 
 	 * @param o
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_Justification(ArrayList<Object> o) throws SQLiteException {
+	public D_Justification(ArrayList<Object> o) throws P2PDDSQLException {
 		if(o==null)throw new RuntimeException(Util._("No such justification"));
 		init(o);
 	}
 	public D_Justification instance() throws CloneNotSupportedException{
 		return new D_Justification();
 	}
-	void init(ArrayList<Object> o) throws SQLiteException {
+	void init(ArrayList<Object> o) throws P2PDDSQLException {
 		this.hash_alg = Util.getString(o.get(table.justification.J_HASH_ALG));
 		this.global_justificationID = Util.getString(o.get(table.justification.J_GID));
 		this.justification_title.title_document.setFormatString(Util.getString(o.get(table.justification.J_TITLE_FORMAT)));	
@@ -328,7 +328,7 @@ public class D_Justification extends ASNObj{
 	public String make_ID(){
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		// return this.global_witness_ID =  
@@ -357,9 +357,9 @@ public class D_Justification extends ASNObj{
 	 * before call, one should set organization_ID and global_motionID
 	 * @param rq
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long store(streaming.RequestData rq) throws SQLiteException {
+	public long store(streaming.RequestData rq) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		
 		
@@ -422,21 +422,21 @@ public class D_Justification extends ASNObj{
 		if(DEBUG) System.out.println("D_Justification:store: result ID= "+result);
 		return result;
 	}
-	public static long insertTemporaryGID(String just_GID, String mot_ID) throws SQLiteException {
+	public static long insertTemporaryGID(String just_GID, String mot_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Justification:insertTemporaryGID: start");
 		return Application.db.insert(table.justification.TNAME,
 				new String[]{table.justification.global_justification_ID, table.justification.motion_ID},
 				new String[]{just_GID, mot_ID},
 				DEBUG);
 	}
-	private static String getDateFor(String justID) throws SQLiteException {
+	private static String getDateFor(String justID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.justification.creation_date+" FROM "+table.justification.TNAME+
 		" WHERE "+table.justification.justification_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{""+justID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public String guessOrganizationGID() throws SQLiteException {
+	public String guessOrganizationGID() throws P2PDDSQLException {
 		String motion_org;
 		String const_org;
 		long oID=-1,m_oID=-1,c_oID=-1;
@@ -461,7 +461,7 @@ public class D_Justification extends ASNObj{
 		return D_Organization.getGlobalOrgID(Util.getStringID(oID));
 	}
 
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion) throws SQLiteException {
+	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion) throws P2PDDSQLException {
 		/*
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
@@ -508,7 +508,7 @@ public class D_Justification extends ASNObj{
 		}
 		return true;
 	}
-	private void fillGlobals() throws SQLiteException {
+	private void fillGlobals() throws P2PDDSQLException {
 		if((this.answerTo_ID != null ) && (this.global_answerTo_ID == null))
 			this.global_answerTo_ID = D_Justification.getGlobalID(this.answerTo_ID);
 		
@@ -521,18 +521,18 @@ public class D_Justification extends ASNObj{
 		if((this.constituent_ID != null ) && (this.global_constituent_ID == null))
 			this.global_constituent_ID = D_Constituent.getConstituentGlobalID(this.constituent_ID);
 	}
-	public long storeVerified() throws SQLiteException {
+	public long storeVerified() throws P2PDDSQLException {
 		Calendar now = Util.CalendargetInstance();
 		return storeVerified(now, DEBUG);
 	}
-	public long storeVerified(boolean DEBUG) throws SQLiteException {
+	public long storeVerified(boolean DEBUG) throws P2PDDSQLException {
 		Calendar now = Util.CalendargetInstance();
 		return storeVerified(now, DEBUG);
 	}
-	public long storeVerified(Calendar arrival_date) throws SQLiteException {
+	public long storeVerified(Calendar arrival_date) throws P2PDDSQLException {
 		return storeVerified(arrival_date, DEBUG);
 	}
-	public long storeVerified(Calendar arrival_date, boolean DEBUG) throws SQLiteException {
+	public long storeVerified(Calendar arrival_date, boolean DEBUG) throws P2PDDSQLException {
 		long result = -1;
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("WB_Justification:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
@@ -613,15 +613,15 @@ public class D_Justification extends ASNObj{
 	 * @param witness_ID
 	 * @param signer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long readSignSave(long justification_ID, long signer_ID) throws SQLiteException {
+	public static long readSignSave(long justification_ID, long signer_ID) throws P2PDDSQLException {
 		D_Justification w=new D_Justification(justification_ID);
 		ciphersuits.SK sk = util.Util.getStoredSK(D_Constituent.getConstituentGlobalID(""+signer_ID));
 		w.sign(sk);
 		return w.storeVerified();
 	}	
-	private static String getLocalIDandDate(String global_justificationID,	String[] _old_date) throws SQLiteException {
+	private static String getLocalIDandDate(String global_justificationID,	String[] _old_date) throws P2PDDSQLException {
 		String sql = "SELECT "+table.justification.justification_ID+","+table.justification.creation_date+" FROM "+table.justification.TNAME+
 		" WHERE "+table.justification.global_justification_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_justificationID}, DEBUG);
@@ -629,14 +629,14 @@ public class D_Justification extends ASNObj{
 		_old_date[0] = Util.getString(o.get(0).get(1));
 		return Util.getString(o.get(0).get(0));
 	}
-	public static String getLocalID(String global_justificationID) throws SQLiteException {
+	public static String getLocalID(String global_justificationID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.justification.justification_ID+" FROM "+table.justification.TNAME+
 		" WHERE "+table.justification.global_justification_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_justificationID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public static String getGlobalID(String justificationID) throws SQLiteException {
+	public static String getGlobalID(String justificationID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.justification.global_justification_ID+" FROM "+table.justification.TNAME+
 		" WHERE "+table.justification.justification_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{justificationID}, DEBUG);
@@ -659,7 +659,7 @@ public class D_Justification extends ASNObj{
 			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
 			d.global_justificationID = d.make_ID();
 			//d.storeVerified(arrival_date);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();
@@ -688,7 +688,7 @@ public class D_Justification extends ASNObj{
 			signature = null;
 			try {
 				storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return true;
@@ -709,7 +709,7 @@ public class D_Justification extends ASNObj{
 		this.requested = this.blocked = this.broadcasted = false;
 	}
 	public static ArrayList<String> checkAvailability(ArrayList<String> hashes,
-			String orgID, boolean DBG) throws SQLiteException {
+			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String hash : hashes) {
 			if(!available(hash, orgID, DBG)) result.add(hash);
@@ -721,9 +721,9 @@ public class D_Justification extends ASNObj{
 	 * @param hash
 	 * @param orgID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static boolean available(String hash, String orgID, boolean DBG) throws SQLiteException {
+	public static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
 		boolean result = true;
 		String sql = 
 			"SELECT "+table.justification.justification_ID+

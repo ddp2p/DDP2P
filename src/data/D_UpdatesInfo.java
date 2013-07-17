@@ -28,7 +28,7 @@ import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Hashtable;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -65,7 +65,7 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = Application.db.select(sql, params, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
 		}		
@@ -137,9 +137,9 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 	 * Retrieve mirrors urls from the DB
 	 * @param 
 	 * @return ArrayList<String>
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	static public ArrayList<String> getUpdateURLs() throws SQLiteException{
+	static public ArrayList<String> getUpdateURLs() throws P2PDDSQLException{
     	ArrayList<String> result =new ArrayList<String>() ;
     	ArrayList<ArrayList<Object>> urls;
     	urls=Application.db.select("SELECT "+table.updates.url +
@@ -158,9 +158,9 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 	 * Retrieve mirrors from the DB
 	 * @param url 
 	 * @return D_UpdateInfo
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	static public D_UpdatesInfo getUpdateInfo(String url) throws SQLiteException{
+	static public D_UpdatesInfo getUpdateInfo(String url) throws P2PDDSQLException{
     	D_UpdatesInfo result =null ;
     	ArrayList<ArrayList<Object>> updateInfo;
     	updateInfo=Application.db.select("SELECT "+table.updates.fields_updates +
@@ -188,7 +188,7 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 		// TODO Auto-generated method stub
 		return null;
 	}
-	public void store(String cmd) throws SQLiteException {
+	public void store(String cmd) throws P2PDDSQLException {
 		String params[] = new String[table.updates.F_FIELDS];
 		params[table.updates.F_ORIGINAL_MIRROR_NAME] = this.original_mirror_name;
 		params[table.updates.F_MY_MIRROR_NAME] = this.my_mirror_name;
@@ -218,7 +218,7 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 			a = Application.db.select("SELECT "+table.updatesKeys.trusted_as_tester+","+table.updatesKeys.trust_weight+" FROM "+table.updatesKeys.TNAME+
 					" WHERE "+table.updatesKeys.trusted_as_tester+"='1' AND "+table.updatesKeys.trust_weight+"!='0'",
 					new String[]{});
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		}
@@ -255,7 +255,7 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 					"SELECT "+table.updatesKeys.public_key_hash+","+table.updatesKeys.trust_weight+","+table.updatesKeys.expected_test_thresholds+
 					" FROM "+table.updatesKeys.TNAME+
 					" ;", new String[]{}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return true;
 		}
@@ -294,7 +294,7 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 	private static boolean isTesterThresholdAbsolute() {
 		try {
 			return !DD.getAppBoolean(DD.UPDATES_TESTERS_THRESHOLDS_RELATIVE);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return true;
 		}
@@ -325,7 +325,7 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 	private static boolean threshold_testers_based_on_count() {
 		try {
 			return !DD.getAppBoolean(DD.UPDATES_TESTERS_THRESHOLD_WEIGHT);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return true;
 		}
@@ -337,7 +337,7 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 					"SELECT "+table.updatesKeys.public_key_hash+","+table.updatesKeys.expected_test_thresholds+
 					" FROM "+table.updatesKeys.TNAME+
 					" WHERE "+table.updatesKeys.reference_tester+"='1';", new String[]{}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return true;
 		}
@@ -412,7 +412,7 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 				ui.testerInfo = vi.testers_data;
 				ui.store("update");
 				if(DEBUG)System.out.println("store_QoTs_and_RoTs()ui.last_version= "+ui.last_version);
-				}catch (SQLiteException e) {
+				}catch (P2PDDSQLException e) {
 		    	e.printStackTrace();
 			    return;		
   			    }

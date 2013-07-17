@@ -20,7 +20,7 @@ import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -159,7 +159,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			if("".equals(crt.my_mirror_name)) crt.my_mirror_name = null;
 			try {
 				data.get(row).store("update");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -167,7 +167,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			data.get(row).url = Util.getString(aValue);
 			try {
 				data.get(row).store("update");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -175,7 +175,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			data.get(row).used = ((Boolean) aValue).booleanValue();
 			try {
 				data.get(row).store("update");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -203,7 +203,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = db.select(sql, params, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
 		}
@@ -273,7 +273,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			frame.pack();
 			frame.setSize(800,300);
 			frame.setVisible(true);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

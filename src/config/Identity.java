@@ -28,9 +28,9 @@ import java.util.Calendar;
 
 import streaming.ConstituentHandling;
 import streaming.OrgHandling;
+import util.P2PDDSQLException;
 import util.Util;
 
-import com.almworks.sqlite4java.SQLiteException;
 
 import data.D_Constituent;
 import static util.Util._;
@@ -149,7 +149,7 @@ public class Identity {
 			br = Application.db.select( sql,
 					new String[]{Identity.current_peer_ID.globalID},
 					DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			Application.warning(_("Database unreachable for broadcastable: ")+e, _("Broadcastable"));
 		}
 		if((br==null) || (br.size()==0)){
@@ -170,7 +170,7 @@ public class Identity {
 					new String[]{table.peer.global_peer_ID}, 
 					new String[]{val?"1":"0",Identity.current_peer_ID.globalID});
 					
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			Application.warning(_("Database unreachable for setting broadcastable: ")+e, _("Broadcastable"));
 		}
 		*/
@@ -183,7 +183,7 @@ public class Identity {
 		boolean result=true;
 		try {
 			result = !DD.getAppBoolean(DD.APP_hidden_from_my_peers);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -193,20 +193,20 @@ public class Identity {
 		boolean result=true;
 		try {
 			DD.setAppText(DD.APP_hidden_from_my_peers, val?"1":"0");
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
 	/**
 	 * Returns current if non-null
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static Identity getCurrentIdentity() throws SQLiteException{
+	public static Identity getCurrentIdentity() throws P2PDDSQLException{
 		if(current_identity != null) return current_identity;
 		return _getDefaultIdentity();
 	}
-	public static Identity addIdentity(boolean default_id) throws SQLiteException {
+	public static Identity addIdentity(boolean default_id) throws P2PDDSQLException {
 		Identity result = new Identity();
 		result.name = _("Default Identity: Double-click to set your name. Right-click to add properties.");
 		result.globalOrgID = null;
@@ -241,9 +241,9 @@ public class Identity {
 	/**
 	 * Builds an Identity for the default in the identities table
 	 * @return default identity in identities table or null if none exists
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static Identity _getDefaultIdentity() throws SQLiteException{
+	private static Identity _getDefaultIdentity() throws P2PDDSQLException{
 		if(DEBUG) System.out.println("Identity:getDefaultIdentity");
     	Identity result = new Identity();
     	ArrayList<ArrayList<Object>> id;
@@ -309,7 +309,7 @@ public class Identity {
 		ArrayList<ArrayList<Object>> a;
 		try {
 			a = Application.db.select(sql, new String[]{globalID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -339,9 +339,9 @@ public class Identity {
 	/**
 	 * Set org_id as current in identity
 	 * @param org_id
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long setCurrentOrg(long org_id) throws SQLiteException {
+	public static long setCurrentOrg(long org_id) throws P2PDDSQLException {
 	   	if(DEBUG) System.err.println("Identity:setCurrentOrg: org="+org_id);
 	   	if(DEBUG) Util.printCallPath("Set current org:"+org_id);
 		//String gID = OrgHandling.getGlobalOrgID(org_id+"");
@@ -382,10 +382,10 @@ public class Identity {
 	 * For each org there is a constituent set as current
 	 * @param _constituentID
 	 * @param _organizationID
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static void setCurrentConstituentForOrg(long _constituentID,
-			long _organizationID) throws SQLiteException {
+			long _organizationID) throws P2PDDSQLException {
     	if(DEBUG) System.err.println("Identity:setCurrentConstituent: "+_constituentID+" org="+_organizationID);
 		if(Identity.current_identity==null) return;
 		if(Identity.current_identity.identity_id==null) return;
@@ -440,9 +440,9 @@ public class Identity {
 	 * also checks if the constituent really exists (feature that may be redundant....)
 	 * @param _organizationID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long getDefaultConstituentIDForOrg(long _organizationID) throws SQLiteException {
+	public static long getDefaultConstituentIDForOrg(long _organizationID) throws P2PDDSQLException {
     	if(DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: begin");
     	if(DEBUG) Util.printCallPath("Defaul ID for ORG");
 		if(Identity.current_identity==null){
@@ -478,7 +478,7 @@ public class Identity {
 	   	if(DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: Done="+old_constituent);
 		return old_constituent;
 	}
-	public static long getDefaultOrgID() throws SQLiteException {
+	public static long getDefaultOrgID() throws P2PDDSQLException {
     	if(DEBUG) System.err.println("Identity:getDefaultOrgID: begin");
     	//Util.printCallPath("Default ID for ORG");
 		if(Identity.current_identity==null){

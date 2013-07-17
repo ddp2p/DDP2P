@@ -35,7 +35,7 @@ import javax.swing.JOptionPane;
 import ciphersuits.PK;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -216,7 +216,7 @@ public class DDAddress {
 	public static int getSteganoSize(int size, int bits){
 		return (int)Math.round(Math.ceil(size*8.0/bits));
 	}
-	public void save() throws SQLiteException {
+	public void save() throws P2PDDSQLException {
 		// boolean DEBUG = true;
 		if(address == null){
 			if(DEBUG) System.out.println("DDAddress:save: nothing to save ");
@@ -259,7 +259,7 @@ public class DDAddress {
 //				long org_ID = UpdateMessages.get_organizationID(served_orgs[k].global_organization_ID, served_orgs[k].org_name, date, served_orgs[k].global_organization_IDhash);
 //				D_PeerAddress.get_peers_orgs_ID(peer_ID,org_ID, date);
 //			}
-		Application.warning(_("Address Saved as #"+peer_ID+"!"), _("Saved!"));
+		if(DEBUG) Application.warning(_("Address Saved as #"+peer_ID+"!"), _("Saved!"));
 	}
 	String sane(String in) {
 		if(in==null) return "";
@@ -365,7 +365,7 @@ public class DDAddress {
 		if(dec.getFirstObject(false)!=null) throw new ASN1DecoderFail("Extra Objects");
 	}
 	
-	public static DDAddress setSteganoImage(BufferedImage bi) throws ASN1DecoderFail, SQLiteException{
+	public static DDAddress setSteganoImage(BufferedImage bi) throws ASN1DecoderFail, P2PDDSQLException{
 		byte[] sign= Util.getBytes(bi,DDAddress.STEGO_SIGN_OFFSET,
 				Util.ceil(2*8/DDAddress.STEGO_BITS));
 		System.out.println("Got image sign bytes: "+Util.byteToHex(sign, " "));
@@ -589,7 +589,7 @@ public class DDAddress {
 			//System.out.println(" New: "+Util.getHEX(stg[crt_dst]));
 		}
 	}
-	public boolean fromBMPFileSave(File file) throws IOException, SQLiteException{
+	public boolean fromBMPFileSave(File file) throws IOException, P2PDDSQLException{
 		String explain="";
 		boolean fail= false;
 		FileInputStream fis=new FileInputStream(file);
@@ -616,7 +616,7 @@ public class DDAddress {
 		save();
 		return true;
 	}
-	public boolean fromBMPStreamSave(InputStream in) throws IOException, ASN1DecoderFail, SQLiteException {
+	public boolean fromBMPStreamSave(InputStream in) throws IOException, ASN1DecoderFail, P2PDDSQLException {
 		int k;
 		short sign_val=0, off_val=0;
 		byte[] bmp= new byte[BMP.DATA];

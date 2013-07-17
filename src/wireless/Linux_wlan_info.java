@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 
-		Author: Ossamah Dhannoon
+		Author: Osamah Dhannoon
 		Florida Tech, Human Decision Support Systems Laboratory
    
        This program is free software; you can redistribute it and/or modify
@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;

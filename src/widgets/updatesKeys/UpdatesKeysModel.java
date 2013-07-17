@@ -22,7 +22,7 @@ import javax.swing.JTextField;
 import javax.swing.JPanel;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -148,7 +148,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 			if("".equals(crt.my_tester_name)) crt.my_tester_name = null;
 			try {
 				data.get(row).store("update");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -156,7 +156,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 			crt.weight = Float.valueOf(Util.getString(aValue)).floatValue();
 			try {
 				data.get(row).store("update");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -164,7 +164,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 			data.get(row).reference = ((Boolean)aValue).booleanValue(); 
 			try {
 				data.get(row).store("update");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -172,7 +172,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 			data.get(row).trusted_as_mirror = ((Boolean)aValue).booleanValue(); 
 			try {
 				data.get(row).store("update");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -180,7 +180,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 			data.get(row).trusted_as_tester = ((Boolean)aValue).booleanValue(); 
 			try {
 				data.get(row).store("update");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -208,7 +208,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = db.select(sql, params, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
 		}
@@ -268,7 +268,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.pack();
 			frame.setVisible(true);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

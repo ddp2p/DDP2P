@@ -33,7 +33,7 @@ import util.DBInterface;
 import util.Util;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -71,7 +71,7 @@ class D_News extends ASNObj{
 	public boolean broadcasted = D_Organization.DEFAULT_BROADCASTED_ORG;
 		
 	public D_News() {}
-	public D_News(long _news_ID) throws SQLiteException {
+	public D_News(long _news_ID) throws P2PDDSQLException {
 		if(_news_ID<=0) return;
 		news_ID = ""+_news_ID;
 		String sql = 
@@ -89,7 +89,7 @@ class D_News extends ASNObj{
 		if(m.size() == 0) return;
 		init(m.get(0));
 	}
-	public D_News(String news_GID) throws SQLiteException {
+	public D_News(String news_GID) throws P2PDDSQLException {
 		if(news_GID == null) return;
 		this.global_news_ID = news_GID;
 		String sql = 
@@ -118,9 +118,9 @@ class D_News extends ASNObj{
 			" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=n."+table.news.motion_ID+")"+
 	 * 
 	 * @param o
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_News(ArrayList<Object> o) throws SQLiteException {
+	public D_News(ArrayList<Object> o) throws P2PDDSQLException {
 		init(o);
 	}
 	public D_News instance() throws CloneNotSupportedException{
@@ -136,9 +136,9 @@ class D_News extends ASNObj{
 			" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=n."+table.news.organization_ID+")"+
 			" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=n."+table.news.motion_ID+")"+
 	 * @param o
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	void init(ArrayList<Object> o) throws SQLiteException {
+	void init(ArrayList<Object> o) throws P2PDDSQLException {
 		hash_alg = Util.getString(o.get(table.news.N_HASH_ALG));
 		title.title_document.setFormatString(Util.getString(o.get(table.news.N_TITLE_FORMAT)));
 		title.title_document.setDocumentString(Util.getString(o.get(table.news.N_TITLE)));
@@ -290,7 +290,7 @@ class D_News extends ASNObj{
 	public String make_ID(){
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		// return this.global_witness_ID =  
@@ -319,9 +319,9 @@ class D_News extends ASNObj{
 	 * before call, one should set organization_ID and global_newsID
 	 * @param rq
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long store(streaming.RequestData rq) throws SQLiteException {
+	public long store(streaming.RequestData rq) throws P2PDDSQLException {
 		boolean locals = fillLocals(rq, true, true, true, true);
 		if(!locals) return -1;
 
@@ -360,21 +360,21 @@ class D_News extends ASNObj{
 		return storeVerified();
 	
 	}
-	static long insertTemporaryGID(String const_GID, String org_ID) throws SQLiteException {
+	static long insertTemporaryGID(String const_GID, String org_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_News:insertTemporaryGID: start");
 		return Application.db.insert(table.news.TNAME,
 				new String[]{table.news.global_news_ID, table.news.organization_ID},
 				new String[]{const_GID, org_ID},
 				DEBUG);
 	}
-	private static String getDateFor(String newsID) throws SQLiteException {
+	private static String getDateFor(String newsID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.news.creation_date+" FROM "+table.news.TNAME+
 		" WHERE "+table.news.news_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{""+newsID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion) throws SQLiteException {
+	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion) throws P2PDDSQLException {
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
 			return false;
@@ -419,7 +419,7 @@ class D_News extends ASNObj{
 		}
 		return true;
 	}
-	private void fillGlobals() throws SQLiteException {
+	private void fillGlobals() throws P2PDDSQLException {
 		if((this.motion_ID != null ) && (this.global_motion_ID == null))
 			this.global_motion_ID = D_Motion.getMotionGlobalID(this.motion_ID);
 		
@@ -429,11 +429,11 @@ class D_News extends ASNObj{
 		if((this.constituent_ID != null ) && (this.global_constituent_ID == null))
 			this.global_constituent_ID = D_Constituent.getConstituentGlobalID(this.constituent_ID);
 	}
-	public long storeVerified() throws SQLiteException {
+	public long storeVerified() throws P2PDDSQLException {
 		Calendar now = Util.CalendargetInstance();
 		return storeVerified(now);
 	}
-	public long storeVerified(Calendar arrival_date) throws SQLiteException {
+	public long storeVerified(Calendar arrival_date) throws P2PDDSQLException {
 		long result = -1;
 		if(DEBUG) System.out.println("WB_News:storeVerified: storing="+this);
 		
@@ -502,15 +502,15 @@ class D_News extends ASNObj{
 	 * @param witness_ID
 	 * @param signer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long readSignSave(long news_ID, long signer_ID) throws SQLiteException {
+	public static long readSignSave(long news_ID, long signer_ID) throws P2PDDSQLException {
 		D_News w=new D_News(news_ID);
 		ciphersuits.SK sk = util.Util.getStoredSK(D_Constituent.getConstituentGlobalID(""+signer_ID));
 		w.sign(sk);
 		return w.storeVerified();
 	}
-	private static String getLocalIDandDate(String global_newsID,	String[] _old_date) throws SQLiteException {
+	private static String getLocalIDandDate(String global_newsID,	String[] _old_date) throws P2PDDSQLException {
 		String sql = "SELECT "+table.news.news_ID+","+table.news.creation_date+" FROM "+table.news.TNAME+
 		" WHERE "+table.news.global_news_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_newsID}, DEBUG);
@@ -518,14 +518,14 @@ class D_News extends ASNObj{
 		_old_date[0] = Util.getString(o.get(0).get(1));
 		return Util.getString(o.get(0).get(0));
 	}
-	public static String getLocalID(String global_newsID) throws SQLiteException {
+	public static String getLocalID(String global_newsID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.news.news_ID+" FROM "+table.news.TNAME+
 		" WHERE "+table.news.global_news_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_newsID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public static String getGlobalID(String newsID) throws SQLiteException {
+	public static String getGlobalID(String newsID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.news.global_news_ID+" FROM "+table.news.TNAME+
 		" WHERE "+table.news.news_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{newsID}, DEBUG);
@@ -548,14 +548,14 @@ class D_News extends ASNObj{
 		return false;
 	}
 	public static ArrayList<String> checkAvailability(ArrayList<String> news,
-			String orgID, boolean DBG) throws SQLiteException {
+			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String cHash : news) {
 			if(!available(cHash, orgID, DBG)) result.add(cHash);
 		}
 		return result;
 	}
-	private static boolean available(String hash, String orgID, boolean DBG) throws SQLiteException {
+	private static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.news.news_ID+
 			" FROM "+table.news.TNAME+
@@ -584,7 +584,7 @@ class D_News extends ASNObj{
 			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
 			d.global_news_ID = d.make_ID();
 			d.storeVerified(arrival_date);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();

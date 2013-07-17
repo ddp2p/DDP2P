@@ -24,8 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import com.almworks.sqlite4java.*;
 
@@ -34,7 +32,7 @@ import config.Application;
 import java.awt.Event;
 import java.io.File;
 
-import javax.swing.JOptionPane;
+
 class Listener{
 	DBListener listener;
 	ArrayList<String> tables;
@@ -43,7 +41,7 @@ class Listener{
 		tables= _tables;
 	}
 }
-public class DBInterface {
+public class DBInterface implements DB_Implementation {
 	//ArrayList<Listener> listeners= new ArrayList<Listener>();
 	Hashtable <DBListener, ArrayList<String>>hash_listeners=new Hashtable<DBListener, ArrayList<String>>();
 	Hashtable<String,ArrayList<DBListener>> hash_tables=new Hashtable<String,ArrayList<DBListener>>();
@@ -52,25 +50,7 @@ public class DBInterface {
 	private static final boolean _DEBUG = true;
     String filename = Application.DELIBERATION_FILE;
     File file = null;
-    SQLiteConnection db;
 	public boolean conn_open = false;
-    public DBInterface(String _filename) throws com.almworks.sqlite4java.SQLiteException{
-    	filename = _filename;
-    	file = new File(filename);
-    	Logger logger = Logger.getLogger("com.almworks.sqlite4java");
-    	logger.setLevel(Level.SEVERE);
-    	db = new SQLiteConnection(file);
-    	db.open(true);
-    	db.dispose();
-    }
-    /**
-     * Call with an open connection
-     * @param conn
-     */
-    public DBInterface(SQLiteConnection conn) {
-    	db = conn;
-    	conn_open = true;
-	}
 	/**
      * 
      * @param object
@@ -136,24 +116,15 @@ public class DBInterface {
 	public synchronized void sync(ArrayList<String> tables) {
 		fireTableUpdate(tables);
 	}
-    public synchronized void exec(String sql) throws com.almworks.sqlite4java.SQLiteException{
-    	db = new SQLiteConnection(file);
-    	db.open(true);
-    	db.exec("BEGIN IMMEDIATE");
-    	db.exec(sql);
-    	if(DEBUG) System.err.println("executed: "+sql);
-    	db.exec("COMMIT");
-    	db.dispose();
-    }
-    public synchronized long insert(String table, String[] fields, String[] params) throws com.almworks.sqlite4java.SQLiteException {
+    public synchronized long insert(String table, String[] fields, String[] params) throws P2PDDSQLException {
     	return insert(table, fields, params, DEBUG);
     }
-    public synchronized long insert(String table, String[] fields, String[] params, boolean dbg) throws com.almworks.sqlite4java.SQLiteException {
+    public synchronized long insert(String table, String[] fields, String[] params, boolean dbg) throws P2PDDSQLException {
     	long result = insertNoSync(table, fields, params, dbg);
     	fireTableUpdate(table);
     	return result;
     }
-    public synchronized long insertNoSync(String table, String[] fields, String[] params) throws com.almworks.sqlite4java.SQLiteException {
+    public synchronized long insertNoSync(String table, String[] fields, String[] params) throws P2PDDSQLException {
     	return insertNoSync(table, fields, params, DEBUG);
     }
     public String makeInsertSQL(String table, String[] fields, String[] params){
@@ -167,61 +138,38 @@ public class DBInterface {
     	sql = sql+");";
     	return sql;
     }
-    public synchronized long insertNoSync(String table, String[] fields, String[] params, boolean dbg) throws com.almworks.sqlite4java.SQLiteException {
+    public synchronized long insertNoSync(String table, String[] fields, String[] params, boolean dbg) throws P2PDDSQLException {
     	//if(dbg) Util.printCallPath("insert sources");
    		if(dbg) System.out.println("DBInterface:insertNoSync: insert in: "+table+" "+fields.length+" "+params.length);
     	String sql = makeInsertSQL(table, fields, params);
     	return insert(sql, params,dbg);
     }
-    public synchronized long _insertNoSync(String table, String[] fields, String[] params, boolean dbg) throws com.almworks.sqlite4java.SQLiteException {
+    /**
+     * To be called only when the database is already open
+     * @param table
+     * @param fields
+     * @param params
+     * @param dbg
+     * @return
+     * @throws P2PDDSQLException
+     */
+    public synchronized long _insertNoSync(String table, String[] fields, String[] params, boolean dbg) throws P2PDDSQLException {
     	//if(dbg) Util.printCallPath("insert sources");
     	if(dbg) System.out.println("DBInterface:insertNoSync: insert in: "+table+" "+fields.length+" "+params.length);
     	String sql = makeInsertSQL(table, fields, params);
     	return _insert(sql, params,dbg);
     }
-    public synchronized long insert(String sql, String[] params) throws com.almworks.sqlite4java.SQLiteException{
+    public synchronized long insert(String sql, String[] params) throws P2PDDSQLException{
     	return insert(sql, params, DEBUG);
     }
-    public synchronized long insert(String sql, String[] params, boolean DEBUG) throws com.almworks.sqlite4java.SQLiteException{
-    	long result;
-    	db = new SQLiteConnection(file);
-    	db.open(true);
-    	result = _insert(sql, params, DEBUG);
-    	db.dispose();
-    	return result;
-    }
-    public synchronized long _insert(String sql, String[] params, boolean DEBUG) throws com.almworks.sqlite4java.SQLiteException{
-    	long result;
-    	SQLiteStatement st = db.prepare(sql);
-    	if(DEBUG) System.out.println("sqlite:insert:sql: "+sql);
-    	try {
-    		for(int k=0; k<params.length; k++){
-    			st.bind(k+1, params[k]);
-    			if(DEBUG) System.out.println("sqlite:insert:bind: "+Util.nullDiscrim(params[k]));
-    		}
-    		st.stepThrough();
-
-    		result = db.getLastInsertId();
-    		if(DEBUG) System.out.println("sqlite:insert:result: "+result);
-    	}
-    	catch(com.almworks.sqlite4java.SQLiteException e){
-    		e.printStackTrace();
-    		System.err.println("sqlite:insert:sql: "+sql);
-    		for(int k=0; k<params.length; k++){
-    			System.err.println("sqlite:insert:bind: "+Util.nullDiscrim(params[k]));
-    		}
-    		throw e;
-    	}finally {st.dispose();}
-    	return result;
-    }
-    public synchronized void update(String table, String[] fields, String[]selector, String[] params, boolean dbg) throws com.almworks.sqlite4java.SQLiteException {
+    public synchronized void update(String table, String[] fields, String[]selector, String[] params, boolean dbg) throws P2PDDSQLException {
     	updateNoSync(table, fields, selector, params, dbg);
      	fireTableUpdate(table);
     }
-    public synchronized void update(String table, String[] fields, String[]selector, String[] params) throws com.almworks.sqlite4java.SQLiteException {
+    public synchronized void update(String table, String[] fields, String[]selector, String[] params) throws P2PDDSQLException {
     	update(table, fields, selector, params, DEBUG);
     }
-	public void updateNoSync(String table, String[] fields, String[] selector, String[] params) throws SQLiteException {
+	public void updateNoSync(String table, String[] fields, String[] selector, String[] params) throws P2PDDSQLException {
 		updateNoSync(table, fields, selector, params, DEBUG);
 	}
 	public String makeUpdateSQL(String table, String[] fields, String[]selector, String[] params) {
@@ -234,126 +182,199 @@ public class DBInterface {
     	sql = sql+";";
 		return sql;
 	}
-    public synchronized void updateNoSync(String table, String[] fields, String[]selector, String[] params, boolean dbg) throws com.almworks.sqlite4java.SQLiteException {
+	public String makeUpdateNULLSQL(String table, String[] fields, String[]selector, String[] params, ArrayList<String> para2) {
+		int cp = 0;
+    	String sql="update "+table+" set "+fields[0]+"=?";
+    	for( int k=1; k<fields.length; k++) {
+    		sql = sql+","+fields[k]+"=?";
+    		//para2.add(params[cp++]);
+    		cp++;
+    	}
+    	if(selector.length>0) {
+    		if(params[fields.length] != null){
+    			sql = sql+" where "+selector[0]+"=?";
+    			para2.add(params[fields.length]);
+    		}else
+    			sql = sql+" where "+selector[0]+" IS NULL ";
+    		cp++;
+    		for( int k=1; k<selector.length; k++){
+        		if(params[fields.length + k] != null){
+        			sql = sql+" AND "+selector[k]+"=?";
+        			para2.add(params[cp]);
+        		}else
+        			sql = sql+" AND "+selector[k]+" IS NULL ";
+        		cp++;
+    		}
+    	}
+    	sql = sql+";";
+		return sql;
+	}
+	/**
+	 * Update setting null to IS NULL
+	 * @param table
+	 * @param fields
+	 * @param selector
+	 * @param params
+	 * @param dbg
+	 * @throws P2PDDSQLException
+	 */
+    public synchronized void updateNoSyncNULL(String table, String[] fields, String[]selector, String[] params, boolean dbg) throws P2PDDSQLException {
+		ArrayList<String> para2 = new ArrayList<String>();
+		if(dbg){
+			for(int k = 0; k<params.length; k++) {
+				System.out.println("\t orig_param:["+k+"]="+params[k]);
+			}
+		}
+    	String sql = makeUpdateNULLSQL(table, fields, selector, params, para2);
+    	String[] _params = new String[fields.length+para2.size()];
+    	for(int k=0; k<fields.length; k++){
+    		_params[k] = params[k];
+    	}
+    	for(int k=0; k<para2.size(); k++){
+    		_params[k+fields.length] = para2.get(k);
+    	}
+    	update(sql, _params, dbg);    	
+    }
+    public synchronized void updateNoSync(String table, String[] fields, String[]selector, String[] params, boolean dbg) throws P2PDDSQLException {
     	String sql = makeUpdateSQL(table, fields, selector, params);
     	update(sql, params, dbg);    	
     }
-    public synchronized void _updateNoSync(String table, String[] fields, String[]selector, String[] params, boolean dbg) throws com.almworks.sqlite4java.SQLiteException {
+    /**
+     * To be called only when the database is already open
+     * @param table
+     * @param fields
+     * @param selector
+     * @param params
+     * @param dbg
+     * @throws P2PDDSQLException
+     */
+    public synchronized void _updateNoSync(String table, String[] fields, String[]selector, String[] params, boolean dbg) throws P2PDDSQLException {
     	String sql = makeUpdateSQL(table, fields, selector, params);
     	_update(sql, params, dbg);
     }
-    public synchronized void update(String sql, String[] params) throws SQLiteException {
+    public synchronized void update(String sql, String[] params) throws P2PDDSQLException {
 		update(sql, params, DEBUG);
 	}
-	public synchronized void update(String sql, String[] params, boolean dbg) throws com.almworks.sqlite4java.SQLiteException{
-    	db = new SQLiteConnection(file);
-    	db.open(true);
-    	_update(sql, params, dbg);    	
-    	db.dispose();
-	}	
-	public synchronized void _update(String sql, String[] params, boolean dbg) throws com.almworks.sqlite4java.SQLiteException{
-    	SQLiteStatement st = db.prepare(sql);
-    	if(dbg) System.out.println("sqlite:update:sql: "+sql);
-    	try {
-    	    for(int k=0; k<params.length; k++){
-    	    	st.bind(k+1, params[k]);
-    	    	if(dbg) System.out.println("sqlite:update:bind: "+params[k]);
-    	    }
-    	    st.stepThrough();
-    	} finally {st.dispose();}
-    }
-	public void delete(String table, String[] fields, String[] params) throws com.almworks.sqlite4java.SQLiteException {
+	public void delete(String table, String[] fields, String[] params) throws P2PDDSQLException {
 		delete(table,fields,params, DEBUG);
 	}
    public synchronized void delete(String table, String[] fields, String[] params,
-			boolean dbg) throws com.almworks.sqlite4java.SQLiteException{
+			boolean dbg) throws P2PDDSQLException{
     	deleteNoSync(table, fields, params, dbg);
     	fireTableUpdate(table);
     }
-   public synchronized void deleteNoSync(String table, String[] fields, String[] params) throws com.almworks.sqlite4java.SQLiteException{
+   public synchronized void deleteNoSync(String table, String[] fields, String[] params) throws P2PDDSQLException{
 	   deleteNoSync(table, fields, params, DEBUG);
    }
-   public synchronized void deleteNoSync(String table, String[] fields, String[] params, boolean dbg) throws com.almworks.sqlite4java.SQLiteException{
-    	String sql;
-    	if(fields.length == 0) sql = "delete from "+table+";";
-    	else{
-    		sql="delete from "+table+" where "+fields[0]+"=?";
-    		for( int k=1; k<fields.length; k++) sql = sql+" AND "+fields[k]+"=?";
-    		sql = sql+";";
-    	}
-    	delete(sql, params, dbg);    	
-    }
-   public synchronized void delete(String sql, String[] params) throws com.almworks.sqlite4java.SQLiteException{
+   public synchronized void deleteNoSync(String table, String[] fields, String[] params, boolean dbg) throws P2PDDSQLException{
+   	String sql;
+   	if(fields.length == 0) sql = "delete from "+table+";";
+   	else{
+   		sql="delete from "+table+" where "+fields[0]+"=?";
+   		for( int k=1; k<fields.length; k++) sql = sql+" AND "+fields[k]+"=?";
+   		sql = sql+";";
+   	}
+   	delete(sql, params, dbg);    	
+   }
+   public synchronized void deleteNoSyncNULL(String table, String[] fields, String[] params, boolean dbg) throws P2PDDSQLException{
+   	String sql;
+   	ArrayList<String> para2 = new ArrayList<String>();
+   	if(fields.length == 0) sql = "delete from "+table+";";
+   	else{
+   		if(params[0]!=null){
+   			sql="delete from "+table+" where "+fields[0]+"=?";
+   			para2.add(params[0]);
+   		}else
+   			sql="delete from "+table+" where "+fields[0]+" IS NULL ";
+   		for( int k=1; k<fields.length; k++){
+   	   		if(params[k]!=null) {
+   	   			sql = sql+" AND "+fields[k]+"=?";
+   	   			para2.add(params[k]);
+   	   		}else
+   	   			sql = sql+" AND "+fields[k]+" IS NULL ";
+   		}
+   		sql = sql+";";
+   	}
+   	for(int k=0;k<params.length;k++){
+   		System.out.println("\t orig_param["+k+"]="+params[k]);
+   	}
+   	delete(sql, para2.toArray(new String[]{}), dbg);
+   }
+   public synchronized void delete(String sql, String[] params) throws P2PDDSQLException{
 	   delete(sql, params, DEBUG);
    }
-   public synchronized void delete(String sql, String[] params, boolean DEBUG) throws com.almworks.sqlite4java.SQLiteException{
-    	db = new SQLiteConnection(file);
-    	db.open(true);
-    	db.exec("BEGIN IMMEDIATE");
-    	SQLiteStatement st = db.prepare(sql);
-    	if(DEBUG) System.out.println("sqlite:delete:sql: "+sql);
-    	try {
-    		for(int k=0; k<params.length; k++){
-    			st.bind(k+1, params[k]);
-    			if(DEBUG) System.out.println("sqlite:delete:bind: "+params[k]);
-    		}
-    		st.stepThrough();	    
-    	} finally {st.dispose();}
-    	db.exec("COMMIT");
-    	db.dispose();
-    }
-    public synchronized ArrayList<ArrayList<Object>> select(String sql, String[] params) throws com.almworks.sqlite4java.SQLiteException{
+    public synchronized ArrayList<ArrayList<Object>> select(String sql, String[] params) throws P2PDDSQLException{
     	return select(sql, params, DEBUG);
     }
-    public synchronized ArrayList<ArrayList<Object>> select(String sql, String[] params, boolean DEBUG) throws com.almworks.sqlite4java.SQLiteException{
-    	//try{throw new Exception("?");}catch(Exception e){e.printStackTrace();}
-    	//conn_open = true;
-    	db = new SQLiteConnection(file);
-    	db.open(true);
-    	ArrayList<ArrayList<Object>> result = _select(sql, params, DEBUG);
-    	db.dispose();
-    	//conn_open = false;
-    	return result;
+
+/**
+ * DB procedures
+ */
+    DB_Implementation db;
+    public DBInterface(String _filename) throws P2PDDSQLException{
+    	//db = new DB_Implementation_SQLite();
+    	db = new DB_Implementation_JDBC_SQLite();
+    	db.open(_filename);
     }
     /**
-     * For already existing connections in db
-     * @param sql
-     * @param params
-     * @param DEBUG
-     * @return
-     * @throws com.almworks.sqlite4java.SQLiteException
+     * Call with an open connection
+     * @param conn
      */
-    public synchronized ArrayList<ArrayList<Object>> _select(String sql, String[] params, boolean DEBUG) throws com.almworks.sqlite4java.SQLiteException{
-    	//if(!conn_open) throw new RuntimeException("Assumption failed!");
-    	SQLiteStatement st = db.prepare(sql);
-    	if(DEBUG) System.out.println("sqlite:select:sql: "+sql+" length="+params.length);
-    	ArrayList<ArrayList<Object>> result = new ArrayList<ArrayList<Object>>();
-    	try {
-    		for(int k=0; k<params.length; k++){
-    			st.bind(k+1, params[k]);
-    			if(DEBUG) System.out.println("sqlite:select:bind: "+params[k]);
-    		}
-    		//if(DEBUG) System.out.println("F: populateIDs will step");
-    		while (st.step()) {
-    			//if(DEBUG) System.out.println("F: populateIDs step");
-    			ArrayList<Object> cresult = new ArrayList<Object>();
-    			for(int j=0; j<st.columnCount(); j++){
-    				//if(DEBUG) System.out.println("F: populateIDs col:"+j);
-    				cresult.add(st.columnValue(j));
-    			}
-    			result.add(cresult);
-    			if (result.size()>MAX_SELECT) {
-    				JOptionPane.showMessageDialog(null,"Found more results than: "+MAX_SELECT);
-    				break;
-    			}
-    			//if(DEBUG) System.out.println("F: populateIDs did step");
-    		}
-    		//if(DEBUG) System.out.println("F: populateIDs step done");
-    	} finally {st.dispose();}
-    	if(DEBUG) System.out.println("DBInterface:select:results#="+result.size());
-    	return result;
-    }
+    public DBInterface(SQLiteConnection conn) {
+    	db = new DB_Implementation_SQLite();
+    	db.keep_open(conn);
+	}
+//    public synchronized void exec(String sql) throws P2PDDSQLException{
+//    	db = new SQLiteConnection(file);
+//    	db.open(true);
+//    	db.exec("BEGIN IMMEDIATE");
+//    	db.exec(sql);
+//    	if(DEBUG) System.err.println("executed: "+sql);
+//    	db.exec("COMMIT");
+//    	db.dispose();
+//    }
+	@Override
+	public ArrayList<ArrayList<Object>> select(String sql, String[] params,
+			boolean DEBUG) throws P2PDDSQLException {
+		return db.select(sql, params, DEBUG);
+	}
+	@Override
+	public ArrayList<ArrayList<Object>> _select(String sql, String[] params,
+			boolean DEBUG) throws P2PDDSQLException {
+		return db._select(sql, params, DEBUG);
+	}
+	@Override
+	public long _insert(String sql, String[] params, boolean DEBUG)
+			throws P2PDDSQLException {
+		return db._insert(sql, params, DEBUG);
+	}
+	@Override
+	public long insert(String sql, String[] params, boolean DEBUG)
+			throws P2PDDSQLException {
+		return db.insert(sql, params, DEBUG);
+	}
+	@Override
+	public void delete(String sql, String[] params, boolean DEBUG)
+			throws P2PDDSQLException {
+		db.delete(sql, params, DEBUG);
+	}
+	@Override
+	public void update(String sql, String[] params, boolean dbg)
+			throws P2PDDSQLException {
+		db.update(sql, params, dbg);
+	}
+	@Override
+	public void _update(String sql, String[] params, boolean dbg)
+			throws P2PDDSQLException {
+		db._update(sql, params, dbg);
+	}
+	@Override
+	public void open(String _filename) throws P2PDDSQLException {
+		db.open(_filename);
+	}
+	@Override
+	public void keep_open(SQLiteConnection conn) {
+		db.keep_open(conn);
+	}	
+
 }
-/*
- select fv.name, fv.forename, fv.constituentID, fv.external, fv.global_constituentID  from constituents AS fv JOIN fields_values AS f ON f.constituentID = fv.constituentID   JOIN fields_values AS fv0 ON fv.constituentID=fv0.constituentID  JOIN fields_values AS fv1 ON fv.constituentID=fv1.constituentID  JOIN fields_values AS fv2 ON fv.constituentID=fv2.constituentID  JOIN fields_values AS fv3 ON fv.constituentID=fv3.constituentID  JOIN fields_values AS fv4 ON fv.constituentID=fv4.constituentID  JOIN fields_values AS fv5 ON fv.constituentID=fv5.constituentID  WHERE fv.organizationID = 100 AND  (  f.value = 'Lunii' AND f.fieldID = 17  AND fv0.value = 'EU' AND fv0.fieldID = 11  AND fv1.value = 'RO' AND fv1.fieldID = 12  AND fv2.value = 'Transylvania' AND fv2.fieldID = 14  AND fv3.value = 'Cluj' AND fv3.fieldID = 14  AND fv4.value = 'Cluj-Napoca' AND fv4.fieldID = 15  AND fv5.value = 'Zorilor' AND fv5.fieldID = 16  ) OR fv.neighborhoodID = 29  GROUP BY fv.constituentID;
- */

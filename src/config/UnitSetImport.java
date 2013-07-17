@@ -22,7 +22,7 @@ package config;
 import util.DBInterface;
 import util.Util;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 public class UnitSetImport {
 	static public void main(String args[]) {
@@ -33,7 +33,7 @@ public class UnitSetImport {
 			Application.db = new DBInterface(Application.DELIBERATION_FILE);
 			DD.setAppText(DD.APP_DB_TO_IMPORT, db_to_import);
 			System.out.println("UnitSetImport: Saved in application field="+DD.APP_DB_TO_IMPORT+" value="+args[0]);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}	

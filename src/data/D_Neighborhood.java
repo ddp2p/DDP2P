@@ -27,9 +27,8 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.regex.Pattern;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
-import registration.ASNNeighborhood;
 import simulator.Fill_database;
 import streaming.ConstituentHandling;
 import streaming.NeighborhoodHandling;
@@ -153,9 +152,9 @@ class D_Neighborhood extends ASNObj implements Summary{
 	 * @param local_n_id
 	 * @param neigh_gid
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static D_Neighborhood getNeighborhood(String local_n_id, String neigh_gid) throws SQLiteException {
+	public static D_Neighborhood getNeighborhood(String local_n_id, String neigh_gid) throws P2PDDSQLException {
 		try {
 			return new D_Neighborhood(local_n_id, neigh_gid);
 		} catch (Exception e) {
@@ -380,7 +379,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		if(DEBUG) System.out.println("WB_Neighborhood:make_ID: this=\""+this+"\"");
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		this.global_neighborhood_ID  = null; // this will be created as result
@@ -388,7 +387,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		if ((this.parent_ID != null) && (this.parent_global_ID == null))
 			try {
 				this.parent_global_ID = D_Neighborhood.getGlobalID(this.parent_ID);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		
@@ -411,7 +410,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		if(DEBUG) System.out.println("WB_Neighborhood:make_ID: gid="+gid);
 		return gid;
 	}
-	private void fillGlobals() throws SQLiteException {
+	private void fillGlobals() throws P2PDDSQLException {
 		if((this.organization_ID > 0 ) && (this.global_organization_ID == null))
 			this.global_organization_ID = D_Organization.getGlobalOrgID(Util.getStringID(this.organization_ID));
 
@@ -429,7 +428,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		if(DEBUG) System.out.println("WB_Neighborhood:verifySign: orgGID=\""+orgGID+"\"");
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		//Util.printCallPath("recursive?");
@@ -456,7 +455,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		if(DEBUG) System.out.println("WB_Neighborhood:verifySign: sign=\""+Util.byteToHexDump(signature)+"\"");
 		return Util.verifySignByID(this.getSignableEncoder(orgGID).getBytes(), pk_ID, signature);
 	}
-	public String storeVerified(String constituent_ID, String orgGID, String org_local_ID, String arrival_time) throws SQLiteException {
+	public String storeVerified(String constituent_ID, String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Neighborhood:storeVerified: setting orgGID="+orgGID+"\nl_org="+org_local_ID);
 		this.global_organization_ID = orgGID;
 		this.organization_ID = Util.lval(org_local_ID, organization_ID);
@@ -475,9 +474,9 @@ class D_Neighborhood extends ASNObj implements Summary{
 	 * @param tempConst : true if a temporary should be created on absence
 	 * @param tempPar : true if a temporary should be created on absence
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempPar) throws SQLiteException {
+	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempPar) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Neighborhood: fillLocals: start");
 		if((global_organization_ID==null)&&(organization_ID <= 0)){
 			Util.printCallPath("cannot store constituent with not orgGID");
@@ -530,7 +529,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		return true;
 	}
 	
-	public long store(RequestData rq) throws SQLiteException {
+	public long store(RequestData rq) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Neighborhood: store: start");
 		
 		boolean locals = fillLocals(rq, true, true, true, true);
@@ -566,11 +565,11 @@ class D_Neighborhood extends ASNObj implements Summary{
 		return _nID;
 	}
 
-	public String store(String orgGID, String org_local_ID, String arrival_time) throws SQLiteException {
+	public String store(String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
 		return integrateNewNeighborhoodData(this, orgGID, org_local_ID, arrival_time, null);
 	}
 	
-	public static Object localForNeighborhoodGID(String gID) throws SQLiteException {
+	public static Object localForNeighborhoodGID(String gID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.neighborhood.neighborhood_ID+
 		" FROM "+table.neighborhood.TNAME+
 		" WHERE "+table.neighborhood.global_neighborhood_ID+"=?;";
@@ -578,7 +577,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		Application.db.select(sql, params, DEBUG);
 		return null;
 	}
-	public static void readSignStore(long nID, SK sk, String orgGID, String submitter_ID, String org_local_ID, String arrival_time) throws SQLiteException {
+	public static void readSignStore(long nID, SK sk, String orgGID, String submitter_ID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
 		D_Neighborhood w = D_Neighborhood.getNeighborhood(nID+"",null);
 		w.sign(sk, orgGID);
 		w.storeVerified(submitter_ID, orgGID, org_local_ID, arrival_time);
@@ -626,7 +625,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 	public static String[] splitSubDivisionsFromCAND(String subs) {
 		return subs.split(Pattern.quote(table.neighborhood.SEP_names_subdivisions));
 	}
-	public static void getLeafNeighborhoods(String org_ID) throws SQLiteException{
+	public static void getLeafNeighborhoods(String org_ID) throws P2PDDSQLException{
 		String sql = "SELECT n."+table.neighborhood.neighborhood_ID+
 		" FROM "+table.neighborhood.TNAME+" AS n "+
 		" LEFT JOIN "+table.neighborhood.TNAME+" AS d ON(d."+table.neighborhood.parent_nID+"=n."+table.neighborhood.neighborhood_ID+") "+
@@ -646,11 +645,11 @@ class D_Neighborhood extends ASNObj implements Summary{
 	 * @param arrival_time
 	 * @param orgData
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static String integrateNewNeighborhoodData(
 			D_Neighborhood wn, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData) throws SQLiteException {
+			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Neighborhood: integrateNewNeighborhoodData: exit start");
 		if(wn == null){
 			if(_DEBUG) System.out.println("D_Neighborhood: integrateNewNeighborhoodData: exit no data");
@@ -665,12 +664,12 @@ class D_Neighborhood extends ASNObj implements Summary{
 		}
 		return integrateNewVerifiedNeighborhoodData(wn, orgGID, org_local_ID, arrival_time, orgData);
 	}
-	public void storeVerified() throws SQLiteException{
+	public void storeVerified() throws P2PDDSQLException{
 		integrateNewVerifiedNeighborhoodData(this, this.global_organization_ID, Util.getStringID(this.organization_ID), Util.getGeneralizedTime(), null);
 	}
 	public static String integrateNewVerifiedNeighborhoodData(
 			D_Neighborhood wn, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData) throws SQLiteException {
+			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
 		try{
 		String result = null;
 		if(DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: start on "+wn);
@@ -754,12 +753,12 @@ class D_Neighborhood extends ASNObj implements Summary{
 	}
 	
 
-	public static String getNeighborhoodLocalID(String parent_global_ID) throws SQLiteException {
+	public static String getNeighborhoodLocalID(String parent_global_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("NeighborhoodHandling:getNeighborhoodLocalID: start");		
 		String date[]= new String[1];
 		return getNeighborhoodLocalIDAndDate(parent_global_ID, date);
 	}
-	public static String getNeighborhoodLocalIDAndDate(String parent_global_ID, String[] date) throws SQLiteException {
+	public static String getNeighborhoodLocalIDAndDate(String parent_global_ID, String[] date) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("NeighborhoodHandling:getNeighborhoodLocalIDAndDate: exit");		
 		if(parent_global_ID==null) return null;
 		String sql = "SELECT "+table.neighborhood.neighborhood_ID+", "+table.neighborhood.creation_date+
@@ -771,7 +770,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		return Util.getString(n.get(0).get(0));
 	}
 
-	public static String getNeighborhoodGlobalID(String local_ID) throws SQLiteException {
+	public static String getNeighborhoodGlobalID(String local_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("NeighborhoodHandling:getNeighborhoodGlobalID: start");		
 		if(local_ID==null) return null;
 		String sql = "SELECT "+table.neighborhood.global_neighborhood_ID+
@@ -782,7 +781,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		return Util.getString(n.get(0).get(0));
 	}
 	public static String insertTemporaryNeighborhoodGID(String neighborhood_GID,
-			String org_ID) throws SQLiteException {
+			String org_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("NeighborhoodHandling:insertTemporaryNeighborhoodGID: start");	
 		if(neighborhood_GID==null){
 			if(DEBUG) System.out.println("NeighborhoodHandling:insertTemporaryNeighborhoodGID: null GID");
@@ -795,7 +794,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 
 	}
 	public static long _insertTemporaryNeighborhoodGID(String neighborhood_GID,
-			String org_ID, long _default) throws SQLiteException {
+			String org_ID, long _default) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("NeighborhoodHandling:insertTemporaryNeighborhoodGID: start");	
 		if(neighborhood_GID==null){
 			if(_DEBUG) System.out.println("NeighborhoodHandling:insertTemporaryNeighborhoodGID: null GID");
@@ -808,14 +807,14 @@ class D_Neighborhood extends ASNObj implements Summary{
 
 	}
 	/*
-	static long insertTemporaryGID(String neighborhood_GID, String _organization_ID) throws SQLiteException {
+	static long insertTemporaryGID(String neighborhood_GID, String _organization_ID) throws P2PDDSQLException {
 		return Application.db.insertNoSync(table.neighborhood.TNAME,
 				new String[]{table.neighborhood.global_neighborhood_ID, table.neighborhood.organization_ID},
 				new String[]{neighborhood_GID, _organization_ID }, DEBUG);
 	}
 */
 	public static ArrayList<String> checkAvailability(ArrayList<String> cons,
-			String orgID, boolean DBG) throws SQLiteException {
+			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String cHash : cons) {
 			if(!available(cHash, orgID, DBG)) result.add(cHash);
@@ -827,9 +826,9 @@ class D_Neighborhood extends ASNObj implements Summary{
 	 * @param cHash
 	 * @param orgID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static boolean available(String hash, String orgID, boolean DBG) throws SQLiteException {
+	private static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.neighborhood.neighborhood_ID+
 			" FROM "+table.neighborhood.TNAME+
@@ -850,9 +849,9 @@ class D_Neighborhood extends ASNObj implements Summary{
 	 * @param nID :  local neighborhood ID
 	 * @param _neighborhoods takes values: {EXPAND_NONE, EXPAND_ONE, EXPAND_ALL} EXPAND_NONE-not checked
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static D_Neighborhood[] getNeighborhoodHierarchy(String global_neighborhood_ID, String nID, int _neighborhoods) throws SQLiteException {
+	public static D_Neighborhood[] getNeighborhoodHierarchy(String global_neighborhood_ID, String nID, int _neighborhoods) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 			if(DEBUG) System.out.println("D_Neighborhood:getNeighborhoodHierarchy: neighGID="+global_neighborhood_ID+" nID="+nID+" #="+_neighborhoods);
 			if(global_neighborhood_ID==null)
@@ -886,14 +885,14 @@ class D_Neighborhood extends ASNObj implements Summary{
 		return neighborhood;
 	}
 
-	public static String getGlobalID(String lID) throws SQLiteException {
+	public static String getGlobalID(String lID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.neighborhood.global_neighborhood_ID+" FROM "+table.neighborhood.TNAME+
 		" WHERE "+table.neighborhood.neighborhood_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{lID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public static String getLocalID(String gID) throws SQLiteException {
+	public static String getLocalID(String gID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.neighborhood.neighborhood_ID+" FROM "+table.neighborhood.TNAME+
 		" WHERE "+table.neighborhood.global_neighborhood_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{gID}, DEBUG);
@@ -909,9 +908,9 @@ class D_Neighborhood extends ASNObj implements Summary{
 	 *  0 for absent,
 	 *  1 for present&signed,
 	 *  -1 for temporary
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static int isGIDavailable(String gID, boolean DBG) throws SQLiteException {
+	public static int isGIDavailable(String gID, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.neighborhood.neighborhood_ID+","+table.neighborhood.signature+
 			" FROM "+table.neighborhood.TNAME+
@@ -933,10 +932,10 @@ class D_Neighborhood extends ASNObj implements Summary{
 	 * @param neig_GID
 	 * @param existingNeighborhoodSigned : set to true if signed
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static String getNeighborhoodLocalID(String neig_GID,
-			boolean[] existingNeighborhoodSigned) throws SQLiteException {
+			boolean[] existingNeighborhoodSigned) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Neighborhood:getNeighborhoodLocalID: "+neig_GID+" ?");
 		if(neig_GID==null) {
 			if(existingNeighborhoodSigned!=null) existingNeighborhoodSigned[0]= false;
@@ -961,7 +960,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		return id;
 	}
 
-	public static boolean toggleBlock(long neighborhoodID) throws SQLiteException {
+	public static boolean toggleBlock(long neighborhoodID) throws P2PDDSQLException {
 		String sql = 
 				"SELECT "+table.neighborhood.blocked+
 				" FROM "+table.neighborhood.TNAME+
@@ -978,7 +977,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 				new String[]{Util.bool2StringInt(result), Util.getStringID(neighborhoodID)}, DEBUG);
 		return result;
 	}
-	public static boolean toggleBroadcast(long neighborhoodID) throws SQLiteException {
+	public static boolean toggleBroadcast(long neighborhoodID) throws P2PDDSQLException {
 		String sql = 
 				"SELECT "+table.neighborhood.broadcasted+
 				" FROM "+table.neighborhood.TNAME+
@@ -1049,7 +1048,24 @@ class D_Neighborhood extends ASNObj implements Summary{
 			}
 			*/
 			//getLeafNeighborhoods(args[0]);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	public static void zapp(long neighborhoodID2) {
+		// TODO Auto-generated method stub
+		try {
+			Application.db.delete(table.neighborhood.TNAME,
+					new String[]{table.neighborhood.neighborhood_ID},
+					new String[]{Util.getStringID(neighborhoodID2)},
+					DEBUG);
+/*			Application.db.delete(table.constituent.TNAME,
+					new String[]{table.constituent.neighborhood_ID},
+					new String[]{Util.getStringID(neighborhoodID2)},
+					DEBUG);
+					*/
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

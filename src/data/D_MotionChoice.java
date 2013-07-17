@@ -22,7 +22,7 @@ package data;
 
 import java.util.ArrayList;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -67,7 +67,7 @@ class D_MotionChoice extends ASNObj{
 	}
 	@Override
 	public Encoder getEncoder() {
-		Encoder enc = new Encoder();
+		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(name).setASN1Type(DD.TAG_AC0));
 		enc.addToSequence(new Encoder(short_name).setASN1Type(DD.TAG_AC1));
 		return enc;
@@ -86,9 +86,9 @@ class D_MotionChoice extends ASNObj{
 	 * Saves a choice for motionID, assuming no other choice exists with the same name OR GID
 	 * @param motionID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long save(String motionID) throws SQLiteException {
+	public long save(String motionID) throws P2PDDSQLException {
 		long result = -1;
 		String sql =
 			"SELECT "+table.motion_choice.choice_ID+
@@ -109,13 +109,13 @@ class D_MotionChoice extends ASNObj{
 		}
 		return result;
 	}
-	public static void save(D_MotionChoice[] choices, String motionID) throws SQLiteException {
+	public static void save(D_MotionChoice[] choices, String motionID) throws P2PDDSQLException {
 		if(choices==null) return;
 		for(D_MotionChoice c: choices){
 			c.save(motionID);
 		}
 	}
-	public static D_MotionChoice[] getChoices(String motionID) throws SQLiteException {
+	public static D_MotionChoice[] getChoices(String motionID) throws P2PDDSQLException {
 		D_MotionChoice[] result;
 		String sql = 
 			"SELECT "+table.motion_choice.fields+

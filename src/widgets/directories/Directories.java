@@ -43,7 +43,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -167,9 +167,9 @@ public class Directories extends JTable {
     }
 	/**
 	 * @param args
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	public static void main(String[] args) throws SQLiteException {
+	public static void main(String[] args) throws P2PDDSQLException {
 		String dfname = Application.DELIBERATION_FILE;
 		Application.db = new DBInterface(dfname);
 		//DirectoriesTest dT = new DirectoriesTest(Application.db);
@@ -257,7 +257,7 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 			String dirs = Util.concat(_ld, DD.APP_LISTING_DIRECTORIES_SEP);
 			if(DEBUG)System.out.println("Directories: setValueAt: Setting "+dirs);
 			DD.setAppTextNoSync(DD.APP_LISTING_DIRECTORIES, dirs);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		fireTableCellUpdated(row, col);
@@ -317,7 +317,7 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 					this.rowByIPport.put(ipPort, new Integer(k));
 				}
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}		
 		this.fireTableDataChanged();

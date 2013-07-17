@@ -25,7 +25,7 @@ import java.util.Calendar;
 import ciphersuits.Cipher;
 import ciphersuits.PK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -82,7 +82,7 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = Application.db.select(sql, params, _DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
 		}
@@ -102,7 +102,7 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 		// TODO Auto-generated method stub
 		return null;
 	}
-	public void store(String cmd) throws SQLiteException {
+	public void store(String cmd) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("in UpdateKeysInfo.store()");
 		String params[] = new String[table.updatesKeys.F_FIELDS];
 		params[table.updatesKeys.F_ORIGINAL_TESTER_NAME] = this.original_tester_name;
@@ -193,7 +193,7 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 					" FROM "+table.updatesKeys.TNAME+
 					" WHERE "+table.updatesKeys.public_key_hash+"=?;",
 					new String[]{public_key_hash}, _DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
 		}

@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 
-		Author: Ossamah Dhannoon
+		Author: Osamah Dhannoon
 		Florida Tech, Human Decision Support Systems Laboratory
    
        This program is free software; you can redistribute it and/or modify

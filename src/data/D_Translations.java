@@ -33,7 +33,7 @@ import util.Util;
 
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -72,7 +72,7 @@ class D_Translations extends ASNObj{
 	public String organization_ID;
 
 	public D_Translations(){}
-	public D_Translations(long translationID) throws SQLiteException{
+	public D_Translations(long translationID) throws P2PDDSQLException{
 		if(_DEBUG) System.out.println("WB_Translations:WB_Translations: start wID="+translationID);
 		this.translation_ID = ""+translationID;
 		String sql = 
@@ -89,7 +89,7 @@ class D_Translations extends ASNObj{
 		if(w.size()>0) init(w.get(0));
 		if(_DEBUG) System.out.println("WB_Translations:WB_Translations: Done");
 	}
-	public D_Translations(String translationGID) throws SQLiteException{
+	public D_Translations(String translationGID) throws P2PDDSQLException{
 		if(_DEBUG) System.out.println("WB_Translations:WB_Translations: start wGID="+translationGID);
 		this.global_translation_ID = translationGID;
 		String sql = 
@@ -260,7 +260,7 @@ class D_Translations extends ASNObj{
 	public String make_ID(){
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		// return this.global_witness_ID =  
@@ -289,9 +289,9 @@ class D_Translations extends ASNObj{
 	 * before call, one should set organization_ID and global_motionID
 	 * @param rq
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long store(streaming.RequestData rq) throws SQLiteException {
+	public long store(streaming.RequestData rq) throws P2PDDSQLException {
 		boolean locals = fillLocals(rq, true, true, true);
 		if(!locals) return -1;
 
@@ -327,7 +327,7 @@ class D_Translations extends ASNObj{
 		
 		return storeVerified();
 	}
-	private static String getLocalIDforGID(String global_translation_ID) throws SQLiteException {
+	private static String getLocalIDforGID(String global_translation_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Translations:getLocalIDforGID: start");
 		if(global_translation_ID==null) return null;
 		String sql = "SELECT "+table.translation.translation_ID+
@@ -337,7 +337,7 @@ class D_Translations extends ASNObj{
 		if(n.size()==0) return null;
 		return Util.getString(n.get(0).get(0));
 	}
-	private static String getLocalIDandDateforGID(String global_translation_ID, String[]date) throws SQLiteException {
+	private static String getLocalIDandDateforGID(String global_translation_ID, String[]date) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Translations:getLocalIDforGID: start");
 		if(global_translation_ID==null) return null;
 		String sql = "SELECT "+table.translation.translation_ID+","+table.translation.creation_date+
@@ -348,21 +348,21 @@ class D_Translations extends ASNObj{
 		date[0] = Util.getString(n.get(0).get(1));
 		return Util.getString(n.get(0).get(0));
 	}
-	public static long insertTemporaryGID(String trans_GID, String org_ID) throws SQLiteException {
+	public static long insertTemporaryGID(String trans_GID, String org_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Transl:insertTemporaryGID: start");
 		return Application.db.insert(table.translation.TNAME,
 				new String[]{table.translation.global_translation_ID, table.translation.organization_ID},
 				new String[]{trans_GID, org_ID},
 				_DEBUG);
 	}
-	private static String getDateFor(String transID) throws SQLiteException {
+	private static String getDateFor(String transID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.translation.creation_date+" FROM "+table.translation.TNAME+
 		" WHERE "+table.translation.translation_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{""+transID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst) throws SQLiteException {
+	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst) throws P2PDDSQLException {
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
 			return false;
@@ -394,7 +394,7 @@ class D_Translations extends ASNObj{
 		}
 		return true;
 	}
-	private void fillGlobals() throws SQLiteException {		
+	private void fillGlobals() throws P2PDDSQLException {		
 		if((this.organization_ID != null ) && (this.global_organization_ID == null))
 			this.global_organization_ID = D_Organization.getGlobalOrgID(this.organization_ID);
 		
@@ -404,9 +404,9 @@ class D_Translations extends ASNObj{
 	/**
 	 * Store setting arrival time to now
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long storeVerified() throws SQLiteException {
+	public long storeVerified() throws P2PDDSQLException {
 		Calendar now = Util.CalendargetInstance();
 		return storeVerified(now);
 	}
@@ -414,9 +414,9 @@ class D_Translations extends ASNObj{
 	 * It will refuse to create new entries if it it has the same global_ID (value&translation for given constituent)
 	 * @param arrival_date
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long storeVerified(Calendar arrival_date) throws SQLiteException {
+	public long storeVerified(Calendar arrival_date) throws P2PDDSQLException {
 		long result = -1;
 		if(_DEBUG) System.out.println("WB_Translations:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		if(this.submitter_ID == null )
@@ -476,16 +476,16 @@ class D_Translations extends ASNObj{
 	 * @param witness_ID
 	 * @param signer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long readSignSave(long translation_ID, long signer_ID) throws SQLiteException {
+	public static long readSignSave(long translation_ID, long signer_ID) throws P2PDDSQLException {
 		D_Translations w=new D_Translations(translation_ID);
 		ciphersuits.SK sk = util.Util.getStoredSK(D_Constituent.getConstituentGlobalID(""+signer_ID));
 		w.sign(sk);
 		return w.storeVerified();
 	}
 
-	public static String getLocalID(String global_translation_ID) throws SQLiteException {
+	public static String getLocalID(String global_translation_ID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.translation.translation_ID+" FROM "+table.translation.TNAME+
 		" WHERE "+table.translation.global_translation_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_translation_ID}, DEBUG);
@@ -493,7 +493,7 @@ class D_Translations extends ASNObj{
 		return Util.getString(o.get(0).get(0));
 	}
 	public static ArrayList<String> checkAvailability(ArrayList<String> hashes,
-			String orgID, boolean DBG) throws SQLiteException {
+			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String hash : hashes) {
 			if(!available(hash, orgID, DBG)) result.add(hash);
@@ -505,9 +505,9 @@ class D_Translations extends ASNObj{
 	 * @param hash
 	 * @param orgID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static boolean available(String hash, String orgID, boolean DBG) throws SQLiteException {
+	private static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.translation.translation_ID+
 			" FROM "+table.translation.TNAME+

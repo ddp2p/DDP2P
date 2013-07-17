@@ -3,7 +3,7 @@ package config;
 import ASN1.ASN1DecoderFail;
 import ASN1.Decoder;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import streaming.RequestData;
 import util.DBInterface;
@@ -34,7 +34,7 @@ public class Interests {
 			
 			System.out.println("Interests: have = "+rq);
 	}
-	public static RequestData getCurrentInterests() throws ASN1DecoderFail, SQLiteException{
+	public static RequestData getCurrentInterests() throws ASN1DecoderFail, P2PDDSQLException{
 			String interests_text = DD.getAppText(DD.WLAN_INTERESTS);
 			if(interests_text==null){
 				System.err.println("Interests:No WLAN interests!");

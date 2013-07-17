@@ -38,7 +38,7 @@ import ASN1.Decoder;
 import ciphersuits.Cipher;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -88,11 +88,20 @@ public class UDPServerThread extends Thread {
 		byte[] msg=null;
 		Decoder dec = new Decoder(pak.getData(),pak.getOffset(),pak.getLength());
 		if(dec.getTypeByte()==DD.TAG_AC12) { //Fragment
+			//System.out.println("F_");
 			if(DEBUG)System.out.println("UDPServer:run: Fragment received, will decode");
 			UDPFragment frag = new UDPFragment();
 			try {
 				frag.decode(dec);
 				if(DEBUG)System.out.println("UDPServer:run: receives fragment "+frag.sequence+"/"+frag.fragments+" from:"+pak.getSocketAddress());
+				if(frag.fragments > DD.UDP_MAX_FRAGMENTS){
+					if(_DEBUG)System.out.println("UDPServer:run: Too Many Fragments: "+frag);
+					return;
+				}
+				if((frag.data!=null) && (frag.data.length > DD.UDP_MAX_FRAGMENT_LENGTH)){
+					if(_DEBUG)System.out.println("UDPServer:run: Too Large Fragments: "+frag.data.length);
+					return;
+				}
 				msg = us.getFragment(frag, pak.getSocketAddress());
 				if(DEBUG)System.out.println("UDPServer:run: Fragment received: "+frag);
 			} catch (ASN1DecoderFail e) {
@@ -109,6 +118,7 @@ public class UDPServerThread extends Thread {
 		}else{
 			//System.out.println("Packet received not fragment");
 			if(dec.getTypeByte()==DD.TAG_AC11) { //Fragment
+				//System.out.println("A");
 				UDPFragmentAck frag = new UDPFragmentAck();
 				try {
 					frag.decode(dec);
@@ -120,6 +130,7 @@ public class UDPServerThread extends Thread {
 				return;
 			}else{
 				if(dec.getTypeByte()==DD.TAG_AC15){
+					//System.out.println("N");
 					UDPFragmentNAck frag = new UDPFragmentNAck();
 					try {
 						frag.decode(dec);
@@ -132,6 +143,7 @@ public class UDPServerThread extends Thread {
 					
 				}else{
 				  if(dec.getTypeByte()==DD.TAG_AC16) {
+					//System.out.println("R");
 					if(DEBUG)System.out.println("UDPServer:run: Packet received is fragments reclaim");
 					UDPReclaim frag = new UDPReclaim();
 					try {
@@ -151,6 +163,7 @@ public class UDPServerThread extends Thread {
 		}
 		if(DEBUG)System.out.println("UDPServer:run: Message received will be interpreted");
 		if(dec.getTypeByte()==DD.TAG_AC13) {
+		//System.out.println("P");
 		 ASNUDPPing aup = new ASNUDPPing();
 		 try { // check if this is a PING
 			if(DEBUG)System.out.println("UDPServer:run: UDPServer receives ping from:"+pak.getSocketAddress());
@@ -162,7 +175,7 @@ public class UDPServerThread extends Thread {
 				// than send a request to that peer
 			  String g_peerID = aup.peer_globalID;
 			  synchronized(us.lock_reply){
-				if(!Application.aus.hasSyncRequests(g_peerID)) {
+				if(DD.AVOID_REPEATING_AT_PING&&!Application.aus.hasSyncRequests(g_peerID)) {
 					DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Received ping confirmation already handled from peer"));
 					if(DEBUG)System.out.println("UDPServer:run: Ping already handled for: "+Util.trimmed(g_peerID));
 					return;					
@@ -173,7 +186,7 @@ public class UDPServerThread extends Thread {
 				String _lastSnapshotString;
 				try {
 					_lastSnapshotString = Client.getLastSnapshot(g_peerID);
-				} catch (SQLiteException e1) {
+				} catch (P2PDDSQLException e1) {
 					e1.printStackTrace();
 					return;
 				}
@@ -186,7 +199,21 @@ public class UDPServerThread extends Thread {
 				String peer_ID = Util.getString(peer.get(table.peer.PEER_COL_ID));
 				String _filtered = Util.getString(peer.get(table.peer.PEER_COL_FILTERED));
 				boolean filtered = Util.stringInt2bool(_filtered, false);
-				ASNSyncRequest asreq = Client.buildRequest(_lastSnapshotString, null, peer_ID);
+			
+				ASNSyncRequest asreq;
+				asreq = Client.peer_scheduled_requests.get(g_peerID);
+				if(asreq!=null){
+					Client.peer_scheduled_requests.remove(g_peerID);
+					asreq.lastSnapshot = Util.getCalendar(_lastSnapshotString);
+					String global_peer_ID = Identity.current_peer_ID.globalID;
+					if(DEBUG) System.out.println("Client: buildRequests: myself=: "+global_peer_ID);
+					try {
+						asreq.address = D_PeerAddress.get_myself(global_peer_ID);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}else
+					asreq = Client.buildRequest(_lastSnapshotString, null, peer_ID);
 				if(filtered) asreq.orgFilter=UpdateMessages.getOrgFilter(peer_ID);
 				SK sk = asreq.sign();
 				
@@ -283,7 +310,7 @@ public class UDPServerThread extends Thread {
 			if(DEBUG)System.out.println("UDPServer:run: UDPServer pinged on request: "+aup);
 		  } catch (ASN1DecoderFail e) {
 			  if(DEBUG)System.out.println("Ping decoding failed! "+e);
-		  } catch (SQLiteException e) {
+		  } catch (P2PDDSQLException e) {
 			  if(DEBUG)System.out.println("Database access failed! "+e);
 			e.printStackTrace();
 		}
@@ -352,7 +379,7 @@ public class UDPServerThread extends Thread {
 			//System.out.println("Answer sent: "+Util.trimmed(sa.toString(),Util.MAX_UPDATE_DUMP));
 		  } catch (ASN1DecoderFail e) {
 			e.printStackTrace();
-		  } catch (SQLiteException e) {
+		  } catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		  } catch (IOException e) {
 			e.printStackTrace();
@@ -404,7 +431,7 @@ public class UDPServerThread extends Thread {
 			if(DEBUG)if((rq!=null) && !rq.empty())System.out.println("UDPServer:run: Should reply with request for: "+rq);
 		  } catch (ASN1DecoderFail e) {
 			e.printStackTrace();
-		  } catch (SQLiteException e) {
+		  } catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		  } 
 		  return;

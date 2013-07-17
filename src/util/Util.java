@@ -81,7 +81,7 @@ import javax.swing.text.View;
 
 import wireless.Detect_interface;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -107,6 +107,7 @@ public class Util {
 	private static final boolean _DEBUG = true;
 	public static final int MAX_DUMP = 20;
 	public static final int MAX_UPDATE_DUMP = 400;
+	static Random rnd = new Random(); // for simulation
 	
     public static String usedCipherGenkey = Cipher.RSA;
     public static String usedMDGenkey = Cipher.SHA256;
@@ -128,6 +129,14 @@ public class Util {
 		if ((array.length == 0)) return def;
 		String result=((array[0]==null)?"":array[0].toString());
 		for(int k=1; k<array.length; k++) result = result + sep + ((array[k]==null)?"":array[k]);
+		return result;
+	}
+	public static String concatSI(Hashtable<String, Integer> array,
+			String sep, String def) {
+		if ((array == null)) return def;
+		if ((array.size() == 0)) return def;
+		String result=((array.get(0)==null)?"":array.get(0).toString());
+		for(String s: array.keySet()) result = result+ sep + s+":"+array.get(s);
 		return result;
 	}
 	public static String concat(Hashtable<String, String> array, String sep,
@@ -728,9 +737,9 @@ public class Util {
 	 * @param local_peer_ID
 	 * @param signature
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static boolean verifySignByPeerID(ASNObj data, String local_peer_ID, byte[] signature) throws SQLiteException {
+	public static boolean verifySignByPeerID(ASNObj data, String local_peer_ID, byte[] signature) throws P2PDDSQLException {
 		String _pk = table.peer.getGlobalPeerID(local_peer_ID);
 		if (_pk==null) return false;
 		PK pk = Cipher.getPK(_pk);
@@ -742,7 +751,7 @@ public class Util {
 	 * @param local_peer_ID
 	 * @param signature
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static boolean verifySignByID(ASNObj data, String local_pk_ID, byte[] signature) {
 		if (local_pk_ID == null) return false;
@@ -755,7 +764,7 @@ public class Util {
 	 * @param local_peer_ID
 	 * @param signature
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static boolean verifySignByID(byte[] msg, String pk_ID, byte[] signature) {
 		if (pk_ID == null){
@@ -1064,7 +1073,6 @@ public class Util {
 	 * @return
 	 */
 	public static float random(float max){
-		Random rnd = new Random();
 		float result = rnd.nextFloat()*max;
 		return result;
 	}
@@ -1098,7 +1106,7 @@ public class Util {
 	 */
 	//return random integer 0 or 1.
 	public static int get_one_or_zero() {
-		int randomInt4=new Random().nextInt(2);
+		int randomInt4=rnd.nextInt(2);
 		return randomInt4;
 	}
 	public static boolean equalBytes_null_or_not(byte[] a, byte[] b) {
@@ -1386,7 +1394,7 @@ public class Util {
 		java.util.ArrayList<java.util.ArrayList<Object>> o;
 		try {
 			o = Application.db.select(sql, new String[]{public_gID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -1403,7 +1411,7 @@ public class Util {
 		java.util.ArrayList<java.util.ArrayList<Object>> o;
 		try {
 			o = Application.db.select(sql, new String[]{id_hash}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -1641,7 +1649,7 @@ public class Util {
 	    return null; 
 	}
     /**
-     * Thus function is supposed to read an image from a filename pictureImage and convert it to a byte[]
+     * This function is supposed to read an image from a filename pictureImage and convert it to a byte[]
      * Unfortunately not portable ..., based on JPEGImageEncoder
      * 
      * see
@@ -1664,22 +1672,21 @@ public class Util {
     		Panel p = new Panel();
     		BufferedImage bi = new BufferedImage(resizeWidth, resizeHeight,
     				BufferedImage.TYPE_INT_RGB);
-    		Graphics2D big = bi.createGraphics();
-    		big.drawImage(imageResize, 0, 0, p);
+//    		Graphics2D big = bi.createGraphics();
+//    		big.drawImage(imageResize, 0, 0, p);
 //    		ByteArrayOutputStream os = new ByteArrayOutputStream();
 //    		JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(os);
 //    		encoder.encode(bi);
 //    		byteArray = os.toByteArray();
     		
     		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    		boolean success = ImageIO.write(bi, DD.CONSTITUENT_PICTURE_FORMAT, baos);
+     		boolean success = ImageIO.write(bi, DD.CONSTITUENT_PICTURE_FORMAT, baos);
     		if(success) byteArray = baos.toByteArray();
     		else System.err.println("ConstituentAction:getImage: appropriate picture writter missing");
     		
     	}catch(RuntimeException ev){ev.printStackTrace();}
     	catch (Exception e) {e.printStackTrace();}
     	return byteArray;
-		
     	//throw new RuntimeException("Not implemented JPEG!");
     }
 
@@ -2010,7 +2017,7 @@ public class Util {
 		return c1.equals(c2);
 	}
 	public static int[] mkIntArray(String[] iDs_strings) {
-		if(_DEBUG&&(iDs_strings!=null))System.out.println("Util:mkIntArray: input #"+iDs_strings.length+"="+Util.concat(iDs_strings, ";"));
+		if(DEBUG&&(iDs_strings!=null))System.out.println("Util:mkIntArray: input #"+iDs_strings.length+"="+Util.concat(iDs_strings, ";"));
 		int[] result = new int[iDs_strings.length];
 		for(int i=0; i<result.length; i++)
 			try{result[i] = Integer.parseInt(iDs_strings[i]);}catch(Exception e){e.printStackTrace();}
@@ -2042,6 +2049,32 @@ public class Util {
 		}else{
 			insertSort(list, item, mid+1, j);			
 		}
+	}
+	public static long get_long(Object o) {
+		if(o==null) return 0;
+		if(o instanceof Long) return ((Long) o).longValue();
+		if(o instanceof Integer) return ((Integer) o).longValue();
+		return Long.parseLong(o.toString());
+	}
+	public static int get_int(Object o) {
+		if(o==null) return 0;
+		if(o instanceof Long) return ((Long) o).intValue();
+		if(o instanceof Integer) return ((Integer) o).intValue();
+		return Integer.parseInt(o.toString());
+	}
+	public static Integer Ival(Object i) {
+		if(i==null) return null;
+		if(i instanceof Integer) return (Integer)i;
+		return new Integer(""+Integer.parseInt(i.toString()));
+	}
+	public static Long Lval(Object i) {
+		if(i==null) return null;
+		if(i instanceof Long) return (Long)i;
+		return new Long(""+Long.parseLong(i.toString()));
+	}
+	public static boolean emptyString(String in) {
+		if(in==null) return true;
+		return "".equals(in);
 	}
 }
 class GetHostName extends Thread{

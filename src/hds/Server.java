@@ -48,7 +48,7 @@ import util.CommEvent;
 import util.DBInterface;
 import util.Util;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -89,6 +89,11 @@ class ServerThread extends Thread {
 				DD.ed.fireServerUpdate(new CommEvent(this, null, s.getRemoteSocketAddress(), "Client", "Sync Requested"));
 				if(DEBUG) out.println("server thread: Got: "+Util.byteToHexDump(sr,msglen));
 				Decoder dec = new Decoder(sr,0,msglen);
+//				if(dec.contentLength() > DD.TCP_MAX_LENGTH){
+//					DD.ed.fireServerUpdate(new CommEvent(this, null, s.getRemoteSocketAddress(), "Client", "Server Long Sync: "+msglen));
+//					if(DEBUG)out.println("Server Long Sync: "+msglen);
+//					break;
+//				}
 				/*
 				while(true) {
 					int asrlen = dec.objectLen();
@@ -110,7 +115,7 @@ class ServerThread extends Thread {
 				if(!asr.verifySignature()){
 					DD.ed.fireServerUpdate(new CommEvent(this, null, s.getRemoteSocketAddress(), "Client", "Server Unsigned Sync Request received: "+asr));
 					if(DEBUG)out.println("Server: Unsigned Request received: "+asr.toString());
-					continue;
+					break; // continue;
 				}
 				SocketAddress isa = s.getRemoteSocketAddress();
 				DD.ed.fireServerUpdate(new CommEvent(this, null, isa, "Client", "Sync Request received: "+asr));
@@ -132,7 +137,7 @@ class ServerThread extends Thread {
 				s.close();
 			} catch (ASN1DecoderFail e) {
 				e.printStackTrace();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			catch (IOException e1) {
@@ -201,7 +206,7 @@ public class Server extends Thread {
 		if (port <= 1000) port = 1000;
 		return port;
 	}
-	public static void extractDataSyncRequest(ASNSyncRequest asr, SocketAddress sa, Object caller) throws SQLiteException {
+	public static void extractDataSyncRequest(ASNSyncRequest asr, SocketAddress sa, Object caller) throws P2PDDSQLException {
 		Calendar crt_date = Util.CalendargetInstance();
 		String _crt_date = Encoder.getGeneralizedTime(crt_date);
 		D_PeerAddress pa = asr.address;
@@ -324,7 +329,7 @@ public class Server extends Thread {
 		DD.createMyPeerIDIfEmpty();
 		if(DEBUG) out.println("END Server.try_connect");
 	}
-	public Server() throws SQLiteException {
+	public Server() throws P2PDDSQLException {
 		if(DEBUG) out.println("Start Server");
 		try_connect(PORT);
 		Identity peer_ID = new Identity();
@@ -333,7 +338,7 @@ public class Server extends Thread {
 		peer_ID.slogan = Identity.current_peer_ID.slogan;
 		set_my_peer_ID_TCP(peer_ID);
 	}
-	public Server(int port) throws SQLiteException {
+	public Server(int port) throws P2PDDSQLException {
 		if(DEBUG) out.println("Start Server port="+port);
 		try_connect(port);
 		Identity peer_ID = new Identity();
@@ -342,12 +347,12 @@ public class Server extends Thread {
 		peer_ID.slogan = Identity.current_peer_ID.slogan;
 		set_my_peer_ID_TCP(peer_ID);
 	}
-	public Server(Identity peer_id) throws SQLiteException {
+	public Server(Identity peer_id) throws P2PDDSQLException {
 		if(DEBUG) out.println("Start Server peer_id="+peer_id);
 		try_connect(PORT);
 		set_my_peer_ID_TCP(peer_id);
 	}
-	public Server(int port, Identity peer_id) throws SQLiteException {
+	public Server(int port, Identity peer_id) throws P2PDDSQLException {
 		if(DEBUG) out.println("Start Server port="+port+" id="+peer_id);
 		try_connect(port);
 		set_my_peer_ID_TCP(peer_id);
@@ -404,7 +409,7 @@ public class Server extends Thread {
 	public static void update_my_peer_ID_peers_name_slogan(){
 		D_PeerAddress.update_my_peer_ID_peers_name_slogan_broadcastable(Identity.getAmIBroadcastable());
 	}
-	public static void set_my_peer_ID_UDP (Identity id, DatagramSocket ds) throws SQLiteException {
+	public static void set_my_peer_ID_UDP (Identity id, DatagramSocket ds) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) out.println("Server: set_my_peer_ID_UDP: enter");
 		if(id==null) return;
@@ -420,9 +425,9 @@ public class Server extends Thread {
 	 * Announce myself to directories, and register current address
 	 *  and known directories into peer_address table
 	 * @param id
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static void set_my_peer_ID_TCP (Identity id) throws SQLiteException {
+	public static void set_my_peer_ID_TCP (Identity id) throws P2PDDSQLException {
 		if(DEBUG) out.println("Server: set_my_peer_ID_TCP: enter");
 		if(id==null) return;
 		if(id.globalID==null) return;
@@ -432,7 +437,7 @@ public class Server extends Thread {
 		if(DEBUG) out.println("Server: set_my_peer_ID_TCP: exit");
 	}
 	/*
-	public void setNameSlogan (Identity id, String name, String slogan) throws SQLiteException{
+	public void setNameSlogan (Identity id, String name, String slogan) throws P2PDDSQLException{
 		ArrayList<ArrayList<Object>> op;
 		op=Application.db.select("SELECT "+table.peer.peer_ID+" FROM "+table.peer.TNAME+" WHERE "+table.peer.global_peer_ID+" = ?;", new String[]{id.globalID});
 		if(op.size()==0) {
@@ -529,7 +534,7 @@ public class Server extends Thread {
 		DD.ed.fireServerUpdate(new CommEvent(this, null, null, "LOCAL", "Server stopping"));
 	}
 	
-	static public void main(String arg[]) throws SQLiteException {
+	static public void main(String arg[]) throws P2PDDSQLException {
 		boolean directory_server_on_start = false;
 		boolean data_server_on_start = true;
 		boolean data_client_on_start = true;
@@ -540,7 +545,7 @@ public class Server extends Thread {
 		if(DEBUG) out.println("Opening database: "+Application.DELIBERATION_FILE);
 		try {
 			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
 		Identity id = Identity.getCurrentIdentity();

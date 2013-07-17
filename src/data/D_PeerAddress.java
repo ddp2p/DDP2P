@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
 
 import javax.swing.JOptionPane;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import streaming.UpdateMessages;
 import streaming.UpdatePeersTable;
@@ -95,12 +95,12 @@ public class D_PeerAddress extends ASNObj {
 
 	static final Object monitor_init_myself = new Object();
 	private static D_PeerAddress _myself = null;
-	public static void init_myself(String gid) throws SQLiteException {
+	public static void init_myself(String gid) throws P2PDDSQLException {
 		synchronized(monitor_init_myself){
 			_myself = new D_PeerAddress(gid);
 		}
 	}
-	public static void re_init_myself() throws SQLiteException {
+	public static void re_init_myself() throws P2PDDSQLException {
 		synchronized(monitor_init_myself) {
 			if(_myself==null) return; // Why?
 			init_myself(_myself.globalID);
@@ -110,9 +110,9 @@ public class D_PeerAddress extends ASNObj {
 	 * Returns myself if not null, else tries to load it
 	 * @param gid
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static D_PeerAddress get_myself(String gid) throws SQLiteException{
+	public static D_PeerAddress get_myself(String gid) throws P2PDDSQLException{
 		synchronized(monitor_init_myself) {
 			if(gid == null) return _myself;
 			if((_myself!=null) && (gid.equals(_myself))) return _myself;
@@ -240,9 +240,9 @@ public class D_PeerAddress extends ASNObj {
 	 * 
 	 * @param peerID
 	 * @param failOnNew avoids getting a peer with inexistant ID
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_PeerAddress(String peerID, boolean failOnNew) throws SQLiteException{
+	public D_PeerAddress(String peerID, boolean failOnNew) throws P2PDDSQLException{
 		String sql =
 			"SELECT "+table.peer.fields_peers+
 			" FROM "+table.peer.TNAME+
@@ -262,9 +262,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param failOnNew
 	 * @param _addresses
 	 * @param _served_orgs
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_PeerAddress(String peerGID, String peerGIDhash, boolean failOnNew, boolean _addresses, boolean _served_orgs) throws SQLiteException{
+	public D_PeerAddress(String peerGID, String peerGIDhash, boolean failOnNew, boolean _addresses, boolean _served_orgs) throws P2PDDSQLException{
 		String sql =
 				"SELECT "+table.peer.fields_peers+
 				" FROM "+table.peer.TNAME+
@@ -284,9 +284,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param failOnNew
 	 * @param _addresses
 	 * @param _served_orgs
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_PeerAddress(long peerID, boolean failOnNew, boolean _addresses, boolean _served_orgs) throws SQLiteException{
+	public D_PeerAddress(long peerID, boolean failOnNew, boolean _addresses, boolean _served_orgs) throws P2PDDSQLException{
 		String sql =
 			"SELECT "+table.peer.fields_peers+
 			" FROM "+table.peer.TNAME+
@@ -306,9 +306,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param failOnNew
 	 * @param _addresses
 	 * @param _served_orgs
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_PeerAddress(String peerGID, boolean failOnNew, boolean _addresses, boolean _served_orgs) throws SQLiteException{
+	public D_PeerAddress(String peerGID, boolean failOnNew, boolean _addresses, boolean _served_orgs) throws P2PDDSQLException{
 		String sql =
 			"SELECT "+table.peer.fields_peers+
 			" FROM "+table.peer.TNAME+
@@ -326,12 +326,12 @@ public class D_PeerAddress extends ASNObj {
 	 * @param peerGID
 	 * @param isGID dummy parameter to differentiate from case with local peerID
 	 * @param failOnNew
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_PeerAddress(String peerGID, int isGID, boolean failOnNew) throws SQLiteException{
+	public D_PeerAddress(String peerGID, int isGID, boolean failOnNew) throws P2PDDSQLException{
 		init(peerGID, isGID, failOnNew);
 	}
-	public void init(String peerGID, int isGID, boolean failOnNew) throws SQLiteException{
+	public void init(String peerGID, int isGID, boolean failOnNew) throws P2PDDSQLException{
 		if(DEBUG) System.out.println("D_PeerAddress: init: GID");
 		String sql =
 			"SELECT "+table.peer.fields_peers+
@@ -345,7 +345,7 @@ public class D_PeerAddress extends ASNObj {
 			init(p.get(0));
 		}
 	}
-	public D_PeerAddress(String peerGID) throws SQLiteException {
+	public D_PeerAddress(String peerGID) throws P2PDDSQLException {
 		init(peerGID, 1, false);
 	}
 	 
@@ -356,9 +356,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param failOnNew
 	 * @param _addresses
 	 * @param _served_orgs
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_PeerAddress(String peerGID, int isGID, boolean failOnNew, boolean _addresses, boolean _served) throws SQLiteException{
+	public D_PeerAddress(String peerGID, int isGID, boolean failOnNew, boolean _addresses, boolean _served) throws P2PDDSQLException{
 			String sql =
 				"SELECT "+table.peer.fields_peers+
 				" FROM "+table.peer.TNAME+
@@ -389,7 +389,7 @@ public class D_PeerAddress extends ASNObj {
 		if(encode_served_orgs)
 			try {
 				served_orgs = getPeerOrgs(_peer_ID);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		if(encode_addresses) address = getPeerAddresses(peer_ID);
@@ -425,13 +425,13 @@ public class D_PeerAddress extends ASNObj {
 //			String local_peer_ID = ""+peer_ID;
 //			String orgs = getPeerOrgs(local_peer_ID, null);
 //			result = peer_org.peerOrgsFromString(orgs);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if(peer_org.DEBUG) System.out.println("\n************\npeer_org: getPeerOrgs: result "+result);
 		return result;
 	}
-	public static D_PeerOrgs[] getPeerOrgs(long _peer_ID) throws SQLiteException {
+	public static D_PeerOrgs[] getPeerOrgs(long _peer_ID) throws P2PDDSQLException {
 		String peer_ID = Util.getStringID(_peer_ID);
 		if(DEBUG) System.out.println("peer_org: getPeerOrgs: "+peer_ID);
 		D_PeerOrgs[] result = null;
@@ -486,7 +486,7 @@ public class D_PeerAddress extends ASNObj {
 			String orgs = UpdatePeersTable.getPeerOrgs(local_peer_ID, null);
 			result = UpdatePeersTable.peerOrgsFromString(orgs);
 			*/
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if(peer_org.DEBUG) System.out.println("\n************\npeer_org: getPeerOrgs: result "+result);
@@ -498,9 +498,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param peer_ID
 	 * @param orgs : An output (if non null), gathering organization_IDs in an ArrayList
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String getPeerOrgs(String peer_ID, ArrayList<String> orgs) throws SQLiteException {
+	public static String getPeerOrgs(String peer_ID, ArrayList<String> orgs) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(peer_org.DEBUG) System.out.println("peer_org: getPeerOrgs: "+peer_ID+" orgs="+Util.concat(orgs," ","NULL"));
 		String result = null;
@@ -551,9 +551,9 @@ public class D_PeerAddress extends ASNObj {
 			experience
 	 * @param global_peer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static ArrayList<Object> getD_PeerAddress_Info(String global_peer_ID) throws SQLiteException {
+	public static ArrayList<Object> getD_PeerAddress_Info(String global_peer_ID) throws P2PDDSQLException {
 		ArrayList<Object> result=null;
 		if(DEBUG) System.err.println("UpdateMessages:get_peer_only: for: "+Util.trimmed(global_peer_ID));
 		String sql = "SELECT "+table.peer.fields_peers+
@@ -761,7 +761,7 @@ public class D_PeerAddress extends ASNObj {
 		ArrayList<ArrayList<Object>> p;
 		try {
 			p = Application.db.select(sql, new String[]{peer_ID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -781,7 +781,7 @@ public class D_PeerAddress extends ASNObj {
 			try {
 				addresses = UpdatePeersTable.getPeerAddresses(peer_ID, Encoder.getGeneralizedTime(0), Util.getGeneralizedTime());
 				result.address=D_PeerAddress.getAddress(addresses);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -793,12 +793,12 @@ public class D_PeerAddress extends ASNObj {
 		try {
 			String addresses = UpdatePeersTable.getPeerAddresses(peer_ID, Encoder.getGeneralizedTime(0), Util.getGeneralizedTime());
 			result=D_PeerAddress.getAddress(addresses);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		return result;
 	}
-	static public long _getLocalPeerIDforGID(String peerGID) throws SQLiteException{
+	static public long _getLocalPeerIDforGID(String peerGID) throws P2PDDSQLException{
 		long result=-1;
 		String adr = getLocalPeerIDforGID(peerGID);
 		if(adr==null){
@@ -809,7 +809,7 @@ public class D_PeerAddress extends ASNObj {
 		if(DEBUG)System.out.println("DD_PeerAddress: _getLocalPeerIDforGID: result = "+result);
 		return result;
 	}
-	public static String getLocalPeerIDforGID(String peerGID) throws SQLiteException {
+	public static String getLocalPeerIDforGID(String peerGID) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("DD_PeerAddress: getLocalPeerIDforGID");
 		String sql = "SELECT "+table.peer.peer_ID+" FROM "+table.peer.TNAME+
 		" WHERE "+table.peer.global_peer_ID+"=?;";
@@ -819,7 +819,7 @@ public class D_PeerAddress extends ASNObj {
 		if(DEBUG)System.out.println("DD_PeerAddress: getLocalPeerIDforGID: result = "+result);
 		return result;
 	}
-	public static String getPeerGIDforID(String peerID) throws SQLiteException {
+	public static String getPeerGIDforID(String peerID) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("DD_PeerAddress: getPeerGIDforID");
 		String sql = "SELECT "+table.peer.global_peer_ID+" FROM "+table.peer.TNAME+
 		" WHERE "+table.peer.peer_ID+"=?;";
@@ -829,7 +829,7 @@ public class D_PeerAddress extends ASNObj {
 		if(DEBUG)System.out.println("DD_PeerAddress: getPeerGIDforID: result = "+result);
 		return result;
 	}
-	public static String getLocalPeerIDforGIDhash(String peerGIDhash) throws SQLiteException {
+	public static String getLocalPeerIDforGIDhash(String peerGIDhash) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.peer.peer_ID+
 			" FROM "+table.peer.TNAME+
@@ -856,13 +856,13 @@ public class D_PeerAddress extends ASNObj {
 		if(hash.length() != s.length()) return hash;
 		return s;
 	}
-	public static long insertTemporaryGID(String peerGID) throws SQLiteException{
+	public static long insertTemporaryGID(String peerGID) throws P2PDDSQLException{
 		return insertTemporaryGID(peerGID, getGIDHashFromGID(peerGID));
 	}
-	public static long insertTemporaryGID(String peerGID, String peerGIDhash) throws SQLiteException{
+	public static long insertTemporaryGID(String peerGID, String peerGIDhash) throws P2PDDSQLException{
 		return insertTemporaryGID(peerGID, peerGIDhash, Util.getGeneralizedTime());
 	}
-	public static long insertTemporaryGID(String peerGID, String peerGIDhash, String crt_date) throws SQLiteException{
+	public static long insertTemporaryGID(String peerGID, String peerGIDhash, String crt_date) throws P2PDDSQLException{
 		long result=-1;
 		if(DEBUG) System.out.println("\n\n******\nPeerAddress:insertTemporaryPeerGID: start");
 		if(peerGIDhash==null) peerGIDhash = getGIDHashFromGID(peerGID);
@@ -885,7 +885,7 @@ public class D_PeerAddress extends ASNObj {
 			String c_ID = null;
 			try {
 				c_ID = storeReceived(pa, Util.getCalendar(crt_date), crt_date);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			if(creator_global_ID.equals(pa.globalID)) return c_ID;
@@ -894,13 +894,13 @@ public class D_PeerAddress extends ASNObj {
 			//long peer_ID = UpdateMessages.getonly_organizationID(creator_global_ID, null);
 			long peer_ID = D_PeerAddress._getLocalPeerIDforGID(creator_global_ID);
 			if(peer_ID>=0) return Util.getStringID(peer_ID);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		long id;
 		try {
 			id = D_PeerAddress.insertTemporaryGID(creator_global_ID, null, crt_date);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 			return null;
 		}
@@ -913,9 +913,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param crt_date
 	 * @param _crt_date 
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String storeReceived(D_PeerAddress pa, Calendar crt_date, String _crt_date) throws SQLiteException {
+	public static String storeReceived(D_PeerAddress pa, Calendar crt_date, String _crt_date) throws P2PDDSQLException {
 		//try{
 			return Util.getStringID(_storeReceived(pa,crt_date, _crt_date));
 		//}catch(Exception e){e.printStackTrace(); throw e;}
@@ -926,9 +926,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param crt_date
 	 * @param _crt_date 
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long _storeReceived(D_PeerAddress pa, Calendar crt_date, String _crt_date) throws SQLiteException {
+	public static long _storeReceived(D_PeerAddress pa, Calendar crt_date, String _crt_date) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) System.err.println("D_PeerAddress: store: start");
 		if((pa == null) || (pa.globalID == null)){
@@ -974,7 +974,7 @@ public class D_PeerAddress extends ASNObj {
 	}
 
 	public static long storeVerified(String global_peer_ID, String name, String adding_date, String slogan,
-			boolean used, boolean broadcastable, String hash_alg, byte[] signature, String creation_date, byte[] picture, String version, D_PeerOrgs[] served_orgs2) throws SQLiteException {
+			boolean used, boolean broadcastable, String hash_alg, byte[] signature, String creation_date, byte[] picture, String version, D_PeerOrgs[] served_orgs2) throws P2PDDSQLException {
 		// boolean DEBUG = true;
 		if(DEBUG) System.err.println("D_PeerAddress: storeVerified: ");
 		//long result_peer_ID=-1;
@@ -1002,30 +1002,30 @@ public class D_PeerAddress extends ASNObj {
 		if(DEBUG) System.err.println("D_PeerAddress: storeVerified: will save!");
 		return dpa._storeVerified(adding_date);
 	}
-	// public String storeVerified() throws SQLiteException{return storeVerified(Util.getGeneralizedTime());}
-	public long _storeVerified() throws SQLiteException{
+	// public String storeVerified() throws P2PDDSQLException{return storeVerified(Util.getGeneralizedTime());}
+	public long _storeVerified() throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified()");
 		return _storeVerified(Util.CalendargetInstance());
 	}
-	public String storeVerified() throws SQLiteException{
+	public String storeVerified() throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: storeVerified()");
 		return Util.getStringID(_storeVerified(Util.CalendargetInstance()));
 	}
-	public String storeVerified(String crt_date) throws SQLiteException{
+	public String storeVerified(String crt_date) throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: storeVerified(date)");
 		return Util.getStringID(_storeVerified(crt_date));
 	}
-	public long _storeVerified(String crt_date) throws SQLiteException{
+	public long _storeVerified(String crt_date) throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(date)");
 		Calendar _crt_date = Util.getCalendar(crt_date);
 		return _storeVerified(_crt_date, crt_date);
 	}
-	public long _storeVerified(Calendar _crt_date) throws SQLiteException{
+	public long _storeVerified(Calendar _crt_date) throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar)");
 		String crt_date = Encoder.getGeneralizedTime(_crt_date);
 		return _storeVerified(_crt_date, crt_date);
 	}	
-	public long _storeVerified(Calendar _crt_date, String crt_date) throws SQLiteException{
+	public long _storeVerified(Calendar _crt_date, String crt_date) throws P2PDDSQLException{
 		//boolean DEBUG=true;
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(_crt_date, crt_date)");
 		this.arrival_date = _crt_date;
@@ -1140,7 +1140,7 @@ public class D_PeerAddress extends ASNObj {
 		experience = Util.getString(p.get(table.peer.PEER_COL_EXPERIENCE));
 		exp_avg = Util.getString(p.get(table.peer.PEER_COL_EXP_AVG));
 	 */
-	private long doSave_except_Served_and_Addresses() throws SQLiteException{
+	private long doSave_except_Served_and_Addresses() throws P2PDDSQLException{
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("\n\n***********\nD_PeerAddress: doSave: "+this);
 		if(peer_ID!=null) if(_peer_ID<=0) _peer_ID = Util.lval(peer_ID, -1);
@@ -1247,7 +1247,7 @@ public class D_PeerAddress extends ASNObj {
 	}
 	/*		
 	public static long storeVerified(String global_peer_ID, String name, String adding_date, String slogan,
-			boolean used, boolean broadcastable, String hash_alg, byte[] signature, String creation_date, byte[] picture, String version) throws SQLiteException {
+			boolean used, boolean broadcastable, String hash_alg, byte[] signature, String creation_date, byte[] picture, String version) throws P2PDDSQLException {
 		// boolean DEBUG = true;
 		long result=-1;
 		String broadcast = broadcastable?"1":"0";
@@ -1307,9 +1307,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param peer_ID should exist
 	 * @param signer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long readSignSave(long peer_ID, long signer_ID) throws SQLiteException {
+	public static long readSignSave(long peer_ID, long signer_ID) throws P2PDDSQLException {
 		D_PeerAddress w=new D_PeerAddress(Util.getStringID(peer_ID), true);
 		ciphersuits.SK sk = util.Util.getStoredSK(w.globalID);
 		w.sign(sk);
@@ -1331,9 +1331,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param served_orgs
 	 * @param peer_ID
 	 * @param adding_date
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static void integratePeerOrgs(D_PeerOrgs[] served_orgs, long peer_ID, String adding_date) throws SQLiteException{
+	public static void integratePeerOrgs(D_PeerOrgs[] served_orgs, long peer_ID, String adding_date) throws P2PDDSQLException{
 		//boolean DEBUG=true;
 		if(DEBUG) System.err.println("D_PeerAddress:integratePeerOrgs: START: ");
 		//String adding_date;
@@ -1379,9 +1379,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param organizationID
 	 * @param adding_date
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long get_peers_orgs_ID(long peer_ID, long organizationID, String adding_date) throws SQLiteException {
+	public static long get_peers_orgs_ID(long peer_ID, long organizationID, String adding_date) throws P2PDDSQLException {
 		long result=0;
 		if(DEBUG) System.err.println("\n************\nD_PeerAddress:get_peers_orgs_ID':  start peer_ID = "+peer_ID+" oID="+organizationID);		
 		if((peer_ID <= 0) || (organizationID<=0))  return -1;
@@ -1425,9 +1425,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param peer_ID
 	 * @param adding_date
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long get_peer_addresses_ID(String address, String type, long peer_ID, String adding_date) throws SQLiteException{
+	public static long get_peer_addresses_ID(String address, String type, long peer_ID, String adding_date) throws P2PDDSQLException{
 		if(DEBUG) err.println("UpdateMessages:get_peer_addresses_ID for: "+Util.trimmed(address)+" id="+peer_ID);
 		long result=0;
 		if((type==null)||(address==null)){
@@ -1446,7 +1446,7 @@ public class D_PeerAddress extends ASNObj {
 		ArrayList<ArrayList<Object>> dt=
 			Application.db.select(sql, new String[]{Util.getStringID(peer_ID), address, type}, DEBUG);
 		if((dt.size()>=1) && (dt.get(0).size()>=1)) 
-			return Long.parseLong(dt.get(0).get(0).toString());
+			return Long.parseLong(Util.getString(dt.get(0).get(0)));
 		result=Application.db.insert(table.peer_address.TNAME,
 				new String[]{table.peer_address.address,table.peer_address.type,table.peer_address.peer_ID,table.peer_address.arrival_date},
 				new String[]{address, type, Util.getStringID(peer_ID), adding_date}, 
@@ -1460,9 +1460,9 @@ public class D_PeerAddress extends ASNObj {
 
 	/**
 	 * Create and set a new peerID, and its keys in "key" table and "application" table
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static void createMyPeerID() throws SQLiteException{
+	public static void createMyPeerID() throws P2PDDSQLException{
 		if(DEBUG) out.println("\n*********\nDD:createMyPeerID: start");
 		String name = Identity.current_peer_ID.name;
 		String slogan = Identity.current_peer_ID.slogan;
@@ -1487,7 +1487,7 @@ public class D_PeerAddress extends ASNObj {
 		if(DEBUG) out.println("DD:createMyPeerID: exit");
 		if(DEBUG) out.println("**************");
 	}
-	private static void doSetMyself(String gID, String secret_key, String name, String slogan, String gIDhash) throws SQLiteException{
+	private static void doSetMyself(String gID, String secret_key, String name, String slogan, String gIDhash) throws P2PDDSQLException{
 		if(secret_key == null) {
 			Util.printCallPath("GID="+gID+"\n; peerID="+secret_key+" name="+name+" hash="+gIDhash);
 			Application.warning(_("We do not know the secret key of this peer!!"), _("Peer Secret Key not available!"));
@@ -1510,9 +1510,9 @@ public class D_PeerAddress extends ASNObj {
 	/**
 	 * 
 	 * @param peerID
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	public static void setMyself(String peerID) throws SQLiteException {
+	public static void setMyself(String peerID) throws P2PDDSQLException {
 		String sql = "SELECT p."+table.peer.global_peer_ID+", k."+table.key.secret_key+
 		", p."+table.peer.name+", p."+table.peer.slogan+", p."+table.peer.global_peer_ID_hash+
 		" FROM "+table.peer.TNAME+" AS p "+
@@ -1548,9 +1548,9 @@ public class D_PeerAddress extends ASNObj {
 	 *  0 for absent,
 	 *  1 for present&signed,
 	 *  -1 for temporary
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static int isGIDavailable(String gID, boolean DBG) throws SQLiteException {
+	public static int isGIDavailable(String gID, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.peer.peer_ID+","+table.peer.signature+
 			" FROM "+table.peer.TNAME+
@@ -1583,7 +1583,7 @@ public class D_PeerAddress extends ASNObj {
 			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
 			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
 			//d.storeVerified(Encoder.getGeneralizedTime(arrival_date));
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();
@@ -1602,7 +1602,7 @@ public class D_PeerAddress extends ASNObj {
 					JOptionPane.QUESTION_MESSAGE);
 		return val;
 	}
-	public static void changeMyPeerName(Component win) throws SQLiteException {
+	public static void changeMyPeerName(Component win) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("peer_ID: "+Identity.current_peer_ID.globalID);
 		String val = queryName(win);
 		if((val!=null)&&(!"".equals(val))){
@@ -1624,7 +1624,7 @@ public class D_PeerAddress extends ASNObj {
 		}
 	}
 
-	public static void changeMyPeerSlogan(Component win) throws SQLiteException {
+	public static void changeMyPeerSlogan(Component win) throws P2PDDSQLException {
 		if(Identity.current_peer_ID.globalID==null){
 			JOptionPane.showMessageDialog(win,
 					_("You are not yet a peer.\n Start your server first!"),
@@ -1680,7 +1680,7 @@ public class D_PeerAddress extends ASNObj {
 			peer_data.storeVerified();
 			
 			//D_PeerAddress.re_init_myself();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			Application.warning(_("Failed updating peer!"), _("Updating Peer"));
 		}
 		if(DEBUG) out.println("END Server.update_my_peer_ID_peers_name_slogan_broadcastable ");
@@ -1688,9 +1688,9 @@ public class D_PeerAddress extends ASNObj {
 	/**
 	 * Called when a server starts
 	 * @param id
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long _set_my_peer_ID (Identity id) throws SQLiteException {		
+	public static long _set_my_peer_ID (Identity id) throws P2PDDSQLException {		
 		String addresses = Identity.current_server_addresses();
 		Calendar _creation_date=Util.CalendargetInstance();
 		String creation_date=Encoder.getGeneralizedTime(_creation_date);
@@ -1726,9 +1726,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param id
 	 * @param address
 	 * @param type
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long update_insert_peer_myself(Identity id, String address, String type, Calendar _creation_date, String creation_date) throws SQLiteException{
+	public static long update_insert_peer_myself(Identity id, String address, String type, Calendar _creation_date, String creation_date) throws P2PDDSQLException{
 		if(Server.DEBUG) out.println("Server:update_insert_peer_myself: id="+id+" address="+address+" type="+type);
 		long pID;
 		D_PeerAddress peer_data = D_PeerAddress.get_myself(id.globalID);
@@ -1786,9 +1786,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param type
 	 * @param creation_date
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long insert_peer_address_if_new(String _peer_ID, String address, String type, String creation_date) throws SQLiteException{
+	public static long insert_peer_address_if_new(String _peer_ID, String address, String type, String creation_date) throws P2PDDSQLException{
 		long result=-1;
 		ArrayList<ArrayList<Object>> op = Application.db.select("SELECT "+table.peer_address.peer_address_ID+" FROM "+table.peer_address.TNAME+" WHERE "+table.peer_address.peer_ID+" = ? AND "+table.peer_address.address+"=?;",
 				new String[]{_peer_ID+"", address});
@@ -1805,9 +1805,9 @@ public class D_PeerAddress extends ASNObj {
 	/**
 	 * Should use "myself"
 	 * @return
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	public static DDAddress getMyDDAddress() throws SQLiteException {
+	public static DDAddress getMyDDAddress() throws P2PDDSQLException {
 		DDAddress myAddress;
 		myAddress = new DDAddress(D_PeerAddress.get_myself(Identity.current_peer_ID.globalID));
 		return myAddress;
@@ -1846,7 +1846,7 @@ public class D_PeerAddress extends ASNObj {
 		myAddress.sign(my_sk);
 		*/
 
-	public static String getAddressID(InetSocketAddress saddr, String peer_ID) throws SQLiteException {
+	public static String getAddressID(InetSocketAddress saddr, String peer_ID) throws P2PDDSQLException {
 		//String sname = saddr.toString();
 		String ip = Util.get_IP_from_SocketAddress(saddr);
 		ArrayList<ArrayList<Object>> a = Application.db.select(
@@ -1857,7 +1857,7 @@ public class D_PeerAddress extends ASNObj {
 		return Util.getString(a.get(0).get(0));
 	}
 
-	public static String getLastResetDate(String _peerID) throws SQLiteException {
+	public static String getLastResetDate(String _peerID) throws P2PDDSQLException {
 		ArrayList<ArrayList<Object>> a = Application.db.select("SELECT "+table.peer.last_reset+" FROM "+table.peer.TNAME+" WHERE "+table.peer.peer_ID+"=?;", new String[]{_peerID});
 		if(a.size() == 0) return null;
 		return Util.getString(a.get(0).get(0));
@@ -1868,7 +1868,7 @@ public class D_PeerAddress extends ASNObj {
     		String now = Util.getGeneralizedTime();
 			Application.db.update(table.peer.TNAME, new String[]{table.peer.last_reset, table.peer.last_sync_date}, new String[]{table.peer.peer_ID},
 					new String[]{now, null, peerID}, DEBUG);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
 	}

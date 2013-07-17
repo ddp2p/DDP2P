@@ -51,7 +51,7 @@ WB_Message ::= SEQUENCE {
 public class D_Message extends ASNObj {
 
 	private static final boolean _DEBUG = true;
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
 	public D_PeerAddress sender;
 	public ArrayList<String> recent_senders;
 	public D_PeerAddress Peer;
@@ -61,6 +61,9 @@ public class D_Message extends ASNObj {
 	public D_Witness witness;
 	public D_Motion motion;
 	public D_Vote vote;
+	public D_News news; // TODO
+	public D_Translations translations[]; // TODO
+	public D_PluginData plugins; // TODO
 	public D_Neighborhood neighborhoods[];
 	public String signature; //OCT STR
 	

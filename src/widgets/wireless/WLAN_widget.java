@@ -25,7 +25,7 @@ package widgets.wireless;
 import hds.DebateDecideAction;
 
 import javax.swing.JTable;
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -189,7 +189,7 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
 		model.update(null, null);
 	}
 	
-	public static void main(String[] args) throws SQLiteException {
+	public static void main(String[] args) throws P2PDDSQLException {
 		/*
 		ArrayList<String> os_Names=new ArrayList<String>();
 		os_Names.add("Windows 7");
@@ -353,7 +353,7 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 					try {
 						_wireless = wireless.Detect_interface.detect_wlan();
 						DD.setAppText(DD.APP_NET_INTERFACES, _wireless);
-					} catch (SQLiteException e) {
+					} catch (P2PDDSQLException e) {
 						e.printStackTrace();
 					}
 				}
@@ -439,7 +439,7 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			catch (SQLiteException e1) {
+			catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
 			catch (InterruptedException e2) {
@@ -463,7 +463,7 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			catch (SQLiteException e1) {
+			catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
 			catch (InterruptedException e2) {
@@ -525,7 +525,7 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 			String dirs = buildInterfacesDescriptionString(_table);
 			if(DEBUG)System.out.println("wlan_widget: setValueAt: Setting "+dirs);
 			DD.setAppTextNoSync(DD.APP_NET_INTERFACES, dirs);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			if(_DEBUG)System.out.println("wlan_widget: setValueAt: Setting error");
 			if(_DEBUG)e.printStackTrace();
 		}
@@ -547,7 +547,7 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 //			String dirs = Util.concat(_ld,",");
 //			if(DEBUG)System.out.println("wlan_widget: setValueAt: Setting "+dirs);
 //			DD.setAppTextNoSync(DD.APP_NET_INTERFACES, dirs);
-//		} catch (SQLiteException e) {
+//		} catch (P2PDDSQLException e) {
 //			e.printStackTrace();
 //		}
 	}
@@ -578,7 +578,7 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 				}
 			}
 			*/
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}		
 		this.fireTableDataChanged();

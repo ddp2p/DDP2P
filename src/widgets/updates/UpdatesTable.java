@@ -37,7 +37,7 @@ import data.D_UpdatesInfo;
 import data.D_TesterDefinition;
 import data.D_UpdatesKeysInfo;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import widgets.updatesKeys.UpdatesKeysTable;
 

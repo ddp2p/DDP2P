@@ -40,7 +40,7 @@ import wireless.BroadcastClient;
 
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -89,7 +89,7 @@ class D_Vote extends ASNObj{
 	public String organization_ID;
 
 	public D_Vote() {}
-	public D_Vote(long _vote_ID) throws SQLiteException {
+	public D_Vote(long _vote_ID) throws P2PDDSQLException {
 		if(_vote_ID<=0) return;
 		vote_ID = Util.getStringID(_vote_ID);
 		String sql = 
@@ -110,7 +110,7 @@ class D_Vote extends ASNObj{
 		if(v.size() == 0) return;
 		init(v.get(0));
 	}
-	public D_Vote(String vote_GID) throws SQLiteException {
+	public D_Vote(String vote_GID) throws P2PDDSQLException {
 		if(vote_GID == null) return;
 		this.global_vote_ID = vote_GID;
 		String sql = 
@@ -131,7 +131,7 @@ class D_Vote extends ASNObj{
 		if(v.size() == 0) return;
 		init(v.get(0));
 	}
-	public static D_Vote getMyVoteForMotion(String motionID) throws SQLiteException {
+	public static D_Vote getMyVoteForMotion(String motionID) throws P2PDDSQLException {
 		D_Vote v = new D_Vote();
 		if(motionID == null) return null;
 		v.motion_ID = motionID;
@@ -169,9 +169,9 @@ class D_Vote extends ASNObj{
 			" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
 	 * 
 	 * @param o
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_Vote(ArrayList<Object> o) throws SQLiteException {
+	public D_Vote(ArrayList<Object> o) throws P2PDDSQLException {
 		init(o);
 	}
 	public D_Vote instance() throws CloneNotSupportedException{
@@ -191,9 +191,9 @@ class D_Vote extends ASNObj{
 			" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
 	 * 
 	 * @param o
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public void init(ArrayList<Object> o) throws SQLiteException {
+	public void init(ArrayList<Object> o) throws P2PDDSQLException {
 		this.hash_alg = Util.getString(o.get(table.signature.S_HASH_ALG));
 		this.global_vote_ID = Util.getString(o.get(table.signature.S_GID));
 		this.creation_date = Util.getCalendar(Util.getString(o.get(table.signature.S_CREATION)));
@@ -366,7 +366,7 @@ class D_Vote extends ASNObj{
 		if(DEBUG) System.out.println("WB_Vote:makeID: start");
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if(DEBUG) System.out.println("WB_Vote:makeID: id of "+this);
@@ -394,7 +394,7 @@ class D_Vote extends ASNObj{
 		if(DEBUG) System.out.println("WB_Vote:verifySignature: result wGID="+result);
 		return result;
 	}
-	private boolean hashConflictCreationDateDropThis() throws SQLiteException {
+	private boolean hashConflictCreationDateDropThis() throws P2PDDSQLException {
 		String this_hash=new String(this.getEntityEncoder().getBytes());
 		String old = new String(new D_Vote(this.global_vote_ID).getEntityEncoder().getBytes());
 		if(old.compareTo(this_hash)>=0){
@@ -408,12 +408,12 @@ class D_Vote extends ASNObj{
 	 * before call, one should set organization_ID and global_motionID
 	 * @param rq
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long store(streaming.RequestData rq) throws SQLiteException {
+	public long store(streaming.RequestData rq) throws P2PDDSQLException {
 		return store(null, rq);
 	}
-	public long store(PreparedMessage pm, streaming.RequestData rq) throws SQLiteException {
+	public long store(PreparedMessage pm, streaming.RequestData rq) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Vote:store: signature start");
 		
 		boolean locals = fillLocals(rq, true, true, true, true, true);
@@ -478,7 +478,7 @@ class D_Vote extends ASNObj{
 		return storePMVerified(pm);
 	
 	}
-	private static String getLocalIDandDateforGID(String global_vote_ID, String[]_date) throws SQLiteException {
+	private static String getLocalIDandDateforGID(String global_vote_ID, String[]_date) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Vote:getLocalIDforGID: start");
 		if(global_vote_ID==null) return null;
 		String sql = "SELECT "+table.signature.signature_ID+","+table.signature.creation_date+
@@ -489,7 +489,7 @@ class D_Vote extends ASNObj{
 		_date[0] = Util.getString(n.get(0).get(1));
 		return Util.getString(n.get(0).get(0));
 	}
-	private static String getLocalIDforGID(String global_vote_ID) throws SQLiteException {
+	private static String getLocalIDforGID(String global_vote_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Vote:getLocalIDforGID: start");
 		if(global_vote_ID==null) return null;
 		String sql = "SELECT "+table.signature.signature_ID+
@@ -499,21 +499,21 @@ class D_Vote extends ASNObj{
 		if(n.size()==0) return null;
 		return Util.getString(n.get(0).get(0));
 	}
-	public static long insertTemporaryGID(String sign_GID, String mot_ID) throws SQLiteException {
+	public static long insertTemporaryGID(String sign_GID, String mot_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Vote:insertTemporaryGID: start");
 		return Application.db.insert(table.signature.TNAME,
 				new String[]{table.signature.global_signature_ID, table.signature.motion_ID},
 				new String[]{sign_GID, mot_ID},
 				DEBUG);
 	}
-	private static String getDateFor(String signID) throws SQLiteException {
+	private static String getDateFor(String signID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.signature.creation_date+" FROM "+table.signature.TNAME+
 		" WHERE "+table.signature.signature_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{""+signID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion, boolean tempJust) throws SQLiteException {
+	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion, boolean tempJust) throws P2PDDSQLException {
 	
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
@@ -569,7 +569,7 @@ class D_Vote extends ASNObj{
 		}
 		return true;
 	}
-	private void fillGlobals() throws SQLiteException {
+	private void fillGlobals() throws P2PDDSQLException {
 		if((this.organization_ID != null ) && (this.global_organization_ID == null))
 			this.global_organization_ID = D_Organization.getGlobalOrgID(this.organization_ID);
 
@@ -582,17 +582,17 @@ class D_Vote extends ASNObj{
 		if((this.constituent_ID != null ) && (this.global_constituent_ID == null))
 			this.global_constituent_ID = D_Constituent.getConstituentGlobalID(this.constituent_ID);
 	}
-	public long storeVerified() throws SQLiteException {
+	public long storeVerified() throws P2PDDSQLException {
 		return storePMVerified(null);
 	}
-	public long storePMVerified(PreparedMessage pm) throws SQLiteException {
+	public long storePMVerified(PreparedMessage pm) throws P2PDDSQLException {
 		Calendar now = Util.CalendargetInstance();
 		return storePMVerified(pm, now);
 	}
-	public long storeVerified(Calendar arrival_date) throws SQLiteException {
+	public long storeVerified(Calendar arrival_date) throws P2PDDSQLException {
 		return storePMVerified(null, arrival_date);
 	}
-	public long storePMVerified(PreparedMessage pm, Calendar arrival_date) throws SQLiteException {
+	public long storePMVerified(PreparedMessage pm, Calendar arrival_date) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		long result = -1;
 		if(DEBUG) System.out.println("WB_Vote:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
@@ -667,7 +667,9 @@ class D_Vote extends ASNObj{
 						if(pm.raw == null)pm.raw = dm.encode();
 						if(pm.motion_ID == null)pm.motion_ID=this.motion.global_motionID;
 						if(this.constituent.global_constituent_id_hash != null)pm.constituent_ID_hash.add(this.constituent.global_constituent_id_hash);
-						if(this.justification.global_justificationID != null)pm.justification_ID = this.justification.global_justificationID;
+						if(this.justification!=null)
+							if(this.justification.global_justificationID != null)
+						pm.justification_ID = this.justification.global_justificationID;
 						if(this.global_organization_ID !=null)pm.org_ID_hash = this.global_organization_ID;
 					
 						BroadcastClient.msgs.registerRecent(pm, BroadcastQueueHandled.VOTE);
@@ -683,15 +685,15 @@ class D_Vote extends ASNObj{
 	 * @param witness_ID
 	 * @param signer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long readSignSave(long vote_ID, long signer_ID) throws SQLiteException {
+	public static long readSignSave(long vote_ID, long signer_ID) throws P2PDDSQLException {
 		D_Vote w=new D_Vote(vote_ID);
 		ciphersuits.SK sk = util.Util.getStoredSK(D_Constituent.getConstituentGlobalID(""+signer_ID));
 		w.sign(sk);
 		return w.storeVerified();
 	}
-	public static String getSignatureLocalID(String global_vote_ID) throws SQLiteException {
+	public static String getSignatureLocalID(String global_vote_ID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.signature.signature_ID+" FROM "+table.signature.TNAME+
 		" WHERE "+table.signature.global_signature_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_vote_ID}, DEBUG);
@@ -716,7 +718,7 @@ class D_Vote extends ASNObj{
 			d.global_vote_ID = d.make_ID();
 			//d.storeVerified(arrival_date);
 			if(_DEBUG) out.println("D_Vote:editable: ID="+d.global_vote_ID);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();
@@ -736,7 +738,7 @@ class D_Vote extends ASNObj{
 		return false;
 	}
 	public static ArrayList<String> checkAvailability(ArrayList<String> hashes,
-			String orgID, boolean DBG) throws SQLiteException {
+			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String hash : hashes) {
 			if(!available(hash, orgID, DBG)) result.add(hash);
@@ -748,9 +750,9 @@ class D_Vote extends ASNObj{
 	 * @param hash
 	 * @param orgID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static boolean available(String hash, String orgID, boolean DBG) throws SQLiteException {
+	public static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
 		boolean result = true;
 		String sql = 
 			"SELECT "+table.signature.signature_ID+
@@ -774,9 +776,9 @@ class D_Vote extends ASNObj{
 	 *  0 for absent,
 	 *  1 for present&signed,
 	 *  -1 for temporary
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static int isGIDavailable(String gID, boolean DBG) throws SQLiteException {
+	public static int isGIDavailable(String gID, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.signature.signature_ID+","+table.signature.signature+
 			" FROM "+table.signature.TNAME+

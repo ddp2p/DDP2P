@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 
-		Author: Ossamah Dhannoon
+		Author: Osamah Dhannoon
 		Florida Tech, Human Decision Support Systems Laboratory
    
        This program is free software; you can redistribute it and/or modify
@@ -21,12 +21,13 @@ package wireless;
 
 import widgets.wireless.WLAN_widget;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.DD;
 
 public class Refresh extends Thread {
 	
+	private static final boolean DEBUG = false;
 	public static boolean START_REFRESH = true;
 	public void run(){
 		String _wireless;
@@ -41,8 +42,9 @@ public class Refresh extends Thread {
 						DD.setAppText(DD.APP_NET_INTERFACES, _wireless);
 						old_wireless = _wireless;
 					}
+					if(DEBUG)System.out.println("Refresh : run : ");
 					Thread.sleep(DD.ADHOC_REFRESH_TIMEOUT_MILLISECONDS);
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 				} catch (InterruptedException e) {
 					e.printStackTrace();

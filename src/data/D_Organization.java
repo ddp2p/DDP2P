@@ -32,9 +32,11 @@ import java.util.Calendar;
 import ciphersuits.Cipher;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import table.key;
+import table.organization;
+import table.peer;
+import util.P2PDDSQLException;
 
-import registration.WB_ASN_Peer;
 import streaming.OrgHandling;
 import streaming.RequestData;
 import util.DBInterface;
@@ -148,21 +150,21 @@ class D_Organization extends ASNObj implements Summary {
 	 * @param object
 	 * @param extra_fields
 	 * @param extra_creator
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_Organization(String org_gid, String org_GIDhash, boolean extra_fields, boolean extra_creator) throws SQLiteException {
+	public D_Organization(String org_gid, String org_GIDhash, boolean extra_fields, boolean extra_creator) throws P2PDDSQLException {
 		init(org_gid, org_GIDhash, extra_fields, extra_creator);
 	}
 	/**
 	 * 
 	 * @param orgGID
 	 * @param orgGID_hash
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_Organization(String orgGID, String orgGID_hash) throws SQLiteException   {
+	public D_Organization(String orgGID, String orgGID_hash) throws P2PDDSQLException   {
 		init(orgGID, orgGID_hash, true, true);
 	}
-	public D_Organization(long _organization_ID) throws SQLiteException {
+	public D_Organization(long _organization_ID) throws P2PDDSQLException {
 		if(_organization_ID<=0) throw new RuntimeException("Invalid org ID");
 		organization_ID = Util.getStringID(_organization_ID);
 		String sql = D_Organization.org_field +
@@ -183,9 +185,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * @param orgGID_hash
 	 * @param extra_fields
 	 * @param extra_creator
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public void init(String orgGID, String orgGID_hash, boolean extra_fields, boolean extra_creator) throws SQLiteException{
+	public void init(String orgGID, String orgGID_hash, boolean extra_fields, boolean extra_creator) throws P2PDDSQLException{
 		String sql = D_Organization.org_field +
 				" FROM "+table.organization.TNAME +
 				" WHERE ( "+table.organization.global_organization_ID+" = ? OR "+table.organization.global_organization_ID_hash+" = ? ) ";
@@ -202,9 +204,9 @@ class D_Organization extends ASNObj implements Summary {
 	/**
 	 * 
 	 * @param row
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public void init(ArrayList<Object> row) throws SQLiteException {
+	public void init(ArrayList<Object> row) throws P2PDDSQLException {
 		init(row, true, true);
 	}
 	/**
@@ -212,9 +214,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * @param row
 	 * @param extra_fields
 	 * @param extra_creator
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public void init(ArrayList<Object> row, boolean extra_fields, boolean extra_creator) throws SQLiteException {
+	public void init(ArrayList<Object> row, boolean extra_fields, boolean extra_creator) throws P2PDDSQLException {
 		organization_ID = Util.getString(row.get(table.organization.ORG_COL_ID),null);
 		_organization_ID = Util.lval(organization_ID, -1);
 		this.arrival_date = Util.getCalendar(Util.getString(row.get(table.organization.ORG_COL_ARRIVAL)),null);
@@ -288,9 +290,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * @param currentTime
 	 * @param sk
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static byte[] getOrgSignature(String org_ID, String currentTime, ciphersuits.SK sk, D_Organization[] org) throws SQLiteException {
+	public static byte[] getOrgSignature(String org_ID, String currentTime, ciphersuits.SK sk, D_Organization[] org) throws P2PDDSQLException {
 		String sql = D_Organization.org_field +
 			" FROM "+table.organization.TNAME+" WHERE "+table.organization.organization_ID+" = ? ";
 		if(DEBUG) out.println("\n***********\nOrgHandling:getOrgSignature: Prepared org: "+org_ID);
@@ -317,9 +319,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * @param currentTime
 	 * @param org : returns the org in parameter if this is not null
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static byte[] getOrgGIDandHashForGrassRoot(String org_ID, String currentTime, D_Organization[] org) throws SQLiteException {
+	public static byte[] getOrgGIDandHashForGrassRoot(String org_ID, String currentTime, D_Organization[] org) throws P2PDDSQLException {
 		String sql = D_Organization.org_field +
 			" FROM "+table.organization.TNAME+" WHERE "+table.organization.organization_ID+" = ? ";
 		if(DEBUG) out.println("OrgHandling:getOrgHash: Prepared org: "+org_ID);
@@ -348,9 +350,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * @param currentTime
 	 * @param org 
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String _getOrgGIDandHashForGrassRoot(String org_ID, String currentTime, D_Organization[] org) throws SQLiteException {
+	public static String _getOrgGIDandHashForGrassRoot(String org_ID, String currentTime, D_Organization[] org) throws P2PDDSQLException {
 		byte[] h = getOrgGIDandHashForGrassRoot(org_ID, currentTime, org);
 		if(h==null){
 			Util.printCallPath("Failure to compute Hash, incomplete data");
@@ -412,9 +414,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * Gets the GIDhash of a given organizationID
 	 * @param oID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String getOrgGIDHashFromDB(String oID) throws SQLiteException {
+	public static String getOrgGIDHashFromDB(String oID) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.organization.global_organization_ID_hash+
 			" FROM "+table.organization.TNAME+
@@ -545,9 +547,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * Gets the components of field_extra, ordered by GID (needed because encoder is used in comparing orgs with same date)
 	 * @param local_id
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static D_OrgParam[]  getOrgParams(String local_id) throws SQLiteException {
+	public static D_OrgParam[]  getOrgParams(String local_id) throws P2PDDSQLException {
 		if(DEBUG) out.println("\n****************\nOrgHandling:getOrgParams: start organization orgID="+local_id);
 		D_OrgParam[] result=null;
 		String psql = "SELECT "+table.field_extra.org_field_extra +
@@ -570,9 +572,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * 
 	 * @param orgID local organization ID
 	 * @param orgParam An OrgParam[] array
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static void storeOrgParams(String orgID, D_OrgParam[] orgParam) throws SQLiteException{
+	public static void storeOrgParams(String orgID, D_OrgParam[] orgParam) throws P2PDDSQLException{
 		// Cannot be deleted and rewrutten since we would lose references to the IDs from const values
 		Application.db.updateNoSync(table.field_extra.TNAME,
 				new String[]{table.field_extra.tmp},
@@ -619,7 +621,7 @@ class D_Organization extends ASNObj implements Summary {
 		}		
 	}
 	public static final String org_field = "SELECT " + table.organization.org_list;
-	static public String getLocalOrgIDandDate(String global_organization_ID, String[] old_date) throws SQLiteException {
+	static public String getLocalOrgIDandDate(String global_organization_ID, String[] old_date) throws P2PDDSQLException {
 		String organization_ID = null;
 		String sql = org_field + " FROM "+table.organization.TNAME+" WHERE "+table.organization.global_organization_ID+" = ?;";
 
@@ -654,7 +656,7 @@ class D_Organization extends ASNObj implements Summary {
 		if(DEBUG) System.out.println("OrgData:verifySign: sign="+Util.byteToHex(sign, ":"));
 		try {
 			this.fillGlobals();
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}		
 		Encoder enc = getSignableEncoder();
@@ -716,7 +718,7 @@ class D_Organization extends ASNObj implements Summary {
 		}
 		return true;
 	}
-	private void fillGlobals() throws SQLiteException {
+	private void fillGlobals() throws P2PDDSQLException {
 		if((this.params==null)||((this.params.creator_global_ID==null)&&(this.creator_ID ==  null))) {
 			Util.printCallPath("cannot test org with no peerGID");
 			return;
@@ -724,7 +726,7 @@ class D_Organization extends ASNObj implements Summary {
 		if((this.creator_ID != null ) && (this.params.creator_global_ID == null))
 			this.params.creator_global_ID = D_Organization.getGlobalOrgID(this.creator_ID);
 	}
-	public boolean fillLocals(RequestData rq, boolean tempPeer, String arrival_time) throws SQLiteException {
+	public boolean fillLocals(RequestData rq, boolean tempPeer, String arrival_time) throws P2PDDSQLException {
 		if((this.params==null)||((this.params.creator_global_ID==null)&&(this.creator_ID ==  null))) {
 			if(DEBUG)Util.printCallPath("cannot store org with no peerGID");
 			return false;
@@ -745,16 +747,16 @@ class D_Organization extends ASNObj implements Summary {
 		
 		return true;
 	}
-	public long store(boolean[] _changed) throws SQLiteException {
+	public long store(boolean[] _changed) throws P2PDDSQLException {
 		return store(_changed, null);
 	}
 	/**
 	 * Probably one should store a temporary if not signed and unavailable (not yet done)
 	 * @param _changed
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long store(boolean _changed[], RequestData _rq) throws SQLiteException {
+	public long store(boolean _changed[], RequestData _rq) throws P2PDDSQLException {
 		
 		boolean locals = fillLocals(_rq, true, Util.getGeneralizedTime());
 		//if(!locals)return -1;
@@ -769,10 +771,10 @@ class D_Organization extends ASNObj implements Summary {
 		}
 		return storeVerified(_changed);
 	}
-	public long storeVerified() throws SQLiteException {
+	public long storeVerified() throws P2PDDSQLException {
 		return storeVerified(Util.getGeneralizedTime(), null);
 	}
-	public long storeVerified(boolean _changed[]) throws SQLiteException {
+	public long storeVerified(boolean _changed[]) throws P2PDDSQLException {
 		return storeVerified(Util.getGeneralizedTime(), _changed);
 	}
 	/**
@@ -780,9 +782,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * @param arrival_time
 	 * @param changed
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long storeVerified(String arrival_time, boolean changed[]) throws SQLiteException {
+	public long storeVerified(String arrival_time, boolean changed[]) throws P2PDDSQLException {
 		return storeVerified(arrival_time, changed, true);
 	}
 	/**
@@ -791,9 +793,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * @param changed
 	 * @param sync : true to synchronize GUI
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long storeVerified(String arrival_time, boolean changed[], boolean sync) throws SQLiteException {
+	public long storeVerified(String arrival_time, boolean changed[], boolean sync) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) out.println("D_Organization: storeVerified: start "+this.global_organization_IDhash);
 		this.arrival_date = Util.getCalendar(arrival_time);
@@ -871,7 +873,7 @@ class D_Organization extends ASNObj implements Summary {
 
 		return this._organization_ID=result;
 	}
-	private boolean hashConflictCreationDateDropThis() throws SQLiteException {
+	private boolean hashConflictCreationDateDropThis() throws P2PDDSQLException {
 		D_PeerAddress o_creator = this.creator;
 		this.creator = null;
 		String this_hash=new String(this.getEntityEncoder().getBytes());
@@ -887,7 +889,7 @@ class D_Organization extends ASNObj implements Summary {
 		if(old.compareTo(this_hash)>=0) return true;
 		return false;
 	}
-	public static long insertTemporaryGID(String global_organization_ID) throws SQLiteException {
+	public static long insertTemporaryGID(String global_organization_ID) throws P2PDDSQLException {
 		return insertTemporaryGID(global_organization_ID, null);
 	}
 	/**
@@ -895,16 +897,16 @@ class D_Organization extends ASNObj implements Summary {
 	 * @param global_organization_ID
 	 * @param GID_hash
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long insertTemporaryGID(String global_organization_ID, String GID_hash) throws SQLiteException {
+	public static long insertTemporaryGID(String global_organization_ID, String GID_hash) throws P2PDDSQLException {
 		if(GID_hash==null) GID_hash = D_Organization.getOrgGIDHashGuess(global_organization_ID);
 		return insertTemporaryGID(global_organization_ID, GID_hash, true);
 	}
-	public static long insertTemporaryGID(String global_organization_ID, String GID_hash, boolean default_blocked_org) throws SQLiteException {
+	public static long insertTemporaryGID(String global_organization_ID, String GID_hash, boolean default_blocked_org) throws P2PDDSQLException {
 		return insertTemporaryGID(global_organization_ID, GID_hash, default_blocked_org, null);
 	}
-	public static long insertTemporaryGID(String global_organization_ID, String GID_hash, boolean default_blocked_org, String name) throws SQLiteException {
+	public static long insertTemporaryGID(String global_organization_ID, String GID_hash, boolean default_blocked_org, String name) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Organization:insertTemporaryGID: start "+GID_hash);
 		boolean grass = Util.equalStrings_or_one_null(GID_hash, global_organization_ID);
 		//boolean grass = Util.equalString_and_non_null(GID_hash, global_organization_ID);
@@ -925,12 +927,12 @@ class D_Organization extends ASNObj implements Summary {
 				DEBUG);
 	}
 
-	public static long getLocalOrgID(String global_organization_ID) throws SQLiteException {
+	public static long getLocalOrgID(String global_organization_ID) throws P2PDDSQLException {
 		String lID = getLocalOrgID_(global_organization_ID);
 		if(lID==null) return -1;
 		return new Integer(lID).longValue();
 	}
-	public static String getGlobalOrgID(String id) throws SQLiteException {
+	public static String getGlobalOrgID(String id) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Organization:getGlobalOrgID: start");
 		String sql = "SELECT "+table.organization.global_organization_ID+" FROM "+table.organization.TNAME+
 		" WHERE "+table.organization.organization_ID+"=?;";
@@ -938,7 +940,7 @@ class D_Organization extends ASNObj implements Summary {
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public static long getLocalOrgID(String orgGID, String orgID_hash) throws SQLiteException {
+	public static long getLocalOrgID(String orgGID, String orgID_hash) throws P2PDDSQLException {
 		if(orgGID!=null) return getLocalOrgID(orgGID);
 		
 		String sql = "SELECT "+table.organization.organization_ID+" FROM "+table.organization.TNAME+
@@ -947,7 +949,7 @@ class D_Organization extends ASNObj implements Summary {
 		if(o.size()==0) return -1;
 		return new Integer(Util.getString(o.get(0).get(0))).longValue();
 	}
-	public static String getLocalOrgID_(String global_organization_ID) throws SQLiteException {
+	public static String getLocalOrgID_(String global_organization_ID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.organization.organization_ID+" FROM "+table.organization.TNAME+
 		" WHERE "+table.organization.global_organization_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_organization_ID}, DEBUG);
@@ -981,9 +983,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * Now returns the ID even if the organization data is temporary (not signed), but not if it is blocked (default)
 	 * @param orgHash
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String getLocalOrgID_fromHashIfNotBlocked(String orgHash) throws SQLiteException {
+	public static String getLocalOrgID_fromHashIfNotBlocked(String orgHash) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.organization.organization_ID+
 			" FROM "+table.organization.TNAME+
@@ -993,7 +995,7 @@ class D_Organization extends ASNObj implements Summary {
 		if(a.size()==0) return null;
 		return Util.getString(a.get(0).get(0));
 	}
-	public static String getLocalOrgID_fromGIDIfNotBlocked(String orgGID) throws SQLiteException {
+	public static String getLocalOrgID_fromGIDIfNotBlocked(String orgGID) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.organization.organization_ID+
 			" FROM "+table.organization.TNAME+
@@ -1003,7 +1005,7 @@ class D_Organization extends ASNObj implements Summary {
 		if(a.size()==0) return null;
 		return Util.getString(a.get(0).get(0));
 	}
-	public void getLocalIDfromGIDandBlock() throws SQLiteException {
+	public void getLocalIDfromGIDandBlock() throws P2PDDSQLException {
 		String sql = 
 				"SELECT "+
 						table.organization.organization_ID+","
@@ -1033,15 +1035,15 @@ class D_Organization extends ASNObj implements Summary {
 	}
 	/**
 	 * 
-	 * @param gID
+	 * @param gIDhash
 	 * @param DBG
 	 * @return
 	 *  0 for absent,
 	 *  1 for present&signed,
 	 *  -1 for temporary
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static int isGIDavailable(String gID, boolean DBG) throws SQLiteException {
+	public static int isGIDhashAvailable(String gIDhash, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.organization.organization_ID+","+table.organization.signature+
 			" FROM "+table.organization.TNAME+
@@ -1049,16 +1051,52 @@ class D_Organization extends ASNObj implements Summary {
 			//" AND "+table.constituent.organization_ID+"=? "+
 			//" AND ( "+table.constituent.sign + " IS NOT NULL " +
 			//" OR "+table.constituent.blocked+" = '1');";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{gID}, DEBUG);
+		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{gIDhash}, DEBUG);
 		boolean result = true;
 		if(a.size()==0) result = false;
-		if(DEBUG||DBG) System.out.println("D_News:available: "+gID+" in "+" = "+result);
+		if(DEBUG||DBG) System.out.println("D_News:available: "+gIDhash+" in "+" = "+result);
 		if(a.size()==0) return 0;    
 		String signature = Util.getString(a.get(0).get(1));
 		if((signature!=null) && (signature.length()!=0)) return 1;
 		return -1;
 	}
-	public void storeLocalFlags() throws SQLiteException {
+	/**
+	 * 
+	 * @param gID
+	 * @param DBG
+	 * @return
+	 *  0 for absent,
+	 *  1 for present&signed,
+	 *  -1 for temporary
+	 * @throws P2PDDSQLException
+	 */
+	public static int isIDavailable(long _organizationID, boolean DBG) throws P2PDDSQLException {
+		//boolean DEBUG = true;
+		String sql = 
+				"SELECT "+table.organization.organization_ID+","+table.organization.signature+
+				" FROM "+table.organization.TNAME+
+				" WHERE "+table.organization.organization_ID+"=? ;";
+				//" AND "+table.constituent.organization_ID+"=? "+
+				//" AND ( "+table.constituent.sign + " IS NOT NULL " +
+				//" OR "+table.constituent.blocked+" = '1');";
+			ArrayList<ArrayList<Object>> a = 
+					Application.db.select(sql, new String[]{Util.getStringID(_organizationID)}, DEBUG);
+			boolean result = true;
+			if(a.size()==0) result = false;
+			if(DEBUG||DBG) System.out.println("D_Org:isIDavailable: "+_organizationID+" in "+" = "+result);
+			if(a.size()==0) {
+				if(DEBUG||DBG) System.out.println("D_Org:isIDavailable: 0");
+				return 0;
+			}
+			String signature = Util.getString(a.get(0).get(1));
+			if((signature!=null) && (signature.length()!=0)) {
+				if(DEBUG||DBG) System.out.println("D_Org:isIDavailable: 1:"+signature);
+				return 1;
+			}
+			if(DEBUG||DBG) System.out.println("D_Org:isIDavailable: -1");
+			return -1;
+	}
+	public void storeLocalFlags() throws P2PDDSQLException {
 		Application.db.update(table.organization.TNAME,
 				new String[]{table.organization.broadcasted,table.organization.blocked,table.organization.requested},
 				new String[]{table.organization.organization_ID},
@@ -1067,6 +1105,48 @@ class D_Organization extends ASNObj implements Summary {
 				Util.bool2StringInt(requested),
 				this.organization_ID}, _DEBUG);
 	}	
+	/**
+	 * Is this editable(not ready)?
+	 * @param method   grassroot?
+	 * @param GID		global ID
+	 * @param cID		creator ID
+	 * @return
+	 */
+	public static boolean isEditable(int method, String GID, String cID) {
+		if((method==table.organization._GRASSROOT) && (GID!=null))
+			return false;
+		if(/*(method==table.organization._GRASSROOT) &&*/ (GID==null))
+			return true;
+		// AUTHORITARIAN with GID
+		String sql = "SELECT p."+table.peer.name+" FROM "+table.peer.TNAME +" AS p JOIN "+table.key.TNAME+" AS k"+
+		" ON ("+table.peer.global_peer_ID_hash+"=k."+table.key.ID_hash+") WHERE "+table.peer.peer_ID +"=?;";
+		//String cID=Util.getString(org.get(table.organization.ORG_COL_CREATOR_ID));
+		if(DD.ORG_CREATOR_REQUIRED) {
+			if(cID == null) return true; // Unknown creator? probably just not set => editable
+			ArrayList<ArrayList<Object>> a;
+			try {
+				a = Application.db.select(sql, new String[]{cID});
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+				return false;
+			}
+			if(a.size()>0) return true; // I have the key => editable
+			return false; // I do not have the key => not editable;
+		}
+		
+		String gsql = "SELECT k."+table.key.name+" FROM "+table.key.TNAME+" AS k "+
+		" WHERE "+table.key.public_key +"=?;";
+		ArrayList<ArrayList<Object>> a;
+		try {
+			if(_DEBUG) System.out.println("D_Organization:isEditable: check authoritarian GID");
+			a = Application.db.select(gsql, new String[]{GID}, _DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+		if(a.size()>0) return true; // I have the key => editable
+		return false; // I do not have the key => not editable;
+	}
 	public static boolean compareOrgs(D_Organization o1, D_Organization o2){
 		try{
 			if((o1==null)&&(o2==null)) return true;
@@ -1102,7 +1182,7 @@ class D_Organization extends ASNObj implements Summary {
 			
 			System.out.println("\n************Loading="+id);
 			D_Organization c=new D_Organization(id);
-			System.out.println("\n************Original\n**********\nrec="+c.toString());
+			System.out.println("\n************Original\n**********\nrec="+Util.getString(c));
 
 			if(!c.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread="+c.toSummaryString());
 			else System.out.println("\n************Signature Pass\n**********\nread="+c.toSummaryString());
@@ -1123,8 +1203,8 @@ class D_Organization extends ASNObj implements Summary {
 			//boolean [] changed = new boolean[2];
 			//d.storeVerified(changed);//arrival_date);
 			
-			System.out.println("\n************Obtained\n**********\nrec="+d.toString());
-		} catch (SQLiteException e) {
+			System.out.println("\n************Obtained\n**********\nrec="+Util.getString(d));
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();

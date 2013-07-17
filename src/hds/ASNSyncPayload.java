@@ -46,7 +46,24 @@ import data.D_PluginData;
 import data.D_Translations;
 import data.D_Vote;
 import data.D_Witness;
-
+/**
+ASNSyncPayload := IMPLICIT [APPLICATION 8] SEQUENCE {
+	version UTF8String,
+	upToDate GeneralizedTime OPTIONAL,
+	tables [APPLICATION 0] ASNDatabase OPTIONAL,
+	orgData [APPLICATION 1] SEQUENCE OF D_Organization OPTIONAL,
+	orgCRL [APPLICATION 2] OrgCRL OPTIONAL,
+	responderID PrintableString OPTIONAL,
+	plugins [APPLICATION 11] SEQUENCE OF ASNPluginInfo OPTIONAL,
+	plugin_data_set [APPLICATION 12] D_PluginData OPTIONAL,
+	requested [APPLICATION 13] WB_Messages OPTIONAL,
+	advertised [APPLICATION 14] SpecificRequest OPTIONAL,
+	advertised_orgs_hash [APPLICATION 15] SEQUENCE OF OrgsData_Hash OPTIONAL,
+	advertised_orgs [APPLICATION 16] SEQUENCE OF OrgInfo OPTIONAL,
+	dictionary_GIDs [APPLICATION 17] SEQUENCE OF PrintableString OPTIONAL,
+	changed_orgs [APPLICATION 18] SEQUENCE OF ResetOrgInfo OPTIONAL,
+}
+*/
 public class ASNSyncPayload extends ASNObj{
 	private static final boolean _DEBUG = true;
 	public static boolean DEBUG = false;
@@ -689,6 +706,24 @@ public class ASNSyncPayload extends ASNObj{
 		//if(this.dictionary_GIDs!=null)result += "\n dictionay_GIDs="+Util.nullDiscrimArrayNumbered(dictionary_GIDs.toArray(new String[0]));
 		return result;
 	}
+	/**
+ASNSyncPayload := IMPLICIT [APPLICATION 8] SEQUENCE {
+	version UTF8String,
+	upToDate GeneralizedTime OPTIONAL,
+	tables [APPLICATION 0] ASNDatabase OPTIONAL,
+	orgData [APPLICATION 1] SEQUENCE OF D_Organization OPTIONAL,
+	orgCRL [APPLICATION 2] OrgCRL OPTIONAL,
+	responderID PrintableString OPTIONAL,
+	plugins [APPLICATION 11] SEQUENCE OF ASNPluginInfo OPTIONAL,
+	plugin_data_set [APPLICATION 12] D_PluginData OPTIONAL,
+	requested [APPLICATION 13] WB_Messages OPTIONAL,
+	advertised [APPLICATION 14] SpecificRequest OPTIONAL,
+	advertised_orgs_hash [APPLICATION 15] SEQUENCE OF OrgsData_Hash OPTIONAL,
+	advertised_orgs [APPLICATION 16] SEQUENCE OF OrgInfo OPTIONAL,
+	dictionary_GIDs [APPLICATION 17] SEQUENCE OF PrintableString OPTIONAL,
+	changed_orgs [APPLICATION 18] SEQUENCE OF ResetOrgInfo OPTIONAL,
+}
+	 */
 	public Encoder getEncoder() {
 		if(ASNSyncRequest.DEBUG)System.out.println("Encoding SyncAnswer");
 		

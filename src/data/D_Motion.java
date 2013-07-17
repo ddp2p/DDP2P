@@ -30,7 +30,7 @@ import java.util.Calendar;
 
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -92,7 +92,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 	public String category;
 	
 	public D_Motion() {}
-	public D_Motion(long motion_ID) throws SQLiteException {
+	public D_Motion(long motion_ID) throws P2PDDSQLException {
 		if(motion_ID<=0) return;
 		motionID = ""+motion_ID;
 		String sql = 
@@ -113,9 +113,9 @@ public class D_Motion extends ASNObj implements util.Summary{
 	/**
 	 * 
 	 * @param motion_GID : global_motion_ID
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_Motion(String motion_GID) throws SQLiteException {
+	public D_Motion(String motion_GID) throws P2PDDSQLException {
 		if(motion_GID == null) return;
 		this.global_motionID = motion_GID;
 		String sql = 
@@ -145,15 +145,15 @@ public class D_Motion extends ASNObj implements util.Summary{
 			" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
 	 * 
 	 * @param o
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public D_Motion(ArrayList<Object> o) throws SQLiteException {
+	public D_Motion(ArrayList<Object> o) throws P2PDDSQLException {
 		init(o);
 	}
 	public D_Motion instance() throws CloneNotSupportedException{
 		return new D_Motion();
 	}
-	void init(ArrayList<Object> o) throws SQLiteException {
+	void init(ArrayList<Object> o) throws P2PDDSQLException {
 		hash_alg = Util.getString(o.get(table.motion.M_HASH_ALG));
 		String _title_format = Util.getString(o.get(table.motion.M_TITLE_FORMAT));
 		if(_title_format!=null){
@@ -213,8 +213,8 @@ public class D_Motion extends ASNObj implements util.Summary{
 		return "D_Motion: "+
 		"\n hash_alg="+hash_alg+
 		"\n global_motionID="+global_motionID+
-		"\n motion_title="+motion_title+
-		"\n motion_text="+motion_text+
+		"\n motion_title="+Util.trimmed(motion_title.toString())+
+		"\n motion_text="+Util.trimmed(motion_text.toString())+
 		"\n constituent="+constituent+
 		"\n global_constituent_ID="+global_constituent_ID+
 		"\n global_enhanced_motionID="+global_enhanced_motionID+
@@ -230,8 +230,8 @@ public class D_Motion extends ASNObj implements util.Summary{
 	}
 	public String toSummaryString() {
 		return "[D_Motion:] "+
-				"\n motion_title="+motion_title+
-				"\n motion_text="+motion_text;
+				"\n motion_title="+Util.trimmed(motion_title.toString())+
+				"\n motion_text="+Util.trimmed(motion_text.toString());
 	}
 	public Encoder getSignableEncoder() {
 		Encoder enc = new Encoder().initSequence();
@@ -292,13 +292,17 @@ public class D_Motion extends ASNObj implements util.Summary{
 		if(dec.getTypeByte()==DD.TAG_AC0)hash_alg = dec.getFirstObject(true).getString(DD.TAG_AC0);
 		if(dec.getTypeByte()==DD.TAG_AC1)global_motionID = dec.getFirstObject(true).getString(DD.TAG_AC1);
 		if(dec.getTypeByte()==DD.TAG_AC2)motion_title = new D_Document_Title().decode(dec.getFirstObject(true));	
+		//System.out.println("D_Motion:decode: title="+motion_title);
 		if(dec.getTypeByte()==DD.TAG_AC3)motion_text = new D_Document().decode(dec.getFirstObject(true));	
 		if(dec.getTypeByte()==DD.TAG_AC4)global_constituent_ID = dec.getFirstObject(true).getString(DD.TAG_AC4);
 		if(dec.getTypeByte()==DD.TAG_AC5)global_enhanced_motionID = dec.getFirstObject(true).getString(DD.TAG_AC5);
 		if(dec.getTypeByte()==DD.TAG_AC6)global_organization_ID = dec.getFirstObject(true).getString(DD.TAG_AC6);
 		if(dec.getTypeByte()==DD.TAG_AC7)creation_date = dec.getFirstObject(true).getGeneralizedTimeCalender(DD.TAG_AC7);
+		//else System.out.println("D_Motion:decode: no creation date");
 		if(dec.getTypeByte()==DD.TAG_AC8)signature = dec.getFirstObject(true).getBytes(DD.TAG_AC8);
+		//else System.out.println("D_Motion:decode: no signature");
 		if(dec.getTypeByte()==DD.TAG_AC9)choices = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_SEQUENCE, new D_MotionChoice[0], new D_MotionChoice());	
+		//else System.out.println("D_Motion:decode: no choices");
 		if(dec.getTypeByte()==DD.TAG_AC10)constituent = new D_Constituent().decode(dec.getFirstObject(true));	
 		if(dec.getTypeByte()==DD.TAG_AC11)enhanced = new D_Motion().decode(dec.getFirstObject(true));	
 		if(dec.getTypeByte()==DD.TAG_AC12)organization = new D_Organization().decode(dec.getFirstObject(true));	
@@ -335,7 +339,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 	public String make_ID(){
 		try {
 			fillGlobals();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		// return this.global_witness_ID =  
@@ -354,6 +358,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 			Util.printCallPath("D_Motion: WRONG EXTERNAL GID");
 			if(DEBUG) System.out.println("D_Motion:verifySignature: WRONG HASH GID="+this.global_motionID+" vs="+newGID);
 			if(DEBUG) System.out.println("D_Motion:verifySignature: WRONG HASH GID result="+false);
+			System.err.println("D_Motion: "+this.toString());
 			return false;
 		}
 		
@@ -365,9 +370,9 @@ public class D_Motion extends ASNObj implements util.Summary{
 	 * before call, one should set organization_ID and global_motionID
 	 * @param rq
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public long store(streaming.RequestData rq) throws SQLiteException {
+	public long store(streaming.RequestData rq) throws P2PDDSQLException {
 		boolean failure = false;
 		boolean locals = fillLocals(rq, true, true, true);
 		if(!locals) failure = true;
@@ -417,7 +422,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 		return storeVerified();
 	
 	}
-	public static long insertTemporaryGID(String motion_GID, String org_ID) throws SQLiteException {
+	public static long insertTemporaryGID(String motion_GID, String org_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:insertTemporaryConstituentGID: start");
 		//Util.printCallPath("temporary motion: "+motion_GID);
 		return Application.db.insert(table.motion.TNAME,
@@ -425,14 +430,14 @@ public class D_Motion extends ASNObj implements util.Summary{
 				new String[]{motion_GID, org_ID},
 				DEBUG);
 	}
-	private static String getDateFor(String motionID) throws SQLiteException {
+	private static String getDateFor(String motionID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.motion.creation_date+" FROM "+table.motion.TNAME+
 		" WHERE "+table.motion.motion_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{""+motionID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst) throws SQLiteException {
+	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst) throws P2PDDSQLException {
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
 			return false;
@@ -464,7 +469,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 		}
 		return true;
 	}
-	private void fillGlobals() throws SQLiteException {
+	private void fillGlobals() throws P2PDDSQLException {
 		if((this.enhanced_motionID != null ) && (this.global_enhanced_motionID == null))
 			this.global_enhanced_motionID = D_Motion.getMotionGlobalID(this.enhanced_motionID);
 		
@@ -476,18 +481,18 @@ public class D_Motion extends ASNObj implements util.Summary{
 		if((this.constituent_ID != null ) && (this.global_constituent_ID == null))
 			this.global_constituent_ID = D_Constituent.getConstituentGlobalID(this.constituent_ID);
 	}
-	public long storeVerified() throws SQLiteException {
+	public long storeVerified() throws P2PDDSQLException {
 		Calendar now = Util.CalendargetInstance();
 		return storeVerified(now, DEBUG);
 	}
-	public long storeVerified(boolean DEBUG) throws SQLiteException {
+	public long storeVerified(boolean DEBUG) throws P2PDDSQLException {
 		Calendar now = Util.CalendargetInstance();
 		return storeVerified(now, DEBUG);
 	}
-	public long storeVerified(Calendar arrival_date) throws SQLiteException {
+	public long storeVerified(Calendar arrival_date) throws P2PDDSQLException {
 		return storeVerified(arrival_date, DEBUG);
 	}
-	public long storeVerified(Calendar arrival_date, boolean DEBUG) throws SQLiteException {
+	public long storeVerified(Calendar arrival_date, boolean DEBUG) throws P2PDDSQLException {
 		long result = -1;
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("D_Motion:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
@@ -559,15 +564,15 @@ public class D_Motion extends ASNObj implements util.Summary{
 	 * @param witness_ID
 	 * @param signer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static long readSignSave(long motion_ID, long signer_ID) throws SQLiteException {
+	public static long readSignSave(long motion_ID, long signer_ID) throws P2PDDSQLException {
 		D_Motion w=new D_Motion(motion_ID);
 		ciphersuits.SK sk = util.Util.getStoredSK(D_Constituent.getConstituentGlobalID(""+signer_ID));
 		w.sign(sk);
 		return w.storeVerified();
 	}
-	private static String getMotionLocalIDandDate(String global_motionID,	String[] _old_date) throws SQLiteException {
+	private static String getMotionLocalIDandDate(String global_motionID,	String[] _old_date) throws P2PDDSQLException {
 		String sql = "SELECT "+table.motion.motion_ID+","+table.motion.creation_date+" FROM "+table.motion.TNAME+
 		" WHERE "+table.motion.global_motion_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_motionID}, DEBUG);
@@ -575,14 +580,14 @@ public class D_Motion extends ASNObj implements util.Summary{
 		_old_date[0] = Util.getString(o.get(0).get(1));
 		return Util.getString(o.get(0).get(0));
 	}
-	public static String getMotionLocalID(String global_motionID) throws SQLiteException {
+	public static String getMotionLocalID(String global_motionID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.motion.motion_ID+" FROM "+table.motion.TNAME+
 		" WHERE "+table.motion.global_motion_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_motionID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public static String getMotionGlobalID(String motionID) throws SQLiteException {
+	public static String getMotionGlobalID(String motionID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.motion.global_motion_ID+" FROM "+table.motion.TNAME+
 		" WHERE "+table.motion.motion_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{motionID}, DEBUG);
@@ -590,7 +595,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 		return Util.getString(o.get(0).get(0));
 	}
 	public static ArrayList<String> checkAvailability(ArrayList<String> cons,
-			String orgID, boolean DBG) throws SQLiteException {
+			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String hash : cons) {
 			if(!available(hash, orgID, DBG)) result.add(hash);
@@ -602,9 +607,9 @@ public class D_Motion extends ASNObj implements util.Summary{
 	 * @param hash
 	 * @param orgID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static boolean available(String hash, String orgID, boolean DBG) throws SQLiteException {
+	private static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
 		String sql = 
 			"SELECT "+table.motion.motion_ID+
 			" FROM "+table.motion.TNAME+
@@ -635,7 +640,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
 			d.global_motionID = d.make_ID();
 			d.storeVerified(arrival_date);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();
@@ -664,7 +669,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 			signature = null;
 			try {
 				storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return true;			

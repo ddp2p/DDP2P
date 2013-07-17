@@ -46,11 +46,12 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 import plugin_data.PluginObject;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import simulator.WirelessLog;
 import streaming.OrgHandling;
@@ -254,7 +255,7 @@ public class StartUpThread extends Thread {
 							DD.controlPane.setUServerStatus(true);
 						} catch (NumberFormatException e) {
 							e.printStackTrace();
-						} catch (SQLiteException e) {
+						} catch (P2PDDSQLException e) {
 							e.printStackTrace();
 						}//startUServer(true, Identity.current_peer_ID);
 					}
@@ -268,7 +269,7 @@ public class StartUpThread extends Thread {
 					public void run(){
 						try {
 							DD.controlPane.setServerStatus(true);//startServer(true, Identity.current_peer_ID);
-						} catch (SQLiteException e) {
+						} catch (P2PDDSQLException e) {
 							e.printStackTrace();
 						}
 					}
@@ -338,7 +339,7 @@ public class StartUpThread extends Thread {
 								Application.panelUpdates.numberButton.setSelected(true);								
 							}
 							Application.panelUpdates.absoluteCheckBox.setSelected(!DD.getAppBoolean(DD.UPDATES_TESTERS_THRESHOLDS_RELATIVE));
-						} catch (SQLiteException e) {
+						} catch (P2PDDSQLException e) {
 							e.printStackTrace();
 						}
 					}
@@ -365,24 +366,31 @@ public class StartUpThread extends Thread {
 				}
 			}
 			*/
-			
+
 			plugin_data.PluginRegistration.loadPlugins(DD.getMyPeerGIDFromIdentity(), DD.getMyPeerName());
 			if(DEBUG) System.out.println("StartUpThread:run: plugins loaded, go wireless");
-			
+
 			//System.err.println("OS_SEP="+Application.OS_PATH_SEPARATOR);
 			String wlans = wireless.Detect_interface.detect_wlan(); // detect OS and initial SSIDs
 			DD.setAppText(DD.APP_NET_INTERFACES,wlans);
 			//Application.wlan.update(); // automatically done by DBInterface
-			
 			WirelessLog.init();
-			
+
+			// Generating random peer number for the running session
+			Random r = new Random();
+			byte[] byteArray = new byte[8];    
+			r.nextBytes(byteArray);
+			DD.Random_peer_Number = byteArray;
+
+
+
 			if(DEBUG) System.out.println("StartUpThread:run: startThread done, go in Tray");
 			registerTray();
-			
+	
 		}
 		catch(Exception e){e.printStackTrace();}
 	}
-	public static void fill_OS_install_path() throws SQLiteException{
+	public static void fill_OS_install_path() throws P2PDDSQLException{
 		if(DEBUG) System.out.println("StartUpThread:fill_OS_install_path: start");
 		Application.LINUX_INSTALLATION_VERSION_BASE_DIR = DD.getAppText(DD.APP_LINUX_INSTALLATION_PATH);
 		if(Application.LINUX_INSTALLATION_VERSION_BASE_DIR==null){

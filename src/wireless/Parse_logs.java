@@ -17,7 +17,7 @@ import java.io.File;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -68,9 +68,9 @@ public class Parse_logs {
 	/** Process_logs()
 	 * 
 	 * @throws IOException
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	public static void process_logs() throws IOException, SQLiteException{
+	public static void process_logs() throws IOException, P2PDDSQLException{
 	
 		BufferedReader send_br = Open_file_return_buffer(SEND_LOG_PATH);
 		BufferedReader rcv_br = Open_file_return_buffer(RCV_LOG_PATH);
@@ -143,9 +143,9 @@ public class Parse_logs {
 	/** Calculate_Statistics for result (merged file)
 	 * 
 	 * @throws IOException
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	public static void Calculate_Statistics() throws IOException, SQLiteException{
+	public static void Calculate_Statistics() throws IOException, P2PDDSQLException{
 		send_db = new DBInterface(SEND_DB_PATH);
 		rcv_db = new DBInterface(RCV_DB_PATH);
 		
@@ -187,7 +187,7 @@ public class Parse_logs {
 		return arr;
 	}
 	
-	public static void main(String args[]) throws IOException, SQLiteException{
+	public static void main(String args[]) throws IOException, P2PDDSQLException{
 		set_paths(args);
 		Parse_logs.process_logs();
 		//Parse_logs.Calculate_Statistics();

@@ -39,7 +39,7 @@ import data.D_UpdatesInfo;
 import data.D_TesterDefinition;
 import data.D_UpdatesKeysInfo;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import widgets.updatesKeys.UpdatesKeysTable;
 
@@ -97,7 +97,7 @@ public class ImportData {
 				    			else ukeys.store("insert");
 				    			line=3;
 				    			Application.db.sync(new ArrayList<String>(Arrays.asList(table.updatesKeys.TNAME)));
-			    			}catch(SQLiteException e){}
+			    			}catch(P2PDDSQLException e){}
 			             }
 				}//switch
 			}// loop
@@ -109,7 +109,7 @@ public class ImportData {
 			
 		} catch (IOException e) {
 			e.printStackTrace();
-		}catch ( SQLiteException e) {
+		}catch ( P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		try {
@@ -154,7 +154,7 @@ public class ImportData {
 				    			ukeys.public_key_hash = Util.getGIDhashFromGID(t.public_key, false);
 				    			ukeys.store("insert");
 				    			line=0;
-			    			}catch(SQLiteException e){}
+			    			}catch(P2PDDSQLException e){}
 			             }
 				}//switch
 			}// loop

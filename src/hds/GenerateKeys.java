@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import util.Util;
 import ciphersuits.Cipher;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -67,7 +67,7 @@ public class GenerateKeys extends Thread {
 			for (WorkerListener l : listeners) {
 				try{l.Done(this);}catch(Exception e){e.printStackTrace();}
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
