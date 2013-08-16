@@ -185,7 +185,7 @@ public class UDPServerThread extends Thread {
 				//get last snapshoot for peerID
 				String _lastSnapshotString;
 				try {
-					_lastSnapshotString = Client.getLastSnapshot(g_peerID);
+					_lastSnapshotString = ClientSync.getLastSnapshot(g_peerID);
 				} catch (P2PDDSQLException e1) {
 					e1.printStackTrace();
 					return;
@@ -201,9 +201,9 @@ public class UDPServerThread extends Thread {
 				boolean filtered = Util.stringInt2bool(_filtered, false);
 			
 				ASNSyncRequest asreq;
-				asreq = Client.peer_scheduled_requests.get(g_peerID);
+				asreq = ClientSync.peer_scheduled_requests.get(g_peerID);
 				if(asreq!=null){
-					Client.peer_scheduled_requests.remove(g_peerID);
+					ClientSync.peer_scheduled_requests.remove(g_peerID);
 					asreq.lastSnapshot = Util.getCalendar(_lastSnapshotString);
 					String global_peer_ID = Identity.current_peer_ID.globalID;
 					if(DEBUG) System.out.println("Client: buildRequests: myself=: "+global_peer_ID);
@@ -213,7 +213,7 @@ public class UDPServerThread extends Thread {
 						e.printStackTrace();
 					}
 				}else
-					asreq = Client.buildRequest(_lastSnapshotString, null, peer_ID);
+					asreq = ClientSync.buildRequest(_lastSnapshotString, null, peer_ID);
 				if(filtered) asreq.orgFilter=UpdateMessages.getOrgFilter(peer_ID);
 				SK sk = asreq.sign();
 				

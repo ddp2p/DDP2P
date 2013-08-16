@@ -63,6 +63,18 @@ class D_DAAnswer extends ASN1.ASNObj{
 	byte[] remote_IP;
 	int remote_port = 0;
 	
+	public String toString() {
+		return "D_DAAnswer: ["+Util.concat(remote_IP, ".", "?.?.?.?")+":"+remote_port+"]";
+	}
+	
+	public D_DAAnswer(String detected_sa) {
+		if(detected_sa != null) {
+			Address ad = new Address(detected_sa);
+			remote_port = ad.udp_port;
+			remote_IP = Util.getBytesFromCleanIPString(Util.get_IP_from_SocketAddress(ad.domain));
+		}
+	}
+
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
@@ -165,36 +177,43 @@ public class DirectoryServer extends Thread{
 		//db.close();
 		out.println("Turning DS off");
 	}
-	public static byte[] handleAnnouncement(DirectoryAnnouncement da, String detected_sa, DBInterface db) throws P2PDDSQLException{
+	public static byte[] handleAnnouncement(DirectoryAnnouncement da, String detected_sa, DBInterface db, boolean storeNAT) throws P2PDDSQLException{
 		if(DEBUG)System.out.println("Got announcement: "+da);
 		db.delete("registered", new String[]{"global_peer_ID"}, new String[]{da.globalID});
+		String adr = da.address.addresses;
+						//da.address.domain+":"+da.address.port+ADDR_SEP+detected_sa,
+		if(storeNAT) adr = Address.joinAddresses(detected_sa, adr);
+			
 		long id=db.insert("registered", new String[]{"global_peer_ID","certificate","addresses","signature","timestamp"},
 				new String[]{da.globalID,
 				(da.certificate.length==0)?null:Util.stringSignatureFromByte(da.certificate),
-						//da.address.domain+":"+da.address.port+ADDR_SEP+detected_sa,
-						Address.joinAddresses(detected_sa, da.address.addresses),
+						adr,
 						(da.signature.length==0)?null:Util.stringSignatureFromByte(da.signature),
 								(Util.CalendargetInstance().getTimeInMillis()/1000)+""}); // strftime('%s', 'now'));
 		if(DEBUG)out.println("inserted with ID="+id);
-		Encoder DAanswer = new D_DAAnswer().getEncoder();
-				// new Encoder().initSequence().addToSequence(new Encoder(true));
-		//DAanswer.setASN1Type(DD.TAG_AC14);
-		byte[] answer=DAanswer.getBytes();
+		byte[] answer = new D_DAAnswer(detected_sa).encode();
 		if(DEBUG) out.println("sending answer: "+Util.byteToHexDump(answer));
 		return answer;
 	}
-	public static String detectAddress(InetSocketAddress isa, int port){
+	public static String detectAddress(InetSocketAddress isa, int udp_port){
+		return null;
+		/* // not really useful to find TCP addresses, since they cannot be used for piercing NATs
+		int tcp_port = isa.getPort(); 
 		String hostName = Util.getNonBlockingHostName(isa);
 		String result = (hostName.equals(isa.getAddress().getHostAddress()))?
-				hostName+":"+port:
-					Address.joinAddresses(isa.getAddress().getHostAddress()+":"+port, hostName+":"+port);
+				hostName+":"+tcp_port+":"+udp_port:
+					Address.joinAddresses(isa.getAddress().getHostAddress()+":"+tcp_port+":"+udp_port, hostName+":"+tcp_port+":"+udp_port);
 		return result;
+		*/
 	}
 	public static String detectUDPAddress(InetSocketAddress isa, int port){
+		return isa.getAddress().getHostAddress()+":-1:"+port;
+		/* // learning the IP is enough for NAT addresses 
 		String hostName = Util.getNonBlockingHostName(isa);
 		return (hostName.equals(isa.getAddress().getHostAddress()))?
 			hostName+":"+port:
 				Address.joinAddresses(hostName+":-1:"+port,isa.getAddress().getHostAddress()+":-1:"+port);
+		*/
 	}
 	public void run () {
 		out.println("Enter DS Server Thread");
@@ -218,8 +237,10 @@ public class DirectoryServer extends Thread{
 					InetSocketAddress isa= (InetSocketAddress)client.getRemoteSocketAddress();
 					DirectoryAnnouncement da = new DirectoryAnnouncement(buffer,peek,client.getInputStream());
 					out.println("Received TCP announcement: "+da+"\n from: "+isa);
-					String detected_sa = detectAddress(isa, da.address.udp_port);
-					byte[] answer = handleAnnouncement(da, detected_sa, db);
+					String detected_sa = detectUDPAddress(isa, da.address.udp_port);
+					detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
+					byte[] answer = handleAnnouncement(da, detected_sa, db, false);
+					//byte[] answer = new D_DAAnswer(detected_sa).encode();
 					client.getOutputStream().write(answer);
 				}else{
 					if(DEBUG)out.println("Received directory request");
@@ -281,5 +302,24 @@ public class DirectoryServer extends Thread{
 			e.printStackTrace();
 			System.exit(-1);
 		}		
+	}
+	/**
+	 * If detected not in announced, then set its protocol to NAT and return it
+	 * else return null
+	 * @param da
+	 * @param detected_sa
+	 * @return
+	 */
+	public static String addr_NAT_detection(DirectoryAnnouncement da,
+			String detected_sa) {
+		if(detected_sa == null) return null;
+		Address det = new Address(detected_sa);
+		String[] addr = Address.split(da.address.addresses);
+		for(int k =0; k<addr.length; k++) {
+			Address a = new Address(addr[k]);
+			if(a.domain.equals(det.domain) && a.udp_port==det.udp_port) return null; // not NAT
+		}
+		det.protocol = Address.NAT;
+		return det.toString();
 	}
 }

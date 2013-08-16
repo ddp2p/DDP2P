@@ -282,7 +282,7 @@ public class PluginRegistration {
 				}
 				plugin_GID = i.plugin_GID;
 				PluginRegistration.registerPlugin(i.plugin_GID, i.plugin_name, i.plugin_info, i.plugin_url, i.renderer, i.editor);
-			}catch(Exception e){e.printStackTrace();}
+			}catch(Exception e){System.err.println("PluginRegistration:loadPlugin: method: try: "+url);e.printStackTrace();}
 			if(plugin_GID == null){
 				if(_DEBUG) System.out.println("PluginRegistration:loadPlugins: null pluginGID");
 				return result;
@@ -310,17 +310,23 @@ public class PluginRegistration {
 			PluginRegistration.plugin_urls.add(url);
 			result = true;
 		} catch (ClassNotFoundException e) {
+			System.err.println("PluginRegistration:loadPlugin: abandon: try: "+url);
 			e.printStackTrace();
 		} catch (SecurityException e) {
+			System.err.println("PluginRegistration:loadPlugin: abandon: try: "+url);
 			e.printStackTrace();
 		} catch (NoSuchMethodException e) {
+			System.err.println("PluginRegistration:loadPlugin: abandon: try: "+url);
 			e.printStackTrace();
 		//} catch (InstantiationException e) {e.printStackTrace();
 		} catch (IllegalAccessException e) {
+			System.err.println("PluginRegistration:loadPlugin: abandon: try: "+url);
 			e.printStackTrace();
 		} catch (IllegalArgumentException e) {
+			System.err.println("PluginRegistration:loadPlugin: abandon: try: "+url);
 			e.printStackTrace();
 		} catch (InvocationTargetException e) {
+			System.err.println("PluginRegistration:loadPlugin: abandon: try: "+url);
 			e.printStackTrace();
 		}
 		return result;

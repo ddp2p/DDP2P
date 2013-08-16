@@ -26,6 +26,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
+import java.util.TimeZone;
+
 
 import util.Util;
  
@@ -243,7 +245,9 @@ class Decoder {
 	 */
 	public Decoder getFirstObject(boolean extract, byte type) throws ASN1DecoderFail {
 		if(length<=0) return null;
-		if((getTypeByte()!=type)&&(getTypeByte()!=Encoder.TAG_NULL)) throw new ASN1DecoderFail("No type: "+type+" in "+this.dumpHex());
+		byte found = getTypeByte();
+		if((found!=type)&&(getTypeByte()!=Encoder.TAG_NULL))
+			throw new ASN1DecoderFail("No type: "+type+" but "+found+" in "+this.dumpHex());
 		int new_len = typeLen()+lenLen()+contentLength();
 		if(new_len>length) throw new ASNLenRuntimeException("Too long");
 		int old_offset = offset;
@@ -457,6 +461,12 @@ class Decoder {
 	public Calendar getGeneralizedTimeCalenderAnyType() throws ASN1DecoderFail {
 		return Util.getCalendar(this.getGeneralizedTimeAnyType());
 	}
+	/**
+	 * Currently not expanding the buffer but rather abandon if too small
+	 * @param is
+	 * @return
+	 * @throws IOException
+	 */
 	public boolean fetchAll(InputStream is) throws IOException {
 		//Decoder dec = new Decoder(sr,0,msglen);
 		while(true) {
@@ -527,4 +537,25 @@ class Decoder {
 		}
 		return result;
 	}
+	// Test by Andreas Bjoru
+	//@Test
+	public static void encodeDecodeCalendar() throws ASN1DecoderFail {
+	        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+	        
+	        Encoder enc = new Encoder(cal);
+	        Decoder dec = new Decoder(enc.getBytes());
+	        Calendar res = dec.getFirstObject(true).getGeneralizedTimeCalenderAnyType();//.getGeneralizedTimeCalendar();
+
+	        int m1 = cal.get(Calendar.MONTH);
+	        int m2 = res.get(Calendar.MONTH);
+	        System.out.println("Compared: "+m1+" vs "+m2);
+	        //Assert.assertEquals(m1, m2);
+	}
+    public static void main(String[]args){
+    	try {
+			encodeDecodeCalendar();
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+    }
 }

@@ -195,6 +195,13 @@ public class Util {
 		for(int k=1; k<array.length; k++) result = result + sep + array[k];
 		return result;
 	}
+	public static String concat(byte[] array, String sep, String def) {
+		if ((array == null) ) return def;
+		if ((array.length == 0)) return def;
+		String result=array[0]+"";
+		for(int k=1; k<array.length; k++) result = result + sep + array[k];
+		return result;
+	}
     public static <T> String nullDiscrimArray(T o[], String sep){
     	if(o==null) return "null";
     	return "#["+o.length+"]=\""+Util.concat(o, sep)+"\"";
@@ -1957,6 +1964,28 @@ public class Util {
 		if(DEBUG) System.out.println("Util:getHostNamexx: done="+gh.hostName);
 		return gh.hostName;
 	}
+	public static InetAddress getNonBlockingHostIA(String domain) {
+		return getHostIA(domain);
+	}
+	public static InetAddress getHostIA(String domain) {
+		if(DEBUG) System.out.println("Util:getHostIAxx: start");
+		GetHostIA gh = new GetHostIA(domain);
+		if(DEBUG) System.out.println("Util:getHostIAxx: inited");
+		synchronized(gh) {
+			if(DEBUG) System.out.println("Util:getHostIAxx: sync");
+			try {
+				while(!gh.started ) {
+					gh.wait(DD.GETHOSTNAME_TIMEOUT_MILLISECONDS);
+				}
+				if(null == gh.hostIA) gh.wait(DD.GETHOSTNAME_TIMEOUT_MILLISECONDS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			gh.interrupt();
+		}
+		if(DEBUG) System.out.println("Util:getHostIAxx: done="+gh.hostIA);
+		return gh.hostIA;
+	}
 	public static String validateIP(String candidate, String orig) {
 		byte[] ip = Util.getBytesFromCleanIPString(candidate);
 		if (ip==null) return orig;
@@ -2094,6 +2123,34 @@ class GetHostName extends Thread{
 			if(sock_addr != null) {
 				hostName = sock_addr.getHostName();
 			}
+		synchronized(this){
+			this.notifyAll();
+		}
+	}
+}
+class GetHostIA extends Thread{
+	static final boolean DEBUG = false;
+	public boolean started = false;
+	String domain = null;
+	InetAddress hostIA = null;
+	//InetSocketAddress sock_addr;
+	GetHostIA(String domain) {
+		this.domain = domain;
+		//this.sock_addr = sock_addr;
+		this.start();
+	}
+	public void run(){
+		hostIA = null;
+		if(domain!=null) {
+			try {
+				started = true;
+				hostIA = InetAddress.getByName(domain);
+			} catch (UnknownHostException e) {
+				if(DEBUG)e.printStackTrace();
+			} catch (Exception e){
+				if(DEBUG)e.printStackTrace();
+			}
+		}
 		synchronized(this){
 			this.notifyAll();
 		}

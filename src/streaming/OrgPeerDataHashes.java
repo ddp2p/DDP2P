@@ -29,7 +29,7 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -96,7 +96,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	}
 
 	public OrgPeerDataHashes(){}
-	public OrgPeerDataHashes(long orgID) throws SQLiteException {
+	public OrgPeerDataHashes(long orgID) throws P2PDDSQLException {
 		if(orgID<=0) return;
 		String sql =
 			"SELECT "+table.organization.specific_requests+
@@ -126,9 +126,9 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	 * in database we do not store the orgGID
 	 * @param orgID
 	 * @param peer_ID 
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public void save(long orgID, long peer_ID, D_PeerAddress peer) throws SQLiteException {
+	public void save(long orgID, long peer_ID, D_PeerAddress peer) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("\nOrgPeerDataHashes: save: saving "+this);
 		//Util.printCallPath("Try");
 		String old = this.global_organization_ID_hash;

@@ -36,17 +36,11 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
@@ -65,7 +59,6 @@ import javax.swing.border.BevelBorder;
 import javax.swing.filechooser.FileFilter;
 import java.awt.Color;
 
-import ASN1.ASN1DecoderFail;
 import ASN1.Encoder;
 
 import ciphersuits.Cipher;
@@ -80,7 +73,6 @@ import data.D_PeerAddress;
 //import song.peers.DualListBox;
 import streaming.OrgHandling;
 import updates.ClientUpdates;
-import util.BMP;
 import util.P2PDDSQLException;
 import util.Util;
 import util.GIF_Convert;
@@ -174,7 +166,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	private static final String STOPPING_USERVER = _("Stopping UDP Server");
 	private static final String BROADCASTABLE_YES = _("Stop broadcastable");
 	private static final String BROADCASTABLE_NO = _("Start broadcastable");
-	private static final boolean DEBUG = false;
+	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	public static final String START_SIMULATOR = _("Start Simulator");
 	public static final String STOP_SIMULATOR = _("Stop Simulator");
@@ -202,8 +194,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	JButton keepThisVersion = new JButton(_("Fix: Keep This Version"));
 	JButton setLinuxScriptsPath = new JButton(_("Set Linux Scripts Path"));
 	JButton setWindowsScriptsPath = new JButton(_("Set Windows Scripts Path"));
-	final JFileChooser fc = new JFileChooser();
-	public final JFileChooser filterUpdates = new JFileChooser();
+	public final static JFileChooser file_chooser_address_container = new JFileChooser();
+	public final static JFileChooser file_chooser_updates_to_sign = new JFileChooser();
 	public JCheckBox serveDirectly;
 	public JCheckBox tcpButton;
 	public JCheckBox udpButton;
@@ -254,7 +246,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		c.add(m_dbgUpdates);
 		m_dbgUpdates.addItemListener(this);
 		
-		m_dbgClient = new JCheckBox("DBG Streaming Client",hds.Client.DEBUG);
+		m_dbgClient = new JCheckBox("DBG Streaming Client",hds.ClientSync.DEBUG);
 		c.add(m_dbgClient);
 		m_dbgClient.addItemListener(this);
 		
@@ -318,7 +310,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    	DD.DEBUG_PLUGIN = val;
 	    } else if (source == this.m_dbgClient) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
-	    	hds.Client.DEBUG = val;
+	    	hds.ClientSync.DEBUG = val;
 	    } else if (source == this.m_dbgUDPServerComm) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	hds.UDPServer.DEBUG = val;
@@ -856,14 +848,14 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
-				fc.setFileFilter(new DDAddressFilter());
-				filterUpdates.setFileFilter(new UpdatesFilter());
+				file_chooser_address_container.setFileFilter(new DDAddressFilter());
+				file_chooser_updates_to_sign.setFileFilter(new UpdatesFilter());
 				//filterUpdates.setSelectedFile(new File(userdir));
 				try{
 					if(DEBUG)System.out.println("ControlPane:<init>: set Dir = "+Application.USER_CURRENT_DIR);
 					File userdir = new File(Application.USER_CURRENT_DIR);
 					if(DEBUG)System.out.println("ControlPane:<init>: set Dir FILE = "+userdir);
-					filterUpdates.setCurrentDirectory(userdir);
+					file_chooser_updates_to_sign.setCurrentDirectory(userdir);
 				}catch(Exception e){if(_DEBUG)e.printStackTrace();}
 			}
 		});
@@ -878,148 +870,28 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 */
 
 	}
-	void actionImport() throws P2PDDSQLException{
-		if(DEBUG)System.err.println("ControlPane:actionImport: import file");
-		int returnVal = fc.showOpenDialog(this);
-		if(DEBUG)System.err.println("ControlPane:actionImport: Got: selected");
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-        	if(DEBUG)System.err.println("ControlPane:actionImport: Got: ok");
-            File file = fc.getSelectedFile();
-            if(!file.exists()){
-            	Application.warning(_("The file does not exists: "+file),_("Importing Address")); return;
-            }
-            try {
-            	DDAddress adr = new DDAddress();
-            	if("txt".equals(Util.getExtension(file))) {
-            		if(DEBUG)System.err.println("ControlPane:actionImport: Got: txt");
-					String content = new Scanner(file).useDelimiter("\\Z").next(); 
-					if(!adr.parseAddress(content)){
-						Application.warning(_("Failed to parse file: "+file), _("Failed to parse address!"));
-						return;
-					}
-				}else if("gif".equals(Util.getExtension(file))){
-						if(DEBUG)System.err.println("ControlPane:actionImport: Got: gif");
-						FileInputStream fis=new FileInputStream(file);
-						boolean found = false;
-						byte[] b = new byte[(int) file.length()];  
-						fis.read(b);
-				    	fis.close();
-				    	int i=0;
-						while (i<b.length){
-							if(b[i]==(byte) 0x3B) {
-								found = true;
-								i++;
-								break;
-							}
-							i++;
-						}
-						if(i>=b.length){
-							JOptionPane.showMessageDialog(this,
-										_("Cannot Extract address in: ")+file+_("No valid data in the picture!"),
-										_("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
-									return;
-						}
-						byte[] addBy = new byte[b.length-i]; 
-						System.arraycopy(b,i,addBy,0,b.length-i);
-						// System.out.println("Got bytes ("+addBy.length+") to write: "+Util.byteToHex(addBy, " "));
-						
-						try {
-						adr.setBytes(addBy);
-						} catch (ASN1DecoderFail e1) {
-							e1.printStackTrace();
-							Application.warning(_("Failed to parse file: "+file+"\n"+e1.getMessage()), _("Failed to parse address!"));
-							return;
-						}
-						
-						
-					
-				
-				}
-				else
-				if("ddb".equals(Util.getExtension(file))){
-					if(DEBUG)System.err.println("ControlPane:actionImport: Got: ddb");
-					FileInputStream fis=new FileInputStream(file);
-					byte[] b = new byte[(int) file.length()];  
-					fis.read(b);
-					fis.close();
-					try {
-						adr.setBytes(b);
-					} catch (ASN1DecoderFail e1) {
-						e1.printStackTrace();
-						Application.warning(_("Failed to parse file: "+file+"\n"+e1.getMessage()), _("Failed to parse address!"));
-						return;
-					}
-				}else
-					if("bmp".equals(Util.getExtension(file))) {
-						//System.err.println("Got: bmp");
-						String explain="";
-						boolean fail= false;
-						FileInputStream fis=new FileInputStream(file);
-						//System.err.println("Got: open");
-						//System.err.println("Got: open size:"+file.length());
-						byte[] b = new byte[(int) file.length()];
-						//System.err.println("Got: alloc="+b.length);
-						fis.read(b);
-						//System.err.println("Got: read");
-						fis.close();
-						//System.err.println("Got: close");
-						//System.out.println("File data: "+Util.byteToHex(b,0,200," "));
-						BMP data = new BMP(b, 0);
-						//System.out.println("BMP Header: "+data);
-
-						if((data.compression!=BMP.BI_RGB) || (data.bpp<24)){
-							explain = " - "+_("Not supported compression: "+data.compression+" "+data.bpp);
-							fail = true;
-						}else{
-							int offset = data.startdata;
-							int word_bytes=1;
-							int bits = 4;
-							try {
-								//System.err.println("Got: steg");
-								////adr.setSteganoBytes(b, offset, word_bytes, bits,data.creator);
-								adr.setSteganoBytes(b, offset, word_bytes, bits);
-							} catch (ASN1DecoderFail e1) {
-								explain = " - "+ _("No valid data in picture!");
-								fail = true;
-							}
-						}
-						if(fail){
-								JOptionPane.showMessageDialog(this,
-									_("Cannot Extract address in: ")+file+explain,
-									_("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
-								return;
-						}
-					}
-				if(DEBUG)System.err.println("Got DDAddress: "+adr);
-            	adr.save();
-            	Application.warning(adr.getNiceDescription(), _("Obtained Addresses"));
-            }catch(IOException e3){
-            	
-            }
-        }		
-	}
 	void actionSignUpdates() {
-		filterUpdates.setFileFilter(new UpdatesFilter());
-		filterUpdates.setName(_("Select data to sign"));
-		filterUpdates.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		filterUpdates.setMultiSelectionEnabled(false);
-		Util.cleanFileSelector(filterUpdates);
+		file_chooser_updates_to_sign.setFileFilter(new UpdatesFilter());
+		file_chooser_updates_to_sign.setName(_("Select data to sign"));
+		file_chooser_updates_to_sign.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		file_chooser_updates_to_sign.setMultiSelectionEnabled(false);
+		Util.cleanFileSelector(file_chooser_updates_to_sign);
 		//filterUpdates.setSelectedFile(null);
-		int returnVal = filterUpdates.showDialog(this,_("Open Input Updates File"));
+		int returnVal = file_chooser_updates_to_sign.showDialog(this,_("Open Input Updates File"));
 		if (returnVal != JFileChooser.APPROVE_OPTION)  return;
-		File fileUpdates = filterUpdates.getSelectedFile();
+		File fileUpdates = file_chooser_updates_to_sign.getSelectedFile();
 		if(!fileUpdates.exists()) {
 			Application.warning(_("No file: "+fileUpdates), _("No such file"));
 			return;
 		}
 		
-		filterUpdates.setFileFilter(new UpdatesFilterKey());
-		filterUpdates.setName(_("Select Secret Trusted Key"));
+		file_chooser_updates_to_sign.setFileFilter(new UpdatesFilterKey());
+		file_chooser_updates_to_sign.setName(_("Select Secret Trusted Key"));
 		//filterUpdates.setSelectedFile(null);
-		Util.cleanFileSelector(filterUpdates);
-		returnVal = filterUpdates.showDialog(this,_("Specify Trusted Secret Key File"));
+		Util.cleanFileSelector(file_chooser_updates_to_sign);
+		returnVal = file_chooser_updates_to_sign.showDialog(this,_("Specify Trusted Secret Key File"));
 		if (returnVal != JFileChooser.APPROVE_OPTION)  return;
-		File fileTrustedSK = filterUpdates.getSelectedFile();
+		File fileTrustedSK = file_chooser_updates_to_sign.getSelectedFile();
 		SK sk;
 		PK pk;
 		if(!fileTrustedSK.exists()) {
@@ -1047,13 +919,13 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			//return;
 		}
 		
-		filterUpdates.setFileFilter(new UpdatesFilter());
-		filterUpdates.setName(_("Select Output File Name"));
+		file_chooser_updates_to_sign.setFileFilter(new UpdatesFilter());
+		file_chooser_updates_to_sign.setName(_("Select Output File Name"));
 		//filterUpdates.setSelectedFile(null);
-		Util.cleanFileSelector(filterUpdates);
-		returnVal = filterUpdates.showDialog(this,_("Specify Output File"));
+		Util.cleanFileSelector(file_chooser_updates_to_sign);
+		returnVal = file_chooser_updates_to_sign.showDialog(this,_("Specify Output File"));
 		if (returnVal != JFileChooser.APPROVE_OPTION)  return;
-		File fileOutput = filterUpdates.getSelectedFile();
+		File fileOutput = file_chooser_updates_to_sign.getSelectedFile();
 		if(fileOutput.exists()) {
 			int n;
 			n = JOptionPane.showConfirmDialog(this, _("Overwrite: ")+fileOutput+"?",
@@ -1076,147 +948,6 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		}
 	}
 	
-	/**
-	 * Exporting current Address
-	 */
-	void actionExport(){
-		//boolean DEBUG = true;
-		DDAddress myAddress;
-		try {
-			myAddress = D_PeerAddress.getMyDDAddress();
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-			return;
-		} 
-		if(DEBUG) System.out.println("Got to write: "+myAddress);
-		BMP data=null;
-		byte[] b=null; // old .bmp file 
-		byte[] adr_bytes = myAddress.getBytes();
-		try{
-		DDAddress  x = new DDAddress();
-		 x.setBytes(adr_bytes);
-		}catch (ASN1DecoderFail e1) {
-							e1.printStackTrace();
-							Application.warning(_("Failed to parse file: \n"+e1.getMessage()), _("Failed to parse address!"));
-							return;
-						}
-		if(DEBUG) System.out.println("Got bytes("+adr_bytes.length+"): to write: "+Util.byteToHex(adr_bytes, " "));
-		int returnVal = fc.showSaveDialog(this);
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-        	fc.setName(_("Select file with image or text containing address"));
-            File file = fc.getSelectedFile();
-            String extension = Util.getExtension(file);
-            if(!"bmp".equals(extension)&&!"txt".equals(extension)&&!"ddb".equals(extension)&&!"gif".equals(extension))  {
-            	file = new File(file.getPath()+".bmp");
-            	extension = "bmp";
-            }
-
-           if(file.exists()){
-            	//Application.warning(_("File exists!"));
-            	
-            	JOptionPane optionPane = new JOptionPane(_("Overwrite/Embed in: ")+file+"?",
-            			JOptionPane.QUESTION_MESSAGE,
-            			JOptionPane.YES_NO_OPTION);
-            	int n;
-            	if("gif".equals(extension) && file.isFile()) {
-            		try{
-            			FileOutputStream fos = new FileOutputStream(file, true);
-            			fos.write(adr_bytes);
-            			fos.close();
-            		} catch(FileNotFoundException ex) {
-					    System.out.println("FileNotFoundException : " + ex);
-					} catch(IOException ioe){
-					    System.out.println("IOException : " + ioe);
-					}
-            	}
-            	if("bmp".equals(extension) && file.isFile()) {
-					FileInputStream fis;
-					boolean fail= false;
-					String explain="";
-					try {
-						fis = new FileInputStream(file);
-						b = new byte[(int) file.length()];  
-						fis.read(b);
-						fis.close();
-						data = new BMP(b, 0);
-						if((data.compression!=BMP.BI_RGB)||(data.bpp<24)){
-							explain = _("Not supported compression: "+data.compression+" "+data.bpp);
-							fail = true;
-						}
-						if(data.width*data.height*3<(adr_bytes.length*8/DDAddress.STEGO_BITS)+DDAddress.STEGO_BYTE_HEADER){
-							explain = _("File too short: "+data.width*data.height*3+" need: "+adr_bytes.length);
-							fail = true;
-						}
-					} catch (FileNotFoundException e1) {
-						fail = true;
-					} catch (IOException e2) {
-						fail = true;
-					}
-					if(fail)
-						JOptionPane.showMessageDialog(this,
-							_("Cannot Embed address in: ")+file+" - "+explain,
-							_("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
-							
-            		n = JOptionPane.showConfirmDialog(this, _("Embed address in: ")+file+"?",
-	            			_("Overwrite prior details?"), JOptionPane.YES_NO_OPTION,
-	            			JOptionPane.QUESTION_MESSAGE);
-            	}else{
-            		n = JOptionPane.showConfirmDialog(this, _("Overwrite: ")+file+"?",
-            			_("Overwrite?"), JOptionPane.YES_NO_OPTION,
-            			JOptionPane.QUESTION_MESSAGE);
-            	}
-            	if(n!=JOptionPane.YES_OPTION)
-            		return;
-            	//Application.warning(_("File exists!"));
-            }
-            try {
-				if("txt".equals(extension)) {
-					BufferedWriter out = new BufferedWriter(new FileWriter(file));
-					out.write(myAddress.getString());
-					out.close();
-				}else
-				if("ddb".equals(extension)){
-					FileOutputStream fo=new FileOutputStream(file);
-					fo.write(myAddress.getBytes());
-					fo.close();
-				}else
-					if("bmp".equals(extension)){
-						if(!file.exists()) {
-							FileOutputStream fo=new FileOutputStream(file);
-							int offset = BMP.DATA;
-							int word_bytes=1;
-							int bits = 4;
-							int datasize;// = adr_bytes.length*(8/bits);
-							int height = 10;
-							int width = DDAddress.getWidth(adr_bytes.length+DDAddress.STEGO_BYTE_HEADER*word_bytes, bits, 3, height);
-							//System.out.println("size="+adr_bytes.length+" width="+width);
-							datasize = width*height*3;
-							byte[]steg_buffer = new byte[BMP.DATA+datasize];
-							data = new BMP(width, height);
-							////data.creator = adr_bytes.length;
-							data.getHeader(steg_buffer, 0);
-							//System.out.println("Got bytes to write: "+Util.byteToHex(adr_bytes, " "));
-							//System.out.println("After header: "+Util.byteToHex(steg_buffer, " "));
-							fo.write(DDAddress.getSteganoBytes(adr_bytes, steg_buffer,
-									offset, word_bytes, bits));
-							//System.out.println("Wrote: "+Util.byteToHex(adr_bytes, " "));
-							//System.out.println("Got: "+Util.byteToHex(steg_buffer, " "));
-							fo.close();
-						}else{
-							FileOutputStream fo=new FileOutputStream(file);
-							int offset = data.startdata;
-							int word_bytes=1;
-							int bits = 4;
-							////Util.copyBytes(b, BMP.CREATOR, adr_bytes.length);
-							fo.write(DDAddress.getSteganoBytes(adr_bytes, b, offset, word_bytes, bits));
-							fo.close();
-						}
-					}
-			} catch (IOException e1) {
-				Application.warning(_("Error writing file:")+file+" - "+ e1,_("Export Address"));
-			}
-        }		
-	}
 	public void setServerStatus(boolean run) throws NumberFormatException, P2PDDSQLException  {
 		if(DEBUG)System.out.println("Setting server running status to: "+run);
 		
@@ -1502,7 +1233,15 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				System.out.println("Previous linux path: "+previous);
 				String _previous = Application.getCurrentLinuxPathsString(SEP+"\n ");
 				String val=JOptionPane.showInputDialog(this,
-						_("Change Linux Installation Path.")+"\n"+_("Previously: ")+"\n "+
+						_("Change Linux Installation Path.")+"\n"+
+								_("V=INSTALLATION_VERSION (no default)")+"\n"+
+								_("R=INSTALLATION_ROOT (default: parent of version)")+"\n"+
+								_("S=INSTALLATION_SCRIPTS")+"\n"+
+								_("P=INSTALLATION_PLUGINS")+"\n"+
+								_("D=INSTALLATION_DATABASE")+"\n"+
+								_("L=INSTALLATION_LOGS")+"\n"+
+								_("J=INSTALLATION_JARS")+"\n"+
+								_("Previously: ")+"\n "+
 						//Application.LINUX_INSTALLATION_VERSION_BASE_DIR
 						_previous
 						,
@@ -1525,8 +1264,15 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				System.out.println("Previous windows path: "+previous);
 				String _previous = Application.getCurrentWindowsPathsString(SEP+"\n ");
 				String val=JOptionPane.showInputDialog(this,
-						_("Change Windows Installation Path, using ':' for default based on INSTALLATION_VERSION.")+
-						"\n"+
+						
+						_("Change Windows Installation Path, using ':' for default based on INSTALLATION_VERSION.")+"\n"+
+								_("V=INSTALLATION_VERSION (no default)")+"\n"+
+								_("R=INSTALLATION_ROOT (default: parent of version)")+"\n"+
+								_("S=INSTALLATION_SCRIPTS")+"\n"+
+								_("P=INSTALLATION_PLUGINS")+"\n"+
+								_("D=INSTALLATION_DATABASE")+"\n"+
+								_("L=INSTALLATION_LOGS")+"\n"+
+								_("J=INSTALLATION_JARS")+"\n"+
 						_("Previously:")+"\n "+
 						_previous
 						,
@@ -1635,9 +1381,9 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			else if ("signUpdates".equals(e.getActionCommand())) {
 				actionSignUpdates();
 			}else if ("export".equals(e.getActionCommand())) {
-				actionExport();
+				EmbedInMedia.actionExport(file_chooser_address_container, JFrameDropCatch.mframe);
 			}else if ("import".equals(e.getActionCommand())) {
-				actionImport();
+				EmbedInMedia.actionImport(ControlPane.file_chooser_address_container, JFrameDropCatch.mframe);
 			}else if ("natBorer".equals(e.getActionCommand())) {
 				String text = natBorer.getText();
 				try{Server.TIMEOUT_UDP_NAT_BORER = Integer.parseInt(text);}catch(Exception a){}

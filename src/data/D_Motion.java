@@ -23,7 +23,7 @@ package data;
 import static java.lang.System.out;
 import static util.Util._;
 import hds.ASNSyncRequest;
-import hds.Client;
+import hds.ClientSync;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -66,6 +66,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 	private static final boolean _DEBUG = true;
 	private static final int DEFAULT_STATUS = 0;
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
+	private static Object motion_GID_saving_lock = new Object(); // lock for storing a GID only once
 	public String hash_alg=V0;
 	public String global_motionID;//Printable
 	public D_Document_Title motion_title = new D_Document_Title();
@@ -373,54 +374,60 @@ public class D_Motion extends ASNObj implements util.Summary{
 	 * @throws P2PDDSQLException
 	 */
 	public long store(streaming.RequestData rq) throws P2PDDSQLException {
-		boolean failure = false;
-		boolean locals = fillLocals(rq, true, true, true);
-		if(!locals) failure = true;
-
-		if(!this.verifySignature())
-			if(! DD.ACCEPT_UNSIGNED_DATA)
-				failure = true;
-		if(failure){
-			if(this.motionID != null) return Util.lval(motionID, -1);
-			return Util.lval(getMotionLocalID(this.global_motionID), -1);
-		}
-		String _old_date[] = new String[1];
-		if ((this.motionID == null) && (this.global_motionID != null))
-			this.motionID = getMotionLocalIDandDate(this.global_motionID,_old_date);
-		if(this.motionID != null ) {
-			String old_date = _old_date[0];//getDateFor(this.motionID);
-			if(old_date != null) {
-				String new_date = Encoder.getGeneralizedTime(this.creation_date);
-				if((new_date==null) || new_date.compareTo(old_date)<=0) return new Integer(this.motionID).longValue();
-			}
-		}
-		
-		if((this.organization_ID == null ) && (this.global_organization_ID != null))
-			this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
-		if((this.organization_ID == null ) && (this.global_organization_ID != null)) {
-			organization_ID = ""+data.D_Organization.insertTemporaryGID(global_organization_ID);
-			rq.orgs.add(global_organization_ID);
-		}
-		
-		if((this.constituent_ID == null ) && (this.global_constituent_ID != null))
-			this.constituent_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
-		if((this.constituent_ID == null ) && (this.global_constituent_ID != null)) {
-			constituent_ID =
-				""+D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID);
-			rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
-		}
-
-		if ((this.enhanced_motionID == null) && (this.global_enhanced_motionID != null))
-			this.enhanced_motionID = getMotionLocalID(this.global_enhanced_motionID);
-		if ((this.enhanced_motionID == null) && (this.global_enhanced_motionID != null)) {
-			this.enhanced_motionID = ""+ insertTemporaryGID(global_enhanced_motionID, this.organization_ID);
-			rq.moti.add(global_enhanced_motionID);
-		}
-		
-		rq.moti.remove(this.global_motionID);
-		
-		return storeVerified();
+		synchronized(D_Motion.motion_GID_saving_lock ) {
+			boolean failure = false;
+			boolean locals = fillLocals(rq, true, true, true);
+			if(!locals) failure = true;
 	
+			if(!this.verifySignature())
+				if(! DD.ACCEPT_UNSIGNED_DATA)
+					failure = true;
+			if(failure){
+				if(this.motionID != null) return Util.lval(motionID, -1);
+				return Util.lval(getMotionLocalID(this.global_motionID), -1);
+			}
+			String _old_date[] = new String[1];
+			if ((this.motionID == null) && (this.global_motionID != null))
+				this.motionID = getMotionLocalIDandDate(this.global_motionID,_old_date);
+			if(this.motionID != null ) {
+				String old_date = _old_date[0];//getDateFor(this.motionID);
+				if(old_date != null) {
+					String new_date = Encoder.getGeneralizedTime(this.creation_date);
+					if((new_date==null) || new_date.compareTo(old_date)<=0) return new Integer(this.motionID).longValue();
+				}
+			}
+			
+			if((this.organization_ID == null ) && (this.global_organization_ID != null))
+				this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
+			if((this.organization_ID == null ) && (this.global_organization_ID != null)) {
+				organization_ID = ""+data.D_Organization.insertTemporaryGID(global_organization_ID);
+				rq.orgs.add(global_organization_ID);
+			}
+			
+			if((this.constituent_ID == null ) && (this.global_constituent_ID != null))
+				this.constituent_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+			if((this.constituent_ID == null ) && (this.global_constituent_ID != null)) {
+				constituent_ID =
+					""+D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID);
+				rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
+			}
+	
+			if(this.global_motionID.equals(this.global_enhanced_motionID)) {
+				failure = true;
+				return Util.lval(this.motionID, -1);
+			}
+			
+			if ((this.enhanced_motionID == null) && (this.global_enhanced_motionID != null))
+				this.enhanced_motionID = getMotionLocalID(this.global_enhanced_motionID);
+			if ((this.enhanced_motionID == null) && (this.global_enhanced_motionID != null)) {
+				this.enhanced_motionID = ""+ insertTemporaryGID(global_enhanced_motionID, this.organization_ID);
+				rq.moti.add(global_enhanced_motionID);
+			}
+			
+			rq.moti.remove(this.global_motionID);
+			
+			return storeVerified();
+		}	
 	}
 	public static long insertTemporaryGID(String motion_GID, String org_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:insertTemporaryConstituentGID: start");
@@ -437,6 +444,15 @@ public class D_Motion extends ASNObj implements util.Summary{
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
+	/**
+	 * Return false for absent organization, constituent, or blocked org now created
+	 * @param rq (add to rq the GIDhash in case not locally known)
+	 * @param tempOrg (create temporary org)
+	 * @param default_blocked_org (if the org is temporary, block)
+	 * @param tempConst  (create temporary constituent
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
 	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst) throws P2PDDSQLException {
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
@@ -555,7 +571,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 		D_MotionChoice.save(choices, motionID);
 		
 		if((this.signature!=null) && (global_motionID != null))
-			Client.payload_recent.add(streaming.RequestData.MOTI, this.global_motionID, D_Organization.getOrgGIDHashGuess(this.global_organization_ID), Client.MAX_ITEMS_PER_TYPE_PAYLOAD);
+			ClientSync.payload_recent.add(streaming.RequestData.MOTI, this.global_motionID, D_Organization.getOrgGIDHashGuess(this.global_organization_ID), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 
 		return result;
 	}

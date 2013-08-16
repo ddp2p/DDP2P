@@ -25,7 +25,7 @@ import static util.Util._;
 
 import javax.swing.event.TreeModelEvent;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -48,7 +48,7 @@ class ConstituentsCensus extends Thread {
 		long result = 0;
 		try {
 			result = censusRoot();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}catch (Exception e) {
 			e.printStackTrace();
@@ -56,7 +56,7 @@ class ConstituentsCensus extends Thread {
 		done(result);
 		if(DEBUG) System.err.println("ConstituentsModel:run: done #="+result);
 	}
-	private long censusRoot() throws SQLiteException {
+	private long censusRoot() throws P2PDDSQLException {
 		if(DEBUG) System.err.println("ConstituentsModel:censusRoot: start");
 		long result = 0;
 		if(root==null) return 0;
@@ -79,9 +79,9 @@ class ConstituentsCensus extends Thread {
 	 * Compute inhabitants of a node as sum of inhabitants in his sub-neighborhoods
 	 * @param crt
 	 * @return
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	private long census(ConstituentsAddressNode crt) throws SQLiteException {
+	private long census(ConstituentsAddressNode crt) throws P2PDDSQLException {
 		if(DEBUG) System.err.println("ConstituentsModel:census: start");
 		if((crt==null)||(crt.n_data==null)){
 			if(DEBUG) System.err.println("ConstituentsModel:census: end no ID");
@@ -131,9 +131,9 @@ class ConstituentsCensus extends Thread {
 	 * @param crt
 	 * @param neighborhoods an initialized array of 1 int, to increment by the # of neighborhoods
 	 * @return
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	private long censusColapsed(ConstituentsAddressNode crt, int[]neighborhoods) throws SQLiteException {
+	private long censusColapsed(ConstituentsAddressNode crt, int[]neighborhoods) throws P2PDDSQLException {
 		if(DEBUG) System.err.println("ConstituentsModel:censusColapsed: start");
 		long result = 0;
 		if((crt==null)||(crt.n_data==null)) return 0;
@@ -165,7 +165,7 @@ class ConstituentsCensus extends Thread {
 		
 		return result;
 	}
-	private long censusHiddenNeighborhoods(long n_ID, HashSet<String> visited) throws SQLiteException {
+	private long censusHiddenNeighborhoods(long n_ID, HashSet<String> visited) throws P2PDDSQLException {
 		if(DEBUG) System.err.println("ConstituentsModel:censusHiddenNeighborhoods: start n_ID="+n_ID);
 		if(n_ID<=0) return 0;
 		if(visited.contains(""+n_ID)){
@@ -204,14 +204,21 @@ class ConstituentsCensus extends Thread {
 		if(DEBUG) System.err.println("ConstituentsModel:announce: start");
 		if(DEBUG) if((crt!=null) && (crt.n_data!=null)) System.err.println("ConstituentsModel:announce: start nID="+crt.n_data.neighborhoodID);
 		ConstituentsModel cm;
+		Object[] path=null;
 		synchronized(this) {
 			if(!running || (model==null)){
 				if(DEBUG) System.err.println("ConstituentsModel:announce: irrelevant");
 				return;
 			}
 			cm = model;
+			path = crt.getPath();
 		}
-		cm.fireTreeNodesChanged(new TreeModelEvent(this, crt.getPath()));
+		try{
+			cm.fireTreeNodesChanged(new TreeModelEvent(this, path));
+		}catch(Exception e){
+			System.err.println("ConstituentsCensus: announce: "+e.getLocalizedMessage());
+			System.err.println("ConstituentsCensus: announce: path="+Util.concat(path, " ; "));
+		}
 	}
 	public void giveUp() {
 		if(DEBUG) System.err.println("ConstituentsModel:giveUp: start");

@@ -23,6 +23,7 @@ import hds.ControlPane;
 import hds.DebateDecideAction;
 
 import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -74,7 +75,7 @@ import ciphersuits.KeyManagement;
 import ciphersuits.PK;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -89,6 +90,7 @@ import util.DBListener;
 import util.DBSelector;
 import util.Util;
 import widgets.components.BulletRenderer;
+import widgets.dir_fw_terms.TermsPanel;
 import static util.Util._;
 
 class NoPluginRenderer implements TableCellRenderer{
@@ -118,6 +120,7 @@ public class Peers extends JTable implements MouseListener {
 	public static final int COMMAND_MENU_SET_NAME = 6;
 	public static final int COMMAND_MENU_SET_SLOGAN = 7;
 	public static final int COMMAND_TOUCH_CLIENT = 8;
+	public static final int COMMAND_MENU_SET_TERMS = 9;
 
 	
 	BulletRenderer bulletRenderer = new BulletRenderer();
@@ -239,13 +242,28 @@ public class Peers extends JTable implements MouseListener {
 		this.setFillsViewportHeight(true);
 		return scrollPane;
 	}
+	TermsPanel termsPanel;
     public JPanel getPanel() {
     	JPanel jp = new JPanel(new BorderLayout());
     	JScrollPane scrollPane = getScrollPane();
         scrollPane.setPreferredSize(new Dimension(400, 200));
+        scrollPane.setMinimumSize(new Dimension(100,50));
+        
         //jp.add(scrollPane, BorderLayout.CENTER);
         Application.peer = new PeerContacts();
-        jp.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, new JScrollPane(Application.peer)), BorderLayout.CENTER);
+        //jp.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, new JScrollPane(Application.peer)), BorderLayout.CENTER);
+        JPanel p = new JPanel(new BorderLayout());
+	//	p.add(new TermsPanel(1, "khalid"));
+	//	p.add(Application.peer);
+//        scrollPane.setPreferredSize(new Dimension(400, 200));
+        termsPanel = new TermsPanel();
+        JScrollPane scrollPane2 = new JScrollPane(termsPanel);
+        scrollPane2.setMinimumSize(new Dimension(100,100));
+        p.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane2 ,new JScrollPane(Application.peer)));
+       // p.add(new JScrollPane(new JScrollPane(Application.peer)) );
+           
+        this.addListener(termsPanel);
+        jp.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, p ), BorderLayout.CENTER);
 		return jp;
     }
 
@@ -373,9 +391,9 @@ public class Peers extends JTable implements MouseListener {
     }
 	/**
 	 * @param args
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	public static void main(String[] args) throws SQLiteException {
+	public static void main(String[] args) throws P2PDDSQLException {
 		String dfname = Application.DELIBERATION_FILE;
 		Application.db = new DBInterface(dfname);
 		PeersTest.createAndShowGUI(Application.db);
@@ -463,6 +481,11 @@ public class Peers extends JTable implements MouseListener {
     	//
     	mAction = new PeersRowAction(this, _("Set Slogan!"), reseticon,_("Set New Slogan."),
     			_("Set Slogan!"),KeyEvent.VK_M, Peers.COMMAND_MENU_SET_SLOGAN);
+    	mAction.putValue("row", new Integer(model_row));
+    	popup.add(new JMenuItem(mAction));
+    	//
+    	mAction = new PeersRowAction(this, _("Set Terms"), reseticon,_("Set New Terms."),
+    			_("Set Terms"),KeyEvent.VK_M, Peers.COMMAND_MENU_SET_TERMS);
     	mAction.putValue("row", new Integer(model_row));
     	popup.add(new JMenuItem(mAction));
     	//
@@ -614,7 +637,7 @@ public class Peers extends JTable implements MouseListener {
 			
 				try {
 					peer = new D_PeerAddress(id, false, true, true);
-				} catch (SQLiteException e1) {
+				} catch (P2PDDSQLException e1) {
 					e1.printStackTrace();
 					return;
 				}
@@ -629,6 +652,12 @@ public class Peers extends JTable implements MouseListener {
 	void dispatchToListeners(int model_row){
 		new DispatchPeer(this, model_row).start();
 	}
+//	void updateTerms(int model_row){
+//		if(model_row!=-1){
+//			termsPanel.setPeerID(Integer.parseInt(this.getModel().getID(model_row)));
+//			this.repaint();
+//		}
+//	}
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
     	int row; //=this.getSelectedRow();
     	int model_row=-1; //=this.getSelectedRow();
@@ -642,13 +671,13 @@ public class Peers extends JTable implements MouseListener {
         if(row>=0)
         	model_row=this.convertRowIndexToModel(row);
         dispatchToListeners(model_row);
-        
+        //updateTerms(model_row);
     	if(!evt.isPopupTrigger()) return;
     	JPopupMenu popup = getPopup(model_row,col);
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
-	public static String getPeerID(String global_peer_ID) throws SQLiteException {
+	public static String getPeerID(String global_peer_ID) throws P2PDDSQLException {
 		String result = "-1";
 		ArrayList<ArrayList<Object>> dt=Application.db.select("SELECT "+table.peer.peer_ID+" FROM "+table.peer.TNAME+" WHERE "+table.peer.global_peer_ID+" = ?;",
 				new String[]{""+global_peer_ID});
@@ -757,7 +786,7 @@ class PeersDeleteAction extends DebateDecideAction {
 			Application.db.delete(table.peer_org.TNAME, new String[]{table.peer_org.peer_ID}, new String[]{peerID}, DEBUG);
 			Application.db.delete(table.peer_plugin.TNAME, new String[]{table.peer_plugin.peer_ID}, new String[]{peerID}, DEBUG);
 			Application.db.delete(table.peer.TNAME, new String[]{table.peer.peer_ID}, new String[]{peerID}, DEBUG);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
     }
@@ -797,7 +826,7 @@ class PeersUseAction extends DebateDecideAction {
 			Application.db.update(table.peer.TNAME, new String[]{table.peer.used}, new String[]{table.peer.peer_ID},
 					new String[]{used, peerID}, DEBUG);
 			DD.touchClient();
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
     }
@@ -836,7 +865,7 @@ class PeersFilterAction extends DebateDecideAction {
     	try {
 			Application.db.update(table.peer.TNAME, new String[]{table.peer.filtered}, new String[]{table.peer.peer_ID},
 					new String[]{filtered, peerID}, DEBUG);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
     }
@@ -877,7 +906,7 @@ class PeersRowAction extends DebateDecideAction {
 		case Peers.COMMAND_TOUCH_CLIENT:
 			try {
 				DD.touchClient();
-			} catch (SQLiteException e4) {
+			} catch (P2PDDSQLException e4) {
 				e4.printStackTrace();
 				Application.warning(_("Error trying to restart comunication:")+"\n "+e4.getLocalizedMessage(), _("Error trying to restart communication!"));
 			}
@@ -885,7 +914,7 @@ class PeersRowAction extends DebateDecideAction {
 		case Peers.COMMAND_MENU_SET_NAME:
 			try {
 				D_PeerAddress.changeMyPeerName(tree);
-			} catch (SQLiteException e4) {
+			} catch (P2PDDSQLException e4) {
 				e4.printStackTrace();
 				Application.warning(_("Error trying to change names:")+"\n "+e4.getLocalizedMessage(), _("Error trying to change names!"));
 			}
@@ -893,10 +922,20 @@ class PeersRowAction extends DebateDecideAction {
 		case Peers.COMMAND_MENU_SET_SLOGAN:
 			try {
 				D_PeerAddress.changeMyPeerSlogan(tree);
-			} catch (SQLiteException e4) {
+			} catch (P2PDDSQLException e4) {
 				e4.printStackTrace();
 				Application.warning(_("Error trying to change slogan:")+"\n "+e4.getLocalizedMessage(), _("Error trying to change slogan!"));
 			}
+			break;
+		case Peers.COMMAND_MENU_SET_TERMS:
+			TermsPanel termsPanel = new TermsPanel(Integer.parseInt(tree.getModel().getID(row)), tree.getModel().getName(row).toString());
+			termsPanel.showJFrame();
+//			try {
+//			//	D_PeerAddress.changeMyPeerSlogan(tree);
+//			} catch (P2PDDSQLException e4) {
+//			//	e4.printStackTrace();
+//			//	Application.warning(_("Error trying to change slogan:")+"\n "+e4.getLocalizedMessage(), _("Error trying to change slogan!"));
+//			}
 			break;
 		case Peers.COMMAND_MENU_SAVE_SK:
 			
@@ -917,7 +956,7 @@ class PeersRowAction extends DebateDecideAction {
 			try {
 				boolean result = KeyManagement.saveSecretKey(gid, fileTrustedSK.getCanonicalPath());
 				if(result) break;
-			} catch (SQLiteException e3) {
+			} catch (P2PDDSQLException e3) {
 				Application.warning(_("Failed to save key: "+e3.getMessage()), _("Failed to save key"));
 				e3.printStackTrace();
 				break;
@@ -962,7 +1001,7 @@ class PeersRowAction extends DebateDecideAction {
     		//
     		try {
 				D_PeerAddress.createMyPeerID();
-			} catch (SQLiteException e2) {
+			} catch (P2PDDSQLException e2) {
 				e2.printStackTrace();
 			}
 			break;
@@ -982,7 +1021,7 @@ class PeersRowAction extends DebateDecideAction {
     		String peerID = Util.getString(model.peers.get(row).get(0));
     		try {
 				D_PeerAddress.setMyself(peerID);
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 				Application.warning(_("Failure to set new ID:")+"\n"+e1.getLocalizedMessage(), _("Failure in message!"));
 			}
@@ -995,7 +1034,7 @@ class PeersRowAction extends DebateDecideAction {
     	try {
 			Application.db.update(table.peer.TNAME, new String[]{table.peer.filtered}, new String[]{table.peer.peer_ID},
 					new String[]{filtered, peerID}, DEBUG);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
 		*/
@@ -1052,7 +1091,7 @@ class PeersBroadcastAction extends DebateDecideAction {
     		else
     			Application.db.insert(table.peer_my_data.TNAME, new String[]{table.peer_my_data.peer_ID,table.peer_my_data.broadcastable},
     					new String[]{peerID, broadcastable}, DEBUG);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
     }
@@ -1118,6 +1157,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	static final int SELECT_COL_M_PICTURE = 16;
 	static final int SELECT_COL_M_BROADCASTABLE = 17;
 	static final int SELECT_COL_GID = 18;
+	static final int SELECT_COL_M_TOPIC = 19;
 
 	static final String select_fields =
 		" p."+table.peer.peer_ID+
@@ -1137,8 +1177,9 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		", m."+table.peer_my_data.name+
 		", m."+table.peer_my_data.slogan+
 		", m."+table.peer_my_data.picture+
-		" , m."+table.peer_my_data.broadcastable+
-		", p."+table.peer.global_peer_ID
+		", m."+table.peer_my_data.broadcastable+
+		", p."+table.peer.global_peer_ID+
+		", m."+table.peer_my_data.my_topic
 		;
 
 	private static final boolean DEBUG = false;
@@ -1176,7 +1217,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	public String getMyselfPeerID() {
 		try {
 			return table.peer.getLocalPeerID(DD.getMyPeerGIDFromIdentity());
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		return null;
@@ -1364,7 +1405,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 						" FROM "+table.peer_org.TNAME+" AS p " +
 						" LEFT JOIN "+table.organization.TNAME+" AS o ON (p."+table.peer_org.organization_ID+" = o."+table.organization.organization_ID+") " +
 						" WHERE p."+table.peer_org.peer_ID+" = ? AND o."+table.organization.name+" IS NOT NULL;", params, DEBUG);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return null;
 			}
@@ -1401,7 +1442,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		}
 		return false;
 	}
-	private void set_my_data(String field, int SELECT_COL_M, String value, int row) {
+	public void set_my_data(String field, int SELECT_COL_M, String value, int row) {
 		if(row >= peers.size()) return;
 		if(SELECT_COL_ID >= peers.get(row).size()) return;
 		String peer_ID = Util.getString(peers.get(row).get(SELECT_COL_ID));
@@ -1411,7 +1452,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 							new String[]{peer_ID, value}, DEBUG);
 					peers.get(row).set(SELECT_COL_M_ID, peer_ID);
 					peers.get(row).set(SELECT_COL_M, value);
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 				}
 		} else {
@@ -1419,7 +1460,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 					db.update(table.peer_my_data.TNAME, new String[]{field}, new String[]{table.peer_my_data.peer_ID},
 							new String[]{value, peer_ID}, DEBUG);
 					peers.get(row).set(SELECT_COL_M, Util.getString(value));
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 				}					
 		}		
@@ -1450,7 +1491,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			String dirs = Util.concat(_ld, DD.APP_LISTING_DIRECTORIES_SEP);
 			if(DEBUG)System.out.println("Directories: setValueAt: Setting "+dirs);
 			DD.setAppTextNoSync(DD.APP_LISTING_DIRECTORIES, dirs);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		*/
@@ -1513,7 +1554,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 				}
 			}
 			*/
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}		
 		this.fireTableDataChanged();

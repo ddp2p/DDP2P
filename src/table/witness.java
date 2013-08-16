@@ -25,8 +25,11 @@ public class witness {
 	 public static final String hash_witness_alg = "hash_witness_alg";
 	 //public static final String hash_witness = "hash_witness";
 	 public static final String category = "category";
+	 public static final String category_trustworthiness = "category_trustworthiness";
 	 public static final String neighborhood_ID = "neighborhood_ID";
 	 public static final String sense_y_n = "sense_y_n";
+	 public static final String sense_y_trustworthiness = "sense_y_trustworthiness";
+	 public static final String statements = "statements";
 	 public static final String source_ID = "source_ID";
 	 public static final String target_ID = "target_ID";
 	 public static final String signature = "signature";
@@ -46,7 +49,10 @@ public class witness {
 		", "+table.witness.source_ID+
 		", "+table.witness.target_ID+
 		", "+table.witness.witness_ID+
-		", "+table.witness.arrival_date
+		", "+table.witness.arrival_date+
+		", "+table.witness.sense_y_trustworthiness+
+		", "+table.witness.category_trustworthiness+
+		", "+table.witness.statements
 		;
 
 	public static final int WIT_COL_CAT = 0;
@@ -60,5 +66,8 @@ public class witness {
 	public static final int WIT_COL_T_C_ID = 8;
 	public static final int WIT_COL_ID = 9;
 	public static final int WIT_COL_ARRIVAL_DATE = 10;
-	public static final int WIT_FIELDS = witness_fields.split(",").length;//11;
+	public static final int WIT_COL_SENSE_TRUSTWORTHINESS = 11;
+	public static final int WIT_COL_CAT_TRUSTWORTHINESS = 12;
+	public static final int WIT_COL_STATEMENTS = 13;
+	public static final int WIT_FIELDS = witness_fields.split(",").length;//14;
 }

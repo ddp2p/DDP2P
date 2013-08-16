@@ -1809,7 +1809,12 @@ public class D_PeerAddress extends ASNObj {
 	 */
 	public static DDAddress getMyDDAddress() throws P2PDDSQLException {
 		DDAddress myAddress;
-		myAddress = new DDAddress(D_PeerAddress.get_myself(Identity.current_peer_ID.globalID));
+		D_PeerAddress me = D_PeerAddress.get_myself(Identity.current_peer_ID.globalID);
+		if(!me.verifySignature()){
+			Application.warning(_("Inconsistent identity. Please restart app."), _("Inconsistant Identity"));
+			return null;
+		}
+		myAddress = new DDAddress(me);
 		return myAddress;
 	}
 		/*

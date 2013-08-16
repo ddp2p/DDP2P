@@ -1105,18 +1105,18 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 		//byte[] sgn = signature;
 		signature = new byte[0];
 		byte[] msg = this.getEncoder().getBytes();
-		if(Client.DEBUG)System.out.println("ASR: signing msg ="+msg.length);
-		if(Client.DEBUG)System.out.println("ASR: signing msg hash ="+Util.stringSignatureFromByte(Util.simple_hash(msg,Cipher.MD5)));
-		if(Client.DEBUG)System.out.println("ASR: signing sk ="+sk);
+		if(ClientSync.DEBUG)System.out.println("ASR: signing msg ="+msg.length);
+		if(ClientSync.DEBUG)System.out.println("ASR: signing msg hash ="+Util.stringSignatureFromByte(Util.simple_hash(msg,Cipher.MD5)));
+		if(ClientSync.DEBUG)System.out.println("ASR: signing sk ="+sk);
 		signature = Util.sign(msg,sk);
 	}
 	public boolean verifySignature(ciphersuits.PK pk) {
 		byte[] sgn = signature;
 		signature = new byte[0];
 		byte[] msg = this.getEncoder().getBytes();
-		if(Client.DEBUG)System.out.println("ASR:VerSigning msg ="+msg.length);
-		if(Client.DEBUG)System.out.println("ASR:VerSigning msg hash ="+Util.stringSignatureFromByte(Util.simple_hash(msg,Cipher.MD5)));
-		if(Client.DEBUG)System.out.println("ASR:VerSigning pk ="+pk);
+		if(ClientSync.DEBUG)System.out.println("ASR:VerSigning msg ="+msg.length);
+		if(ClientSync.DEBUG)System.out.println("ASR:VerSigning msg hash ="+Util.stringSignatureFromByte(Util.simple_hash(msg,Cipher.MD5)));
+		if(ClientSync.DEBUG)System.out.println("ASR:VerSigning pk ="+pk);
 		signature = sgn;
 		return Util.verifySign(msg, pk, sgn);
 	}

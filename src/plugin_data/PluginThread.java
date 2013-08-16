@@ -19,10 +19,14 @@
 /* ------------------------------------------------------------------------- */
 package plugin_data;
 
+import hds.Address;
+import hds.ClientSync;
+
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Hashtable;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -47,6 +51,16 @@ class PluginThread extends Thread {
 	@SuppressWarnings("unchecked")
 	public void run () {
 		if(DEBUG) System.out.println("PluginThread:run: start");
+		try{
+			_run();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		if(_DEBUG) System.out.println("PluginThread:run: done");
+	}
+	@SuppressWarnings("unchecked")
+	public void _run () {
+		if(DEBUG) System.out.println("PluginThread:_run: start");
 		//data.D_PluginInfo info = null;
 		//PeerPlugin plugin = null;
 		String plugin_GID = null;
@@ -76,7 +90,8 @@ class PluginThread extends Thread {
 		}
 		*/
 		for (;;) {
-			if(DEBUG) System.out.println("PluginThread:run: loop");
+			//System.out.print("_0");
+			if(DEBUG) System.out.println("PluginThread:_run: loop DBGPLUG="+DD.DEBUG_PLUGIN);
 			try {
 				request = null;
 				request = (Hashtable<String,Object>) p_methods.checkOutgoingMessageHashtable.invoke(null);
@@ -87,23 +102,27 @@ class PluginThread extends Thread {
 			} catch (InvocationTargetException e) {
 				e.printStackTrace();
 			}
-			if(DEBUG) System.out.println("PluginThread:run: got =" +request);
+			if(DEBUG) System.out.println("PluginThread:_run: got =" +request);
 			if(request == null) continue;
 			PluginRequest msg = new PluginRequest().setHashtable(request);
 			boolean result = false;
 			switch(msg.type) {
 			case PluginRequest.MSG:
-				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:run: will enqueue MSG "+msg);
+				//System.out.print("_1");
+				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: will enqueue MSG "+msg);
 				if((msg==null)||(msg.plugin_GID==null)||(msg.peer_GID==null)) {
 					if(DD.WARN_OF_INVALID_PLUGIN_MSG)
 						Application.warning(_("Plugin: "+plugin_name(msg.plugin_GID)+" sends unspecified request"), _("Invalid plugin message"));
+					if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: skip null MSG/TARGET");
 					continue;
 				}
-				if(DD.WARN_OF_UNUSED_PEERS){
+				ArrayList<Address> pca = ClientSync.peer_contacted_addresses.get(msg.peer_GID);
+				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: Client address = "+pca);
+				if(DD.WARN_OF_UNUSED_PEERS && (pca == null)){
 					D_PeerAddress peer;
 					try {
 						peer = new D_PeerAddress(msg.peer_GID, 0, true, false, false);
-					} catch (SQLiteException e) {
+					} catch (P2PDDSQLException e) {
 						if(DD.WARN_OF_INVALID_PLUGIN_MSG)
 							Application.warning(_("Plugin: "+plugin_name(msg.plugin_GID)+" sends request to unknown user"), _("Invalid plugin message"));
 						e.printStackTrace();
@@ -112,9 +131,17 @@ class PluginThread extends Thread {
 					if(!peer.used)
 						Application.warning(_("Plugin: "+plugin_name(msg.plugin_GID)+" sends request to blocked/unused user"),
 								_("Jammed plugin message"));
+					if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: Peer = "+peer);
 				}
-				
+				//System.out.print("_5");
+				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: schedule for sending");
+				ClientSync.schedule_for_sending_plugin_data(msg);
+				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: try send");
+				ClientSync.try_send(msg, pca);
+				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: enqueue for sending");
 				result  = D_PluginData._enqueueForSending(msg.msg, msg.peer_GID, msg.plugin_GID);
+				
+				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: sending result = "+result);
 				
 				if(!result) {
 					if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:run: failed to enqueue");
@@ -126,10 +153,11 @@ class PluginThread extends Thread {
 					} catch (InvocationTargetException e) {e.printStackTrace();}
 				} else
 					try {
+						if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: touch client");
 						DD.touchClient();
 					} catch (NumberFormatException e1) {
 						e1.printStackTrace();
-					} catch (SQLiteException e1) {
+					} catch (P2PDDSQLException e1) {
 						e1.printStackTrace();
 					}
 				break;

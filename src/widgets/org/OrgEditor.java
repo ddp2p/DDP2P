@@ -60,7 +60,7 @@ import ASN1.Encoder;
 import ciphersuits.Cipher;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -71,6 +71,8 @@ import streaming.OrgHandling;
 import util.Util;
 import widgets.components.LVComboBox;
 import widgets.components.LVListener;
+import widgets.components.MultiformatDocumentEditor;
+import widgets.components.MultiformatDocumentListener;
 import widgets.components.TranslatedLabel;
 import static java.lang.System.out;
 import static util.Util._;
@@ -92,15 +94,17 @@ class OrgGIDItem{
 }
 
 @SuppressWarnings("serial")
-public class OrgEditor  extends JPanel implements OrgListener, ActionListener, FocusListener, DocumentListener, LVListener, ItemListener {
+public class OrgEditor  extends JPanel implements OrgListener, ActionListener, FocusListener, DocumentListener, LVListener, ItemListener, MultiformatDocumentListener {
 	//private static final boolean _DEBUG = true;
 	private static final String GRASSROOT = _("Grass-Root");
 	private static final String AUTHORITARIAN = _("Authoritarian");
 	private static final String EXPRESSION = _("Expression");
 	private static String []g_methods=new String[]{GRASSROOT,AUTHORITARIAN,EXPRESSION};
-	private static final boolean DEBUG = false;
+	private static final boolean DEBUG = false; //false;
 	private static final boolean _DEBUG = true;
-	JTextArea instructionsMotionsPane, instructionsRegistrationsPane, descriptionPane;
+	/* JTextArea */ 
+	MultiformatDocumentEditor instructionsMotionsPane, instructionsRegistrationsPane, descriptionPane;
+	
 	JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP,JTabbedPane.WRAP_TAB_LAYOUT);
 	String orgID;
 	JTextField name_field, category_field_editor, date_field;
@@ -186,6 +190,8 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		orgID = _orgID;
 		if(!force && enabled) disable_it();
 		update_it(force);
+		boolean editable = isEditable();
+		if(editable && ! enabled) enable_it();
 		if(this.extraFields!=null)	
 			this.extraFields.setCurrent(_orgID);
 		if(DEBUG) out.println("OrgEditor:setOrg: exit");
@@ -213,21 +219,9 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 	private boolean isEditable() {
 		if(org == null) return false; // no org => no editing
 		int method = new Integer(Util.getString(org.get(table.organization.ORG_COL_CERTIF_METHODS))).intValue();
-		if((method==table.organization._GRASSROOT) && (org.get(table.organization.ORG_COL_GID)!=null))
-			return false;
-		String sql = "SELECT p."+table.peer.name+" FROM "+table.peer.TNAME +" AS p JOIN "+table.key.TNAME+" AS k"+
-		" ON ("+table.peer.global_peer_ID_hash+"=k."+table.key.ID_hash+") WHERE "+table.peer.peer_ID +"=?;";
-		String cID=Util.getString(org.get(table.organization.ORG_COL_CREATOR_ID));
-		if(cID == null) return true; // Unknown creator? probably just not set => editable
-		ArrayList<ArrayList<Object>> a;
-		try {
-			a = Application.db.select(sql, new String[]{cID});
-		} catch (SQLiteException e) {
-			e.printStackTrace();
-			return false;
-		}
-		if(a.size()>0) return true; // I have the key => editable
-		return false; // I do not have the key => not editable;
+		String GID = Util.getString(org.get(table.organization.ORG_COL_GID));
+		String cID = Util.getString(org.get(table.organization.ORG_COL_CREATOR_ID));
+		return D_Organization.isEditable(method, GID, cID);
 	}
 	/**
 	 * Load keys for the current organization from available keys
@@ -265,7 +259,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						globID_field.setSelectedItem(crt);
 					}
 				}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}else{ // fix: will set GID hash
@@ -289,7 +283,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		ArrayList<ArrayList<Object>> a;
 		try {
 			a = Application.db.select(sql_org, new String[]{orgID});
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			disable_it(); return false;
 		}
@@ -308,7 +302,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		if(DEBUG) out.println("OrgEditor:updateit: start");
 		if(reloadOrg(force))
 			enable_it();
-		//else return false; // furthr processing changes arrival_date by handling creator and default_scoring fields
+		//else return false; // further processing changes arrival_date by handling creator and default_scoring fields
 		if(org==null) return false;
 		m_editable = isEditable(); // editable?
 
@@ -359,17 +353,17 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		this.default_scoring_options_field.setArrayValue(scores_array);//, table.organization.ORG_LANG_SEP);//Util.getString(org.get(table.organization.ORG_COL_SCORES)));
 		this.default_scoring_options_field.addLVListener(this);
 		
-		this.descriptionPane.getDocument().removeDocumentListener(this);
-		this.descriptionPane.setText(Util.getString(org.get(table.organization.ORG_COL_DESCRIPTION)));
-		this.descriptionPane.getDocument().addDocumentListener(this);
+		this.descriptionPane.getMFDocument().removeDocumentListener(this);
+		this.descriptionPane.setDBDoc(Util.getString(org.get(table.organization.ORG_COL_DESCRIPTION)));
+		this.descriptionPane.getMFDocument().addDocumentListener(this);
 		
-		this.instructionsMotionsPane.getDocument().removeDocumentListener(this);
-		this.instructionsMotionsPane.setText(Util.getString(org.get(table.organization.ORG_COL_INSTRUC_MOTION)));
-		this.instructionsMotionsPane.getDocument().addDocumentListener(this);
+		this.instructionsMotionsPane.getMFDocument().removeDocumentListener(this);
+		this.instructionsMotionsPane.setDBDoc(Util.getString(org.get(table.organization.ORG_COL_INSTRUC_MOTION)));
+		this.instructionsMotionsPane.getMFDocument().addDocumentListener(this);
 		
-		this.instructionsRegistrationsPane.getDocument().removeDocumentListener(this);
-		this.instructionsRegistrationsPane.setText(Util.getString(org.get(table.organization.ORG_COL_INSTRUC_REGIS)));
-		this.instructionsRegistrationsPane.getDocument().addDocumentListener(this);
+		this.instructionsRegistrationsPane.getMFDocument().removeDocumentListener(this);
+		this.instructionsRegistrationsPane.setDBDoc(Util.getString(org.get(table.organization.ORG_COL_INSTRUC_REGIS)));
+		this.instructionsRegistrationsPane.getMFDocument().addDocumentListener(this);
 		
 		name_field.getDocument().removeDocumentListener(this);
 		name_field.setText(Util.getString(org.get(table.organization.ORG_COL_NAME)));
@@ -381,8 +375,9 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		method_field.removeItemListener(this);
 		try{method_field.setSelectedIndex(method);}catch(Exception e){}
 		method_field.addItemListener(this);
-		globID_field.setEnabled(enabled && (method != 0));
-		commit_field.setEnabled(enabled && (method != 0));
+		//if(DD.ORG_CREATOR_REQUIRED)
+		globID_field.setEnabled(enabled && (method != table.organization._GRASSROOT));
+		commit_field.setEnabled(enabled && (method != table.organization._GRASSROOT));
 			
 		
 		String gID = Util.getString(org.get(table.organization.ORG_COL_GID));
@@ -419,7 +414,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 					if(DEBUG) System.out.println("widgets:OrgEditor:update_it select creator creatorID="+i+" "+
 							i.gid+":"+i.hash+" n="+i.name);
 				}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -461,7 +456,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						if(DEBUG) System.out.println("widgets:OrgEditor:update_it selected="+crt);
 					}
 				}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -488,7 +483,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						category_field.setSelectedItem(crt);
 					}
 				}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}else{
@@ -537,7 +532,8 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		if(this.creator_field!=null) this.creator_field.setEnabled(true);
 		if(this.keygen_field!=null) this.keygen_field.setEnabled(true);
 		if(this.commit_field!=null) this.commit_field.setEnabled(true);
-		try{this.keygen_field.setEnabled(org.get(table.organization.ORG_COL_CREATOR_ID)!=null);}catch(Exception e){}
+		if(DD.ORG_CREATOR_REQUIRED)
+			try{this.keygen_field.setEnabled(org.get(table.organization.ORG_COL_CREATOR_ID)!=null);}catch(Exception e){}
 		if(this.dategen_field!=null) this.dategen_field.setEnabled(true);
 		if(this.date_field!=null) this.date_field.setEnabled(true);
 		if(this.default_scoring_options_field!=null) this.default_scoring_options_field.setEnabled(true);
@@ -546,7 +542,9 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		if(this.instructionsRegistrationsPane!=null) this.instructionsRegistrationsPane.setEnabled(true);
 		if(this.extraFields!=null) this.extraFields.setEnabled(true);
 	}
-	private JTextArea makeInstructionsMotionsPanel() {
+	private MultiformatDocumentEditor makeInstructionsMotionsPanel() {
+		return new MultiformatDocumentEditor(TEXT_LEN_ROWS,TEXT_LEN_COLS);
+/*
 		JTextArea result;
 		//result = new JTextArea(TEXT_LEN_ROWS,TEXT_LEN_COLS);
 		result = new JTextArea();
@@ -557,8 +555,11 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		//result.setMaximumSize(new java.awt.Dimension(300,100));
 		result.getDocument().addDocumentListener(this);
 		return result;
+		*/
 	}
-	private JTextArea makeDescriptionPanel() {
+	private MultiformatDocumentEditor makeDescriptionPanel() {
+		return new MultiformatDocumentEditor(TEXT_LEN_ROWS,TEXT_LEN_COLS);
+		/*
 		JTextArea result;
 		//result = new JTextArea(TEXT_LEN_ROWS,TEXT_LEN_COLS);
 		result = new JTextArea();
@@ -569,9 +570,14 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		//result.setMaximumSize(new java.awt.Dimension(300,100));
 		result.getDocument().addDocumentListener(this);
 		return result;
-		
+		*/
 	}
-	private JTextArea makeInstructionsRegistrationsPanel() {
+	private MultiformatDocumentEditor makeInstructionsRegistrationsPanel() {
+		MultiformatDocumentEditor ed =
+				new MultiformatDocumentEditor(TEXT_LEN_ROWS,TEXT_LEN_COLS);
+		ed.editor.name = "Instr Reg";
+		return ed;
+		/*
 		JTextArea result;
 		//result = new JTextArea(TEXT_LEN_ROWS,TEXT_LEN_COLS);
 		result = new JTextArea();
@@ -582,6 +588,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		//result.setMaximumSize(new java.awt.Dimension(300,100));
 		result.getDocument().addDocumentListener(this);
 		return result;
+		*/
 	}
 	private JComponent makeHandlingPanel() {
 		JPanel p = new JPanel(new GridBagLayout());
@@ -836,7 +843,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.default_scoring_options, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_text, creationTime, currentTime, null, this.orgID}, DEBUG);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;						
@@ -853,7 +860,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.languages, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_text, creationTime, currentTime, null, this.orgID}, DEBUG);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;						
@@ -867,7 +874,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.name_organization, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_text, creationTime, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -880,7 +887,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.name_forum, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_text, creationTime, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -894,7 +901,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.name_motion, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_text, creationTime, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -908,49 +915,49 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.name_justification, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_text, creationTime, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
 		}
 		if((this.descriptionPane==source)||(this.descriptionPane.getDocument()==source)) {
 			if(DEBUG) out.println("OrgEditor:handleFieldEvent: description");
-			String new_text = this.descriptionPane.getText();
+			String new_text = this.descriptionPane.getDBDoc();
 			//this.hash_org.instructions_new_motions = new_text;
 			try {
 				Application.db.update(table.organization.TNAME,
 						new String[]{table.organization.description, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_text, creationTime, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
 		}
 		if((this.instructionsMotionsPane==source)||(this.instructionsMotionsPane.getDocument()==source)) {
 			if(DEBUG) out.println("OrgEditor:handleFieldEvent: instructions motions");
-			String new_text = this.instructionsMotionsPane.getText();
+			String new_text = this.instructionsMotionsPane.getDBDoc();
 			this.hash_org.instructions_new_motions = new_text;
 			try {
 				Application.db.update(table.organization.TNAME,
 						new String[]{table.organization.instructions_new_motions, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_text, creationTime, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
 		}
 		if((this.instructionsRegistrationsPane==source)||(this.instructionsRegistrationsPane.getDocument()==source)) {
 			if(DEBUG) out.println("OrgEditor:handleFieldEvent: instructions registration");
-			String new_text = this.instructionsRegistrationsPane.getText();
+			String new_text = this.instructionsRegistrationsPane.getDBDoc();
 			this.hash_org.instructions_registration = new_text;
 			try {
 				Application.db.update(table.organization.TNAME,
 						new String[]{table.organization.instructions_registration, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_text, creationTime, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -964,7 +971,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.name, table.organization.creation_date, table.organization.arrival_date},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_name, creationTime, currentTime, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;
@@ -991,11 +998,12 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_date, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;
 		}
+		//  authoritarian?keygen<-true ; creatorID?: keygen<-enabled
 		if(creator_field==source) {
 			if(DEBUG) out.println("OrgEditor:handleFieldEvent: creator");
 			if(DEBUG) Util.printCallPath("Linux tracing");
@@ -1015,14 +1023,16 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.organization_ID},
 						new String[]{id, creationTime, currentTime, null, this.orgID}, DEBUG);
 				//this.commit_field.setEnabled(id!=null);
-				int method = method_field.getSelectedIndex();
-				if(method==table.organization._AUTHORITARIAN) {
-					this.keygen_field.setEnabled(true);
+				if(DD.ORG_CREATOR_REQUIRED) {
+					int method = method_field.getSelectedIndex();
+					if(method==table.organization._AUTHORITARIAN) {
+						this.keygen_field.setEnabled(true);
+					}
+					if(method==table.organization._GRASSROOT) {
+						this.keygen_field.setEnabled(id!=null);
+					}
 				}
-				if(method==table.organization._GRASSROOT) {
-					this.keygen_field.setEnabled(id!=null);
-				}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			} catch (NumberFormatException e) {
 				e.printStackTrace();
@@ -1040,7 +1050,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.category, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_category, creationTime, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;
@@ -1063,7 +1073,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 			try {
 				_signature = OrgHandling.getOrgSignature(this.orgID, creationTime, sk);
 				signature = Util.stringSignatureFromByte(_signature);
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 				return;
 			}
@@ -1080,13 +1090,14 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 							table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{new_ID, selected.hash, creationTime, currentTime, signature, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return;
 			}
 			// disable_it();
 			 
 		}
+		// store signature and modifs for authoritarian org
 		if((commit_field==source)) {
 			OrgGIDItem selected = (OrgGIDItem)globID_field.getSelectedItem();
 			if((selected == null) || (selected.gid == null)){
@@ -1117,7 +1128,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 							table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{gID, selected.hash, creationTime, currentTime, signature, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return;
 			}
@@ -1134,7 +1145,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.certification_methods, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{method+"", creationTime, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}			
 			this.reloadOrg(true); // force since editing already
@@ -1153,7 +1164,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						new String[]{table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
 						new String[]{table.organization.organization_ID},
 						new String[]{crt_date, currentTime, null, this.orgID});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}			
 			
@@ -1173,7 +1184,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				keys.genKey(1024);
 				try {
 					DD.storeSK(keys, "ORG");
-				} catch (SQLiteException e2) {
+				} catch (P2PDDSQLException e2) {
 					// TODO Auto-generated catch block
 					e2.printStackTrace();
 				}
@@ -1200,7 +1211,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 					}
 					orgData = org[0];
 					signature = Util.stringSignatureFromByte(_signature);
-				} catch (SQLiteException e1) {
+				} catch (P2PDDSQLException e1) {
 					e1.printStackTrace();
 					return;
 				}
@@ -1230,7 +1241,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 							creationTime, currentTime, signature, this.orgID},DEBUG);
 					org.set(table.organization.ORG_COL_GID, gID);
 					org.set(table.organization.ORG_COL_GID_HASH, gIDhash);
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 					return;
 				}
@@ -1259,7 +1270,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 //					}
 //					gid = Util.stringSignatureFromByte(_gid);
 					orgData = org[0];
-				} catch (SQLiteException e1) {
+				} catch (P2PDDSQLException e1) {
 					e1.printStackTrace();
 					return;
 				}
@@ -1282,7 +1293,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 							creationTime, currentTime, gid, this.orgID}, DEBUG);
 					org.set(table.organization.ORG_COL_GID, gid);
 					org.set(table.organization.ORG_COL_GID_HASH, gid);
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 					return;
 				}
@@ -1331,7 +1342,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				return null;
 			}
 			//signature = Util.stringSignatureFromByte(_signature);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 			return null;
 		}
@@ -1376,6 +1387,11 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 	@Override
 	public void listenLV(Object source) {
 		if(DEBUG)System.out.println("OrgEditor:listenLV:SRC= "+source);
+		this.handleFieldEvent(source);		
+	}
+	@Override
+	public void changeUpdate(Object source) {
+		if(DEBUG)System.out.println("OrgEditor:changeUpdate:SRC= "+source);
 		this.handleFieldEvent(source);		
 	}
 }

@@ -178,7 +178,7 @@ public class GIF_Convert {
 			int word_bytes=1;
 			int bits = 4;
 			////Util.copyBytes(b, BMP.CREATOR, adr_bytes.length);
-			fo.write(DDAddress.getSteganoBytes(adr_bytes, b, offset, word_bytes, bits));
+			fo.write(EmbedInMedia.getSteganoBytes(adr_bytes, b, offset, word_bytes, bits));
 			fo.close();
 			} catch (FileNotFoundException e1) {
 				fail = true;

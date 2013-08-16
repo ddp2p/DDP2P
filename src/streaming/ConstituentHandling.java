@@ -29,7 +29,7 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Hashtable;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -69,9 +69,9 @@ public class ConstituentHandling {
 	 * @param org_id
 	 * @param _maxDate
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static Hashtable<String, String> getConstituentHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws SQLiteException {
+	public static Hashtable<String, String> getConstituentHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
 		if(DEBUG) out.println("CostituentHandling:getConstituentHashes: start");
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
@@ -102,9 +102,9 @@ public class ConstituentHandling {
 	 * @param org_id
 	 * @param _maxDate
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static ASNConstituentOP[] getConstituentOPs(ASNSyncRequest asr, String last_sync_date, String gid, String org_id, String[] _maxDate) throws SQLiteException {
+	public static ASNConstituentOP[] getConstituentOPs(ASNSyncRequest asr, String last_sync_date, String gid, String org_id, String[] _maxDate) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("\n************\nConstituentHandling: getConstituentOPs: from date="+last_sync_date+" orgID="+org_id+" to:"+_maxDate[0]);
 		
 		ArrayList<ArrayList<Object>> al = Application.db.select(sql_get_const_ops_min_max_no_terminator+" LIMIT "+BIG_LIMIT+";",
@@ -125,7 +125,7 @@ public class ConstituentHandling {
 		if(result.length==0) return null;
 		return result;
 	}
-	public static ASNConstituentOP[] getConstituentData(ASNSyncRequest asr, String last_sync_date, String org_gid, String org_id, String[] _maxDate) throws SQLiteException{
+	public static ASNConstituentOP[] getConstituentData(ASNSyncRequest asr, String last_sync_date, String org_gid, String org_id, String[] _maxDate) throws P2PDDSQLException{
 		if(_maxDate!=null)
 			return ConstituentHandling.getConstituentOPs(asr,last_sync_date, org_gid, org_id, _maxDate);
 		else
@@ -136,9 +136,9 @@ public class ConstituentHandling {
 	 * @param local_id
 	 * @param last_sync_date
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static ASNConstituentOP[] getConstituentsModifs(String local_id, String last_sync_date) throws SQLiteException {
+	public static ASNConstituentOP[] getConstituentsModifs(String local_id, String last_sync_date) throws P2PDDSQLException {
 		if(DEBUG) out.println("\n********\nConstituentHandling:getConstituentsModifs: id="+local_id+" from="+last_sync_date);
 		ArrayList<ArrayList<Object>> al = 
 			Application.db.select(sql_get_const_ops_min_no_terminator+" LIMIT "+BIG_LIMIT+";", new String[]{local_id, last_sync_date});
@@ -154,7 +154,7 @@ public class ConstituentHandling {
 	/**
 	 * orgs will contain a list of the orgGID available
 	 */
-	public static String getConstituentOPsDate(String last_sync_date, String maxDate, OrgFilter ofi, HashSet<String> orgs, int limitConstituentLow) throws SQLiteException {
+	public static String getConstituentOPsDate(String last_sync_date, String maxDate, OrgFilter ofi, HashSet<String> orgs, int limitConstituentLow) throws P2PDDSQLException {
 		String result;
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("\n\n************\nConstituentHandling:getConstituentOPsDate:  Unbounded constituents date = "+last_sync_date+" to "+maxDate);
@@ -206,9 +206,9 @@ public class ConstituentHandling {
 	 * @param ofi
 	 * @param orgs is an output with the list of orgGIDs available
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String getConstituentOPsDate(String last_sync_date, OrgFilter ofi, HashSet<String> orgs, int limitConstituentLow) throws SQLiteException {
+	public static String getConstituentOPsDate(String last_sync_date, OrgFilter ofi, HashSet<String> orgs, int limitConstituentLow) throws P2PDDSQLException {
 		String result;
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("\n\n************\nConstituentHandling:getConstituentOPsDate':  Unbounded constituents date = "+last_sync_date);
@@ -267,10 +267,10 @@ public class ConstituentHandling {
 	 * @param org_local_ID
 	 * @param arrival_time
 	 * @param orgData
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
 	public static boolean integrateNewData(ASNConstituentOP[] constituents,
-			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws SQLiteException {
+			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
 		if(constituents == null) return false;
 		boolean result = false;
 		for(int k=0; k<constituents.length; k++) {
@@ -311,10 +311,10 @@ public class ConstituentHandling {
 	 * @param org_local_ID
 	 * @param arrival_time
 	 * @param orgData
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
 	private static boolean integrateNewConstituentOPData( ASNConstituentOP constituent, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData) throws SQLiteException {
+			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: start on "+constituent);
 		if(constituent == null) return false;
 		D_Constituent wc = constituent.constituent;
@@ -324,7 +324,7 @@ public class ConstituentHandling {
 		return result;
 	}
 	public static String integrateNewConstituentData( D_Constituent wc, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData) throws SQLiteException {
+			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: start on "+wc);
 		String result = null;
 		if(wc == null) return result;

@@ -46,7 +46,7 @@ import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import table.justification;
@@ -375,7 +375,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			this.signature.setEditable();
 			try {
 				this.signature.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -386,7 +386,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			this.signature.setEditable();
 			try {
 				this.signature.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -435,7 +435,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				//this.signature.creation_date = Util.getCalendar(creationTime);
 				this.signature.setEditable();
 				this.signature.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}	
 		}
@@ -514,7 +514,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				*/
 				disable_it();
 				justificationEditor.disable_it();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -530,7 +530,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			 try {
 				this.signature.setEditable();
 				this.signature.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 	 */
@@ -612,7 +612,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				String name = Util.getString(_j.get(0));
 				combo_answerTo[k++] = new JustGIDItem(gid, id, name);
 			}
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}	
 }
@@ -700,7 +700,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			//this.signature.creation_date = Util.getCalendar(creationTime);
 			this.signature.setEditable();
 			this.signature.storeVerified();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}			
 	}

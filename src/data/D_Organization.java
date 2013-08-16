@@ -52,6 +52,7 @@ public
 class D_Organization extends ASNObj implements Summary {
 	private static final String V0 = "0";
 	public static boolean DEBUG = false;
+	private static Object lock_organization_GID_storage = new Object(); // lock for new organization GID
 	private static final boolean _DEBUG = true;
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
 	public static final boolean DEFAULT_BROADCASTED_ORG = true;
@@ -796,82 +797,84 @@ class D_Organization extends ASNObj implements Summary {
 	 * @throws P2PDDSQLException
 	 */
 	public long storeVerified(String arrival_time, boolean changed[], boolean sync) throws P2PDDSQLException {
-		//boolean DEBUG = true;
-		if(DEBUG) out.println("D_Organization: storeVerified: start "+this.global_organization_IDhash);
-		this.arrival_date = Util.getCalendar(arrival_time);
-		arrival_time = Encoder.getGeneralizedTime(arrival_date);
-		long result = -1;
-		int filter = 0;
-				
-		if(this.global_organization_IDhash == null) global_organization_IDhash = getOrgGIDHashFromGID();
-		
-		String creation_time = Encoder.getGeneralizedTime(params.creation_time);
-		String old_date[] = new String[1];
-		String organization_ID = D_Organization.getLocalOrgIDandDate(global_organization_ID, old_date);
-		if((organization_ID != null) && (old_date!=null) && (old_date[0]!=null) && (creation_time.compareTo(old_date[0]) <= 0)) {
-			if(!Util.equalStrings_null_or_not(creation_time, old_date[0]) || hashConflictCreationDateDropThis()) {
-				if(DEBUG) out.println("D_Organization: storeVerified: Will not integrate old ["+creation_time+"]: "+this);
-				if(changed!=null)changed[0]=false;
-				return Util.lval(organization_ID,-1);
+		synchronized(D_Organization.lock_organization_GID_storage ) {
+			//boolean DEBUG = true;
+			if(DEBUG) out.println("D_Organization: storeVerified: start "+this.global_organization_IDhash);
+			this.arrival_date = Util.getCalendar(arrival_time);
+			arrival_time = Encoder.getGeneralizedTime(arrival_date);
+			long result = -1;
+			int filter = 0;
+					
+			if(this.global_organization_IDhash == null) global_organization_IDhash = getOrgGIDHashFromGID();
+			
+			String creation_time = Encoder.getGeneralizedTime(params.creation_time);
+			String old_date[] = new String[1];
+			String organization_ID = D_Organization.getLocalOrgIDandDate(global_organization_ID, old_date);
+			if((organization_ID != null) && (old_date!=null) && (old_date[0]!=null) && (creation_time.compareTo(old_date[0]) <= 0)) {
+				if(!Util.equalStrings_null_or_not(creation_time, old_date[0]) || hashConflictCreationDateDropThis()) {
+					if(DEBUG) out.println("D_Organization: storeVerified: Will not integrate old ["+creation_time+"]: "+this);
+					if(changed!=null)changed[0]=false;
+					return Util.lval(organization_ID,-1);
+				}
 			}
+			if(changed!=null) changed[0] = true;
+			if(organization_ID != null) filter = 1;
+			
+			if(creator_ID == null)
+				creator_ID = D_PeerAddress.storePeerAndGetOrInsertTemporaryLocalForPeerGID(params.creator_global_ID,creator,arrival_time);
+			
+			String field_sign = (signature!=null)?Util.stringSignatureFromByte(signature):null;
+			if((field_sign!=null) && (params.certifMethods == table.organization._GRASSROOT)){
+				field_sign = "G:"+field_sign;
+			}
+			
+			String[] fieldNames = Util.trimmed(table.organization.org_list.split(","));
+			String[] p = new String[fieldNames.length + filter];
+			p[table.organization.ORG_COL_GID] = global_organization_ID;
+			p[table.organization.ORG_COL_GID_HASH] = global_organization_IDhash;
+			p[table.organization.ORG_COL_NAME] = name;
+			p[table.organization.ORG_COL_NAME_ORG] = D_OrgConcepts.stringFromStringArray(concepts.name_organization);
+			p[table.organization.ORG_COL_NAME_FORUM] = D_OrgConcepts.stringFromStringArray(concepts.name_forum);
+			p[table.organization.ORG_COL_NAME_MOTION] = D_OrgConcepts.stringFromStringArray(concepts.name_motion);
+			p[table.organization.ORG_COL_NAME_JUST] = D_OrgConcepts.stringFromStringArray(concepts.name_justification);//, table.organization.ORG_TRANS_SEP,null);
+			p[table.organization.ORG_COL_LANG] = D_OrgConcepts.stringFromStringArray(params.languages);//, table.organization.ORG_LANG_SEP,null);
+			p[table.organization.ORG_COL_INSTRUC_REGIS] = params.instructions_registration;
+			p[table.organization.ORG_COL_INSTRUC_MOTION] = params.instructions_new_motions;
+			p[table.organization.ORG_COL_DESCRIPTION] = params.description;
+			p[table.organization.ORG_COL_SCORES] = D_OrgConcepts.stringFromStringArray(params.default_scoring_options);//, table.organization.ORG_SCORE_SEP,null);
+			p[table.organization.ORG_COL_CATEG] = params.category;
+			p[table.organization.ORG_COL_CERTIF_METHODS] = ""+params.certifMethods;
+			p[table.organization.ORG_COL_HASH_ALG] = params.hash_org_alg;
+			//p[table.organization.ORG_COL_HASH] = (params.hash_org!=null)?Util.byteToHex(params.hash_org, table.organization.ORG_HASH_BYTE_SEP):null;
+			p[table.organization.ORG_COL_CREATION_DATE] = creation_time;
+			p[table.organization.ORG_COL_CERTIF_DATA] = (params.certificate!=null)?Util.stringSignatureFromByte(params.certificate):null;
+			p[table.organization.ORG_COL_CREATOR_ID] = creator_ID;
+			p[table.organization.ORG_COL_SIGN] = field_sign;
+			p[table.organization.ORG_COL_SIGN_INITIATOR] = Util.stringSignatureFromByte(this.signature_initiator);
+			p[table.organization.ORG_COL_ARRIVAL] = arrival_time; //Util.getGeneralizedTime();
+			p[table.organization.ORG_COL_RESET_DATE] = (reset_date!=null)?Encoder.getGeneralizedTime(reset_date):null; //Util.getGeneralizedTime();
+			p[table.organization.ORG_COL_BLOCK] = Util.bool2StringInt(blocked);
+			p[table.organization.ORG_COL_REQUEST] = Util.bool2StringInt(requested);
+			p[table.organization.ORG_COL_BROADCASTED] = Util.bool2StringInt(broadcasted);
+			
+			//String orgID;
+			if(organization_ID == null) {
+				organization_ID = Util.getStringID(result = Application.db.insertNoSync(table.organization.TNAME, fieldNames, p, DEBUG));//changed = true;
+				if(DEBUG) out.println("D_Organization: storeVerified: Inserted: "+this);
+			}else{
+				//orgID = Util.getString(p_data.get(0).get(table.organization.ORG_COL_ID));
+				p[table.organization.ORG_COL_ID] = organization_ID;
+				if(filter>0) p[fieldNames.length] = organization_ID;
+				Application.db.updateNoSync(table.organization.TNAME,  fieldNames, new String[]{table.organization.organization_ID}, p, DEBUG);//changed = true;
+				result = Util.lval(organization_ID, -1);
+				if(DEBUG) out.println("\nD_Organization: storeVerified: Updated: "+this);
+			}
+			if(sync) Application.db.sync(new ArrayList<String>(Arrays.asList(table.organization.TNAME)));
+			//organization_ID = orgID;
+			if(params!=null) D_Organization.storeOrgParams(organization_ID, params.orgParam);
+	
+			return this._organization_ID=result;
 		}
-		if(changed!=null) changed[0] = true;
-		if(organization_ID != null) filter = 1;
-		
-		if(creator_ID == null)
-			creator_ID = D_PeerAddress.storePeerAndGetOrInsertTemporaryLocalForPeerGID(params.creator_global_ID,creator,arrival_time);
-		
-		String field_sign = (signature!=null)?Util.stringSignatureFromByte(signature):null;
-		if((field_sign!=null) && (params.certifMethods == table.organization._GRASSROOT)){
-			field_sign = "G:"+field_sign;
-		}
-		
-		String[] fieldNames = Util.trimmed(table.organization.org_list.split(","));
-		String[] p = new String[fieldNames.length + filter];
-		p[table.organization.ORG_COL_GID] = global_organization_ID;
-		p[table.organization.ORG_COL_GID_HASH] = global_organization_IDhash;
-		p[table.organization.ORG_COL_NAME] = name;
-		p[table.organization.ORG_COL_NAME_ORG] = D_OrgConcepts.stringFromStringArray(concepts.name_organization);
-		p[table.organization.ORG_COL_NAME_FORUM] = D_OrgConcepts.stringFromStringArray(concepts.name_forum);
-		p[table.organization.ORG_COL_NAME_MOTION] = D_OrgConcepts.stringFromStringArray(concepts.name_motion);
-		p[table.organization.ORG_COL_NAME_JUST] = D_OrgConcepts.stringFromStringArray(concepts.name_justification);//, table.organization.ORG_TRANS_SEP,null);
-		p[table.organization.ORG_COL_LANG] = D_OrgConcepts.stringFromStringArray(params.languages);//, table.organization.ORG_LANG_SEP,null);
-		p[table.organization.ORG_COL_INSTRUC_REGIS] = params.instructions_registration;
-		p[table.organization.ORG_COL_INSTRUC_MOTION] = params.instructions_new_motions;
-		p[table.organization.ORG_COL_DESCRIPTION] = params.description;
-		p[table.organization.ORG_COL_SCORES] = D_OrgConcepts.stringFromStringArray(params.default_scoring_options);//, table.organization.ORG_SCORE_SEP,null);
-		p[table.organization.ORG_COL_CATEG] = params.category;
-		p[table.organization.ORG_COL_CERTIF_METHODS] = ""+params.certifMethods;
-		p[table.organization.ORG_COL_HASH_ALG] = params.hash_org_alg;
-		//p[table.organization.ORG_COL_HASH] = (params.hash_org!=null)?Util.byteToHex(params.hash_org, table.organization.ORG_HASH_BYTE_SEP):null;
-		p[table.organization.ORG_COL_CREATION_DATE] = creation_time;
-		p[table.organization.ORG_COL_CERTIF_DATA] = (params.certificate!=null)?Util.stringSignatureFromByte(params.certificate):null;
-		p[table.organization.ORG_COL_CREATOR_ID] = creator_ID;
-		p[table.organization.ORG_COL_SIGN] = field_sign;
-		p[table.organization.ORG_COL_SIGN_INITIATOR] = Util.stringSignatureFromByte(this.signature_initiator);
-		p[table.organization.ORG_COL_ARRIVAL] = arrival_time; //Util.getGeneralizedTime();
-		p[table.organization.ORG_COL_RESET_DATE] = (reset_date!=null)?Encoder.getGeneralizedTime(reset_date):null; //Util.getGeneralizedTime();
-		p[table.organization.ORG_COL_BLOCK] = Util.bool2StringInt(blocked);
-		p[table.organization.ORG_COL_REQUEST] = Util.bool2StringInt(requested);
-		p[table.organization.ORG_COL_BROADCASTED] = Util.bool2StringInt(broadcasted);
-		
-		//String orgID;
-		if(organization_ID == null) {
-			organization_ID = Util.getStringID(result = Application.db.insertNoSync(table.organization.TNAME, fieldNames, p, DEBUG));//changed = true;
-			if(DEBUG) out.println("D_Organization: storeVerified: Inserted: "+this);
-		}else{
-			//orgID = Util.getString(p_data.get(0).get(table.organization.ORG_COL_ID));
-			p[table.organization.ORG_COL_ID] = organization_ID;
-			if(filter>0) p[fieldNames.length] = organization_ID;
-			Application.db.updateNoSync(table.organization.TNAME,  fieldNames, new String[]{table.organization.organization_ID}, p, DEBUG);//changed = true;
-			result = Util.lval(organization_ID, -1);
-			if(DEBUG) out.println("\nD_Organization: storeVerified: Updated: "+this);
-		}
-		if(sync) Application.db.sync(new ArrayList<String>(Arrays.asList(table.organization.TNAME)));
-		//organization_ID = orgID;
-		if(params!=null) D_Organization.storeOrgParams(organization_ID, params.orgParam);
-
-		return this._organization_ID=result;
 	}
 	private boolean hashConflictCreationDateDropThis() throws P2PDDSQLException {
 		D_PeerAddress o_creator = this.creator;

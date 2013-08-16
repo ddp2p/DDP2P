@@ -1,3 +1,6 @@
+/**
+ * Khalid Alhamed
+ */
 package widgets.dir_management;
 
 import hds.Address;
@@ -11,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
+import java.io.File;
 
 import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
@@ -76,11 +80,13 @@ public class DirPanel extends JPanel implements  ActionListener{
 	public void init(){
     	add(getHeaderPanel(), BorderLayout.NORTH);
     	DirTable dirTable = null;
-    	try {
-    		dirTable = new DirTable(new DBInterface(Application.DIRECTORY_FILE), this);
-    	}catch(P2PDDSQLException e){
-    		System.out.println(e);
+
+    	if(Application.db_dir == null){
+    		Application.DB_PATH = new File(Application.DELIBERATION_FILE).getParent();
+    		Application.db_dir = DD.load_Directory_DB(Application.DB_PATH);
     	}
+    	
+    	dirTable = new DirTable(Application.db_dir, this);
     	dirTableScroll = dirTable.getScrollPane();
     	add(dirTableScroll);
 		addMouseListener(dirTable);

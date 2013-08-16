@@ -30,7 +30,7 @@ import java.util.HashSet;
 
 import ASN1.Encoder;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -67,7 +67,7 @@ public class NeighborhoodHandling {
 	private static final boolean _DEBUG = true;
 
 	public static String getNextNeighborhoodDate(String last_sync_date,
-			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitNeighLow) throws SQLiteException {
+			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitNeighLow) throws P2PDDSQLException {
 		if(DEBUG) out.println("OrgHandling:getNextNeighborhoodDate: start: between: "+last_sync_date+" : "+_maxDate);
 		String sql = (_maxDate==null)?sql_nomax:sql_max;
 		String[] param=(_maxDate==null)?new String[]{last_sync_date}:new String[]{last_sync_date, _maxDate};
@@ -101,7 +101,7 @@ public class NeighborhoodHandling {
 		+" AND n."+table.neighborhood.global_neighborhood_ID+" IS NOT NULL "
 		+" ORDER BY n."+table.neighborhood.arrival_date
 		;
-	public static ArrayList<String> getNeighborhoodHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws SQLiteException {
+	public static ArrayList<String> getNeighborhoodHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else{ maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
@@ -111,7 +111,7 @@ public class NeighborhoodHandling {
 	}
 
 	public static ASNNeighborhoodOP[] getNeighborhoodOPs(ASNSyncRequest asr,
-			String last_sync_date, String gid, String org_id, String[] _maxDate) throws SQLiteException {
+			String last_sync_date, String gid, String org_id, String[] _maxDate) throws P2PDDSQLException {
 		if(DEBUG) out.println("NeighborhoodHandling:getNeighborhoodOPs: from="+last_sync_date+" to="+_maxDate[0]+" for orgID="+org_id+" orgGID="+gid);
 		ASNNeighborhoodOP[] result = null;
 		ArrayList<ArrayList<Object>> a;
@@ -164,7 +164,7 @@ public class NeighborhoodHandling {
 	
 
 	public static boolean integrateNewData(ASNNeighborhoodOP[] neighborhoods,
-			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws SQLiteException {
+			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
 		if(neighborhoods == null) return false;
 		boolean result = false;
 		for(int k=0; k<neighborhoods.length; k++) {
@@ -227,7 +227,7 @@ public class NeighborhoodHandling {
 
 	private static boolean integrateNewNeighborhoodOPData(
 			ASNNeighborhoodOP neighborhood, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData) throws SQLiteException {
+			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewNeighborhoodData: start on "+neighborhood);
 		if(neighborhood == null) return false;
 		boolean result = false;

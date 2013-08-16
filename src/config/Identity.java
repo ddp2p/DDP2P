@@ -508,4 +508,9 @@ public class Identity {
 	public static void setCurrentIdentity(Identity newID) {
 		 current_identity = newID;
 	}
+
+	public static String getMyPeerGID() {
+		if(current_peer_ID == null) return null;
+		return current_peer_ID.globalID;
+	}
 }

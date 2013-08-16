@@ -23,7 +23,7 @@ import java.util.ArrayList;
 
 import util.Util;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.DD;
 
@@ -42,7 +42,7 @@ public class BroadcastQueueCircular extends BroadcastQueue {
 	 Constructor: when first running the program 
 	 load everything currently available on db
 	 */
-	public BroadcastQueueCircular() throws SQLiteException{
+	public BroadcastQueueCircular() throws P2PDDSQLException{
 		if(DEBUG)System.out.println("BroadcastQueueCircular() : Constructor ");
 		loadAll();
 	}
@@ -50,22 +50,22 @@ public class BroadcastQueueCircular extends BroadcastQueue {
 	public void loadAll() {
 		// LOADER_ADDED START
 		this.m_PreparedMessagesVotes = loadVotes();
-		this.m_iCrtVotes = -1;
+		this.m_iCrtVotes = 0;
 		
 		this.m_PreparedMessagesConstituents = loadConstituents();
-		this.m_iCrtConstituents = -1;
+		this.m_iCrtConstituents = 0;
 		
 		this.m_PreparedMessagesPeers = loadPeers();
-		this.m_iCrtPeers = -1;
+		this.m_iCrtPeers = 0;
 		
 		this.m_PreparedMessagesOrgs = loadOrgs();
-		this.m_iCrtOrgs = -1;
+		this.m_iCrtOrgs = 0;//-1;
 		
 		this.m_PreparedMessagesWitnesses = loadWitnesses();
-		this.m_iCrtWitnesses = -1;
+		this.m_iCrtWitnesses = 0;
 		
 		this.m_PreparedMessagesNeighborhoods = loadNeighborhoods();
-		this.m_iCrtNeighborhoods = -1;
+		this.m_iCrtNeighborhoods = 0;
 		// LOADER_ADDED END
 	}
 
@@ -123,18 +123,19 @@ public class BroadcastQueueCircular extends BroadcastQueue {
 		if(DEBUG)System.out.println("\n---------------------------------------------------------------\n");
 		return newQueue;
 	}
-
+	/*
 	protected void setNewRoundFromQueue(
 			ArrayList<PreparedMessage> crt_witnesses_queue,
 			int count_broadcasted_witnesses2) {
 			for(int i=0;i < crt_witnesses_queue.size(); i++)
 				crt_witnesses_queue.get(i).sent_flag = false;
+			if(DEBUG)System.out.println("BQCircular: setNewRoundFromQueue");
 	}
 	@Override
 	protected byte[] getItemFromQueue(
 			ArrayList<PreparedMessage> crt_witnesses_queue,
 			int crt_witnesses_idx, int count_broadcasted_witnesses2, int QUEUE) {
-		if(count_broadcasted_witnesses2==0) return crt_witnesses_queue.get(crt_witnesses_idx).raw;
+		if(count_broadcasted_witnesses2==0) { BroadcastQueue.crt_votes_idx=crt_witnesses_idx; return crt_witnesses_queue.get(crt_witnesses_idx).raw;}
 		int qlen = crt_witnesses_queue.size();
 		int actual_idx = (int)Math.round(Math.floor(Util.random(qlen+0.9f)));
 		int i=0;
@@ -143,9 +144,13 @@ public class BroadcastQueueCircular extends BroadcastQueue {
 			crt_witnesses_queue.get((i+actual_idx)%qlen).sent_flag = true;
 			break;
 		}
+		if(DEBUG)System.out.println("BQCircular: getItemFromQueue");
+		//int tt=(i+actual_idx)%qlen;
+		//System.out.println("BQCircular: "+tt);
+		BroadcastQueue.crt_votes_idx=(i+actual_idx)%qlen;
 		return crt_witnesses_queue.get((i+actual_idx)%qlen).raw;
 	}
-	
+	*/
 	@Override
 	long loadVotes(ArrayList<PreparedMessage> m_PreparedMessagesVotes2,
 			long m_lastVote2) {
@@ -163,7 +168,7 @@ public class BroadcastQueueCircular extends BroadcastQueue {
 	}
 	@Override
 	long loadOrgs(ArrayList<PreparedMessage> m_PreparedMessagesOrgs2, long m_lastOrg2)
-			throws SQLiteException {
+			throws P2PDDSQLException {
 		return 0;
 	}
 	@Override

@@ -52,12 +52,13 @@ public class Application{
 	public static String DELIBERATION_FILE = DEFAULT_DELIBERATION_FILE;
 	//public static String CURRENT_DELIBERATION_FILE = null;
 	static public DBInterface db;
+	static public DBInterface db_dir;
 	static public DirectoryServer ds;
 	static public Server as;
 	static public UDPServer aus; //have to unify with the one in DD
 	static public BroadcastServer g_BroadcastServer = null; // reference to the unique BroadcastServer
 	static public BroadcastClient g_BroadcastClient = null; // reference to the unique BroadcastClient
-	static public Client ac;
+	static public IClient ac;
 	static public Directories ld=null;
 	static public Peers peers=null;
 	//public static String my_global_peer_ID;
@@ -223,6 +224,7 @@ public class Application{
 	public static DirectoriesData directoriesData;
 	public static PeerContacts peer;
 	public static UpdatesPanel panelUpdates;
+	public static String DB_PATH = null;
 	
 	public static void warning(String war, String title){
 		JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
@@ -278,7 +280,7 @@ public class Application{
 					_("Unknown path component type"));return;}
 		}
 		if(":".equals(version)) {
-			Application.warning(_("The WINDOWS_INSTALLATION_VERSION_BASE_DIR cannot be set to default, as it is the base of defalut."), _("Invalid input"));
+			Application.warning(_("The WINDOWS_INSTALLATION_VERSION_BASE_DIR cannot be set to default, as it is the base of default."), _("Invalid input"));
 			return;
 		}
 		if(":".equals(root)){
@@ -353,7 +355,7 @@ public class Application{
 			}
 		}
 		if(":".equals(version)) {
-			Application.warning(_("The LINUX_INSTALLATION_VERSION_BASE_DIR cannot be set to default, as it is the base of defalut."), _("Invalid input"));
+			Application.warning(_("The LINUX_INSTALLATION_VERSION_BASE_DIR cannot be set to default, as it is the base of default."), _("Invalid input"));
 			return;
 		}
 		if(":".equals(root)){

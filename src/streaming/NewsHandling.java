@@ -27,7 +27,7 @@ import hds.ASNSyncRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -66,7 +66,7 @@ class NewsHandling {
 
 	public static boolean integrateNewData(D_News[] news,
 			String global_organization_ID, String org_local_ID,
-			String arrival_time, D_Organization orgData, RequestData rq) throws SQLiteException {
+			String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
 		if(news==null) return false;
 		for(int k=0; k<news.length; k++) {
 			news[k].global_organization_ID = global_organization_ID;
@@ -77,7 +77,7 @@ class NewsHandling {
 	}
 
 	public static String getNextNewsDate(String last_sync_date, String _maxDate,
-			OrgFilter ofi, HashSet<String> orgs, int limitNewsLow) throws SQLiteException {
+			OrgFilter ofi, HashSet<String> orgs, int limitNewsLow) throws P2PDDSQLException {
 		if(DEBUG) out.println("TranslationHandling:getNextTranslationDate: start: between: "+last_sync_date+" : "+_maxDate);
 		ArrayList<ArrayList<Object>> w;
 		String[] params;
@@ -146,7 +146,7 @@ class NewsHandling {
 			" AND n."+table.news.global_news_ID+" IS NOT NULL " +
 			" ORDER BY n."+table.news.arrival_date
 		;
-	public static ArrayList<String> getNewsHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws SQLiteException {
+	public static ArrayList<String> getNewsHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
@@ -157,7 +157,7 @@ class NewsHandling {
 
 	public static D_News[] getNewsData(ASNSyncRequest asr,
 			String last_sync_date, String org_gid, String org_id,
-			String[] __maxDate) throws SQLiteException {
+			String[] __maxDate) throws P2PDDSQLException {
 		
 		D_News[] result=null;
 		String _maxDate = __maxDate[0];

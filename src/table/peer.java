@@ -27,7 +27,7 @@ import util.Util;
 
 import ciphersuits.Cipher;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -142,9 +142,9 @@ public class peer {
 	 *  Get the local ID for a given hash_peer_ID
 	 * @param global_peer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String getLocalPeerIDByHash(String global_peer_ID_hash) throws SQLiteException {
+	public static String getLocalPeerIDByHash(String global_peer_ID_hash) throws P2PDDSQLException {
 		ArrayList<ArrayList<Object>> p =
 		Application.db.select("select "+table.peer.peer_ID+" from "+table.peer.TNAME+" where "+table.peer.global_peer_ID_hash+" = ?", 
 				new String[]{global_peer_ID_hash});
@@ -156,12 +156,12 @@ public class peer {
 	 * @param global_peer_ID
 	 * @param blocked2 
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String getLocalPeerID(String global_peer_ID) throws SQLiteException {
+	public static String getLocalPeerID(String global_peer_ID) throws P2PDDSQLException {
 		return getLocalPeerID(global_peer_ID, null);
 	}
-	public static String getLocalPeerID(String global_peer_ID, boolean[] blocked) throws SQLiteException {
+	public static String getLocalPeerID(String global_peer_ID, boolean[] blocked) throws P2PDDSQLException {
 		ArrayList<ArrayList<Object>> p =
 		Application.db.select("SELECT "+table.peer.peer_ID+","+table.peer.blocked+
 				" FROM "+table.peer.TNAME+" WHERE "+table.peer.global_peer_ID+" = ?;", 
@@ -175,9 +175,9 @@ public class peer {
 	 *  Get the global ID for a given peer_ID
 	 * @param global_peer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String getGlobalPeerID(String peer_ID) throws SQLiteException {
+	public static String getGlobalPeerID(String peer_ID) throws P2PDDSQLException {
 		ArrayList<ArrayList<Object>> p =
 		Application.db.select("select "+table.peer.global_peer_ID+" from "+table.peer.TNAME+" where "+table.peer.peer_ID+" = ?", 
 				new String[]{peer_ID});

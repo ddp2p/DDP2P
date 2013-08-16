@@ -28,14 +28,24 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.io.File;
 import javax.swing.*;
 import javax.swing.tree.*;
 import javax.swing.event.*;
 
+import config.DD;
+
+import ASN1.ASN1DecoderFail;
+import ASN1.Decoder;
+
+import data.D_Document;
 import data.D_Neighborhood;
+import data.D_Organization;
+import data.D_Witness;
 
 import util.Util;
+import widgets.components.DocumentEditor;
 import widgets.components.Language;
 import widgets.components.TranslatedLabel;
 /**
@@ -57,6 +67,9 @@ class ConstituentAddData{
 	int last_neighbor_idx=-1;
 	String _subdivisions;
 	TreePath tp;
+	public boolean sign;
+	public String witness_category_trustworthiness;
+	
 	String subdivisions(){
 		String result=":";
 		for (int k=valueEditor.length-1;k>=0; k--) {
@@ -94,14 +107,47 @@ public class ConstituentsAdd extends JDialog {
     private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final int INDEX_WITNESS_MYSELF = 2;
+	public boolean myself;
+	private static final int[] witness_categories_sense = new int[]{D_Witness.FAVORABLE,D_Witness.FAVORABLE,D_Witness.FAVORABLE,D_Witness.UNKNOWN,D_Witness.UNFAVORABLE,D_Witness.UNFAVORABLE,D_Witness.UNFAVORABLE};
 	private static final String[] witness_categories=new String[]{
-					_("Personally known"),
-					_("Hearsay"),
-					_("Myself")
-					};
+		_("Eligibility personally known"),
+		_("Hearsay eligibility"),
+		_("Myself (eligible)"),
+		_("Unknown"),
+		_("Myself (ineligible)"),
+		_("Hearsay ineligibility"),
+		_("Ineligibility personally known")
+		};
+	private static final int INDEX_WITNESS_TRUSTWORTHINESS_MYSELF = 2;
+	private static final int[] witness_categories_trustworthiness_sense = new int[]{D_Witness.FAVORABLE,D_Witness.FAVORABLE,D_Witness.FAVORABLE,D_Witness.UNKNOWN,D_Witness.UNFAVORABLE,D_Witness.UNFAVORABLE};
+	private static final String[] witness_categories_trustworthiness=new String[]{
+		_("Trust personally inferred"),
+		_("Hearsay trust"),
+		_("Myself"),
+		_("Unknown"),
+		_("Hearsay distrust"),
+		_("Distrust personally inferred")
+		};
+	public static final Hashtable<String,Integer> sense_eligibility = init_sense_eligibility();
+	public static final Hashtable<String,Integer> sense_trustworthiness = init_sense_trustworthiness();
+	private static Hashtable<String, Integer> init_sense_eligibility() {
+		Hashtable<String,Integer> result = new Hashtable<String,Integer>();
+		for(int i=0; i<witness_categories.length; i++)result.put(witness_categories[i], witness_categories_sense[i]);
+		return result;
+	}
+	private static Hashtable<String, Integer> init_sense_trustworthiness() {
+		Hashtable<String,Integer> result = new Hashtable<String,Integer>();
+		for(int i=0; i<witness_categories_trustworthiness.length; i++)
+			result.put(witness_categories_trustworthiness[i], witness_categories_trustworthiness_sense[i]);
+		return result;
+	}
 	@SuppressWarnings("unchecked")
 	public JComboBox witness_category =
 			new JComboBox(witness_categories);
+
+	@SuppressWarnings("unchecked")
+	public JComboBox witness_category_trustworthiness =
+			new JComboBox(witness_categories_trustworthiness);
 
 	String getText(JComponent com) {
     	String value;
@@ -121,6 +167,9 @@ public class ConstituentsAdd extends JDialog {
 		cad.label_lang=label_lang;
 		cad.partNeigh=partNeigh;
 		cad.witness_category = Util.getJFieldText(witness_category);
+		if(DD.CONSTITUENTS_ADD_ASK_TRUSTWORTHINESS)
+			cad.witness_category_trustworthiness = Util.getJFieldText(witness_category_trustworthiness);
+		else cad.witness_category_trustworthiness = null;
 		cad.valueEditor=new String[valueEditor.length]; 
 		for(int k=0;k<valueEditor.length;k++)
 			cad.valueEditor[k]=getText(valueEditor[k]);
@@ -131,6 +180,9 @@ public class ConstituentsAdd extends JDialog {
 		cad.tip=tip;
 		cad.lov=lov;
 		cad.tp=tp;
+		cad.pictureImage = pictureImage;
+		if(signEditor !=null) cad.sign = signEditor.isSelected();
+		else cad.sign = true;
 		cad.subdivisions();
 		return cad;
 	}
@@ -140,8 +192,10 @@ public class ConstituentsAdd extends JDialog {
 	TreePath tp;
 	JButton ok;
 	JLabel jpl=new JLabel();
+	//String jpl_name = null;
 	TranslatedLabel tpl;
 	JComponent[] valueEditor = new JComponent[0];  // list of components
+	JCheckBox signEditor;
 	JTextField gnEditor, snEditor, emailEditor;
 	GridBagConstraints c = new GridBagConstraints();
 	JPanel panel = new JPanel();
@@ -159,6 +213,7 @@ public class ConstituentsAdd extends JDialog {
 	String label_lang[];
 	TranslatedLabel tl[];
 	public boolean accepted = false;
+	private DocumentEditor instr_reg;
 	
 	long ival(Object obj, long _default){
 		if(obj == null) return _default;
@@ -174,24 +229,44 @@ public class ConstituentsAdd extends JDialog {
 	}
 	/**
 	 * This creates the part of the add dialog that handles the static components of the constituent data
+	 * @return 
 	 */
-	void initStaticFields(){
+	int initStaticFields(){
 		JButton bp;
-		c.ipadx=10; c.gridx=0; c.gridy=0;c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
+		int y = 0;
+		c.ipadx=10; c.gridx=0; c.gridy=y;c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
 		//Language author_lang=new Language("en",null);
+
+		if(!myself) {
+			panel.add(new TranslatedLabel("Sign This Data?"),c);
+			c.gridx = 1;
+			panel.add(signEditor=new JCheckBox("("+_("Current Identity:")+" "+model.getConstituentMyselfNames()+")"),c);
+			signEditor.setHorizontalTextPosition(SwingConstants.LEADING);
+			y++;y++;
+		}
+		c.ipadx=10; c.gridx=0; 
+		c.gridy=y;c.anchor = GridBagConstraints.WEST;
+		c.fill = GridBagConstraints.HORIZONTAL;		
 		panel.add(new TranslatedLabel("Given Name"),c);
 		c.gridx = 1;
 		panel.add(gnEditor=new JTextField(50),c);
-		c.ipadx=10; c.gridx=0; c.gridy=1;c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
+		
+		y++;
+		c.ipadx=10; c.gridx=0; c.gridy=y;c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
 		panel.add(new TranslatedLabel("Surname"),c);
 		c.gridx = 1;
 		panel.add(snEditor=new JTextField(50),c);
-		c.ipadx=10; c.gridx=0; c.gridy=2;c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
+		
+		y++;
+		c.ipadx=10; c.gridx=0; c.gridy=y;c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
 		panel.add(new TranslatedLabel("Email"),c);
 		c.gridx = 1;
 		panel.add(emailEditor=new JTextField(50),c);
-		c.ipadx=10; c.gridx=0; c.gridy=3;c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
+		
+		y++;
+		c.ipadx=10; c.gridx=0; c.gridy=y;c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
 		panel.add(tpl=new TranslatedLabel("Picture"),c);
+		panel.add(jpl, c);
 		c.gridx = 1;
 		panel.add(bp=new JButton(_("Browse For Picture File ...")),c);//new JFileChooser(),c);
 		bp.addActionListener(new ActionListener(){
@@ -213,17 +288,35 @@ public class ConstituentsAdd extends JDialog {
 						
 						jpl.setIcon(ii);
 						jpl.setText("");
-						c.ipadx=10; c.gridx=0; c.gridy=3;c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.NONE;
-						panel.remove(tpl);
-						panel.add(jpl,c);
+						//c.ipadx=10; c.gridx=0; c.gridy=myself?3:4; 
+						//c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.NONE;
+						//panel.remove(tpl);
+						tpl.setVisible(false);
+						//panel.add(jpl,c);
+						
 						dialog.pack();
 					}
 				}
 		});
-		c.ipadx=10; c.gridx=0; c.gridy=4; c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
-		panel.add(new TranslatedLabel("Explanation"),c);
+		
+		y++;
+		c.ipadx=10; c.gridx=0; c.gridy=y; c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
+		panel.add(new TranslatedLabel("Eligible"),c);
 		c.gridx = 1;
 		panel.add(witness_category,c);
+		
+		if(DD.CONSTITUENTS_ADD_ASK_TRUSTWORTHINESS && !myself) {
+			y++;
+			c.ipadx=10; c.gridx=0; c.gridy=y; c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
+			panel.add(new TranslatedLabel("Trusted"),c);
+			c.gridx = 1;
+			panel.add(witness_category_trustworthiness,c);
+		}else{
+			witness_category_trustworthiness.setSelectedIndex(INDEX_WITNESS_TRUSTWORTHINESS_MYSELF);
+		}
+		
+		y++;
+		return y;
 	}
 	/**
 	 * create empty arrays to store data for vfields fields
@@ -332,7 +425,20 @@ public class ConstituentsAdd extends JDialog {
 					((JComboBox)valueEditor[k]).setSelectedIndex(i);
 				}
 				valueEditor[k].setToolTipText(tip[k]);
-		}		
+		}
+		c.fill = GridBagConstraints.BOTH;
+		c.gridx=0; c.gridy = fe.size()+static_rows;
+		c.gridwidth = 2;
+		instr_reg = new DocumentEditor();
+		D_Organization org = model.getOrganization();
+		if(org==null) return;
+		D_Document dd = new D_Document();
+		dd.setDBDoc(org.params.instructions_registration);
+		instr_reg.setType(dd.getFormatString());
+		instr_reg.setText(dd.getDocumentString());
+		instr_reg.setEnabled(false);
+		panel.add(instr_reg.getComponent(),c);
+		
 	}
 	/**
 	 * Avoid a call with a warning
@@ -416,10 +522,11 @@ public class ConstituentsAdd extends JDialog {
 		super(Util.findWindow(_tree));
 		init(_tree, _tp, myself);
 	}
-	void init(ConstituentsTree _tree, TreePath _tp, boolean myself){
+	void init(ConstituentsTree _tree, TreePath _tp, boolean _myself){
+		myself = _myself;
 		panel.setLayout(new GridBagLayout());
 		setLayout(new GridBagLayout());
-		int static_rows=5;
+		int static_rows=0;
 		tree = (ConstituentsTree) _tree;
 		model = (ConstituentsModel) _tree.getModel();
 		tp = _tp;
@@ -461,7 +568,7 @@ public class ConstituentsAdd extends JDialog {
 			cnt_subdivisions = 0;
 		}
 		if(can.location!=null) lastPN = can.location.partNeigh;//can.location.fieldID;
-		initStaticFields();
+		static_rows = initStaticFields();
 		// If current neighborhood has explicit subdivisions, disregard neighborhood extra-fields
 		if((sub_divisions==null)||(can.parent==null)) { // non-explicit subdivisions
 			if(DEBUG)System.out.println("ConstituentAdd: neigh+non-neigh: null sub="+sub_divisions);
@@ -523,6 +630,7 @@ public class ConstituentsAdd extends JDialog {
 	public void setWitnessCategoryMyself() {
        	if(DEBUG) System.out.println("ConstituentsAdd:setWitnessCategoryMyself");
 		witness_category.setSelectedIndex(INDEX_WITNESS_MYSELF);
+		witness_category_trustworthiness.setSelectedIndex(INDEX_WITNESS_TRUSTWORTHINESS_MYSELF);
 	}
 }
 

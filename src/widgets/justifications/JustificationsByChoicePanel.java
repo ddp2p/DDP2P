@@ -34,7 +34,7 @@ import javax.swing.JSplitPane;
 import org.jdesktop.swingx.MultiSplitLayout;
 import org.jdesktop.swingx.MultiSplitPane;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -139,7 +139,7 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 				ArrayList<ArrayList<Object>> l = Application.db.select(sql_label, new String[]{choices[k].short_name,motion_ID}, DEBUG);
 				if(l.size()>0){ val = Util.lval(l.get(0).get(0), -1); sum = Util.dval(l.get(0).get(1), 0.);}
 				jl[k].setText(choices[k].name+" (#:"+val+" W:"+sum+")");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}

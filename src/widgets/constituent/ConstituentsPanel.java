@@ -27,7 +27,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -106,7 +106,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
     	result += " || " + _("I am :")+" "+tree.getModel().getConstituentMyselfName();
 		return result;
 	}
-	public void setOrg(long _orgID, D_Organization org) throws SQLiteException{
+	public void setOrg(long _orgID, D_Organization org) throws P2PDDSQLException{
     	if(DEBUG)System.out.println("ConstituentsTest:setOrg: id="+_orgID);
     	organization = org;
     	if(tree!=null){
@@ -181,7 +181,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 		 _orgID = new Integer(orgID).longValue();
 		try {
 			this.setOrg(_orgID, org);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -231,7 +231,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 			model.refresh(new JTree[]{tree}, oldRoot);
 			model.runCensus();
 				 */
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}

@@ -39,7 +39,7 @@ import java.util.Set;
 
 import static java.lang.System.out;
 import static java.lang.System.err;
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 import static util.Util._;
 import ASN1.ASN1DecoderFail;
 import ASN1.Encoder;
@@ -75,7 +75,7 @@ public class UpdateMessages {
 		if (obj instanceof String) return obj.toString().getBytes();
 		return obj.toString().getBytes();
 	}
-	public static SyncAnswer buildAnswer(ASNSyncRequest asr, String peerID) throws SQLiteException {
+	public static SyncAnswer buildAnswer(ASNSyncRequest asr, String peerID) throws P2PDDSQLException {
 		SyncAnswer sa=null;
 		String[] _maxDate = new String[1];
 		HashSet<String> orgs = new HashSet<String>();
@@ -119,7 +119,7 @@ public class UpdateMessages {
 		}
 		return sa;
 	}
-	public static SyncAnswer buildAnswer(ASNSyncRequest asr, String[] _maxDate, boolean justDate, HashSet<String> orgs) throws SQLiteException {
+	public static SyncAnswer buildAnswer(ASNSyncRequest asr, String[] _maxDate, boolean justDate, HashSet<String> orgs) throws P2PDDSQLException {
 		// boolean DEBUG = true;
 		String maxDate =_maxDate[0];
 		if(!justDate && (maxDate==null) && (orgs.size()==0)) {
@@ -173,7 +173,7 @@ public class UpdateMessages {
 		
 		if((orgData!=null))
 			for (D_Organization dorg : orgData) {
-				if(dorg.availableHashes!=null){
+				if((dorg!=null)&&(dorg.availableHashes!=null)) {
 					if(sa.advertised==null) // &&(sa.advertised.rd!=null))
 						sa.advertised = new SpecificRequest();
 					if((sa.advertised!=null)&&(sa.advertised.rd!=null))						
@@ -203,10 +203,10 @@ public class UpdateMessages {
 	 * @param address_ID : peer_address_ID to update as the one from which I got messages
 	 * @param __rq
 	 * @throws ASN1DecoderFail
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static boolean integrateUpdate(ASNSyncPayload asa, InetSocketAddress s_address, Object src,
-			String _global_peer_ID, String _peer_ID, String address_ID, RequestData __rq, D_PeerAddress peer) throws ASN1DecoderFail, SQLiteException {
+			String _global_peer_ID, String _peer_ID, String address_ID, RequestData __rq, D_PeerAddress peer) throws ASN1DecoderFail, P2PDDSQLException {
 
 		if(DEBUG || DD.DEBUG_PLUGIN) err.println("UpdateMessages:integrateUpdate: start gID="+Util.trimmed(_global_peer_ID));
 
@@ -412,10 +412,10 @@ public class UpdateMessages {
 	 * @param _peer_ID
 	 * @param generalizedTime
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	private static boolean store_detected_interests(SpecificRequest sp,
-			long _peer_ID, String generalizedTime, D_PeerAddress peer) throws SQLiteException {
+			long _peer_ID, String generalizedTime, D_PeerAddress peer) throws P2PDDSQLException {
 		boolean result = false;
 		for (RequestData rq: sp.rd) {
 			String org = rq.global_organization_ID_hash;
@@ -442,9 +442,9 @@ public class UpdateMessages {
 	 *  // check existing/non-blocked data and insert wished one into sp, store sp in orgs
 	 * @param advertised
 	 * @param sp
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	private static void evaluate_interest(SpecificRequest advertised, SpecificRequest sp) throws SQLiteException {
+	private static void evaluate_interest(SpecificRequest advertised, SpecificRequest sp) throws P2PDDSQLException {
 		if((advertised == null)||(advertised.rd==null)) return;
 		for (RequestData rq : advertised.rd) {
 			RequestData sp_rq = new RequestData();
@@ -457,9 +457,9 @@ public class UpdateMessages {
 	 * // check existing/non-blocked data and insert wished one into sp, store sp in orgs
 	 * @param rq
 	 * @param sp_rq
-	 * @throws SQLiteException 
+	 * @throws P2PDDSQLException 
 	 */
-	private static void evaluate_interest(RequestData advertised, RequestData sp_rq) throws SQLiteException {
+	private static void evaluate_interest(RequestData advertised, RequestData sp_rq) throws P2PDDSQLException {
 		String orgHash = advertised.global_organization_ID_hash;
 		String orgID = D_Organization.getLocalOrgID_fromHashIfNotBlocked(orgHash);
 		if(orgID==null) {
@@ -481,10 +481,10 @@ public class UpdateMessages {
 	 * @param obtained_sr :  obtained entities
 	 * @param _global_peer_ID : not used now, but eventually may be saved to know from where we have learned and where we should ask a dependency
 	 * @param _peer_ID
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	private static void integrate(Hashtable<String, RequestData> sq_sr,
-			Hashtable<String, RequestData> obtained_sr, String _global_peer_ID, long _peer_ID, D_PeerAddress peer) throws SQLiteException {
+			Hashtable<String, RequestData> obtained_sr, String _global_peer_ID, long _peer_ID, D_PeerAddress peer) throws P2PDDSQLException {
 		Set<String> toreq = sq_sr.keySet();
 		Set<String> got = obtained_sr.keySet();
 		Set<String> orgs =	new HashSet<String>();//Collections.emptySet();
@@ -513,9 +513,9 @@ public class UpdateMessages {
 	 * For these orgs, purge obtained from their store requests
 	 * @param orgs
 	 * @param obtained
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static void purge(HashSet<String> orgs, RequestData obtained) throws SQLiteException {
+	private static void purge(HashSet<String> orgs, RequestData obtained) throws P2PDDSQLException {
 		if(obtained==null) return;
 		if(obtained.empty()) return;
 		for(String o: orgs) {
@@ -525,11 +525,11 @@ public class UpdateMessages {
 			rq.save(orgID);
 		}
 	}
-	private static RequestData getOldDataRequest(D_Organization orgData) throws SQLiteException {
+	private static RequestData getOldDataRequest(D_Organization orgData) throws P2PDDSQLException {
 		long orgID = D_Organization.getLocalOrgID(orgData.global_organization_ID);
 		return new RequestData(orgID);
 	}
-	private static void updateDataToRequest(D_Organization orgData, RequestData rq) throws SQLiteException {
+	private static void updateDataToRequest(D_Organization orgData, RequestData rq) throws P2PDDSQLException {
 		long orgID = D_Organization.getLocalOrgID(orgData.global_organization_ID);
 		rq.save(orgID);
 	}
@@ -553,7 +553,7 @@ public class UpdateMessages {
 		for(int k=0; k<a1.length; k++) if(a1[k]!=a2[k]) return false;
 		return true;
 	}
-	static public long getonly_constituent_ID(String global_constituent_ID) throws SQLiteException{
+	static public long getonly_constituent_ID(String global_constituent_ID) throws P2PDDSQLException{
 		long result=-1;
 		if(DEBUG) System.out.println("\n************\nUpdateMessages:getonly_constituentID':  start gcID= = "+Util.trimmed(global_constituent_ID));		
 		String sql="SELECT "+table.constituent.constituent_ID+" FROM "+table.constituent.TNAME+" WHERE "+table.constituent.global_constituent_ID+" = ?";
@@ -564,7 +564,7 @@ public class UpdateMessages {
 		if(DEBUG) System.out.println("****************");		
 		return result;
 	}
-	static public long get_news_ID(String global_news_ID, long constituentID, long organizationID, String date, String news, String type, String signature) throws SQLiteException {
+	static public long get_news_ID(String global_news_ID, long constituentID, long organizationID, String date, String news, String type, String signature) throws P2PDDSQLException {
 		long result=0;
 		ArrayList<ArrayList<Object>> dt=Application.db.select("SELECT "+table.news.news_ID+" FROM "+table.news.TNAME+" WHERE "+table.news.global_news_ID+" = ?",
 				new String[]{global_news_ID});
@@ -577,7 +577,7 @@ public class UpdateMessages {
 		return result;
 	}
 	
-	static public long getonly_organizationID(String global_organizationID, String orgID_hash) throws SQLiteException {
+	static public long getonly_organizationID(String global_organizationID, String orgID_hash) throws P2PDDSQLException {
 		long result=-1;
 		if(DEBUG) System.out.println("\n************\nUpdateMessages:getonly_organizationID':  start orgID_hash= = "+orgID_hash);		
 		if ((global_organizationID!=null)||(orgID_hash!=null)) {
@@ -594,7 +594,7 @@ public class UpdateMessages {
 		if(DEBUG) System.out.println("****************");		
 		return result;
 	}
-	public static long get_organizationID(String global_organizationID, String org_name, String adding_date, String orgHash) throws SQLiteException {
+	public static long get_organizationID(String global_organizationID, String org_name, String adding_date, String orgHash) throws P2PDDSQLException {
 		long result=0;
 		if(DEBUG) System.out.println("\n************\nUpdateMessages:getonly_organizationID':  start orgID_hash= = "+Util.trimmed(global_organizationID));		
 		if(global_organizationID==null) return -1;
@@ -632,7 +632,7 @@ public class UpdateMessages {
 					" AND o."+ table.organization.requested  +"= '1'"+
 							" ORDER BY p."+table.peer_org.last_sync_date+" ASC;",
 					new String[]{peer_ID});
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 				Application.warning(_("Database: ")+e1, _("Database"));
 				return null;
 		}

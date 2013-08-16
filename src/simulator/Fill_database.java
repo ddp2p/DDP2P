@@ -29,7 +29,7 @@ import java.util.Random;
 import java.util.UUID;
 import ASN1.ASN1DecoderFail;
 import ASN1.Encoder;
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
 import util.Util;
@@ -55,9 +55,18 @@ public class Fill_database<org_id_for> extends Thread  {
 	private static final int MAX_ADDED = 1;
 	private static final boolean ADDED_BOUNDED = false;
 	public static long COUNT = 0;
+	static final int SELECT_ORGS = 0;
+	static final int SELECT_CONS = 1;
+	static final int SELECT_NEIG = 2;
+	static final int SELECT_PEER = 3;
+	static final int SELECT_MOT = 4;
+	static final int SELECT_VOTE = 5;
+	static final int SELECT_WITN = 6;
+	
+
 
 	public Fill_database() {
-			//Application.db=new DBInterface("deliberation-app.db");
+	//Application.db=new DBInterface("deliberation-app.db");
 	}
 	int i=-1;
 	int randomInt,randomInt1,randomInt2,randomInt3,randomInt4,randomInt5;
@@ -65,7 +74,8 @@ public class Fill_database<org_id_for> extends Thread  {
 	Random randomGenerator = new Random();
 	private boolean running = true;
 
-	public static void cleanDatabase() throws SQLiteException {
+	public static void cleanDatabase() throws P2PDDSQLException {
+		Application.db.delete("delete from "+table.application.TNAME+" where "+table.application.field+"=\"WLAN_INTERESTS\";",new String[]{});
 		Application.db.delete("delete from "+table.organization.TNAME,new String[]{});
 		Application.db.delete("delete from "+table.peer.TNAME,new String[]{});
 		Application.db.delete("delete from "+table.peer_address.TNAME,new String[]{});
@@ -84,19 +94,21 @@ public class Fill_database<org_id_for> extends Thread  {
 	}
 
 	public void run() {
-		int counter = 0;
+		boolean DEBUG = false;
+		int counter = 0, count =0;
 		try{
 			if(_DEBUG)System.out.println("Simulator runing");
-			for(i=0;;i++)
+			for(i=0;i<1;i++)
 			{
 				if(ADDED_BOUNDED&&(counter==MAX_ADDED)) running = false;
 				counter++;
 				if(!running) break;
 				//add_constituent();
-				//add_witness();
-				add_vote();
-				Thread.sleep(3000);
+				add_witness();
+				//add_motion();
 				//add_organization();
+				//add_vote();
+				if(_DEBUG) System.out.println("everything=	"+i);
 				//add_peer();
 				/*
 				if(DEBUG)System.out.println("6 NEIGHS TO BE ADDED :-");
@@ -113,7 +125,9 @@ public class Fill_database<org_id_for> extends Thread  {
 					pID = Nbre[j].neighborhoodID;
 				}
 				
-				
+				*/
+				/*
+				if(DEBUG)System.out.println("Fill_database : START picking a probability for simulation");
 				int choice = Util.pick_randomly(
 						new float[]{SimulationParameters.adding_new_organization,
 								SimulationParameters.adding_new_constituent,
@@ -122,18 +136,19 @@ public class Fill_database<org_id_for> extends Thread  {
 								SimulationParameters.adding_new_motion,
 								SimulationParameters.adding_new_vote,
 								SimulationParameters.adding_new_witness});
+				if(DEBUG)System.out.println("Fill_database : END picking a probability for simulation");
 				switch(choice){
-				case 0: 
+				case SELECT_ORGS: 
 					if(DEBUG)System.out.println("ORG TO BE ADDED :-");
 					add_organization();
 					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
 					break;
-				case 1:
+				case SELECT_CONS:
 					if(DEBUG)System.out.println("CONS TO BE ADDED :-");
-					add_constituent();
+					 add_constituent();
 					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
 					break;
-				case 2: //neighborhood
+				case SELECT_NEIG:
 					if(DEBUG)System.out.println("6 NEIGHS TO BE ADDED :-");
 					String pID = null;
 					long org_id = select_random_organization();
@@ -143,25 +158,26 @@ public class Fill_database<org_id_for> extends Thread  {
 					for(int j=0; j<6; j++) {
 						Nbre[j] = add_neighborhood(org_id,c_id,sk,pID);
 						pID = Nbre[j].neighborhoodID;
-					}	
+					}
 					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
 					break;
-				case 3:	
+				case SELECT_PEER:	
 					if(DEBUG)System.out.println("PEER TO BE ADDED :-");
 					add_peer(); 
 					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
 					break;
-				case 4:
+				case SELECT_MOT:
 					if(DEBUG)System.out.println("MOTION TO BE ADDED :-");
 					add_motion();
 					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
 					break;
-				case 5:
+				case SELECT_VOTE:
 					if(DEBUG)System.out.println("VOTE TO BE ADDED :-");
 					add_vote();
+					if(_DEBUG) System.out.println("everything=	"+i+"	VOTES=	"+(++count));
 					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
 					break;
-				case 6:
+				case SELECT_WITN:
 					if(DEBUG)System.out.println("WITNESS TO BE ADDED :-");
 					add_witness();
 					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
@@ -170,19 +186,23 @@ public class Fill_database<org_id_for> extends Thread  {
 					break;
 				}
 				*/
+				Thread.sleep(5);
 			}
 		}catch(Exception e){}
 	}
 
 
-	private static long add_vote() throws SQLiteException, ASN1DecoderFail {
+	private static long add_vote() throws P2PDDSQLException, ASN1DecoderFail {
+		
 		if(DEBUG)System.out.println("Fill_database : add_vote() : START ");
 		long added_vote = -1;
 		long organization_ID = select_random_organization();
 		long constituent_ID = select_random_constituent(organization_ID);
 		long motion_ID = select_random_motion(organization_ID, constituent_ID);
+		if(DEBUG)System.out.println("Fill_database : add_vote() : after selecting");
 		Calendar creation_date = Util.CalendargetInstance();
 		SK sk = DD.getConstituentSK(constituent_ID);
+		if(DEBUG)System.out.println("Fill_database : add_vote() : after creating sk");
 		D_Vote vote = new D_Vote();
 		vote.organization_ID = ""+organization_ID;
 		vote.global_organization_ID = D_Organization.getGlobalOrgID(vote.organization_ID);
@@ -198,7 +218,7 @@ public class Fill_database<org_id_for> extends Thread  {
 		vote.arrival_date = creation_date;
 		vote.choice = Util.random_Y_N();
 		vote.format = "format";
-
+		if(DEBUG)System.out.println("Fill_database : add_vote() : after filling -without jus-");
 		int justification_choice = Util.pick_randomly(new float[]{SimulationParameters.adding_new_justification_in_vote,
 				SimulationParameters.no_justification_vote,SimulationParameters.using_old_justification_in_vote});
 		switch(justification_choice){
@@ -226,7 +246,7 @@ public class Fill_database<org_id_for> extends Thread  {
 			vote.signature = vote.sign(sk);
 			added_vote = vote.storeVerified();
 			if(DEBUG)System.out.println("Fill_database : vote() : END CASE 0 : "+vote.global_vote_ID);
-			if(DEBUG)System.out.println("Fill_database : add_vote() : END ");
+			if(DEBUG)System.out.println("Fill_database : add_vote_with_justification : END vote_id="+added_vote);
 			return added_vote;
 		} 
 
@@ -234,10 +254,13 @@ public class Fill_database<org_id_for> extends Thread  {
 		{ 
 			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE ONLY");
 			vote.global_vote_ID = vote.make_ID();
+			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE ONLY before sign");
 			vote.signature = vote.sign(sk);
+			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE ONLY after sign befor storing");
 			added_vote = vote.storeVerified();
+			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE ONLY after storing");
 			if(DEBUG)System.out.println("Fill_database : vote() : END CASE 1 : "+vote.global_vote_ID);
-			if(DEBUG)System.out.println("Fill_database : add_vote() : END ");
+			if(DEBUG)System.out.println("Fill_database : add_vote_only : END vote_id="+added_vote);
 			return added_vote;
 		}
 
@@ -253,7 +276,7 @@ public class Fill_database<org_id_for> extends Thread  {
 			vote.signature = vote.sign(sk);
 			added_vote = vote.storeVerified();
 			if(DEBUG)System.out.println("Fill_database : vote() : END CASE 2 : "+vote.global_vote_ID);
-			if(DEBUG)System.out.println("Fill_database : add_vote() : END ");
+			if(DEBUG)System.out.println("Fill_database : add_vote_with_refering_to_existing_just : END vote_id="+added_vote);
 			return added_vote;
 		} 
 		default:
@@ -262,7 +285,7 @@ public class Fill_database<org_id_for> extends Thread  {
 		return added_vote;
 	}
 
-	private static long select_random_justification(long motion_id,long constituent_id,long org_id) throws SQLiteException, ASN1DecoderFail {
+	private static long select_random_justification(long motion_id,long constituent_id,long org_id) throws P2PDDSQLException, ASN1DecoderFail {
 		long J_ID=-1;
 		String sql = "SELECT count(*) FROM "+table.justification.TNAME+" WHERE "+table.justification.motion_ID+"=?;";
 		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{""+motion_id});
@@ -283,17 +306,27 @@ public class Fill_database<org_id_for> extends Thread  {
 	 * @param org_id
 	 * @param add_answerTo
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 * @throws ASN1DecoderFail
 	 */
-	private static long add_justification(long motion_id,long constituent_id,long org_id,boolean add_answerTo) throws SQLiteException, ASN1DecoderFail {
+	private static long add_justification(long motion_id,long constituent_id,long org_id,boolean add_answerTo) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG)System.out.println("ADDING JUSTIFICATION");
 		long j_id=-1;
 		long ans_id=-1;
 		Calendar creation_date = Util.CalendargetInstance();
 		String uuid = UUID.randomUUID().toString().substring(31);
-		String justification_text = "JTXT"+uuid;
+		//
+		String randomStrings = new String();
+	    Random random = new Random();
+	        char[] word = new char[300]; // words of length 3 through 10. (1 and 2 letter words are boring.)
+	        for(int j = 0; j < 300; j++)
+	        {
+	            word[j] = (char)('a' + random.nextInt(26));
+	        }
+	        randomStrings = new String(word);
+		String justification_text = randomStrings ;
 		String justification_title = "JT"+uuid;
+		String justification_format = "JF"+uuid;
 		SK sk = DD.getConstituentSK(constituent_id);
 		try{
 		D_Justification jus = new D_Justification();
@@ -310,7 +343,7 @@ public class Fill_database<org_id_for> extends Thread  {
 		jus.global_organization_ID = D_Organization.getGlobalOrgID(jus.organization_ID);
 		D_Document doc1 = new D_Document();
 		doc1.setDocumentString(justification_text);
-		doc1.setFormatString(justification_text);
+		doc1.setFormatString(justification_format);
 		D_Document doc2 = new D_Document();
 		doc2.setDocumentString(justification_title);
 		doc2.setFormatString(justification_title);
@@ -335,14 +368,14 @@ public class Fill_database<org_id_for> extends Thread  {
 		j_id = jus.storeVerified();
 		if(DEBUG)System.out.println("JUS sig : "+jus.signature);
 		if(jus.verifySignature()==false){
-			if(_DEBUG)System.out.println("WRONG JUSTIFICATION SIG");
+			if(DEBUG)System.out.println("WRONG JUSTIFICATION SIG");
 		}
 		}catch(Exception e){e.printStackTrace();}
-		if(DEBUG)System.out.println("Fill_database : add_justification : JUST ADDED");
+		if(DEBUG)System.out.println("Fill_database : add_justification : JUST ADDED jus_id="+j_id);
 		return j_id;
 	}
 	
-	public static String getJustificationGlobalID(String justification_ID) throws SQLiteException {
+	public static String getJustificationGlobalID(String justification_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("Fill_database:getJustificationGlobalID: start");
 		if(justification_ID==null) return null;
 		String sql = "SELECT "+table.justification.global_justification_ID+
@@ -354,7 +387,8 @@ public class Fill_database<org_id_for> extends Thread  {
 	}
 
 	private static long select_random_motion(long organization_ID,
-			long constituent_ID) throws SQLiteException, ASN1DecoderFail {
+			long constituent_ID) throws P2PDDSQLException, ASN1DecoderFail {
+		if(DEBUG)System.out.println("calling select_random_motion...before 1 sel: "+Util.getGeneralizedTime());
 		long motion_ID = -1;
 		String sql =
 			"SELECT count(DISTINCT m."+table.motion.motion_ID+") " +
@@ -366,12 +400,14 @@ public class Fill_database<org_id_for> extends Thread  {
 					" LEFT JOIN "+table.signature.TNAME+" AS s ON(s."+table.signature.motion_ID+"=nm."+table.motion.motion_ID+") "+
 					" WHERE nm."+table.motion.organization_ID+"=?" +
 					" AND s."+table.signature.constituent_ID+"=?);";
-		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{""+organization_ID,""+organization_ID,""+constituent_ID});
-		
+		ArrayList<ArrayList<Object>> count =
+				Application.db.select(sql, new String[]{""+organization_ID,""+organization_ID,""+constituent_ID});
+		if(DEBUG)System.out.println("Fill_database : select_random_motion : after 1 sel :"+Util.getGeneralizedTime());
+		if(DEBUG)System.out.println("Fill_database : select_random_motion : Org_ID="+organization_ID+" Cons_ID="+constituent_ID);
 		long motions = Integer.parseInt(count.get(0).get(0).toString());
 		if(motions == 0) return add_motion(organization_ID);
 		long selected = (long)Util.random(motions);
-		
+		if(DEBUG)System.out.println("Fill_database : select_random_motion : before 2 sel :"+Util.getGeneralizedTime());
 		String sql_sel =
 			"SELECT DISTINCT m."+table.motion.motion_ID +
 			" FROM "+table.motion.TNAME+" AS m "+
@@ -386,13 +422,15 @@ public class Fill_database<org_id_for> extends Thread  {
 		
 		
 		ArrayList<ArrayList<Object>> m_data = Application.db.select(sql_sel, new String[]{""+organization_ID,""+organization_ID,""+constituent_ID});
+		if(DEBUG)System.out.println("Fill_database : select_random_motion : after 2 sel :"+Util.getGeneralizedTime());
 		motion_ID = Integer.parseInt(m_data.get(0).get(0).toString());
+		if(DEBUG)System.out.println("select_random_motion(): motion selected id="+motion_ID);
 		return motion_ID;
 	}
 
 
 	// we can use it when we want to select random motion using only org_id without constituent
-	private static long select_random_motion(long organization_ID) throws SQLiteException, ASN1DecoderFail {
+	private static long select_random_motion(long organization_ID) throws P2PDDSQLException, ASN1DecoderFail {
 		long motion_ID = -1;
 		String sql = "SELECT count(*) FROM "+table.motion.TNAME+" WHERE "+table.motion.organization_ID+"=?;";
 		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{""+organization_ID});
@@ -407,11 +445,11 @@ public class Fill_database<org_id_for> extends Thread  {
 		return motion_ID;
 	}
 
-	private static long add_motion() throws SQLiteException, ASN1DecoderFail {
+	private static long add_motion() throws P2PDDSQLException, ASN1DecoderFail {
 		return add_motion(-1);
 	}
 
-	private static long add_motion(long org_ID) throws SQLiteException, ASN1DecoderFail {
+	private static long add_motion(long org_ID) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG)System.out.println("add_motion : start");
 		long motion_ID = -1;
 		String organization_ID = null;
@@ -421,8 +459,19 @@ public class Fill_database<org_id_for> extends Thread  {
 		if(DEBUG)System.out.println("Cons ID : "+Cons_ID);
 		Calendar creation_date = Util.CalendargetInstance();
 		String uuid = UUID.randomUUID().toString().substring(31);
+		//
+		String randomStrings = new String();
+	    Random random = new Random();
+	        char[] word = new char[1000];
+	        for(int j = 0; j < 1000; j++)
+	        {
+	            word[j] = (char)('a' + random.nextInt(26));
+	        }
+	        randomStrings = new String(word);
+	        //
 		String motion_title = "MT"+uuid;
-		String motion_text = "MTXT"+uuid;
+		String motion_text = randomStrings;
+		String motion_format = "MF"+uuid;
 		SK sk = DD.getConstituentSK(Cons_ID);
 		D_Motion mot = new D_Motion();
 		mot.global_organization_ID = D_Organization.getGlobalOrgID(organization_ID);
@@ -442,7 +491,7 @@ public class Fill_database<org_id_for> extends Thread  {
 		if(DEBUG)System.out.println("add_motion : before motion text : ");
 		D_Document doc1 = new D_Document();
 		doc1.setDocumentString(motion_text);
-		doc1.setFormatString(motion_text);
+		doc1.setFormatString(motion_format);
 		D_Document doc2 = new D_Document();
 		doc2.setDocumentString(motion_title);
 		doc2.setFormatString(motion_title);
@@ -461,36 +510,45 @@ public class Fill_database<org_id_for> extends Thread  {
 		motion_ID = mot.storeVerified();
 		}catch(Exception e){e.printStackTrace();}
 		if(DEBUG)System.out.println("add_motion : end");
-		if(DEBUG)System.out.println("Fill_database : add_motion : MOTION ADDED");
+		if(DEBUG)System.out.println("Fill_database : add_motion : MOTION ADDED ID="+motion_ID);
 		return motion_ID;
 	}
 	
 	
-	private static long add_witness() throws SQLiteException, ASN1DecoderFail  {
+	private static long add_witness() throws P2PDDSQLException, ASN1DecoderFail  {
 		return add_witness(-1);
 	}
 	
-	public static long add_witness(long org_id) throws SQLiteException, ASN1DecoderFail {
+	public static long add_witness(long org_id) throws P2PDDSQLException, ASN1DecoderFail {
+		if(DEBUG)System.out.println("Fill_database : add_witness Start");
 		long witness_id = -1;
 		D_Witness wbw = new D_Witness();
-		if(org_id==-1) 
+		if(DEBUG)System.out.println("Fill_database : add_witness : before select_random_org");
+		if(org_id==-1)
 			org_id = select_random_organization();
+		if(DEBUG)System.out.println("Fill_database : add_witness : after select_random_org");
 		String organization_ID = Util.getStringID(org_id);
 		String organizationGID = D_Organization.getGlobalOrgID(organization_ID);
 		long Con_witnessed_ID;
 		long Con_witnessing_ID;
+		if(DEBUG)System.out.println("Fill_database : add_witness : before select_random_Cons");
 		Con_witnessing_ID = select_random_constituent(org_id,"0");
-		if(COUNT==1) {
-			long c=add_constituent(org_id);
-			}
-		do{
-			Con_witnessed_ID=select_random_constituent(org_id);
-			if(DEBUG)System.out.println("Simulator:Fill_database:Trial");
-		}while (Con_witnessing_ID==Con_witnessed_ID);
+		if(DEBUG)System.out.println("Fill_database : add_witness : after select_random_Cons");
+		SK sk = DD.getConstituentSK(Con_witnessing_ID);
+		if(sk==null) return -1; //trying to generate witness using a receiving constituent
+		
+	//f(COUNT==1) {
+		//ong c=add_constituent(org_id);
+		//
+		//do{
+			Con_witnessed_ID=select_random_constituent_except(org_id,Con_witnessing_ID);
+			if(DEBUG)System.out.println("Fill_database : add_witness : Con_witnessed_ID:"+Con_witnessed_ID+
+					" Con_witnessing_ID:"+Con_witnessing_ID);
+		//}while (Con_witnessing_ID==Con_witnessed_ID);
 		if(DEBUG)System.out.println("Simulator:Fill_database:First (witnessed) con ID="+Con_witnessed_ID);
 		if(DEBUG)System.out.println("Simulator:Fill_database:Second (witnessing) con ID="+Con_witnessing_ID);
 		Calendar creation_date = Util.CalendargetInstance();
-		SK sk = DD.getConstituentSK(Con_witnessing_ID);
+		
 		
 		wbw.global_organization_ID(organizationGID);
 		wbw.witnessed_constituentID = Con_witnessed_ID;
@@ -498,7 +556,7 @@ public class Fill_database<org_id_for> extends Thread  {
 		wbw.witnessing_constituentID = Con_witnessing_ID;
 		wbw.witnessing_global_constituentID = D_Constituent.getConstituentGlobalID(Util.getStringID(Con_witnessing_ID));
 		wbw.sense_y_n = Util.get_one_or_zero();
-		wbw.witness_category = "your_explanation";
+		wbw.witness_eligibility_category = "your_explanation";
 		wbw.creation_date = creation_date;
 		wbw.arrival_date = creation_date;
 		wbw.global_organization_ID = organizationGID;
@@ -509,15 +567,17 @@ public class Fill_database<org_id_for> extends Thread  {
 		return witness_id;
 	}
 
-	private static long select_random_constituent(long organization_ID, String external) throws SQLiteException, ASN1DecoderFail {
+	private static long select_random_constituent(long organization_ID, String external) throws P2PDDSQLException, ASN1DecoderFail {
+		if(DEBUG)System.out.println("Fill_database : select_random_constituent with external");
 		long p_ID;
 		String sql = "SELECT count(*) FROM "+table.constituent.TNAME+" WHERE "+table.constituent.organization_ID+"=? AND "+table.constituent.external+"=?;";
 		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{""+organization_ID,external});
 		long c = Integer.parseInt(count.get(0).get(0).toString());
-		COUNT = c;
+		//COUNT = c;
 		if(DEBUG)System.out.println("count : "+c);
-		if(c == 0){ COUNT = add_constituent(organization_ID);
-		return COUNT;
+		if(c == 0){ //COUNT = add_constituent(organization_ID);
+			//return COUNT;
+			return add_constituent(organization_ID);
 		}
 		
 		long selected = (long)Util.random(c);
@@ -526,8 +586,38 @@ public class Fill_database<org_id_for> extends Thread  {
 		p_ID = Integer.parseInt(p_data.get(0).get(0).toString());
 		return p_ID;
 	}
+	
+	private static long select_random_constituent_except(long organization_ID,long avoid) throws P2PDDSQLException, ASN1DecoderFail {
+		if(DEBUG)System.out.println("Fill_database : select_random_constituent");
+		long p_ID;
+		ArrayList<ArrayList<Object>> p_data = null;
+		String sql = "SELECT count(*) FROM "+table.constituent.TNAME+
+				" JOIN "+table.key.TNAME+" ON "+table.constituent.global_constituent_ID+"="+table.key.public_key
+				+" WHERE "+table.constituent.organization_ID+"=?  AND "+table.constituent.constituent_ID+"<>?";
+		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{Util.getStringID(organization_ID),""+avoid});
+		long c = Integer.parseInt(count.get(0).get(0).toString());
+		if(DEBUG)System.out.println("Fill_database : select_random_constituent : selected cons="+c);
+		if(c == 0) return add_constituent(organization_ID);
+		long selected = (long)Util.random(c);
+		
+		String sql_sel = "SELECT "+table.constituent.constituent_ID+" FROM "+table.constituent.TNAME+
+				" JOIN "+table.key.TNAME+" ON "+table.constituent.global_constituent_ID+"="+table.key.public_key+
+				" WHERE "+table.constituent.organization_ID+"=? AND "+table.constituent.constituent_ID+"<>?"+
+				"LIMIT 1 OFFSET "+selected;
+		try{
+		p_data = Application.db.select(sql_sel, new String[]{""+organization_ID,""+avoid});
+		}
+		catch(Exception e) {e.printStackTrace();}
+		//if(p_data.size() == 0) return add_constituent(organization_ID);
+		
+		p_ID = Integer.parseInt(p_data.get(0).get(0).toString());
+		if(DEBUG) System.out.println("select_random_constituent(): constituent selected is:"+p_ID);
+		//if(p_ID == 0) return add_constituent(organization_ID);
+		return p_ID;
+	}
 
-	private static long select_random_constituent(long organization_ID) throws SQLiteException, ASN1DecoderFail {
+	private static long select_random_constituent(long organization_ID) throws P2PDDSQLException, ASN1DecoderFail {
+		if(DEBUG)System.out.println("Fill_database : select_random_constituent");
 		long p_ID;
 		ArrayList<ArrayList<Object>> p_data = null;
 		String sql = "SELECT count(*) FROM "+table.constituent.TNAME+
@@ -535,7 +625,7 @@ public class Fill_database<org_id_for> extends Thread  {
 				+" WHERE "+table.constituent.organization_ID+"=?;";
 		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{Util.getStringID(organization_ID)});
 		long c = Integer.parseInt(count.get(0).get(0).toString());
-		//System.out.println("c : "+c);
+		if(DEBUG)System.out.println("Fill_database : select_random_constituent : selected cons="+c);
 		if(c == 0) return add_constituent(organization_ID);
 		long selected = (long)Util.random(c);
 		
@@ -550,16 +640,18 @@ public class Fill_database<org_id_for> extends Thread  {
 		//if(p_data.size() == 0) return add_constituent(organization_ID);
 		
 		p_ID = Integer.parseInt(p_data.get(0).get(0).toString());
-		//System.out.println("current pID : "+p_ID);
+		if(DEBUG) System.out.println("select_random_constituent(): constituent selected is:"+p_ID);
 		//if(p_ID == 0) return add_constituent(organization_ID);
 		return p_ID;
 	}
 
-	private static long add_constituent() throws SQLiteException, ASN1DecoderFail {
+	private static long add_constituent() throws P2PDDSQLException, ASN1DecoderFail {
+		if(DEBUG) System.out.println("simulator: add_constituent()");
 		return add_constituent(-1);
 	}
 
-	private static long add_constituent(long organization_ID2) throws SQLiteException, ASN1DecoderFail {
+	public static long add_constituent(long organization_ID2) throws P2PDDSQLException, ASN1DecoderFail {
+		if(DEBUG)Util.printCallPath("Fill_database : calling add_constituent") ;
 		if(DEBUG)System.out.println("add_constituent : org ID : "+organization_ID2);
 		long constituent_ID = -1;
 		String uuid = UUID.randomUUID().toString().substring(31);
@@ -601,7 +693,9 @@ public class Fill_database<org_id_for> extends Thread  {
 		Cons.languages = new String[0];
 		Cons.neighborhood = null;
 		String orgGID = D_Organization.getGlobalOrgID(organization_ID2+"");
+		//System.out.println("add_constituent(): before storeVerified()");
 		constituent_ID = Cons.storeVerified(orgGID, ""+organization_ID2, now);
+		//System.out.println("add_constituent(): after storeVerified()");
 		//Cons.neighborhood = new WB_Neighborhood[6];
 		Cons.neighborhood = select_neighborhood_or_create_by_cID(organization_ID2, constituent_ID, sk);
 		if(Cons.neighborhood.length>0)
@@ -609,15 +703,15 @@ public class Fill_database<org_id_for> extends Thread  {
 		Cons.creation_date = Util.CalendargetInstance();
 		Cons.signature = Cons.sign(Cons.global_organization_ID, Cons.global_constituent_id);
 		Cons.storeVerified(orgGID, ""+organization_ID2, now);
-		if(DEBUG)System.out.println("Fill_database : add_constituent() : CONS ADDED ");
+		if(DEBUG)System.out.println("Fill_database : add_constituent() : CONS ADDED cons_id="+constituent_ID);
 		return constituent_ID;
 	}
 
    private static D_Neighborhood[] select_neighborhood_or_create_by_cID(
-			long organization_ID2, long cID, SK sk) throws SQLiteException {
+			long organization_ID2, long cID, SK sk) throws P2PDDSQLException {
 	   D_Neighborhood[] Nbre = new D_Neighborhood[6];
-	   String sql = "SELECT count(*) FROM "+table.neighborhood.TNAME;
-	   ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{});
+	   String sql = "SELECT count(*) FROM "+table.neighborhood.TNAME+" where "+table.neighborhood.organization_ID+"=?;";
+	   ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{Util.getString(organization_ID2)});
 	   long nbrs = Integer.parseInt(Util.getString(count.get(0).get(0)));
 	   String pID = null;
 	   if(DEBUG)System.out.println("Neigh Count : "+nbrs);
@@ -628,15 +722,19 @@ public class Fill_database<org_id_for> extends Thread  {
 		   }
 		   return Nbre;
 	   }
+	  
 	   String sql1 = "SELECT n."+table.neighborhood.neighborhood_ID+
 				" FROM "+table.neighborhood.TNAME+" AS n "+
 				" LEFT JOIN "+table.neighborhood.TNAME+" AS d ON(d."+table.neighborhood.parent_nID+"=n."+table.neighborhood.neighborhood_ID+") "+
 				" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=n."+table.neighborhood.organization_ID+") "+
 				" WHERE o."+table.organization.organization_ID+"=? AND d."+table.neighborhood.neighborhood_ID+" IS NULL;"
 				;
+	   if(DEBUG)System.out.println("select_neighborhood_or_create_by_cID : sql1:"+sql1);
+	   if(DEBUG)System.out.println("select_neighborhood_or_create_by_cID : Org_id:"+organization_ID2);
 		ArrayList<ArrayList<Object>> a = Application.db.select(sql1, new String[]{Util.getStringID(organization_ID2)}, DEBUG);
+		if(DEBUG)System.out.println("a:"+a);
 		long n_ID = Integer.parseInt(a.get(0).get(0).toString());
-		
+		 if(DEBUG)System.out.println("select_neighborhood_or_create_by_cID : n_ID:"+n_ID);
 		String sql2 = "SELECT "+table.neighborhood.global_neighborhood_ID+
 				" FROM "+table.neighborhood.TNAME+" WHERE "+
 				table.neighborhood.neighborhood_ID+"=?;";
@@ -649,7 +747,7 @@ public class Fill_database<org_id_for> extends Thread  {
 	   return Nbre;
 	}
 
-private static D_Neighborhood add_neighborhood(long organization_ID, long cID, SK sk, String pID) throws SQLiteException{
+private static D_Neighborhood add_neighborhood(long organization_ID, long cID, SK sk, String pID) throws P2PDDSQLException{
 	
 	   String uuid = UUID.randomUUID().toString().substring(31);
 	   String name = "name "+uuid;
@@ -680,11 +778,12 @@ private static D_Neighborhood add_neighborhood(long organization_ID, long cID, S
 	   wbn.global_neighborhood_ID = wbn.make_ID(wbn.global_organization_ID);
 	  wbn.signature = wbn.sign(sk, wbn.global_organization_ID);
 	  wbn.neighborhoodID =  wbn.storeVerified(Util.getStringID(cID), wbn.global_organization_ID, ""+organization_ID, now);
-	  if(DEBUG)System.out.println("Fill_database : add_neighborhood() : NEIGH ADDED ");
+	  if(DEBUG)System.out.println("Fill_database : add_neighborhood() : NEIGH ADDED Neig_id="+ wbn.neighborhoodID);
 	   return wbn;
    }
 	
-	private static long select_random_organization() throws SQLiteException, ASN1DecoderFail {
+	private static long select_random_organization() throws P2PDDSQLException, ASN1DecoderFail {
+		if(DEBUG)System.out.println("calling select_random_organization");
 		long organization_ID = -1;
 		String sql = "SELECT count(*) FROM "+table.organization.TNAME+
 				" WHERE "+table.organization.broadcasted+"=1";
@@ -696,10 +795,11 @@ private static D_Neighborhood add_neighborhood(long organization_ID, long cID, S
 				" FROM "+table.organization.TNAME+" LIMIT 1 OFFSET "+selected;
 		ArrayList<ArrayList<Object>> o_data = Application.db.select(sql_sel, new String[]{});
 		organization_ID = Integer.parseInt(o_data.get(0).get(0).toString());
+		if(DEBUG)System.out.println("simulator: select_random_organization selected org id :"+organization_ID);
 		return organization_ID;
 	}
 
-	public static long add_organization() throws SQLiteException, ASN1DecoderFail {
+	public static long add_organization() throws P2PDDSQLException, ASN1DecoderFail {
 		
 		long p_ID = select_random_peer();
 		String uuid = UUID.randomUUID().toString().substring(31);
@@ -774,11 +874,11 @@ private static D_Neighborhood add_neighborhood(long organization_ID, long cID, S
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if(DEBUG)System.out.println("Fill_database : add_organization() : Org is added ");
+		if(DEBUG)System.out.println("Fill_database : add_organization() : Org is added org_id"+org_id);
 		return org_id;
 	}
 	
-private static D_PeerAddress get_peer_by_ID(long p_id) throws SQLiteException {
+private static D_PeerAddress get_peer_by_ID(long p_id) throws P2PDDSQLException {
 		
 		D_PeerAddress pa = new D_PeerAddress();
 		String sql = "SELECT "+table.peer.fields_peers+" FROM "+table.peer.TNAME+
@@ -803,7 +903,7 @@ private static D_PeerAddress get_peer_by_ID(long p_id) throws SQLiteException {
 	}
 
 	
-	private static long select_random_peer() throws SQLiteException, ASN1DecoderFail {
+	private static long select_random_peer() throws P2PDDSQLException, ASN1DecoderFail {
 		long peer_ID=-1;
 		String sql = "SELECT count(*) FROM "+table.peer.TNAME;
 		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{});
@@ -818,7 +918,7 @@ private static D_PeerAddress get_peer_by_ID(long p_id) throws SQLiteException {
 		return peer_ID;
 	}
 	
-	private static long add_peer() throws SQLiteException {
+	private static long add_peer() throws P2PDDSQLException {
 		
 		long peer_ID = -1;	
 		String uuid = UUID.randomUUID().toString().substring(31);
@@ -849,7 +949,7 @@ private static D_PeerAddress get_peer_by_ID(long p_id) throws SQLiteException {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if(DEBUG)System.out.println("Fill_database : Peer is added ");
+		if(DEBUG)System.out.println("Fill_database : Peer is added peer_id"+peer_ID);
 		return peer_ID;
 	}
 
@@ -860,7 +960,7 @@ private static D_PeerAddress get_peer_by_ID(long p_id) throws SQLiteException {
 	}
 
 	/*
-	public static void main(String args[]) throws SQLiteException{
+	public static void main(String args[]) throws P2PDDSQLException{
 		if(args[0].compareTo("dl")==0) {
 			Fill_database s=new Fill_database();
 			Fill_database.cleanDatabase();

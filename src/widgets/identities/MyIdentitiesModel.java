@@ -23,7 +23,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.tree.*;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.Identity;
@@ -84,9 +84,9 @@ public class MyIdentitiesModel extends TreeModelSupport implements TreeModel {
     		Object obj = identities.get(i).get(1);
     		if(obj!=null) value = obj.toString();
     		else value = "NULL";
-    		long identityID = ((Integer)identities.get(i).get(Queries.IFN_IDENTITY)).longValue();
-    		int children = ((Integer)identities.get(i).get(Queries.IFN_COUNT)).intValue();
-    		boolean default_id = ((Integer)identities.get(i).get(Queries.IFN_DEFAULT)).intValue()>0;
+    		long identityID = Util.get_long(identities.get(i).get(Queries.IFN_IDENTITY));
+    		int children = Util.get_int(identities.get(i).get(Queries.IFN_COUNT));
+    		boolean default_id = Util.get_int(identities.get(i).get(Queries.IFN_DEFAULT))>0;
        		String secret_key = Util.getString(identities.get(i).get(Queries.IFN_SK));
        		String pk_hash = Util.getString(identities.get(i).get(Queries.IFN_S_CRED));
        		//String pk = Util.getString(identities.get(i).get(Queries.IFN_PK));
@@ -116,9 +116,9 @@ public class MyIdentitiesModel extends TreeModelSupport implements TreeModel {
      * Sets a given branch as default
      * @param tree (an instance of the identities tree)
      * @param ib (a branch object from the Identities tree)
-     * @throws SQLiteException
+     * @throws P2PDDSQLException
      */
-    public static void setAnIdentityCurrent(MyIdentitiesTree tree, IdentityBranch ib) throws SQLiteException {
+    public static void setAnIdentityCurrent(MyIdentitiesTree tree, IdentityBranch ib) throws P2PDDSQLException {
     	if(DEBUG) System.out.println("MyIdentitiesModel:setDefaultIdentityCurrent: "+ib);
     	if(ib==null) return;
     	String sql = sql_identities_view +

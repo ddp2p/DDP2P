@@ -28,7 +28,7 @@ import javax.swing.JComboBox;
 
 import util.Util;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -52,7 +52,7 @@ class OIDComboBox extends JComboBox implements ActionListener{
 				addItem(new OIDItem(o.get(2), o.get(1), o.get(0), Util.getString(o.get(3))));
 			}
 			addItem(new OIDItem("None", null, null, null));
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}		
 	}
@@ -83,7 +83,7 @@ class OIDComboBox extends JComboBox implements ActionListener{
 						table.oid.OID_name, table.oid.sequence},
 						new String[]{seq, oidv[0].trim(), seq, seq}, DEBUG);
 				return seq;
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				//e1.printStackTrace();
 			}
 			return null;

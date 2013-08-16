@@ -23,7 +23,7 @@ import java.util.ArrayList;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 import config.Application;
 import util.*;
 
@@ -62,7 +62,7 @@ public class CensusThresholdComputation{
 			System.out.println("[Target_ID, Negative Count, Positive Count, ValidityOfIdentity,Constituent Name]");
 			System.out.println(c);
 
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -84,7 +84,7 @@ public static void populateWitnessData1(){
 				Application.db.insert(insertSql, new String[] {""+0,""+4,""+1});
 				Application.db.insert(insertSql, new String[] {""+3,""+1,""+0});
 				Application.db.insert(insertSql, new String[] {""+4,""+1,""+1});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -106,7 +106,7 @@ public static void populateWitnessData2(){
 				Application.db.insert(insertSql, new String[] {""+0,""+4,""+1});
 				Application.db.insert(insertSql, new String[] {""+3,""+1,""+0});
 				Application.db.insert(insertSql, new String[] {""+4,""+1,""+1});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -116,7 +116,7 @@ public static void populateWitnessData2(){
 	public static void main(String[] args) {
 		try {
 			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

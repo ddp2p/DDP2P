@@ -117,12 +117,14 @@ public class DirectoryRequest extends ASNObj{
 		return enc;
 	}
 	public String toString() {
-		String result= "DirectoryRequest:\n gID="+Util.trimmed(globalID)+
+		String result= "[DirectoryRequest:\n gID="+Util.trimmed(globalID)+
 		       "\n  from:"+Util.trimmed(initiator_globalID)+"\n  UDPport="+UDP_port ;
+			if(terms!=null)
 		       for(int i=0; i<terms.length; i++){
 		       	result+="\n  terms["+i+"]\n"+ terms[i];
-		       }	
-	    return result;	       
+		       }
+			else result+="\n terms=null";
+	    return result+"]";
 	}
 	byte buffer[] = new byte[DirectoryServer.MAX_DR_DA];
 	public DirectoryRequest(byte[]_buffer, int peek, InputStream is) throws Exception {
@@ -139,7 +141,10 @@ public class DirectoryRequest extends ASNObj{
 		read(buffer, 0, is);
 	}
 	/**
-	 * Build request with pre-approved terms for service
+	 * Build request with pre-approved terms for service.
+	 * The terms are read from the "directory_forwarding_terms" table.
+	 * 
+	 * Typically not signed. (Signatures may be requested on DoS detection/payments)
 	 * @param global_peer_ID
 	 * @param ini_ID
 	 * @param udp
@@ -157,14 +162,16 @@ public class DirectoryRequest extends ASNObj{
 	DIR_Terms_Preaccepted[] getTerms(){
 		String sql;
 		String[]params;
+		
+		// check first for terms specific to this directory address
 		sql = "SELECT "+directory_forwarding_terms.fields_terms+
 			" FROM  "+directory_forwarding_terms.TNAME+
 		    " WHERE "+directory_forwarding_terms.peer_ID+" =? " +
 			" AND ("+directory_forwarding_terms.dir_addr+" =? "+
 			" OR  "+directory_forwarding_terms.dir_addr+" is NULL )"+
 			" AND " + directory_forwarding_terms.priority_type+" = 1 ;";
-		params = new String[]{""+this.peer_ID, this.dir_address};
-		if(DEBUG) System.out.println("select directory this.dir_address: "+ this.dir_address);
+		params = new String[]{this.peer_ID, this.dir_address};
+		if(DEBUG) System.out.println("DirectoryRequest:getTerms: select directory this.dir_address: "+ this.dir_address);
 		
 		ArrayList<ArrayList<Object>> u;
 		try {
@@ -174,13 +181,13 @@ public class DirectoryRequest extends ASNObj{
 			return null;
 		}
 		if(u==null || u.size()==0){ // Global directory
-		    if(DEBUG) System.out.println("select for Global directory");
+		    if(DEBUG) System.out.println("DirectoryRequest:getTerms: select for Global directory");
 			sql = "SELECT "+directory_forwarding_terms.fields_terms+
 			" FROM  "+directory_forwarding_terms.TNAME+
 		    " WHERE "+directory_forwarding_terms.peer_ID+" =? " +
 			" AND "+directory_forwarding_terms.dir_addr+" is NULL "+
 			" AND " + directory_forwarding_terms.priority_type+" = 1 ;";
-			params = new String[]{""+0};
+			params = new String[]{"0"};
 			try {
 				u = Application.db.select(sql, params, DEBUG);
 			} catch (P2PDDSQLException e) {
@@ -188,6 +195,7 @@ public class DirectoryRequest extends ASNObj{
 				return null;
 			}	
 		}
+		/*
 		if(u==null || u.size()==0){
 			sql = "SELECT "+directory_forwarding_terms.fields_terms+
 				" FROM  "+directory_forwarding_terms.TNAME+
@@ -195,8 +203,8 @@ public class DirectoryRequest extends ASNObj{
 				" AND ("+directory_forwarding_terms.dir_addr+" =? "+
 				" OR  "+directory_forwarding_terms.dir_addr+" is NULL )"+
 				" AND "+directory_forwarding_terms.priority+" = 1 ;";
-			params = new String[]{""+this.peer_ID, this.dir_address};
-			if(DEBUG) System.out.println("select directory this.dir_address: "+ this.dir_address);
+			params = new String[]{this.peer_ID, this.dir_address};
+			if(DEBUG) System.out.println("DirectoryRequest:getTerms: select directory this.dir_address: "+ this.dir_address);
 			
 			try {
 				u = Application.db.select(sql, params, DEBUG);
@@ -206,13 +214,13 @@ public class DirectoryRequest extends ASNObj{
 			}
 		}
 		if(u==null || u.size()==0){ // Global directory
-		    if(DEBUG) System.out.println("select for Global directory");
+		    if(DEBUG) System.out.println("DirectoryRequest:getTerms: select for Global directory");
 			sql = "SELECT "+directory_forwarding_terms.fields_terms+
 			" FROM  "+directory_forwarding_terms.TNAME+
 		    " WHERE "+directory_forwarding_terms.peer_ID+" =? " +
 			" AND "+directory_forwarding_terms.dir_addr+" is NULL "+
 			" AND ("+directory_forwarding_terms.priority+" = 1);";
-			params = new String[]{""+0};
+			params = new String[]{"0"};
 			try {
 				u = Application.db.select(sql, params, DEBUG);
 			} catch (P2PDDSQLException e) {
@@ -220,7 +228,8 @@ public class DirectoryRequest extends ASNObj{
 				return null;
 			}	
 		}
-
+		*/
+		
 		if(u==null || u.size()==0) return null;
 		DIR_Terms_Preaccepted[] dir_terms = new DIR_Terms_Preaccepted[u.size()];
 		int i=0; 
@@ -228,7 +237,7 @@ public class DirectoryRequest extends ASNObj{
 			D_TermsInfo ui = new D_TermsInfo(_u);
 			dir_terms[i] = new DIR_Terms_Preaccepted();
 			if(ui.topic)
-				 dir_terms[i].topic = "any topic"; //ask???
+				 dir_terms[i].topic = DD.getTopic(this.globalID, this.peer_ID);//"any topic"; //ask???
 			else dir_terms[i].topic = null;
 			if( ui.ad)
 				 dir_terms[i].ad = 1;
@@ -244,10 +253,99 @@ public class DirectoryRequest extends ASNObj{
 			   dir_terms[i].payment.method = "Any Method";
 			   dir_terms[i].payment.details = "Any details";
 			}else dir_terms[i].payment = null;   
-			if(DEBUG) System.out.println("TermsModel: update: add: "+ui);
+			if(DEBUG) System.out.println("DirectoryRequest:getTerms:  add: "+ui);
 			i++;
 		}
-	 return dir_terms;		
+		return dir_terms;
+	}
+	DIR_Terms_Preaccepted[] updateTerms(
+			DIR_Terms_Requested[] terms, String peer_ID, String global_peer_ID,
+			String dir_address, DIR_Terms_Preaccepted[] terms2) {
+		String sql;
+		String[]params;
+		
+		// check first for terms specific to this directory address
+		sql = "SELECT "+directory_forwarding_terms.fields_terms+
+			" FROM  "+directory_forwarding_terms.TNAME+
+		    " WHERE "+directory_forwarding_terms.peer_ID+" =? " +
+			" AND ("+directory_forwarding_terms.dir_addr+" =? "+
+			" OR  "+directory_forwarding_terms.dir_addr+" is NULL )"+
+			" AND " + directory_forwarding_terms.priority_type+" > 1 " +
+					" ORDER BY "+directory_forwarding_terms.priority_type+";";
+		params = new String[]{this.peer_ID, this.dir_address};
+		if(DEBUG) System.out.println("DirectoryRequest:getTerms: select directory this.dir_address: "+ this.dir_address);
+		
+		ArrayList<ArrayList<Object>> u;
+		try {
+			u = Application.db.select(sql, params, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		if(u==null || u.size()==0){ // Global directory
+		    if(DEBUG) System.out.println("DirectoryRequest:getTerms: select for Global directory");
+			sql = "SELECT "+directory_forwarding_terms.fields_terms+
+			" FROM  "+directory_forwarding_terms.TNAME+
+		    " WHERE "+directory_forwarding_terms.peer_ID+" =? " +
+			" AND "+directory_forwarding_terms.dir_addr+" is NULL "+
+			" AND " + directory_forwarding_terms.priority_type+" > 1 " +
+			" ORDER BY "+directory_forwarding_terms.priority_type+";";
+			params = new String[]{"0"};
+			try {
+				u = Application.db.select(sql, params, DEBUG);
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+				return null;
+			}	
+		}
+
+		if(u==null || u.size()==0) return null;
+		ArrayList<DIR_Terms_Preaccepted> _dir_terms = new ArrayList<DIR_Terms_Preaccepted>();
+		DIR_Terms_Preaccepted[] dir_terms; // = new DIR_Terms_Preaccepted[u.size()];
+		int i=0; 
+		
+		for(ArrayList<Object> _u :u){
+			D_TermsInfo ui = new D_TermsInfo(_u);
+			DIR_Terms_Preaccepted dir_terms_i = new DIR_Terms_Preaccepted();
+			if(ui.topic)
+				 dir_terms_i.topic = DD.getTopic(this.globalID, this.peer_ID);//"any topic"; //ask???
+			else dir_terms_i.topic = null;
+			if( ui.ad)
+				 dir_terms_i.ad = 1;
+			else dir_terms_i.ad = 0;
+			if(ui.plaintext)
+				 dir_terms_i.plaintext = 1;
+			else dir_terms_i.plaintext = 0;
+			if(ui.service!=-1)
+				dir_terms_i.services_acceptable = Integer.toString(ui.service).getBytes(); // check?
+			if(ui.payment ){
+			   dir_terms_i.payment = new DIR_Payment();
+			   dir_terms_i.payment.amount = 0;
+			   dir_terms_i.payment.method = "Any Method";
+			   dir_terms_i.payment.details = "Any details";
+			}else dir_terms_i.payment = null;   
+			if(DEBUG) System.out.println("DirectoryRequest:getTerms:  add: "+ui);
+			_dir_terms.add(dir_terms_i);
+			if(sufficientTerms(_dir_terms, terms)){
+				break;
+			}
+			i++;
+		}
+		dir_terms = _dir_terms.toArray(new DIR_Terms_Preaccepted[0]);
+		// should only send the minimum ones...
+		return dir_terms;
+	}
+	/**
+	 * Check if the terms2 are satisfied by _dir_terms
+	 * @param _dir_terms
+	 * @param terms2
+	 * @return
+	 */
+	private boolean sufficientTerms(
+			ArrayList<DIR_Terms_Preaccepted> _dir_terms,
+			DIR_Terms_Requested[] terms2) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 	void read(byte[]buffer, int peek, InputStream is)  throws Exception{
 		if(DEBUG)out.println("dirRequest read: ["+peek+"]="+ Util.byteToHexDump(buffer, peek));

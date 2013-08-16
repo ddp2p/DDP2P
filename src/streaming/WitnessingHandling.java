@@ -30,7 +30,7 @@ import java.util.HashSet;
 
 import ASN1.Encoder;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -64,7 +64,7 @@ public class WitnessingHandling {
 		+" AND w."+table.witness.global_witness_ID +" IS NOT NULL "
 		+" ORDER BY w."+table.witness.arrival_date
 		;
-	public static ArrayList<String> getWitnessingHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws SQLiteException {
+	public static ArrayList<String> getWitnessingHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
@@ -81,10 +81,10 @@ public class WitnessingHandling {
  * @param orgs
  * @param limitWitnessLow 
  * @return
- * @throws SQLiteException
+ * @throws P2PDDSQLException
  */
 	public static String getNextWitnessingDate(String last_sync_date,
-			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitWitnessLow) throws SQLiteException {
+			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitWitnessLow) throws P2PDDSQLException {
 		if(DEBUG) out.println("WitnessingHandling:getNextWitnessingDate: start: between: "+last_sync_date+" : "+_maxDate);
 		ArrayList<ArrayList<Object>> w;
 		String[] params;
@@ -149,7 +149,7 @@ public class WitnessingHandling {
 
 	public static D_Witness[] getWitnessingData(ASNSyncRequest asr,
 			String last_sync_date, String org_gid, String org_id,
-			String[] __maxDate) throws SQLiteException {
+			String[] __maxDate) throws P2PDDSQLException {
 		
 		D_Witness[] result=null;
 		String _maxDate = __maxDate[0];
@@ -198,7 +198,7 @@ public class WitnessingHandling {
 	}
 
 	public static boolean integrateNewData(D_Witness[] witnesses, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws SQLiteException {
+			String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
 		if(DEBUG) out.println("WitnessHandling:integrateNewData: start oID="+org_local_ID+" gid="+orgGID);
 		if(witnesses==null) return false;
 		for(int k=0; k<witnesses.length; k++) {
@@ -215,11 +215,11 @@ public class WitnessingHandling {
 		try {
 			Application.db = new DBInterface(Application.DELIBERATION_FILE);
 			_main(arg);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
-	static public void _main(String[] arg) throws SQLiteException {
+	static public void _main(String[] arg) throws P2PDDSQLException {
 		HashSet<String> a = new HashSet<String>();
 		String start = arg[0];
 		String end=null;

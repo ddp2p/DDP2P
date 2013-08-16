@@ -44,7 +44,7 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import util.DBInterface;
 import util.Util;
@@ -365,7 +365,7 @@ class NewsCustomAction extends DebateDecideAction {
 				nID = n_news.storeVerified();
 	        	if(DEBUG) System.out.println("NewsCAction: got id="+nID);
 				tree.setCurrent(nID);
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
     	}

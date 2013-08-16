@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import util.Util;
 import wireless.Broadcasting_Probabilities;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.DD;
 import data.D_Interests;
@@ -86,7 +86,7 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 	public boolean loader_constituents_running = false;
 	public boolean loader_witnesses_running = false;
 	public boolean loader_orgs_running = false;
-	final static public int broadcasts = 10;
+	final static public int broadcasts = 1;
 	private static final int Q_ORGS = 0;
 	private static final int Q_CONS = 1;
 	private static final int Q_VOTE = 2;
@@ -104,16 +104,18 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 	//abstract void loadReceivedInterests();
 	public byte[] getNext(String queue_type,long _msg_c) {
 		try {
+			//System.out.println("BroadcastQueue: calling getNext with null");
 			return _getNext(queue_type,_msg_c, null).raw;
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
 	public PreparedMessage getNext(String queue_type,long _msg_c, PreparedMessage pm) {
 		try {
+			//System.out.println("BroadcastQueue: calling getNext with PM");
 			return _getNext(queue_type,_msg_c, pm);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		return null;
@@ -129,9 +131,10 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 	 * choose either Org, Constituent, Vote , Peer, Witness by a certain probability
 	 	and prepare it to be broadcasted
 	 * @return byte[]
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public PreparedMessage _getNext(String queue_type,long msg_cntr, PreparedMessage pm) throws SQLiteException {
+	public PreparedMessage _getNext(String queue_type,long msg_cntr, PreparedMessage pm) throws P2PDDSQLException {
+		if(pm==null){pm=new PreparedMessage(); if(DEBUG)System.out.println("input pm was null");}
 		if(DEBUG)System.out.println("BroadcastQueue : _getNext()");
 		int used_queue = -1;
 		int used_queue_idx = -1;
@@ -253,10 +256,12 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 			//WirelessLog.check_which_queue_idx(queue_type,m_iCrtVotes);
 			if(toLoadV) toLoadVote();
 			
+			if(DEBUG)System.out.println("BroadcastQueue : getNext() :crt_votes_queue.size = "+crt_votes_queue.size());
 			// LOADER_ADDED START ... use temporary copies of queue and index
 			if(crt_votes_queue.size() > 0){
 				//WirelessLog.check_which_queue_idx(queue_type,m_iCrtVotes);
 				result = getItemFromQueue(crt_votes_queue,crt_votes_idx,count_broadcasted_votes,Q_VOTE);//crt_votes_queue.get(crt_votes_idx).raw;
+				if(DEBUG)System.out.println("BroadcastQueue : getNext() : result= "+result);
 				if(pm!=null)pm = crt_votes_queue.get(crt_votes_idx);
 				used_queue = Q_VOTE;
 				used_queue_idx = crt_votes_idx;
@@ -276,6 +281,7 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 			ArrayList<PreparedMessage> crt_witnesses_queue;
 			int crt_witnesses_idx;
 			synchronized(BroadcastQueue.loader_monitor){
+				if(DEBUG)System.out.println("BroadcastQueue : SELECT_WITN : m_iCrtWitnesses="+m_iCrtWitnesses);
 				crt_witnesses_idx = m_iCrtWitnesses;
 				m_iCrtWitnesses++;
 				crt_witnesses_queue = m_PreparedMessagesWitnesses;
@@ -293,11 +299,12 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 
 			//WirelessLog.check_which_queue_idx(queue_type,m_iCrtWitnesses);
 			if(toLoadW) toLoadWitness();
-
+			if(DEBUG)System.out.println("BroadcastQueue : getNext() :crt_witnesses_queue.size() = "+crt_witnesses_queue.size());
 			// LOADER_ADDED START ... use tempoarry copies of queue and index
 			if(crt_witnesses_queue.size() > 0){
 				//WirelessLog.check_which_queue_idx(queue_type,m_iCrtWitnesses);
 				result = getItemFromQueue(crt_witnesses_queue,crt_witnesses_idx,count_broadcasted_witnesses, Q_WITN);
+				if(DEBUG)System.out.println("BroadcastQueue : getNext() : result= "+result);
 				if(pm!=null)pm = crt_witnesses_queue.get(crt_witnesses_idx);
 				used_queue = Q_WITN;
 				used_queue_idx = crt_witnesses_idx;
@@ -390,7 +397,8 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 		if(used_queue==-1) {if(DEBUG)System.out.println("Trying to broadcast from a queue that has no data !!");} 
 		else WirelessLog.Print_to_log_Param(WirelessLog.log_broadcast, queue_type, ""+used_queue_idx, QUEUE_POLICY_NAME[used_queue], result,msg_cntr);
 		
-		if(pm!=null)return pm;
+		if(pm!=null){if(DEBUG)System.out.println("BroadcastQueue:_getNext: return:"+pm.raw); 
+		return pm;}
 		else{
 			pm = new PreparedMessage();
 			pm.raw=result;
@@ -418,6 +426,7 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 	protected byte[] getItemFromQueue(
 			ArrayList<PreparedMessage> crt_witnesses_queue,
 			int crt_witnesses_idx, int count_broadcasted_witnesses2, int QUEUE) {
+		if(DEBUG)System.out.println("BroadcastQueue : getItemFromQueue : crt_witnesses_idx="+crt_witnesses_idx);
 		return crt_witnesses_queue.get(crt_witnesses_idx).raw;
 	}
 
@@ -434,7 +443,7 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 					ArrayList<PreparedMessage> newQueue = loadOrgs();
 					synchronized(BroadcastQueue.loader_monitor) {
 						count_broadcasted_orgs = 0;
-						m_iCrtOrgs = -1;
+						m_iCrtOrgs = 0;//-1;
 						m_PreparedMessagesOrgs = newQueue;
 					}
 					loader_orgs_running = false;
@@ -456,7 +465,7 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 					ArrayList<PreparedMessage> newQueue = loadConstituents();
 					synchronized(BroadcastQueue.loader_monitor) {
 						count_broadcasted_constituents = 0;
-						m_iCrtConstituents = -1;
+						m_iCrtConstituents = 0;
 						m_PreparedMessagesConstituents = newQueue;
 					}
 					loader_constituents_running = false;
@@ -478,7 +487,7 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 					ArrayList<PreparedMessage> newQueue = loadPeers();
 					synchronized(BroadcastQueue.loader_monitor) {
 						count_broadcasted_peers = 0;
-						m_iCrtPeers = -1;
+						m_iCrtPeers = 0;
 						m_PreparedMessagesPeers = newQueue;
 					}
 					loader_peers_running = false;
@@ -489,20 +498,23 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 	}
 	public void toLoadVote(){
 		//count_broadcasted_votes = 0;
-		if(DEBUG)System.out.println("BroadcastableMessages : getNext() : reload Votes");
+		if(DEBUG)System.out.println("\n\n\nBroadcastQueue:toLoadVote() : reload Votes :loader_votes_running="+ loader_votes_running+ " \n\n");
 		//WirelessLog.check_which_queue(queue_type);
 
 		// LOADER_ADDED START  start thread and set new values
 		if(! loader_votes_running) {
 			loader_votes_running  = true;
+			if(DEBUG)System.out.println("\n\n\nBroadcastQueue:toLoadVote() : starting thread to load votes\n\n");
 			new Thread(){
 				public void run() {
+					if(DEBUG)System.out.println("BroadcastQueue: toLoadVote() : thread started calling loadVotes()");
 					ArrayList<PreparedMessage> newQueue = loadVotes();
 					synchronized(BroadcastQueue.loader_monitor) {
 						count_broadcasted_votes = 0;
-						m_iCrtVotes = -1;
+						m_iCrtVotes = 0;
 						m_PreparedMessagesVotes = newQueue;
 					}
+					if(DEBUG)System.out.println("BroadcastQueue: toLoadVote() : loading done! new queue size = "+newQueue.size());
 					loader_votes_running = false;
 				}
 			}.start();
@@ -522,7 +534,7 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 					ArrayList<PreparedMessage> newQueue = loadWitnesses();
 					synchronized(BroadcastQueue.loader_monitor) {
 						count_broadcasted_witnesses = 0;
-						m_iCrtWitnesses = -1;
+						m_iCrtWitnesses = 0;
 						m_PreparedMessagesWitnesses = newQueue;
 					}
 					loader_witnesses_running = false;
@@ -544,7 +556,7 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 					ArrayList<PreparedMessage> newQueue = loadNeighborhoods();
 					synchronized(BroadcastQueue.loader_monitor) {
 						count_broadcasted_neighborhoods = 0;
-						m_iCrtNeighborhoods = -1;
+						m_iCrtNeighborhoods = 0;
 						m_PreparedMessagesNeighborhoods = newQueue;
 					}
 					loader_neighborhoods_running = false;
@@ -610,7 +622,7 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 		ArrayList<PreparedMessage> newQueue = new ArrayList<PreparedMessage>();
 		try {
 			m_lastOrg = loadOrgs(newQueue,m_lastOrg);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if(DEBUG)System.out.println("size of Orgs queue is : "+m_PreparedMessagesOrgs.size());
@@ -619,7 +631,7 @@ public abstract class BroadcastQueue implements BroadcastingQueue{
 	}
 
 	abstract long loadOrgs(ArrayList<PreparedMessage> m_PreparedMessagesOrgs2,
-			long m_lastOrg2) throws SQLiteException;
+			long m_lastOrg2) throws P2PDDSQLException;
 
 	ArrayList<PreparedMessage> loadWitnesses() {
 		if(DEBUG)System.out.println("BroadcastQueue : loadWitnesses() : from db");

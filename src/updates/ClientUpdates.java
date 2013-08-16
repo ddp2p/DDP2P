@@ -54,7 +54,7 @@ import ciphersuits.Cipher;
 import ciphersuits.PK;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 import static util.Util._;
 import config.Application;
 import config.DD;
@@ -94,7 +94,7 @@ public class ClientUpdates extends Thread{
 	public boolean initializeServers(){
 		try {
 		urls = D_UpdatesInfo.getUpdateURLs();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		}
@@ -111,7 +111,7 @@ public class ClientUpdates extends Thread{
 		try {
 			updateServers = DD.getExactAppText(DD.APP_UPDATES_SERVERS);
 			if(DEBUG) out.println("ClientUpdates: initializeServers: got = "+updateServers);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		}
@@ -189,7 +189,7 @@ public class ClientUpdates extends Thread{
 				String __trusted = DD.getAppText(DD.TRUSTED_UPDATES_GID);
 				if(__trusted != null) _trusted = __trusted.split(Pattern.quote(DD.TRUSTED_UPDATES_GID_SEP));
 				if(DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: got splits PK: "+_trusted.length);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 		}
 		ArrayList<PK> trusted = new ArrayList<PK>();
@@ -217,7 +217,7 @@ public class ClientUpdates extends Thread{
 				String __trusted = DD.getAppText(DD.TRUSTED_UPDATES_GID);
 				if(__trusted != null) _trusted = __trusted.split(Pattern.quote(DD.TRUSTED_UPDATES_GID_SEP));
 				if(DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: got splits PK: "+_trusted.length);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 		}
 		//ArrayList<PK> trusted = new ArrayList<PK>();
@@ -304,8 +304,8 @@ public class ClientUpdates extends Thread{
 				String def = _("Download Now");
 				Object[] options = new Object[]{def, _("Will inspect available versions in panel")};
 				int c = Application.ask(
-						Util._("Upload available: #")+cnt_new+"/"+is.size()+", version:"+newest_version_obtained.version+".\nYou can download it now or after inspecting its quality in the Updates panel.\n "+Util._("Download now?"),
-						Util._("Upload available. Download?"),
+						Util._("Upgrade available: #")+cnt_new+"/"+is.size()+", version:"+newest_version_obtained.version+".\nYou can download it now or after inspecting its quality in the Updates panel.\n "+Util._("Download now?"),
+						Util._("Upgrade available. Download?"),
 						//JOptionPane.OK_CANCEL_OPTION
 						options,
 						def,
@@ -602,7 +602,7 @@ public class ClientUpdates extends Thread{
 		try {
 			db = DD.getExactAppText(DD.LATEST_DD_VERSION_DOWNLOADED);
 			if(DEBUG)System.out.println("ClientUpdates latestAvailable: latest downloaded ="+db);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if(db!=null) {
@@ -958,7 +958,7 @@ public class ClientUpdates extends Thread{
 	    }
 	    try {
 			DD.setAppTextNoSync(DD.LATEST_DD_VERSION_DOWNLOADED, a.version);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		};
 		
@@ -1170,7 +1170,7 @@ public class ClientUpdates extends Thread{
 		return true;
 	}
 
-	public static boolean fixLATEST() throws IOException, SQLiteException{
+	public static boolean fixLATEST() throws IOException, P2PDDSQLException{
 		String parent_dir_with_sep = getFileInstallRootPathWithSeparator();
 		String version = getFileInstallLastComponent();
 		if((version == null) || ("".equals(version.trim())))
@@ -1272,7 +1272,7 @@ public class ClientUpdates extends Thread{
 	    		try {
 	    			filepath = DD.getAppText(DD.APP_WINDOWS_INSTALLATION_ROOT_PATH);
 	    			//file_sep = "\\";
-	    		} catch (SQLiteException e) {
+	    		} catch (P2PDDSQLException e) {
 	    			e.printStackTrace();
 	    		}
 	    	}
@@ -1280,7 +1280,7 @@ public class ClientUpdates extends Thread{
 	    		try {
 	    			filepath = DD.getAppText(DD.APP_LINUX_INSTALLATION_ROOT_PATH);
 	    			//file_sep = "/";
-	    		} catch (SQLiteException e) {
+	    		} catch (P2PDDSQLException e) {
 	    			e.printStackTrace();
 	    		}
 	    	}
@@ -1299,7 +1299,7 @@ public class ClientUpdates extends Thread{
 			try {
 				filepath = DD.getAppText(DD.APP_WINDOWS_INSTALLATION_PATH);
 				//file_sep = "\\";
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 	    }
@@ -1307,7 +1307,7 @@ public class ClientUpdates extends Thread{
 			try {
 				filepath = DD.getAppText(DD.APP_LINUX_INSTALLATION_PATH);
 				//file_sep = "/";
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 	    }

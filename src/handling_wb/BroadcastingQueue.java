@@ -2,7 +2,7 @@ package handling_wb;
 
 import ASN1.ASN1DecoderFail;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 public interface BroadcastingQueue{
 	public byte[] getNext(long msg_c);

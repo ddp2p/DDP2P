@@ -27,7 +27,7 @@ import hds.ASNSyncRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -47,7 +47,7 @@ public class JustificationHandling {
 	private static final int BIG_LIMIT = 500;
 
 	public static String getNextJustificationDate(String last_sync_date,
-			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitJustLow) throws SQLiteException {
+			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitJustLow) throws P2PDDSQLException {
 		if(DEBUG) out.println("JustificationHandling:getNextJustificationDate: start: between: "+last_sync_date+" : "+_maxDate);
 		ArrayList<ArrayList<Object>> w;
 		String[] params;
@@ -131,7 +131,7 @@ public class JustificationHandling {
 			" AND j."+table.justification.global_justification_ID+" IS NOT NULL "+
 			" ORDER BY j."+table.justification.arrival_date
 		;
-	public static ArrayList<String> getJustificationHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws SQLiteException {
+	public static ArrayList<String> getJustificationHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
@@ -142,7 +142,7 @@ public class JustificationHandling {
 
 	public static D_Justification[] getJustificationData(
 			ASNSyncRequest asr, String last_sync_date, String org_gid,
-			String org_id, String[] __maxDate) throws SQLiteException {
+			String org_id, String[] __maxDate) throws P2PDDSQLException {
 		
 		D_Justification[] result=null;
 		String _maxDate = __maxDate[0];
@@ -192,7 +192,7 @@ public class JustificationHandling {
 	}
 
 	public static boolean integrateNewData(D_Justification[] justifications,
-			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws SQLiteException {
+			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
 		if(justifications==null) return false;
 		for(int k=0; k<justifications.length; k++) {
 			justifications[k].global_organization_ID = orgGID;
@@ -202,7 +202,7 @@ public class JustificationHandling {
 		return justifications.length>0;
 	}
 
-	public static String getJustificationLocalID(String global_justification_ID) throws SQLiteException {
+	public static String getJustificationLocalID(String global_justification_ID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.justification.justification_ID+" FROM "+table.justification.TNAME+
 		" WHERE "+table.justification.global_justification_ID+"=?;";
 		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_justification_ID}, DEBUG);

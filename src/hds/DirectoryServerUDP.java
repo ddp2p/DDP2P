@@ -51,7 +51,7 @@ public class DirectoryServerUDP extends Thread {
 	
 	public void run () {
 		if(DEBUG) out.println("Enter DS UDP Server Thread");
-		byte buffer[]=new byte[DirectoryServer.MAX_DR];
+		byte buffer[] = new byte[DirectoryServer.MAX_DR];
 		for(;;) {
 			if(turnOff){
 				out.println("Turned off");
@@ -89,10 +89,10 @@ public class DirectoryServerUDP extends Thread {
 				}
 				if(DEBUG)out.println("DirectoryServerUDP: Received UDP announcement: "+da+"\n from: "+risa);
 				String detected_sa = DirectoryServer.detectUDPAddress(risa, risa.getPort());
-						// da.address.port);
+				detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
 				byte[] answer;
 				try {
-					answer = DirectoryServer.handleAnnouncement(da, detected_sa, ds.db);
+					answer = DirectoryServer.handleAnnouncement(da, detected_sa, ds.db, true);
 				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 					continue;

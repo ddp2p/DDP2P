@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import ciphersuits.Cipher;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import simulator.WirelessLog;
 import util.Util;
@@ -141,7 +141,7 @@ public class BroadcastQueueHandled extends BroadcastQueue {
 
 	@Override
 	long loadOrgs(ArrayList<PreparedMessage> m_ALbaPreparedMessagesOrgs2, long m_lastOrg2)
-			throws SQLiteException {
+			throws P2PDDSQLException {
 		System.err.println("BroadcastQueueHandled: loadOrgs: not used!");
 		System.exit(1);
 		// TODO Auto-generated method stub

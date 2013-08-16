@@ -13,12 +13,15 @@ import util.DBInfo;
 import util.DBListener;
 import util.Util;
 
+import ASN1.ASN1DecoderFail;
+import ASN1.Decoder;
 import ciphersuits.Cipher;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
+import data.D_Interests;
 import simulator.WirelessLog;
 
 public class BroadcastQueues implements BroadcastingQueue, DBListener{
@@ -33,12 +36,13 @@ public class BroadcastQueues implements BroadcastingQueue, DBListener{
 	BroadcastQueueHandled b_h;
 	BroadcastQueue[] bq;
 
-	public BroadcastQueues() throws SQLiteException {
+	public BroadcastQueues() throws P2PDDSQLException {
 		if(_DEBUG)System.out.println("Client Start\n");
 		b_md = new BroadcastQueueMyData();
 		b_c = new BroadcastQueueCircular();
 		//b_ra = new BroadcastQueueRandom();
 		b_re = new BroadcastQueueRequested();
+		b_re.loadAll();
 		b_r = new BroadcastQueueRecent();
 		b_h = new BroadcastQueueHandled();
 		bq = new BroadcastQueue[]{b_md,b_c,/*b_ra,*/ b_re,b_r, b_h};
@@ -82,7 +86,7 @@ public class BroadcastQueues implements BroadcastingQueue, DBListener{
 		float rnd = Util.random(1.f);
 		byte[] result=null;
 		
-		if(DEBUG)System.out.println("again");
+		if(DEBUG)System.out.println("BroadcastQueue::Inside getNext()");
 		/*
 		System.out.println("br : "+wireless.Broadcasting_Probabilities.get_broadcast_queue_br());
 		System.out.println("bh : "+wireless.Broadcasting_Probabilities.get_broadcast_queue_bh());
@@ -91,6 +95,8 @@ public class BroadcastQueues implements BroadcastingQueue, DBListener{
 		System.out.println("md : "+wireless.Broadcasting_Probabilities.get_broadcast_queue_md());
 		*/
 		do {
+			if(DEBUG)System.out.println("BroadcastQueue::Inside getNext():inside do-while");
+			
 			if((rnd < wireless.Broadcasting_Probabilities.get_broadcast_queue_br()) && (wireless.Broadcasting_Probabilities._broadcast_queue_br)){
 				result = b_r.getNext(WirelessLog.Recent_queue,msg_c);
 				if(DEBUG)System.out.println("getnext : broadcast_queue_br : "+result);
@@ -162,6 +168,7 @@ public class BroadcastQueues implements BroadcastingQueue, DBListener{
 			
 			
 			if((rnd < wireless.Broadcasting_Probabilities.get_broadcast_queue_c())&&(wireless.Broadcasting_Probabilities._broadcast_queue_c)){
+				if(DEBUG)System.out.println("getnext : broadcast_queue_c selected!");
 				result = b_c.getNext(WirelessLog.Circular_queue,msg_c);
 				if(DEBUG)System.out.println("getnext : broadcast_queue_c : "+result);
 				if(result!=null) {
@@ -203,16 +210,36 @@ public class BroadcastQueues implements BroadcastingQueue, DBListener{
 			}
 			rnd = 0;
 			if(DEBUG)System.out.println("BroadcastQueues : getNext() : NO DATA BREAK!");
-			break;
+			//break;
 		}while(result == null);
 		
 		
 		//embed personal interests here!!!
+		if(result==null)	if(_DEBUG)System.out.println("result is null");
+		else 	if(_DEBUG)System.out.println("Message available for broadcast!");
 		data.D_Interests_Message dim = new data.D_Interests_Message();
+		if(BroadcastQueueRequested.myInterests==null)  if(_DEBUG)System.out.println("Myinterest is null");
+		else{
+			if(DEBUG) if(BroadcastQueueRequested.myInterests.org_ID_hashes!=null)System.out.println("myInterest.org size:"+BroadcastQueueRequested.myInterests.org_ID_hashes.size());
+		}
+		
 		dim.message =result;
+		BroadcastQueueRequested.myInterests.Random_peer_number = DD.Random_peer_Number;
 		dim.interests = BroadcastQueueRequested.myInterests.encode();
 		
-		return dim.encode();
+		/*
+		data.D_Interests interests = new data.D_Interests();
+		try {
+			interests.decode(new Decoder(dim.interests));
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+		*/
+		//if(_DEBUG)System.out.println("BroadcastQueue:Myinterest:orgArrayList size :"+BroadcastQueueRequested.myInterests.org_ID_hashes.size());
+
+		byte[] x = dim.encode();
+		if(x==null)System.out.println("dim is null :"+x);
+		return x;
 	}
 
 	@Override

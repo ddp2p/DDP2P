@@ -27,7 +27,7 @@ import hds.ASNSyncRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -47,7 +47,7 @@ public class TranslationHandling {
 
 	public static boolean integrateNewData(D_Translations[] translations,
 			String global_organization_ID, String org_local_ID,
-			String arrival_time, D_Organization orgData, RequestData rq) throws SQLiteException {
+			String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
 		if(translations==null) return false;
 		for(int k=0; k<translations.length; k++) {
 			translations[k].global_organization_ID = global_organization_ID;
@@ -73,7 +73,7 @@ public class TranslationHandling {
 			" AND t."+table.translation.global_translation_ID+" IS NOT NULL "+
 			" ORDER BY t."+table.translation.arrival_date
 		;
-	public static ArrayList<String> getTranslationHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws SQLiteException {
+	public static ArrayList<String> getTranslationHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
@@ -84,7 +84,7 @@ public class TranslationHandling {
 
 	public static D_Translations[] getTranslationData(ASNSyncRequest asr,
 			String last_sync_date, String org_gid, String org_id,
-			String[] __maxDate) throws SQLiteException {
+			String[] __maxDate) throws P2PDDSQLException {
 		
 		D_Translations[] result=null;
 		String _maxDate = __maxDate[0];
@@ -127,7 +127,7 @@ public class TranslationHandling {
 	}
 
 	public static String getNextTranslationDate(String last_sync_date,
-			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitTransLow) throws SQLiteException {
+			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitTransLow) throws P2PDDSQLException {
 		if(DEBUG) out.println("TranslationHandling:getNextTranslationDate: start: between: "+last_sync_date+" : "+_maxDate);
 		ArrayList<ArrayList<Object>> w;
 		String[] params;

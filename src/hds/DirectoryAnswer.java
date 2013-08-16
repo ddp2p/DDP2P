@@ -183,7 +183,7 @@ public class DirectoryAnswer extends ASNObj {
 		int req_len=dec_da.objectLen();
 		if(req_len > MAX_LEN)  throw new Exception("Unacceptable package!");
 		if(req_len<0) throw new Exception("Not enough bytes received in first package!");
-		if(req_len>len){
+		if(req_len>len) {
 			if(dec_da.objectLen()>MAX_DA) {
 				byte[] old_buffer = buffer;
 				buffer = new byte[req_len];

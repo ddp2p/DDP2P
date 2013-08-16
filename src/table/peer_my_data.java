@@ -25,5 +25,6 @@ public class peer_my_data {
 	 public static final String slogan = "slogan";
 	 public static final String picture = "picture";
 	public static final String TNAME = "peer_my_data";
+	public static final String my_topic = "my_topic";
 	public static final String broadcastable = "broadcastable";
 }

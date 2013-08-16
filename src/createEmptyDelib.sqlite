@@ -10,6 +10,20 @@ CREATE TABLE "key" (
     "name" TEXT, 
     "type" TEXT
 );
+CREATE TABLE directory_forwarding_terms (
+	"term_ID" INTEGER PRIMARY KEY,
+	"priority"	INTEGER,
+	"topic" INTEGER,
+	"ad"	INTEGER,
+	"plaintext" INTEGER,
+	"payment" INTEGER,
+	"payment_amount" TEXT,
+    "peer_ID" INTEGER NOT NULL,
+    "dir_addr" TEXT,
+    "service" TEXT,
+    "priority_type" TEXT,
+    FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
+);
 CREATE TABLE updates (
 	"updates_ID" INTEGER PRIMARY KEY,
 	"original_mirror_name"	TEXT,
@@ -86,6 +100,7 @@ CREATE TABLE "peer_my_data" (
 	"slogan" TEXT,
 	"broadcastable" TEXT,
 	"picture" BLOB,
+	"my_topic" TEXT,
 	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 );
 CREATE TABLE "plugin" (
@@ -110,8 +125,8 @@ CREATE TABLE "plugin_local_storage" (
 );
 CREATE TABLE organization ( 
 	organization_ID INTEGER PRIMARY KEY, 
-	global_organization_ID_hash TEXT, 
-	global_organization_ID TEXT, 
+	global_organization_ID_hash TEXT UNIQUE ON CONFLICT FAIL, 
+	global_organization_ID TEXT UNIQUE ON CONFLICT FAIL,
 	name TEXT, 
 	creator_ID INTEGER,
 	description TEXT, 
@@ -185,8 +200,8 @@ CREATE TABLE "translation" (
 );
 CREATE TABLE constituent ( 
     "constituent_ID" INTEGER PRIMARY KEY, 
-    "global_constituent_ID" TEXT, 
-    "global_constituent_ID_hash" TEXT,
+    "global_constituent_ID" TEXT UNIQUE ON CONFLICT FAIL, 
+    "global_constituent_ID_hash" TEXT UNIQUE ON CONFLICT FAIL,
     "neighborhood_ID" INTEGER, 
     "organization_ID" INTEGER, 
     "submitter_ID" INTEGER, 
@@ -207,6 +222,7 @@ CREATE TABLE constituent (
     "picture" BLOB,
    "op" INTEGER NOT NULL DEFAULT (1),
    "revoked" INTEGER DEFAULT (0), 
+    "version" INTEGER DEFAULT (0),
     "hidden" INTEGER DEFAULT (0),
     "peer_transmitter_ID" INTEGER,
     "creation_date" TEXT, 
@@ -221,7 +237,7 @@ CREATE TABLE constituent (
 );
 CREATE TABLE motion (
 	motion_ID INTEGER PRIMARY KEY,
-	global_motion_ID TEXT,
+	global_motion_ID TEXT UNIQUE ON CONFLICT FAIL,
 	enhances_ID INTEGER, 
 	hash_motion_alg TEXT,
 	hash_motion BLOB,
@@ -285,7 +301,7 @@ CREATE TABLE my_justification_data (
 );
 CREATE TABLE signature ( 
 	signature_ID INTEGER PRIMARY KEY, 
-	global_signature_ID TEXT, 
+	global_signature_ID TEXT UNIQUE ON CONFLICT FAIL, 
 	hash_signature_alg TEXT, 
 	hash_signature BLOB, 
 	constituent_ID INTEGER, 
@@ -302,7 +318,7 @@ CREATE TABLE signature (
 );
 CREATE TABLE neighborhood ( 
 	"neighborhood_ID" INTEGER PRIMARY KEY, 
-	"global_neighborhood_ID" TEXT, 
+	"global_neighborhood_ID" TEXT UNIQUE ON CONFLICT FAIL, 
 	"address" BLOB,
 	"description" TEXT,
 	"parent_nID" INTEGER,
@@ -335,7 +351,10 @@ CREATE TABLE witness (
 	hash_witness BLOB, 
 	category TEXT, 
 	neighborhood_ID INTEGER,  
-	sense_y_n NUMERIC, 
+	sense_y_n NUMERIC,
+	sense_y_trustworthiness NUMERIC,
+	category_trustworthiness TEXT, 
+	statements BLOB,
 	source_ID INTEGER, 
 	target_ID NUMERIC, 
 	signature BLOB,
@@ -430,8 +449,10 @@ CREATE TABLE field_extra (
 	"oid" TEXT,
 	"version" TEXT,
 	"tmp" TEXT,
+	UNIQUE ("organization_ID" , "global_field_extra_ID") ON CONFLICT FAIL,
 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
  );
+
 CREATE TABLE field_value ( 
 	"field_value_ID" INTEGER PRIMARY KEY, 
 	"constituent_ID" INTEGER, 

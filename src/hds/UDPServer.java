@@ -798,7 +798,7 @@ public class UDPServer extends Thread {
 				sk = DD.getMyPeerSK();
 				boolean filtered = false;
 				String _lastSnapshotString = null;
-				ASNSyncRequest asreq = Client.buildRequest(_lastSnapshotString, ra.upToDate, peer_ID);
+				ASNSyncRequest asreq = ClientSync.buildRequest(_lastSnapshotString, ra.upToDate, peer_ID);
 				if(filtered) asreq.orgFilter=UpdateMessages.getOrgFilter(peer_ID);
 				asreq.sign(sk);
 				byte[] buf = asreq.encode();

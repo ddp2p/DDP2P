@@ -18,7 +18,7 @@
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 /* ------------------------------------------------------------------------- */
  package widgets.constituent;
-import hds.Client;
+import hds.ClientSync;
 
 import javax.swing.*;
 import javax.swing.event.*;
@@ -29,7 +29,7 @@ import ASN1.Encoder;
 import ciphersuits.Cipher;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -37,6 +37,7 @@ import config.Identity;
 import data.D_Organization;
 import data.D_Constituent;
 import data.D_Neighborhood;
+import data.D_Witness;
 //import com.sun.mirror.apt.Filer.Location;
 import java.util.*;
 import java.text.MessageFormat;
@@ -72,12 +73,14 @@ class ConstituentData {
 	Icon icon;
 	String slogan;
 	boolean inserted_by_me;
-	int witnessed_by_me; // 1 for positive, -1 for negative
+	int witnessed_by_me; // 1 for positive, -1 for negative, 2-added by myself
 	boolean external;
 	public String email;
 	public String submitter_ID;
 	public boolean blocked;
 	public boolean broadcast;
+	public int witness_neuter;
+	public int myself;
 	public String toString(){
 		return "ConstituentData: "+surname+"," +given_name+": "+slogan+"="+ witness_for+"/"+witness_against;
 	}
@@ -241,24 +244,29 @@ class ConstituentsIDNode extends ConstituentsBranch {
                 identities = model.db.select(sql, new String[]{constituent.constituentID+""});
                 constituent.witness_against = constituent.witness_for = 0;
                 for(int k=0; k<identities.size(); k++) {
-                        int wsense = Util.ival(identities.get(k).get(0), 0);
+                        int wsense = Util.ival(identities.get(k).get(0), D_Witness.UNKNOWN);
                         int wcount = Util.ival(identities.get(k).get(1), 1);
-                        if(wsense>0) constituent.witness_for = wcount;
-                        else constituent.witness_against = wcount;
+                        if(wsense==D_Witness.FAVORABLE) constituent.witness_for = wcount;
+                        else if(wsense==D_Witness.UNFAVORABLE) constituent.witness_against = wcount;
+                        else constituent.witness_neuter = wcount;
                 }
                 
                 sql = "select w."+table.witness.sense_y_n +
                 " from "+table.witness.TNAME+" as w " +
                 " where w."+table.witness.target_ID+" = ? and w."+table.witness.source_ID+" = ? " +
                 " ; ";
+                long myself = model.getConstituentIDMyself();
                 identities = model.db.select(sql, 
-                		new String[]{constituent.constituentID+"", model.getConstituentIDMyself()+""});
-                constituent.witnessed_by_me=-1;
+                		new String[]{constituent.constituentID+"", myself+""});
+                constituent.witnessed_by_me=D_Witness.UNSPECIFIED;
+                if(identities.size() > 1) Application.warning(_("For constituent:")+" "+constituent.constituentID, _("Multiple witness from me"));
                 for(int k=0; k<identities.size(); k++) {
-                	int wsense = Util.ival(identities.get(k).get(0), 0);
-                	constituent.witnessed_by_me = 1 + wsense;
+                	int wsense = Util.ival(identities.get(k).get(0), D_Witness.UNKNOWN);
+                	constituent.witnessed_by_me = wsense;
                 	if(DEBUG) System.err.println("Witnessed by me with: "+wsense);
                 }
+                if(myself == constituent.constituentID) constituent.myself = 1; 
+                else constituent.myself = 0; 
         }catch(Exception e){
                 JOptionPane.showMessageDialog(null,"populate witnesses: "+e.toString());
                 e.printStackTrace();                    
@@ -372,14 +380,18 @@ class ConstituentsIDNode extends ConstituentsBranch {
     		data.value = subm_ID;
     		long s_ID = Util.lval(subm_ID, -1);
     		try {
-				D_Constituent wc = new D_Constituent(subm_ID, D_Constituent.EXPAND_ONE);
-				data.value = wc.surname+", "+wc.forename+" <"+wc.email+">";
-				if ((wc.neighborhood!=null) && (wc.neighborhood.length>0))
-					data.value += "("+wc.neighborhood[0].name_division+":"+wc.neighborhood[0].name+")";
-			} catch (SQLiteException e) {
-				e.printStackTrace();
-			}
-    		populateChild(new ConstituentsPropertyNode(data, this),0);			
+    			if(s_ID>0) {
+    				D_Constituent wc = new D_Constituent(subm_ID, D_Constituent.EXPAND_ONE);
+    				data.value = wc.surname+", "+wc.forename+" <"+wc.email+">";
+    				if ((wc.neighborhood!=null) && (wc.neighborhood.length>0))
+    					data.value += "("+wc.neighborhood[0].name_division+":"+wc.neighborhood[0].name+")";
+    			}else{
+    				data.value = "-";
+    			}
+    		} catch (P2PDDSQLException e) {
+    			e.printStackTrace();
+    		}
+   			populateChild(new ConstituentsPropertyNode(data, this),0);
 		}
     	if( (fixed_fields+identities.size())!=nchildren) setNChildren(identities.size()+ fixed_fields);
     	model.fireTreeStructureChanged(new TreeModelEvent(model,getPath()));
@@ -391,7 +403,7 @@ class ConstituentsIDNode extends ConstituentsBranch {
 	public void advertise(ConstituentsTree tree) {
 		String hash = D_Constituent.getGIDHashFromGID(this.constituent.global_constituentID);
 		String org_hash = D_Organization.getOrgGIDHashGuess(tree.getModel().getOrgGID());
-		Client.addToPayloadFix(streaming.RequestData.CONS, hash, org_hash, Client.MAX_ITEMS_PER_TYPE_PAYLOAD);
+		ClientSync.addToPayloadFix(streaming.RequestData.CONS, hash, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 	}
 	public void block(ConstituentsTree tree) {
 		try {
@@ -410,6 +422,9 @@ class ConstituentsIDNode extends ConstituentsBranch {
 			e.printStackTrace();
 			return;
 		}
+	}
+	public void zapp(ConstituentsTree tree) {
+		D_Constituent.zapp(this.constituent.constituentID);
 	}
 }
 //http://www.britishpathe.com/record.php?id=700
@@ -1215,7 +1230,7 @@ class ConstituentsAddressNode extends ConstituentsBranch {
     	return true;
     }
     // fv is field_values of next child, fe is field_extra 
-    ArrayList<ArrayList<Object>> getDynamicNeighborhoods(String query, String group) throws SQLiteException {
+    ArrayList<ArrayList<Object>> getDynamicNeighborhoods(String query, String group) throws P2PDDSQLException {
 		if(DEBUG) System.err.println("ConstituentsModel:ConstituentsAddressNode:getDynamicNeighborhoods: start");
     	ArrayList<ArrayList<Object>> identities;
     	String tables = " ";
@@ -1261,7 +1276,7 @@ class ConstituentsAddressNode extends ConstituentsBranch {
 		String hash = D_Constituent.getGIDHashFromGID(this.n_data.global_nID);
 		String org_hash = tree.getModel().getOrganization().global_organization_IDhash;
 	//	String org_hash = D_Organization.getOrgGIDHashGuess(tree.getModel().getOrgGID());
-		Client.addToPayloadFix(streaming.RequestData.NEIG, hash, org_hash, Client.MAX_ITEMS_PER_TYPE_PAYLOAD);
+		ClientSync.addToPayloadFix(streaming.RequestData.NEIG, hash, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 	}
 
 	public void block(ConstituentsTree tree) {
@@ -1281,6 +1296,10 @@ class ConstituentsAddressNode extends ConstituentsBranch {
 			e.printStackTrace();
 			return;
 		}
+	}
+
+	public void zapp(ConstituentsTree tree) {
+		D_Neighborhood.zapp(this.n_data.neighborhoodID);
 	}
 }
 public class ConstituentsModel extends TreeModelSupport implements TreeModel, DBListener {
@@ -1325,7 +1344,19 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 					" WHERE "+table.constituent.constituent_ID+"=?;", new String[]{Util.getStringID(getConstituentIDMyself())});
 			if(c.size()==0) return _("None");
 			return "\""+c.get(0).get(0)+"\"";
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return _("Error");
+	}
+	public String getConstituentMyselfNames() {
+		ArrayList<ArrayList<Object>> c;
+		try {
+			c = Application.db.select("SELECT "+table.constituent.name+","+table.constituent.forename+" FROM "+table.constituent.TNAME+
+					" WHERE "+table.constituent.constituent_ID+"=?;", new String[]{Util.getStringID(getConstituentIDMyself())});
+			if(c.size()==0) return _("None");
+			return "\""+c.get(0).get(0)+", "+c.get(0).get(1)+"\"";
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		return _("Error");
@@ -1335,9 +1366,9 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 	 * @param _constituent_ID
 	 * @param global_constituent_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	boolean setConstituentIDMyself(long _constituent_ID, String global_constituent_ID) throws SQLiteException{
+	boolean setConstituentIDMyself(long _constituent_ID, String global_constituent_ID) throws P2PDDSQLException{
 		if((_constituent_ID<0) &&(global_constituent_ID == null)) {
 			my_constituentID = -1;
 			my_global_constituentID = null;
@@ -1381,7 +1412,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		db.addListener(this, new ArrayList<String>(Arrays.asList(table.constituent.TNAME, table.witness.TNAME, table.neighborhood.TNAME, table.field_value.TNAME)), null);
 		try {
 			init(organizationID2, _constituentID, _global_constituentID, org);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}catch(Exception e){
@@ -1399,7 +1430,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		D_Constituent c;
 		try {
 			c = new D_Constituent(constituentID, D_Constituent.EXPAND_ALL);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -1424,7 +1455,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		if(DEBUG) System.err.println("ConstituentsModel:expandConstituentID end");
 		return cin;
 	}
-	public ConstituentsAddressNode expandNeighborhoodID(ConstituentsTree tree, String nID) throws SQLiteException {
+	public ConstituentsAddressNode expandNeighborhoodID(ConstituentsTree tree, String nID) throws P2PDDSQLException {
 		D_Neighborhood neighborhood[] = D_Neighborhood.getNeighborhoodHierarchy(null, nID, D_Constituent.EXPAND_ALL);
 		return expandNeighborhoodID(tree, root, neighborhood);
 	}
@@ -1442,7 +1473,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 			if(nID==null)
 				try {
 					nID = D_Neighborhood.getNeighborhoodLocalID(nGID);
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 					return null;
 				}
@@ -1472,7 +1503,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		this.startCensus();
 	}
 	
-	public void doRefreshAll() throws SQLiteException{
+	public void doRefreshAll() throws P2PDDSQLException{
 		if(DEBUG) System.err.println("ConstituentsModel:deRefreshAll: start");
 		ConstituentsModel model = this;
 		Object oldRoot = model.getRoot();
@@ -1494,9 +1525,9 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 	 * @param organizationID2
 	 * @param _constituentID
 	 * @param _global_constituentID
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public void refresh(JTree trees[], Object _old_root) throws SQLiteException {
+	public void refresh(JTree trees[], Object _old_root) throws P2PDDSQLException {
 		
 		//boolean DEBUG = true;
 		if(this.refreshListener != null) this.refreshListener.disableRefresh();
@@ -1570,7 +1601,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		if(DEBUG) System.err.println("ConstituentsModel:translate_expansion stop");		
 	}
 	public void init(long _organizationID, 
-			long _constituentID, String _global_constituentID, D_Organization org) throws SQLiteException {
+			long _constituentID, String _global_constituentID, D_Organization org) throws P2PDDSQLException {
 		if(DEBUG) System.err.println("ConstituentsModel:init start org="+_organizationID+
 				" myconstID="+_constituentID+" gID="+_global_constituentID);
 		
@@ -1764,7 +1795,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		    		root.setNChildren(identities.size()+root.nchildren);
 		    	if(DEBUG) System.err.print("ConstituentsModel: populateOrphans fire");
 
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 	}
@@ -1809,7 +1840,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
     	ArrayList<ArrayList<Object>> n;
 		try {
 			n = Application.db.select(sql, new String[]{nID+""}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -1832,7 +1863,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
     	try {
 			Application.db.updateNoSync(table.neighborhood.TNAME, new String[]{table.neighborhood.signature, table.neighborhood.global_neighborhood_ID}, new String[]{table.neighborhood.neighborhood_ID},
 					new String[]{_signature, gID, nID+""}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
     	return signature;
@@ -1939,7 +1970,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 				return false;
 			}
 			Identity.setCurrentConstituentForOrg(_constituentID, this.organizationID);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		}
@@ -1954,7 +1985,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 			try {
 				//this.refresh(trees.toArray(new JTree[0]), root);
 				this.doRefreshAll();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;

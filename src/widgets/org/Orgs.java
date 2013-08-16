@@ -50,19 +50,21 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
+import streaming.RequestData;
 import util.DBInfo;
 import util.DBInterface;
 import util.DBListener;
 import util.DBSelector;
 import util.Util;
 import widgets.components.BulletRenderer;
+import wireless.BroadcastClient;
 
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 
 //import apple.laf.CoreUIUtils.Tree;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -130,14 +132,17 @@ public class Orgs extends JTable implements MouseListener {
 	
 	public Orgs() {
 		super(new OrgsModel(Application.db));
+		if(DEBUG) System.out.println("Orgs: constr from db");
 		init();
 	}
 	public Orgs(DBInterface _db) {
 		super(new OrgsModel(_db));
+		if(DEBUG) System.out.println("Orgs: constr from dbintf");
 		init();
 	}
 	public Orgs(OrgsModel dm) {
 		super(dm);
+		if(DEBUG) System.out.println("Orgs: constr from model");
 		init();
 	}
 	void init(){
@@ -157,9 +162,13 @@ public class Orgs extends JTable implements MouseListener {
    			if (Identity.getCurrentIdentity().identity_id!=null) {
     			//long id = new Integer(Identity.current.identity_id).longValue();
     			long orgID = Identity.getDefaultOrgID();
+    			if(DEBUG) System.out.println("Orgs:init: crt orgID="+orgID);
     			this.setCurrent(orgID);
     			int row =this.getSelectedRow();
+    			if(DEBUG) System.out.println("Orgs:init: crt row="+row);
      			this.fireListener(row, A_NON_FORCE_COL);
+   			}else{
+   	   			if(DEBUG) System.out.println("Orgs:init: crt orgID= NONE :(");   				
    			}
     	}catch(Exception e){e.printStackTrace();}
 	}
@@ -372,6 +381,7 @@ public class Orgs extends JTable implements MouseListener {
     	OrgsAddAction aAction;
     	OrgsForceEditAction eAction;
     	OrgsToggleServingAction sAction;
+    	OrgsCustomAction cAction;
     	
     	aAction = new OrgsAddAction(this, _("Add!"), delicon,_("Add new organization."), _("Add"),KeyEvent.VK_A);
     	aAction.putValue("row", new Integer(row));
@@ -399,7 +409,12 @@ public class Orgs extends JTable implements MouseListener {
        		sAction = new OrgsToggleServingAction(this, _("Advertise!"), delicon,_("Advertise this organization."), _("Advertise"),KeyEvent.VK_S);
     	sAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(sAction));
+      	
     	
+    	cAction = new OrgsCustomAction(this, _("Add to WLAN Interest!"), delicon,_("Add to WLAN Interests."), _("WLAN Request"),KeyEvent.VK_R, OrgsCustomAction.M_WLAN_REQUEST);
+    	cAction.putValue("row", new Integer(row));
+    	popup.add(new JMenuItem(cAction));
+      	
     	eAction = new OrgsForceEditAction(this, _("Force Edit!"), delicon,_("Force editing rights."), _("Edit"),KeyEvent.VK_E);
     	eAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(eAction));
@@ -533,7 +548,7 @@ class OrgsDeleteAction extends DebateDecideAction {
 			Application.db.delete(table.identity_ids.TNAME, new String[]{table.identity_ids.organization_ID}, new String[]{orgID}, DEBUG);
 			Application.db.update(table.identity.TNAME, new String[]{table.identity.organization_ID}, new String[]{table.identity.organization_ID}, new String[]{"-1",orgID}, DEBUG);
 			Application.db.delete(table.organization.TNAME, new String[]{table.organization.organization_ID}, new String[]{orgID}, DEBUG);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
     }
@@ -607,6 +622,80 @@ class OrgsToggleServingAction extends DebateDecideAction {
     	//Application.appObject.actionPerformed(new ActionEvent(tree, row, DD.COMMAND_NEW_ORG));
     }
 }
+@SuppressWarnings("serial")
+class OrgsCustomAction extends DebateDecideAction {
+    public static final int M_WLAN_REQUEST = 1;
+	private static final boolean DEBUG = false;
+    private static final boolean _DEBUG = true;
+	Orgs tree; ImageIcon icon;
+	int command;
+    public OrgsCustomAction(Orgs tree,
+			     String text, ImageIcon icon,
+			     String desc, String whatis,
+			     Integer mnemonic, int command) {
+        super(text, icon, desc, whatis, mnemonic);
+        this.tree = tree; this.icon = icon;
+        this.command = command;
+    }
+    public void actionPerformed(ActionEvent e) {
+    	Object src = e.getSource();
+    	JMenuItem mnu;
+    	int row =-1;
+    	String org_id=null;
+    	if(src instanceof JMenuItem){
+    		mnu = (JMenuItem)src;
+    		Action act = mnu.getAction();
+    		row = ((Integer)act.getValue("row")).intValue();
+    		//org_id = Util.getString(act.getValue("org"));
+            //System.err.println("row property: " + row);
+    	} else {
+    		row = tree.getSelectedRow();
+       		row = tree.convertRowIndexToModel(row);
+   		//org_id = tree.getModel().org_id;
+    		//System.err.println("Row selected: " + row);
+    	}
+    	OrgsModel model = (OrgsModel)tree.getModel();
+    	if(command == M_WLAN_REQUEST) {
+    		boolean DEBUG = true;
+    		if(DEBUG) System.out.println("Orgs:OrgsCustomAction:WLANRequest: start");
+    		String _m_GID = model.getOrgGID(row);
+    		if(_m_GID==null){
+    			if(DEBUG) System.out.println("Orgs:OrgsCustomAction:WLANRequest: null GID");
+        		return;
+    		}
+    		if(DEBUG) System.out.println("Orgs:OrgsCustomAction:WLANRequest: GID: "+_m_GID);
+    		RequestData rq = new RequestData();;
+    		
+			try {
+				String interests = DD.getAppText(DD.WLAN_INTERESTS);
+				if(interests != null){
+					byte[] wlan_interests = Util.byteSignatureFromString(interests);
+					rq = rq.decode(new ASN1.Decoder(wlan_interests));
+				}
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+			if(!rq.orgs.contains(_m_GID)) {
+				rq.orgs.add(_m_GID);
+				if(BroadcastClient.msgs == null){
+					System.out.println("Orgs:OrgsCustomAction:WLANRequest: empty messages queue!");
+				}else
+					BroadcastClient.msgs.registerRequest(rq);
+				if(DEBUG) System.out.println("Orgs:OrgsCustomAction:WLANRequest: added GID: "+_m_GID);
+			}
+			
+			byte[] intr = rq.getEncoder().getBytes();
+			try {
+				DD.setAppText(DD.WLAN_INTERESTS, Util.stringSignatureFromByte(intr));
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
+			if(DEBUG) System.out.println("Orgs:OrgsCustomAction:WLANRequest: done ");
+    	}
+    	
+    	//Application.appObject.actionPerformed(new ActionEvent(tree, row, DD.COMMAND_NEW_ORG));
+    }
+}
 
 @SuppressWarnings("serial")
 class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
@@ -636,6 +725,10 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		db.addListener(this, new ArrayList<String>(Arrays.asList(table.organization.TNAME)), null);
 		// DBSelector.getHashTable(table.organization.TNAME, table.organization.organization_ID, ));
 		update(null, null);
+	}
+	public String getOrgGID(int row) {
+		if((row<0) || (row>_hash.length)) return null;
+		return (String)_hash[row];
 	}
 	public boolean isServing(int row) {
 		if(DEBUG) System.out.println("\n************\nOrgs:OgsModel:isServing: row="+row);
@@ -692,7 +785,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		String peer_ID;
 		try {// get my peerID
 			peer_ID = table.peer.getLocalPeerID(global_peer_ID);
-		} catch (SQLiteException e2) {
+		} catch (P2PDDSQLException e2) {
 			e2.printStackTrace();
 			return false;
 		}
@@ -724,7 +817,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 						new String[]{table.peer_org.served,table.peer_org.peer_ID,table.peer_org.organization_ID},
 						new String[]{_serving, peer_ID, organization_ID}, _DEBUG);
 				setBroadcasting(organization_ID, val);
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 				return false;
 			}
@@ -736,6 +829,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		return !serving;
 	}
 	public void setCurrent(long org_id) {
+		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("Orgs:OrgsModel:setCurrent: id="+org_id);
 		if(org_id<0){
 			for(Orgs o: tables){
@@ -749,33 +843,47 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		//this.fireTableDataChanged();
 		for(int k=0;k<_orgs.length;k++){
 			Object i = _orgs[k];
+			long id;
 			if(DEBUG) System.out.println("Orgs:setCurrent: k="+k+" row_org_ID="+i);
 			if(i instanceof Integer){
-				Integer id = (Integer)i;
-				if(id.longValue()==org_id) {
-					try {
-						//long constituent_ID = 
-						if(DEBUG) System.out.println("Orgs:setCurrent: will set current org");
-						Identity.setCurrentOrg(org_id);
-						
-					} catch (SQLiteException e) {
+				Integer _id = (Integer)i;
+				id = _id.longValue();
+			}else
+				if(i instanceof Long){
+					Long _id = (Long)i;
+					id = _id.longValue();
+				}else{
+					String _id = i+"";
+					try{id = Long.parseLong(_id);}catch(Exception e){
+						if(DEBUG) System.out.println("Orgs:setCurrent: ID not parsable: ["+k+"]="+i);
 						e.printStackTrace();
+						continue; //id=-2;
 					}
-					
-					for(Orgs o: tables){
-						int tk = o.convertRowIndexToView(k);
-						o.setRowSelectionAllowed(true);
-						ListSelectionModel selectionModel = o.getSelectionModel();
-						selectionModel.setSelectionInterval(tk, tk);
-						//o.requestFocus();
-						o.scrollRectToVisible(o.getCellRect(tk, 0, true));
-						//o.setEditingRow(k);
-						//o.setRowSelectionInterval(k, k);
-						o.fireListener(k, 0);
-					}
-					break;
 				}
-			}
+			
+			if(id==org_id) {
+				try {
+					//long constituent_ID = 
+					if(DEBUG) System.out.println("Orgs:setCurrent: will set current org");
+					Identity.setCurrentOrg(org_id);
+							
+				} catch (P2PDDSQLException e) {
+					e.printStackTrace();
+				}
+						
+				for(Orgs o: tables){
+					int tk = o.convertRowIndexToView(k);
+					o.setRowSelectionAllowed(true);
+					ListSelectionModel selectionModel = o.getSelectionModel();
+					selectionModel.setSelectionInterval(tk, tk);
+					//o.requestFocus();
+					o.scrollRectToVisible(o.getCellRect(tk, 0, true));
+					//o.setEditingRow(k);
+					//o.setRowSelectionInterval(k, k);
+					o.fireListener(k, 0);
+				}
+				break;
+			}else  if(DEBUG) System.out.println("Orgs:setCurrent: ID not this: "+id);
 		}
 		if(DEBUG) System.out.println("Orgs:setCurrent: Done");
 	}
@@ -803,10 +911,11 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		Object old_sel[] = new Object[tables.size()];
 		for(int i=0; i<old_sel.length; i++){
 			int sel = tables.get(i).getSelectedRow();
+			if(DEBUG) System.out.println("widgets.org.Orgs: old selected row: table["+i+"]="+sel);
 			if((sel >= 0) && (sel < _orgs.length)) old_sel[i] = _orgs[sel];
 		}
 		try {
-			ArrayList<ArrayList<Object>> orgs = db.select(sql, new String[]{});
+			ArrayList<ArrayList<Object>> orgs = db.select(sql, new String[]{},DEBUG);
 			_orgs = new Object[orgs.size()];
 			_meth = new Object[orgs.size()];
 			_hash = new Object[orgs.size()];
@@ -826,14 +935,14 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 				_req[k] = "1".equals(orgs.get(k).get(6));
 			}
 			if(DEBUG) System.out.println("widgets.org.Orgs: A total of: "+_orgs.length);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		for(int k=0; k<old_sel.length; k++){
 			Orgs i = tables.get(k);
 			//int row = i.getSelectedRow();
 			int row = findRow(old_sel[k]);
-			if(DEBUG) System.out.println("widgets.org.Orgs: selected row: "+row);
+			if(DEBUG) System.out.println("widgets.org.Orgs: selected row: table["+k+"]="+row);
 			//i.revalidate();
 			this.fireTableDataChanged();
 			if((row >= 0)&&(row<_orgs.length)) i.setRowSelectionInterval(row, row);
@@ -890,7 +999,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 						result = orgs.get(0).get(0);
 						if(DEBUG)System.out.println("Orgs:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -912,7 +1021,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 						result = Util.getString(orgs.get(0).get(2));
 						if(DEBUG)System.out.println("Orgs:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -933,7 +1042,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 						result = orgs.get(0).get(0);
 						if(DEBUG)System.out.println("Orgs:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -943,7 +1052,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_co, new String[]{orgID, "1"});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -955,7 +1064,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac, new String[]{orgID});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 				else result = new Integer("0");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				break;
 			}
@@ -964,8 +1073,8 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			" WHERE "+table.news.organization_ID+" = ?;";
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_new, new String[]{orgID});
-				if(orgs.size()>0) result = new Integer(""+(((Integer)result).longValue()+((Integer)orgs.get(0).get(0)).longValue()));
-			} catch (SQLiteException e) {
+				if(orgs.size()>0) result = new Integer(""+(Util.get_long(result)+Util.get_long(orgs.get(0).get(0))));
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -978,7 +1087,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac2, new String[]{orgID,Util.getGeneralizedDate(DAYS_OLD2)});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 				else result = new Integer("0");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				break;
 			}
@@ -988,10 +1097,10 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_new2, new String[]{orgID,Util.getGeneralizedDate(DAYS_OLD2)});
 				if(orgs.size()>0){
-					int result_int = new Integer(""+(((Integer)result).longValue()+((Integer)orgs.get(0).get(0)).longValue()));
+					int result_int = new Integer(""+((Util.get_long(result))+(Util.get_long(orgs.get(0).get(0)))));
 					if(result_int>0) result = new Boolean(true); else result = new Boolean(false);
 				}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -1002,7 +1111,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_news, new String[]{orgID,Util.getGeneralizedDate(DAYS_OLD)});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -1048,7 +1157,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 						new String[]{field_name,table.my_organization_data.organization_ID},
 						new String[]{value, org_ID});
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -1065,7 +1174,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		ArrayList<ArrayList<Object>> a;
 		try {
 			a = Application.db.select(sql, new String[]{cID});
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		}
@@ -1117,7 +1226,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 					new String[]{table.organization.blocked},
 					new String[]{table.organization.organization_ID},
 					new String[]{Util.bool2StringInt(val), orgID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -1133,7 +1242,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 					new String[]{table.organization.broadcasted, table.organization.reset_date},
 					new String[]{table.organization.organization_ID},
 					new String[]{Util.bool2StringInt(val),Util.getGeneralizedTime(), orgID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if(DEBUG) System.out.println("Orgs:setBroadcasting: Done");
@@ -1145,7 +1254,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 					new String[]{table.organization.requested},
 					new String[]{table.organization.organization_ID},
 					new String[]{Util.bool2StringInt(val), orgID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}

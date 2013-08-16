@@ -3,7 +3,7 @@ SETLOCAL
 scripts\sqlite3.exe deliberation-app.db < createEmptyDelib.sqlite
 scripts\sqlite3.exe deliberation-app.db < createInitDelib.sqlite
 scripts\sqlite3.exe deliberation-app.db < createTrigDelib.sqlite
-scripts\sqlite3 directory.db < createEmptyDir.sqlite
+scripts\sqlite3 directory-app.db < createEmptyDir.sqlite
 
 REM compile.bat
 REM echo "Compiled"

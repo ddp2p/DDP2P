@@ -1,4 +1,23 @@
 BEGIN TRANSACTION;
-CREATE TABLE registered (registeredID INTEGER PRIMARY KEY, global_peer_ID TEXT, certificate BLOB, addresses TEXT, signature BLOB, "timestamp" TIMESTAMP);
-COMMIT;
+CREATE TABLE registered (
+       registeredID INTEGER PRIMARY KEY, 
+       global_peer_ID TEXT UNIQUE, 
+       certificate BLOB, addresses TEXT, 
+       signature BLOB, 
+       "timestamp" TIMESTAMP);
 
+
+CREATE TABLE subscriber (
+    "subscriber_ID" INTEGER PRIMARY KEY,
+    "GID" TEXT UNIQUE,
+    "name" TEXT,
+    "topic" INTEGER,
+    "ad"    INTEGER,
+    "plaintext" INTEGER,
+    "payment" INTEGER,
+    "payment_amount" TEXT,
+    "mode" TEXT,
+    "expiration" TEXT
+);
+
+COMMIT;

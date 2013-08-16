@@ -43,8 +43,9 @@ import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import util.DBInterface;
+import util.P2PDDSQLException;
 import widgets.org.OrgListener;
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 import config.Application;
 import data.D_Organization;
 public class CensusPanel extends JPanel implements OrgListener {
@@ -467,7 +468,7 @@ public class CensusPanel extends JPanel implements OrgListener {
 	public static void main(String[] args) {
 		try {
 			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 		}
 		JFrame wg = new CensusFuzzy(-1, -1).getCensusFuzzyFrame();
 		wg.pack();

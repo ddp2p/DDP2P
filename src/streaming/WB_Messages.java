@@ -29,7 +29,7 @@ import java.util.Hashtable;
 
 import util.Util;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.DD;
 
@@ -127,10 +127,10 @@ public class WB_Messages extends ASNObj{
 	 * @param asr
 	 * @param sa
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static WB_Messages getRequestedData(ASNSyncRequest asr,
-			SyncAnswer sa) throws SQLiteException {
+			SyncAnswer sa) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Messages: getRequestedData: start");
 		if(asr==null){
 			if(DEBUG) System.out.println("WB_Messages: getRequestedData: exit no sync request");
@@ -155,14 +155,20 @@ public class WB_Messages extends ASNObj{
 					result.orgs.add(new D_Organization(gid,gid));
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got org");
 				} catch (Exception e) {
-					e.printStackTrace();
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested org: "+gid);
+					//e.printStackTrace();
 				}
 			}
 			for(String gid: r.cons.keySet()) {
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: cons gid="+gid);
 				// TODO if gid is sa, then skip to avoid duplicating work 
 				if((sa!=null)&&sa.hasConstituent(gid, r.cons.get(gid))) continue;
-				result.cons.add(new D_Constituent(gid, gid, D_Constituent.EXPAND_NONE));
+				try{
+					result.cons.add(new D_Constituent(gid, gid, D_Constituent.EXPAND_NONE));
+				}catch(Exception e){
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested const: "+gid);
+					//e.printStackTrace();
+				}
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: got cons");
 			}
 			for(String gid: r.neig) {
@@ -172,7 +178,8 @@ public class WB_Messages extends ASNObj{
 					result.neig.add(new D_Neighborhood(gid));
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got neig");
 				} catch (Exception e) {
-					e.printStackTrace();
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested neig: "+gid);
+					//e.printStackTrace();
 				}
 			}
 			for(String gid: r.witn) {
@@ -182,7 +189,8 @@ public class WB_Messages extends ASNObj{
 					result.witn.add(new D_Witness(gid));
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got witn");
 				} catch (Exception e) {
-					e.printStackTrace();
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested witn: "+gid);
+					//e.printStackTrace();
 				}
 			}
 			for(String gid: r.moti) {
@@ -192,7 +200,8 @@ public class WB_Messages extends ASNObj{
 					result.moti.add(new D_Motion(gid));
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got moti");
 				} catch (Exception e) {
-					e.printStackTrace();
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested moti: "+gid);
+					//e.printStackTrace();
 				}
 			}
 			for(String gid: r.just) {
@@ -202,7 +211,8 @@ public class WB_Messages extends ASNObj{
 					result.just.add(new D_Justification(gid));
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got just");
 				} catch (Exception e) {
-					e.printStackTrace();
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested just: "+gid);
+					//e.printStackTrace();
 				}
 			}			
 			for(String gid: r.sign) {
@@ -212,7 +222,8 @@ public class WB_Messages extends ASNObj{
 					result.sign.add(new D_Vote(gid));
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got vote");
 				} catch (Exception e) {
-					e.printStackTrace();
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested vote: "+gid);
+					//e.printStackTrace();
 				}
 			}			
 		}
@@ -228,9 +239,9 @@ public class WB_Messages extends ASNObj{
 	 * @param sp
 	 * @param obtained
 	 * @param orgs : the list of orgs mentioned
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static void store(WB_Messages r, Hashtable<String, RequestData> sq_sr, Hashtable<String, RequestData> obtained_sr, HashSet<String> orgs) throws SQLiteException {
+	public static void store(WB_Messages r, Hashtable<String, RequestData> sq_sr, Hashtable<String, RequestData> obtained_sr, HashSet<String> orgs) throws P2PDDSQLException {
 		RequestData obtained, rq = new RequestData();
 		if(DEBUG) System.out.println("WB_Messages: store: start");
 		if(r == null) {

@@ -31,7 +31,7 @@ import util.Util;
 
 import ASN1.Encoder;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -42,13 +42,13 @@ public class UpdateNewsTable {
 	private static byte[] getFieldData(Object object) {
 		return UpdateMessages.getFieldData(object);
 	}
-	public static Table buildNewsTable(String last_sync_date, String[] _maxDate, boolean justDate, HashSet<String> orgs, int limitNewsLow, int limitNewsMax) throws SQLiteException{
+	public static Table buildNewsTable(String last_sync_date, String[] _maxDate, boolean justDate, HashSet<String> orgs, int limitNewsLow, int limitNewsMax) throws P2PDDSQLException{
 		return buildNewsTable1(last_sync_date, _maxDate, justDate, orgs, limitNewsLow, limitNewsMax);
 	}
-	public static void integrateNewsTable(Table tab) throws SQLiteException{
+	public static void integrateNewsTable(Table tab) throws P2PDDSQLException{
 		integrateNewsTable1(tab);
 	}
-	private static Table buildNewsTable1(String last_sync_date, String[] _maxDate, boolean justDate, HashSet<String> orgs, int limitNewsLow, int limitNewsMax) throws SQLiteException {
+	private static Table buildNewsTable1(String last_sync_date, String[] _maxDate, boolean justDate, HashSet<String> orgs, int limitNewsLow, int limitNewsMax) throws P2PDDSQLException {
 		if(justDate) return null;
 		Table recentNews=new Table();
 		recentNews.name = table.news.G_TNAME;
@@ -92,7 +92,7 @@ public class UpdateNewsTable {
 		}
 		return recentNews;
 	}
-	private static void integrateNewsTable1(Table tab) throws SQLiteException {
+	private static void integrateNewsTable1(Table tab) throws P2PDDSQLException {
 		for(int i=0; i<tab.rows.length; i++) {
 			String global_news_ID = Util.getBString(tab.rows[i][0]);
 			String global_constituentID = Util.getBString(tab.rows[i][1]);

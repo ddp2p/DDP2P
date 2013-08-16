@@ -47,14 +47,16 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
+import streaming.RequestData;
 import util.DBInterface;
 import util.Util;
 //import widgets.org.ColorRenderer;
 import widgets.components.DocumentTitleRenderer;
 import widgets.motions.MotionsModel;
 import widgets.org.Orgs;
+import wireless.BroadcastClient;
 import config.Application;
 import config.DD;
 import config.DDIcons;
@@ -327,6 +329,11 @@ public class Motions extends JTable implements MouseListener  {
     	popup.add(menuItem);    	
        	
 
+    	aAction = new MotionCustomAction(this, _("WLAN_Request!"), addicon,_("Request this on WLAN."), _("Request"),KeyEvent.VK_R, MotionCustomAction.M_WLAN_REQUEST);
+    	aAction.putValue("row", new Integer(model_row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);    	
+
     	aAction = new MotionCustomAction(this, _("Enhance!"), addicon,_("Enhance this."), _("Enhance"),KeyEvent.VK_E, MotionCustomAction.M_ENHANCE);
     	aAction.putValue("row", new Integer(model_row));
     	menuItem = new JMenuItem(aAction);
@@ -378,6 +385,7 @@ class MotionCustomAction extends DebateDecideAction {
 	public static final int M_DEL_PARTIAL = 5;
 	public static final int M_ENHANCE = 6;
 	public static final int M_ADVERTISE = 7;
+	public static final int M_WLAN_REQUEST = 8;
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
 	Motions tree; ImageIcon icon; int cmd;
@@ -410,6 +418,42 @@ class MotionCustomAction extends DebateDecideAction {
     	
     	if(DEBUG) System.out.println("MotionCAction: row = "+row);
     	//do_cmd(row, cmd);
+    	if(cmd == M_WLAN_REQUEST) {
+    		if(DEBUG) System.out.println("Motions:MotionCustomAction:WLANRequest: start");
+    		String _m_GID = model.getMotionGID(row);
+    		if(_m_GID==null){
+    			if(DEBUG) System.out.println("Morions:MotionCustomAction:WLANRequest: null GID");
+        		return;
+    		}
+    		if(DEBUG) System.out.println("Morions:MotionCustomAction:WLANRequest: GID: "+_m_GID);
+    		RequestData rq = new RequestData();;
+    		
+			try {
+				String interests = DD.getAppText(DD.WLAN_INTERESTS);
+				if(interests != null){
+					byte[] wlan_interests = Util.byteSignatureFromString(interests);
+					rq = rq.decode(new ASN1.Decoder(wlan_interests));
+				}
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+			if(!rq.moti.contains(_m_GID)) {
+				rq.moti.add(_m_GID);
+				if(BroadcastClient.msgs == null){
+					System.out.println("Motions:MotionCustomAction:WLANRequest: empty messages queue!");
+				}else
+					BroadcastClient.msgs.registerRequest(rq);
+				if(DEBUG) System.out.println("Morions:MotionCustomAction:WLANRequest: added GID: "+_m_GID);
+			}
+			
+			byte[] intr = rq.getEncoder().getBytes();
+			try {
+				DD.setAppText(DD.WLAN_INTERESTS, Util.stringSignatureFromByte(intr));
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
+			if(DEBUG) System.out.println("Morions:MotionCustomAction:WLANRequest: done ");
+    	}
         if(cmd == M_DEL) {
     		String _m_ID = model.getMotionID(row);
     		if(_m_ID == null) return;
@@ -426,7 +470,7 @@ class MotionCustomAction extends DebateDecideAction {
 				Application.db.delete(table.news.TNAME,
 						new String[]{table.news.motion_ID},
 						new String[]{_m_ID}, DEBUG);
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
     	}
@@ -445,7 +489,7 @@ class MotionCustomAction extends DebateDecideAction {
 						" WHERE "+table.signature.signature+" IS NULL OR "+table.signature.global_signature_ID+" IS NULL",
 						new String[]{}, DEBUG);
 				Application.db.sync(new ArrayList<String>(Arrays.asList(table.justification.TNAME,table.signature.TNAME)));
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
     	}
@@ -470,7 +514,7 @@ class MotionCustomAction extends DebateDecideAction {
 				nID = n_motion.storeVerified();
 	        	if(DEBUG) System.out.println("MotionCAction: got id="+nID);
 				tree.setCurrent(nID);
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
     	}
@@ -504,7 +548,7 @@ class MotionCustomAction extends DebateDecideAction {
         		tree.setCurrent(nID);
         		if(DEBUG) System.out.println("MotionCAction: fire="+nID);
         		tree.fireListener(n_motion, ""+nID, 0);
- 			} catch (SQLiteException e2) {
+ 			} catch (P2PDDSQLException e2) {
 				e2.printStackTrace();
 			}
     	}

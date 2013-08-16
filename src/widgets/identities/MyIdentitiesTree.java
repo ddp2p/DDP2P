@@ -31,7 +31,7 @@ import javax.swing.tree.*;
 //import javax.swing.UIManager;
 import javax.swing.event.*;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Identity;
 import util.*;
@@ -164,7 +164,7 @@ public class MyIdentitiesTree extends JTree implements TreeExpansionListener,  T
 
 		try {
 			MyIdentitiesModel.setAnIdentityCurrent(this, (IdentityBranch) Identity.default_id_branch);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

@@ -29,7 +29,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.Identity;
@@ -226,7 +226,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 						result = dt;
 						if(DEBUG)System.out.println("Justifications:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -248,7 +248,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 						result = Util.getString(orgs.get(0).get(2));
 						if(DEBUG)System.out.println("Justifications:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -270,7 +270,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 						result = orgs.get(0).get(0);
 						if(DEBUG)System.out.println("Justifications:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -286,7 +286,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_co, new String[]{motID, "y"}, _DEBUG);
 				if(orgs.size()>0) result = orgs.get(0).get(0);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -298,7 +298,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac, new String[]{motID});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 				else result = new Integer("0");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return result;
 			}
@@ -307,8 +307,9 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			" WHERE "+table.news.justification_ID+" = ?;";
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_new, new String[]{motID});
-				if(orgs.size()>0) result = new Integer(""+(((Integer)result).longValue()+((Integer)orgs.get(0).get(0)).longValue()));
-			} catch (SQLiteException e) {
+				if(orgs.size()>0)
+					result = new Integer(""+Util.lval(result,0)+Util.lval(orgs.get(0).get(0),0));
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -321,7 +322,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac2, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD2)});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 				else result = new Integer("0");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return result;
 			}
@@ -331,10 +332,10 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_new2, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD2)});
 				if(orgs.size()>0){
-					int result_int = new Integer(""+(((Integer)result).longValue()+((Integer)orgs.get(0).get(0)).longValue()));
+					int result_int = new Integer(""+Util.lval(result,0)+Util.lval(orgs.get(0).get(0),0));
 					if(result_int>0) result = new Boolean(true); else result = new Boolean(false);
 				}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -346,7 +347,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_news, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD)});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -372,11 +373,9 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		for(int k=0;k<_justifications.length;k++){
 			Object i = _justifications[k];
 			if(DEBUG) System.out.println("JustificationsModel:setCurrent: k="+k+" row_just_ID="+i);
-			if(i instanceof Integer){
-				Integer id = (Integer)i;
-				if(id.longValue()==just_id) {
-					return k;
-				}
+			Long id = Util.Lval(i);
+			if((id!=null) && (id.longValue()==just_id)) {
+				return k;
 			}
 		}
 		return -1;
@@ -388,7 +387,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 						if(DEBUG) System.out.println("JustificationsModel:setCurrent: will set current just");
 						//Identity.setCurrentOrg(mot_id);
 						
-					} catch (SQLiteException e) {
+					} catch (P2PDDSQLException e) {
 						e.printStackTrace();
 					}
 					*/
@@ -520,7 +519,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 				_crea_date[k] = justi.get(k).get(1);
 			}
 			if(DEBUG) System.out.println("widgets.org.Justifications: A total of: "+_justifications.length);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		for(int k=0; k<old_sel.length; k++){
@@ -575,7 +574,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 						new String[]{field_name,table.my_justification_data.justification_ID},
 						new String[]{value, justification_ID});
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -598,7 +597,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		ArrayList<ArrayList<Object>> a;
 		try {
 			a = Application.db.select(sql, new String[]{cID});
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		}
@@ -631,7 +630,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 					new String[]{table.justification.blocked},
 					new String[]{table.justification.justification_ID},
 					new String[]{val?"1":"0", justificationID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -647,7 +646,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 					new String[]{table.justification.broadcasted},
 					new String[]{table.justification.justification_ID},
 					new String[]{val?"1":"0", justificationID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if(DEBUG) System.out.println("Orgs:setBroadcasting: Done");
@@ -659,7 +658,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 					new String[]{table.justification.requested},
 					new String[]{table.justification.justification_ID},
 					new String[]{val?"1":"0", justificationID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}

@@ -38,9 +38,10 @@ public class Address extends ASNObj{
 	private static final boolean DEBUG = false;
 	public static final String SOCKET = "Socket";
 	public static final String DIR = "DIR";
+	public static final String NAT = "NAT";
 	public String domain;
-	String protocol;
-	int tcp_port;
+	public String protocol;
+	public int tcp_port;
 	public int udp_port;
 	public String toString(){
 		return ((protocol!=null)?(protocol+"://"):"")+domain+ADDR_PART_SEP+tcp_port+((udp_port>0)?(ADDR_PART_SEP+udp_port):"");

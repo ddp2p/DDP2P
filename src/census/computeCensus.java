@@ -18,8 +18,6 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import census.witnessGraph.witnessGraphNode;
 
-import com.almworks.sqlite4java.SQLiteException;
-
 import config.Application;
 import data.D_Organization;
 import data.D_Witness;
@@ -144,7 +142,7 @@ tieID+" tied identities";;
 //			e[4][1]=1;
 //			e[3][1]=0;
 			
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
@@ -329,7 +327,7 @@ public class computeCensus extends JPanel{
 			System.out.println("[Target_ID, Negative Count, Positive Count, ValidityOfIdentity,Constituent Name]");
 			System.out.println(c);
 
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -351,7 +349,7 @@ public static void populateWitnessData1(){
 				Application.db.insert(insertSql, new String[] {""+0,""+4,""+1});
 				Application.db.insert(insertSql, new String[] {""+3,""+1,""+0});
 				Application.db.insert(insertSql, new String[] {""+4,""+1,""+1});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -373,7 +371,7 @@ public static void populateWitnessData2(){
 				Application.db.insert(insertSql, new String[] {""+0,""+4,""+1});
 				Application.db.insert(insertSql, new String[] {""+3,""+1,""+0});
 				Application.db.insert(insertSql, new String[] {""+4,""+1,""+1});
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -383,7 +381,7 @@ public static void populateWitnessData2(){
 	public static void main(String[] args) {
 		try {
 			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

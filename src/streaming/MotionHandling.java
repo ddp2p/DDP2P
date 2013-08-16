@@ -27,7 +27,7 @@ import hds.ASNSyncRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -47,7 +47,7 @@ public class MotionHandling {
 	private static final int BIG_LIMIT = 500;
 
 	public static boolean integrateNewData(D_Motion[] motions, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws SQLiteException {
+			String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
 		if(motions==null) return false;
 		for(int k=0; k<motions.length; k++) {
 			motions[k].global_organization_ID = orgGID;
@@ -65,10 +65,10 @@ public class MotionHandling {
  * @param orgs
  * @param limitMotionLow 
  * @return
- * @throws SQLiteException
+ * @throws P2PDDSQLException
  */
 	public static String getNextMotionDate(String last_sync_date,
-			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitMotionLow) throws SQLiteException {
+			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitMotionLow) throws P2PDDSQLException {
 		if(DEBUG) out.println("MotionHandling:getNextMotionDate: start: between: "+last_sync_date+" : "+_maxDate);
 		ArrayList<ArrayList<Object>> w;
 		String[] params;
@@ -132,7 +132,7 @@ public class MotionHandling {
 
 	public static D_Motion[] getMotionData(ASNSyncRequest asr,
 			String last_sync_date, String org_gid, String org_id,
-			String[] __maxDate) throws SQLiteException {
+			String[] __maxDate) throws P2PDDSQLException {
 		
 		D_Motion[] result=null;
 		String _maxDate = __maxDate[0];
@@ -194,7 +194,7 @@ public class MotionHandling {
 			" AND m."+table.motion.global_motion_ID+" IS NOT NULL "+
 			" ORDER BY m."+table.motion.arrival_date
 		;
-	public static ArrayList<String> getMotionHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws SQLiteException {
+	public static ArrayList<String> getMotionHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}

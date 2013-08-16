@@ -33,9 +33,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import util.DBInterface;
+import util.P2PDDSQLException;
 import util.Util;
 
-import com.almworks.sqlite4java.SQLiteException;
 
 import config.Application;
 import config.DD;
@@ -49,10 +49,10 @@ public class KeyManagement {
  * @param gid
  * @param sk_file
  * @return
- * @throws SQLiteException
+ * @throws P2PDDSQLException
  * @throws IOException
  */
-	public static boolean saveSecretKey(String gid, String sk_file) throws SQLiteException, IOException {
+	public static boolean saveSecretKey(String gid, String sk_file) throws P2PDDSQLException, IOException {
 		String sql =
 			"SELECT "+table.key.secret_key+","+table.key.name+","+table.key.type+
 			" FROM "+table.key.TNAME+
@@ -75,7 +75,7 @@ public class KeyManagement {
 		return true;
 	}
 	
-	public static SK loadSecretKey(String sk_file, String[] __pk) throws IOException, SQLiteException{
+	public static SK loadSecretKey(String sk_file, String[] __pk) throws IOException, P2PDDSQLException{
 		if(DEBUG) System.out.println("KeyManagement:loadSecretKey: start "+sk_file);
 		BufferedReader br = new BufferedReader(new FileReader(sk_file));
 		String sk, pk, type=null, name=null;

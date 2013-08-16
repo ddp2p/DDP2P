@@ -24,7 +24,7 @@ import static java.lang.System.out;
 
 import handling_wb.BroadcastQueueHandled;
 import handling_wb.PreparedMessage;
-import hds.Client;
+import hds.ClientSync;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -674,7 +674,7 @@ class D_Vote extends ASNObj{
 					
 						BroadcastClient.msgs.registerRecent(pm, BroadcastQueueHandled.VOTE);
 					}
-					Client.payload_recent.add(streaming.RequestData.SIGN, this.global_vote_ID, D_Organization.getOrgGIDHashGuess(this.global_organization_ID), Client.MAX_ITEMS_PER_TYPE_PAYLOAD);
+					ClientSync.payload_recent.add(streaming.RequestData.SIGN, this.global_vote_ID, D_Organization.getOrgGIDHashGuess(this.global_organization_ID), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 				}
 			}
 		}

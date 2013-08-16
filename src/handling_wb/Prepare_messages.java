@@ -27,7 +27,7 @@ import ASN1.ASN1DecoderFail;
 import ASN1.Encoder;
 import ciphersuits.Cipher;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
 import simulator.WirelessLog;
@@ -48,10 +48,10 @@ public class Prepare_messages {
 
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	private static int PEERS_SIZE = 10;//20;
-	public static int ORGS_SIZE = 10;//20;
-	public static int VOTES_SIZE = 10;//1000;
-	public static int CONSTITUENTS_SIZE = 10;//100;
+	private static int PEERS_SIZE = 10;
+	public static int ORGS_SIZE = 10;
+	public static int VOTES_SIZE = 1000;
+	public static int CONSTITUENTS_SIZE = 10;
 	public static int WITNESSES_SIZE = 10;
 	public static int NEIGHS_SIZE = 6;
 	public String m_sG_org_id=null;
@@ -68,19 +68,19 @@ public class Prepare_messages {
 	 * @param org_msgs
 	 * @param rowID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static long loadOrgs(ArrayList<PreparedMessage> org_msgs, long rowID) {
 		if(DEBUG)System.out.println("Prepare_messages : loadOrgs() : START");
 		try { 
 			return _loadOrgs(org_msgs, rowID);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return -1;
 		}
 	}
 
-	public static long _loadOrgs(ArrayList<PreparedMessage> org_msgs, long rowID) throws SQLiteException {
+	public static long _loadOrgs(ArrayList<PreparedMessage> org_msgs, long rowID) throws P2PDDSQLException {
 		long start_row = rowID;
 		boolean wrapped = false;
 		long last_row = -1;
@@ -640,9 +640,9 @@ public class Prepare_messages {
 	 * get_org_db_by_local
 	 * @param org_id
 	 * @return ArrayList<Object>
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static ArrayList<Object> get_org_db_by_local(String org_id) throws SQLiteException {
+	public static ArrayList<Object> get_org_db_by_local(String org_id) throws P2PDDSQLException {
 		String sql = "SELECT "+table.organization.org_list+" FROM "+
 				table.organization.TNAME+" WHERE "+table.organization.organization_ID+
 				"=?;";
@@ -655,11 +655,11 @@ public class Prepare_messages {
 	 * @param peer
 	 * @param rowID
 	 * @return byte[]
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 * @throws ASN1DecoderFail
 	 */
 	@SuppressWarnings("static-access")
-	private static byte[] buildPeerMessage(ArrayList<Object> peer, long rowID) throws SQLiteException, ASN1DecoderFail {
+	private static byte[] buildPeerMessage(ArrayList<Object> peer, long rowID) throws P2PDDSQLException, ASN1DecoderFail {
 		D_Message asn1=new D_Message();
 		asn1.sender = new D_PeerAddress();
 		asn1.sender.globalID = DD.getMyPeerGIDFromIdentity();
@@ -683,7 +683,7 @@ public class Prepare_messages {
 		return msg;
 	}
 
-	public static TypedAddress[] get_Paddress(String peer_id) throws SQLiteException {
+	public static TypedAddress[] get_Paddress(String peer_id) throws P2PDDSQLException {
 		int i=-1;
 		String sql = "SELECT "+table.peer_address.fields_peer_address+
 				" FROM "+table.peer_address.TNAME+
@@ -709,12 +709,12 @@ public class Prepare_messages {
 	 * @param org
 	 * @param local_id
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 * @throws ASN1DecoderFail
 	 */
 
 	@SuppressWarnings("static-access")
-	static byte[] buildOrganizationMessage(ArrayList<Object> org, String local_id) throws SQLiteException, ASN1DecoderFail{
+	static byte[] buildOrganizationMessage(ArrayList<Object> org, String local_id) throws P2PDDSQLException, ASN1DecoderFail{
 		D_Message asn1=new D_Message();
 		asn1.sender = new D_PeerAddress(); 
 		asn1.sender.globalID = DD.getMyPeerGIDFromIdentity();//DD.getAppText(DD.APP_my_global_peer_ID);
@@ -736,10 +736,10 @@ public class Prepare_messages {
 	 * @param _org
 	 * @param _local_id
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static D_Organization get_ASN_Organization_by_OrgID(ArrayList<Object> _org, String _local_id)
-			throws SQLiteException {
+			throws P2PDDSQLException {
 		/*
 		D_Organization ASN_Org = new D_Organization();
 		ASN_Org.params = new D_OrgParams();
@@ -784,9 +784,9 @@ public class Prepare_messages {
 	 * construct Peer MSG
 	 * @param global_creator_id
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static D_PeerAddress Get_creatorby_ID(String global_creator_id) throws SQLiteException {
+	private static D_PeerAddress Get_creatorby_ID(String global_creator_id) throws P2PDDSQLException {
 		D_PeerAddress l_peer = new D_PeerAddress();
 		ArrayList<ArrayList<Object>> peers = new ArrayList<ArrayList<Object>>();
 		String sql;

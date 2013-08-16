@@ -532,62 +532,11 @@ public class DDAddress {
 	public byte[] getSteganoBytes(int offset, int word_bytes, int bits) {
 		byte[] ddb = getBytes();
 		byte[] stg = new byte[offset+(int)Math.ceil(ddb.length/(double)bits)*word_bytes];
-		return getSteganoBytes(ddb, stg, offset, word_bytes, bits);
+		return EmbedInMedia.getSteganoBytes(ddb, stg, offset, word_bytes, bits);
 	}
 	public byte[] getSteganoBytes(byte[] stg, int offset, int word_bytes, int bits) {
 		byte[] ddb = getBytes();
-		return getSteganoBytes(ddb, stg, offset, word_bytes, bits);
-	}
-	public static byte[] getSteganoBytes(byte[] ddb, byte[] stg,
-			int offset, int word_bytes, int bits) {
-		byte[] len = new byte[4];
-		Util.copyBytes(len, 0, ddb.length);
-		getSteganoBytesRaw(len, stg, offset+STEGO_LEN_OFFSET, word_bytes, bits);
-		byte[] sign = new byte[2];
-		Util.copyBytes(sign, 0, STEGO_SIGN);
-		getSteganoBytesRaw(sign, stg, offset+STEGO_SIGN_OFFSET, word_bytes, bits);
-		Util.copyBytes(sign, 0, STEGO_BYTE_HEADER);
-		getSteganoBytesRaw(sign, stg, offset+STEGO_OFF_OFFSET, word_bytes, bits);
-		return getSteganoBytesRaw(ddb, stg, offset+STEGO_BYTE_HEADER*word_bytes, word_bytes, bits);
-	}
-	/**
-	 *  Fills buffer with bytes from result
-	 * @param ddb input full bytes data
-	 * @param stg destination steganodata buffer 
-	 * @param offset
-	 * @param word_bytes
-	 * @param bits
-	 * @return filled stg
-	 */
-	public static byte[] getSteganoBytesRaw(byte[] ddb, byte[] stg,
-			int offset, int word_bytes, int bits) {
-		int crt_src=0;
-		int crt_bit=0;
-		int crt_dst=offset;
-		for(;;crt_dst+=word_bytes) {
-			if(crt_src >= ddb.length) return stg;
-			if(crt_dst >= stg.length) return stg;
-			int available_bits = Math.min(8-crt_bit, bits);
-			//System.out.println(crt_src+" CRT src: "+Util.getHEX(ddb[crt_src])+" crt="+crt_bit+" av="+available_bits);
-			byte b1 = (byte) ((ddb[crt_src]>>crt_bit));
-			byte b2 = (byte) (((1<<available_bits) - 1));
-			byte b = (byte) ((ddb[crt_src]>>crt_bit) & ((1<<available_bits) - 1));
-			//System.out.println(" CRT b: "+Util.getHEX(b)+" CRT b1: "+Util.getHEX(b1)+" CRT b2: "+Util.getHEX(b2));
-			crt_bit += available_bits;
-			if(crt_bit >=8) {crt_src++; crt_bit=0;}
-			if(available_bits<bits) {
-				//crt_src++;
-				if(crt_src >= ddb.length) return stg;
-				//System.out.println(crt_src+" + CRT src: "+Util.getHEX(ddb[crt_src]));
-				crt_bit=bits-available_bits;
-				b |= (byte) ( (ddb[crt_src] & ((1<<crt_bit) - 1)) << available_bits );
-				//System.out.println(" + CRT b: "+Util.getHEX(ddb[crt_src]));
-			}
-			//System.out.print(crt_dst+" Old: "+Util.getHEX(stg[crt_dst])+" <- "+Util.getHEX(b));
-			stg[crt_dst] &= (byte) ~((1<<bits) - 1);
-			stg[crt_dst] |= b;
-			//System.out.println(" New: "+Util.getHEX(stg[crt_dst]));
-		}
+		return EmbedInMedia.getSteganoBytes(ddb, stg, offset, word_bytes, bits);
 	}
 	public boolean fromBMPFileSave(File file) throws IOException, P2PDDSQLException{
 		String explain="";

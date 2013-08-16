@@ -55,7 +55,7 @@ class RSA_PK extends PK{
 		return result;
 	}
 	public boolean _equals(PK _pk){
-		if(_DEBUG)System.out.println("RSA_PK:equal: start");
+		if(DEBUG)System.out.println("RSA_PK:equal: start");
 		if(!(_pk instanceof RSA_PK)) return false;
 		RSA_PK pk = (RSA_PK)_pk;
 		if(pk ==null) return false;

@@ -31,7 +31,7 @@ import javax.swing.event.*;
 
 import ASN1.Encoder;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import ciphersuits.Cipher;
 import ciphersuits.SK;
@@ -177,7 +177,7 @@ class ConstituentsDelAction extends DebateDecideAction {
    	   	 		if(DEBUG) System.err.println("ConstituentsAction:ConstituentsDelAction:GID = null (I removed myself)");
 				model.setCurrentConstituent(-1, tree);
 			}
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
@@ -204,11 +204,12 @@ class ConstituentsWitnessAction extends DebateDecideAction {
     	ConstituentsWitness dialog = new ConstituentsWitness(tree, tp, 0);
     	if (!dialog.accepted) return;
     	String witness_category = Util.getJFieldText(dialog.witness_category);
-    	int sense;
-    	int wItemIx = dialog.witness_category.getSelectedIndex();
-    	if(wItemIx >= dialog.first_negative){
-    		sense = 0;
-    	}else sense=1;
+    	String witness_category_trustworthiness = Util.getJFieldText(dialog.witness_category_trustworthiness);
+    	//int sense;
+    	//int wItemIx = dialog.witness_category.getSelectedIndex();
+    	//if(wItemIx >= dialog.first_negative){
+    	//	sense = 0;
+    	//}else sense=1;
     	String gcd = can.constituent.global_constituentID;
     	int new_index=can.parent.getIndexOfChild(can);
     	try {
@@ -239,10 +240,17 @@ class ConstituentsWitnessAction extends DebateDecideAction {
     		wbw.witnessed_global_constituentID = can.constituent.global_constituentID;
     		wbw.witnessing_global_constituentID = model.getConstituentGIDMyself();
     		wbw.witnessing_constituentID = model.getConstituentIDMyself();
-    		wbw.sense_y_n = sense;
+    		wbw.witness_eligibility_category = witness_category;
+    		//wbw.sense_y_n = sense;
+    		wbw.sense_y_n = ConstituentsWitness.sense_eligibility.get(witness_category).intValue();
+    		//System.out.println("ConstitAdd:: "+Util.concatSI(ConstituentsAdd.sense_eligibility, ":::", "NNN"));
+    		//System.out.println("ConstitAdd:: "+witness_category+" -> "+wbw.sense_y_n);
+    		wbw.witness_trustworthiness_category = witness_category_trustworthiness;
+    		if(!Util.emptyString(witness_category_trustworthiness))
+    			wbw.sense_y_trustworthiness = ConstituentsWitness.sense_trustworthiness.get(witness_category_trustworthiness).intValue();
+    		else wbw.sense_y_trustworthiness = D_Witness.UNKNOWN;
     		wbw.creation_date = creation_date;
     		wbw.arrival_date = creation_date;
-    		wbw.witness_category = witness_category;
     		wbw.global_witness_ID = wbw.make_ID();
         	if(DEBUG) System.out.println("CostituentsAction: addConst: signing="+wbw);
     		wbw.sign(sk);
@@ -320,6 +328,7 @@ class ConstituentsCustomAction extends DebateDecideAction {
 	public static final int TOUCH = 8;
 	public static final int REFRESH_NEED = 9;
 	public static final int MOVE = 10;
+	public static final int ZAPP = 11;
 	ConstituentsTree tree;ImageIcon icon; int action;
     public ConstituentsCustomAction(ConstituentsTree tree,
 			     String text, ImageIcon icon,
@@ -335,7 +344,7 @@ class ConstituentsCustomAction extends DebateDecideAction {
     	Object root=model.root;
     	Object target = null;
     	if(tpath!=null) target = tpath.getLastPathComponent();
-    	
+    	System.out.println("ConstAction:"+action);
     	try {
     		if(action == REFRESH_NEED) {
     			model.enableRefresh();
@@ -401,6 +410,18 @@ class ConstituentsCustomAction extends DebateDecideAction {
     	    		}
      	    	}
         	}
+       		if(action == ZAPP) {
+       			if (tpath != null) {
+    	    		if(target instanceof ConstituentsIDNode) {
+    	    	    	ConstituentsIDNode can = (ConstituentsIDNode) target;
+    	    	    	can.zapp(tree);
+    	    		}
+    	       		if(target instanceof ConstituentsAddressNode) {
+    	       			ConstituentsAddressNode can = (ConstituentsAddressNode) target;
+    	    	    	can.zapp(tree);
+    	    		}
+     	    	}
+        	}
             if(action == BROADCAST) {
     	    	if (tpath != null) {
     	    		if(target instanceof ConstituentsIDNode) {
@@ -445,7 +466,7 @@ class ConstituentsCustomAction extends DebateDecideAction {
     				D_Constituent dc = new D_Constituent(cID);
     				
     				String peer_Slogan = dc.slogan;
-    				String val=JOptionPane.showInputDialog(tree, _("Change My Constituent Slogan.\nPreviously: ")+peer_Slogan, _("My Constituent Slogan"), JOptionPane.QUESTION_MESSAGE);
+    				String val=JOptionPane.showInputDialog(tree, _("Change My Constituent Slogan.\nPreviously: ")+Util.trimmed(peer_Slogan,DD.MAX_DISPLAYED_CONSTITUENT_SLOGAN), _("My Constituent Slogan"), JOptionPane.QUESTION_MESSAGE);
     				if((val!=null)&&(!"".equals(val))){
     					dc.slogan = val;
     					//dc.organization_ID = ""+model.organizationID;
@@ -487,7 +508,7 @@ class ConstituentsCustomAction extends DebateDecideAction {
     			}
     			else Application.warning(_("You do not have a constituent self!"), _("No constituent self"));
     		}
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
 		/* // may try to re-expand tree branches now expanded... 
@@ -558,15 +579,20 @@ class ConstituentsAddAction extends DebateDecideAction {
     	ConstituentAddData dialog = dialogCA.getConstituentAddData();
     	long id = storeNewConstituentData(tree, dialog, false, true);
     	try {
-			if (id>=0) D_Constituent.readSignSave(id, model.getConstituentIDMyself());
+			if (id>=0){
+				if(dialog.sign)
+					D_Constituent.readSignSave(id, model.getConstituentIDMyself());
+				else
+					D_Constituent.readSignSave(id, 0);
+			}
 			model.expandConstituentID(tree, ""+id, true);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
     }
     /**
      * This function will store the constituent data found in the dialog
-     * for some constituent
+     * for some other constituent
      * @param tree
      * @param dialog
      * @param inserting_field_values
@@ -588,6 +614,7 @@ class ConstituentsAddAction extends DebateDecideAction {
     	Icon imageicon=null;
     	boolean noChild = true; // true is the next level is constituents (leaf)
     	String witness_category=dialog.witness_category;
+    	String witness_category_trustworthiness=dialog.witness_category_trustworthiness;
     	byte[] byteArray=null;
     	long field_default_next=0;
     	long field_above=-1; //  The ID of the current "previous fieldID"
@@ -635,8 +662,8 @@ class ConstituentsAddAction extends DebateDecideAction {
     		wbc.hash_alg = table.constituent.CURRENT_HASH_CONSTITUENT_ALG;
     		wbc.languages = dialog.getLanguages();
     		wbc.neighborhood=null;
-       		wbc.submitter_ID=Util.getStringID(model.getConstituentIDMyself());
-       		wbc.global_submitter_id = model.getConstituentGIDMyself();
+    		if(dialog.sign)wbc.submitter_ID=Util.getStringID(model.getConstituentIDMyself());
+       		if(dialog.sign)wbc.global_submitter_id = model.getConstituentGIDMyself();
          	 
     		//wbc.sign(wbc.global_organization_ID);
     		constituentID = wbc.storeVerified(wbc.global_organization_ID, wbc.organization_ID, now);
@@ -859,8 +886,10 @@ class ConstituentsAddAction extends DebateDecideAction {
          	//gcd=wbc.makeExternalGID();   		
     		//wbc.global_constituent_id = gcd;
     		//wbc.global_constituent_id_hash = gcd;
-    		gcd=data.D_Constituent.readSignSave(constituentID, model.getConstituentIDMyself());
-    		
+    		if(dialog.sign)
+    			gcd=data.D_Constituent.readSignSave(constituentID, model.getConstituentIDMyself());
+    		else
+    			gcd=data.D_Constituent.readSignSave(constituentID, 0);
     		//String now = Util.getGeneralizedTime();		
     		D_Witness wbw = new D_Witness();
     		wbw.global_organization_ID(organizationGID);
@@ -868,10 +897,16 @@ class ConstituentsAddAction extends DebateDecideAction {
     		wbw.witnessed_global_constituentID = gcd;
     		wbw.witnessing_global_constituentID = model.getConstituentGIDMyself();
     		wbw.witnessing_constituentID = model.getConstituentIDMyself();
-    		wbw.sense_y_n = 1;
+    		wbw.witness_eligibility_category = witness_category;
+    		wbw.sense_y_n = ConstituentsAdd.sense_eligibility.get(witness_category).intValue();
+    		//System.out.println("ConstitAdd:: "+Util.concatSI(ConstituentsAdd.sense_eligibility, ":::", "NNN"));
+    		//System.out.println("ConstitAdd:: "+witness_category+" -> "+wbw.sense_y_n);
+    		wbw.witness_trustworthiness_category = witness_category_trustworthiness;
+    		if(!Util.emptyString(witness_category_trustworthiness))
+    			wbw.sense_y_trustworthiness = ConstituentsAdd.sense_trustworthiness.get(witness_category_trustworthiness).intValue();
+			else wbw.sense_y_trustworthiness = D_Witness.UNKNOWN;
     		wbw.creation_date = creation_date;
     		wbw.arrival_date = creation_date;
-    		wbw.witness_category = witness_category;
     		wbw.global_witness_ID = wbw.make_ID();
         	if(DEBUG) System.out.println("CostituentsAction: addConst: signing="+wbw);
         	wbw.sign(sk);
@@ -903,7 +938,7 @@ class ConstituentsAddAction extends DebateDecideAction {
     		data.external = true;
     		data.slogan = table.constituent.INIT_EXTERNAL_SLOGAN;
         	data.email = dialog.emailEditor;
-        	data.submitter_ID = ""+model.getConstituentIDMyself();
+        	if(dialog.sign)data.submitter_ID = ""+model.getConstituentIDMyself();
         	if(DEBUG) System.out.println("NoChildren="+child);
     		can.addChild(child=new ConstituentsIDNode(model,can,data,null,null,can.next_ancestors), 0);
     		inserted_neigh = true;
@@ -1002,7 +1037,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
 			//if(id>0)
 			model.expandConstituentID(tree, ""+id, true);
 
-		} catch (SQLiteException e2) {
+		} catch (P2PDDSQLException e2) {
 			e2.printStackTrace();
 		}
     }
@@ -1015,10 +1050,10 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
      * @param inserting_field_values
      * @param inserting_neighborhoods
      * @return 
-     * @throws SQLiteException 
+     * @throws P2PDDSQLException 
      */
     static long storeMyConstituentData(ConstituentsTree tree, ConstituentAddData dialog,
-    		boolean inserting_field_values, boolean inserting_neighborhoods) throws SQLiteException {
+    		boolean inserting_field_values, boolean inserting_neighborhoods) throws P2PDDSQLException {
     	boolean inserted_neigh = false;
     	ConstituentsModel model = (ConstituentsModel)tree.getModel();
     	TreePath tp=dialog.tp;
@@ -1096,10 +1131,16 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
 		wbw.witnessed_global_constituentID = gcd;
 		wbw.witnessing_constituentID = constituentID;
 		wbw.witnessing_global_constituentID = gcd;//model.global_constituentID;
-		wbw.sense_y_n = 1;
+		wbw.witness_eligibility_category = witness_category;
+		wbw.sense_y_n = ConstituentsAdd.sense_eligibility.get(witness_category).intValue();
+		//System.out.println("ConstitAdd:: "+Util.concatSI(ConstituentsAdd.sense_eligibility, ":::", "NNN"));
+		//System.out.println("ConstitAdd:: "+witness_category+" -> "+wbw.sense_y_n);
+		wbw.witness_trustworthiness_category = dialog.witness_category_trustworthiness;
+		if(!Util.emptyString(dialog.witness_category_trustworthiness))
+			wbw.sense_y_trustworthiness = ConstituentsAdd.sense_trustworthiness.get(dialog.witness_category_trustworthiness).intValue();
+		else wbw.sense_y_trustworthiness = D_Witness.FAVORABLE;
 		wbw.creation_date = creation_date;
 		wbw.arrival_date = creation_date;
-		wbw.witness_category = witness_category;
  		wbw.global_witness_ID = wbw.make_ID();
     	if(DEBUG) System.out.println("CostituentsAction: addmyselfConst: signing="+wbw);
 		wbw.sign(sk);

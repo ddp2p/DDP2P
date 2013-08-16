@@ -47,7 +47,7 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import util.DBInterface;
 import util.Util;
@@ -394,7 +394,7 @@ class JustificationsCustomAction extends DebateDecideAction {
 				Application.db.delete(table.signature.TNAME,
 						new String[]{table.signature.justification_ID},
 						new String[]{_j_ID}, DEBUG);
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
     	}
@@ -409,7 +409,7 @@ class JustificationsCustomAction extends DebateDecideAction {
 						" WHERE "+table.signature.signature+" IS NULL OR "+table.signature.global_signature_ID+" IS NULL",
 						new String[]{}, DEBUG);
 				Application.db.sync(new ArrayList<String>(Arrays.asList(table.justification.TNAME,table.signature.TNAME)));
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
     	}
@@ -434,7 +434,7 @@ class JustificationsCustomAction extends DebateDecideAction {
         		if(DEBUG) System.out.println("JustificationsCAction: fire="+nID);
         		tree.fireListener(Util.getStringID(nID), 0, false);
         		DD.tabbedPane.setSelectedComponent(DD.jscj);
-			} catch (SQLiteException e2) {
+			} catch (P2PDDSQLException e2) {
 				e2.printStackTrace();
 			}
     	}

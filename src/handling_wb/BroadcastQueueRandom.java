@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import streaming.RequestData;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 public class BroadcastQueueRandom extends BroadcastQueue {
 
@@ -43,7 +43,7 @@ public class BroadcastQueueRandom extends BroadcastQueue {
 
 	@Override
 	long loadOrgs(ArrayList<PreparedMessage> m_PreparedMessagesOrgs2, long m_lastOrg2)
-			throws SQLiteException {
+			throws P2PDDSQLException {
 		// TODO Auto-generated method stub
 		return 0;
 	}

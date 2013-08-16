@@ -49,7 +49,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 ///////////////////////////////////////////////
 import ciphersuits.SK;
 ///////////////////////////////////////////////
@@ -356,7 +356,7 @@ public class HandleService {
     
 		try {
 			config.Application.db = new util.DBInterface("deliberation-app.db"/*args[1]*/);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
 		}	
@@ -452,7 +452,7 @@ public class HandleService {
         try {
         	 response = DDver.getVersionInfo(h);
         }catch(SOAPFaultException e){
-        	System.err.println("Code: " + e.getFault().getFaultCode() + ", Actor: "+e.getFault().getFaultActor()+", String: "+ e.getFault().getFaultString());
+        	if(DEBUG)System.err.println("WSUpdate:HandleService:Code: " + e.getFault().getFaultCode() + ", Actor: "+e.getFault().getFaultActor()+", String: "+ e.getFault().getFaultString());
         	if(e.getFault().getFaultActor().trim().equals("date")){
         		statusCode = INVALID_DATE;
         		errorString = e.getFault().getFaultString();
@@ -461,7 +461,7 @@ public class HandleService {
         		context.remove(url.toString());
         		context.put(url.toString(),d);
         		//d.ServerDate.setTime(new Date(Long.parseLong(errorString)));
-        		System.out.println("Server: "+d.ServerDate.getTime() + "  Client: " +d.LocalDate.getTime());
+        		if(DEBUG)System.out.println("WSUpdate:HandleService:Server: "+d.ServerDate.getTime() + "  Client: " +d.LocalDate.getTime());
         	} else if(e.getFault().getFaultActor().trim().equals("url")){
         		statusCode = INVALID_URL;
         		errorString = e.getFault().getFaultString();

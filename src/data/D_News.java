@@ -269,7 +269,7 @@ class D_News extends ASNObj{
 		ciphersuits.SK sk = util.Util.getStoredSK(signer_GID);
 		if(sk==null) {
 			if(DEBUG) System.out.println("WB_Motion:sign: no signature");
-			Application.warning(Util._("No secter key! You should select a constituent"), Util._("No secret key!"));
+			Application.warning(Util._("No secret key! You should select a constituent"), Util._("No secret key!"));
 			return null;
 		}
 		if(DEBUG) System.out.println("WB_Motion:sign: sign="+sk);

@@ -12,12 +12,12 @@ if [ -e directory.db ]
 then
  unlink directory.db
 fi
-sqlite3 directory.db < createEmptyDir.sqlite
+sqlite3 directory-app.db < createEmptyDir.sqlite
 echo "directory database made"
 make
 #./qin.sh
 
 #scripts/addpaths.sh
 pwd
-#./unit_test.sh widgets.wireless.WirelessSetup `pwd`/
+./unit_test.sh widgets.wireless.WirelessSetup `pwd`/
 

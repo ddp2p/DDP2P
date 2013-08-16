@@ -33,7 +33,7 @@ import util.DBInterface;
 import util.Util;
 import ASN1.Encoder;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -51,15 +51,15 @@ public class UpdatePeersTable {
 	public static byte[] getFieldData(Object object) {
 		return UpdateMessages.getFieldData(object);
 	}
-	public static Table buildPeersTable(String last_sync_date, String[] _maxDate, boolean justDate, HashSet<String> orgs, int limitPeersLow, int limitPeersMax) throws SQLiteException{
+	public static Table buildPeersTable(String last_sync_date, String[] _maxDate, boolean justDate, HashSet<String> orgs, int limitPeersLow, int limitPeersMax) throws P2PDDSQLException{
 		return buildPeersTable2(last_sync_date, _maxDate, justDate, orgs, limitPeersLow, limitPeersMax);
 	}
-	public static D_PeerAddress integratePeersTable(Table tab, String filteredID) throws SQLiteException{
+	public static D_PeerAddress integratePeersTable(Table tab, String filteredID) throws P2PDDSQLException{
 		if(DEBUG) out.println("UpdatePeersTable:integratePeersTable: now");
 		return integratePeersTable2(tab, filteredID);
 	}
 	@Deprecated
-	static Table buildPeersTable1(String last_sync_date) throws SQLiteException{
+	static Table buildPeersTable1(String last_sync_date) throws P2PDDSQLException{
 		Table recentPeers=new Table();
 		recentPeers.name = table.peer.G_TNAME;
 		recentPeers.fields=DD.peerFields1;
@@ -111,9 +111,9 @@ public class UpdatePeersTable {
 	 * @param orgs2 
 	 * @param limitPeersLow     like 30 (or MAX_ROW)
 	 * @return null iff nothing found
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	static String getNextDate(String last_sync_date, String _maxDate, HashSet<String> orgs2, int limitPeersLow) throws SQLiteException {
+	static String getNextDate(String last_sync_date, String _maxDate, HashSet<String> orgs2, int limitPeersLow) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("UpdatePeersTable:getNextDate: lsd="+last_sync_date+" maxDate="+_maxDate);
 		String queryPeers;
 		ArrayList<ArrayList<Object>>p_data = null, p_addr = null;
@@ -208,10 +208,10 @@ public class UpdatePeersTable {
 	 * @param last_sync_date
 	 * @param _maxDate
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	@Deprecated
-	static String getNextDate2(String last_sync_date, String _maxDate) throws SQLiteException {
+	static String getNextDate2(String last_sync_date, String _maxDate) throws P2PDDSQLException {
 		String queryPeers;
 		ArrayList<ArrayList<Object>>p_data = null;
 		if(_maxDate == null) {
@@ -238,13 +238,13 @@ public class UpdatePeersTable {
 		if(DEBUG) out.println("NextDate after "+last_sync_date+" = "+p_data.get(0).get(0)+" ("+p_data.get(0).get(1)+")");
 		return Util.getString(p_data.get(valid).get(0));
 	}
-	public static String getPeerAddresses(String peer_ID, String minDate, String maxDate) throws SQLiteException {
+	public static String getPeerAddresses(String peer_ID, String minDate, String maxDate) throws P2PDDSQLException {
 		String result = "";
 		String queryAddresses = "SELECT a."+table.peer_address.address+",a."+table.peer_address.type+",a."+table.peer_address.arrival_date+
 			" FROM "+table.peer_address.TNAME+" AS a " +
 			" WHERE (a."+table.peer_address.peer_ID+" == ?) AND (a."+table.peer_address.arrival_date+" > ?)" +
 				((maxDate!=null)?(" AND (a."+table.peer_address.arrival_date+" <= ?) "):"") +
-			" ORDER BY a."+table.peer_address.arrival_date+" LIMIT 1000;";
+			" ORDER BY a."+table.peer_address.arrival_date+" DESC LIMIT 1000;";
 		ArrayList<ArrayList<Object>>p_data =
 			Application.db.select(queryAddresses,
 					((maxDate!=null)?(new String[]{peer_ID, minDate, maxDate}):new String[]{peer_ID, minDate}),
@@ -257,7 +257,7 @@ public class UpdatePeersTable {
 		return result;
 	}
 	
-	public static String getPeerAddresses(String peer_ID) throws SQLiteException {
+	public static String getPeerAddresses(String peer_ID) throws P2PDDSQLException {
 		String result = "";
 		String queryAddresses = "SELECT a."+table.peer_address.address+",a."+table.peer_address.type+",a."+table.peer_address.arrival_date+
 			" FROM "+table.peer_address.TNAME+" AS a " +
@@ -280,9 +280,9 @@ public class UpdatePeersTable {
 	 * @param limitPeersLow low as 5
 	 * @param limitPeersMax can be 1000
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	static Table buildPeersTable2(String last_sync_date, String[] _maxDate, boolean justDate, HashSet<String> orgs2, int limitPeersLow, int limitPeersMax) throws SQLiteException{
+	static Table buildPeersTable2(String last_sync_date, String[] _maxDate, boolean justDate, HashSet<String> orgs2, int limitPeersLow, int limitPeersMax) throws P2PDDSQLException{
 		if(justDate){
 			_maxDate[0] = getNextDate(last_sync_date, _maxDate[0], orgs2, limitPeersLow);
 			if(DEBUG) System.out.println("UpdatePeersTable:buildPeersTable2: result justDate maxDate="+_maxDate[0]);
@@ -410,7 +410,7 @@ public class UpdatePeersTable {
 		for(int k = 0; k<row.length; k++) result += sep+((row[k]==null)?"null":new String(row[k]));
 		return result;
 	}
-	public static D_PeerAddress integratePeersTable2(Table tab, String filteredID) throws SQLiteException{
+	public static D_PeerAddress integratePeersTable2(Table tab, String filteredID) throws P2PDDSQLException{
 		//boolean DEBUG = true;
 		if(DEBUG) out.println("UpdatePeersTable:integratePeersTable2: START");
 		
@@ -542,7 +542,7 @@ public class UpdatePeersTable {
 		return null;
 	}
 	//public static String addressStringFromArray(hds.TypedAddress[] address) {return null;}
-	public static void integratePeerAddresses(long peer_ID, TypedAddress[] addresses_l, Calendar adding__date ) throws SQLiteException{
+	public static void integratePeerAddresses(long peer_ID, TypedAddress[] addresses_l, Calendar adding__date ) throws P2PDDSQLException{
 		if(DEBUG)out.println("UpdatePeersTable:integratePeersTable2: got addresses #: "+addresses_l.length);
 		for(int j=0; j<addresses_l.length; j++) {
 			String adding_date = Encoder.getGeneralizedTime(Util.incCalendar(adding__date, 1));
@@ -557,7 +557,7 @@ public class UpdatePeersTable {
 			if(DEBUG)out.println("UpdatePeersTable:integratePeersTable2: got local address_ID: "+address_ID);
 		}
 	}
-	public static void integratePeerAddresses(long peer_ID, String[] addresses_l, Calendar adding__date ) throws SQLiteException{
+	public static void integratePeerAddresses(long peer_ID, String[] addresses_l, Calendar adding__date ) throws P2PDDSQLException{
 		if(DEBUG)out.println("UpdatePeersTable:integratePeersTable2: got addresses #: "+addresses_l.length);
 		for(int j=0; j<addresses_l.length; j++) {
 			String adding_date = Encoder.getGeneralizedTime(Util.incCalendar(adding__date, 1));
@@ -576,7 +576,7 @@ public class UpdatePeersTable {
 	public static void main(String args[]){
 		try {
 			Application.db = new DBInterface(Application.DEFAULT_DELIBERATION_FILE);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 			return;
@@ -590,7 +590,7 @@ public class UpdatePeersTable {
 		Table a=null;
 		try {
 			a = UpdatePeersTable.buildPeersTable(last_sync_date, _maxDate, justDate, orgs, limitPeersLow, limitPeersMax);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

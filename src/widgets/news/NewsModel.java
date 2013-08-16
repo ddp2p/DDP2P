@@ -29,7 +29,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.Identity;
@@ -217,7 +217,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 						result = dt;
 						if(DEBUG)System.out.println("NewsModel:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -239,7 +239,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 						result = Util.getString(orgs.get(0).get(2));
 						if(DEBUG)System.out.println("NewsModel:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -261,7 +261,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 						result = orgs.get(0).get(0);
 						if(DEBUG)System.out.println("News:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -276,7 +276,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_co, new String[]{motID, "y"});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -288,7 +288,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac, new String[]{motID});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 				else result = new Integer("0");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return result;
 			}
@@ -298,7 +298,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_new, new String[]{motID});
 				if(orgs.size()>0) result = new Integer(""+(((Integer)result).longValue()+((Integer)orgs.get(0).get(0)).longValue()));
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -311,7 +311,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac2, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD2)});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 				else result = new Integer("0");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return result;
 			}
@@ -324,7 +324,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 					int result_int = new Integer(""+(((Integer)result).longValue()+((Integer)orgs.get(0).get(0)).longValue()));
 					if(result_int>0) result = new Boolean(true); else result = new Boolean(false);
 				}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
@@ -336,7 +336,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_news, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD)});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -374,16 +374,15 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 		for(int k=0;k<_news.length;k++){
 			Object i = _news[k];
 			if(DEBUG) System.out.println("NewsModel:setCurrent: k="+k+" row_just_ID="+i);
-			if(i instanceof Integer){
-				Integer id = (Integer)i;
-				if(id.longValue()==just_id) {
+			Long id = Util.Lval(i);
+			if((id != null) && (id.longValue()==just_id)) {
 					/*
 					try {
 						//long constituent_ID = 
 						if(DEBUG) System.out.println("NewsModel:setCurrent: will set current just");
 						//Identity.setCurrentOrg(mot_id);
 						
-					} catch (SQLiteException e) {
+					} catch (P2PDDSQLException e) {
 						e.printStackTrace();
 					}
 					*/
@@ -399,7 +398,6 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 						o.fireListener(k, 0);
 					}
 					break;
-				}
 			}
 		}
 		if(DEBUG) System.out.println("NewsModel:setCurrent: Done");
@@ -461,7 +459,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 				//_votes[k] = news_data.get(k).get(7);
 			}
 			if(DEBUG) System.out.println("widgets.org.News: A total of: "+_news.length);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		for(int k=0; k<old_sel.length; k++){
@@ -514,7 +512,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 						new String[]{field_name,table.my_news_data.news_ID},
 						new String[]{value, news_ID});
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -537,7 +535,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 		ArrayList<ArrayList<Object>> a;
 		try {
 			a = Application.db.select(sql, new String[]{cID});
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		}
@@ -570,7 +568,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 					new String[]{table.news.blocked},
 					new String[]{table.news.news_ID},
 					new String[]{val?"1":"0", newsID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -586,7 +584,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 					new String[]{table.news.broadcasted},
 					new String[]{table.news.news_ID},
 					new String[]{val?"1":"0", newsID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if(DEBUG) System.out.println("Orgs:setBroadcasting: Done");
@@ -598,7 +596,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 					new String[]{table.news.requested},
 					new String[]{table.news.news_ID},
 					new String[]{val?"1":"0", newsID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}

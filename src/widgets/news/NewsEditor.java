@@ -24,6 +24,7 @@ import static util.Util._;
 
 import hds.DebateDecideAction;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
@@ -36,6 +37,13 @@ import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -45,25 +53,29 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 import util.Util;
+import widgets.components.DocumentEditor;
 import widgets.components.TranslatedLabel;
+import widgets.motions.MotionEditor;
 import widgets.motions.MotionsListener;
 import widgets.news.NewsListener;
 import widgets.news.NewsModel;
 import widgets.org.OrgListener;
 import ASN1.Encoder;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -110,10 +122,13 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 	
 	public JTextField news_title_field;
 	//public JComboBox just_answer_field;
-	public JTextArea news_body_field;
+	public DocumentEditor news_body_field;
 	public JButton news_submit_field;
 	public JTextField date_field;
 	public JButton dategen_field;
+	public JButton load_field;
+	public JButton setTxtMode;
+	public JButton setHTMMode;
 	public JCheckBox requested;
 	public JCheckBox broadcasted;
 	public JCheckBox blocked;
@@ -131,6 +146,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 	long motion_ID = -1;
 	boolean forced;
 	private D_Organization organization;
+	JPanel panel_body = new JPanel();
 
 	
 	private void disable_it() {
@@ -157,7 +173,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 		mot_label.addMouseListener(this);
 		this.setLayout(new GridBagLayout());
 		int y[]={0};
-		makeGeneralPanel(this,y);
+		makeGeneralPanel(y);//this
 		makeHandlingPanel(this, y);
 		disable_it();
 	}
@@ -205,6 +221,38 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 		}
 		if(DEBUG) out.println("JustEditor:editable: exit "+d_news);
 		return false;
+	}
+	/**
+	 * Set the editor in a given mode (HTMLEditor/TXT/PDFViewer)
+	 * and load it with "data"
+	 * @param _NEW_FORMAT
+	 * @param data
+	 */
+	public void setMode(String _NEW_FORMAT, String data){
+		this.d_news.news.setDocumentString(data);
+		this.d_news.news.setFormatString(_NEW_FORMAT);
+		
+		this.news_body_field.removeListener(this);
+		news_body_field.getComponent().setVisible(false);
+		this.news_body_field.setType(d_news.news.getFormatString());
+		this.news_body_field.setText(d_news.news.getDocumentString());
+		
+		news_body_field.getComponent().setVisible(true);
+	    //this.panel_body.removeAll();
+	    //this.panel_body.add(motion_body_field.getComponent());
+		this.news_body_field.setEnabled(enabled);
+		this.news_body_field.addListener(this);
+	}
+	/**
+	 * Set the editor in a given mode (HTMLEditor/TXT/PDFViewer)
+	 * and convert current data to it
+	 * @param _NEW_FORMAT
+	 */
+	public void switchMode(String _NEW_FORMAT){
+		String data = "";
+		data = this.d_news.news.convertTo(_NEW_FORMAT);
+		if(data==null) return;
+		setMode(_NEW_FORMAT, data);
 	}
 	/**
 	 * Will reload org from database
@@ -287,7 +335,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 				String name = Util.getString(_j.get(0));
 				combo_answerTo[k++] = new NewsGIDItem(gid, id, name);
 			}
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
 		
@@ -305,7 +353,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 				} catch (NumberFormatException e) {
 					e.printStackTrace();
 					just.answerTo_ID = null;
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 					just.answerTo_ID = null;
 				}
@@ -324,9 +372,9 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 		if(sel!=null)just_answer_field.setSelectedItem(sel);
 		just_answer_field.addItemListener(this);
 		*/
-		this.news_body_field.getDocument().removeDocumentListener(this);
+		this.news_body_field.removeListener(this);
 		this.news_body_field.setText(d_news.news.getDocumentString());
-		this.news_body_field.getDocument().addDocumentListener(this);
+		this.news_body_field.addListener(this);
 		
 		this.news_title_field.getDocument().removeDocumentListener(this);
 		this.news_title_field.setText(d_news.title.title_document.getDocumentString());
@@ -335,7 +383,212 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 		
 		return true;
 	}
-	private JPanel makeGeneralPanel(NewsEditor p, int _y[]) {
+	
+	private JSplitPane makeGeneralPanel(int _y[]) { 
+    	
+    	JPanel p=new JPanel(), p1=new JPanel(), p2=new JPanel();
+    	JSplitPane sp= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, p1, p2);
+    	//_p.setLayout(new FlowLayout());
+    	//_p.add(sp);
+    	p1.setLayout(new BorderLayout());
+    	p1.add(p,BorderLayout.NORTH);
+    	p2.setLayout(new GridBagLayout());
+    	GridBagConstraints t = new GridBagConstraints();
+		t.fill = GridBagConstraints.NONE;
+		t.gridx = 0; t.gridy = 0;
+		t.anchor = GridBagConstraints.WEST;
+    	
+		//NewsEditor p = this; 
+		int y = _y[0];
+    	p.setLayout(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.NONE;
+		
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		c.gridx = 0; c.gridy = y++;		
+		TranslatedLabel label_org = new TranslatedLabel("Organization");
+		p.add(label_org, c);
+		c.gridx = 0; c.gridy = y++;		
+//		c.gridx = 1;
+		c.anchor = GridBagConstraints.WEST;
+		p.add(org_label,c);
+		
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		c.gridx = 0; c.gridy = y++;		
+		TranslatedLabel label_mot = new TranslatedLabel("Motion");
+		p.add(label_mot, c);
+		c.gridx = 0; c.gridy = y++;		
+//		c.gridx = 1;
+		c.anchor = GridBagConstraints.WEST;
+		p.add(mot_label,c);
+		
+		JPanel p_t = new JPanel();
+		TranslatedLabel label_just_title = new TranslatedLabel("Title");
+		p_t.add(label_just_title);
+		p_t.add(news_title_field = new JTextField(TITLE_LEN));
+		news_title_field.getDocument().addDocumentListener(this);
+		p2.add(p_t,t);
+
+		/*
+		c.anchor = GridBagConstraints.EAST;
+		c.gridx = 0; c.gridy = y++;		
+		TranslatedLabel label_just_title = new TranslatedLabel("Title");
+		p.add(label_just_title, c);
+		c.gridx = 1;
+		c.anchor = GridBagConstraints.WEST;
+		p.add(news_title_field = new JTextField(TITLE_LEN),c);
+		//title_field.addActionListener(this); //name_field.addFocusListener(this);
+		news_title_field.getDocument().addDocumentListener(this);
+		*/
+
+		/*
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		c.gridx = 0; c.gridy = y++;		
+		TranslatedLabel label_just_body = new TranslatedLabel("News");
+		p.add(label_just_body, c);
+		
+//		c.gridx = 1;
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.WEST;
+		news_body_field = new DocumentEditor();
+		
+		news_body_field.init(TEXT_LEN_ROWS);
+		news_body_field.addListener(this);
+		p.add(panel_body, c);
+		panel_body.add(news_body_field.getComponent());
+		
+
+		news_body_field.setLineWrap(true);
+		news_body_field.setWrapStyleWord(true);
+		news_body_field.setAutoscrolls(true);
+		news_body_field.setRows(TEXT_LEN_ROWS);
+		//result.setMaximumSize(new java.awt.Dimension(300,100));
+		news_body_field.getDocument().addDocumentListener(this);
+		
+		p.add(news_body_field, c);
+		 */
+		
+		/*
+		c.anchor = GridBagConstraints.EAST;
+		c.gridx = 0; c.gridy = y++;		
+		TranslatedLabel label_answer_just = new TranslatedLabel("Answer To");
+		p.add(label_answer_just, c);
+		c.gridx = 1;
+		c.anchor = GridBagConstraints.WEST;
+		*/
+		//p.add(just_answer_field = new JComboBox(combo_answerTo),c);
+		//p.add(just_answer_field = new JTextField(TITLE_LEN),c);
+		//just_answer_field.getDocument().addDocumentListener(this);
+		//just_answer_field.addItemListener(this);
+		
+		String creation_date = Util.getGeneralizedTime();
+		date_field = new JTextField(creation_date);
+		date_field.setColumns(creation_date.length());
+		
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		TranslatedLabel label_date = new TranslatedLabel("Creation Date");
+		p.add(label_date, c);
+//		c.gridx = 1;
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.WEST;
+		//hash_org.creation_date = creation_date;
+		p.add(date_field,c);
+		date_field.setForeground(Color.GREEN);
+		//name_field.addActionListener(this); //name_field.addFocusListener(this);
+		date_field.getDocument().addDocumentListener(this);
+		
+		c.gridx = 0; c.gridy = y++;		
+//		c.gridx = 1;
+		c.anchor = GridBagConstraints.WEST;
+		p.add(dategen_field = new JButton(_("Set Current Date")),c);
+		c.anchor = GridBagConstraints.EAST;
+		dategen_field.addActionListener(this);
+		
+		c.anchor = GridBagConstraints.EAST;
+		c.gridx = 0; c.gridy = y++;		
+		//TranslatedLabel label_submit_just = new TranslatedLabel("Submit");
+		//p.add(label_submit_just, c);
+//		c.gridx = 1;
+		//c.gridx = 0; c.gridy = y++;		
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(news_submit_field = new JButton(_("Submit News")),c);
+		//p.add(just_answer_field = new JTextField(TITLE_LEN),c);
+		//just_answer_field.getDocument().addDocumentListener(this);
+		news_submit_field.addActionListener(this);
+
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(load_field = new JButton(_("Load PDF/HTM/TXT")),c);
+		load_field.addActionListener(this);
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(this.setTxtMode = new JButton(_("Set TXT Mode")),c);
+		setTxtMode.addActionListener(this);
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(this.setHTMMode = new JButton(_("Set HTML Mode")),c);
+		setHTMMode.addActionListener(this);
+		c.gridx = 0; c.gridy = y++;	 //c.gridwidth=2;
+
+		
+		news_body_field = new DocumentEditor();
+		news_body_field.init(TEXT_LEN_ROWS);
+		news_body_field.addListener(this);
+		t.gridx = 0; t.gridy = 1;
+		t.anchor = GridBagConstraints.WEST;
+		t.fill = GridBagConstraints.BOTH;
+		p2.add(panel_body,t);//, c);
+
+		news_body_field.getComponent(DocumentEditor.RTEDIT).setVisible(false);
+		news_body_field.getComponent(DocumentEditor.TEXTAREA).setVisible(false);
+		news_body_field.getComponent(DocumentEditor.PDFVIEW).setVisible(false);
+		panel_body.add(news_body_field.getComponent(DocumentEditor.TEXTAREA));
+		panel_body.add(news_body_field.getComponent(DocumentEditor.RTEDIT));
+		panel_body.add(news_body_field.getComponent(DocumentEditor.PDFVIEW));
+		
+		news_body_field.setType(DocumentEditor.DEFAULT_FORMAT);
+		news_body_field.getComponent(DocumentEditor.DEFAULT_EDITOR).setVisible(true);
+
+		
+		/*
+		c.gridx = 0; c.gridy = y++;
+		//CheckboxGroup cg = null;//new CheckboxGroup();
+		requested = new JCheckBox(_("Requested"), false);
+		requested.addItemListener(this);
+		
+		broadcasted = new JCheckBox(_("Broadcasted"), false);
+		broadcasted.addItemListener(this);
+		
+		blocked = new JCheckBox(_("Blocked"), false);
+		blocked.addItemListener(this);
+		p.add(broadcasted,c);
+		c.gridx = 0; c.gridy = y++;
+		p.add(requested,c);
+		c.gridx = 0; c.gridy = y++;
+		p.add(blocked,c);
+		*/
+		_y[0] = y;
+		//max_general_fields = 5;
+		this.add(sp);
+		return sp;
+	}
+	
+	private JPanel _makeGeneralPanel(int _y[]) { 
+		NewsEditor p = this; 
 		int y = _y[0];
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.NONE;
@@ -372,14 +625,23 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 		p.add(label_just_body, c);
 		c.gridx = 1;
 		c.anchor = GridBagConstraints.WEST;
-		news_body_field = new JTextArea();
+		news_body_field = new DocumentEditor();
+		
+		news_body_field.init(TEXT_LEN_ROWS);
+		news_body_field.addListener(this);
+		p.add(panel_body, c);
+		panel_body.add(news_body_field.getComponent());
+		/*
+
 		news_body_field.setLineWrap(true);
 		news_body_field.setWrapStyleWord(true);
 		news_body_field.setAutoscrolls(true);
 		news_body_field.setRows(TEXT_LEN_ROWS);
 		//result.setMaximumSize(new java.awt.Dimension(300,100));
 		news_body_field.getDocument().addDocumentListener(this);
+		
 		p.add(news_body_field, c);
+		 */
 		
 		/*
 		c.anchor = GridBagConstraints.EAST;
@@ -516,7 +778,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 		if(DEBUG)System.out.println("JustEditor: handleFieldEvent: enter news="+d_news);
 		
 		if(this.d_news==null){
-			Util.printCallPath("No news?");
+			Util.printCallPath("No news object selected! Will create one.");
 			this.d_news = new D_News();
 			d_news.organization = this.organization;
 			d_news.organization_ID = Util.getStringID(this.organization_ID);
@@ -539,7 +801,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 		//String currentTime = Util.getGeneralizedTime();
 		String creationTime = date_field.getText();
 
-		if((this.news_body_field==source)||(this.news_body_field.getDocument()==source)) {
+		if((this.news_body_field==source)||(this.news_body_field.getDocumentSource()==source)) {
 			if(DEBUG) out.println("JustEditor:handleFieldEvent: just body");
 			String new_text = this.news_body_field.getText();
 			this.d_news.news.setDocumentString(new_text);
@@ -548,7 +810,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			this.d_news.setEditable();
 			try {
 				this.d_news.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -563,7 +825,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			this.d_news.setEditable();
 			try {
 				this.d_news.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -578,7 +840,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			this.d_news.setEditable();
 			try {
 				this.d_news.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -589,7 +851,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			this.d_news.setEditable();
 			try {
 				this.d_news.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -613,7 +875,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 				this.d_news.creation_date = Util.getCalendar(creationTime);
 				this.d_news.setEditable();
 				this.d_news.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			} catch (NumberFormatException e) {
 				e.printStackTrace();
@@ -632,10 +894,144 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 				long id = this.d_news.storeVerified();
 				if(id<=0) return;
 				disable_it();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
+		
+		if(this.setTxtMode==source) {
+			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setText");
+			switchMode(DocumentEditor.TXT_BODY_FORMAT);
+			if(DEBUG) System.out.println("MotionEditor:handleFieldEvent: done");
+
+			this.d_news.creation_date = Util.getCalendar(creationTime);
+			this.d_news.setEditable();
+			try {
+				this.d_news.storeVerified();
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		if(this.setHTMMode==source) {
+			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setHTM");
+			switchMode(DocumentEditor.HTM_BODY_FORMAT);
+			if(DEBUG) System.out.println("MotionEditor:handleFieldEvent: done");
+
+			this.d_news.creation_date = Util.getCalendar(creationTime);
+			this.d_news.setEditable();
+			try {
+				this.d_news.storeVerified();
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		if(this.load_field==source) {
+			if(DEBUG)System.err.println("ControlPane:actionImport: import file");
+			int returnVal = MotionEditor.fd.showOpenDialog(this);
+			if(DEBUG)System.err.println("ControlPane:actionImport: Got: selected");
+	        if (returnVal == JFileChooser.APPROVE_OPTION) {
+	        	if(DEBUG)System.err.println("ControlPane:actionImport: Got: ok");
+	            File file = MotionEditor.fd.getSelectedFile();
+	            if(!file.exists()){
+	            	Application.warning(_("The file does not exists: "+file),_("Importing Address")); return;
+	            }
+	            String ext = Util.getExtension(file);
+	            if(ext!=null) ext = ext.toLowerCase();
+	            try {
+	            	if("pdf".equals(ext)) {
+	            		if(DEBUG)System.err.println("ControlPane:actionImport: Got: pdf");
+	            		try {
+	            			//File f = new File("/home/msilaghi/CS_seminar_flyer.pdf");
+	            			InputStream in = new FileInputStream(file); // "/home/msilaghi/CS_seminar_flyer.pdf");
+	            			if(file.length() > DocumentEditor.MAX_PDF) {
+	            				if(_DEBUG) System.out.println("MotionEditor: getText: bin size="+file.length()+" vs "+DocumentEditor.MAX_PDF);
+	            				Application.warning(_("File too large! Current Limit:"+" "+file.length()+"/"+DocumentEditor.MAX_PDF),
+	            						_("Document too large for import!"));
+	            				return;
+	            			}
+	            			byte bin[] = new byte[(int)file.length()];
+	            			int off = 0;
+	            			do{
+	            				int cnt = in.read(bin, off, bin.length-off);
+	            				if(cnt == -1) {
+	            					if(_DEBUG) System.out.println("MotionEditor: getText: crt="+cnt+" off="+off+"/"+bin.length);
+	            					break;
+	            				}
+	            				off +=cnt;
+            					if(_DEBUG) System.out.println("MotionEditor: getText: crt="+cnt+" off="+off+"/"+bin.length);
+	            			}while(off < bin.length);
+	            			if(DEBUG) System.out.println("DocumentEditor: handle: bin size="+bin.length);
+	            			String data = Util.stringSignatureFromByte(bin);
+	            			if(DEBUG) System.out.println("DocumentEditor: handle: txt size="+data.length());
+	            			
+	            			setMode(DocumentEditor.PDF_BODY_FORMAT, data);
+	            			
+	            			if(DEBUG) System.out.println("DocumentEditor: handle: done");
+
+	            			this.d_news.creation_date = Util.getCalendar(creationTime);
+	            			this.d_news.setEditable();
+	            			try {
+	            				this.d_news.storeVerified();
+	            			} catch (P2PDDSQLException e) {
+	            				e.printStackTrace();
+	            			}
+	            			
+	            		} catch (FileNotFoundException e) {
+	            			e.printStackTrace();
+	            		} catch (IOException e) {
+	            			e.printStackTrace();
+	            		}
+	            	}else
+	            		if(("html".equals(ext)) || ("htm".equals(ext))){
+	            			if(_DEBUG)System.err.println("ControlPane:actionImport: Got: html: implement!");
+	            			try{
+	            				BufferedReader bri = new BufferedReader(new FileReader(file));
+								String data = Util.readAll(bri);
+								
+								setMode(DocumentEditor.HTM_BODY_FORMAT, data);
+								
+								if(DEBUG) System.out.println("DocumentEditor: handle: done");
+
+		            			this.d_news.creation_date = Util.getCalendar(creationTime);
+		            			this.d_news.setEditable();
+		            			try {
+		            				this.d_news.storeVerified();
+		            			} catch (P2PDDSQLException e) {
+		            				e.printStackTrace();
+		            			}
+	            			}catch(Exception e){
+	            				e.printStackTrace();
+	            			}
+	            		}else
+	            			if(("txt".equals(ext))){
+	            				try{
+		            				BufferedReader bri = new BufferedReader(new FileReader(file));
+									String data = Util.readAll(bri);
+									
+									setMode(DocumentEditor.TXT_BODY_FORMAT, data);
+									
+			            			if(DEBUG) System.out.println("DocumentEditor: handle: done");
+	
+			            			this.d_news.creation_date = Util.getCalendar(creationTime);
+			            			this.d_news.setEditable();
+			            			try {
+			            				this.d_news.storeVerified();
+			            			} catch (P2PDDSQLException e) {
+			            				e.printStackTrace();
+			            			}
+		            			}catch(Exception e){
+		            				e.printStackTrace();
+		            			}
+	            			}else
+	            				if(_DEBUG)System.err.println("ControlPane:actionImport: Got: "+ext+": implement!");
+	            }catch(Exception e){
+	            	e.printStackTrace();
+	            }
+	        }
+		}
+
+
+		
 		if(DEBUG) out.println("JustEditor:handleFieldEvent: exit");
 		if(DEBUG) out.println("*****************");
 	}
@@ -748,7 +1144,7 @@ class NewsEditorCustomAction extends DebateDecideAction {
         	tree.org_label.setText("");
         	try {
 				tree.d_news.storeVerified();
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
         	tree.update_it(tree.forced);
@@ -762,7 +1158,7 @@ class NewsEditorCustomAction extends DebateDecideAction {
         	tree.mot_label.setText("");
         	try {
 				tree.d_news.storeVerified();
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
         	tree.update_it(tree.forced);

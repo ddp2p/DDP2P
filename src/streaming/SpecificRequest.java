@@ -22,7 +22,7 @@ package streaming;
 
 import java.util.ArrayList;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -76,9 +76,9 @@ public class SpecificRequest extends ASNObj implements Summary{
 	 * // for each org served by this peer, gather the requested data
 	 * @param peer_ID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static SpecificRequest getPeerRequest(String peer_ID) throws SQLiteException {
+	public static SpecificRequest getPeerRequest(String peer_ID) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("SpecificRequest:getPeerRequest: start "+peer_ID);
 		long _peer_ID = Util.lval(peer_ID, -1);

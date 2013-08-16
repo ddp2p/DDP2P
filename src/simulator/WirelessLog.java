@@ -26,13 +26,17 @@ public class WirelessLog {
     public static File f2;
     public static FileWriter fw2;
     public static PrintWriter pw2;
+    public static File f3;
+    public static FileWriter fw3;
+    public static PrintWriter pw3;
+    
 	public static final DateFormat dateFormat = new SimpleDateFormat("MM/dd/yy HH:mm:ss");
 	public static final Date date = new Date();
 	public static final String Log_Time = (dateFormat.format(date))+"\n";
 	public static final String Log_Queue_info 		= "#***Queue_Fields***#	Queue_Name	Queue_idx	Type	Hash_Size\n";
-	public static final String Log_Broadcast_info 	= "#*Broadcast_Fields*#	Time	Queue_Name	Queue_idx	Type	Msg_counter\n";
+	public static final String Log_Broadcast_info 	= "#*Broadcast_Fields*#	Time	Queue_Name	Queue_idx	Type	Msg_counter	Msg_Size\n";
 	public static final String Log_Info = Log_Time+Log_Queue_info+Log_Broadcast_info;
-	public static final String RCV_Info				= "#*Receiving_Fields*#	Time	Type	Peer_GID_Hash	Hash_Msg	New?	Received_IP	Msg_counter\n";
+	public static final String RCV_Info				= "#*Receiving_Fields*#	DB_store_Time	Type	Peer_GID_Hash	Hash_Msg	New?	Received_IP	Msg_counter	Rcv_Msg_Time\n";
 	public static final String RCV_Log_Info = Log_Time+RCV_Info;
 	public static final String RCV_log = "(*Receiving*)	";
 	public static final String log_queue = "(***Queue***)	";
@@ -67,6 +71,10 @@ public class WirelessLog {
 	
 	public static synchronized void Print_to_RCV_log(String val){
 		if(WirelessLog.pw2!=null) WirelessLog.pw2.println(val);
+	}
+	
+	public static synchronized void Print_to_BS_log(String val){
+		if(WirelessLog.pw3!=null) WirelessLog.pw3.println(val);
 	}
 	
 public static String inc_c_counter(){
@@ -170,7 +178,7 @@ public static String inc_c_counter(){
 	}
 	
 	public static void RCV_logging(String Type, String Peer_GID, byte[] data,
-									int length, int status,String IP,long counter){
+									int length, int status,String IP,long counter, String Msg_time){
 		String _status = null;
 		switch(status){
 		case 0:
@@ -187,7 +195,7 @@ public static String inc_c_counter(){
 			break;
 		}
 		String Peer_GID_hash = Util.getGIDhash(Peer_GID);
-		String hash_msg = Util.stringSignatureFromByte(Util.simple_hash(data,0,length, DD.APP_INSECURE_HASH));
+		String hash_msg = "";//Util.stringSignatureFromByte(Util.simple_hash(data,0,length, DD.APP_INSECURE_HASH));
 		 String Time = Util.getGeneralizedTime();
 		 String log = RCV_log+
 				 	Time+
@@ -202,7 +210,10 @@ public static String inc_c_counter(){
 				 	WirelessLog.tab+
 				 	IP+
 				 	WirelessLog.tab+
-				 	counter;
+				 	counter+
+				 	WirelessLog.tab+
+				 	Msg_time
+				 	;
 		 WirelessLog.Print_to_RCV_log(log);
 	}
 	
@@ -221,6 +232,10 @@ public static String inc_c_counter(){
         WirelessLog.pw2 = new PrintWriter(WirelessLog.fw2);
         WirelessLog.Print_to_RCV_log(WirelessLog.RCV_Log_Info);
         
+        WirelessLog.f3 = new File(Application.CURRENT_LOGS_BASE_DIR()/*+Application.OS_PATH_SEPARATOR+Application.RELATIVE_DIR_LOGS+Application.OS_PATH_SEPARATOR*/+"BS_LOG"+t+".log");
+        WirelessLog.fw3 = new FileWriter(f3);
+        WirelessLog.pw3 = new PrintWriter(WirelessLog.fw3);
+        
         try {
             Runtime.getRuntime().addShutdownHook(
             new Thread(){
@@ -229,6 +244,7 @@ public static String inc_c_counter(){
                     //log.info( "Exiting..." );
                     WirelessLog.pw1.close();
                     WirelessLog.pw2.close();
+                    WirelessLog.pw3.close();
                  }
             } );
         }
@@ -255,9 +271,11 @@ public static String inc_c_counter(){
 		WirelessLog.tab+
 		subqueue+
 		WirelessLog.tab+
+		result.length+
+		WirelessLog.tab+
 		msg_c;
-		if(queue_type == WirelessLog.Handled_queue)
-			log += getMsgHash(result);
+		if(queue_type == WirelessLog.Handled_queue){
+			log += (WirelessLog.tab+getMsgHash(result));}
 		WirelessLog.Print_to_log(log);
 	}
 	

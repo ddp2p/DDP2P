@@ -33,7 +33,7 @@ import javax.swing.event.*;
 import util.Util;
 
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.Identity;
@@ -71,7 +71,7 @@ class IdentitySetCurrentAction extends DebateDecideAction {
     	    	if(sel.size()<1) return;
     	    	MyIdentitiesModel.setCurrent(sel.get(0), tree, ib);
 		    	model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{model.root.getIndexOfChild(ib)},new Object[]{ib}));				
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
     	}
@@ -150,7 +150,7 @@ class IdentitySetDefAction extends DebateDecideAction {
 				MyIdentitiesModel.setAnIdentityCurrent(tree, ib);
 				ib.default_id = true;
 		    	model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{model.root.getIndexOfChild(ib)},new Object[]{ib}));				
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
     }
@@ -198,7 +198,7 @@ class IdentityUnSetDefAction extends DebateDecideAction {
 				ib.default_id = true;
 		    	model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{model.root.getIndexOfChild(ib)},new Object[]{ib}));				
 		    	*/
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
     }
@@ -291,7 +291,7 @@ class IdentityCustomAction extends DebateDecideAction {
     						new String[]{table.identity_value.sequence_ordering},
     						new String[]{table.identity_value.identity_value_ID},
     						new String[]{""+il.sequence, Util.getStringID(il.id)}, DEBUG);
-    			} catch (SQLiteException e1) {
+    			} catch (P2PDDSQLException e1) {
     				e1.printStackTrace();
     			}
 				//TreePath new_path = tp.getParentPath();//.pathByAddingChild(newchild);
@@ -318,7 +318,7 @@ class IdentityCustomAction extends DebateDecideAction {
 					ArrayList<ArrayList<Object>> s = Application.db.select(sql_max, new String[]{Util.getStringID(il.id)}, DEBUG);
 					if(s.size()==0) il.sequence=0;
 					else il.sequence = Util.lval(s.get(0).get(0), -1)+1;
-				} catch (SQLiteException e2) {
+				} catch (P2PDDSQLException e2) {
 					e2.printStackTrace();
 					il.sequence++;
 				}
@@ -327,7 +327,7 @@ class IdentityCustomAction extends DebateDecideAction {
     						new String[]{table.identity_value.sequence_ordering},
     						new String[]{table.identity_value.identity_value_ID},
     						new String[]{""+il.sequence, Util.getStringID(il.id)}, DEBUG);
-    			} catch (SQLiteException e1) {
+    			} catch (P2PDDSQLException e1) {
     				e1.printStackTrace();
     			}
 				//TreePath new_path = tp.getParentPath();//.pathByAddingChild(newchild);

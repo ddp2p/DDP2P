@@ -24,10 +24,13 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.io.File;
 import javax.swing.*;
 import javax.swing.tree.*;
 import javax.swing.event.*;
+
+import data.D_Witness;
 import util.Util;
 
 class ConstituentsWitness extends JDialog {
@@ -42,16 +45,45 @@ class ConstituentsWitness extends JDialog {
 	JPanel panel = new JPanel();
 	public boolean accepted = false;
 	
-	@SuppressWarnings("unchecked")
-	public JComboBox witness_category =
-		new JComboBox(new String[]{
-				_("Personally known"),
-				_("Hearsay"),
+	private static final int[] witness_categories_sense = new int[]{D_Witness.FAVORABLE,D_Witness.FAVORABLE,D_Witness.UNKNOWN,D_Witness.UNKNOWN,D_Witness.UNFAVORABLE,D_Witness.UNFAVORABLE,D_Witness.UNFAVORABLE,D_Witness.UNFAVORABLE};
+	private static final String[] witness_categories=new String[]{
+				_("Personally known eligibility"),
+				_("Hearsay eligibility"),
+				_("Unknown"),"",
 				_("Inexistant address"),
 				_("No such person at this address"),
 				_("Not eligible"),
-				_("Error in address")});
-	public final int first_negative=2;
+				_("Error in address")
+	};
+	@SuppressWarnings("unchecked")
+	public JComboBox witness_category =
+		new JComboBox(witness_categories);
+	
+	private static final int[] witness_categories_trustworthiness_sense = new int[]{D_Witness.FAVORABLE,D_Witness.FAVORABLE,D_Witness.UNKNOWN,D_Witness.UNKNOWN,D_Witness.UNFAVORABLE,D_Witness.UNFAVORABLE};
+	private static final String[] witness_categories_trustworthiness=new String[]{
+				_("Personal trust"),
+				_("Hearsay trust"),
+				_("Unknown"),"",
+				_("Hearsay distrust"),
+				_("Personal distrust")
+	};
+	@SuppressWarnings("unchecked")
+	public JComboBox witness_category_trustworthiness =
+		new JComboBox(witness_categories_trustworthiness);
+	//public final int first_negative=2;
+	public static final Hashtable<String,Integer> sense_eligibility = init_sense_eligibility();
+	public static final Hashtable<String,Integer> sense_trustworthiness = init_sense_trustworthiness();
+	private static Hashtable<String, Integer> init_sense_eligibility() {
+		Hashtable<String,Integer> result = new Hashtable<String,Integer>();
+		for(int i=0; i<witness_categories.length; i++)result.put(witness_categories[i], witness_categories_sense[i]);
+		return result;
+	}
+	private static Hashtable<String, Integer> init_sense_trustworthiness() {
+		Hashtable<String,Integer> result = new Hashtable<String,Integer>();
+		for(int i=0; i<witness_categories_trustworthiness.length; i++)
+			result.put(witness_categories_trustworthiness[i], witness_categories_trustworthiness_sense[i]);
+		return result;
+	}
 	public ConstituentsWitness(ConstituentsTree _tree, TreePath _tp, int sense) {
 		super(Util.findWindow(_tree));
 		tree = (ConstituentsTree) _tree;
@@ -64,9 +96,14 @@ class ConstituentsWitness extends JDialog {
 		setLayout(new GridBagLayout());
 
 		c.ipadx=10; c.gridx=0; c.gridy=4; c.anchor = GridBagConstraints.WEST;
-		panel.add(new JLabel(_("Explanation")),c);
+		panel.add(new JLabel(_("Eligibility")),c);
 		c.gridx = 1;
 		panel.add(witness_category,c);
+
+		c.ipadx=10; c.gridx=0; c.gridy=5; c.anchor = GridBagConstraints.WEST;
+		panel.add(new JLabel(_("Trustworthiness")),c);
+		c.gridx = 1;
+		panel.add(witness_category_trustworthiness,c);
 
 		c.gridx=0; c.gridy=0;
 		add(panel,c);

@@ -20,14 +20,16 @@
 
 package simulator;
 public class SimulationParameters{
-    public static float intended_constituents = 100000,
+	
+    public static float
+    intended_witnesses = 1000000,
+    intended_constituents = 100000,
 	intended_orgs = 100,
 	intended_peers = 5000,
 	intended_motions = 5000,
 	intended_neighborhoods = 200,
-	intended_witnesses = 1000000,
 	intended_votes = 10000000,
-	intended_all=intended_constituents+intended_votes+intended_motions+intended_peers+intended_orgs;
+	intended_all=intended_constituents+intended_votes+intended_motions+intended_peers+intended_orgs+intended_witnesses;
 
 
     public static float adding_new_organization = intended_orgs/intended_all,
@@ -36,7 +38,7 @@ public class SimulationParameters{
 	adding_new_motion = intended_motions/intended_all,
 	adding_new_witness = intended_witnesses/intended_all,
 	adding_new_neighbor = intended_neighborhoods/intended_all,
-	adding_new_vote = 1-adding_new_motion-adding_new_constituent-adding_new_organization-adding_new_peer,
+	adding_new_vote = 1-adding_new_motion-adding_new_constituent-adding_new_organization-adding_new_peer-adding_new_witness,
 	adding_new_justification_in_vote = 1/10.f,
 	using_old_justification_in_vote = 1-adding_new_justification_in_vote,
 	no_justification_vote = 1/2.f,

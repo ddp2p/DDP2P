@@ -24,7 +24,9 @@ import static util.Util._;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -32,8 +34,16 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Scanner;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -41,11 +51,14 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
+import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -53,6 +66,7 @@ import table.motion;
 import table.signature;
 import util.Util;
 import widgets.components.DocumentEditor;
+import widgets.components.DocumentFilter;
 import widgets.components.LVComboBox;
 import widgets.components.LVListener;
 import widgets.components.TranslatedLabel;
@@ -62,7 +76,7 @@ import widgets.motions.MotionsModel;
 import widgets.org.OrgEditor;
 import ASN1.Encoder;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -107,16 +121,20 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	private static final int TEXT_LEN_ROWS = 10;
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	private static final String BODY_FORMAT = "TXT";
+	//private static final String BODY_FORMAT = "TXT";
 	private static final String TITLE_FORMAT = "TXT";
 	public boolean SUBMIT = true;
 	
+	static final public JFileChooser fd = new JFileChooser();
 	public JTextField motion_title_field;
 	public JComboBox motion_answer_field;
 	public DocumentEditor motion_body_field;
 	public JButton motion_submit_field;
 	public JTextField date_field;
 	public JButton dategen_field;
+	public JButton load_field;
+	public JButton setTxtMode;
+	public JButton setHTMMode;
 	public JCheckBox requested;
 	public JCheckBox broadcasted;
 	public JCheckBox blocked;
@@ -137,6 +155,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	JustificationEditor jEditor;
 	VoteEditor vEditor;
 	private LVComboBox scoring_options_field;
+	JPanel panel_body = new JPanel();
 	
 	private void disable_handling() {
 		if(this.requested!=null) this.requested.setEnabled(false);
@@ -152,6 +171,9 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		if(this.date_field!=null) this.date_field.setEnabled(false);
 		if(this.scoring_options_field!=null) this.scoring_options_field.setEnabled(false);
 		if(this.dategen_field!=null) this.dategen_field.setEnabled(false);
+		if(this.load_field!=null) this.load_field.setEnabled(false);
+		if(this.setTxtMode!=null) this.setTxtMode.setEnabled(false);
+		if(this.setHTMMode!=null) this.setHTMMode.setEnabled(false);
 		if(this.category_field!=null) this.category_field.setEnabled(false);
 		if(this.category_field_editor!=null) this.category_field_editor.setEnabled(false);
 		vEditor.disable_it();
@@ -167,6 +189,9 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		if(this.date_field!=null) this.date_field.setEnabled(true);
 		if(this.scoring_options_field!=null) this.scoring_options_field.setEnabled(true);
 		if(this.dategen_field!=null) this.dategen_field.setEnabled(true);
+		if(this.load_field!=null) this.load_field.setEnabled(true);
+		if(this.setTxtMode!=null) this.setTxtMode.setEnabled(true);
+		if(this.setHTMMode!=null) this.setHTMMode.setEnabled(true);
 		if(this.category_field!=null) this.category_field.setEnabled(true);
 		if(this.category_field_editor!=null) this.category_field_editor.setEnabled(true);
 		if(this.requested!=null) this.requested.setEnabled(true);
@@ -189,9 +214,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		ImageIcon icon = config.DDIcons.getOrgImageIcon("General Org");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
 		int y[] = new int[]{0};
 		
-		JPanel gp = new JPanel();
-		gp.setLayout(new GridBagLayout()); y[0] = 0;
-		JComponent generalPane = makeGeneralPanel(gp,y);
+		JComponent generalPane = makeGeneralPanel(y);
 		tabbedPane.addTab(_("Motion Body"), icon, generalPane, _("Generic fields"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_G);
 		
@@ -215,12 +238,57 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		this.add(tabbedPane);
 		disable_it();
 		this.disable_handling();
+		
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				fd.setFileFilter(new DocumentFilter());
+				try{
+					if(DEBUG)System.out.println("ControlPane:<init>: set Dir = "+Application.USER_CURRENT_DIR);
+					File userdir = new File(Application.USER_CURRENT_DIR);
+					if(DEBUG)System.out.println("ControlPane:<init>: set Dir FILE = "+userdir);
+					fd.setCurrentDirectory(userdir);
+				}catch(Exception e){if(_DEBUG)e.printStackTrace();}
+			}
+		});
 	}
 	public JScrollPane getScrollPane(){
         JScrollPane scrollPane = new JScrollPane(this);
         //scrollPane.setSize(1000, this.getHeight());
 		//this.setFillsViewportHeight(true);
 		return scrollPane;
+	}
+	/**
+	 * Set the editor in a given mode (HTMLEditor/TXT/PDFViewer)
+	 * and load it with "data"
+	 * @param _NEW_FORMAT
+	 * @param data
+	 */
+	public void setMode(String _NEW_FORMAT, String data){
+		if(DEBUG) System.out.println("MotionEditor:setMode: "+_NEW_FORMAT+" "+data);
+		this.moti.motion_text.setDocumentString(data);
+		this.moti.motion_text.setFormatString(_NEW_FORMAT);
+		
+		this.motion_body_field.removeListener(this);
+		motion_body_field.getComponent().setVisible(false);
+		this.motion_body_field.setType(moti.motion_text.getFormatString());
+		this.motion_body_field.setText(moti.motion_text.getDocumentString());
+		
+		motion_body_field.getComponent().setVisible(true);
+	    //this.panel_body.removeAll();
+	    //this.panel_body.add(motion_body_field.getComponent());
+		this.motion_body_field.setEnabled(enabled);
+		this.motion_body_field.addListener(this);
+	}
+	/**
+	 * Set the editor in a given mode (HTMLEditor/TXT/PDFViewer)
+	 * and convert current data to it
+	 * @param _NEW_FORMAT
+	 */
+	public void switchMode(String _NEW_FORMAT){
+		String data = "";
+		data = this.moti.motion_text.convertTo(_NEW_FORMAT);
+		if(data==null) return;
+		setMode(_NEW_FORMAT, data);
 	}
 	public void setMotion(String _motionID, boolean force){
 		if(DEBUG) out.println("MotionEditor:setMotion: force="+force);
@@ -258,7 +326,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		ArrayList<ArrayList<Object>> s = null;
 		try {
 			s = Application.db.select(sql, new String[]{motionID,constituentID});
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -333,7 +401,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		/*
 		try {
 			this.moti = new D_Motion(Util.lval(motionID, -1));
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 			return;
 		}
@@ -438,7 +506,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				String name = Util.getString(_j.get(0));
 				combo_answerTo[k++] = new MotionsGIDItem(gid, id, name);
 			}
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
 		
@@ -456,7 +524,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				} catch (NumberFormatException e) {
 					e.printStackTrace();
 					just.answerTo_ID = null;
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 					just.answerTo_ID = null;
 				}
@@ -476,9 +544,18 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		if(sel!=null)motion_answer_field.setSelectedItem(sel);
 		motion_answer_field.addItemListener(this);
 		
-		this.motion_body_field.getDocument().removeDocumentListener(this);
+		if(DEBUG) System.out.println("MotionEditor: update_it: will set="+moti.motion_text.getFormatString());
+		this.motion_body_field.removeListener(this);
+		motion_body_field.getComponent().setVisible(false);
+		this.motion_body_field.setType(moti.motion_text.getFormatString()); // has to be done first
+		// text set only after format (editor) is specified
 		this.motion_body_field.setText(moti.motion_text.getDocumentString());
-		this.motion_body_field.getDocument().addDocumentListener(this);
+		motion_body_field.getComponent().setVisible(true);
+		//this.panel_body.removeAll();
+		//this.panel_body.add(motion_body_field.getComponent());
+		this.motion_body_field.setEnabled(enabled);
+		this.motion_body_field.addListener(this);
+		if(DEBUG) System.out.println("MotionEditor: update_it: did set="+moti.motion_text.getFormatString());
 		
 		this.motion_title_field.getDocument().removeDocumentListener(this);
 		this.motion_title_field.setText(moti.motion_title.title_document.getDocumentString());
@@ -507,7 +584,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 						category_field.setSelectedItem(crt);
 					}
 				}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}else{
@@ -524,8 +601,208 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		// TODO Auto-generated method stub
 		return null;
 	}
-        @SuppressWarnings("unchecked")
-	private JPanel makeGeneralPanel(JPanel p, int _y[]) {
+    @SuppressWarnings("unchecked")
+    private JSplitPane makeGeneralPanel(int _y[]) {
+    	
+    	JPanel p=new JPanel(), p1=new JPanel(), p2=new JPanel();
+    	JSplitPane sp= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, p1, p2);
+    	//_p.setLayout(new FlowLayout());
+    	//_p.add(sp);
+    	p1.setLayout(new BorderLayout());
+    	p1.add(p,BorderLayout.NORTH);
+    	p2.setLayout(new GridBagLayout());
+    	GridBagConstraints t = new GridBagConstraints();
+		t.fill = GridBagConstraints.NONE;
+		t.gridx = 0; t.gridy = 0;
+		t.anchor = GridBagConstraints.WEST;
+    	
+    	int y = _y[0];
+    	p.setLayout(new GridBagLayout());
+    	GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.NONE;
+		
+		JPanel p_t = new JPanel();
+		TranslatedLabel label_just_title = new TranslatedLabel("Title");
+		p_t.add(label_just_title);
+		p_t.add(motion_title_field = new JTextField(TITLE_LEN));
+		motion_title_field.getDocument().addDocumentListener(this);
+		p2.add(p_t,t);
+		/*
+		c.anchor = GridBagConstraints.WEST;
+		c.gridx = 0; c.gridy = y++;		
+		p.add(label_just_title, c);
+		*/
+		/*
+		//c.gridx = 1;
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		p.add(motion_title_field = new JTextField(TITLE_LEN),c);
+		//title_field.addActionListener(this); //name_field.addFocusListener(this);
+		*/
+		//p2.add(motion_title_field = new JTextField(TITLE_LEN),BorderLayout.NORTH);
+		
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.WEST;
+		TranslatedLabel label_choices = new TranslatedLabel("Default Choices");
+		p.add(label_choices, c);
+		//c.gridx = 1;
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		scoring_options_field = new LVComboBox();
+		p.add(scoring_options_field,c);
+		scoring_options_field.addLVListener(this);
+		c.fill = GridBagConstraints.NONE;
+		
+		c.anchor = GridBagConstraints.WEST;
+		c.gridx = 0; c.gridy = y++;		
+		TranslatedLabel label_answer_just = new TranslatedLabel("Answer To");
+		p.add(label_answer_just, c);
+		//c.gridx = 1;
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		p.add(motion_answer_field = new JComboBox(combo_answerTo),c);
+		//p.add(just_answer_field = new JTextField(TITLE_LEN),c);
+		//just_answer_field.getDocument().addDocumentListener(this);
+		motion_answer_field.addItemListener(this);
+		c.fill = GridBagConstraints.NONE;
+		
+		
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.WEST;
+		TranslatedLabel label_category = new TranslatedLabel("Category");
+		p.add(label_category, c);
+		//c.gridx = 1;
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		p.add(category_field = new JComboBox(new String[]{}),c);
+		category_field.addItemListener(this);
+		category_field_editor = ((JTextField)category_field.getEditor().getEditorComponent());
+		category_field_editor.getDocument().addDocumentListener(this);
+		category_field.setEditable(true);
+		c.fill = GridBagConstraints.NONE;
+		
+		String creation_date = Util.getGeneralizedTime();
+		date_field = new JTextField(creation_date);
+		date_field.setColumns(creation_date.length());
+		
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.WEST;
+		TranslatedLabel label_date = new TranslatedLabel("Creation Date");
+		p.add(label_date, c);
+		//c.gridx = 1;
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		//hash_org.creation_date = creation_date;
+		p.add(date_field,c);
+		date_field.setForeground(Color.GREEN);
+		//name_field.addActionListener(this); //name_field.addFocusListener(this);
+		date_field.getDocument().addDocumentListener(this);
+		c.fill = GridBagConstraints.NONE;
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(dategen_field = new JButton(_("Set Current Date")),c);
+		dategen_field.addActionListener(this);
+
+		
+		/*
+		c.anchor = GridBagConstraints.NORTHWEST;
+		c.gridx = 0; c.gridy = y++;		
+		TranslatedLabel label_just_body = new TranslatedLabel("Motion");
+		p.add(label_just_body, c);
+		*/
+		if(SUBMIT) {
+			c.anchor = GridBagConstraints.EAST;
+			c.gridx = 0; c.gridy = y++; // +1		
+			//c.gridx = 1;
+			c.anchor = GridBagConstraints.EAST;
+			//c.anchor = GridBagConstraints.WEST;
+			p.add(motion_submit_field = new JButton(_("Submit Motion")),c);
+			motion_submit_field.addActionListener(this);
+		}
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(load_field = new JButton(_("Load PDF/HTM/TXT")),c);
+		load_field.addActionListener(this);
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(this.setTxtMode = new JButton(_("Set TXT Mode")),c);
+		setTxtMode.addActionListener(this);
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(this.setHTMMode = new JButton(_("Set HTML Mode")),c);
+		setHTMMode.addActionListener(this);
+		c.gridx = 0; c.gridy = y++;	 //c.gridwidth=2;
+		c.fill = GridBagConstraints.BOTH; //c.ipadx=c.ipady=2;
+		// c.anchor = GridBagConstraints.WEST;
+		motion_body_field = new DocumentEditor();
+		motion_body_field.name = "Motion Editor";
+		// javax.swing.text.rtf.
+		// motion_body_field.setContentType("text/html");
+		// motion_body_field.setText("<html><body>This is <em>emphasized</em>.</body></html>");
+		motion_body_field.init(TEXT_LEN_ROWS);
+		motion_body_field.addListener(this);
+		t.gridx = 0; t.gridy = 1;
+		t.anchor = GridBagConstraints.WEST;
+		t.fill = GridBagConstraints.BOTH;
+		p2.add(panel_body,t); //, c);
+
+		motion_body_field.getComponent(DocumentEditor.RTEDIT).setVisible(false);
+		motion_body_field.getComponent(DocumentEditor.TEXTAREA).setVisible(false);
+		motion_body_field.getComponent(DocumentEditor.PDFVIEW).setVisible(false);
+		panel_body.add(motion_body_field.getComponent(DocumentEditor.TEXTAREA));
+		panel_body.add(motion_body_field.getComponent(DocumentEditor.RTEDIT));
+		panel_body.add(motion_body_field.getComponent(DocumentEditor.PDFVIEW));
+		
+		motion_body_field.setType(DocumentEditor.DEFAULT_FORMAT);
+		motion_body_field.getComponent(DocumentEditor.DEFAULT_EDITOR).setVisible(true);
+		
+		/*
+		c.gridx = 0; c.gridy = 4;
+		//CheckboxGroup cg = null;//new CheckboxGroup();
+		requested = new JCheckBox(_("Requested"), false);
+		requested.addItemListener(this);
+		
+		broadcasted = new JCheckBox(_("Broadcasted"), false);
+		broadcasted.addItemListener(this);
+		
+		blocked = new JCheckBox(_("Blocked"), false);
+		blocked.addItemListener(this);
+		p.add(broadcasted,c);
+		c.gridx = 0; c.gridy = 5;
+		p.add(requested,c);
+		c.gridx = 0; c.gridy = 6;
+		p.add(blocked,c);
+		*/
+		
+		//max_general_fields = 6;
+		_y[0]=y;
+    	return sp;
+    }
+    @SuppressWarnings("unchecked")
+	private JPanel _makeGeneralPanel(int _y[]) {
+		JPanel p = new JPanel();
+		p.setLayout(new GridBagLayout()); _y[0] = 0;
 		int y = _y[0];
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.NONE;
@@ -615,16 +892,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		//javax.swing.text.rtf.
 		//motion_body_field.setContentType("text/html");
 		//motion_body_field.setText("<html><body>This is <em>emphasized</em>.</body></html>");
-		motion_body_field.setEditable(true);
-		motion_body_field.setSize(500, 200);
-		//.setEditorKit(RTFEditorKit);
-		motion_body_field.setLineWrap(true);
-		motion_body_field.setWrapStyleWord(true);
-		motion_body_field.setRows(TEXT_LEN_ROWS);
-		motion_body_field.setAutoscrolls(true);
-		//result.setMaximumSize(new java.awt.Dimension(300,100));
-		motion_body_field.getDocument().addDocumentListener(this);
-		p.add(motion_body_field, c);
+		motion_body_field.init(TEXT_LEN_ROWS);
+		motion_body_field.addListener(this);
+		p.add(panel_body, c);
+		panel_body.add(motion_body_field.getComponent());
 		
 		/*
 		c.gridx = 0; c.gridy = 4;
@@ -740,7 +1011,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			this.moti.setEditable();
 			try {
 				this.moti.storeVerified(DEBUG);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			this.vEditor.setSignature(vEditor.signature, this);
@@ -748,19 +1019,149 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		}
 
 		
-		if((this.motion_body_field==source)||(this.motion_body_field.getDocument()==source)) {
+		if((this.motion_body_field==source)||(this.motion_body_field.getDocumentSource()==source)) {
 			if(DEBUG) out.println("MotionEditor:handleFieldEvent: just body");
 			String new_text = this.motion_body_field.getText();
 			this.moti.motion_text.setDocumentString(new_text);
-			this.moti.motion_text.setFormatString(BODY_FORMAT);
+			this.moti.motion_text.setFormatString(this.motion_body_field.getFormatString());//BODY_FORMAT);
 			this.moti.creation_date = Util.getCalendar(creationTime);
 			this.moti.setEditable();
 			try {
 				this.moti.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
+		}
+		if(this.setTxtMode==source) {
+			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setText");
+			switchMode(DocumentEditor.TXT_BODY_FORMAT);
+			if(DEBUG) System.out.println("MotionEditor:handleFieldEvent: done");
+
+			this.moti.creation_date = Util.getCalendar(creationTime);
+			this.moti.setEditable();
+			try {
+				this.moti.storeVerified();
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		if(this.setHTMMode==source) {
+			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setHTM");
+			switchMode(DocumentEditor.HTM_BODY_FORMAT);
+			if(DEBUG) System.out.println("MotionEditor:handleFieldEvent: done");
+
+			this.moti.creation_date = Util.getCalendar(creationTime);
+			this.moti.setEditable();
+			try {
+				this.moti.storeVerified();
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		if(this.load_field==source) {
+			if(DEBUG)System.err.println("ControlPane:actionImport: import file");
+			int returnVal = fd.showOpenDialog(this);
+			if(DEBUG)System.err.println("ControlPane:actionImport: Got: selected");
+	        if (returnVal == JFileChooser.APPROVE_OPTION) {
+	        	if(DEBUG)System.err.println("ControlPane:actionImport: Got: ok");
+	            File file = fd.getSelectedFile();
+	            if(!file.exists()){
+	            	Application.warning(_("The file does not exists: "+file),_("Importing Address")); return;
+	            }
+	            String ext = Util.getExtension(file);
+	            if(ext!=null) ext = ext.toLowerCase();
+	            try {
+	            	if("pdf".equals(ext)) {
+	            		if(DEBUG)System.err.println("ControlPane:actionImport: Got: pdf");
+	            		try {
+	            			//File f = new File("/home/msilaghi/CS_seminar_flyer.pdf");
+	            			InputStream in = new FileInputStream(file); // "/home/msilaghi/CS_seminar_flyer.pdf");
+	            			if(file.length() > DocumentEditor.MAX_PDF) {
+	            				if(_DEBUG) System.out.println("MotionEditor: getText: bin size="+file.length()+" vs "+DocumentEditor.MAX_PDF);
+	            				Application.warning(_("File too large! Current Limit:"+" "+file.length()+"/"+DocumentEditor.MAX_PDF),
+	            						_("Document too large for import!"));
+	            				return;
+	            			}
+	            			byte bin[] = new byte[(int)file.length()];
+	            			int off = 0;
+	            			do{
+	            				int cnt = in.read(bin, off, bin.length-off);
+	            				if(cnt == -1) {
+	            					if(_DEBUG) System.out.println("MotionEditor: getText: crt="+cnt+" off="+off+"/"+bin.length);
+	            					break;
+	            				}
+	            				off +=cnt;
+            					if(_DEBUG) System.out.println("MotionEditor: getText: crt="+cnt+" off="+off+"/"+bin.length);
+	            			}while(off < bin.length);
+	            			if(DEBUG) System.out.println("DocumentEditor: handle: bin size="+bin.length);
+	            			String data = Util.stringSignatureFromByte(bin);
+	            			if(DEBUG) System.out.println("DocumentEditor: handle: txt size="+data.length());
+	            			
+	            			setMode(DocumentEditor.PDF_BODY_FORMAT, data);
+	            			
+	            			if(DEBUG) System.out.println("DocumentEditor: handle: done");
+
+	            			this.moti.creation_date = Util.getCalendar(creationTime);
+	            			this.moti.setEditable();
+	            			try {
+	            				this.moti.storeVerified();
+	            			} catch (P2PDDSQLException e) {
+	            				e.printStackTrace();
+	            			}
+	            			
+	            		} catch (FileNotFoundException e) {
+	            			e.printStackTrace();
+	            		} catch (IOException e) {
+	            			e.printStackTrace();
+	            		}
+	            	}else
+	            		if(("html".equals(ext)) || ("htm".equals(ext))){
+	            			if(_DEBUG)System.err.println("ControlPane:actionImport: Got: html: implement!");
+	            			try{
+	            				BufferedReader bri = new BufferedReader(new FileReader(file));
+								String data = Util.readAll(bri);
+								
+								setMode(DocumentEditor.HTM_BODY_FORMAT, data);
+								
+								if(DEBUG) System.out.println("DocumentEditor: handle: done");
+
+		            			this.moti.creation_date = Util.getCalendar(creationTime);
+		            			this.moti.setEditable();
+		            			try {
+		            				this.moti.storeVerified();
+		            			} catch (P2PDDSQLException e) {
+		            				e.printStackTrace();
+		            			}
+	            			}catch(Exception e){
+	            				e.printStackTrace();
+	            			}
+	            		}else
+	            			if(("txt".equals(ext))){
+	            				try{
+		            				BufferedReader bri = new BufferedReader(new FileReader(file));
+									String data = Util.readAll(bri);
+									
+									setMode(DocumentEditor.TXT_BODY_FORMAT, data);
+									
+			            			if(DEBUG) System.out.println("DocumentEditor: handle: done");
+	
+			            			this.moti.creation_date = Util.getCalendar(creationTime);
+			            			this.moti.setEditable();
+			            			try {
+			            				this.moti.storeVerified();
+			            			} catch (P2PDDSQLException e) {
+			            				e.printStackTrace();
+			            			}
+		            			}catch(Exception e){
+		            				e.printStackTrace();
+		            			}
+	            			}else
+	            				if(_DEBUG)System.err.println("ControlPane:actionImport: Got: "+ext+": implement!");
+	            }catch(Exception e){
+	            	e.printStackTrace();
+	            }
+	        }
 		}
 
 		if((this.motion_title_field==source)||(this.motion_title_field.getDocument()==source)) {
@@ -772,7 +1173,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			this.moti.setEditable();
 			try {
 				this.moti.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -787,7 +1188,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			this.moti.setEditable();
 			try {
 				this.moti.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -798,7 +1199,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			this.moti.setEditable();
 			try {
 				this.moti.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -821,7 +1222,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				this.moti.creation_date = Util.getCalendar(creationTime);
 				this.moti.setEditable();
 				this.moti.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			} catch (NumberFormatException e) {
 				e.printStackTrace();
@@ -838,7 +1239,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				this.moti.creation_date = Util.getCalendar(creationTime);
 				this.moti.setEditable();
 				this.moti.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;
@@ -891,7 +1292,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				if(v_id<=0) return;
 				
 				disable_it();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}

@@ -13,7 +13,7 @@ import ASN1.Encoder;
 
 import ciphersuits.Cipher;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -31,16 +31,16 @@ import data.D_Witness;
 public class BroadcastQueueMyData extends BroadcastQueue {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	private static int PEERS_SIZE = 10;//20;
+	private static int PEERS_SIZE = 10;
 	public static int ORGS_SIZE = 10;
-	public static int VOTES_SIZE = 10;//1000;
+	public static int VOTES_SIZE = 1000;
 	public static int CONSTITUENTS_SIZE = 10;
 	public static int WITNESSES_SIZE = 10;
 	public static int NEIGHS_SIZE = 6;
 	private String my_peer_ID;
 	void load(){}
 
-	public BroadcastQueueMyData() throws SQLiteException {
+	public BroadcastQueueMyData() throws P2PDDSQLException {
 		if(DEBUG)System.out.println("BroadcastQueueMyData() : Constructor "); 
 		loadAll();
 	}
@@ -54,22 +54,22 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 		if(DEBUG)System.out.println("BroadcastQueueMyData() :  loadAll() ");
 		// LOADER_ADDED START
 				this.m_PreparedMessagesVotes = loadVotes();
-				this.m_iCrtVotes = -1;
+				this.m_iCrtVotes = 0;
 				
 				this.m_PreparedMessagesConstituents = loadConstituents();
-				this.m_iCrtConstituents = -1;
+				this.m_iCrtConstituents = 0;
 				
 				this.m_PreparedMessagesPeers = loadPeers();
-				this.m_iCrtPeers = -1;
+				this.m_iCrtPeers = 0;
 				
 				this.m_PreparedMessagesOrgs = loadOrgs();
-				this.m_iCrtOrgs = -1;
+				this.m_iCrtOrgs = 0;//-1;
 				
 				this.m_PreparedMessagesWitnesses = loadWitnesses();
-				this.m_iCrtWitnesses = -1;
+				this.m_iCrtWitnesses = 0;
 				
 				this.m_PreparedMessagesNeighborhoods = loadNeighborhoods();
-				this.m_iCrtNeighborhoods = -1;
+				this.m_iCrtNeighborhoods = 0;
 				// LOADER_ADDED END
 	}
 
@@ -78,13 +78,13 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 	 * @param org_msgs
 	 * @param rowID
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public long loadOrgs(ArrayList<PreparedMessage> org_msgs, long rowID){
 		if(DEBUG)System.out.println("BroadcastQueueRecent() : loadOrgs() : START");
 		try{
 			return _loadOrgs(org_msgs,rowID);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return -1;
 		}
@@ -97,7 +97,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 			" WHERE" +
 			" k."+table.key.secret_key+" IS NOT NULL AND";
 
-	public long _loadOrgs(ArrayList<PreparedMessage> org_msgs, long rowID) throws SQLiteException {
+	public long _loadOrgs(ArrayList<PreparedMessage> org_msgs, long rowID) throws P2PDDSQLException {
 		long start_row = rowID;
 		boolean wrapped = false;
 		long last_row = -1;
@@ -126,7 +126,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 					
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
-					pm.org_ID_hash = Util.getString(org.get(table.organization.ORG_COL_GID_HASH));
+					//pm.org_ID_hash = Util.getString(org.get(table.organization.ORG_COL_GID_HASH));
 					// pm.motion_ID = Util.getString(org.get(table.motion.M_MOTION_GID));
 					// pm.constituent_ID_hash = Util.getString(org.get(table.constituent.CONST_COL_GID_HASH));
 					// pm.neighborhood_ID = Util.getString(org.get(table.neighborhood.IDX_GID));
@@ -167,7 +167,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 		if(DEBUG)System.out.println("BroadcatQueueMyData() : loadWitnesses() : START");
 		try {
 			return _loadWitnesses(Witnesses_msgs, rowID);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return -1;
 		}
@@ -188,7 +188,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 					" WHERE" +
 					" k."+table.key.secret_key+" IS NOT NULL AND"
 					;
-	public long _loadWitnesses(ArrayList<PreparedMessage> Witnesses_msgs,long rowID) throws SQLiteException {
+	public long _loadWitnesses(ArrayList<PreparedMessage> Witnesses_msgs,long rowID) throws P2PDDSQLException {
 		long start_row = rowID;
 		boolean wrapped = false;
 		long last_row = -1;
@@ -239,14 +239,14 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 				
 				PreparedMessage pm = new PreparedMessage();
 				pm.raw = msg;
-				if(asn1.organization!=null)pm.org_ID_hash = asn1.organization.global_organization_IDhash; 
+				//if(asn1.organization!=null)pm.org_ID_hash = asn1.organization.global_organization_IDhash; 
 				if(wbw.witnessing!=null){
-						pm.constituent_ID_hash.add(wbw.witnessing.global_constituent_id_hash); 
-						for(int i=0; i<wbw.witnessing.neighborhood.length; i++) {pm.neighborhood_ID.add(wbw.witnessing.neighborhood[i].neighborhoodID);}
+						//pm.constituent_ID_hash.add(wbw.witnessing.global_constituent_id_hash); 
+						//for(int i=0; i<wbw.witnessing.neighborhood.length; i++) {pm.neighborhood_ID.add(wbw.witnessing.neighborhood[i].neighborhoodID);}
 				}
 				if(wbw.witnessed!=null){
-						pm.constituent_ID_hash.add(wbw.witnessed.global_constituent_id_hash); 
-						for(int i=0; i<wbw.witnessed.neighborhood.length; i++) {pm.neighborhood_ID.add(wbw.witnessed.neighborhood[i].neighborhoodID);}
+						//pm.constituent_ID_hash.add(wbw.witnessed.global_constituent_id_hash); 
+						//for(int i=0; i<wbw.witnessed.neighborhood.length; i++) {pm.neighborhood_ID.add(wbw.witnessed.neighborhood[i].neighborhoodID);}
 				}
 				
 				
@@ -345,13 +345,13 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 					
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
-					if(con.global_organization_ID !=null)pm.org_ID_hash = con.global_organization_ID;
+					//if(con.global_organization_ID !=null)pm.org_ID_hash = con.global_organization_ID;
 					//pm.motion_ID = ;
-					pm.constituent_ID_hash.add(con.global_constituent_id_hash);
+					//pm.constituent_ID_hash.add(con.global_constituent_id_hash);
 					if(con.neighborhood!=null){
 						for(int i=0; i<con.neighborhood.length; i++) 
 						{
-							pm.neighborhood_ID.add(con.neighborhood[i].neighborhoodID);
+							//pm.neighborhood_ID.add(con.neighborhood[i].neighborhoodID);
 						}
 					}
 					constituent_msgs.add(pm);
@@ -432,7 +432,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 						WirelessLog.logging(WirelessLog.log_queue,WirelessLog.MyData_queue,
 								""+(peers_msgs.size()-1),WirelessLog.peer_type,msg);
 				}
-			}catch(SQLiteException e){
+			}catch(P2PDDSQLException e){
 				if(_DEBUG)System.out.println("BroadcatQueueMyData() : loadPeers: EXCEPTION");
 				e.printStackTrace();
 				return -1;
@@ -525,10 +525,10 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 					
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
-					if(asn1.organization!=null)pm.org_ID_hash = asn1.organization.global_organization_IDhash;
-					if(v.motion!=null)pm.motion_ID = v.motion.global_motionID;
-					if(v.constituent!=null)pm.constituent_ID_hash.add(v.constituent.global_constituent_id_hash);
-					if(v.justification!=null)pm.justification_ID=v.justification.global_justificationID;
+					//if(asn1.organization!=null)pm.org_ID_hash = asn1.organization.global_organization_IDhash;
+					//if(v.motion!=null)pm.motion_ID = v.motion.global_motionID;
+					//if(v.constituent!=null)pm.constituent_ID_hash.add(v.constituent.global_constituent_id_hash);
+					//if(v.justification!=null)pm.justification_ID=v.justification.global_justificationID;
 					//pm.neighborhood_ID = ;
 					
 					vote_msgs.add(pm);
@@ -642,7 +642,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 					//pm.neighborhood_ID = Util.getString(neighs.get(table.neighborhood.IDX_GID));
 					if(n!=null){
 						for(int j=0;j< n.length;j++){
-							pm.neighborhood_ID.add(n[j].global_neighborhood_ID);
+							//pm.neighborhood_ID.add(n[j].global_neighborhood_ID);
 						}
 					}
 					neighs_msgs.add(pm);
@@ -681,9 +681,9 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 	 * get_org_db_by_local
 	 * @param org_id
 	 * @return ArrayList<Object>
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static ArrayList<Object> get_org_db_by_local(String org_id) throws SQLiteException {
+	public static ArrayList<Object> get_org_db_by_local(String org_id) throws P2PDDSQLException {
 		String sql = "SELECT "+table.organization.org_list+" FROM "+
 				table.organization.TNAME+" WHERE "+table.organization.organization_ID+
 				"=?;";
@@ -696,11 +696,11 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 	 * @param peer
 	 * @param rowID
 	 * @return byte[]
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 * @throws ASN1DecoderFail
 	 */
 	@SuppressWarnings("static-access")
-	private byte[] buildPeerMessage(ArrayList<Object> peer, long rowID) throws SQLiteException, ASN1DecoderFail {
+	private byte[] buildPeerMessage(ArrayList<Object> peer, long rowID) throws P2PDDSQLException, ASN1DecoderFail {
 		D_Message asn1=new D_Message();
 		asn1.sender = new D_PeerAddress();
 		asn1.sender.globalID = DD.getMyPeerGIDFromIdentity();
@@ -724,7 +724,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 		return msg;
 	}
 
-	public static TypedAddress[] get_Paddress(String peer_id) throws SQLiteException {
+	public static TypedAddress[] get_Paddress(String peer_id) throws P2PDDSQLException {
 		int i=-1;
 		String sql = "SELECT "+table.peer_address.fields_peer_address+
 				" FROM "+table.peer_address.TNAME+
@@ -750,12 +750,12 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 	 * @param org
 	 * @param local_id
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 * @throws ASN1DecoderFail
 	 */
 
 	@SuppressWarnings("static-access")
-	byte[] buildOrganizationMessage(ArrayList<Object> org, String local_id) throws SQLiteException, ASN1DecoderFail{
+	byte[] buildOrganizationMessage(ArrayList<Object> org, String local_id) throws P2PDDSQLException, ASN1DecoderFail{
 		D_Message asn1=new D_Message();
 		asn1.sender = new D_PeerAddress(); 
 		asn1.sender.globalID = DD.getMyPeerGIDFromIdentity();
@@ -784,10 +784,10 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 	 * @param _org
 	 * @param _local_id
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
 	public static D_Organization get_ASN_Organization_by_OrgID(ArrayList<Object> _org, String _local_id)
-			throws SQLiteException {
+			throws P2PDDSQLException {
 		/*
 		D_Organization ASN_Org = new D_Organization();
 		ASN_Org.params = new D_OrgParams();
@@ -832,9 +832,9 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 	 * construct Peer MSG
 	 * @param global_creator_id
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	private static D_PeerAddress Get_creatorby_ID(String global_creator_id) throws SQLiteException {
+	private static D_PeerAddress Get_creatorby_ID(String global_creator_id) throws P2PDDSQLException {
 		D_PeerAddress l_peer = new D_PeerAddress();
 		ArrayList<ArrayList<Object>> peers = new ArrayList<ArrayList<Object>>();
 		String sql;

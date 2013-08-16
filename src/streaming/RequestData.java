@@ -23,7 +23,7 @@ package streaming;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 
@@ -62,7 +62,7 @@ public class RequestData extends ASNObj implements Summary{
 	public ArrayList<String> news = new ArrayList<String>();
 	public String global_organization_ID_hash;
 	public RequestData() {}
-	public RequestData(long orgID) throws SQLiteException {
+	public RequestData(long orgID) throws P2PDDSQLException {
 		String sql =
 			"SELECT "+table.organization.specific_requests+
 			","+table.organization.global_organization_ID_hash+
@@ -151,9 +151,9 @@ public class RequestData extends ASNObj implements Summary{
 	/**
 	 * in database we do not store the orgGID
 	 * @param orgID
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public void save(long orgID) throws SQLiteException {
+	public void save(long orgID) throws P2PDDSQLException {
 		String old = this.global_organization_ID_hash;
 		this.global_organization_ID_hash = null;
 		Encoder enc = this.getEncoder();

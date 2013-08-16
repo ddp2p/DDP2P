@@ -273,7 +273,10 @@ public class DirModel extends AbstractTableModel implements TableModel, DBListen
 		getComboBox(null);
 		dirTable.repaint();
 	   // namesCBox.removeAllItems() ;
-		String sql = "SELECT "+Subscriber.fields_subscribers+" FROM "+Subscriber.TNAME+";";
+		String sql =
+				"SELECT "+
+						Subscriber.fields_subscribers+
+				" FROM "+Subscriber.TNAME+";";
 		String[]params = new String[]{};// where clause?
 		ArrayList<ArrayList<Object>> u;
 		try {

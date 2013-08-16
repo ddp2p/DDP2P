@@ -56,7 +56,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DDIcons;
@@ -318,7 +318,7 @@ class OrgExtraDeleteAction extends DebateDecideAction {
     	String extraID = Util.getString(model.m_extras.get(row).get(table.field_extra.OPARAM_EXTRA_FIELD_ID));
     	try {
 			Application.db.delete(table.field_extra.TNAME, new String[]{table.field_extra.field_extra_ID}, new String[]{extraID}, DEBUG);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
     }
@@ -357,20 +357,22 @@ class OrgExtraAddAction extends DebateDecideAction {
      		try {
      			long extra_ID = Application.db.insert(table.field_extra.TNAME,
 						new String[]{table.field_extra.organization_ID, table.field_extra.global_field_extra_ID},
-						new String[]{org_id, new_global_extra });
+						new String[]{org_id, new_global_extra },
+						DEBUG);
      			tree.setCurrent(extra_ID);
-			} catch (SQLiteException e1) {e1.printStackTrace();}
+			} catch (P2PDDSQLException e1) {e1.printStackTrace();}
      		return;
      	}
     	//String extraID = Util.getString(model.m_extras.get(row).get(table.field_extra.OPARAM_EXTRA_FIELD_ID));
     	try {
+    		String new_level = Util.getString(model.m_extras.get(row).get(table.field_extra.OPARAM_NEIGH));
 			long extra_ID = Application.db.insert(table.field_extra.TNAME,
 					new String[]{table.field_extra.organization_ID, table.field_extra.global_field_extra_ID, table.field_extra.partNeigh},
 					new String[]{org_id, new_global_extra,
-						Util.getString(model.m_extras.get(row).get(table.field_extra.OPARAM_NEIGH))
+						new_level
 					}, DEBUG);
 			tree.setCurrent(extra_ID);
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
     }
@@ -412,20 +414,20 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 		for(int k=0;k<this.m_extras.size();k++){
 			ArrayList<Object> e = m_extras.get(k);
 			Object i = e.get(table.field_extra.OPARAM_EXTRA_FIELD_ID);
-			if(i instanceof Integer){
-				Integer id = (Integer)i;
-				if(id.longValue()==extra_ID) {
-					if(DEBUG)System.out.println("OrgExtra:setCurrent:long: found k="+k);
-					for(OrgExtra o: tables){
-						int tk = o.convertRowIndexToView(k);
-						o.setRowSelectionAllowed(true);
-						ListSelectionModel selectionModel = o.getSelectionModel();
-						selectionModel.setSelectionInterval(tk, tk);
-						o.scrollRectToVisible(o.getCellRect(tk, 0, true));
-						//o.fireListener(k, 0);
-					}
-					break;
+			if(i==null) continue;
+			Long id = Util.Lval(i);
+			
+			if(id.longValue()==extra_ID) {
+				if(DEBUG)System.out.println("OrgExtra:setCurrent:long: found k="+k);
+				for(OrgExtra o: tables){
+					int tk = o.convertRowIndexToView(k);
+					o.setRowSelectionAllowed(true);
+					ListSelectionModel selectionModel = o.getSelectionModel();
+					selectionModel.setSelectionInterval(tk, tk);
+					o.scrollRectToVisible(o.getCellRect(tk, 0, true));
+					//o.fireListener(k, 0);
 				}
+				break;
 			}
 		}
 	}
@@ -456,7 +458,7 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 			m_extras = Application.db.select(sql, new String[]{org_id},DEBUG);
 			this.fireTableDataChanged();
 			//this.fireTableStructureChanged();
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -502,8 +504,13 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 		case TABLE_COL_CERTIFIED: result = field.get(table.field_extra.OPARAM_CERT); break;
 		case TABLE_COL_REQUIRED: result = field.get(table.field_extra.OPARAM_REQ); break;
 		case TABLE_COL_NEIGHB:
-			try{result = (Integer)field.get(table.field_extra.OPARAM_NEIGH);}
-			catch(Exception e){result = new Integer(table.field_extra.partNeigh_non_neighborhood_indicator+"");}break;
+			try{
+				Object o = field.get(table.field_extra.OPARAM_NEIGH);
+				if(o==null) 
+					result = new Integer(table.field_extra.partNeigh_non_neighborhood_indicator+"");
+				else	if(o instanceof Integer) result = (Integer)o;
+				else	result = new Integer(Util.ival(o, table.field_extra.partNeigh_non_neighborhood_indicator));
+			}catch(Exception e){result = new Integer(table.field_extra.partNeigh_non_neighborhood_indicator+"");}break;
 		case TABLE_COL_VALUES: result = field.get(table.field_extra.OPARAM_LIST_VAL); break;
 		case TABLE_COL_DEFAULT: result = field.get(table.field_extra.OPARAM_DEFAULT); break;
 		case TABLE_COL_TIP: result = field.get(table.field_extra.OPARAM_TIP); break;
@@ -639,24 +646,29 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 		String fieldID = Util.getString(field.get(table.field_extra.OPARAM_EXTRA_FIELD_ID));
 		try {
 			db.updateNoSync(table.field_extra.TNAME,
-					new String[]{field_name}, new String[]{table.field_extra.field_extra_ID}, 
+					new String[]{field_name},
+					new String[]{table.field_extra.field_extra_ID}, 
 					new String[]{value,fieldID},
 					DEBUG);
 			
 			if(table.field_extra.label.equals(field_name)) {
 				D_OrgParam dop = new D_OrgParam(fieldID);
 				String hash = data.D_OrgParam.makeGID(value, dop.list_of_values, dop.version);
-				db.update(table.field_extra.TNAME, new String[]{table.field_extra.global_field_extra_ID},
-					new String[]{table.field_extra.field_extra_ID}, new String[]{hash,fieldID}, DEBUG);
+				db.update(table.field_extra.TNAME,
+					new String[]{table.field_extra.global_field_extra_ID},
+					new String[]{table.field_extra.field_extra_ID},
+					new String[]{hash,fieldID}, DEBUG);
 			}
 			if(table.field_extra.list_of_values.equals(field_name)) {
 				D_OrgParam dop = new D_OrgParam(fieldID);
 				String hash = data.D_OrgParam.makeGID(dop.label, dop.list_of_values, dop.version);
-				db.update(table.field_extra.TNAME, new String[]{table.field_extra.global_field_extra_ID},
-					new String[]{table.field_extra.field_extra_ID}, new String[]{hash,fieldID}, DEBUG);
+				db.update(table.field_extra.TNAME,
+					new String[]{table.field_extra.global_field_extra_ID},
+					new String[]{table.field_extra.field_extra_ID}, 
+					new String[]{hash,fieldID}, DEBUG);
 			}
 		
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		}

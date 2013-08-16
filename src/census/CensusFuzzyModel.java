@@ -31,10 +31,11 @@ import javax.swing.table.TableModel;
 
 import util.DBInfo;
 import util.DBListener;
+import util.P2PDDSQLException;
 import util.Util;
 import widgets.org.OrgListener;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.Identity;
@@ -199,7 +200,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 					new String[] {});
 			if (sqlResult.size() != 0)
 				empty = false;
-		} catch (SQLiteException e2) {
+		} catch (P2PDDSQLException e2) {
 			e2.printStackTrace();
 		}
 		if (!empty) {
@@ -235,7 +236,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 							.get(2)));// 1 or 0
 					edgeTable[sourceID][targetID] = sense;
 				}
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
 		}
@@ -276,7 +277,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 		try {
 			myConstituentID = Identity.getCurrentIdentity()
 					.getDefaultConstituentIDForOrg(this.organizationID);// TODO:-1
-		} catch (SQLiteException e1) {
+		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
 		r = new Node();// root
@@ -340,14 +341,14 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 				constituentName = Application.db.select(
 						"SELECT name from constituent where constituent_ID=?",
 						new String[] { Util.getString(constituentID) });
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
 //			System.out.println("constituentName:" + constituentName);
 			try {
 				myConstituentID = (int) Identity.getCurrentIdentity()
 						.getDefaultConstituentIDForOrg(this.organizationID);
-			} catch (SQLiteException e1) {
+			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
 			if (constituentName.size() == 0)
@@ -423,7 +424,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 				viewDataBuffer.put(constituentID, new ConstituentStatictics(
 						value, threshold));
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}

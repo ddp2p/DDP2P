@@ -30,6 +30,13 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -40,9 +47,11 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -51,7 +60,7 @@ import javax.swing.event.DocumentListener;
 
 import ASN1.Encoder;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -83,6 +92,7 @@ import data.D_Vote;
 import table.justification;
 import table.motion;
 import util.Util;
+import widgets.components.DocumentEditor;
 import widgets.components.TranslatedLabel;
 import widgets.motions.MotionEditor;
 import widgets.motions.VoteEditor;
@@ -103,11 +113,15 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	public static final int ONLY = 1;
 	public static final int CHOICE = 2;
 	
+	
 	public JTextField just_title_field;
 	public JComboBox just_answer_field;
-	public JTextArea just_body_field;
+	public DocumentEditor just_body_field;
 	public JTextField date_field;
 	public JButton dategen_field;
+	public JButton load_field;
+	public JButton setTxtMode;
+	public JButton setHTMMode;
 	public JCheckBox requested;
 	public JCheckBox broadcasted;
 	public JCheckBox blocked;
@@ -125,6 +139,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	private boolean SUBMIT = true;
 	private MotionEditor motionEditor;
 	private VoteEditor vEditor;
+	JPanel panel_body = new JPanel();
 
 	
 	public void disable_it() {
@@ -139,6 +154,9 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		if(this.just_body_field!=null) this.just_body_field.setEnabled(false);
 		if(this.date_field!=null) this.date_field.setEnabled(false);
 		if(this.dategen_field!=null) this.dategen_field.setEnabled(false);	
+		if(this.load_field!=null) this.load_field.setEnabled(false);
+		if(this.setTxtMode!=null) this.setTxtMode.setEnabled(false);
+		if(this.setHTMMode!=null) this.setHTMMode.setEnabled(false);
 	}
 	public void enable_it() {
 		enabled  = true;
@@ -152,15 +170,18 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		if(this.just_body_field!=null) this.just_body_field.setEnabled(true);
 		if(this.date_field!=null) this.date_field.setEnabled(true);
 		if(this.dategen_field!=null) this.dategen_field.setEnabled(true);	
+		if(this.load_field!=null) this.load_field.setEnabled(true);
+		if(this.setTxtMode!=null) this.setTxtMode.setEnabled(true);
+		if(this.setHTMMode!=null) this.setHTMMode.setEnabled(true);
 	}
 	public JustificationEditor(int _mode){
 		mode  = _mode;
-		this.setLayout(new GridBagLayout());
+		//this.setLayout(new GridBagLayout());
 		int y[] = new int[]{0};
 		switch(mode){
 		case ONLY:
 			SUBMIT = false;
-			makeGeneralPanel(this,y);
+			this.add(makeGeneralPanel(y));//this
 			 break;
 			 /*
 		case CHOICE:
@@ -180,9 +201,9 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		cp.setLayout(new GridBagLayout()); y[0] = 0;
 		vEditor = new VoteEditor(null, this, VoteEditor.CHOICE);//makeChoicePanel(cp,y);
 		
-		JPanel gp = new JPanel();
-		gp.setLayout(new GridBagLayout()); y[0] = 0;
-		JComponent generalPane = makeGeneralPanel(gp,y);
+		//JPanel gp = new JPanel();
+		//gp.setLayout(new GridBagLayout()); y[0] = 0;
+		JComponent generalPane = makeGeneralPanel(y);//gp
 		
 		tabbedPane.addTab(_("Justification Body"), icon, generalPane, _("Generic fields"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_G);
@@ -365,7 +386,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 				} catch (NumberFormatException e) {
 					e.printStackTrace();
 					just.answerTo_ID = null;
-				} catch (SQLiteException e) {
+				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 					just.answerTo_ID = null;
 				}
@@ -378,9 +399,9 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		}
 		*/
 		if(just_body_field != null) {
-			this.just_body_field.getDocument().removeDocumentListener(this);
+			this.just_body_field.removeListener(this);
 			this.just_body_field.setText(just.justification_text.getDocumentString());
-			this.just_body_field.getDocument().addDocumentListener(this);
+			this.just_body_field.addListener(this);
 		}
 		if(just_title_field != null) {
 			this.just_title_field.getDocument().removeDocumentListener(this);
@@ -391,7 +412,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		return true;
 	}			    
     @SuppressWarnings("unchecked")
-	private JPanel makeGeneralPanel(JPanel p, int []_y) {
+	private JPanel _makeGeneralPanel(JPanel p, int []_y) {
 		int y = _y[0];
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.NONE;
@@ -412,14 +433,17 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		p.add(label_just_body, c);
 		c.gridx = 1;
 		c.anchor = GridBagConstraints.WEST;
-		just_body_field = new JTextArea();
-		just_body_field.setLineWrap(true);
-		just_body_field.setWrapStyleWord(true);
-		just_body_field.setAutoscrolls(true);
-		just_body_field.setRows(TEXT_LEN_ROWS);
+		just_body_field = new DocumentEditor();
+		//just_body_field.setLineWrap(true);
+		//just_body_field.setWrapStyleWord(true);
+		//just_body_field.setAutoscrolls(true);
+		//just_body_field.setRows(TEXT_LEN_ROWS);
+		just_body_field.init(TEXT_LEN_ROWS);
 		//result.setMaximumSize(new java.awt.Dimension(300,100));
-		just_body_field.getDocument().addDocumentListener(this);
-		p.add(just_body_field, c);
+		just_body_field.addListener(this);
+		//p.add(just_body_field, c);
+		p.add(panel_body, c);
+		panel_body.add(just_body_field.getComponent());
 		
 		c.anchor = GridBagConstraints.EAST;
 		c.gridx = 0; c.gridy = y++;		
@@ -489,6 +513,173 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		_y[0] = y;
 		return p;
 	}
+    @SuppressWarnings("unchecked")
+	private JSplitPane makeGeneralPanel(int []_y) {
+    	JPanel p=new JPanel(), p1=new JPanel(), p2=new JPanel();
+    	JSplitPane sp= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, p1, p2);
+    	//_p.setLayout(new FlowLayout());
+    	//_p.add(sp);
+    	p1.setLayout(new BorderLayout());
+    	p1.add(p,BorderLayout.NORTH);
+    	p2.setLayout(new GridBagLayout());
+    	GridBagConstraints t = new GridBagConstraints();
+		t.fill = GridBagConstraints.NONE;
+		t.gridx = 0; t.gridy = 0;
+		t.anchor = GridBagConstraints.WEST;
+    	
+		int y = _y[0];
+    	p.setLayout(new GridBagLayout());
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.NONE;
+		
+		JPanel p_t = new JPanel();
+		TranslatedLabel label_just_title = new TranslatedLabel("Title");
+		p_t.add(label_just_title);
+		p_t.add(just_title_field = new JTextField(TITLE_LEN));
+		just_title_field.getDocument().addDocumentListener(this);
+		p2.add(p_t,t);
+/*
+		c.anchor = GridBagConstraints.EAST;
+		c.gridx = 0; c.gridy = y++;		
+		TranslatedLabel label_just_title = new TranslatedLabel("Title");
+		p.add(label_just_title, c);
+		c.gridx = 1;
+		c.anchor = GridBagConstraints.WEST;
+		p.add(just_title_field = new JTextField(TITLE_LEN),c);
+		//title_field.addActionListener(this); //name_field.addFocusListener(this);
+*/
+		
+		//c.anchor = GridBagConstraints.EAST;
+		//c.gridx = 0; c.gridy = y++;		
+		//TranslatedLabel label_just_body = new TranslatedLabel("Justification");
+		//p.add(label_just_body, c);
+		//c.gridx = 1;
+		//c.anchor = GridBagConstraints.WEST;
+		just_body_field = new DocumentEditor();
+		//just_body_field.setLineWrap(true);
+		//just_body_field.setWrapStyleWord(true);
+		//just_body_field.setAutoscrolls(true);
+		//just_body_field.setRows(TEXT_LEN_ROWS);
+		just_body_field.init(TEXT_LEN_ROWS);
+		//result.setMaximumSize(new java.awt.Dimension(300,100));
+		just_body_field.addListener(this);
+		//p.add(just_body_field, c);
+		t.gridx = 0; t.gridy = 1;
+		t.anchor = GridBagConstraints.WEST;
+		t.fill = GridBagConstraints.BOTH;
+		p2.add(panel_body,t);//, c);
+		//p.add(panel_body, c);
+		//panel_body.add(just_body_field.getComponent());
+
+		just_body_field.getComponent(DocumentEditor.RTEDIT).setVisible(false);
+		just_body_field.getComponent(DocumentEditor.TEXTAREA).setVisible(false);
+		just_body_field.getComponent(DocumentEditor.PDFVIEW).setVisible(false);
+		panel_body.add(just_body_field.getComponent(DocumentEditor.TEXTAREA));
+		panel_body.add(just_body_field.getComponent(DocumentEditor.RTEDIT));
+		panel_body.add(just_body_field.getComponent(DocumentEditor.PDFVIEW));
+		
+		just_body_field.setType(DocumentEditor.DEFAULT_FORMAT);
+		just_body_field.getComponent(DocumentEditor.DEFAULT_EDITOR).setVisible(true);
+		
+		
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		c.gridx = 0; c.gridy = y++;		
+		TranslatedLabel label_answer_just = new TranslatedLabel("Answer To");
+		p.add(label_answer_just, c);
+		//c.gridx = 1;
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.WEST;
+		c.fill = GridBagConstraints.BOTH;
+		p.add(just_answer_field = new JComboBox(combo_answerTo),c);
+		//p.add(just_answer_field = new JTextField(TITLE_LEN),c);
+		//just_answer_field.getDocument().addDocumentListener(this);
+		just_answer_field.addItemListener(this);
+		
+		String creation_date = Util.getGeneralizedTime();
+		date_field = new JTextField(creation_date);
+		date_field.setColumns(creation_date.length());
+		
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.EAST;
+		c.anchor = GridBagConstraints.WEST;
+		TranslatedLabel label_date = new TranslatedLabel("Creation Date");
+		p.add(label_date, c);
+		//c.gridx = 1;
+		c.gridx = 0; c.gridy = y++;		
+		c.anchor = GridBagConstraints.WEST;
+		//hash_org.creation_date = creation_date;
+		p.add(date_field,c);
+		date_field.setForeground(Color.GREEN);
+		//name_field.addActionListener(this); //name_field.addFocusListener(this);
+		date_field.getDocument().addDocumentListener(this);
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.WEST;
+		c.anchor = GridBagConstraints.EAST;
+		p.add(dategen_field = new JButton(_("Set Current Date")),c);
+		dategen_field.addActionListener(this);
+
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(load_field = new JButton(_("Load PDF/HTM/TXT")),c);
+		load_field.addActionListener(this);
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(this.setTxtMode = new JButton(_("Set TXT Mode")),c);
+		setTxtMode.addActionListener(this);
+		
+		c.gridx = 0; c.gridy = y++;		
+		//c.gridx = 1;
+		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		p.add(this.setHTMMode = new JButton(_("Set HTML Mode")),c);
+		setHTMMode.addActionListener(this);
+
+		
+		/*
+		if(SUBMIT) {
+			c.anchor = GridBagConstraints.EAST;
+			c.gridx = 0; c.gridy = y++;		
+			//TranslatedLabel label_submit_just = new TranslatedLabel("Submit");
+			//p.add(label_submit_just, c);
+			c.gridx = 1;
+			c.anchor = GridBagConstraints.WEST;
+			p.add(just_submit_field = new JButton(_("Submit Justification")),c);
+			//p.add(just_answer_field = new JTextField(TITLE_LEN),c);
+			//just_answer_field.getDocument().addDocumentListener(this);
+			just_submit_field.addActionListener(this);
+		}
+		
+		c.gridx = 0; c.gridy = 4;
+		//CheckboxGroup cg = null;//new CheckboxGroup();
+		requested = new JCheckBox(_("Requested"), false);
+		requested.addItemListener(this);
+		
+		broadcasted = new JCheckBox(_("Broadcasted"), false);
+		broadcasted.addItemListener(this);
+		
+		blocked = new JCheckBox(_("Blocked"), false);
+		blocked.addItemListener(this);
+		p.add(broadcasted,c);
+		c.gridx = 0; c.gridy = 5;
+		p.add(requested,c);
+		c.gridx = 0; c.gridy = 6;
+		p.add(blocked,c);
+		*/
+		
+		//max_general_fields = 5;
+		_y[0] = y;
+		return sp;
+	}
 	private JComponent makeHandlingPanel(JPanel p, int[] _y) {
 		int y = _y[0];
 		GridBagConstraints c = new GridBagConstraints();
@@ -511,6 +702,39 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		p.add(blocked,c);
 		_y[0] = y;
 		return p;
+	}
+
+	/**
+	 * Set the editor in a given mode (HTMLEditor/TXT/PDFViewer)
+	 * and load it with "data"
+	 * @param _NEW_FORMAT
+	 * @param data
+	 */
+	public void setMode(String _NEW_FORMAT, String data){
+		this.just.justification_text.setDocumentString(data);
+		this.just.justification_text.setFormatString(_NEW_FORMAT);
+		
+		this.just_body_field.removeListener(this);
+		just_body_field.getComponent().setVisible(false);
+		this.just_body_field.setType(just.justification_text.getFormatString());
+		this.just_body_field.setText(just.justification_text.getDocumentString());
+		
+		just_body_field.getComponent().setVisible(true);
+	    //this.panel_body.removeAll();
+	    //this.panel_body.add(motion_body_field.getComponent());
+		this.just_body_field.setEnabled(enabled);
+		this.just_body_field.addListener(this);
+	}
+	/**
+	 * Set the editor in a given mode (HTMLEditor/TXT/PDFViewer)
+	 * and convert current data to it
+	 * @param _NEW_FORMAT
+	 */
+	public void switchMode(String _NEW_FORMAT){
+		String data = "";
+		data = this.just.justification_text.convertTo(_NEW_FORMAT);
+		if(data==null) return;
+		setMode(_NEW_FORMAT, data);
 	}
 
 	@Override
@@ -581,7 +805,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		}else{
 			creationTime = Util.getGeneralizedTime();
 		}
-		if((this.just_body_field==source)||(this.just_body_field.getDocument()==source)) {
+		if((this.just_body_field==source)||(this.just_body_field.getDocumentSource()==source)) {
 			if(DEBUG) out.println("JustEditor:handleFieldEvent: just body");
 			String new_text = this.just_body_field.getText();
 			this.just.justification_text.setDocumentString(new_text);
@@ -590,10 +814,140 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			this.just.setEditable();
 			try {
 				this.just.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
+		}
+		if(this.setTxtMode==source) {
+			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setText");
+			switchMode(DocumentEditor.TXT_BODY_FORMAT);
+			if(DEBUG) System.out.println("MotionEditor:handleFieldEvent: done");
+
+			this.just.creation_date = Util.getCalendar(creationTime);
+			this.just.setEditable();
+			try {
+				this.just.storeVerified();
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		if(this.setHTMMode==source) {
+			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setHTM");
+			switchMode(DocumentEditor.HTM_BODY_FORMAT);
+			if(DEBUG) System.out.println("MotionEditor:handleFieldEvent: done");
+
+			this.just.creation_date = Util.getCalendar(creationTime);
+			this.just.setEditable();
+			try {
+				this.just.storeVerified();
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		if(this.load_field==source) {
+			if(DEBUG)System.err.println("ControlPane:actionImport: import file");
+			int returnVal = MotionEditor.fd.showOpenDialog(this);
+			if(DEBUG)System.err.println("ControlPane:actionImport: Got: selected");
+	        if (returnVal == JFileChooser.APPROVE_OPTION) {
+	        	if(DEBUG)System.err.println("ControlPane:actionImport: Got: ok");
+	            File file = MotionEditor.fd.getSelectedFile();
+	            if(!file.exists()){
+	            	Application.warning(_("The file does not exists: "+file),_("Importing Address")); return;
+	            }
+	            String ext = Util.getExtension(file);
+	            if(ext!=null) ext = ext.toLowerCase();
+	            try {
+	            	if("pdf".equals(ext)) {
+	            		if(DEBUG)System.err.println("ControlPane:actionImport: Got: pdf");
+	            		try {
+	            			//File f = new File("/home/msilaghi/CS_seminar_flyer.pdf");
+	            			InputStream in = new FileInputStream(file); // "/home/msilaghi/CS_seminar_flyer.pdf");
+	            			if(file.length() > DocumentEditor.MAX_PDF) {
+	            				if(_DEBUG) System.out.println("MotionEditor: getText: bin size="+file.length()+" vs "+DocumentEditor.MAX_PDF);
+	            				Application.warning(_("File too large! Current Limit:"+" "+file.length()+"/"+DocumentEditor.MAX_PDF),
+	            						_("Document too large for import!"));
+	            				return;
+	            			}
+	            			byte bin[] = new byte[(int)file.length()];
+	            			int off = 0;
+	            			do{
+	            				int cnt = in.read(bin, off, bin.length-off);
+	            				if(cnt == -1) {
+	            					if(_DEBUG) System.out.println("MotionEditor: getText: crt="+cnt+" off="+off+"/"+bin.length);
+	            					break;
+	            				}
+	            				off +=cnt;
+            					if(_DEBUG) System.out.println("MotionEditor: getText: crt="+cnt+" off="+off+"/"+bin.length);
+	            			}while(off < bin.length);
+	            			if(DEBUG) System.out.println("DocumentEditor: handle: bin size="+bin.length);
+	            			String data = Util.stringSignatureFromByte(bin);
+	            			if(DEBUG) System.out.println("DocumentEditor: handle: txt size="+data.length());
+	            			
+	            			setMode(DocumentEditor.PDF_BODY_FORMAT, data);
+	            			
+	            			if(DEBUG) System.out.println("DocumentEditor: handle: done");
+
+	            			this.just.creation_date = Util.getCalendar(creationTime);
+	            			this.just.setEditable();
+	            			try {
+	            				this.just.storeVerified();
+	            			} catch (P2PDDSQLException e) {
+	            				e.printStackTrace();
+	            			}
+	            			
+	            		} catch (FileNotFoundException e) {
+	            			e.printStackTrace();
+	            		} catch (IOException e) {
+	            			e.printStackTrace();
+	            		}
+	            	}else
+	            		if(("html".equals(ext)) || ("htm".equals(ext))){
+	            			if(_DEBUG)System.err.println("ControlPane:actionImport: Got: html: implement!");
+	            			try{
+	            				BufferedReader bri = new BufferedReader(new FileReader(file));
+								String data = Util.readAll(bri);
+								
+								setMode(DocumentEditor.HTM_BODY_FORMAT, data);
+								
+								if(DEBUG) System.out.println("DocumentEditor: handle: done");
+
+		            			this.just.creation_date = Util.getCalendar(creationTime);
+		            			this.just.setEditable();
+		            			try {
+		            				this.just.storeVerified();
+		            			} catch (P2PDDSQLException e) {
+		            				e.printStackTrace();
+		            			}
+	            			}catch(Exception e){
+	            				e.printStackTrace();
+	            			}
+	            		}else
+	            			if(("txt".equals(ext))){
+	            				try{
+		            				BufferedReader bri = new BufferedReader(new FileReader(file));
+									String data = Util.readAll(bri);
+									
+									setMode(DocumentEditor.TXT_BODY_FORMAT, data);
+									
+			            			if(DEBUG) System.out.println("DocumentEditor: handle: done");
+	
+			            			this.just.creation_date = Util.getCalendar(creationTime);
+			            			this.just.setEditable();
+			            			try {
+			            				this.just.storeVerified();
+			            			} catch (P2PDDSQLException e) {
+			            				e.printStackTrace();
+			            			}
+		            			}catch(Exception e){
+		            				e.printStackTrace();
+		            			}
+	            			}else
+	            				if(_DEBUG)System.err.println("ControlPane:actionImport: Got: "+ext+": implement!");
+	            }catch(Exception e){
+	            	e.printStackTrace();
+	            }
+	        }
 		}
 
 		if((this.just_title_field==source)||(this.just_title_field.getDocument()==source)) {
@@ -605,7 +959,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			this.just.setEditable();
 			try {
 				this.just.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -620,7 +974,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			this.just.setEditable();
 			try {
 				this.just.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -631,7 +985,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			this.just.setEditable();
 			try {
 				this.just.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			return;			
@@ -654,7 +1008,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 				this.just.creation_date = Util.getCalendar(creationTime);
 				this.just.setEditable();
 				this.just.storeVerified();
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			} catch (NumberFormatException e) {
 				e.printStackTrace();
@@ -691,6 +1045,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		return null;
 	}
 	public void make_new() {
+		if(just==null) just = new D_Justification();
 		if(just.isEditable()) return;
 		just.setEditable();
 		just.justification_ID = null;

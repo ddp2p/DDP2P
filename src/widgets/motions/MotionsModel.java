@@ -21,7 +21,7 @@ package widgets.motions;
 
 import static util.Util._;
 
-import hds.Client;
+import hds.ClientSync;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +31,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.Identity;
@@ -188,7 +188,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 						result = dt;
 						if(DEBUG)System.out.println("Motions:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -211,7 +211,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 						result = Util.getString(orgs.get(0).get(2));
 						if(DEBUG)System.out.println("Motions:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -232,7 +232,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 						result = orgs.get(0).get(0);
 						if(DEBUG)System.out.println("Motions:Got my="+result);
 					}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -242,7 +242,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_co, new String[]{motID, "y"});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -253,7 +253,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac, new String[]{motID});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 				else result = new Integer("0");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				break;
 			}
@@ -262,8 +262,8 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			" WHERE "+table.news.motion_ID+" = ?;";
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_new, new String[]{motID});
-				if(orgs.size()>0) result = new Integer(""+(((Integer)result).longValue()+((Integer)orgs.get(0).get(0)).longValue()));
-			} catch (SQLiteException e) {
+				if(orgs.size()>0) result = new Integer(""+((Util.get_long(result))+(Util.get_long(orgs.get(0).get(0)))));
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -275,7 +275,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac2, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD2)});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 				else result = new Integer("0");
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				break;
 			}
@@ -285,10 +285,10 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_new2, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD2)});
 				if(orgs.size()>0){
-					int result_int = new Integer(""+(((Integer)result).longValue()+((Integer)orgs.get(0).get(0)).longValue()));
+					int result_int = new Integer(""+((Util.get_long(result))+(Util.get_long(orgs.get(0).get(0)))));
 					if(result_int>0) result = new Boolean(true); else result = new Boolean(false);
 				}
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -299,7 +299,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_news, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD)});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
-			} catch (SQLiteException e) {
+			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -339,16 +339,16 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		for(int k=0;k<_motions.length;k++){
 			Object i = _motions[k];
 			if(DEBUG) System.out.println("MotionsModel:setCurrent: k="+k+" row_org_ID="+i);
-			if(i instanceof Integer){
-				Integer id = (Integer)i;
-				if(id.longValue()==motion_id) {
+			if(i == null) continue;
+			Long id = Util.Lval(i);
+			if((id != null) && (id.longValue()==motion_id)) {
 					/*
 					try {
 						//long constituent_ID = 
 						if(DEBUG) System.out.println("MotionsModel:setCurrent: will set current org");
 						Identity.setCurrentOrg(motion_id);
 						
-					} catch (SQLiteException e) {
+					} catch (P2PDDSQLException e) {
 						e.printStackTrace();
 					}
 					*/
@@ -364,7 +364,6 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 						o.fireListener(k, 0);
 					}
 					break;
-				}
 			}
 		}
 		if(DEBUG) System.out.println("MotionsModel:setCurrent: Done");
@@ -416,7 +415,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 				_crea_date[k] = moti.get(k).get(7);
 			}
 			if(DEBUG) System.out.println("widgets.org.Motions: A total of: "+_motions.length);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		for(int k=0; k<old_sel.length; k++){
@@ -474,7 +473,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 						new String[]{field_name,table.my_motion_data.motion_ID},
 						new String[]{value, motion_ID});
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -489,7 +488,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		ArrayList<ArrayList<Object>> a;
 		try {
 			a = Application.db.select(sql, new String[]{cID});
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
 		}
@@ -522,7 +521,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 					new String[]{table.motion.blocked},
 					new String[]{table.motion.motion_ID},
 					new String[]{val?"1":"0", motionID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -538,7 +537,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 					new String[]{table.motion.broadcasted},
 					new String[]{table.motion.motion_ID},
 					new String[]{val?"1":"0", motionID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if(DEBUG) System.out.println("Orgs:setBroadcasting: Done");
@@ -550,7 +549,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 					new String[]{table.motion.requested},
 					new String[]{table.motion.motion_ID},
 					new String[]{val?"1":"0", motionID}, DEBUG);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -568,41 +567,52 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		return;
 	}
 	public long getConstituentIDMyself() {
+		if(Application.constituents==null) return -1;
+		if(Application.constituents.tree==null) return -1;
+		if(Application.constituents.tree.getModel()==null) return -1;
 		return  Application.constituents.tree.getModel().getConstituentIDMyself();
 
 	}
 	public String getConstituentGIDMyself() {
+		if(Application.constituents==null) return null;
+		if(Application.constituents.tree==null) return null;
+		if(Application.constituents.tree.getModel()==null) return null;
 		return  Application.constituents.tree.getModel().getConstituentGIDMyself();
 	}
+	
 	public String getOrganizationID() {
 		return  this.crt_orgID;//Application.constituents.tree.getModel().getOrganizationID();
 	}
-
+	
 	public String getMotionID(int row) {
 		return Util.getString(this._motions[row]);
+	}
+	
+	public String getMotionGID(int row) {
+		return Util.getString(this._hash[row]);
 	}
 
 	public void advertise(int row) {
 		String hash = Util.getString(this._hash[row]);
 		String org_hash = this.organization.global_organization_IDhash;
-		Client.addToPayloadFix(RequestData.MOTI, hash, org_hash, Client.MAX_ITEMS_PER_TYPE_PAYLOAD);
-		Client.payload.requested = new WB_Messages();
+		ClientSync.addToPayloadFix(RequestData.MOTI, hash, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
+		ClientSync.payload.requested = new WB_Messages();
 		try {
 			D_Motion m;
-			Client.payload.requested.moti.add(m = new D_Motion(hash));
+			ClientSync.payload.requested.moti.add(m = new D_Motion(hash));
 			D_Vote vote = D_Vote.getMyVoteForMotion(m.motionID);
 			if(vote != null) {
-				Client.addToPayloadFix(RequestData.SIGN, vote.global_vote_ID, org_hash, Client.MAX_ITEMS_PER_TYPE_PAYLOAD);
-				Client.payload.requested.sign.add(vote);
+				ClientSync.addToPayloadFix(RequestData.SIGN, vote.global_vote_ID, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
+				ClientSync.payload.requested.sign.add(vote);
 				if(vote.justification_ID!=null){
 					D_Justification just = new D_Justification(vote.justification_ID);
 					if(just!=null){
-						Client.addToPayloadFix(RequestData.JUST, just.global_justificationID, org_hash, Client.MAX_ITEMS_PER_TYPE_PAYLOAD);
-						Client.payload.requested.just.add(just);
+						ClientSync.addToPayloadFix(RequestData.JUST, just.global_justificationID, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
+						ClientSync.payload.requested.just.add(just);
 					}
 				}
 			}
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}

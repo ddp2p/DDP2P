@@ -22,11 +22,13 @@ package config;
  
 import static java.lang.System.out;
 import static util.Util._;
-import hds.Client;
+import hds.Client1;
+import hds.ClientSync;
 import hds.Console;
 import hds.ControlPane;
 import hds.DirectoryServer;
 import hds.EventDispatcher;
+import hds.IClient;
 import hds.JFrameDropCatch;
 import hds.Server;
 import hds.StartUpThread;
@@ -113,8 +115,8 @@ import data.D_PeerAddress;
 import ASN1.Encoder;
 
 public class DD {
-	public static final String VERSION = "0.9.11";
-	public static String APP_NAME = _("Direct Democracy");
+	public static final String VERSION = "0.9.17";
+	public static String APP_NAME = _("Direct Democracy P2P");
 	//public static String APP_NAME = _("La Bible A Petits Pas");
 	public static JTabbedPane tabbedPane = new JTabbedPane();
 
@@ -333,7 +335,7 @@ public class DD {
 	public static final String CONSTITUENT_PICTURE_FORMAT = "jpg";
 	public static final String WIRELESS_SELECTED_INTERFACES = "WIRELESS_SELECTED_INTERFACES";
 	public static final String WIRELESS_SELECTED_INTERFACES_SEP = ":";
-	public static final long GETHOSTNAME_TIMEOUT_MILLISECONDS = 1000*1;
+	public static final long GETHOSTNAME_TIMEOUT_MILLISECONDS = (long)(1000*0.05);
 	public static final String LAST_SOFTWARE_VERSION = "LAST_SOFTWARE_VERSION";
 	public static final String DD_DB_VERSION = "DD_DB_VERSION";
 	public static final String EMPTYDATE = "";
@@ -353,6 +355,8 @@ public class DD {
 	public static final boolean AVOID_REPEATING_AT_PING = false;
 	public static final boolean ORG_CREATOR_REQUIRED = false;
 	public static final boolean CONSTITUENTS_ADD_ASK_TRUSTWORTHINESS = false;
+	private static final String MY_DEBATE_TOPIC = "MY_DEBATE_TOPIC";
+	public static final long LARGEST_BMP_FILE_LOADABLE = 10000000;
 	//public static int TCP_MAX_LENGTH = 10000000;
 	public static int UDP_MAX_FRAGMENT_LENGTH = 100000;
 	public static int UDP_MAX_FRAGMENTS = 100;
@@ -1231,29 +1235,24 @@ public class DD {
 		return true;
 	}
 	static public boolean startClient(boolean on) throws NumberFormatException, P2PDDSQLException {
-		Client ac = Application.ac;
+		IClient ac = Application.ac;
 		
 		if((on == false)&&(ac!=null)) {ac.turnOff(); Application.ac=null;}
 		if(ac != null) return false;
 		try {
-			Application.ac = new Client();
-			Application.ac.start();
+			Application.ac = ClientSync.startClient();
 		} catch (Exception e) {
 			return false;
 		}
 		return true;
 	}
 	static public void touchClient() throws NumberFormatException, P2PDDSQLException {
-		Client ac = Application.ac;
+		IClient ac = Application.ac;
 		if(ac==null) {
 			startClient(true);
 			ac = Application.ac;
 		}
-		synchronized(ac.wait_lock) {
-			Client.recentlyTouched = true;
-			Client.peersToGo = Client.peersAvailable;
-			ac.wait_lock.notify();
-		}
+		ac.wakeUp();
 	}
 
 	public static SK getConstituentSK(long constituentID) throws P2PDDSQLException {
@@ -1713,9 +1712,9 @@ public class DD {
 		int screen_width = (int)toolkit.getScreenSize().getWidth();
 		int screen_height = (int)toolkit.getScreenSize().getHeight();
 		if(screen_width > 680){
-			DD.FRAME_OFFSET = (screen_width-600)/4;
-			DD.FRAME_WIDTH = 500;
-			DD.FRAME_HSTART = (screen_height-600)/4;
+			DD.FRAME_OFFSET = (screen_width-600)/3;
+			DD.FRAME_WIDTH = 600;
+			DD.FRAME_HSTART = (screen_height-600)/3;
 			DD.FRAME_HEIGHT = 450;
 		}else{
 			DD.FRAME_OFFSET = 0;
@@ -1818,6 +1817,9 @@ public class DD {
 		Application.db = selected_db;
 		if(DEBUG) System.out.println("DD:run: done database, done import databases");
 		DDTranslation.db=Application.db;
+
+		//Application.DB_PATH = new File(Application.DELIBERATION_FILE).getParent();
+		//Application.db_dir = load_Directory_DB(Application.DB_PATH);
 		
 		Identity peer_ID = Identity.current_peer_ID;//getDefaultIdentity();
     	if(DEBUG) System.err.println("DD:main: identity");
@@ -1860,6 +1862,44 @@ public class DD {
 		if (data_server_on_start) startServer(true, Identity.current_peer_ID);
 		if (data_client_on_start) startClient(true);
 		*/
+	}
+
+
+	public static DBInterface load_Directory_DB(String dB_PATH) {
+		DBInterface dbdir = null;
+		String sql = "SELECT "+table.Subscriber.subscriber_ID+
+				" FROM "+table.Subscriber.TNAME+
+				" LIMIT 1;";
+		try {
+			String[]params = new String[]{};
+			String dbase = Application.DIRECTORY_FILE;
+			if(dB_PATH!=null) dbase = dB_PATH+Application.OS_PATH_SEPARATOR+dbase;
+			dbdir = new DBInterface(dbase);
+			dbdir.select(sql, params, DEBUG);
+		} catch (util.P2PDDSQLException e) {
+			System.out.print(sql);
+			e.printStackTrace();
+			return null;
+		}
+		
+		return dbdir;
+	}
+
+
+	public static String getTopic(String globalID, String peer_ID) {
+		String topic = null;
+		try {
+			topic = DD.getAppText(DD.MY_DEBATE_TOPIC);
+			if((topic == null)||(topic.length()==0)) {
+				topic = Util.getString(JOptionPane.showInputDialog(JFrameDropCatch.mframe,
+						_("Declare a topic for your discussions"),
+						_("Topic"), JOptionPane.PLAIN_MESSAGE, null, null, null));
+				if(topic != null) DD.setAppTextNoSync(DD.MY_DEBATE_TOPIC, topic);
+			}
+		} catch (util.P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return topic;
 	}
 
 }

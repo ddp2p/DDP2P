@@ -32,7 +32,7 @@ import util.Util;
 import ciphersuits.Cipher;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.Identity;
@@ -109,7 +109,7 @@ public class IdentityBranch extends IdentityNode{
 			org_name = (String) id.get(0).get(2);
 			c_name = (String) id.get(0).get(3);
 			c_forename = (String) id.get(0).get(4);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		
@@ -280,7 +280,7 @@ public class IdentityBranch extends IdentityNode{
 					new String[]{table.identity.identity_ID},
 					new String[]{gk.gIDhash, this.identityID+""});
 			setKeys(gk.keys, gk.keys.getSK(), gk.gIDhash);
-		} catch (SQLiteException e) {
+		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}

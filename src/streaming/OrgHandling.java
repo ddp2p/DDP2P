@@ -39,7 +39,7 @@ import ASN1.Encoder;
 import ciphersuits.Cipher;
 import ciphersuits.SK;
 
-import com.almworks.sqlite4java.SQLiteException;
+import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
@@ -77,9 +77,9 @@ public class OrgHandling {
 	 * @param _orgID
 	 * @param arrival_time
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public	static boolean updateOrg(D_Organization od, String[] _orgID, String arrival_time, RequestData _rq, D_PeerAddress peer) throws SQLiteException {
+	public	static boolean updateOrg(D_Organization od, String[] _orgID, String arrival_time, RequestData _rq, D_PeerAddress peer) throws P2PDDSQLException {
 		boolean changed=false;
 		//String id_hash;
 		if(DEBUG) out.println("OrgHandling:updateOrg: enter");
@@ -147,7 +147,7 @@ public class OrgHandling {
 		return changed;
 	}
 	private static boolean integrateOtherOrgData(D_Organization od, String org_local_ID,
-			String arrival_time, boolean recent_org_data, RequestData rq) throws SQLiteException {
+			String arrival_time, boolean recent_org_data, RequestData rq) throws P2PDDSQLException {
 		boolean result = false;
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed start="+result);
 		result |= streaming.ConstituentHandling.integrateNewData(od.constituents, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
@@ -176,9 +176,9 @@ public class OrgHandling {
 	 * @param limitOrgMax 
 	 * @param limitOrgLow 
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static String getNextOrgDate(String last_sync_date, String _maxDate, HashSet<String> orgs, int limitOrgLow) throws SQLiteException {
+	public static String getNextOrgDate(String last_sync_date, String _maxDate, HashSet<String> orgs, int limitOrgLow) throws P2PDDSQLException {
 		// boolean DEBUG = true;
 		
 		if(DEBUG) out.println("OrgHandling:getNextOrgDate: start: between: "+last_sync_date+" : "+_maxDate);
@@ -273,7 +273,7 @@ public class OrgHandling {
 		return result;
 	}
 
-	private static String getNextFilteredOrgDate(String last_sync_date, OrgFilter ofi, HashSet<String> orgs) throws SQLiteException {
+	private static String getNextFilteredOrgDate(String last_sync_date, OrgFilter ofi, HashSet<String> orgs) throws P2PDDSQLException {
 		if(DEBUG) out.println("\n************\nOrgHandling:getNextFilteredOrgDate filter "+ofi+": "+last_sync_date+" ;");
 		String sql, result=null;
 		ArrayList<ArrayList<Object>>p_data;
@@ -301,7 +301,7 @@ public class OrgHandling {
 	}
 	
 	@Deprecated
-	static D_Organization _signableOrgData(String ofi_orgID, String local_id, ArrayList<Object> row) throws SQLiteException {
+	static D_Organization _signableOrgData(String ofi_orgID, String local_id, ArrayList<Object> row) throws P2PDDSQLException {
 			if(DEBUG) out.println("\n****************\nOrgHandling:signOrgData: start organization orgID="+ofi_orgID);
 		//return new OrgData(row);
 		D_Organization od = new D_Organization();
@@ -366,9 +366,9 @@ public class OrgHandling {
 	 * @param local_id
 	 * @param row
 	 * @return
-	 * @throws SQLiteException
+	 * @throws P2PDDSQLException
 	 */
-	public static D_Organization signableOrgData(String ofi_orgID, String local_id, ArrayList<Object> row) throws SQLiteException {
+	public static D_Organization signableOrgData(String ofi_orgID, String local_id, ArrayList<Object> row) throws P2PDDSQLException {
 		if(DEBUG) out.println("\n****************\nOrgHandling:signOrgData: start organization orgID="+ofi_orgID);
 		D_Organization od = null;
 		try {
@@ -390,7 +390,7 @@ public class OrgHandling {
 		od.justifications = new ASNJustificationSets[0];
 		od.signatures = new ASNSignature[0];
 		*/
-	static D_Organization getOrgData(String last_sync_date, String ofi_orgGID, ArrayList<Object> row) throws SQLiteException {
+	static D_Organization getOrgData(String last_sync_date, String ofi_orgGID, ArrayList<Object> row) throws P2PDDSQLException {
 		if(DEBUG) out.println("\n****************\nOrgHandling:getOrgData: start organization orgGID="+ofi_orgGID+" from date="+last_sync_date);
 		String local_id = Util.getString(row.get(table.organization.ORG_COL_ID),null);
 		D_Organization od = signableOrgData(ofi_orgGID, local_id, row);
@@ -438,9 +438,9 @@ public class OrgHandling {
 	}
 
 /**
- * @throws SQLiteException 
+ * @throws P2PDDSQLException 
  * @throws  
- * @throws SQLiteException 
+ * @throws P2PDDSQLException 
  *  Get the OrgData starting last_sync_data and up to _maxData[0], or find _maxDate[]
  *  such that the data to send it not too large
  * @param asr
@@ -453,7 +453,7 @@ public class OrgHandling {
  * @throws  
  */
 	public static D_Organization[] getOrgData(ASNSyncRequest asr, String last_sync_date, String[] _maxDate, boolean justDate, HashSet<String> orgIDs,
-			int limitOrgLow, int limitOrgMax) throws SQLiteException {
+			int limitOrgLow, int limitOrgMax) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) out.println("\n**************\nOrgHandling:getOrgData':start: "+_maxDate[0]+" justDate:"+justDate+" orgs="+orgIDs.size());//+" asr="+asr);
 		String maxDate=null;
@@ -511,10 +511,12 @@ public class OrgHandling {
 			 *  K stores the index in the sql result
 			 */
 			
-			orgData = new D_Organization[orgIDs.size()]; //p_data.size()];
-			int of = 0;
+			//orgData = new D_Organization[orgIDs.size()]; //p_data.size()];
+			ArrayList<D_Organization> _orgData = new ArrayList<D_Organization>();
+			//int of = 0;
 			Iterator<String> orgIDs_iter = orgIDs.iterator();
 			do{ //int of=0; of<orgData.length; of++) {
+				D_Organization crt_org;
 				String org_id =orgIDs_iter.next();
 				if(DEBUG) System.out.println("OrgHandling:getOrgData: orgs try ID="+org_id);
 				if(org_id==null) continue;
@@ -537,24 +539,28 @@ public class OrgHandling {
 					//String org_gid = Util.getString(p_data.get(k).get(table.organization.ORG_COL_GID));
 					//String org_id = Util.getString(p_data.get(k).get(table.organization.ORG_COL_ID));
 					
-					orgData[of] = OrgHandling.getOrgData(last_sync_date, org_gid, p_data.get(k));
-					if(DD.STREAM_SEND_ALL_ORG_CREATOR) {
-						try{orgData[of].creator = new D_PeerAddress(orgData[of].params.creator_global_ID);}
+					crt_org = OrgHandling.getOrgData(last_sync_date, org_gid, p_data.get(k));
+					_orgData.add(crt_org);//[of]
+					if(crt_org == null) continue;
+					if(DD.STREAM_SEND_ALL_ORG_CREATOR && (crt_org!=null)) {
+						try{crt_org.creator = new D_PeerAddress(crt_org.params.creator_global_ID);}
 						catch(Exception e){e.printStackTrace();}
 					}
-					if(DEBUG) out.println("OrgHandling:getOrgData: Prepared org: "+orgData[of]);
+					if(DEBUG) out.println("OrgHandling:getOrgData: Prepared org: "+crt_org);
 				}else{
 					D_Organization all;
 					all = new D_Organization(org_gid, null, true, false); //false to not load extras
 					if(!DD.STREAM_SEND_ALL_FUTURE_ORG || all.arrival_date.before(Util.getCalendar(last_sync_date))){
-						orgData[of] = new D_Organization();
-						orgData[of].global_organization_ID = org_gid;
-						orgData[of].global_organization_IDhash = all.global_organization_IDhash;
-						orgData[of].params.certifMethods = all.params.certifMethods;
+						crt_org = new D_Organization();
+						_orgData.add(crt_org);//[of]
+						crt_org.global_organization_ID = org_gid;
+						crt_org.global_organization_IDhash = all.global_organization_IDhash;
+						crt_org.params.certifMethods = all.params.certifMethods;
 					}else{
-						orgData[of] = all;
+						crt_org = all;
+						_orgData.add(all);
 						if(DD.STREAM_SEND_ALL_ORG_CREATOR) {
-							try{orgData[of].creator = new D_PeerAddress(orgData[of].params.creator_global_ID);}
+							try{all.creator = new D_PeerAddress(all.params.creator_global_ID);}
 							catch(Exception e){e.printStackTrace();}
 						}
 					}
@@ -563,20 +569,20 @@ public class OrgHandling {
 				
 				if(SERVE_DIRECTLY_DATA) {
 					if(DEBUG) out.println("OrgHandling:getOrgData: SERVE_DIRECTLY");
-					orgData[of].constituents = ConstituentHandling.getConstituentData(asr,last_sync_date, org_gid, org_id, _maxDate);
-					orgData[of].neighborhoods = NeighborhoodHandling.getNeighborhoodOPs(asr,last_sync_date, org_gid, org_id, _maxDate);
-					orgData[of].witnesses = WitnessingHandling.getWitnessingData(asr,last_sync_date, org_gid, org_id, _maxDate);
-					orgData[of].motions = MotionHandling.getMotionData(asr,last_sync_date, org_gid, org_id, _maxDate);
-					orgData[of].justifications = JustificationHandling.getJustificationData(asr,last_sync_date, org_gid, org_id, _maxDate);
-					orgData[of].signatures = SignatureHandling.getSignaturesData(asr,last_sync_date, org_gid, org_id, _maxDate);
-					orgData[of].translations = TranslationHandling.getTranslationData(asr,last_sync_date, org_gid, org_id, _maxDate);
-					orgData[of].news = NewsHandling.getNewsData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					crt_org.constituents = ConstituentHandling.getConstituentData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					crt_org.neighborhoods = NeighborhoodHandling.getNeighborhoodOPs(asr,last_sync_date, org_gid, org_id, _maxDate);
+					crt_org.witnesses = WitnessingHandling.getWitnessingData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					crt_org.motions = MotionHandling.getMotionData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					crt_org.justifications = JustificationHandling.getJustificationData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					crt_org.signatures = SignatureHandling.getSignaturesData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					crt_org.translations = TranslationHandling.getTranslationData(asr,last_sync_date, org_gid, org_id, _maxDate);
+					crt_org.news = NewsHandling.getNewsData(asr,last_sync_date, org_gid, org_id, _maxDate);
 				}else{
 					//boolean DEBUG = true;
 					if(DEBUG) out.println("OrgHandling:getOrgData: SERVE_INDIRECTLY:"+_maxDate[0]);
 					//SpecificRequest availableHashes = new SpecificRequest();
 					RequestData rq = new RequestData();
-					rq.global_organization_ID_hash = orgData[of].global_organization_IDhash;
+					rq.global_organization_ID_hash = crt_org.global_organization_IDhash;
 					if(rq.global_organization_ID_hash==null) rq.global_organization_ID_hash = D_Organization.getOrgGIDHashGuess(org_gid);
 					int BIG_LIMIT = 300;
 					if(DEBUG) out.println("\n\b******OrgHandling:getOrgData: get indirectly");
@@ -592,15 +598,19 @@ public class OrgHandling {
 					rq.tran = TranslationHandling.getTranslationHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
 					rq.news = NewsHandling.getNewsHashes(last_sync_date, org_id, _maxDate, BIG_LIMIT);
 					if(DEBUG) out.println("OrgHandling:getOrgData: got advertising: "+_maxDate[0]+" "+rq);
-					orgData[of].availableHashes = rq;
+					crt_org.availableHashes = rq;
 					maxDate = _maxDate[0];
 				}
-				orgData[of].setGT(maxDate);
+				crt_org.setGT(maxDate);
 
-				if(DEBUG) out.println("OrgHandling:getOrgData: Prepared org components: "+orgData[of]);
+				if(DEBUG) out.println("OrgHandling:getOrgData: Prepared org components: "+crt_org);
 				
-				of++;
+				//of++;
 			}while(orgIDs_iter.hasNext());
+			try{
+				_orgData.removeAll(Arrays.asList(new D_Organization[]{null}));
+			}catch(Exception e){e.printStackTrace();}
+			orgData = _orgData.toArray(new D_Organization[0]);
 		}else{
 			if(DEBUG)out.println("OrgHandling:getOrgData: Filter length: "+asr.orgFilter.length);
 			/*if(justDate){
@@ -626,6 +636,7 @@ public class OrgHandling {
 				if(p_data.size()>=1) {
 					//if(max_Date.equals(last_sync_date) && !Util.getString(p_data.get(0).get(ORG_COL_ARRIVAL)).compareTo(last_sync_date)) continue;
 					D_Organization od = OrgHandling.getOrgData(last_sync_date, ofi.orgGID, p_data.get(0));
+					if(od==null) continue;
 					od.setGT(max_Date);
 					_orgData.add(od);
 					String org_id = Util.getString(p_data.get(0).get(table.organization.ORG_COL_ID));
@@ -668,6 +679,9 @@ public class OrgHandling {
 					}
 				}
 			}
+			try{
+				_orgData.removeAll(Arrays.asList(new D_Organization[]{null}));
+			}catch(Exception e){e.printStackTrace();}
 			orgData = _orgData.toArray(new D_Organization[0]);
 		}
 		if(DEBUG) out.println("OrgHandling:getOrgData':exit: "+orgData);

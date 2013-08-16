@@ -577,8 +577,7 @@ public class Server extends Thread {
 			//server.setID(id);
 		}
 		if (data_client_on_start) {
-			Application.ac = new Client();
-			Application.ac.start();
+			Application.ac = ClientSync.startClient();
 		}
 	}
 	public static boolean isMyself(InetSocketAddress sock_addr) {
