@@ -50,7 +50,7 @@ class ConstituentsWitness extends JDialog {
 				_("Personally known eligibility"),
 				_("Hearsay eligibility"),
 				_("Unknown"),"",
-				_("Inexistant address"),
+				_("Nonexistent address"),
 				_("No such person at this address"),
 				_("Not eligible"),
 				_("Error in address")

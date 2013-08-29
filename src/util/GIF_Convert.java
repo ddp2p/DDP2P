@@ -164,7 +164,7 @@ public class GIF_Convert {
 					explain = _("Not supported compression: "+data.compression+" "+data.bpp);
 					fail = true;
 				}
-				if(data.width*data.height*3<(adr_bytes.length*8/DDAddress.STEGO_BITS)+DDAddress.STEGO_BYTE_HEADER){
+				if(data.width*data.height*3<(adr_bytes.length*8/EmbedInMedia.STEGO_BITS)+EmbedInMedia.STEGO_BYTE_HEADER){
 					explain = _("File too short: "+data.width*data.height*3+" need: "+adr_bytes.length);
 					fail = true;
 				}
@@ -215,7 +215,7 @@ public class GIF_Convert {
 			int word_bytes=1;
 			int bits = 4;
 			try {
-				adr.setSteganoBytes(b, offset, word_bytes, bits);
+				EmbedInMedia.setSteganoBytes(adr, b, offset, word_bytes, bits);
 			} catch (Exception e1) {
 				explain = " - "+ _("No valid data in picture!");
 				fail = true;

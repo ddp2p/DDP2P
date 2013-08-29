@@ -53,7 +53,7 @@ import ASN1.Encoder;
 
 public class WB_Messages extends ASNObj{
 
-	private static final boolean _DEBUG = true;
+	static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
 	public ArrayList<D_Constituent> cons = new ArrayList<D_Constituent>();
 	public ArrayList<D_Neighborhood> neig = new ArrayList<D_Neighborhood>();
@@ -150,6 +150,10 @@ public class WB_Messages extends ASNObj{
 		for(RequestData r: rd) {
 			for(String gid: r.orgs) {
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: org gid="+gid);
+				String org_id = Util.getStringID(D_Organization.getLocalOrgID(gid, gid));
+
+				if(!OrgHandling.serving(asr, org_id)) continue;
+				
 				if((sa!=null)&&sa.hasOrg(gid)) continue;
 				try {
 					result.orgs.add(new D_Organization(gid,gid));
@@ -164,7 +168,9 @@ public class WB_Messages extends ASNObj{
 				// TODO if gid is sa, then skip to avoid duplicating work 
 				if((sa!=null)&&sa.hasConstituent(gid, r.cons.get(gid))) continue;
 				try{
-					result.cons.add(new D_Constituent(gid, gid, D_Constituent.EXPAND_NONE));
+					D_Constituent c = new D_Constituent(gid, gid, D_Constituent.EXPAND_NONE);
+					if(!OrgHandling.serving(asr, c.organization_ID)) continue;
+					result.cons.add(c);
 				}catch(Exception e){
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested const: "+gid);
 					//e.printStackTrace();
@@ -175,7 +181,9 @@ public class WB_Messages extends ASNObj{
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: neigh gid="+gid);
 				if((sa!=null)&&sa.hasNeighborhod(gid)) continue;
 				try {
-					result.neig.add(new D_Neighborhood(gid));
+					D_Neighborhood n = new D_Neighborhood(gid);
+					if(!OrgHandling.serving(asr, Util.getStringID(n.organization_ID))) continue;
+					result.neig.add(n);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got neig");
 				} catch (Exception e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested neig: "+gid);
@@ -186,7 +194,9 @@ public class WB_Messages extends ASNObj{
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: witn gid="+gid);
 				if((sa!=null)&&sa.hasWitness(gid)) continue;
 				try {
-					result.witn.add(new D_Witness(gid));
+					D_Witness w = new D_Witness(gid);
+					if(!OrgHandling.serving(asr, w.organization_ID)) continue;
+					result.witn.add(w);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got witn");
 				} catch (Exception e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested witn: "+gid);
@@ -197,7 +207,9 @@ public class WB_Messages extends ASNObj{
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: moti gid="+gid);
 				if((sa!=null)&&sa.hasMotion(gid)) continue;
 				try {
-					result.moti.add(new D_Motion(gid));
+					D_Motion m = new D_Motion(gid);
+					if(!OrgHandling.serving(asr, m.organization_ID)) continue;
+					result.moti.add(m);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got moti");
 				} catch (Exception e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested moti: "+gid);
@@ -208,7 +220,9 @@ public class WB_Messages extends ASNObj{
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: cons just="+gid);
 				if((sa!=null)&&sa.hasJustification(gid)) continue;
 				try{
-					result.just.add(new D_Justification(gid));
+					D_Justification j = new D_Justification(gid);
+					if(!OrgHandling.serving(asr, j.organization_ID)) continue;
+					result.just.add(j);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got just");
 				} catch (Exception e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested just: "+gid);
@@ -219,7 +233,9 @@ public class WB_Messages extends ASNObj{
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: vote just="+gid);
 				if((sa!=null)&&sa.hasSignature(gid)) continue;
 				try{
-					result.sign.add(new D_Vote(gid));
+					D_Vote v = new D_Vote(gid);
+					if(!OrgHandling.serving(asr, v.organization_ID)) continue;
+					result.sign.add(v);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got vote");
 				} catch (Exception e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested vote: "+gid);
@@ -229,6 +245,7 @@ public class WB_Messages extends ASNObj{
 		}
 		return result;
 	}
+
 	/**
 	 * 		Hashtable<String, RequestData> obtained_sr = new Hashtable<String, RequestData>();
 		Hashtable<String, RequestData> sq_sr = new Hashtable<String, RequestData>();

@@ -50,7 +50,7 @@ public class ClientSync{
 	static public IClient startClient(){
 		if(DEBUG) System.out.println("ClientSync:startClient: start Client2");
 		IClient r;
-		r = new Client2();
+		r = new Client2(); // Change to Client1 on bugs
 		r.start();
 		if(DEBUG) System.out.println("ClientSync:startClient: started Client2");
 		return r;

@@ -318,7 +318,7 @@ public class Motions extends JTable implements MouseListener  {
     	JPopupMenu popup = new JPopupMenu();
     	MotionCustomAction aAction;
     	
-    	aAction = new MotionCustomAction(this, _("Add!"), delicon,_("Add new motion."), _("Add"),KeyEvent.VK_A, MotionCustomAction.M_ADD);
+    	aAction = new MotionCustomAction(this, _("Add!"), addicon,_("Add new motion."), _("Add"),KeyEvent.VK_A, MotionCustomAction.M_ADD);
     	aAction.putValue("row", new Integer(model_row));
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);

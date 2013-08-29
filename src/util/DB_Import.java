@@ -45,7 +45,7 @@ public class DB_Import {
 		if(DEBUG) System.out.println("DB_Import: import_db: will import db indicated by "+previous+" into "+db_new);
 		File indicator_to_previous_db = new File(previous);
 		if(!indicator_to_previous_db.exists() || !indicator_to_previous_db.isFile()){
-			Application.warning(_("Inexistant old database version indicator file:")+previous, _("Abandon database import!"));
+			Application.warning(_("Nonexistent old database version indicator file:")+" "+previous, _("Abandon database import!"));
 			return false;
 		}
 		

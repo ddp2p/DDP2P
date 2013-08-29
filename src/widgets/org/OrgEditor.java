@@ -136,6 +136,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 	JCheckBox broadcasted;
 	JCheckBox blocked;
 	private D_Organization organization;
+	private JCheckBox broadcast_rule;
 
 	public OrgEditor() {
 		tabbedPane.setTabPlacement(JTabbedPane.TOP);
@@ -313,6 +314,10 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		blocked.removeItemListener(this);
 		blocked.setSelected("1".equals(Util.getString(org.get(table.organization.ORG_COL_BLOCK))));
 		blocked.addItemListener(this);
+
+		broadcast_rule.removeItemListener(this);
+		broadcast_rule.setSelected("1".equals(Util.getString(org.get(table.organization.ORG_COL_BROADCAST_RULE))));
+		broadcast_rule.addItemListener(this);
 
 		broadcasted.removeItemListener(this);
 		broadcasted.setSelected("1".equals(Util.getString(org.get(table.organization.ORG_COL_BROADCASTED))));
@@ -496,6 +501,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 	}
 	private void disable_it() {
 		enabled = false;
+		if(this.broadcast_rule!=null) this.broadcast_rule.setEnabled(false);
 		if(this.name_forum_field!=null) this.name_forum_field.setEnabled(false);
 		if(this.name_org_field!=null) this.name_org_field.setEnabled(false);
 		if(this.name_motion_field!=null) this.name_motion_field.setEnabled(false);
@@ -520,6 +526,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		enabled = true;
 		if(DEBUG)System.out.println("OrgEditor:Enabling");
 		//Util.printCallPath("enabling");
+		if(this.broadcast_rule!=null) this.broadcast_rule.setEnabled(true);
 		if(this.name_forum_field!=null) this.name_forum_field.setEnabled(true);
 		if(this.name_org_field!=null) this.name_org_field.setEnabled(true);
 		if(this.name_motion_field!=null) this.name_motion_field.setEnabled(true);
@@ -603,12 +610,17 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		broadcasted = new JCheckBox(_("Broadcasted"), false);
 		broadcasted.addItemListener(this);
 		
+		broadcast_rule = new JCheckBox(_("Broadcast Indiscriminately"), true);
+		broadcast_rule.addItemListener(this);
+		
 		blocked = new JCheckBox(_("Blocked"), false);
 		blocked.addItemListener(this);
-		p.add(broadcasted,c);
+		p.add(broadcast_rule,c);
 		c.gridx = 0; c.gridy = 1;
-		p.add(requested,c);
+		p.add(broadcasted,c);
 		c.gridx = 0; c.gridy = 2;
+		p.add(requested,c);
+		c.gridx = 0; c.gridy = 3;
 		p.add(blocked,c);
 		JScrollPane scrollPane = new JScrollPane(p);
 		return scrollPane;
@@ -812,22 +824,45 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		
 		if(this.broadcasted == source) {
 			boolean val = broadcasted.isSelected();
-			OrgsModel.toggleServing(this.orgID, false, val);
+			//OrgsModel.toggleServing(this.orgID, false, val);
+			OrgsModel.setBroadcasting(this.orgID, val);
 			if(this.organization!=null) this.organization.broadcasted = val;
+			return;
 		}
 		if(this.blocked == source) {
 			boolean val = blocked.isSelected();
 			OrgsModel.setBlocking(this.orgID, val);
 			if(this.organization!=null) this.organization.blocked = val;
+			return;
 		}
 		if(this.requested == source) {
 			boolean val = requested.isSelected();
 			OrgsModel.setRequested(this.orgID, val);
 			if(this.organization!=null) this.organization.requested = val;
+			return;
 		}
 		if(!enabled) return;
 		String currentTime = Util.getGeneralizedTime();
 		String creationTime = date_field.getText();
+
+		
+		if(this.broadcast_rule == source) {
+			boolean val = broadcast_rule.isSelected();
+			if(_DEBUG)System.out.println("OrgEditor:handleFieldEvent: broadcast_rule:val="+val);
+			String val_S = Util.bool2StringInt(val);
+			if(_DEBUG)System.out.println("OrgEditor:handleFieldEvent: broadcast_rule:val="+val_S);
+			try {
+				Application.db.updateNoSync(table.organization.TNAME,
+						new String[]{table.organization.broadcast_rule, table.organization.creation_date, table.organization.arrival_date, table.organization.signature},
+						new String[]{table.organization.organization_ID},
+						new String[]{val_S, creationTime, currentTime, null, this.orgID}, _DEBUG);
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+			if(this.org!=null) org.set(table.organization.ORG_COL_BROADCAST_RULE,val_S);
+			if(this.organization!=null) this.organization.broadcast_rule = val;
+			return;
+		}
 		
 		if(this.default_scoring_options_field == source) {
 			if(DEBUG) out.println("OrgEditor:handleFieldEvent: default scoring"); 
@@ -1057,7 +1092,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		}
 		
 		if((globID_field==source)) {
-			if(DEBUG) out.println("OrgEditor:handleFieldEvent: globID");
+			if(_DEBUG) out.println("OrgEditor:handleFieldEvent: globID");
 			OrgGIDItem selected = (OrgGIDItem)globID_field.getSelectedItem();
 			if(selected == null) {
 				hash_org.global_organization_ID = null;
@@ -1065,6 +1100,8 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 			}
 			String new_ID = Util.getString(selected.gid);
 			hash_org.global_organization_ID = new_ID;
+			String new_IDhash = D_Organization.getOrgGIDHashAuthoritarian(new_ID);
+			if(_DEBUG) out.println("OrgEditor:handleFieldEvent: globIDhash="+new_IDhash);
 			
 			String signature=null;
 			/*
@@ -1089,7 +1126,8 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 							table.organization.arrival_date,
 							table.organization.signature},
 						new String[]{table.organization.organization_ID},
-						new String[]{new_ID, selected.hash, creationTime, currentTime, signature, this.orgID});
+						new String[]{new_ID, new_IDhash, //selected.hash,
+						creationTime, currentTime, signature, this.orgID}, _DEBUG);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return;
@@ -1105,21 +1143,27 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				return;
 			}
 			try{
-				if(org.get(table.organization.ORG_COL_CREATOR_ID)==null){
-					Application.warning(_("You need to select a peer identity as Initiator"), _("Missing Initiator"));
-					return;					
-				}
 				String name = Util.getString(org.get(table.organization.ORG_COL_NAME));
 				if((name==null) || ("".equals(name.trim()))){
 					Application.warning(_("You need to select a name for you organization"), _("Missing Name"));
 					return;						
 				}
+				if(org.get(table.organization.ORG_COL_CREATOR_ID)==null){
+					Application.warning(_("You may want to select a peer identity as Initiator"), _("Missing Initiator"));
+					//return;					
+				}
 			}catch(Exception e){}
 
+			/*
 			String gID=Util.getString(selected.gid);//hash_org.global_organization_ID;
+			String gIDhash = D_Organization.getOrgGIDHashAuthoritarian(gID);
 			byte[] _signature = this.signOrg(gID, creationTime);
 			String signature = Util.stringSignatureFromByte(_signature);
+			*/
+			String ID = Util.getString(org.get(table.organization.ORG_COL_ID));
 			try {
+				D_Organization.readSignSave(Util.lval(ID,-1));
+				/*
 				Application.db.update(table.organization.TNAME,
 						new String[]{table.organization.global_organization_ID,
 							table.organization.global_organization_ID_hash,
@@ -1127,9 +1171,16 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 							table.organization.arrival_date,
 							table.organization.signature},
 						new String[]{table.organization.organization_ID},
-						new String[]{gID, selected.hash, creationTime, currentTime, signature, this.orgID});
-			} catch (P2PDDSQLException e) {
+						new String[]{gID, gIDhash, //selected.hash,
+						creationTime, currentTime, signature, this.orgID});
+				*/
+			} catch (Exception e) {
 				e.printStackTrace();
+				Application.warning(_("Error saving organization:")+" "+e.getLocalizedMessage()+"\n"+
+						_("Potentially you use the same Identity as another existing org.")+"\n"+
+						_("Probably you should generate a new Identity key (for AUTHORITARIAN orgs)\n"+
+						"or should change some parameters to avoid conflicts (with GRASSROOT orgs)"),
+						_("Error Saving Org"));
 				return;
 			}
 			disable_it();			
@@ -1183,15 +1234,15 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				Cipher keys = Util.getKeyedGlobalID(AUTHORITARIAN, ""+name+creation_date);
 				keys.genKey(1024);
 				try {
-					DD.storeSK(keys, "ORG");
+					DD.storeSK(keys, "ORG:"+name+":");
 				} catch (P2PDDSQLException e2) {
-					// TODO Auto-generated catch block
 					e2.printStackTrace();
 				}
 				String gID = Util.getKeyedIDPK(keys);
 				String sID = Util.getKeyedIDSK(keys);
 				//String gIDhash = Util.getHash(keys.getPK().encode());
-				String gIDhash = Util.getGIDhash(gID);
+				String gIDhash = Util.getGIDhash(gID); // for the key table
+				String gIDhashAuth = D_Organization.getOrgGIDHashAuthoritarian(gID);
 				String type = Util.getKeyedIDType(keys);
 				OrgGIDItem gid = new OrgGIDItem(gID, gIDhash, Util.getGeneralizedTime());
 				//String hashorg = Util.getHash(hash_org.encode(), DD.APP_ID_HASH);
@@ -1235,7 +1286,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 							//table.organization.hash_orgID,
 							table.organization.creation_date,table.organization.arrival_date,table.organization.signature},
 							new String[]{table.organization.organization_ID},
-							new String[]{gID, gIDhash,
+							new String[]{gID, gIDhashAuth,
 							Util.stringSignatureFromByte(orgData.signature_initiator),
 							//hashorg, 
 							creationTime, currentTime, signature, this.orgID},DEBUG);

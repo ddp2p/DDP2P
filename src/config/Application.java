@@ -165,7 +165,7 @@ public class Application{
 			
 			Application.warning(_("Setting wrong path for scripts:")+"\""+dir+"\n"+ _("You can change path from the control panel of the app, or may move scripts there."), _("Wrong path!"));
 			Util.printCallPath("Wrong path: "+dir);
-			System.err.println("Script existance: "+ crt.exists());
+			System.err.println("Script existence: "+ crt.exists());
 			System.err.println("Script dir: "+ crt.isDirectory());
 			System.err.println("Current folder: "+crt.getAbsolutePath());
 		}

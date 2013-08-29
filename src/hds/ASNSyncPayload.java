@@ -693,7 +693,7 @@ public class ASNSyncPayload extends ASNObj{
 	public String toSummaryString(){
 		String result = "\n[SyncAnswer v="+version+"] "+" upTo:"+Encoder.getGeneralizedTime(upToDate);
 		if(tables!=null) result += "\n  tables="+tables.toSummaryString();
-		if((orgData!=null) && (orgData.length>0))result += "\n  orgData= ["+Util.concatSummary(orgData," ",null)+"]";
+		if((orgData!=null) && (orgData.length>0))result += "\n  orgData#"+orgData.length+"= ["+Util.concatSummary(orgData," ",null)+"]";
 		if(orgCRL!=null) result += "\n orgCRL="+orgCRL;
 		result += "\n responderID="+Util.trimmed(responderID);
 		if(plugins!=null) result += "\n plugins="+Util.trimmed(""+Util.nullDiscrimArray(plugins,":"), 400);
@@ -751,9 +751,16 @@ ASNSyncPayload := IMPLICIT [APPLICATION 8] SEQUENCE {
 			ResetOrgInfo[] ch_orgs = changed_orgs.toArray(new ResetOrgInfo[0]);
 			enc.addToSequence(Encoder.getEncoder(ch_orgs).setASN1Type(DD.TAG_AC18));
 		}
-		enc.setASN1Type(DD.TAG_AC8);
+		enc.setASN1Type(getASN1Type());
 		if(ASNSyncRequest.DEBUG)System.out.println("Encoded SyncAnswer");
 		return enc;
+	}
+	/**
+	 * Returns DD.TAG_AC8
+	 * @return
+	 */
+	public static byte getASN1Type(){
+		return DD.TAG_AC8;
 	}
 
 	public ASNSyncPayload decode(Decoder decoder) throws ASN1DecoderFail {

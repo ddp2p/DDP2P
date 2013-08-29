@@ -54,6 +54,9 @@ class OrgFilter extends ASNObj{
 		_last_sync_date = lsd;
 		last_sync_date = Util.getCalendar(lsd);
 	}
+	public static byte getASN1Type(){
+		return Encoder.TAG_SEQUENCE;
+	}
 	public Encoder getEncoder(){
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(version));
@@ -78,6 +81,7 @@ class OrgFilter extends ASNObj{
 			enc.addToSequence(encP.setASN1Type(DD.TAG_AC2));
 		}
 		enc.addToSequence(new Encoder(plugins_excluding));
+		enc.setASN1Type(getASN1Type());
 		return enc;
 	}
 	public OrgFilter decode(Decoder decoder) throws ASN1DecoderFail {

@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 
 import ciphersuits.Cipher;
+import ciphersuits.PK;
 import ciphersuits.SK;
 
 import table.key;
@@ -86,6 +87,7 @@ class D_Organization extends ASNObj implements Summary {
 	public boolean blocked = false;
 	public boolean requested = false;
 	public boolean broadcasted = DEFAULT_BROADCASTED_ORG_ITSELF;
+	public boolean broadcast_rule = true;
 	public Calendar arrival_date;
 	public long _organization_ID;
 	public byte[] signature_initiator;
@@ -96,6 +98,7 @@ class D_Organization extends ASNObj implements Summary {
 		//";\n  ver = "+version+
 		//";\n  id  = "+global_organization_ID+";\n"+
 		result += " name="+name+"; ";
+		result += " b_r="+broadcast_rule+"; ";
 		//";\n  l_s_d="+_last_sync_date+
 		//";\n  params="+params+
 		//";\n  creator="+creator+
@@ -111,30 +114,33 @@ class D_Organization extends ASNObj implements Summary {
 		if(translations != null) result += ";\n  translations="+Util.concat(translations, "\nOrgData-Translations:");
 		if(news != null) result += ";\n  news="+Util.concat(news, "\nOrgData-News:");
 		if(availableHashes!=null) result += ";\n  available="+availableHashes.toSummaryString();
+		//else result += ";\n  available=null"; // not encoded (sent in advertised in SyncPayload)
 		result += "\n]";
 		return result;
 	}
 	public String toString() {
 		String result = "OrgData: [";
-		result += ";\n  ver = "+version;
-		result += ";\n  id  = "+global_organization_ID;
-		result += ";\n  name="+name;
-		result += ";\n  l_s_d="+_last_sync_date;
-		result += ";\n  params="+params;
-		result += ";\n  creator="+creator;
-		result += ";\n  concepts=<"+concepts+">";
-		result += ";\n  signature=<"+Util.byteToHexDump(signature)+">";
-		result += ";\n  signature_initiator=<"+Util.byteToHexDump(signature_initiator)+">";
-		if(neighborhoods != null) result += ";\n  neighborhoods="+Util.concat(neighborhoods, "\nOrgData-Neighborhood:");
-		if(constituents != null) result += ";\n  constituents="+Util.concat(constituents, "\nOrgData-Constituents:");
-		if(witnesses != null) result += ";\n  witnesses="+Util.concat(witnesses, "\nOrgData-Witnesses:");
-		if(motions != null) result += ";\n  motions="+Util.concat(motions, "\nOrgData-Motions:");
-		if(justifications != null) result += ";\n  justifications="+Util.concat(justifications, "\nOrgData-Justifications:");
-		if(signatures != null) result += ";\n  signatures="+Util.concat(signatures, "\nOrgData-Signatures:");
-		if(translations != null) result +=  ";\n  translations="+Util.concat(translations, "\nOrgData-Translations:");
-		if(news != null) result +=  ";\n  news="+Util.concat(news, "\nOrgData-News:");
-		if(availableHashes!=null) result +=  ";\n  available="+availableHashes;
-		result += "\n]";
+		result += ";\r\n\r  ver = "+version;
+		result += ";\r\n\r  id  = "+global_organization_ID;
+		result += ";\r\n\r  name="+name;
+		result += ";\r\n\r  broadcast_rule="+broadcast_rule;
+		result += ";\r\n\r  l_s_d="+_last_sync_date;
+		result += ";\r\n\r  params="+params;
+		result += ";\r\n\r  creator_ID="+creator_ID;
+		result += ";\r\n\r  creator="+creator;
+		result += ";\r\n\r  concepts=<"+concepts+">";
+		result += ";\r\n\r  signature=<"+Util.byteToHexDump(signature)+">";
+		result += ";\r\n\r  signature_initiator=<"+Util.byteToHexDump(signature_initiator)+">";
+		if(neighborhoods != null) result += ";\r\n\r  neighborhoods="+Util.concat(neighborhoods, "\nOrgData-Neighborhood:");
+		if(constituents != null) result += ";\r\n\r  constituents="+Util.concat(constituents, "\nOrgData-Constituents:");
+		if(witnesses != null) result += ";\r\n\r  witnesses="+Util.concat(witnesses, "\nOrgData-Witnesses:");
+		if(motions != null) result += ";\r\n\r  motions="+Util.concat(motions, "\nOrgData-Motions:");
+		if(justifications != null) result += ";\r\n\r  justifications="+Util.concat(justifications, "\nOrgData-Justifications:");
+		if(signatures != null) result += ";\r\n\r  signatures="+Util.concat(signatures, "\nOrgData-Signatures:");
+		if(translations != null) result +=  ";\r\n\r  translations="+Util.concat(translations, "\nOrgData-Translations:");
+		if(news != null) result +=  ";\r\n\r  news="+Util.concat(news, "\nOrgData-News:");
+		if(availableHashes!=null) result +=  ";\r\n\r  available="+availableHashes;
+		result += "\r\n\r]";
 		return result;
 	}
 	
@@ -179,6 +185,8 @@ class D_Organization extends ASNObj implements Summary {
 			ArrayList<Object> row = p_data.get(0);
 			init(row);
 		}
+		if(DEBUG)System.out.println("D_Organization:<init(long)>:creatorID="+this.creator_ID+
+				"; param.GID="+this.params.creator_global_ID+"; peer_creat="+this.creator);
 	}
 	/**
 	 * 
@@ -209,6 +217,8 @@ class D_Organization extends ASNObj implements Summary {
 	 */
 	public void init(ArrayList<Object> row) throws P2PDDSQLException {
 		init(row, true, true);
+		if(DEBUG)System.out.println("D_Organization:<init(AL)>:creatorID="+this.creator_ID+
+				"; param.GID="+this.params.creator_global_ID+"; peer_creat="+this.creator);
 	}
 	/**
 	 * 
@@ -241,6 +251,7 @@ class D_Organization extends ASNObj implements Summary {
 		this.blocked = Util.stringInt2bool(row.get(table.organization.ORG_COL_BLOCK),false);
 		this.requested = Util.stringInt2bool(row.get(table.organization.ORG_COL_REQUEST),false);
 		this.broadcasted = Util.stringInt2bool(row.get(table.organization.ORG_COL_BROADCASTED), D_Organization.DEFAULT_BROADCASTED_ORG_ITSELF);
+		this.broadcast_rule = Util.stringInt2bool(row.get(table.organization.ORG_COL_BROADCAST_RULE), true);
 		
 		this.concepts = new D_OrgConcepts();
 		this.concepts.name_organization = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(table.organization.ORG_COL_NAME_ORG),null));
@@ -251,27 +262,32 @@ class D_Organization extends ASNObj implements Summary {
 		this.signature_initiator = getSignatureFromString(Util.getString(row.get(table.organization.ORG_COL_SIGN_INITIATOR),null));
 		
 		if(extra_fields)this.params.orgParam = D_Organization.getOrgParams(organization_ID);
-		D_PeerAddress creator = null;
-//		D_PeerAddress creator1 = null;
-//		D_PeerAddress creator2 = null;
-		if(extra_creator) creator = D_PeerAddress.getPeerAddress(creator_ID, true, true); // for creator one also needs _served
-		else this.params.creator_global_ID = D_PeerAddress.getPeerGIDforID(creator_ID);
-
+		if(DEBUG) System.out.println("D_Organization:init: extra_creator="+extra_creator+" ID="+creator_ID);
+		if(extra_creator){
+			creator = D_PeerAddress.getPeerAddress(creator_ID, true, true); // for creator one also needs _served
+			if(DEBUG) System.out.println("D_Organization:init: creator="+creator);
+		}else{
+			this.params.creator_global_ID = D_PeerAddress.getPeerGIDforID(creator_ID);
+			if(DEBUG) System.out.println("D_Organization:init: param_creator="+this.params.creator_global_ID);
+		}
 		if(creator == null) {
+			if(DEBUG) System.out.println("D_Organization:init: no creator");
 			//if(DEBUG)Util.printCallPath("No creator:"+creator_ID);
 			//Application.warning(Util._("Missing organization creator, or may have incomplete data. You should create a new one!"), Util._("Missing organization creator."));
 			//throw new Exception("No creator");
 		}else
 			this.params.creator_global_ID = creator.globalID;
 		if((this.signature_initiator == null)&&(this.params.creator_global_ID!=null)){
+
 			byte[]msg = this.getSignableEncoder().getBytes();
+
 			SK sk = Util.getStoredSK(this.params.creator_global_ID, null);
 			if(sk!=null) {
 				this.signature_initiator = Util.sign(msg, sk);
 				Application.db.updateNoSync(table.organization.TNAME,
 						new String[]{table.organization.signature_initiator},
 						new String[]{table.organization.organization_ID},
-						new String[]{Util.stringSignatureFromByte(this.signature_initiator), this.organization_ID}, DEBUG);
+						new String[]{Util.stringSignatureFromByte(this.signature_initiator), this.organization_ID}, _DEBUG);
 				Application.warning(_("Update org initiator signature for:")+this.name, _("Updated org Signature"));
 			}
 		}
@@ -374,10 +390,22 @@ class D_Organization extends ASNObj implements Summary {
 		if(verif!=null) verif[0]=!DD.ENFORCE_ORG_INITIATOR||Util.verifySignByID(hash, this.params.creator_global_ID, this.signature_initiator);
 		return "G:"+Util.stringSignatureFromByte(hash);
 	}
+	/**
+	 * Remove the "G:" prefix
+	 * @param id
+	 * @return
+	 */
 	public static byte[] getHashFromGrassrootGID(String id) {
 		if((id==null) || (id.length()<2)) return null;
 		return Util.byteSignatureFromString(id.substring(2));
 	}
+	/**
+	 * Returns 
+	 * 
+	 * "O:"+DD.APP_ID_HASH+DD.APP_ID_HASH_SEP+base64(hash(decode64(GID)))
+	 * @param GID
+	 * @return
+	 */
 	public static String getOrgGIDHashAuthoritarian(String GID){
 		if (GID==null) return null;
 		String hash = Util.getGIDhash(GID);
@@ -447,7 +475,7 @@ class D_Organization extends ASNObj implements Summary {
 	 * @return
 	 */
 	public Encoder getSignableEncoder() {
-		if(ASNSyncRequest.DEBUG)System.out.println("Encoding OrgData sign: "+this);
+		if(ASNSyncRequest.DEBUG||DEBUG)System.out.println("Encoding OrgData sign: "+this);
 		if((params==null) || (params.creator_global_ID==null)) {
 			Util.printCallPath("No creator for this org!");
 			//return null;
@@ -459,9 +487,14 @@ class D_Organization extends ASNObj implements Summary {
 		//if (last_sync_date != null) enc.addToSequence(new Encoder(last_sync_date));
 		if (params != null) enc.addToSequence(params.getEncoder().setASN1Type(DD.TAG_AC1));
 		if (concepts != null) enc.addToSequence(concepts.getEncoder().setASN1Type(DD.TAG_AC2));
-		if(ASNSyncRequest.DEBUG)System.out.println("Encoded OrgData sign: "+this);
+		if (broadcast_rule != true) enc.addToSequence(new Encoder(broadcast_rule).setASN1Type(DD.TAG_AC15));
+		if(ASNSyncRequest.DEBUG||DEBUG)System.out.println("Encoded OrgData sign: "+this);
 		return enc;
 	}
+	/**
+	 * Used to compare between two authoritarian orgs with identical GID and creation date
+	 * @return
+	 */
 	private Encoder getEntityEncoder() {
 		if(ASNSyncRequest.DEBUG)System.out.println("Encoding OrgData: "+this);
 		Encoder enc = new Encoder().initSequence();
@@ -471,6 +504,7 @@ class D_Organization extends ASNObj implements Summary {
 		//if (last_sync_date != null) enc.addToSequence(new Encoder(last_sync_date));
 		if (params != null) enc.addToSequence(params.getEncoder().setASN1Type(DD.TAG_AC1));
 		if (concepts != null) enc.addToSequence(concepts.getEncoder().setASN1Type(DD.TAG_AC2));
+		if (broadcast_rule != true) enc.addToSequence(new Encoder(broadcast_rule).setASN1Type(DD.TAG_AC15));
 		//if (signature != null) enc.addToSequence(new Encoder(signature));
 		//if (creator != null) enc.addToSequence(creator.getEncoder().setASN1Type(DD.TAG_AC0));
 		//if (neighborhoods != null) enc.addToSequence(Encoder.getEncoder(neighborhoods).setASN1Type(DD.TAG_AC3));
@@ -495,6 +529,7 @@ class D_Organization extends ASNObj implements Summary {
 		if (last_sync_date != null) enc.addToSequence(new Encoder(last_sync_date));
 		if (params != null) enc.addToSequence(params.getEncoder().setASN1Type(DD.TAG_AC1));
 		if (concepts != null) enc.addToSequence(concepts.getEncoder().setASN1Type(DD.TAG_AC2));
+		if (broadcast_rule != true) enc.addToSequence(new Encoder(broadcast_rule).setASN1Type(DD.TAG_AC15));
 		if (signature != null) enc.addToSequence(new Encoder(signature));
 		if (signature_initiator != null) enc.addToSequence(new Encoder(signature_initiator).setASN1Type(DD.TAG_AC14));
 		if (creator != null) enc.addToSequence(creator.getEncoder().setASN1Type(DD.TAG_AC0));
@@ -527,6 +562,7 @@ class D_Organization extends ASNObj implements Summary {
 		if(dec.getTypeByte()==Encoder.TAG_GeneralizedTime){ setDate(dec.getFirstObject(true).getGeneralizedTimeCalenderAnyType()); if(DEBUG )System.out.println("OrgData d="+last_sync_date);}
 		if(dec.getTypeByte()==DD.TAG_AC1){ params=new D_OrgParams().decode(dec.getFirstObject(true)); if(DEBUG )System.out.println("OrgData p="+params);}
 		if(dec.getTypeByte()==DD.TAG_AC2){ concepts=new D_OrgConcepts().decode(dec.getFirstObject(true)); if(DEBUG)System.out.println("OrgData c="+concepts);}
+		if(dec.getTypeByte()==DD.TAG_AC15){ broadcast_rule = dec.getFirstObject(true).getBoolean(); if(DEBUG)System.out.println("OrgData b_r="+broadcast_rule);}
 		if(dec.getTypeByte()==Encoder.TAG_OCTET_STRING){ signature=dec.getFirstObject(true).getBytes(); if(DEBUG)System.out.println("OrgData s="+Util.byteToHexDump(signature));}
 		if(dec.getTypeByte()==DD.TAG_AC14){ signature_initiator=dec.getFirstObject(true).getBytes(); if(DEBUG)System.out.println("OrgData s="+Util.byteToHexDump(signature_initiator));}
 		if(dec.getTypeByte()==DD.TAG_AC0){ creator = new D_PeerAddress().decode(dec.getFirstObject(true)); if(DEBUG)System.out.println("OrgData cr="+creator);}
@@ -576,7 +612,7 @@ class D_Organization extends ASNObj implements Summary {
 	 * @throws P2PDDSQLException
 	 */
 	public static void storeOrgParams(String orgID, D_OrgParam[] orgParam) throws P2PDDSQLException{
-		// Cannot be deleted and rewrutten since we would lose references to the IDs from const values
+		// Cannot be deleted and rewritten since we would lose references to the IDs from const values
 		Application.db.updateNoSync(table.field_extra.TNAME,
 				new String[]{table.field_extra.tmp},
 				new String[]{table.organization.organization_ID},
@@ -649,8 +685,19 @@ class D_Organization extends ASNObj implements Summary {
 	public byte[]sign(ciphersuits.SK sk, ciphersuits.SK sk_ini){
 		Encoder enc = getSignableEncoder();
 		byte[] msg = enc.getBytes();
-		if(sk_ini !=null)this.signature_initiator = Util.sign(msg, sk_ini);
-		return Util.sign(msg, sk);	
+		if(DEBUG) System.out.println("D_Organization:sign:");
+		if(DEBUG) System.out.println("msg=#"+msg.length+" hash(msg)="+Util.getGID_as_Hash(msg));
+		if(DEBUG) System.out.println("sk_ini=#"+sk_ini);
+		if(sk_ini !=null){
+			this.signature_initiator = Util.sign(msg, sk_ini);
+			if(DEBUG) System.out.println("sgn_ini=#"+signature_initiator.length+" hash(sgn_ini)="+Util.getGID_as_Hash(signature_initiator));
+		}else{
+			this.signature_initiator = null;			
+		}
+		if(DEBUG) System.out.println("sk=#"+sk);
+		byte[] sgn = Util.sign(msg, sk);	
+		if(DEBUG) System.out.println("sgn=#"+sgn.length+" hash(sgn)="+Util.getGID_as_Hash(sgn));
+		return sgn;
 	}
 	public boolean verifySignAuthoritarian(byte[] sign) {
 		if(DEBUG) System.out.println("OrgData:verifySign: KEY=="+global_organization_ID);
@@ -663,8 +710,34 @@ class D_Organization extends ASNObj implements Summary {
 		Encoder enc = getSignableEncoder();
 		byte[] msg = enc.getBytes();
 		if(DEBUG) System.out.println("OrgData:verifySign: msg="+Util.byteToHex(msg, ":"));
-		if(!Util.verifySignByID(msg, this.params.creator_global_ID, this.signature_initiator)) return false;
-		return Util.verifySignByID(msg, global_organization_ID, sign);
+		PK creator_pk = Cipher.getPK(this.params.creator_global_ID);
+		if((creator_pk!=null) && !Util.verifySign(msg, creator_pk, this.signature_initiator)){
+			if(DEBUG) System.out.println("D_Organization:Failed Creator verification:");
+			if(DEBUG) System.out.println("msg=#"+msg.length+" hash(msg)="+Util.getGID_as_Hash(msg));
+			if(DEBUG) System.out.println("sgn=#"+((signature_initiator==null)?"null":signature_initiator)+" hash(sgn)="+Util.getGID_as_Hash(signature_initiator));
+			if(DEBUG) System.out.println("pk=#"+creator_pk);
+			return false;
+		}else{
+			if(DEBUG) System.out.println("D_Organization:Success Creator verification:");
+			if(DEBUG) System.out.println("msg=#"+msg.length+" hash(msg)="+Util.getGID_as_Hash(msg));
+			if(DEBUG) System.out.println("sgn=#"+((signature_initiator==null)?"null":signature_initiator)+" hash(sgn)="+Util.getGID_as_Hash(signature_initiator));
+			if(DEBUG) System.out.println("pk=#"+creator_pk);
+		}
+		PK org_pk = Cipher.getPK(global_organization_ID);
+		boolean result = Util.verifySign(msg, org_pk, sign);
+		if(!result){
+			if(DEBUG) System.out.println("D_Organization:Failed Org verification:");
+			if(DEBUG) System.out.println("msg=#"+msg.length+" hash(msg)="+Util.getGID_as_Hash(msg));
+			if(DEBUG) System.out.println("sgn=#"+signature_initiator.length+" hash(sgn)="+Util.getGID_as_Hash(signature_initiator));
+			if(DEBUG) System.out.println("pk=#"+creator_pk);
+			return false;
+		}else{
+			if(DEBUG) System.out.println("D_Organization:Success Org verification:");
+			if(DEBUG) System.out.println("msg=#"+msg.length+" hash(msg)="+Util.getGID_as_Hash(msg));
+			if(DEBUG) System.out.println("sgn=#"+signature_initiator.length+" hash(sgn)="+Util.getGID_as_Hash(signature_initiator));
+			if(DEBUG) System.out.println("pk=#"+creator_pk);
+		}
+		return result;
 	}
 	/**
 	 * starts by verifying the field_extra IDs and the orgID for grass root orgs
@@ -728,7 +801,10 @@ class D_Organization extends ASNObj implements Summary {
 			this.params.creator_global_ID = D_Organization.getGlobalOrgID(this.creator_ID);
 	}
 	public boolean fillLocals(RequestData rq, boolean tempPeer, String arrival_time) throws P2PDDSQLException {
-		if((this.params==null)||((this.params.creator_global_ID==null)&&(this.creator_ID ==  null))) {
+		if(DD.ENFORCE_ORG_INITIATOR &&
+				((this.params==null)
+						||((this.params.creator_global_ID==null)
+								&&(this.creator_ID ==  null)))) {
 			if(DEBUG)Util.printCallPath("cannot store org with no peerGID");
 			return false;
 		}
@@ -743,7 +819,7 @@ class D_Organization extends ASNObj implements Summary {
 				if(rq!=null)rq.peers.add(consGID_hash);
 				//creator_ID = Util.getStringID(D_PeerAddress.insertTemporaryGID(this.params.creator_global_ID, consGID_hash));
 			}
-			if(creator_ID == null) return false;
+			if(DD.ENFORCE_ORG_INITIATOR && (creator_ID == null)) return false;
 		}
 		
 		return true;
@@ -758,10 +834,11 @@ class D_Organization extends ASNObj implements Summary {
 	 * @throws P2PDDSQLException
 	 */
 	public long store(boolean _changed[], RequestData _rq) throws P2PDDSQLException {
-		
+		if(_organization_ID==0){ _organization_ID=-1; organization_ID = null;}
 		boolean locals = fillLocals(_rq, true, Util.getGeneralizedTime());
-		//if(!locals)return -1;
-		
+		if(!locals)//return -1;
+			if(_DEBUG) out.println("D_Organization: store: locals failed");
+
 		if((!locals) || (this.params==null) || !verifySignature()) {
 			if((this.signature!=null)||(DD.ENFORCE_ORG_INITIATOR&&(this.signature_initiator!=null)))
 				if(_DEBUG) out.println("D_Organization: store: exit signature verification failed for:"+this);
@@ -856,6 +933,7 @@ class D_Organization extends ASNObj implements Summary {
 			p[table.organization.ORG_COL_BLOCK] = Util.bool2StringInt(blocked);
 			p[table.organization.ORG_COL_REQUEST] = Util.bool2StringInt(requested);
 			p[table.organization.ORG_COL_BROADCASTED] = Util.bool2StringInt(broadcasted);
+			p[table.organization.ORG_COL_BROADCAST_RULE] = Util.bool2StringInt(broadcast_rule);
 			
 			//String orgID;
 			if(organization_ID == null) {
@@ -913,7 +991,9 @@ class D_Organization extends ASNObj implements Summary {
 		if(DEBUG) System.out.println("D_Organization:insertTemporaryGID: start "+GID_hash);
 		boolean grass = Util.equalStrings_or_one_null(GID_hash, global_organization_ID);
 		//boolean grass = Util.equalString_and_non_null(GID_hash, global_organization_ID);
-		return Application.db.insert(table.organization.TNAME,
+		long id = -1;
+		try{
+			id = Application.db.insert(table.organization.TNAME,
 				new String[]{table.organization.global_organization_ID,
 				table.organization.global_organization_ID_hash,
 				table.organization.blocked,
@@ -928,6 +1008,20 @@ class D_Organization extends ASNObj implements Summary {
 				""+(grass?table.organization._GRASSROOT:table.organization._AUTHORITARIAN)
 				},
 				DEBUG);
+			if(_DEBUG) System.out.println("D_Organization:insertTempGID: got id(ins)="+id);
+		}catch(Exception e){
+			if(_DEBUG) System.out.println("D_Organization:insertTempGID: failure on hash="+GID_hash+
+					" GID="+global_organization_ID);
+			e.printStackTrace();
+			if(global_organization_ID != null){
+				id = D_Organization.getLocalOrgID(global_organization_ID);
+				if(_DEBUG) System.out.println("D_Organization:insertTempGID: got id(GID)="+id);
+			}else{
+				id = D_Organization.getLocalOrgID(global_organization_ID, GID_hash);
+				if(_DEBUG) System.out.println("D_Organization:insertTempGID: got id(hash)="+id);
+			}
+		}
+		return id;
 	}
 
 	public static long getLocalOrgID(String global_organization_ID) throws P2PDDSQLException {
@@ -1141,8 +1235,8 @@ class D_Organization extends ASNObj implements Summary {
 		" WHERE "+table.key.public_key +"=?;";
 		ArrayList<ArrayList<Object>> a;
 		try {
-			if(_DEBUG) System.out.println("D_Organization:isEditable: check authoritarian GID");
-			a = Application.db.select(gsql, new String[]{GID}, _DEBUG);
+			if(DEBUG) System.out.println("D_Organization:isEditable: check authoritarian GID");
+			a = Application.db.select(gsql, new String[]{GID}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
@@ -1157,6 +1251,7 @@ class D_Organization extends ASNObj implements Summary {
 
 			if(!Util.equalStrings_null_or_not(o1.version,o2.version)) throw new Exception("");
 			if(!Util.equalStrings_null_or_not(o1.name,o2.name)) throw new Exception("");
+			if(o1.broadcast_rule!=o2.broadcast_rule) throw new Exception("");
 			if(o1.params.certifMethods!=(o2.params.certifMethods)) throw new Exception("");
 			if(!Util.equalStrings_null_or_not(o1.params.hash_org_alg,o2.params.hash_org_alg)) throw new Exception("");
 			if(!o1.params.creation_time.equals(o2.params.creation_time)) throw new Exception("");
@@ -1165,11 +1260,41 @@ class D_Organization extends ASNObj implements Summary {
 			if(!Util.equalBytes_null_or_not(o1.params.certificate, o2.params.certificate)) throw new Exception("");
 			if(!Util.equalBytes_null_or_not(o1.signature, o2.signature)) throw new Exception("");
 			if(!Util.equalBytes_null_or_not(o1.signature_initiator, o2.signature_initiator)) throw new Exception("");
+			if(_DEBUG)System.out.println("D_Organization:compareOrgs:Comparison succeeded!");
 		}catch(Exception e) {
 			e.printStackTrace();
 			return false;
 		}
 		return true;
+	}
+	public static D_Organization readSignSave(long id) throws P2PDDSQLException {
+		if(DEBUG) System.out.println("D_Organization:readSignSave:*******************");
+		D_Organization o = new D_Organization(id);
+		if(DEBUG) System.out.println("D_Organization:readSignSave:*******************");
+		if(DEBUG) System.out.println("D_Organization:readSignSave:org="+o);
+		SK sk = Util.getStoredSK(o.global_organization_ID, o.global_organization_IDhash);
+		SK sk_ini = null;
+		if(DEBUG) System.out.println("D_Organization:readSignSave:*******************");
+		System.out.println("D_Organization:readSignSave:creatorID="+o.creator_ID+
+				" GID="+o.params.creator_global_ID+" peer="+o.creator);
+		if(o.creator!=null){
+			sk_ini = Util.getStoredSK(o.creator.globalID, o.creator.globalIDhash);
+			if(sk_ini==null)
+				Util.printCallPath("Why!!");
+			if(!Util.equalStrings_null_or_not(o.creator.globalID, o.params.creator_global_ID))
+				System.out.println("D_Organization:readSignSave: diff GIDs:!!!");
+		}else
+			if(o.params.creator_global_ID!=null){
+				sk_ini = Util.getStoredSK(o.params.creator_global_ID, null);
+				if(sk_ini==null)
+					Util.printCallPath("Why!!");				
+			}
+		o.params.creation_time = Util.CalendargetInstance();
+		
+		o.signature=o.sign(sk, sk_ini);
+		o.storeVerified();
+		if(DEBUG) System.out.println("D_Organization:readSignSave:*******************");
+		return o;
 	}
 	public static void main(String args[]){
 		try {
@@ -1177,8 +1302,19 @@ class D_Organization extends ASNObj implements Summary {
 			if(args.length>0) source = args[0];
 			int id=1;
 			if(args.length>1) id = Integer.parseInt(args[1]);
-			if(args.length>2) DEBUG = Util.stringInt2bool((args[1]), false);
+			if(args.length>2){
+				DEBUG = Util.stringInt2bool((args[2]), false);
+				D_PeerAddress.DEBUG = Util.stringInt2bool((args[2]), false);
+			}
 			Application.db = new DBInterface(source);
+			if(id<0) {
+				id=-id; 
+				D_Organization o = D_Organization.readSignSave(id); 
+				System.out.println("\n************Saved="+id);
+				boolean b = o.verifySignature();
+				System.out.println("\n************Result Verif="+b);
+				if(true) return;
+			}
 			//if(args.length>0){readSignSave(3,1); if(true) return;}
 			
 			//long id=simulator.Fill_database.add_organization();

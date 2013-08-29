@@ -85,9 +85,11 @@ class NewsHandling {
 			String sql=
 				"SELECT n."+table.news.arrival_date+", n."+table.news.organization_ID//", w."+table.witness.source_ID+
 				+" FROM "+table.news.TNAME+" AS n "
+				+" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=n."+table.news.organization_ID+")"
 				//+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=w."+table.witness.source_ID+")"
 				+" WHERE n."+table.news.arrival_date+">? " +
 				 " AND n."+table.news.blocked+" <> '1' " +
+				 " AND ( o."+table.organization.broadcasted+" <> '0' OR o."+table.organization.broadcasted+" IS NULL ) " +
 				((_maxDate!=null)?" AND n."+table.news.arrival_date+"<=? ":"")
 				+" ORDER BY n."+table.news.arrival_date
 						+" LIMIT "+(1+limitNewsLow)+
@@ -104,8 +106,10 @@ class NewsHandling {
 			String sql=
 				"SELECT n."+table.news.arrival_date+", n."+table.news.organization_ID//", w."+table.witness.source_ID+
 				+" FROM "+table.news.TNAME+" AS n "
+				+" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=n."+table.news.organization_ID+")"
 				//+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=w."+table.witness.source_ID+")"
 				+" WHERE n."+table.news.arrival_date+">? " +
+				 " AND ( o."+table.organization.broadcasted+" <> '0' OR o."+table.organization.broadcasted+" IS NULL ) " +
 				 " AND n."+table.news.blocked+" <> '1' " +
 				((_maxDate!=null)?" AND n."+table.news.arrival_date+"<=? ":"")
 				+" AND n."+table.news.organization_ID+"=? "

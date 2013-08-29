@@ -278,7 +278,7 @@ public class ConstituentHandling {
 			String submit_ID;
 			if(constituents[k].constituent.external) {
 				if(constituents[k].constituent.submitter_ID !=null) submit_ID = constituents[k].constituent.submitter_ID;
-				else submit_ID = D_Constituent.getConstituentLocalID(constituents[k].constituent.global_submitter_id);
+				else submit_ID = D_Constituent.getConstituentLocalIDFromGID(constituents[k].constituent.global_submitter_id);
 				if(submit_ID==null) {
 					submit_ID = ""+D_Constituent.insertTemporaryConstituentGID(constituents[k].constituent.global_submitter_id, org_local_ID);
 					rq.cons.put(constituents[k].constituent.global_submitter_id, DD.EMPTYDATE);

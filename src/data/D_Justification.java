@@ -50,7 +50,7 @@ global_justificationID PrintableString,
  */
 
 public class D_Justification extends ASNObj{
-	private static final boolean DEBUG = false;
+	private static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
 	private static final String V0 = "0";
@@ -395,7 +395,7 @@ public class D_Justification extends ASNObj{
 		}
 		
 		if((this.constituent_ID == null ) && (this.global_constituent_ID != null))
-			this.constituent_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(this.global_constituent_ID);
 		if((this.constituent_ID == null ) && (this.global_constituent_ID != null)) {
 			constituent_ID =
 				""+D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID);
@@ -489,7 +489,7 @@ public class D_Justification extends ASNObj{
 		}
 		
 		if((this.global_constituent_ID!=null)&&(constituent_ID == null)){
-			this.constituent_ID = D_Constituent.getConstituentLocalID(global_constituent_ID);
+			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID);
 			if(tempConst && (constituent_ID == null ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
 				if(rq!=null)rq.cons.put(consGID_hash, DD.EMPTYDATE);
@@ -537,7 +537,7 @@ public class D_Justification extends ASNObj{
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("WB_Justification:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		if(this.constituent_ID == null )
-			constituent_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+			constituent_ID = D_Constituent.getConstituentLocalIDFromGID(this.global_constituent_ID);
 		if(constituent_ID == null){
 			if(_DEBUG) System.out.println("WB_Justification:storeVerified: no signer!");
 			return -1;
@@ -643,30 +643,6 @@ public class D_Justification extends ASNObj{
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public static void main(String[] args) {
-		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-			if(args.length>0){readSignSave(3,1); if(true) return;}
-			
-			D_Justification c=new D_Justification(1);
-			if(!c.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread="+c);
-			else System.out.println("\n************Signature Pass\n**********\nread="+c);
-			Decoder dec = new Decoder(c.getEncoder().getBytes());
-			D_Justification d = new D_Justification().decode(dec);
-			Calendar arrival_date = d.arrival_date=Util.CalendargetInstance();
-			//if(d.global_organization_ID==null) d.global_organization_ID = OrgHandling.getGlobalOrgID(d.organization_ID);
-			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
-			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
-			d.global_justificationID = d.make_ID();
-			//d.storeVerified(arrival_date);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		} catch (ASN1DecoderFail e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 	public static byte getASN1Type() {
 		return TAG;
 	}
@@ -737,5 +713,126 @@ public class D_Justification extends ASNObj{
 		if(DEBUG||DBG) System.out.println("D_Justification:available: "+hash+" in "+orgID+"(?) = "+result);
 		return result;
 	}
-
+	
+	public static void _main(String[] args) {
+		try {
+			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			if(args.length>0){readSignSave(3,1); if(true) return;}
+			
+			D_Justification c=new D_Justification(1);
+			if(!c.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread="+c);
+			else System.out.println("\n************Signature Pass\n**********\nread="+c);
+			Decoder dec = new Decoder(c.getEncoder().getBytes());
+			D_Justification d = new D_Justification().decode(dec);
+			Calendar arrival_date = d.arrival_date=Util.CalendargetInstance();
+			//if(d.global_organization_ID==null) d.global_organization_ID = OrgHandling.getGlobalOrgID(d.organization_ID);
+			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
+			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
+			d.global_justificationID = d.make_ID();
+			//d.storeVerified(arrival_date);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Called as:
+	 * database id fix verbose
+	 * id: 0 - traverse all
+	 * 
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		try {
+			if(args.length == 0) {
+				System.out.println("prog database id fix verbose");
+				return;
+			}
+			
+			String database = Application.DELIBERATION_FILE;
+			if(args.length>0) database = args[0];
+			
+			long id = 0;
+			if(args.length>1) id = Long.parseLong(args[1]);
+			
+			boolean fix = false;
+			if(args.length>2) fix = Util.stringInt2bool(args[2], false);
+			
+			//boolean verbose = false;
+			if(args.length>3) DEBUG = Util.stringInt2bool(args[3], false);
+			
+			
+			Application.db = new DBInterface(database);
+			
+			ArrayList<ArrayList<Object>> l;
+			D_Organization organization;
+			if(id<=0){
+				l = Application.db.select(
+						"SELECT "+table.justification.justification_ID+
+						" FROM "+table.justification.TNAME, new String[]{}, DEBUG);
+				for(ArrayList<Object> a: l){
+					String m_ID = Util.getString(a.get(0));
+					long ID = Util.lval(m_ID, -1);
+					D_Justification m = new D_Justification(ID);
+					if(m.signature==null){
+						//if(m.motion==null)m.motion = new D_Motion(Util.lval(m.organization_ID, -1));
+						//organization = new D_Organization(Util.lval(m.motion.organization_ID, -1));
+						System.out.println("Fail:temporary "+m.justification_ID+":"+m.justification_title+" in "+m.organization_ID+":"+m.motion_ID);
+					
+						if(fix){
+							if(m.motion_ID==null)
+								Application.db.delete(table.justification.TNAME,
+										new String[]{table.justification.justification_ID},
+										new String[]{m_ID}, true);
+						}
+						
+						continue;
+					}
+					if(m.global_motionID==null){
+						if(m.motion==null)m.motion = new D_Motion(Util.lval(m.organization_ID, -1));
+						organization = new D_Organization(Util.lval(m.motion.organization_ID, -1));
+						System.out.println("Fail:edited "+m.justification_ID+":"+m.justification_title+" in "+m.organization_ID+":"+organization.name);
+						continue;
+					}
+					if(!m.verifySignature()){
+						if(m.motion==null)m.motion = new D_Motion(Util.lval(m.organization_ID, -1));
+						organization = new D_Organization(Util.lval(m.motion.organization_ID, -1));
+						System.out.println("Fail: "+m.justification_ID+":"+m.justification_title+" in "+m.organization_ID+":"+organization.name);
+						if(fix){
+							m.global_motionID = m.make_ID();
+							m.storeVerified();
+							readSignSave(ID, Util.lval(m.constituent_ID, -1));
+						}
+					}
+				}
+				return;
+			}else{
+				long ID = id;
+				D_Justification m = new D_Justification(ID);
+				if(fix)
+					if(!m.verifySignature()) {
+						if(m.motion==null)m.motion = new D_Motion(Util.lval(m.organization_ID, -1));
+						organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						System.out.println("Fixing: "+m.justification_ID+":"+m.justification_title+" in "+m.organization_ID+":"+organization.name);
+						readSignSave(ID, Util.lval(m.constituent_ID, -1));
+					}
+				else if(!m.verifySignature()){
+					if(m.motion==null)m.motion = new D_Motion(Util.lval(m.organization_ID, -1));
+					organization = new D_Organization(Util.lval(m.organization_ID, -1));
+					System.out.println("Fail: "+m.justification_ID+":"+m.justification_title+" in "+m.organization_ID+":"+organization.name);
+				}
+				return;
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		//catch (ASN1DecoderFail e) {e.printStackTrace();}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }

@@ -211,15 +211,21 @@ public class Address extends ASNObj{
 		//if((addresses1==null)&&(addresses2==null)) return null;
 		return addresses1+DirectoryServer.ADDR_SEP+addresses2;
 	}
+	/**
+	 * Splits string by DirectoryServer.ADDR_SEP (,)
+	 * @param address
+	 * @return
+	 */
 	public static String[] split(String address) {
 		if(address==null) return new String[0];
 		String[] result;
 		if(DEBUG) System.out.println("Address:split: parsing address "+address+" BY "+DirectoryServer.ADDR_SEP);
 		result = address.split(Pattern.quote(DirectoryServer.ADDR_SEP));
 		if(DEBUG) System.out.println("Address:split: parsing address #="+result.length);
-		for(int k=0;k<result.length; k++){
-			if(DEBUG) System.out.println("Address:split: parsing address #["+k+"]="+result[k]);
-		}
+		if(DEBUG)
+			for(int k=0;k<result.length; k++) {
+				System.out.println("Address:split: parsing address #["+k+"]="+result[k]);
+			}
 		return result;
 	}
 	

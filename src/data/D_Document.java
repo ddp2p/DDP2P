@@ -54,10 +54,18 @@ Document ::= SEQUENCE{
 
 public class D_Document extends ASNObj{
 
+	public static final String TXT_FORMAT = "TXT";
+	private static final String D = "D:";
 	private String format;//Printable
 	private String document; //OCT STR
 	public String toString() {
 		return "D:"+format+":"+document;
+	}
+	public void decode(String d) {
+		if(!d.startsWith(D)) return;
+		String[] v = d.split(":");
+		format = v[1];
+		document=v[2];
 	}
 	public D_Document(){
 		format = DocumentEditor.DEFAULT_FORMAT;

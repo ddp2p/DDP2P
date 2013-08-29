@@ -44,6 +44,7 @@ import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
 import data.D_OrgConcepts;
+import data.D_OrgDistribution;
 import data.D_Organization;
 import data.D_OrgParam;
 import data.D_OrgParams;
@@ -66,8 +67,8 @@ public class OrgHandling {
 	private static int LIMIT_NEWS_LOW = 10;
 	private static int LIMIT_TRANS_LOW = 10;
 	private static int LIMIT_HASH_LOW = 100;
-	public static final String ORG_PEERS = "-20";
-	public static final String ORG_NEWS = "-21";
+	public static final String ORG_PEERS = "-20"; // this is added to HashSet orgs to tell that there are "peers" to add in the time segment
+	public static final String ORG_NEWS = "-21";  // this is added to HashSet orgs to tell that there are "news" to add in the time segment
 	public static boolean SERVE_DIRECTLY_DATA = false;
 	/**
 	 * prepare GIDhash
@@ -102,22 +103,28 @@ public class OrgHandling {
 		if(od.global_organization_IDhash == null) od.global_organization_IDhash = od.getOrgGIDHashFromGID();
 		
 		boolean _changed[] = new boolean[1];
-		long id=-1;
 		if(od.creator != null){
 			//if(DEBUG) out.println("OrgHandling:updateOrg: store peer");
 			D_PeerAddress.storeReceived(od.creator, Util.getCalendar(arrival_time), arrival_time);
 			//if(DEBUG) out.println("OrgHandling:updateOrg: stored peer");
-			if((od.creator.globalID!=null)&&od.creator.globalID.equals(od.params.creator_global_ID)) od.creator_ID = od.creator.peer_ID;
+			if((od.creator.globalID!=null)&&od.creator.globalID.equals(od.params.creator_global_ID))
+				od.creator_ID = od.creator.peer_ID;
 		}
-		if((od.signature!=null)&&((od.signature_initiator!=null)||!DD.ENFORCE_ORG_INITIATOR)) id = od.store(_changed, _rq); // should set blocking new orgs
+		long id=-1;
+		if((od.signature!=null)&&((od.signature_initiator!=null) 
+				||!DD.ENFORCE_ORG_INITIATOR)){
+			id = od.store(_changed, _rq); // should set blocking new orgs
+		}
+		if(_DEBUG)System.out.println("OrgHandling:updateOrg: org id="+id+" name="+od.name);
 		if(id<=0){
 			id = D_Organization.getLocalOrgID(od.global_organization_ID);
+			if(_DEBUG)System.out.println("OrgHandling:updateOrg: org id(GID)="+id+" name="+od.name);
 			if(id<=0) {
 				if(od.signature != null){
 					od.blocked = DD.BLOCK_NEW_ARRIVING_ORGS_WITH_BAD_SIGNATURE;
 					if(DD.WARN_OF_FAILING_SIGNATURE_ONRECEPTION) {
 						String peer_name = _("Unknown");
-						if(peer!=null){
+						if(peer != null){
 							peer_name = peer.name;
 							if(peer_name==null) peer_name = Util.trimmed(peer.globalID);
 							if(peer_name == null) peer_name = _("Unknown");
@@ -127,11 +134,15 @@ public class OrgHandling {
 										_("Arriving from peer:")+peer_name+"\n"+
 										_("You can disable such warnings from Control Panel, GUI"),
 										_("Failure signature organization"));
+						// might have been created while waiting for user
+						id = D_Organization.getLocalOrgID(od.global_organization_ID);
 					}
 				}
 				// created blocked on bad signature
 				String name = od.name;
-				id = D_Organization.insertTemporaryGID(od.global_organization_ID, od.global_organization_IDhash, od.blocked, od.name);
+				if(id<=0)
+					id = D_Organization.insertTemporaryGID(od.global_organization_ID, od.global_organization_IDhash, od.blocked, od.name);
+				if(_DEBUG)System.out.println("OrgHandling:updateOrg: tmp id="+id+" name="+name);
 			}
 			od._organization_ID = id;
 			od.organization_ID = Util.getStringID(od._organization_ID);
@@ -183,7 +194,7 @@ public class OrgHandling {
 		
 		if(DEBUG) out.println("OrgHandling:getNextOrgDate: start: between: "+last_sync_date+" : "+_maxDate);
 		String sql, result=null;
-
+		if(DEBUG) System.out.println("OrgHandling:getNextOrgDate: enter="+result+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
 		
 		int _LIMIT_CONSTITUENT_LOW;
 		int _LIMIT_NEIGH_LOW;
@@ -236,14 +247,16 @@ public class OrgHandling {
 		}
 		if(p_data.size()<=0) result = null;
 		else{
+			if(DEBUG) out.println("OrgHandling:getNextOrgDate: sz=: "+p_data.size());
 			if(p_data.size()>limitOrgLow) {
 				result = Util.getString(p_data.get(limitOrgLow-1).get(0));
 				if(DD.WARN_BROADCAST_LIMITS_REACHED || DEBUG) System.out.println("TranslationHandling: getNextTranslationDate: limits reached: "+limitOrgLow+" date="+result);
-				for (ArrayList<Object> a : p_data) {
-					orgs.add(Util.getString(a.get(3)));
-				}
-				if(DEBUG) out.println("OrgHandling:getNextOrgDate:>limitOrgLow In  getNextOrgDate orgs: "+Util.concat(orgs.toArray(),","));
+				if(DEBUG) out.println("OrgHandling:getNextOrgDate:>limitOrgLow="+limitOrgLow);
 			}
+			for (ArrayList<Object> a : p_data) {
+				orgs.add(Util.getString(a.get(3)));
+			}
+			if(DEBUG) out.println("OrgHandling:getNextOrgDate:>limitOrgLow In  getNextOrgDate orgs: "+Util.concat(orgs.toArray(),","));
 		}
 		if (result == null){
 			if(DEBUG) out.println("OrgHandling:getNextOrgDate: In  getNextOrgDate result: "+result);
@@ -442,7 +455,7 @@ public class OrgHandling {
  * @throws  
  * @throws P2PDDSQLException 
  *  Get the OrgData starting last_sync_data and up to _maxData[0], or find _maxDate[]
- *  such that the data to send it not too large
+ *  such that the data to send is not too large
  * @param asr
  * @param last_sync_date
  * @param _maxDate[0]     output if justData = true; else input
@@ -463,6 +476,7 @@ public class OrgHandling {
 			if(DEBUG) out.println("OrgHandling:getOrgData: No filter!");
 			if(justDate) {
 				String max_Date = OrgHandling.getNextOrgDate(last_sync_date, _maxDate[0], orgIDs, limitOrgLow);
+				if(DEBUG) System.out.println("OrgHandling:getOrgData: orgs :"+Util.nullDiscrimArray(orgIDs.toArray(new String[0])," : "));
 				if(max_Date != null) _maxDate[0] = max_Date;
 				if(DEBUG) out.println("OrgHandling:getOrgData: Date (after org no filter): "+_maxDate[0]);
 				return null;
@@ -478,7 +492,7 @@ public class OrgHandling {
 					((maxDate!=null)?("AND "+table.organization.arrival_date+" <= ? "):"") +
 					" AND " +table.organization.global_organization_ID+ " IS NOT NULL "+
 					 " AND o."+table.organization.broadcasted+" <> '0' " +
-					" AND " +table.organization.creator_ID+ " IS NOT NULL "+
+				//	" AND " +table.organization.creator_ID+ " IS NOT NULL "+
 					" AND " +table.organization.signature+ " IS NOT NULL "+
 				" ORDER BY "+table.organization.arrival_date+" LIMIT "+limitOrgMax+";";
 			ArrayList<ArrayList<Object>> p_data =
@@ -524,6 +538,18 @@ public class OrgHandling {
 				long l_org_id = D_Organization.getLocalOrgID(org_gid);
 				String org_id = Util.getStringID(l_org_id);
 				*/
+//				boolean serving_peer = serving_org_to_peer(org_id, asr.address);
+//				if(!serving_peer && privateOrg(org_id)){
+//					if(_DEBUG) System.out.println("OrgHandling:getOrgData: not serving="+org_id+" to="+asr.address);
+//					continue;
+//				}else{
+//					if(serving_peer){
+//						if(_DEBUG) System.out.println("OrgHandling:getOrgData: serving private orgID="+org_id);
+//					}else{
+//						if(_DEBUG) System.out.println("OrgHandling:getOrgData: serving non-private orgID="+org_id);
+//					}
+//				}
+				if(!OrgHandling.serving(asr, org_id)) continue;
 				String org_gid = D_Organization.getGlobalOrgID(org_id);
 				if(DEBUG) System.out.println("OrgHandling:getOrgData: orgs try GID="+org_gid);
 				Integer K = null;
@@ -641,6 +667,7 @@ public class OrgHandling {
 					_orgData.add(od);
 					String org_id = Util.getString(p_data.get(0).get(table.organization.ORG_COL_ID));
 
+					if(!OrgHandling.serving(asr, org_id)) continue;
 
 					if(SERVE_DIRECTLY_DATA) {
 						if(DEBUG) out.println("OrgHandling:getOrgData: SERVE_DIRECTLY");
@@ -688,6 +715,20 @@ public class OrgHandling {
 		if(DEBUG) out.println("***************");
 		return orgData;
 	}
+	static boolean privateOrg(String org_id) {
+		D_Organization dorg;
+		try {
+			dorg = new D_Organization(Util.lval(org_id, -1));
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return true;
+		}
+		return !dorg.broadcast_rule;
+	}
+	static boolean serving_org_to_peer(String org_id, D_PeerAddress address) {
+		ArrayList<D_OrgDistribution> b = D_OrgDistribution.get_Org_Distribution_byPeerID(address.peer_ID);
+		return D_OrgDistribution.contains_org(b, Util.lval(org_id, -1));
+	}
 	void test(int of, long l_org_id, String org_gid, D_Organization[] orgData){
 		
 		if(orgData[of].constituents!=null)
@@ -716,6 +757,20 @@ public class OrgHandling {
 					Util.printCallPath("Failure signature witn");
 					throw new RuntimeException("Failure signature witness");
 				}	
+	}
+	static boolean serving(ASNSyncRequest asr, String org_id){
+		boolean serving_peer = serving_org_to_peer(org_id, asr.address);
+		if(!serving_peer && privateOrg(org_id)){
+			if(WB_Messages._DEBUG) System.out.println("OrgHandling:getOrgData: not serving="+org_id+" to="+asr.address);
+			return false;
+		}else{
+			if(serving_peer){
+				if(WB_Messages._DEBUG) System.out.println("OrgHandling:getOrgData: serving private orgID="+org_id);
+			}else{
+				if(WB_Messages._DEBUG) System.out.println("OrgHandling:getOrgData: serving non-private orgID="+org_id);
+			}
+		}
+		return true;
 	}
 }
 

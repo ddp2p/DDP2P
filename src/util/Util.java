@@ -1160,7 +1160,9 @@ public class Util {
 		return splits;
 	}
 	/**
-	 * Return the hash of msg with the algorithm alg, prefixed with the DD.APP_ID_HASH+DD.APP_ID_HASH_SEP
+	 * Return the hash of msg with the algorithm alg,
+	 *  prefixed as: "DD.APP_ID_HASH+DD.APP_ID_HASH_SEP+base64(hash(msg))"
+	 *  
 	 * @param msg
 	 * @param alg such as DD.APP_ID_HASH, Cipher.SHA256
 	 * @return
@@ -1337,8 +1339,12 @@ public class Util {
 		return result;
 	}
 	/**
-	 * Standard(?) algorithm to get a globalID_hash from a hex string, using DD.APP_OTHER_HASH
+	 * Standard algorithm to get a globalID_hash from a hex string, using DD.APP_OTHER_HASH
 	 * used for constituents. verbose=true
+	 * 
+	 * DD.APP_ID_HASH+DD.APP_ID_HASH_SEP+base64(hash(decode_64(ID)))
+	 * 
+	 * 
 	 * @param globalID
 	 * @return
 	 */
@@ -1348,6 +1354,7 @@ public class Util {
 	/**
 	 * Get has hash of the public key
 	 * Return the hash of msg with the default algorithm DD.APP_ID_HASH
+	 * as: DD.APP_ID_HASH+DD.APP_ID_HASH_SEP+base64(hash(msg))
 	 * @param msg
 	 * @return
 	 */
@@ -1356,6 +1363,8 @@ public class Util {
 	}
 	/**
 	 * Called when transforming a GID to a GIDhash
+	 * DD.APP_ID_HASH+DD.APP_ID_HASH_SEP+bse64(hash(msg))
+	 * 
 	 * @param msg
 	 * @return
 	 */
@@ -1363,7 +1372,9 @@ public class Util {
 		return getGID_as_Hash(msg);
 	}
 	/**
-	 * Standard(?) algorithm to get a globalID_hash from a signature string, using DD.APP_OTHER_HASH
+	 * Standard algorithm to get a globalID_hash from a signature string, using DD.APP_OTHER_HASH
+	 * DD.APP_ID_HASH+DD.APP_ID_HASH_SEP+base64(hash(decode_64(ID)))
+	 * 
 	 * @param globalID
 	 * @param verbose : false for silent on expected exceptions
 	 * @return
@@ -1898,7 +1909,8 @@ public class Util {
 				e.printStackTrace();
 			}
 			if(0!=exit){
-				Application.warning(_("Process:"+"\n"+cmd+"\n"+_("exits with:")+exit), _("Process exit error"));
+				if(DD.SCRIPTS_ERRORS_WARNING)
+					Application.warning(_("Process:"+"\n"+cmd+"\n"+_("exits with:")+exit), _("Process exit error"));
 				if(_DEBUG)System.out.println("Util:getProcessOutput: exit with: "+exit+" output=\n"+result+"\n*******");
 			}
 			if(DEBUG)System.out.println("Util:getProcessOutput: output=\n"+result+"\n*******");

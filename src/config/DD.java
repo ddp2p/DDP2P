@@ -115,9 +115,10 @@ import data.D_PeerAddress;
 import ASN1.Encoder;
 
 public class DD {
-	public static final String VERSION = "0.9.17";
-	public static String APP_NAME = _("Direct Democracy P2P");
-	//public static String APP_NAME = _("La Bible A Petits Pas");
+	public static final String VERSION = "0.9.33";
+	public static String _APP_NAME = _("Direct Democracy P2P");
+	//public static String _APP_NAME = _("La Bible A Petits Pas");
+	public static String APP_NAME = _APP_NAME+" "+VERSION;
 	public static JTabbedPane tabbedPane = new JTabbedPane();
 
 	public static final boolean DEBUG = false;
@@ -182,6 +183,7 @@ public class DD {
 	public static final byte TYPE_FieldName = DD.asn1Type(Encoder.CLASS_PRIVATE, Encoder.PC_PRIMITIVE, (byte)2);
 	public static final byte TYPE_FieldType = DD.asn1Type(Encoder.CLASS_PRIVATE, Encoder.PC_PRIMITIVE, (byte)3);
 	public static final byte TYPE_MotionID = DD.asn1Type(Encoder.CLASS_PRIVATE, Encoder.PC_PRIMITIVE, (byte)4);
+	public static final byte TYPE_SignSyncReq = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5);
 	public static final byte MSGTYPE_EmptyPing = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)20);;
 	public static final byte TYPE_ORG_DATA = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)29);
   
@@ -339,7 +341,7 @@ public class DD {
 	public static final String LAST_SOFTWARE_VERSION = "LAST_SOFTWARE_VERSION";
 	public static final String DD_DB_VERSION = "DD_DB_VERSION";
 	public static final String EMPTYDATE = "";
-	public static final boolean ENFORCE_ORG_INITIATOR = false;
+	public static boolean ENFORCE_ORG_INITIATOR = false;
 	public static final String UPDATES_TESTERS_THRESHOLD_WEIGHT = "UPDATES_TESTERS_THRESHOLD_WEIGHT";
 	public static final String UPDATES_TESTERS_THRESHOLD_COUNT_VALUE = "UPDATES_TESTERS_THRESHOLD_COUNT_VALUE";
 	public static final String UPDATES_TESTERS_THRESHOLD_WEIGHT_VALUE = "UPDATES_TESTERS_THRESHOLD_WEIGHT_VALUE";
@@ -350,13 +352,26 @@ public class DD {
 	public static final String WLAN_INTERESTS = "WLAN_INTERESTS";
 	public static final boolean SUBMITTER_REQUIRED_FOR_EXTERNAL = false;
 	public static final String P2PDDSQLException = null;
+	public static boolean VERIFY_FRAGMENT_RECLAIM_SIGNATURE = false;
+	public static boolean VERIFY_FRAGMENT_NACK_SIGNATURE = false;
+	public static boolean VERIFY_FRAGMENT_ACK_SIGNATURE = false;
 	public static boolean VERIFY_FRAGMENT_SIGNATURE = false;
+	public static boolean PRODUCE_FRAGMENT_RECLAIM_SIGNATURE = false;
+	public static boolean PRODUCE_FRAGMENT_NACK_SIGNATURE = false;
+	public static boolean PRODUCE_FRAGMENT_ACK_SIGNATURE = false;
 	public static boolean PRODUCE_FRAGMENT_SIGNATURE = false;
+	public static final int FRAGMENTS_WINDOW = 10;
+	public static final int FRAGMENTS_WINDOW_LOW_WATER = FRAGMENTS_WINDOW/2;
 	public static final boolean AVOID_REPEATING_AT_PING = false;
 	public static final boolean ORG_CREATOR_REQUIRED = false;
 	public static final boolean CONSTITUENTS_ADD_ASK_TRUSTWORTHINESS = false;
 	private static final String MY_DEBATE_TOPIC = "MY_DEBATE_TOPIC";
 	public static final long LARGEST_BMP_FILE_LOADABLE = 10000000;
+	public static final long PAUSE_BEFORE_CONNECTIONS_START = 5*1000;
+	public static final long PAUSE_BEFORE_CLIENT_START = 4*1000; //after connections
+	public static final long PAUSE_BEFORE_UDP_SERVER_START = 4*1000;
+	public static final boolean DROP_DUPLICATE_REQUESTS = false;
+	public static final int UDP_SENDING_CONFLICTS = 10; // how many requests are dropped waiting to send a message
 	//public static int TCP_MAX_LENGTH = 10000000;
 	public static int UDP_MAX_FRAGMENT_LENGTH = 100000;
 	public static int UDP_MAX_FRAGMENTS = 100;
@@ -406,7 +421,7 @@ public class DD {
 	public static boolean DEFAULT_AUTO_CONSTITUENTS_REFRESH = false;
 	public static long UPDATES_WAIT_MILLISECONDS = 1000*60*10;
 	public static long UPDATES_WAIT_ON_STARTUP_MILLISECONDS = 1000*60*5;
-	public static boolean UPDATES_AUTOMATIC_VALITATION_AND_INSTALL = true;
+	public static boolean UPDATES_AUTOMATIC_VALIDATION_AND_INSTALL = true;
 	public static boolean DELETE_UPGRADE_FILES_WITH_BAD_HASH = false;
 	public static boolean ADHOC_WINDOWS_DD_CONTINUOUS_REFRESH = true;
 	public static long ADHOC_EMPTY_TIMEOUT_MILLISECONDS = 1000*1; // 1 seconds
@@ -435,6 +450,7 @@ public class DD {
 	private static JTextField clientsockets_long_sleep_seconds;
 	private static JTextField clientsockets_long_sleep_minutes_start;
 	public static byte[] Random_peer_Number;
+	public static boolean SCRIPTS_ERRORS_WARNING = true;
 
 
     
@@ -819,6 +835,7 @@ public class DD {
         if(SONG)tabbedPane.addTab(_("Census"), _censusPane);
         tabbedPane.addTab(_("Directories"), listing_dicts.getPanel());
     	tabbedPane.addTab("Peers", peersPluginsPane.getPanel());//peersPluginsPane.getScrollPane());
+        Application.peers.privateOrgPanel.addOrgListener(); // has to be called after peersPluginsPane.getPanel()
     	
     	JPanel orgs = makeOrgsPanel(orgEPane, orgsPane); //new JPanel();
     	//jsco = new javax.swing.JScrollPane(orgs);
@@ -1076,9 +1093,22 @@ public class DD {
 		}
 		return true;
 	}
+	/**
+	 * Uses Application.db, which should be set to the right DB
+	 * @param field
+	 * @param value
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
 	static public boolean setAppText(String field, String value) throws P2PDDSQLException{
-		//boolean DEBUG = false;
+		return setAppText(field,value,false);
+	}
+	private static boolean setAppText(String field, String value,
+			boolean debug) throws P2PDDSQLException {
+		boolean DEBUG = DD.DEBUG || debug;
 		if(DEBUG) System.err.println("DD:setAppText: field="+field+" new="+value);
+		String _value = getExactAppText(field);
+		if(DEBUG) System.err.println("DD:setAppText: field="+field+" old="+_value);
     	Application.db.update(table.application.TNAME, new String[]{table.application.value}, new String[]{table.application.field},
     			new String[]{value, field}, DEBUG);
     	if (value!=null){
@@ -1093,6 +1123,19 @@ public class DD {
     			if(DEBUG)Application.warning(_("Added absent property: ")+field, _("Properties"));
     		}
     	}
+    	/* //was used to debug when the error was a wrong Application.db object 
+    	else{
+    		if(DEBUG) System.err.println("DD:setAppText: field="+field+" set null");
+    		String old_val = getExactAppText(field);
+    		if(DEBUG) System.err.println("DD:setAppText: field="+field+" _old="+old_val);
+    		if(old_val!=null){
+    			if(DEBUG)Application.warning(_("Deleting property: ")+field+" old_value", _("Properties"));
+    			int q=Application.ask(_("Want to force delete property:")+" "+field, _("Property"), JOptionPane.OK_CANCEL_OPTION);
+    			if(q==0)Application.db.delete(table.application.TNAME, new String[]{table.application.field},
+    					new String[]{field}, DEBUG);
+    		}
+    	}
+    	*/
 		return true;
 	}
 	static public boolean setAppBoolean(String field, boolean val){
@@ -1800,7 +1843,7 @@ public class DD {
 			//StartUpThread.fill_OS_install_path();
 			//StartUpThread.fill_OS_scripts_path();
 			boolean imported = util.DB_Import.import_db(db_to_import, Application.DELIBERATION_FILE);
-			if(DEBUG) System.out.println("DD:run: done database, importing database from: "+db_to_import+" result="+imported);
+			if(_DEBUG) System.out.println("DD:run: done database, importing database from: "+db_to_import+" result="+imported);
 			int q=0;
 			if(!imported){
 				q = Application.ask(_("Do you want to attempt import on the next startups?"),
@@ -1808,7 +1851,8 @@ public class DD {
 						JOptionPane.YES_NO_OPTION);
 			}
 			if(imported || (q!=0)){
-				if(DEBUG) System.out.println("DD:run: done database, will clean "+DD.APP_DB_TO_IMPORT);
+				if(_DEBUG) System.out.println("DD:run: done database, will clean "+DD.APP_DB_TO_IMPORT);
+				Application.db = selected_db; // needed to enable setAppText
 				DD.setAppText(DD.APP_DB_TO_IMPORT, null);
 			}
 			Application.warning(_("Result trying to import data from old database:")+"\n"+db_to_import+"\n result="+(imported?_("Success"):_("Failure")), _("Importing database!"));
@@ -1900,6 +1944,12 @@ public class DD {
 			e.printStackTrace();
 		}
 		return topic;
+	}
+
+
+	public static boolean isThisAnApprovedPeer(String senderID) {
+		// TODO Auto-generated method stub
+		return true;
 	}
 
 }

@@ -18,11 +18,11 @@ CREATE TABLE directory_forwarding_terms (
 	"plaintext" INTEGER,
 	"payment" INTEGER,
 	"payment_amount" TEXT,
-    "peer_ID" INTEGER NOT NULL,
-    "dir_addr" TEXT,
-    "service" TEXT,
-    "priority_type" TEXT,
-    FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
+	"peer_ID" INTEGER NOT NULL,
+    	"dir_addr" TEXT,
+    	"service" TEXT,
+    	"priority_type" TEXT,
+    	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 );
 CREATE TABLE updates (
 	"updates_ID" INTEGER PRIMARY KEY,
@@ -59,10 +59,10 @@ CREATE TABLE tester (
 );
 CREATE TABLE peer ( 
     "peer_ID" INTEGER PRIMARY KEY NOT NULL,
-    "global_peer_ID" TEXT,
-    "global_peer_ID_hash" TEXT,
+    "global_peer_ID" TEXT UNIQUE ON CONFLICT FAIL,
+    "global_peer_ID_hash" TEXT UNIQUE ON CONFLICT FAIL,
     "name" TEXT,
-    "broadcastable" INTEGER, 
+    "broadcastable" INTEGER DEFAULT (0), 
     "slogan" TEXT,
     "used" INTEGER DEFAULT (0), 
     "blocked" INTEGER DEFAULT (0), 
@@ -83,15 +83,36 @@ CREATE TABLE peer (
     "revoked" INTEGER DEFAULT (0), 
     "hidden" INTEGER DEFAULT (0),
     "creation_date" TEXT, 
-    "arrival_date" TIMESTAMP 
+    "arrival_date" TIMESTAMP, 
+    "preferences_date" TEXT
+);
+
+
+
+
+
+
+CREATE TABLE peer_instance (
+   "peer_instance_ID" INTEGER PRIMARY KEY,
+   "peer_ID" INTEGER NOT NULL,
+   "peer_instance" TEXT,
+   "plugin_info" TEXT,
+   "last_sync_date" TEXT, 
+   "last_reset" TEXT,  
+   "last_contact_date" TEXT,
+    UNIQUE ("peer_ID", "peer_instance") ON CONFLICT FAIL,
+    FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 );
 CREATE TABLE peer_address ( 
 	peer_address_ID INTEGER PRIMARY KEY, 
 	peer_ID INTEGER, 
 	address TEXT, 
 	type TEXT, 
+	certified TEXT DEFAULT (0), 
+	priority INTEGER DEFAULT (0), 
 	my_last_connection TEXT,
 	arrival_date TIMESTAMP, 
+	UNIQUE ("peer_ID" , "address", "type") ON CONFLICT FAIL,
 	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 );
 CREATE TABLE "peer_my_data" ( 
@@ -105,7 +126,7 @@ CREATE TABLE "peer_my_data" (
 );
 CREATE TABLE "plugin" (
 	"plugin_ID" INTEGER PRIMARY KEY,
-	"global_plugin_ID" TEXT, 
+	"global_plugin_ID" TEXT UNIQUE ON CONFLICT FAIL, 
 	"plugin_info" TEXT,
 	 "creation_date" TEXT,
 	"arrival_date" TIMESTAMP
@@ -113,6 +134,7 @@ CREATE TABLE "plugin" (
 CREATE TABLE "peer_plugin" ( 
 	"peer_plugin_ID" INTEGER PRIMARY KEY NOT NULL, 
 	"peer_ID" INTEGER NOT NULL,
+        "peer_instance_ID" TEXT,
 	"plugin_ID" INTEGER NOT NULL,
 	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 	FOREIGN KEY(plugin_ID) REFERENCES plugin(plugin_ID)
@@ -135,6 +157,7 @@ CREATE TABLE organization (
 	certificate BLOB, 		
 	signature TEXT,      
 	signature_initiator TEXT,
+	broadcast_rule TEXT DEFAULT (1), 
 	crl BLOB, 
 	crl_date DATE, 
 	default_scoring_options TEXT, 
@@ -179,9 +202,17 @@ CREATE TABLE "peer_org" (
 	"last_sync_date" TEXT,
 	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 );
+CREATE TABLE "org_distribution" (
+       "peer_distribution_ID" INTEGER PRIMARY KEY NOT NULL,
+       "organization_ID" TEXT,
+       "peer_ID" TEXT,  
+       UNIQUE (organization_ID, peer_ID) ON CONFLICT FAIL,
+ 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
+ 	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
+);
 CREATE TABLE "translation" ( 
 	"translation_ID" INTEGER PRIMARY KEY, 
-	"global_translation_ID" TEXT, 
+	"global_translation_ID" TEXT UNIQUE ON CONFLICT FAIL, 
 	"hash_alg" TEXT,
 	"value" TEXT,
 	"value_lang" TEXT,
@@ -261,7 +292,7 @@ CREATE TABLE motion (
 	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID)
 );
 CREATE TABLE my_motion_data (
-	motion_ID INTEGER,
+	motion_ID INTEGER UNIQUE ON CONFLICT FAIL,
 	name TEXT,
 	creator TEXT,
 	category TEXT,
@@ -270,7 +301,7 @@ CREATE TABLE my_motion_data (
 );
 CREATE TABLE justification ( 
 	justification_ID INTEGER PRIMARY KEY, 
-	global_justification_ID TEXT, 
+	global_justification_ID TEXT UNIQUE ON CONFLICT FAIL, 
 	motion_ID INTEGER, 
 	answerTo_ID INTEGER, 
 	hash_justification_alg TEXT, 
@@ -292,7 +323,7 @@ CREATE TABLE justification (
 	FOREIGN KEY(answerTo_ID) REFERENCES justification(justification_ID)
 );
 CREATE TABLE my_justification_data (
-	justification_ID INTEGER,
+	justification_ID INTEGER UNIQUE ON CONFLICT FAIL,
 	name TEXT,
 	creator TEXT,
 	category TEXT,
@@ -346,7 +377,7 @@ CREATE TABLE neighborhood (
 );
 CREATE TABLE witness ( 
 	witness_ID INTEGER PRIMARY KEY, 
-	global_witness_ID TEXT, 
+	global_witness_ID TEXT UNIQUE ON CONFLICT FAIL, 
 	hash_witness_alg TEXT, 
 	hash_witness BLOB, 
 	category TEXT, 
@@ -471,7 +502,7 @@ CREATE TABLE field_value (
 CREATE TABLE "news" (
     "news_ID" INTEGER PRIMARY KEY, 
     "hash_alg" TEXT,
-    "global_news_ID" TEXT,
+    "global_news_ID" TEXT UNIQUE ON CONFLICT FAIL,
     "constituent_ID" INTEGER, 
     "organization_ID" INTEGER, 
     "motion_ID" INTEGER, 
@@ -493,7 +524,7 @@ CREATE TABLE "news" (
  	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
 );
 CREATE TABLE my_news_data (
-	news_ID INTEGER,
+	news_ID INTEGER UNIQUE ON CONFLICT FAIL,
 	name TEXT,
 	creator TEXT,
 	category TEXT,

@@ -59,9 +59,12 @@ public class peer {
 	public static final String last_reset = "last_reset";
 	public static final String creation_date = "creation_date";
 	public static final String arrival_date = "arrival_date";
+	public static final String preferences_date = "preferences_date";
 	public static final String plugins_msg = "plugins_msg";
 	public static final String plugin_info = "plugin_info";
 	public static final String version = "version";
+	public static final String emails = "emails";
+	public static final String phones = "phones";
 	public static final String TNAME = "peer";
 
 	/*
@@ -109,9 +112,15 @@ public class peer {
 			exp_avg+","+
 			experience+","+
 			blocked+","+
-			version
+			version+","+
+			emails+","+
+			phones+","+
+			preferences_date
 			;
 //			no_update+","+
+	public static final String fields_peers = fields_peers_no_ID + "," + peer_ID;
+	public static final int PEER_COL_FIELDS_NO_ID = table.peer.fields_peers_no_ID.split(",").length;
+	public static final int PEER_COL_FIELDS = table.peer.fields_peers.split(",").length;
 			
 	public static final int PEER_COL_GID = 0;
 	public static final int PEER_COL_GID_HASH = 1;
@@ -133,10 +142,11 @@ public class peer {
 	public static final int PEER_COL_EXPERIENCE = 17;
 	public static final int PEER_COL_BLOCKED = 18;
 	public static final int PEER_COL_VERSION = 19;
-	public static final String fields_peers = fields_peers_no_ID + "," + peer_ID;
-	public static final int PEER_COL_ID = 20;
-	public static final int PEER_COL_FIELDS_NO_ID = table.peer.fields_peers_no_ID.split(",").length;
-	public static final int PEER_COL_FIELDS = table.peer.fields_peers.split(",").length;
+	public static final int PEER_COL_EMAILS = 20;
+	public static final int PEER_COL_PHONES = 21;
+	public static final int PEER_COL_PREFERENCES_DATE = 22;
+	public static final int PEER_COL_ID = PEER_COL_FIELDS_NO_ID;
+
 	//public static final int PEER_COL_NOUPDATE = ?; // replaced by blocked
 	/**
 	 *  Get the local ID for a given hash_peer_ID

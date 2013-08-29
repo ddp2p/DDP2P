@@ -19,7 +19,6 @@
 /* ------------------------------------------------------------------------- */
 package table;
 
-
 public class organization {
 	public static final String Gs_global_organization_ID = "global_organization_IDs_served";
 	 public static final String organization_ID = "organization_ID";
@@ -55,6 +54,7 @@ public class organization {
 	 public static final String requested = "requested";  // request data about this item, in filters
 	 public static final String broadcasted = "broadcasted";  // send data for this
 	 public static final String specific_requests = "specific_requests";
+	 public static final String broadcast_rule = "broadcast_rule";  // send data for this
 	 public static final String TNAME = "organization";
 	public static final String org_list = " "+util.Util.trimInterFieldSpaces(
 			global_organization_ID+","+name+","+              organization_ID+","+name_organization+","+        name_forum+"," +
@@ -63,7 +63,7 @@ public class organization {
 			certificate+","+      crl+","+                  crl_date+","+           arrival_date+"," +        motions_excluding+","+      
 			plugins_excluding+","+description+","+ 			creator_ID+","+ 	    global_organization_ID_hash+"," +signature+","+				
 			requested+","+		  blocked+","+		  		broadcasted+","+			specific_requests+","	+reset_date+","+
-			signature_initiator)+" ";
+			signature_initiator+","+broadcast_rule)+" ";
 	//hash_org+"," +
 	public static final int _GRASSROOT = 0;
 	public static final int _AUTHORITARIAN = 1;
@@ -107,5 +107,6 @@ public class organization {
 	public static final int ORG_COL_SPECIFIC = 28;
 	public static final int ORG_COL_RESET_DATE = 29;
 	public static final int ORG_COL_SIGN_INITIATOR = 30;
+	public static final int ORG_COL_BROADCAST_RULE = 31;
 	public static final int ORG_COL_FIELDS = org_list.split(",").length;
 }

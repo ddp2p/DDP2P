@@ -28,6 +28,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -83,6 +84,12 @@ public class UDPServer extends Thread {
 		for (UDPMessage um : Application.aus.recvMessages.values()) {
 			if (global_peer_ID.equals(um.senderID)&&
 					(um.type == DD.MSGTYPE_SyncAnswer)) {
+				if(_DEBUG)System.out.println("UDPServer: transfAnswer:now="+Util.CalendargetInstance().getTimeInMillis()+" checks="+um.checked +"/"+ DD.UDP_SENDING_CONFLICTS);
+				if(_DEBUG)System.out.println("UDPServer: transfAnswer:"+um);
+				um.checked++;
+				if(um.checked > DD.UDP_SENDING_CONFLICTS) // potentially lost
+					return false; //let it go further!
+				Application.aus.sendReclaim(um);
 				return true;
 			}
 		}
@@ -92,7 +99,19 @@ public class UDPServer extends Thread {
 		if(global_peer_ID==null) return false;
 		for (UDPMessage um : Application.aus.sentMessages.values()) {
 			if (global_peer_ID.equals(um.destinationID)&&
-					(um.type == DD.MSGTYPE_SyncRequest) )return true;
+					(um.type == DD.MSGTYPE_SyncRequest) ){
+				um.checked++;
+				if(um.checked > DD.UDP_SENDING_CONFLICTS) // potentially lost
+					return false; //let it go further!
+				if(um.no_ack_received()){
+					try {
+						Application.aus.reclaim(um);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+				return true;
+			}
 		}
 		return false;
 	}
@@ -147,6 +166,8 @@ public class UDPServer extends Thread {
 	/**
 	 * If message length larger than DD.MTU, then break it into fragments
 	 * else send in a single fragment
+	 * 
+	 * Synchronizes on "UDPServer.sentMessages"
 	 * @param sa
 	 * @param msg
 	 * @param MTU
@@ -169,10 +190,19 @@ public class UDPServer extends Thread {
 		UDPMessage umsg = new UDPMessage(frags);
 		umsg.msgID = rnd.nextInt()+"";
 		umsg.type = type;
-		sentMessages.put(umsg.msgID,umsg);
-
+		umsg.sa = sa;
+		synchronized (sentMessages) {
+			int trials=0;
+			while(sentMessages.get(umsg.msgID) != null){
+				if(DEBUG) System.out.println("UDPServer: sendLargeMessage: repeating msgID! "+umsg.msgID);
+				umsg.msgID = rnd.nextInt()+"";
+				if(trials++ < 100) continue;
+			}
+			sentMessages.put(umsg.msgID,umsg);
+		}
+		
 		if(DEBUG)System.out.println("Sending to: "+sa+" msgID="+umsg.msgID+" msg["+msg.length+"]="+Util.byteToHexDump(msg));
-		for(int k=0; k<frags; k++) {
+		for(int k=0; k < frags; k++) {
 			UDPFragment uf = new UDPFragment();
 			uf.senderID = Identity.current_peer_ID.globalID;
 			uf.destinationID = destGID;
@@ -188,6 +218,19 @@ public class UDPServer extends Thread {
 			uf.data = new byte[len_this];
 			Util.copyBytes(uf.data, 0, msg, uf.data.length, MTU*k);
 			umsg.fragment[k] = uf;
+		}
+		int messages_to_send_in_parallel = Math.min(DD.FRAGMENTS_WINDOW, frags);
+		for(int k=0; k < messages_to_send_in_parallel; k++) {
+			UDPFragment uf = umsg.fragment[k];
+			synchronized(sentMessages) { // these may change during transmission/reception
+				if(umsg.sent_attempted[k]>0){
+					System.out.println("UDPServer:sendLargeMessage: fragment already sent:"+k);
+					messages_to_send_in_parallel = Math.min(messages_to_send_in_parallel+1, frags);
+					continue;
+				}
+				umsg.sent_attempted[k]++;
+				umsg.unacknowledged++;
+			}
 			byte[]frag = uf.encode();
 			DatagramPacket dp= new DatagramPacket(frag, frag.length);
 			dp.setSocketAddress(sa);
@@ -196,94 +239,168 @@ public class UDPServer extends Thread {
 			if(DEBUG)System.out.println("Sent UDPFragment: "+uf.sequence+"/"+uf.fragments+" to "+sa+" of "+uf.msgID);
 		}
 	}
-	public void getFragmentAck(UDPFragmentAck frag){
+	/**
+	 * Synchronizes on sentMessages
+	 * @param sa 
+	 * @param frag
+	 * @throws IOException 
+	 */
+	public void getFragmentAck(UDPFragmentAck ack, SocketAddress sa) throws IOException{
 		if(DEBUG) System.out.println("getAck");
-		
-		synchronized(sentMessages) {
-		UDPMessage umsg = sentMessages.get(frag.msgID+"");
-		if(umsg == null) return;
-
-		byte[] signature = frag.signature;
-		String senderID = frag.senderID;
-		
-		// prepare for verification
-		frag.signature = new byte[0];
-		frag.senderID = "";
-		if(DD.VERIFY_FRAGMENT_SIGNATURE)
-			if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
-				System.err.println("Failure verifying FragAck: "+frag+
-					"\n ID="+Util.trimmed(senderID)+ 
-					"\n sign="+Util.byteToHexDump(signature));
+		if(DD.VERIFY_FRAGMENT_ACK_SIGNATURE) {
+			/**
+			 * Just check fast to not verify the signature for no benefit
+			 */
+			synchronized(sentMessages) {
+				UDPMessage umsg = sentMessages.get(ack.msgID+"");
+				if(umsg == null) return;
+			}
+			
+			byte[] signature = ack.signature;
+			String senderID = ack.senderID;
+				
+			// prepare for verification
+			ack.signature = new byte[0];
+			ack.senderID = "";
+			if(!Util.verifySign(ack, Cipher.getPK(senderID), signature)){
+				System.err.println("Failure verifying FragAck: "+ack+
+						"\n ID="+Util.trimmed(senderID)+ 
+						"\n sign="+Util.byteToHexDump(signature));
 				return;
 			}
-		frag.signature = signature;
-		frag.senderID = senderID;
+			ack.signature = signature;
+			ack.senderID = senderID;
+		}
 		
-		for(int i=0; i<frag.transmitted.length; i++) {
-			if(frag.transmitted[i]==1)	
-				if(umsg.transmitted[i] == 0) {
-					umsg.received++;
-					umsg.transmitted[i] = 1;
-				}
+		int bagged=0;
+		boolean bag[] = new boolean[ack.transmitted.length];
+		UDPMessage umsg = null;
+		synchronized(sentMessages) {
+			umsg = sentMessages.get(ack.msgID+"");
+			if((umsg == null)||(umsg.fragment.length!=ack.transmitted.length)) return;
+	
+			for(int i=0; i<ack.transmitted.length; i++) {
+				if(ack.transmitted[i]==1)	
+					if(umsg.transmitted[i] == 0) {
+						umsg.received++;
+						umsg.transmitted[i] = 1;
+					}
+				umsg.unacknowledged --;
+				umsg.unacknowledged=Math.max(0, umsg.unacknowledged);
+			}
+			/**
+			 * If not yet done!
+			 */
+			if((umsg.received < umsg.fragment.length)&&
+					//(umsg.received > umsg.sent_once-DD.FRAGMENTS_WINDOW_LOW_WATER)
+					(umsg.unacknowledged < DD.FRAGMENTS_WINDOW_LOW_WATER)
+					){
+				/**
+				 * could try a loop, up to the largest value in sent_attempted
+				 * First try to select (to re-send) fragments never sent before
+				 * Then attempt to select some that were already sent (up to window)
+				 * When all were sent once, the approach will keep sending the first ones
+				 */
+				bagged = this.prepareBag(bag, umsg, umsg.unacknowledged);
+			}
+			
+			if(umsg.received >= umsg.fragment.length) {
+				sentMessages.remove(umsg.msgID);
+				if(DEBUG)System.out.println("Message discarded "+umsg.msgID);
+				return;
+			}
 		}
-		if(umsg.received >= umsg.fragment.length) {
-			sentMessages.remove(umsg.msgID);
-			if(DEBUG)System.out.println("Message discarded "+umsg.msgID);
-		}
-		}
+		sendBag(bag, umsg, bagged);
 	}
+	/**
+	 * Synchronizes on recvMessages
+	 * Removes the message from the queue of received ones
+	 * @param frag
+	 */
 	public void getFragmentNAck(UDPFragmentNAck frag){
 		if(DEBUG) System.out.println("get Nack: "+frag.msgID);
-		byte[] signature = frag.signature;
-		String senderID = frag.senderID;
-		
-		// prepare for verification
-		frag.signature = new byte[0];
-		frag.senderID = "";
-		if(DD.VERIFY_FRAGMENT_SIGNATURE)
+		if(DD.VERIFY_FRAGMENT_NACK_SIGNATURE) {
+			byte[] signature = frag.signature;
+			String senderID = frag.senderID;
+			
+			// prepare for verification
+			frag.signature = new byte[0];
+			frag.senderID = "";
 			if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
 				System.err.println("Failure verifying FragNack: "+frag+
 					"\n ID="+Util.trimmed(senderID)+ 
 					"\n sign="+Util.byteToHexDump(signature));
 				return;
 			}
-		frag.signature = signature;
-		frag.senderID = senderID;
+			frag.signature = signature;
+			frag.senderID = senderID;
+		}
 		
 		synchronized(recvMessages) {
 			recvMessages.remove(frag.msgID+"");
 		}
 		if(DEBUG) System.out.println("get Nack: removing message"+frag.msgID);
 	}
-	public void getFragmentReclaim(UDPFragmentAck frag, SocketAddress sa) throws IOException{
+	/**
+	 * Synchronizes on sentMessages
+	 * @param frag
+	 * @param sa
+	 * @throws IOException
+	 */
+	public void getFragmentReclaim(UDPFragmentAck recl, SocketAddress sa) throws IOException{
 		if(DEBUG) System.out.println("get Reclaim");
-		byte[] signature = frag.signature;
-		String senderID = frag.senderID;
-		
-		// prepare for verification
-		frag.signature = new byte[0];
-		frag.senderID = "";
-		if(DD.VERIFY_FRAGMENT_SIGNATURE)
-			if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
-				System.err.println("Failure verifying Reclaim: "+frag+
+		if(DD.VERIFY_FRAGMENT_RECLAIM_SIGNATURE){
+			byte[] signature = recl.signature;
+			String senderID = recl.senderID;
+			
+			// prepare for verification
+			recl.signature = new byte[0];
+			recl.senderID = "";
+			if(!Util.verifySign(recl, Cipher.getPK(senderID), signature)){
+				System.err.println("Failure verifying Reclaim: "+recl+
 					"\n ID="+Util.trimmed(senderID)+ 
 					"\n sign="+Util.byteToHexDump(signature));
 				return;
 			}
-		
-		UDPMessage umsg = sentMessages.get(frag.msgID+"");
+		}
+		boolean bag[] = new boolean[recl.transmitted.length];
+		int bagged = 0;
+		UDPMessage umsg = null;
+		synchronized(sentMessages) {
+			umsg = sentMessages.get(recl.msgID+"");
+			if(umsg != null){
+				if(DEBUG) System.out.println("Answering Reclaim: "+recl+"   for umsg="+umsg);
+				for(int i=0; i<recl.transmitted.length; i++) {
+					if(recl.transmitted[i]==1)	{
+						if(umsg.transmitted[i] == 0) {
+							umsg.received++;
+							umsg.transmitted[i] = 1;
+						}
+					}
+				}
+//				// Surely not yet fully sent!
+				/**
+				 * Forget acknowledgments! They will no longer be waited for
+				 */
+				umsg.unacknowledged = 0;
+				bagged = this.prepareBag(bag, umsg, umsg.unacknowledged);
+			}
+		}
+		sendBag(bag, umsg, bagged);
 		if(umsg == null) {
-			if(DEBUG) System.out.println("Reclaim for discarded message: "+frag.msgID);
+			if(DEBUG) System.out.println("Reclaim for discarded message: "+recl.msgID);
 			UDPFragmentNAck uf = new UDPFragmentNAck();
-			uf.msgID = frag.msgID;
-			uf.destinationID = frag.senderID;
-			uf.transmitted = frag.transmitted;
+			uf.msgID = recl.msgID;
+			uf.destinationID = recl.senderID;
+			uf.transmitted = recl.transmitted;
 			
-			// prepare for signature
-			uf.signature = new byte[0];
-			uf.senderID="";
-			uf.signature = Util.sign_peer(uf);//frag.destinationID);
-			uf.senderID = frag.destinationID;
+			if(DD.PRODUCE_FRAGMENT_NACK_SIGNATURE) {
+				// prepare for signature
+				uf.signature = new byte[0];
+				uf.senderID="";
+				uf.signature = Util.sign_peer(uf);//frag.destinationID);
+				uf.senderID = recl.destinationID;
+			}
 			if(DEBUG)System.out.println("Sending NAck: "+uf);
 			byte[] ack = uf.encode();
 			DatagramPacket dp = new DatagramPacket(ack, ack.length,sa);
@@ -291,87 +408,159 @@ public class UDPServer extends Thread {
 			if(DEBUG)System.out.println("Sending NAck: "+uf.msgID);
 			return;
 		}
-		if(DEBUG) System.out.println("Answering Reclaim: "+frag+"   for umsg="+umsg);
-		for(int i=0; i<frag.transmitted.length; i++) {
-			if(frag.transmitted[i]==1)	
-				if(umsg.transmitted[i] == 0) {
-					umsg.received++;
-					umsg.transmitted[i] = 1;
+	}
+	public int prepareBag(boolean[]bag, UDPMessage umsg, int unacks){
+		int bagged=0;
+		int largest = 0;
+		for(int i=0; i<bag.length; i++)
+			largest = Math.max(largest, umsg.sent_attempted[i]);
+		for(int j=0; j<=largest; j++) {
+			for(int i=0; i<bag.length; i++) {
+				if((umsg.sent_attempted[i] == j)&&(umsg.transmitted[i] == 0)) {
+					if(bag[i]) continue; // redundant
+					bag[i] = true;
+					bagged++;
+					if(bagged+unacks >= DD.FRAGMENTS_WINDOW) break;
 				}
-			if(umsg.transmitted[i] == 0) {
-				UDPFragment uf = umsg.fragment[i];
-				byte[]fragb = uf.encode();
-				DatagramPacket dp= new DatagramPacket(fragb, fragb.length);
-				dp.setSocketAddress(sa);
-				ds.send(dp);
-				if(DEBUG)System.out.println("Sent UDPFragment: "+uf+" to "+sa);
-				if(DEBUG)System.out.println("ReSent UDPFragment: "+uf.sequence+"/"+umsg.msgID+" to "+sa);				
 			}
+			if(bagged+unacks >= DD.FRAGMENTS_WINDOW) break;
+		}
+		return bagged;
+	}
+	/**
+	 * Called to restart a stalled sending that is unknown to the recipient.
+	 * @param umsg
+	 * @throws IOException 
+	 */
+	private void reclaim(UDPMessage umsg) throws IOException {
+		if(umsg == null) return;
+		boolean bag[] = new boolean[umsg.transmitted.length];
+		int bagged = 0;
+		synchronized(sentMessages) {
+			if(DEBUG) System.out.println("UDPServer: Reclaim for umsg="+umsg);
+			/**
+			 * Forget acknowledgments! They will no longer be waited for
+			 */
+			umsg.unacknowledged = 0;
+			bagged = this.prepareBag(bag, umsg, umsg.unacknowledged);
+		}
+		sendBag(bag, umsg, bagged);
+	}
+	private void sendBag(boolean bag[], UDPMessage umsg, int bagged) throws IOException{
+		if(bagged!=0){
+			for(int k=0; k<bag.length; k++) {
+				if(!bag[k]) continue;
+					
+				UDPFragment uf = umsg.fragment[k];
+				if(umsg.transmitted[k] == 1){
+					System.out.println("UDPServer:getFragmentAck: fragment already acked:"+k);
+					continue;
+				}
+				synchronized(sentMessages) { // these may change during transmission/reception
+					umsg.sent_attempted[k]++;
+					umsg.unacknowledged++;
+				}
+				byte[]fragb = uf.encode();
+				DatagramPacket dp = new DatagramPacket(fragb, fragb.length);
+				dp.setSocketAddress(umsg.sa);
+				ds.send(dp);
+				if(DEBUG)System.out.println("Sent UDPFragment: "+uf+" to "+umsg.sa);
+				if(DEBUG)System.out.println("ReSent UDPFragment: "+uf.sequence+"/"+uf.fragments+" ID="+umsg.msgID+" to "+umsg.sa);
+			}
+			return;
 		}
 	}
+	private void sendReclaim(UDPMessage umsg) {
+		long crt_time = Util.CalendargetInstance().getTimeInMillis();
+		sendReclaim (umsg, crt_time);
+	}
+	private void sendReclaim(UDPMessage umsg, long crt_time) {
+		umsg.date = crt_time;
+		if(DEBUG) out.println("userver: UDPServer Reclaim at "+crt_time+"ms: "+umsg);
+		UDPReclaim uf = new UDPReclaim();
+		uf.msgID = umsg.msgID;
+		uf.destinationID = umsg.senderID;
+		uf.transmitted = umsg.transmitted;
+						
+		if(DD.PRODUCE_FRAGMENT_RECLAIM_SIGNATURE) {
+			// prepare for signature
+			uf.signature = new byte[0];
+			uf.senderID="";
+			uf.signature = Util.sign_peer(uf);//umsg.destinationID);
+			uf.senderID = umsg.destinationID;
+		}
+		if(DEBUG)System.out.println("Sending reclaim: "+uf);
+		byte[] ack = uf.encode();
+		DatagramPacket dp;
+		try {
+			dp = new DatagramPacket(ack, ack.length, umsg.sa);
+			if(DEBUG) out.println("userver: UDPServer Reclaim sent to "+umsg.sa+" recl=: "+ uf);
+			this.ds.send(dp);
+			if(DEBUG) out.println("userver: UDPServer Reclaim sent to "+umsg.sa+" recl=: "+ umsg.received+"/"+umsg.fragment.length+" of "+umsg.msgID);
+		} catch (SocketException e1) {
+			e1.printStackTrace();
+		} catch (IOException e2) {
+			e2.printStackTrace();
+		}
+	}
+	/**
+	 * Synchronized on recvMessages
+	 */
 	public void sendFragmentReclaim(){
 		if(DEBUG_ALIVE) out.println("userver: UDPServer Reclaim! messages #"+recvMessages.size());
+		ArrayList<UDPMessage> bag = new ArrayList<UDPMessage>();
 		long crt_time = Util.CalendargetInstance().getTimeInMillis();
+		/**
+		 * First extract all messages to reclaim (to not keep lock for long)
+		 */
 		synchronized(this.recvMessages) {
-		for(UDPMessage umsg: recvMessages.values()) {
-			if(DEBUG) out.println("userver: UDPServer Reclaim "+umsg.msgID+" check: "+crt_time+"-"+umsg.date+"="+(crt_time-umsg.date)+">"+Server.TIMEOUT_UDP_Reclaim);
-			if(crt_time-umsg.date>Server.TIMEOUT_UDP_Reclaim) {
-				umsg.date = crt_time;
-				if(DEBUG) out.println("userver: UDPServer Reclaim at "+crt_time+"ms: "+umsg);
-				//for(int k=0; k<umsg.fragment.length; k++) {
-				//	if(umsg.transmitted[k]==0) {
-						UDPReclaim uf = new UDPReclaim();
-						uf.msgID = umsg.msgID;
-						uf.destinationID = umsg.senderID;
-						uf.transmitted = umsg.transmitted;
-						
-						// prepare for signature
-						uf.signature = new byte[0];
-						uf.senderID="";
-						uf.signature = Util.sign_peer(uf);//umsg.destinationID);
-						uf.senderID = umsg.destinationID;
-						if(DEBUG)System.out.println("Sending reclaim: "+uf);
-						byte[] ack = uf.encode();
-						DatagramPacket dp;
-						try {
-							dp = new DatagramPacket(ack, ack.length, umsg.sa);
-							if(DEBUG) out.println("userver: UDPServer Reclaim sent to "+umsg.sa+" recl=: "+ uf);
-							this.ds.send(dp);
-							if(DEBUG) out.println("userver: UDPServer Reclaim sent to "+umsg.sa+" recl=: "+ umsg.received+"/"+umsg.fragment.length+" of "+umsg.msgID);
-						} catch (SocketException e1) {
-							e1.printStackTrace();
-						} catch (IOException e2) {
-							e2.printStackTrace();
-						}
-					//}
-				//}
+			for(UDPMessage umsg: recvMessages.values()) {
+				if(DEBUG) out.println("userver: UDPServer Reclaim "+umsg.msgID+" check: "+crt_time+"-"+umsg.date+"="+(crt_time-umsg.date)+">"+Server.TIMEOUT_UDP_Reclaim);
+				if(crt_time-umsg.date>Server.TIMEOUT_UDP_Reclaim) {
+					bag.add(umsg);
+				}
 			}
 		}
+		/**
+		 * Then reclaim them. Synchronization is probably not needed
+		 */
+		for(UDPMessage umsg: bag){
+			sendReclaim(umsg, crt_time);
 		}
 	}
+
+	/**
+	 * Temporary locks UDPServer.recvMessages and
+	 *  umsg.lock_ack where umsg is the structure of the large message being received
+	 * @param frag
+	 * @param sa
+	 * @return
+	 * @throws IOException
+	 */
 	public byte[] getFragment(UDPFragment frag, SocketAddress sa) throws IOException{
 		byte[] result = null;
 		
-		byte[] signature = frag.signature;
-		String senderID = frag.senderID;
-		//System.out.println("F");
-		// prepare for verification
-		frag.signature = new byte[0];
-		frag.senderID = "";
 		if(DD.VERIFY_FRAGMENT_SIGNATURE) {
+			byte[] signature = frag.signature;
+			String senderID = frag.senderID;
+			//System.out.println("F");
+			// prepare for verification
+			frag.signature = new byte[0];
+			frag.senderID = "";
 			if((signature == null)||(signature.length==0)){
 				System.err.println("Fragment came unsigned: rejected\n"+frag);
 				return null;
 			}
 			if(!Util.verifySign(frag, Cipher.getPK(senderID), signature)){
+				if(DD.isThisAnApprovedPeer(senderID))
 				System.err.println("Failure verifying frag: "+frag+
 					"\n sender ID="+Util.trimmed(senderID)+ 
 					"\n sign="+Util.byteToHexDump(signature));
 				return null;
 			}
+			frag.signature = signature;
+			frag.senderID = senderID;
 		}
-		frag.signature = signature;
-		frag.senderID = senderID;
 		
 		String msgID = frag.msgID+"";
 		
@@ -386,10 +575,16 @@ public class UDPServer extends Thread {
 			}
 		}
 	
-	    UDPMessage umsg;
+	    UDPMessage umsg = null;
+	    /**
+	     * Here we extract the message from recv (or create a new one there)
+	     */
 	    synchronized (recvMessages) {
 	    	umsg = recvMessages.get(msgID);
 	    	if(umsg == null) {
+	    		/**
+	    		 * For new messages
+	    		 */
 	    		umsg = new UDPMessage(frag.fragments);
 	    		umsg.uf.msgID = frag.msgID;
 	    		umsg.uf.destinationID = frag.senderID;
@@ -404,49 +599,64 @@ public class UDPServer extends Thread {
 	    		if(DEBUG)System.out.println("Starting new message: "+umsg);
 	    	}else
 	    		if(DEBUG)System.out.println("Located message: "+umsg);
+	    	/**
+	    	 * Update date of last contact
+	    	 */
 	    	umsg.date = Util.CalendargetInstance().getTimeInMillis();
-	    	
-	    	// add new fragment
+
+	    	/**
+	    	 * add new fragment
+	    	 */
+	    	// if the fragment longer then length of previous fragment: strange => drop
 	    	if(frag.sequence>=umsg.fragment.length){
 	    		if(DEBUG)System.err.println("Failure sequence: "+frag.sequence+" vs. "+umsg.fragment.length);
 	    		return null;
 	    	}
+	    	/**
+	    	 * Set the flag for having received this
+	    	 */
 	    	if(umsg.transmitted[frag.sequence]==0) {
 	    		umsg.transmitted[frag.sequence] = 1;
 	    		umsg.received++;
 	    		umsg.ack_changed = true;
+	    	
+	    		umsg.fragment[frag.sequence] = frag;
 	    	}
-	    	umsg.fragment[frag.sequence] = frag;
-	    
 		
 			if(umsg.received>=umsg.fragment.length){
-				byte[] msg = umsg.assemble();
 				recvMessages.remove(umsg.fragment[0].msgID);
-				if(DEBUG)System.out.println("Removing received message: "+umsg.msgID);
-				if(DEBUG)System.out.println("getFragments: Got message completely: "+umsg.msgID+" msg="+Util.byteToHexDump(msg));
-				result = msg;
-			}else{
-				if(DEBUG)System.out.println("getFragments. Got: "+umsg.received+"/"+umsg.fragment.length+" received msg="+umsg);
-				result = null;//umsg.assemble();
 			}
 	    }
+	    
+		if(umsg.received>=umsg.fragment.length){
+			byte[] msg = umsg.assemble();
+			if(DEBUG)System.out.println("Removing received message: "+umsg.msgID);
+			if(DEBUG)System.out.println("getFragments: Got message completely: "+umsg.msgID+" msg="+Util.byteToHexDump(msg));
+			result = msg;
+		}else{
+			if(DEBUG)System.out.println("getFragments. Got: "+umsg.received+"/"+umsg.fragment.length+" received msg="+umsg);
+			result = null;//umsg.assemble();
+		}
 	    
 	    // could arrange for a separate thread to send the ack outside the critical section
 	    
 	    synchronized(umsg.lock_ack){
 	    	// prepare for signature
 	    	if(umsg.ack_changed) {
-	    		umsg.uf.signature = new byte[0];
-	    		umsg.uf.senderID="";
-	    		umsg.uf.senderID = frag.destinationID;
-	    		umsg.uf.signature = Util.sign_peer(umsg.uf);//frag.destinationID);
+	    		if(DD.PRODUCE_FRAGMENT_ACK_SIGNATURE) {
+	    			umsg.uf.signature = new byte[0];
+	    			umsg.uf.senderID="";
+	    			umsg.uf.senderID = frag.destinationID;
+	    			umsg.uf.signature = Util.sign_peer(umsg.uf);//frag.destinationID);
+	    		}
 	    		if(DEBUG)System.out.println("getFragments: Preparing ack: "+umsg.uf+" umsgID="+umsg.msgID+" to: "+sa);
 	    		umsg.ack = umsg.uf.encode();
+	    		umsg.ack_changed = false;
 	    	}
-	    	DatagramPacket dp = new DatagramPacket(umsg.ack, umsg.ack.length,sa);
-	    	this.ds.send(dp);
-	    	if(DEBUG)System.out.println("getFragments: Sent ack: "+frag.sequence+"/"+umsg.received+" umsgID="+umsg.msgID+" to: "+sa);
 	    }
+	    DatagramPacket dp = new DatagramPacket(umsg.ack, umsg.ack.length,sa);
+	    this.ds.send(dp);
+	    if(DEBUG)System.out.println("getFragments: Sent ack: "+frag.sequence+"/"+umsg.received+" umsgID="+umsg.msgID+" to: "+sa);
 	    return result;
 	}
 	/**
@@ -625,19 +835,32 @@ public class UDPServer extends Thread {
 		ds.send(dp);
 	}
 	public void run() {
+		synchronized(lock ){
+			try {
+				lock.wait(DD.PAUSE_BEFORE_UDP_SERVER_START);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+				return;
+			}
+		}
+		if(_DEBUG)System.out.println("UDPServer: run: go");
+		_name = name++;
 		try{
 			_run();
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
+	public static int name = 0;
+	public int _name;
 	public void _run() {
 		DD.ed.fireServerUpdate(new CommEvent(this, null, null, "LOCAL", "UDPServer starting"));
 		//this.announceMyselfToDirectories();
 		int cnt = 0;
 		for(;;) {
+			if (_DEBUG) out.print("(UDP*)");
 			if (turnOff) break;
-			if(DEBUG_ALIVE) out.println("userver: UDPServer reclaim!");
+			if (DEBUG_ALIVE) out.println("userver: UDPServer reclaim!");
 			try {
 				this.sendFragmentReclaim();
 				if(this.isInterrupted()) continue;

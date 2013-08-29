@@ -68,10 +68,12 @@ class ServerThread extends Thread {
 	Socket s;
 	Server server;
 	String name;
+	public String peer_ID;
 	ServerThread(Socket s, Server server){
 		if(DEBUG) out.println("server thread: Created");
 		this.s=s;
 		this.server = server;
+		//this.peer_ID = _peer_ID;
 		name=cnt+""; cnt++;
 	}
 	public void run(){
@@ -121,8 +123,13 @@ class ServerThread extends Thread {
 				DD.ed.fireServerUpdate(new CommEvent(this, null, isa, "Client", "Sync Request received: "+asr));
 				Server.extractDataSyncRequest(asr, isa, this);
 				if(DEBUG)out.println("Request received: "+asr.toString());
-				
-				SyncAnswer sa = UpdateMessages.buildAnswer(asr, null);
+				if(asr.address!=null){
+					asr.address.peer_ID = peer_ID = D_PeerAddress.getLocalPeerIDforGID(asr.address.globalID);
+				}else{
+					Application.warning(_("Peer does not authenticate itself"), _("Contact from unknown peer"));
+					if(!DD.ACCEPT_UNSIGNED_PEERS) break;
+				}
+				SyncAnswer sa = UpdateMessages.buildAnswer(asr, peer_ID);
 				byte[]msg = sa.encode();
 				
 				if(DEBUG) out.println("Answering: "+Util.byteToHexDump(msg, " ")+"::"+Util.trimmed(sa.toString(),300));
@@ -216,7 +223,8 @@ public class Server extends Thread {
 			if((pa!=null)&&(pa.signature!=null)&&((pa.globalID!=null)||(pa.globalIDhash!=null))) {
 				boolean verif = pa.verifySignature();
 				if(verif) {
-					D_PeerAddress local = new D_PeerAddress(pa.globalID, pa.globalIDhash, false, false, true);
+					// Here the address only needed at version 2
+					D_PeerAddress local = new D_PeerAddress(pa.globalID, pa.globalIDhash, false, true, true);
 					if(local.peer_ID==null){
 						int i = 2;
 						pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;

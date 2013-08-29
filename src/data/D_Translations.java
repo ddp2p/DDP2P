@@ -318,7 +318,7 @@ class D_Translations extends ASNObj{
 		}
 		
 		if((this.submitter_ID == null ) && (this.global_constituent_ID != null))
-			this.submitter_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+			this.submitter_ID = D_Constituent.getConstituentLocalIDFromGID(this.global_constituent_ID);
 		if((this.submitter_ID == null ) && (this.global_constituent_ID != null)) {
 			submitter_ID =
 				""+D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID);
@@ -384,7 +384,7 @@ class D_Translations extends ASNObj{
 		}
 			
 		if((this.global_constituent_ID!=null)&&(submitter_ID == null)){
-			this.submitter_ID = D_Constituent.getConstituentLocalID(global_constituent_ID);
+			this.submitter_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID);
 			if(tempConst && (submitter_ID == null ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
 				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
@@ -420,7 +420,7 @@ class D_Translations extends ASNObj{
 		long result = -1;
 		if(_DEBUG) System.out.println("WB_Translations:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		if(this.submitter_ID == null )
-			submitter_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+			submitter_ID = D_Constituent.getConstituentLocalIDFromGID(this.global_constituent_ID);
 		if(submitter_ID == null){
 			if(DEBUG) System.out.println("WB_Translations:storeVerified: no signer!");
 			return -1;

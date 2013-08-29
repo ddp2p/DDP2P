@@ -219,15 +219,17 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	}
 	public void add(RequestData n, long _peer_ID, String generalizedTime) {
 		if(DEBUG)System.out.println("\nOrgPeerDataHashes:add: add "+n+" to "+this);
-		//orgs = appendSet(orgs, n.orgs, _peer_ID, generalizedTime);
-		neig = appendSet(neig, n.neig, _peer_ID, generalizedTime);
-		cons = appendHash(cons, n.cons, _peer_ID, generalizedTime);
-		witn = appendSet(witn, n.witn, _peer_ID, generalizedTime);
-		moti = appendSet(moti, n.moti, _peer_ID, generalizedTime);
-		just = appendSet(just, n.just, _peer_ID, generalizedTime);
-		sign = appendSet(sign, n.sign, _peer_ID, generalizedTime);
-		tran = appendSet(tran, n.tran, _peer_ID, generalizedTime);
-		news = appendSet(news, n.news, _peer_ID, generalizedTime);
+		synchronized(cons){
+			//orgs = appendSet(orgs, n.orgs, _peer_ID, generalizedTime);
+			neig = appendSet(neig, n.neig, _peer_ID, generalizedTime);
+			cons = appendHash(cons, n.cons, _peer_ID, generalizedTime);
+			witn = appendSet(witn, n.witn, _peer_ID, generalizedTime);
+			moti = appendSet(moti, n.moti, _peer_ID, generalizedTime);
+			just = appendSet(just, n.just, _peer_ID, generalizedTime);
+			sign = appendSet(sign, n.sign, _peer_ID, generalizedTime);
+			tran = appendSet(tran, n.tran, _peer_ID, generalizedTime);
+			news = appendSet(news, n.news, _peer_ID, generalizedTime);
+		}
 		if(DEBUG)System.out.println("OrgPeerDataHashes:add: Got "+this);
 	}
 
@@ -419,38 +421,49 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 		if(obtained==null) return;
 		if(DEBUG)System.out.println("RequestData:purge: Will purge "+this+" with "+obtained);
 		//if(.empty()) return;
-		for(String s : obtained.cons.keySet()){
-			cons.remove(s);
-			cons.remove(D_Constituent.getGIDHashFromGID(s));
+		synchronized(cons){
+			for(String s : obtained.cons.keySet()){
+				cons.remove(s);
+				cons.remove(D_Constituent.getGIDHashFromGID(s));
+			}
+			for(String s : obtained.neig) neig.remove(s);
+			for(String s : obtained.witn) witn.remove(s);
+			for(String s : obtained.moti) moti.remove(s);
+			for(String s : obtained.just) just.remove(s);
+			for(String s : obtained.sign) sign.remove(s);
+			for(String s : obtained.tran) tran.remove(s);
+			for(String s : obtained.news) news.remove(s);
 		}
-		for(String s : obtained.neig) neig.remove(s);
-		for(String s : obtained.witn) witn.remove(s);
-		for(String s : obtained.moti) moti.remove(s);
-		for(String s : obtained.just) just.remove(s);
-		for(String s : obtained.sign) sign.remove(s);
-		for(String s : obtained.tran) tran.remove(s);
-		for(String s : obtained.news) news.remove(s);
 		if(DEBUG)System.out.println("RequestData:purge: Got "+this);
 	}
+	/**
+	 * The hashtable could be concurrently modified.
+	 * One needs synchronization
+	 * @param obtained
+	 * @param peer_ID
+	 * @param crt_date
+	 */
 	public void updateAfterChanges(RequestData obtained, long peer_ID, String crt_date) {
 		if(DEBUG)System.out.println("RequestData:updateAfterChanges: Will updateAfterChanges by "+peer_ID+" on \n"+this+" with \n"+obtained);
-		for(String s : obtained.cons.keySet()) add(cons, s, peer_ID, crt_date);
-		for(String s : obtained.neig) add(neig, s, peer_ID, crt_date);
-		for(String s : obtained.witn) add(witn, s, peer_ID, crt_date);
-		for(String s : obtained.moti) add(moti, s, peer_ID, crt_date);
-		for(String s : obtained.just) add(just, s, peer_ID, crt_date);
-		for(String s : obtained.sign) add(sign, s, peer_ID, crt_date);
-		for(String s : obtained.tran) add(tran, s, peer_ID, crt_date);
-		for(String s : obtained.news) add(news, s, peer_ID, crt_date);
-		
-		for(String s : this.cons.keySet()) if(!obtained.cons.contains(s)) cons.remove(s);
-		for(String s : this.neig.keySet()) if(!obtained.neig.contains(s)) neig.remove(s);
-		for(String s : this.witn.keySet()) if(!obtained.witn.contains(s)) witn.remove(s);
-		for(String s : this.moti.keySet()) if(!obtained.moti.contains(s)) moti.remove(s);
-		for(String s : this.just.keySet()) if(!obtained.just.contains(s)) just.remove(s);
-		for(String s : this.sign.keySet()) if(!obtained.sign.contains(s)) sign.remove(s);
-		for(String s : this.tran.keySet()) if(!obtained.tran.contains(s)) tran.remove(s);
-		for(String s : this.news.keySet()) if(!obtained.news.contains(s)) news.remove(s);
+		synchronized(cons) {
+			for(String s : obtained.cons.keySet()) add(cons, s, peer_ID, crt_date);
+			for(String s : obtained.neig) add(neig, s, peer_ID, crt_date);
+			for(String s : obtained.witn) add(witn, s, peer_ID, crt_date);
+			for(String s : obtained.moti) add(moti, s, peer_ID, crt_date);
+			for(String s : obtained.just) add(just, s, peer_ID, crt_date);
+			for(String s : obtained.sign) add(sign, s, peer_ID, crt_date);
+			for(String s : obtained.tran) add(tran, s, peer_ID, crt_date);
+			for(String s : obtained.news) add(news, s, peer_ID, crt_date);
+			
+			for(String s : this.cons.keySet()) if(!obtained.cons.contains(s)) cons.remove(s);
+			for(String s : this.neig.keySet()) if(!obtained.neig.contains(s)) neig.remove(s);
+			for(String s : this.witn.keySet()) if(!obtained.witn.contains(s)) witn.remove(s);
+			for(String s : this.moti.keySet()) if(!obtained.moti.contains(s)) moti.remove(s);
+			for(String s : this.just.keySet()) if(!obtained.just.contains(s)) just.remove(s);
+			for(String s : this.sign.keySet()) if(!obtained.sign.contains(s)) sign.remove(s);
+			for(String s : this.tran.keySet()) if(!obtained.tran.contains(s)) tran.remove(s);
+			for(String s : this.news.keySet()) if(!obtained.news.contains(s)) news.remove(s);
+		}
 		if(DEBUG)System.out.println("RequestData:updateAfterChanges: Got "+this);
 	}
 

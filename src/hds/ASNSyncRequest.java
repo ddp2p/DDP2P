@@ -23,6 +23,8 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import javax.swing.JOptionPane;
+
 import ciphersuits.Cipher;
 import ciphersuits.SK;
 
@@ -33,6 +35,7 @@ import data.D_PluginData;
 
 import streaming.OrgFilter;
 import streaming.SpecificRequest;
+import util.P2PDDSQLException;
 import util.Summary;
 import util.Util;
 import static util.Util._;
@@ -96,28 +99,40 @@ class UDPMessage {
 	public int type;
 	UDPFragment[] fragment;
 	byte[] transmitted;
+	int[] sent_attempted; //not packed (used only at sender)
+	int unacknowledged = 0;
 	long date;
 	int received;
 	public String msgID;
 	SocketAddress sa;
 	
-	//acknowledgement data
+	//Acknowledgment data
 	UDPFragmentAck uf;
 	byte[] ack;
 	boolean ack_changed=false;
 	Object lock_ack=new Object();
 	
 	public String destinationID, senderID;
+	public int checked = 0; // how many requests are dropped waiting to send a message
 	public String toString() {
-		String res = "UDPMesage: ID="+msgID+"\n date: "+date+"ms\n rec="+received+"/"+fragment.length+
+		String res = "UDPMesage:" +
+				" ID="+msgID+
+				"\n type="+type+
+				"\n date: "+date+"ms"+
+				"\n unack: "+unacknowledged+
+				"\n rec="+received+"/"+fragment.length+
 		"\n transmitted=";
 		for(int k=0; k<fragment.length;k++)
 			res+="."+transmitted[k];
+		res += "\n attempts";
+		for(int k=0; k<fragment.length;k++)
+			res+="."+sent_attempted[k];
 		return res;
 	}
 	UDPMessage(int len){
 		fragment = new UDPFragment[len];
 		transmitted = new byte[len];
+		sent_attempted = new int[len];
 		date = Util.CalendargetInstance().getTimeInMillis();
 		
 		uf = new UDPFragmentAck();
@@ -133,6 +148,12 @@ class UDPMessage {
 					fragment[i].data.length, 0);
 		}
 		return msg;
+	}
+	public boolean no_ack_received() {
+		for(int i=0; i<fragment.length; i++) {
+			if(this.transmitted[i] == 1) return false;
+		}
+		return true;
 	}
 }
 /**
@@ -848,6 +869,7 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
  */
 public class ASNSyncRequest extends ASNObj implements Summary {
 	public static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
 	public String version="2";
 	public Calendar lastSnapshot;
 	public String[] tableNames;
@@ -896,61 +918,63 @@ public class ASNSyncRequest extends ASNObj implements Summary {
 	public byte[] encode() {
 		return getEncoder().getBytes();
 	}
+	byte getASN1TAG(){
+		return DD.TAG_AC7;
+	}
 	public ASNSyncRequest decode(Decoder decoder) throws ASN1DecoderFail {
 		//System.out.println("Decoding ASNSyncReq: "+decoder.dumpHex());
-		if(decoder.getTypeByte() != DD.TAG_AC7) throw new ASN1DecoderFail("No right type");
+		if(decoder.getTypeByte() != getASN1TAG()) throw new ASN1DecoderFail("No right type");
 		Decoder dec = decoder.getContent();
 		version = dec.getFirstObject(true).getString();
 		if(dec.getTypeByte()==Encoder.TAG_GeneralizedTime){
 			lastSnapshot = dec.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
 		}
 		if(dec.getTypeByte()==DD.TAG_AC0){
-			Decoder d_tn = dec.getFirstObject(true, DD.TAG_AC0).getContent();
-			ArrayList<String> tableNames = new ArrayList<String>();
-			for(;;) {
-				Decoder c_tn = d_tn.getFirstObject(true, DD.TYPE_TableName);
-				if(c_tn==null) break;
-				tableNames.add(c_tn.getString(DD.TYPE_TableName));
-			}
-			this.tableNames = tableNames.toArray(new String[]{});
+//			Decoder d_tn = dec.getFirstObject(true, DD.TAG_AC0).getContent();
+//			ArrayList<String> tableNames = new ArrayList<String>();
+//			for(;;) {
+//				Decoder c_tn = d_tn.getFirstObject(true, DD.TYPE_TableName);
+//				if(c_tn==null) break;
+//				tableNames.add(c_tn.getString(DD.TYPE_TableName));
+//			}
+//			this.tableNames = tableNames.toArray(new String[]{});
+			this.tableNames = dec.getFirstObject(true).getSequenceOf(DD.TYPE_TableName);
 		}
 		if(dec.getTypeByte()==DD.TAG_AC1){
-			orgFilter = dec.getFirstObject(true, DD.TAG_AC1)
-			.getSequenceOf(Encoder.TYPE_SEQUENCE, new OrgFilter[]{}, new OrgFilter());
-			/*
-			Decoder d_tn = dec.getFirstObject(true, DD.TAG_AC1).getContent();
-			ArrayList<OrgFilter> orgFilter = new ArrayList<OrgFilter>();
-			for(;;) {
-				Decoder c_tn = d_tn.getFirstObject(true);
-				if(c_tn==null) break;
-				orgFilter.add(new OrgFilter().decode(c_tn));
-			}
-			this.orgFilter = orgFilter.toArray(new OrgFilter[]{});
-			*/
+			orgFilter = dec.getFirstObject(true)
+			.getSequenceOf(OrgFilter.getASN1Type(), new OrgFilter[]{}, new OrgFilter());
 		}
-		if(dec.getTypeByte()==DD.TAG_AC2){
-			Decoder d_pa = dec.getFirstObject(true, DD.TAG_AC2);
-			address = new D_PeerAddress().decode(d_pa);
-		}
-		if(dec.getTypeByte()==DD.TAG_AC3){
-			Decoder d_pa = dec.getFirstObject(true, DD.TAG_AC3);
-			request = new SpecificRequest().decode(d_pa);
-		}
-		if(dec.getTypeByte()==DD.TAG_AC4){
-			Decoder d_pa = dec.getFirstObject(true, DD.TAG_AC4);
-			plugin_msg = new D_PluginData().decode(d_pa);
-		}
-		if(dec.getTypeByte()==DD.TAG_AC6) this.plugin_info = dec.getFirstObject(true).getSequenceOf(ASNPluginInfo.getASN1Type(), new ASNPluginInfo[0], new ASNPluginInfo());
+		if(dec.getTypeByte()==DD.TAG_AC2)
+			address = new D_PeerAddress().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC3)
+			request = new SpecificRequest().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC4)
+			plugin_msg = new D_PluginData().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC6)
+			this.plugin_info = dec.getFirstObject(true)
+			.getSequenceOf(ASNPluginInfo.getASN1Type(), new ASNPluginInfo[0], new ASNPluginInfo());
 		//if(dec.getTypeByte()==DD.TAG_AC3)directory = new Address().decode(dec);
-		if(dec.getTypeByte()==Encoder.TYPE_SEQUENCE){
+		if(dec.getTypeByte()==SyncAnswer.getASN1Type()) // DD.TAG_AC8
 			this.pushChanges = new SyncAnswer().decode(dec.getFirstObject(true));
-		}
 		//System.out.println("Got to pushChanges: "+this);
-		if(this.versionAfter(version,1)||
-				(dec.getTypeByte()==Encoder.buildASN1byteType(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5)))
-			signature= dec.getFirstObject(true).getBytes();
-		if(dec.getFirstObject(false)!=null)
-			throw new ASN1DecoderFail("Extra Objects in decoder");
+		byte tag_sign = Encoder.TAG_OCTET_STRING;
+		if(!this.versionAfter(version,1)) // new versions remains OCTET_STRING
+				tag_sign = DD.TYPE_SignSyncReq;
+		//		(dec.getTypeByte()==DD.TYPE_SignSyncReq))
+		if(dec.getTypeByte() == tag_sign) // optional decoding, but should be always there!!!
+			signature = dec.getFirstObject(true).getBytes();
+		else
+			if(_DEBUG)System.out.println("ASNSyncReq:decode:**********SHOULD HAVE SIGNATURE");
+
+		Decoder rest = dec.getFirstObject(false); 
+		if(rest!=null){
+			if(_DEBUG)System.out.println("ASNSyncReq:decode:*******************************");
+			if(_DEBUG)System.out.println("ASNSyncReq:decode:**********SHOULD HAVE HAD SIGNATURE!");
+			if(_DEBUG)System.out.println("ASNSyncReq:decode:*******************************");
+			if(_DEBUG)System.out.println("ASNSyncReq:decode: so far got:"+this);
+			if(_DEBUG)System.out.println("ASNSyncReq:decode: remains:"+rest);
+			//throw new ASN1DecoderFail("Extra Objects in decoder");
+		}
 		return this;
 	}
 	/**
@@ -978,35 +1002,33 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(version));
-		if(lastSnapshot!=null) enc.addToSequence(new Encoder(lastSnapshot));
+		if(lastSnapshot!=null) enc.addToSequence(new Encoder(lastSnapshot).setASN1Type(Encoder.TAG_GeneralizedTime));
 		
 		if(tableNames!=null) {
-			Encoder encTableNames = new Encoder().initSequence();
-			for(int i=0; i<tableNames.length; i++) {
-				encTableNames.addToSequence(new Encoder(tableNames[i]).
-					setASN1Type(Encoder.CLASS_PRIVATE, Encoder.PC_PRIMITIVE, (byte)0));
-			}
-			enc.addToSequence(encTableNames.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)0));
+			enc.addToSequence(
+					Encoder.getStringEncoder(tableNames, DD.TYPE_TableName).setASN1Type(DD.TAG_AC0));
+//			Encoder encTableNames = new Encoder().initSequence();
+//			for(int i=0; i<tableNames.length; i++) {
+//				encTableNames.addToSequence(new Encoder(tableNames[i]).
+//					setASN1Type(DD.TYPE_TableName));
+//			}
+//			enc.addToSequence(encTableNames.setASN1Type(DD.TAG_AC0));
 		}
 		if(orgFilter!=null) {
-			Encoder encOF=new Encoder().initSequence();
-			for(int i=0; i<orgFilter.length; i++) {
-				encOF.addToSequence(orgFilter[i].getEncoder());
-			}
-			enc.addToSequence(encOF.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)1));
+			enc.addToSequence(Encoder.getEncoder(orgFilter).setASN1Type(DD.TAG_AC1));
+//			
+//			Encoder encOF=new Encoder().initSequence();
+//			for(int i=0; i<orgFilter.length; i++) {
+//				encOF.addToSequence(orgFilter[i].getEncoder());
+//			}
+//			enc.addToSequence(encOF.setASN1Type(DD.TAG_AC1));
 		}
-		if(address!=null) {
-			Encoder encPA = address.getEncoder();
-			enc.addToSequence(encPA.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)2));
-		}
-		if(request!=null) {
-			Encoder encPA = request.getEncoder();
-			enc.addToSequence(encPA.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)3));
-		}
-		if(plugin_msg!=null) {
-			Encoder encPA = plugin_msg.getEncoder();
-			enc.addToSequence(encPA.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)4));
-		}
+		if(address!=null)
+			enc.addToSequence(address.getEncoder().setASN1Type(DD.TAG_AC2));
+		if(request!=null)
+			enc.addToSequence(request.getEncoder().setASN1Type(DD.TAG_AC3));
+		if(plugin_msg!=null)
+			enc.addToSequence(plugin_msg.getEncoder().setASN1Type(DD.TAG_AC4));
 		if(plugin_info!=null) enc.addToSequence(Encoder.getEncoder(this.plugin_info).setASN1Type(DD.TAG_AC6));
 		/*
 		if(directory!=null) {
@@ -1015,14 +1037,19 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 		}
 		*/
 		if(pushChanges!=null)
-			enc.addToSequence(pushChanges.getEncoder());
+			enc.addToSequence(pushChanges.getEncoder());// DD.TAG_AC8
 		
-		Encoder sign = new Encoder(this.signature);
-		if(!versionAfter(version,1))
-			sign.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5);
-		enc.addToSequence(sign);
-		
-		enc.setASN1Type(DD.TAG_AC7);
+		if(signature!=null) {
+			Encoder sign = new Encoder(this.signature);
+			if(!versionAfter(version,1)) // In new versions should be OCTET_STRING
+				sign.setASN1Type(DD.TYPE_SignSyncReq);
+			enc.addToSequence(sign);
+		}else{
+			if(_DEBUG)System.out.println("ASNSyncReq:encode:*******************************");
+			if(_DEBUG)System.out.println("ASNSyncReq:encode:**********SHOULD HAVE HAD SIGNATURE!");
+			if(_DEBUG)System.out.println("ASNSyncReq:encode:*******************************");
+		}
+		enc.setASN1Type(getASN1TAG());
 		return enc;
 	}
 	private boolean versionAfter(String v1, String v2) {
@@ -1034,7 +1061,15 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 			return V1>V2;
 		}catch(Exception e){return false;}
 	}
-	private boolean versionAfter(String v1, int V2) {
+	/**
+	 * Tells if V1>V2
+	 * false for null V1
+	 * Always true for negative V2
+	 * @param v1
+	 * @param V2
+	 * @return
+	 */
+	public boolean versionAfter(String v1, int V2) {
 		if(v1==null) return false;
 		if(V2<0) return true;
 		try{
@@ -1066,7 +1101,17 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 			System.err.println("ASNSyncRequest:verifySignature: Faulty msg="+address);
 			System.err.println("ASNSyncRequest:verifySignature: Faulty address="+address);
 			System.err.println("ASNSyncRequest:verifySignature: Faulty address key="+pk);
-			return false;
+			if(0==Application.ask(_("Should we fix wrong signature for your peer address?")+"\n"+address.toSummaryString(),
+					_("Wrong Signature"), JOptionPane.YES_NO_OPTION)){
+				address.creation_date=Util.CalendargetInstance();
+				address.sign(Util.getStoredSK(this.address.globalID));
+				try {
+					address.storeVerified();
+				} catch (P2PDDSQLException e) {
+					e.printStackTrace();
+				}
+			}else
+				return false;
 		}
 		boolean result = verifySignature(pk);
 		if(!result) {

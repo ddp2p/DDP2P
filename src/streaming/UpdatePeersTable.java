@@ -240,7 +240,15 @@ public class UpdatePeersTable {
 	}
 	public static String getPeerAddresses(String peer_ID, String minDate, String maxDate) throws P2PDDSQLException {
 		String result = "";
-		String queryAddresses = "SELECT a."+table.peer_address.address+",a."+table.peer_address.type+",a."+table.peer_address.arrival_date+
+		final int Q_ADDR=0;
+		final int Q_TYPE=1;
+		final int Q_ARRIV=2;
+		final int Q_CERT=3;
+		final int Q_PRI=4;
+		String queryAddresses =
+				"SELECT a."+table.peer_address.address+",a."+table.peer_address.type+
+						",a."+table.peer_address.arrival_date+",a."+table.peer_address.certified+
+						",a."+table.peer_address.priority+
 			" FROM "+table.peer_address.TNAME+" AS a " +
 			" WHERE (a."+table.peer_address.peer_ID+" == ?) AND (a."+table.peer_address.arrival_date+" > ?)" +
 				((maxDate!=null)?(" AND (a."+table.peer_address.arrival_date+" <= ?) "):"") +
@@ -250,7 +258,9 @@ public class UpdatePeersTable {
 					((maxDate!=null)?(new String[]{peer_ID, minDate, maxDate}):new String[]{peer_ID, minDate}),
 					DEBUG);
 		for(ArrayList<Object> a: p_data) {
-			String addr = Util.getString(a.get(1)) + Address.ADDR_TYPE_SEP + Util.getString(a.get(0));
+			String addr = Util.getString(a.get(Q_TYPE)) + Address.ADDR_TYPE_SEP + Util.getString(a.get(Q_ADDR));
+			if(Util.stringInt2bool(a.get(Q_CERT), false))
+				addr += TypedAddress.PRI_SEP + Util.getString(a.get(Q_PRI));
 			if("".equals(result)) result = addr;
 			else result = Address.joinAddresses(result, addr);
 		}
@@ -259,13 +269,16 @@ public class UpdatePeersTable {
 	
 	public static String getPeerAddresses(String peer_ID) throws P2PDDSQLException {
 		String result = "";
-		String queryAddresses = "SELECT a."+table.peer_address.address+",a."+table.peer_address.type+",a."+table.peer_address.arrival_date+
+		String queryAddresses = "SELECT a."+table.peer_address.address+",a."+table.peer_address.type+
+				",a."+table.peer_address.arrival_date+",a."+table.peer_address.certified+",a."+table.peer_address.priority+
 			" FROM "+table.peer_address.TNAME+" AS a " +
 			" WHERE (a."+table.peer_address.peer_ID+" == ?) " +
 			" ORDER BY a."+table.peer_address.arrival_date+" LIMIT 1000;";
 		ArrayList<ArrayList<Object>>p_data = Application.db.select(queryAddresses, new String[]{peer_ID});
 		for(ArrayList<Object> a: p_data) {
 			String addr = Util.getString(a.get(1)) + Address.ADDR_TYPE_SEP + Util.getString(a.get(0));
+			if(Util.stringInt2bool(a.get(3), false))
+				addr += Address.ADDR_TYPE_SEP + Util.getString(a.get(4));
 			if("".equals(result)) result = addr;
 			else result = Address.joinAddresses(result, addr);
 		}
@@ -519,7 +532,8 @@ public class UpdatePeersTable {
 			//integratePeerOrgs(peer_data.served_orgs, peer_ID, adding_date);
 
 			
-			hds.TypedAddress[] typed_address = data.D_PeerAddress.getAddress(addresses);
+			if(DEBUG)out.println("UpdatePeersTable:integratePeersTable2: got addresses: "+addresses);
+			hds.TypedAddress[] typed_address = hds.TypedAddress.getAddress(addresses);
 			integratePeerAddresses(peer_ID, typed_address, adding__date);
 			if(filteredID!=null) return peer_data;
 			/*
@@ -544,8 +558,13 @@ public class UpdatePeersTable {
 	//public static String addressStringFromArray(hds.TypedAddress[] address) {return null;}
 	public static void integratePeerAddresses(long peer_ID, TypedAddress[] addresses_l, Calendar adding__date ) throws P2PDDSQLException{
 		if(DEBUG)out.println("UpdatePeersTable:integratePeersTable2: got addresses #: "+addresses_l.length);
+		if(addresses_l==null) return;
 		for(int j=0; j<addresses_l.length; j++) {
 			String adding_date = Encoder.getGeneralizedTime(Util.incCalendar(adding__date, 1));
+			if(addresses_l[j] == null){
+				if(_DEBUG)out.println("UpdatePeersTable:integratePeersTable2:#"+j+"/"+addresses_l.length+":got addr: "+addresses_l[j]);
+				continue;
+			}
 			if(DEBUG)out.println("got addr: "+addresses_l[j]);
 			//String[] t_address = addresses_l[j].split(Pattern.quote(Address.ADDR_TYPE_SEP));
 			//out.println("got addr: "+addresses_l[j]);
@@ -553,7 +572,8 @@ public class UpdatePeersTable {
 			String address = addresses_l[j].address;//null;
 			//if(t_address.length>1) address = t_address[1];
 			adding_date = Encoder.getGeneralizedTime(Util.incCalendar(adding__date, 1));
-			long address_ID = D_PeerAddress.get_peer_addresses_ID(address, type, peer_ID, adding_date);
+			long address_ID = D_PeerAddress.get_peer_addresses_ID(address, type, peer_ID, adding_date,
+					addresses_l[j].certified, addresses_l[j].priority);
 			if(DEBUG)out.println("UpdatePeersTable:integratePeersTable2: got local address_ID: "+address_ID);
 		}
 	}
@@ -566,9 +586,19 @@ public class UpdatePeersTable {
 			//out.println("got addr: "+addresses_l[j]);
 			String type = t_address[0];
 			String address = null;
-			if(t_address.length>1) address = t_address[1];
+			boolean certificate = false;
+			int priority = 0;
+			if(t_address.length>1){
+				String ta[] = t_address[1].split(Pattern.quote(TypedAddress.PRI_SEP),2);
+				address = ta[0];
+				if(ta.length>1) {
+					certificate = true;
+					priority = Util.get_int(ta[1]);
+				}
+			}
 			adding_date = Encoder.getGeneralizedTime(Util.incCalendar(adding__date, 1));
-			long address_ID = D_PeerAddress.get_peer_addresses_ID(address, type, peer_ID, adding_date);
+			long address_ID = D_PeerAddress.get_peer_addresses_ID(address, type, peer_ID, adding_date,
+					certificate, priority);
 			if(DEBUG)out.println("UpdatePeersTable:integratePeersTable2: got local address_ID: "+address_ID);
 		}
 	}

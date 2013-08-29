@@ -431,7 +431,8 @@ public class HandleService {
         } else{ 
         	if(ClientUpdates.DEBUG || DEBUG)System.out.println("localtime: "+d.LocalDate.getTime());
         	if(ClientUpdates.DEBUG || DEBUG)System.out.println("Caltime: "+d.CalculatedDate.getTime());
-        	if(d.ServerDate!=null)System.out.println("Servertime: "+d.ServerDate.getTime());
+        	if(ClientUpdates.DEBUG || DEBUG)
+        		if(d.ServerDate!=null)System.out.println("Servertime: "+d.ServerDate.getTime());
         }
         if(d.ServerDate!=null)  // server date set only with error
         	d.CalculatedDate = getUpdateDate(d.ServerDate, d.LocalDate);

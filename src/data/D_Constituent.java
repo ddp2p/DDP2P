@@ -129,7 +129,7 @@ HashExtern_D_Constituent ::= IMPLICIT [UNIVERSAL 48] SEQUENCE {
 */
 public class D_Constituent extends ASNObj implements Summary {
 	private static final boolean _DEBUG = true;
-	private static final boolean DEBUG = false;
+	private static boolean DEBUG = false;
 	public static final int EXPAND_NONE = 0;
 	public static final int EXPAND_ONE = 1;
 	public static final int EXPAND_ALL = 2;
@@ -377,6 +377,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		String signature;
 		if((submitter_id!=0)||(!wbc.external)){
 			_signature = wbc.sign(global_organization_id, submitter_GID);
+			if((_signature!=null)&&(_signature.length == 0)) _signature = null;
 			signature = Util.stringSignatureFromByte(_signature);
 		}else{
 			_signature=null;
@@ -737,7 +738,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		}
 		
 		if((this.global_submitter_id!=null)&&(submitter_ID == null)) {
-			submitter_ID = D_Constituent.getConstituentLocalID(global_submitter_id);
+			submitter_ID = D_Constituent.getConstituentLocalIDFromGID(global_submitter_id);
 			if(tempConst && (submitter_ID == null))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_submitter_id);
 				if(rq!=null)rq.cons.put(consGID_hash, DD.EMPTYDATE);
@@ -805,10 +806,10 @@ public class D_Constituent extends ASNObj implements Summary {
 		 */
 		
 		if((this.global_constituent_id!=null)&&(this.constituent_ID==null))
-			this.constituent_ID = this.getConstituentLocalID(global_constituent_id);
+			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_id);
+		if((this.global_constituent_id_hash!=null)&&(this.constituent_ID==null))
+			this.constituent_ID = D_Constituent.getConstituentLocalIDByGID_or_Hash(this.global_constituent_id_hash, null);
 		this._constituent_ID = Util.lval(constituent_ID, -1);
-		
-		
 		if(!verifySignature(orgGID)){
 			if(_DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData:Signature check failed using orgGID: "+orgGID);
 			if(_DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData:Signature check failed for "+this);
@@ -828,8 +829,24 @@ public class D_Constituent extends ASNObj implements Summary {
 	}
 	public long storeVerified(PreparedMessage pm, String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:storeVerified: start");
-		if((this.global_constituent_id!=null)&&(this.constituent_ID==null))
-			this.constituent_ID = this.getConstituentLocalID(global_constituent_id);
+
+		if(global_constituent_id_hash == null)
+			if(external){
+				global_constituent_id_hash = global_constituent_id;
+				if(_DEBUG) System.out.println("D_Constituent:storeVerified: ext hash="+global_constituent_id_hash);
+			}else{
+				global_constituent_id_hash = getGIDHashFromGID();
+				if(_DEBUG) System.out.println("D_Constituent:storeVerified: act hash="+global_constituent_id_hash);
+			}
+		
+		if((this.global_constituent_id!=null)&&(this.constituent_ID==null)){
+			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_id);
+			if(_DEBUG) System.out.println("D_Constituent:storeVerified: id(GID)="+constituent_ID);
+		}
+		if((this.global_constituent_id_hash!=null)&&(this.constituent_ID==null)){
+			this.constituent_ID = D_Constituent.getConstituentLocalIDByGID_or_Hash(this.global_constituent_id_hash, null);
+			if(_DEBUG) System.out.println("D_Constituent:storeVerified: id(hash)="+constituent_ID);
+		}
 		this._constituent_ID = Util.lval(constituent_ID, -1);
 		if((org_local_ID==null) && (orgGID!=null)) {
 			org_local_ID = D_Organization.getLocalOrgID_(orgGID);
@@ -838,7 +855,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		if(external) {
 			if(submitter_ID==null) {
 				if(global_submitter_id!=null) {
-					submitter_ID = D_Constituent.getConstituentLocalID(global_submitter_id);
+					submitter_ID = D_Constituent.getConstituentLocalIDFromGID(global_submitter_id);
 					if(submitter_ID == null) {
 						submitter_ID = Util.getStringID(D_Constituent.insertTemporaryConstituentGID(global_submitter_id, org_local_ID));
 					}
@@ -867,7 +884,12 @@ public class D_Constituent extends ASNObj implements Summary {
 		String[]date = new String[1];
 		boolean[]_old_revoked = new boolean[]{false};
 		String[]_old_sign = new String[]{null};
-		constituent_ID = D_Constituent.getConstituentLocalIDAndDateAndSignRevoked(this.global_constituent_id, date, _old_sign, _old_revoked);
+		String constituent_ID_2 = D_Constituent.getConstituentLocalIDAndDateAndSignRevoked(this.global_constituent_id,this.global_constituent_id_hash, date, _old_sign, _old_revoked);
+		if(constituent_ID==null) constituent_ID = constituent_ID_2;
+		else {
+			if(!constituent_ID.equals(constituent_ID_2))
+				Util.printCallPath("Why:"+constituent_ID+" vs "+constituent_ID_2);
+		}
 		if(_old_revoked[0]) return Util.lval(constituent_ID, -1);
 		String new_creation_date = Encoder.getGeneralizedTime(creation_date);
 		if( (date[0] != null) && (date[0].compareTo(new_creation_date)>=0)){
@@ -892,15 +914,7 @@ public class D_Constituent extends ASNObj implements Summary {
 				}
 			}
 		}
-		
-		//long _constituent_ID;
-		
-		if(global_constituent_id_hash == null)
-			if(external){
-				global_constituent_id_hash = global_constituent_id;
-			}else{
-				global_constituent_id_hash = getGIDHashFromGID();
-			}
+				
 		String[] fields = table.constituent._fields_constituents.split(Pattern.quote(","));
 		String[] params = new String[fields.length+((constituent_ID!=null)?1:0)];
 		//params[table.constituent.CONST_COL_ID] = ;
@@ -929,8 +943,19 @@ public class D_Constituent extends ASNObj implements Summary {
 		params[table.constituent.CONST_COL_BROADCASTED] = Util.bool2StringInt(broadcasted);
 		if(constituent_ID==null){
 			if(DEBUG) System.out.println("ConstituentHandling:storeVerified: insert!");
-			_constituent_ID=Application.db.insert(table.constituent.TNAME, fields, params, DEBUG);
-			constituent_ID = ""+_constituent_ID;
+			try{
+				_constituent_ID=Application.db.insert(table.constituent.TNAME, fields, params, DEBUG);
+			}catch(Exception e){
+				if(_DEBUG) System.out.println("D_Constituent:storeVerified: failed hash="+global_constituent_id_hash);
+				e.printStackTrace();
+				if((this.global_constituent_id_hash!=null)&&(this.constituent_ID==null)){
+					this.constituent_ID = D_Constituent.getConstituentLocalIDByGID_or_Hash(this.global_constituent_id_hash, null);
+					if(_DEBUG) System.out.println("D_Constituent:storeVerified: failed reget id=="+this.constituent_ID);
+				}
+				this._constituent_ID = Util.lval(this.constituent_ID, -1);
+			}
+			constituent_ID = Util.getStringID(_constituent_ID);
+			if(constituent_ID==null) return _constituent_ID;
 		}else {
 			if(DEBUG) System.out.println("ConstituentHandling:storeVerified: update!");
 			//params[table.constituent.CONST_COLs] = constituent_ID;
@@ -1011,6 +1036,7 @@ public class D_Constituent extends ASNObj implements Summary {
 	public void load(ArrayList<Object> alk, int _neighborhoods) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:load: neigh="+_neighborhoods);		
 		String _constituentID = Util.getString(alk.get(table.constituent.CONST_COL_ID));
+		constituent_ID = _constituentID; //Util.lval(_constituentID, -1);
 		version = Util.ival(alk.get(table.constituent.CONST_COL_VERSION), 0);
 		submitter_ID = Util.getString(alk.get(table.constituent.CONST_COL_SUBMITTER));
 		if(submitter_ID !=null)
@@ -1043,7 +1069,9 @@ public class D_Constituent extends ASNObj implements Summary {
 		//picture = strToBytes(Util.getString(alk.get(table.constituent.CONST_COL_PICTURE)));
 		picture = Util.byteSignatureFromString(Util.getString(alk.get(table.constituent.CONST_COL_PICTURE)));
 		hash_alg = Util.getString(alk.get(table.constituent.CONST_COL_HASH_ALG));
-		signature = Util.byteSignatureFromString(Util.getString(alk.get(table.constituent.CONST_COL_SIGNATURE)));
+		String _sgn = Util.getString(alk.get(table.constituent.CONST_COL_SIGNATURE));
+		if("".equals(_sgn)) _sgn = null;
+		signature = Util.byteSignatureFromString(_sgn);
 		//certificate = strToBytes(Util.getString(alk.get(table.constituent.CONST_COL_CERTIF)));
 		certificate = Util.byteSignatureFromString(Util.getString(alk.get(table.constituent.CONST_COL_CERTIF)));			
 		//c.hash = Util.hexToBytes(Util.getString(al.get(k).get(table.constituent.CONST_COL_HASH)).split(Pattern.quote(":")));
@@ -1057,44 +1085,54 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public static String getConstituentLocalID(String submitter_global_ID) throws P2PDDSQLException {
+	public static String getConstituentLocalIDFromGID(String global_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentLocalID: start");
 		String date[] = new String[1];
-		String result = getConstituentLocalIDAndDate(submitter_global_ID, date);
+		String result = getConstituentLocalIDAndDateFromGID(global_ID, date);
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentLocalID: result = "+result);
 		return result;
 	}
 	/**
 	 * Returns null on absence
-	 * @param submitter_global_ID
+	 * @param global_ID
 	 * @param date
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public static String getConstituentLocalIDAndDate(
-			String submitter_global_ID, String[] date) throws P2PDDSQLException {
+	public static String getConstituentLocalIDAndDateFromGID(
+			String global_ID, String[] date) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentLocalIDAndDate: start");
-		if(submitter_global_ID==null) return null;
+		if(global_ID==null) return null;
 		String sql = "SELECT "+table.constituent.constituent_ID+", "+table.constituent.creation_date+
 		" FROM "+table.constituent.TNAME+
 		" WHERE "+table.constituent.global_constituent_ID+"=?;";
-		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{submitter_global_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{global_ID}, DEBUG);
 		if(n.size()==0) return null;
 		date[0]=Util.getString(n.get(0).get(1));
 		String result = Util.getString(n.get(0).get(0));
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentLocalIDAndDate: got="+result);
 		return result;
 	}
+	/**
+	 * 
+	 * @param global_constituent_ID
+	 * @param global_constituent_id_hash2 
+	 * @param date
+	 * @param _old_sign
+	 * @param _old_revoked
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
 	private static String getConstituentLocalIDAndDateAndSignRevoked(
-			String submitter_global_ID, String[] date, String[] _old_sign, boolean[] _old_revoked) throws P2PDDSQLException {
+			String global_constituent_ID, String global_constituent_id_hash, String[] date, String[] _old_sign, boolean[] _old_revoked) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:getConstituentLocalIDAndDate: start");
-		if(submitter_global_ID==null) return null;
+		if((global_constituent_ID==null)&&(global_constituent_id_hash==null)) return null;
 		String sql = 
 				"SELECT "+table.constituent.constituent_ID+", "+table.constituent.creation_date+
 				", "+table.constituent.sign+", "+table.constituent.revoked+
 		" FROM "+table.constituent.TNAME+
-		" WHERE "+table.constituent.global_constituent_ID+"=?;";
-		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{submitter_global_ID}, DEBUG);
+		" WHERE "+table.constituent.global_constituent_ID+"=? OR "+table.constituent.global_constituent_ID_hash+"=?;";
+		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{global_constituent_ID, global_constituent_id_hash}, DEBUG);
 		if(n.size()==0) return null;
 		date[0]=Util.getString(n.get(0).get(1));
 		_old_sign[0]=Util.getString(n.get(0).get(2));
@@ -1123,10 +1161,17 @@ public class D_Constituent extends ASNObj implements Summary {
 	public static long insertTemporaryConstituentGID(String const_GID, String org_ID) throws P2PDDSQLException{
 		if(DEBUG)Util.printCallPath("temp why");
 		if(DEBUG) System.out.println("ConstituentHandling:insertTemporaryConstituentGID: start ");
-		return Application.db.insert(table.constituent.TNAME,
-				new String[]{table.constituent.global_constituent_ID, table.constituent.organization_ID},
-				new String[]{const_GID, org_ID},
-				DEBUG);
+		try{
+			return Application.db.insert(table.constituent.TNAME,
+					new String[]{table.constituent.global_constituent_ID, table.constituent.organization_ID},
+					new String[]{const_GID, org_ID},
+					DEBUG);
+		}catch(Exception e){
+			if(_DEBUG) System.out.println("ConstituentHandling:insertTemporaryConstituentGID: regot failed="+const_GID);
+			String id = D_Constituent.getConstituentLocalIDFromGID(const_GID);
+			if(_DEBUG) System.out.println("ConstituentHandling:insertTemporaryConstituentGID: regot id="+id);
+			return Util.lval(id, -1);
+		}
 	}
 	public static byte getASN1Type() {
 		return Encoder.buildASN1byteType(Encoder.CLASS_APPLICATION,
@@ -1246,12 +1291,37 @@ public class D_Constituent extends ASNObj implements Summary {
 		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{gID,gID}, DEBUG);
 		String result = null;
 		if(DEBUG) System.out.println("D_Constituent:available: "+gID+" in "+" = "+result);
-		existingSigned[0] = false;
+		if(existingSigned != null) existingSigned[0] = false;
 		if(a.size()==0) {return null;}
 		String signature = Util.getString(a.get(0).get(1));
-		if((signature!=null) && (signature.length()!=0)) existingSigned[0] = true;
+		if((signature!=null) && (signature.length()!=0) && (existingSigned!=null))
+			existingSigned[0] = true;
 		String id = Util.getString(a.get(0).get(0));
 		return id;
+	}
+	public static String getConstituentLocalIDByGID_or_Hash(
+			String gID, String GID_hash,
+			boolean existingSigned[]) throws P2PDDSQLException {
+		String sql = 
+				"SELECT "+table.constituent.constituent_ID+","+table.constituent.sign+
+				" FROM "+table.constituent.TNAME+
+				" WHERE "+
+				table.constituent.global_constituent_ID_hash+"=? OR "+
+				table.constituent.global_constituent_ID+"=?"+
+				";";
+				//" AND "+table.constituent.organization_ID+"=? "+
+				//" AND ( "+table.constituent.sign + " IS NOT NULL " +
+				//" OR "+table.constituent.blocked+" = '1');";
+			ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{GID_hash, gID}, DEBUG);
+			String result = null;
+			if(DEBUG) System.out.println("D_Constituent:available: "+gID+" in "+" = "+result);
+			if(existingSigned != null) existingSigned[0] = false;
+			if(a.size()==0) {return null;}
+			String signature = Util.getString(a.get(0).get(1));
+			if((signature!=null) && (signature.length()!=0) && (existingSigned!=null))
+				existingSigned[0] = true;
+			String id = Util.getString(a.get(0).get(0));
+			return id;
 	}
 	public static boolean toggleBlock(long constituentID) throws P2PDDSQLException {
 		String sql = 
@@ -1291,7 +1361,7 @@ public class D_Constituent extends ASNObj implements Summary {
 	 * Tests
 	 * @param args
 	 */
-	public static void main(String[] args) {
+	public static void _main(String[] args) {
 		try {
 			Application.db = new DBInterface(Application.DELIBERATION_FILE);
 			//if(args.length>0){readSignSave(2,1); if(true) return;}
@@ -1338,5 +1408,90 @@ public class D_Constituent extends ASNObj implements Summary {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}		
+	}
+
+	public static void main(String[] args) {
+		try {
+			if(args.length == 0) {
+				System.out.println("prog database id fix verbose");
+				return;
+			}
+			
+			String database = Application.DELIBERATION_FILE;
+			if(args.length>0) database = args[0];
+			
+			long id = 0;
+			if(args.length>1) id = Long.parseLong(args[1]);
+			
+			boolean fix = false;
+			if(args.length>2) fix = Util.stringInt2bool(args[2], false);
+			
+			//boolean verbose = false;
+			if(args.length>3) DEBUG = Util.stringInt2bool(args[3], false);
+			
+			
+			Application.db = new DBInterface(database);
+			
+			ArrayList<ArrayList<Object>> l;
+			D_Organization organization = null;
+			if(id<=0){
+				l = Application.db.select(
+						"SELECT "+table.constituent.constituent_ID+
+						" FROM "+table.constituent.TNAME, new String[]{}, DEBUG);
+				for(ArrayList<Object> a: l){
+					String m_ID = Util.getString(a.get(0));
+					long ID = Util.lval(m_ID, -1);
+					D_Constituent m = new D_Constituent(ID);
+					if(m.signature==null){
+						if(organization==null)organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						System.out.println("Fail:temporary "+m.constituent_ID+":"+m.surname+","+m.forename+" in "+m.organization_ID+":"+organization.name);
+
+						if(fix){
+							m.global_constituent_id_hash = m.getGIDHashFromGID();
+							m.storeVerified();
+							readSignSave(ID, Util.lval(m.submitter_ID, -1));
+						}
+						continue;
+					}
+					if(m.global_constituent_id_hash==null){
+						if(organization==null)organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						System.out.println("Fail:edited "+m.constituent_ID+":"+m.surname+","+m.forename+" in "+m.organization_ID+":"+organization.name);
+						continue;
+					}
+					if(!m.verifySignature(m.global_organization_ID)){
+						if(organization==null)organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						System.out.println("Fail: "+m.constituent_ID+":"+m.surname+","+m.forename+" in "+m.organization_ID+":"+organization.name);
+						if(fix){
+							m.global_constituent_id_hash = m.getGIDHashFromGID();
+							m.storeVerified();
+							readSignSave(ID, Util.lval(m.submitter_ID, -1));
+						}
+					}
+				}
+				return;
+			}else{
+				long ID = id;
+				D_Constituent m = new D_Constituent(ID);
+				if(fix)
+					if(!m.verifySignature(m.global_organization_ID)) {
+						if(organization==null)organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						m.global_constituent_id_hash = m.getGIDHashFromGID();
+						m.storeVerified();
+						System.out.println("Fixing: "+m.constituent_ID+":"+m.surname+","+m.forename+" in "+m.organization_ID+":"+organization.name);
+						readSignSave(ID, Util.lval(m.submitter_ID, -1));
+					}
+				else if(!m.verifySignature(m.global_organization_ID)){
+					if(organization==null)organization = new D_Organization(Util.lval(m.organization_ID, -1));
+					System.out.println("Fail: "+m.constituent_ID+":"+m.surname+","+m.forename+" in "+m.organization_ID+":"+organization.name);
+				}
+				return;
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		//catch (ASN1DecoderFail e) {e.printStackTrace();}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

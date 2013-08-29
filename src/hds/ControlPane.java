@@ -1381,9 +1381,9 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			else if ("signUpdates".equals(e.getActionCommand())) {
 				actionSignUpdates();
 			}else if ("export".equals(e.getActionCommand())) {
-				EmbedInMedia.actionExport(file_chooser_address_container, JFrameDropCatch.mframe);
+				actionExport(file_chooser_address_container, JFrameDropCatch.mframe);
 			}else if ("import".equals(e.getActionCommand())) {
-				EmbedInMedia.actionImport(ControlPane.file_chooser_address_container, JFrameDropCatch.mframe);
+				EmbedInMedia.actionImport(ControlPane.file_chooser_address_container, JFrameDropCatch.mframe, new DDAddress());
 			}else if ("natBorer".equals(e.getActionCommand())) {
 				String text = natBorer.getText();
 				try{Server.TIMEOUT_UDP_NAT_BORER = Integer.parseInt(text);}catch(Exception a){}
@@ -1396,6 +1396,18 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		} catch (UnknownHostException e3) {
 			e3.printStackTrace();
 		}
+	}
+	static void actionExport(JFileChooser fc, Component parent){
+		//boolean DEBUG = true;
+		DDAddress myAddress;
+		try {
+			myAddress = D_PeerAddress.getMyDDAddress();
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return;
+		}
+		DDAddress  x = new DDAddress();
+		EmbedInMedia.actionExport(fc, parent, myAddress, x);
 	}
 	@Override
 	public void itemStateChanged(ItemEvent e) {

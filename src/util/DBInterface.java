@@ -41,12 +41,39 @@ class Listener{
 		tables= _tables;
 	}
 }
+class DBWorkThread extends Thread{
+	private static final boolean _DEBUG = true;
+	private static final boolean DEBUG = false;
+	DBListener l;
+	ArrayList<String> tables;
+	Hashtable<String, DBInfo> info;
+	static private int cnt = 0;
+	DBWorkThread(DBListener l, ArrayList<String> tables, Hashtable<String, DBInfo> info){
+		this.l=l;
+		this.tables = tables;
+		this.info=info;
+		start();
+	}
+	public void run(){
+		cnt ++;
+		if(DBInterface.DEBUG) System.out.println("DBInterface:DBWorkThread:start cnt="+cnt+" tables="+Util.concat(tables, ":", "def") +" l="+l);
+		try{
+			if(DEBUG) System.out.println("DBInterface:Work:"+l);
+			l.update(tables, info);
+			if(DEBUG) System.out.println("DBInterface:Work:done:"+l);
+		}catch(RuntimeException e){
+			e.printStackTrace();
+		}
+		cnt--;
+		if(DBInterface.DEBUG) System.out.println("done cnt="+cnt+" tables="+Util.concat(tables, ":", "def")+" l="+l);
+	}
+}
 public class DBInterface implements DB_Implementation {
 	//ArrayList<Listener> listeners= new ArrayList<Listener>();
 	Hashtable <DBListener, ArrayList<String>>hash_listeners=new Hashtable<DBListener, ArrayList<String>>();
 	Hashtable<String,ArrayList<DBListener>> hash_tables=new Hashtable<String,ArrayList<DBListener>>();
 	static final int MAX_SELECT = 10000;
-	private static final boolean DEBUG = false;
+	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
     String filename = Application.DELIBERATION_FILE;
     File file = null;
@@ -87,25 +114,22 @@ public class DBInterface implements DB_Implementation {
     	}
     }
     private void fireTableUpdate(ArrayList<String> tables){
-    	if(DEBUG) System.out.println("FIRE UPDATE");
+    	if(DEBUG) System.out.println("DBInterface:fireTableUpdate: FIRE UPDATE");
     	HashSet<DBListener> list = new HashSet<DBListener>();
     	for(String table: tables){
+        	if(DEBUG) System.out.println("DBInterface:fireTableUpdate: FIRE UPDATE table="+table);
     		ArrayList<DBListener> al = hash_tables.get(table);
     		if(al!=null)list.addAll(al);
     	}
     	if(list.size()==0){
-    		if(DEBUG) System.out.println("FIRED UPDATE: Nobody Listens!");
+    		if(DEBUG) System.out.println("DBInterface:fireTableUpdate: FIRED UPDATE: Nobody Listens!");
     		return;
     	}
     	for (DBListener l : list) {
-    		try{
-    			l.update(tables, null);
-    		}catch(RuntimeException e){
-    			e.printStackTrace();
-    		}
-    		if(DEBUG) System.out.println("FIRED UPDATE to: "+l);
+    		new DBWorkThread(l,tables,null);
+    		if(DEBUG) System.out.println("DBInterface:fireTableUpdate: FIRED UPDATE to: "+l);
     	}
-    	if(DEBUG) System.out.println("FIRED UPDATE");
+    	if(DEBUG) System.out.println("DBInterface:fireTableUpdate: FIRED UPDATE");
    	
     }
     private void fireTableUpdate(String table){

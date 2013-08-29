@@ -24,6 +24,7 @@ import java.util.Calendar;
 
 import ASN1.ASN1DecoderFail;
 import ASN1.Decoder;
+import ASN1.Encoder;
 
 /**
  * class SyncAnswer is to be replaced with ASNSyncPayload
@@ -38,8 +39,13 @@ class SyncAnswer extends ASNSyncPayload{
 	public SyncAnswer(Calendar _upToDate, String globalID){
 		super(_upToDate, globalID);
 	}
+	@Override
 	public SyncAnswer decode(Decoder decoder) throws ASN1DecoderFail {
 		return (SyncAnswer)super.decode(decoder);
+	}
+	@Override
+	public Encoder getEncoder(){
+		return super.getEncoder();
 	}
 	public boolean hasConstituent(String gid, String creation_date) {
 		// TODO Auto-generated method stub

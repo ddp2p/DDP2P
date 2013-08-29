@@ -1257,8 +1257,15 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 					}
 				}
 				this.moti.global_motionID = this.moti.make_ID();
-				this.moti.sign();
+				//this.moti.sign();
 				long m_id = this.moti.storeVerified(DEBUG);
+				
+				D_Motion mot = new D_Motion(Util.lval(this.moti.motionID, -1));
+				this.moti.global_motionID = mot.global_motionID = mot.make_ID();
+				this.moti.signature = mot.signature = mot.sign();
+				m_id = mot.storeVerified(DEBUG);
+				D_Motion.readSignSave(Util.lval(mot.motionID, -1), Util.lval(mot.constituent_ID,-1));
+				this.moti = new D_Motion(m_id);
 				if(m_id<=0) return;
 				
 				if(vEditor.vote_newjust_field.isSelected()) {

@@ -68,7 +68,7 @@ public class Table extends ASNObj {
 		//for(int k=0; k<fieldTypes.length;k++) result+="\n  ["+k+"]"+fieldTypes[k];
 		result+="\n rows=";
 		for(int k=0; k<rows.length;k++) {
-			result += "\n  ["+k+"]="+Util.trimmedStrObj(rows[k][1])+" slogan="+Util.trimmedStrObj(rows[k][2])+" "+Util.trimmedStrObj(rows[k][3]);
+			result += "\n  ["+k+"]="+Util.trimmedStrObj(rows[k][1])+" slogan="+Util.trimmedStrObj(rows[k][2])+" addr="+Util.trimmedStrObj(rows[k][3]);
 			//result += printRow(rows[k]);
 		}
 		return result;

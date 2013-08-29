@@ -1,4 +1,4 @@
-INSERT INTO "application" VALUES('DD_DB_VERSION','1.0.4');
+INSERT INTO "application" VALUES('DD_DB_VERSION', '1.0.5');
 INSERT INTO "application" VALUES('listing_directories','163.118.78.44:25123,163.118.78.40:25123');
 
 INSERT INTO "updates" ("updates_ID",

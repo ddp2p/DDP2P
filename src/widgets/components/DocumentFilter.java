@@ -12,7 +12,7 @@ public
 class DocumentFilter extends FileFilter {
 	public boolean accept(File f) {
 	    if (f.isDirectory()) {
-	    	return false;
+	    	return true;//false;
 	    }
 
 	    String extension = Util.getExtension(f);

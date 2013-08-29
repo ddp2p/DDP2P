@@ -66,7 +66,11 @@ public class Win_wlan_info {
 				new String[]{Application.CURRENT_SCRIPTS_BASE_DIR() + Application.SCRIPT_WINDOWS_WIRELESS_DETECT_SSID,
 				DD.ADHOC_DD_IP_WINDOWS_NETSH_INTERFACE_IDENTIFIER,
 				DD.ADHOC_DD_IP_WINDOWS_NETSH_SSID_IDENTIFIER};
+		// To avoid annoying errors when running on a desktop with no wireless
+		boolean old_err = DD.SCRIPTS_ERRORS_WARNING;
+		DD.SCRIPTS_ERRORS_WARNING = false;
 		BufferedReader bri = Util.getProcessOutput(wireless_SSID_script);
+		DD.SCRIPTS_ERRORS_WARNING = old_err;
 		if(bri!=null){
 			while ((line = bri.readLine()) != null) {
 				if(line.length()!=0)

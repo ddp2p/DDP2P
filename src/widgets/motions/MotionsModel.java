@@ -36,6 +36,7 @@ import util.P2PDDSQLException;
 import config.Application;
 import config.Identity;
 import data.D_Constituent;
+import data.D_Document;
 import data.D_Document_Title;
 import data.D_Justification;
 import data.D_Motion;
@@ -176,18 +177,30 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 					" WHERE o."+table.motion.motion_ID+"= ? LIMIT 1;";
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql, new String[]{motID});
-				if(orgs.size()>0)
-					if(orgs.get(0).get(1)!=null){
-						result = orgs.get(0).get(1);
+				if(orgs.size()>0){
+					ArrayList<Object> o = orgs.get(0);
+					if(o.get(1)!=null){
+						String s = Util.getString(o.get(1));
+						if(s!=null){
+							s=s.trim();
+							if(s.startsWith(D_Document_Title.TD)){
+								D_Document_Title dt = new D_Document_Title();
+								dt.decode(s);
+								result = dt;
+							}else{
+								result = s;
+							}
+						}
 						if(DEBUG)System.out.println("Motions:Got my="+result);
 					}
 					else{
 						D_Document_Title dt = new D_Document_Title();
-						dt.title_document.setFormatString(Util.getString(orgs.get(0).get(2)));
-						dt.title_document.setDocumentString(Util.getString(orgs.get(0).get(0)));
+						dt.title_document.setFormatString(Util.getString(o.get(2)));
+						dt.title_document.setDocumentString(Util.getString(o.get(0)));
 						result = dt;
 						if(DEBUG)System.out.println("Motions:Got my="+result);
 					}
+				}
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
@@ -240,7 +253,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			String sql_co = "SELECT count(*) FROM "+table.signature.TNAME+
 			" WHERE "+table.signature.motion_ID+" = ? AND "+table.signature.choice+" = ?;";
 			try {
-				ArrayList<ArrayList<Object>> orgs = db.select(sql_co, new String[]{motID, "y"});
+				ArrayList<ArrayList<Object>> orgs = db.select(sql_co, new String[]{motID, D_Vote.DEFAULT_YES_COUNTED_LABEL});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
@@ -445,6 +458,14 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	public void setValueAt(Object value, int row, int col) {
 		switch(col) {
 		case TABLE_COL_NAME:
+			if(value instanceof D_Document_Title){
+				D_Document_Title _value = (D_Document_Title) value;
+				if(_value.title_document!=null)  {
+					String format  = _value.title_document.getFormatString();
+					if((format==null) || D_Document.TXT_FORMAT.equals(format))
+						value = _value.title_document.getDocumentUTFString();
+				}
+			}
 			set_my_data(table.my_motion_data.name, Util.getString(value), row);
 			break;
 		case TABLE_COL_CREATOR:
@@ -463,8 +484,8 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		String motion_ID = Util.getString(_motions[row]);
 		try {
 			String sql = "SELECT "+field_name+" FROM "+table.my_motion_data.TNAME+" WHERE "+table.my_motion_data.motion_ID+"=?;";
-			ArrayList<ArrayList<Object>> orgs = db.select(sql,new String[]{motion_ID});
-			if(orgs.size()>0){
+			ArrayList<ArrayList<Object>> mots = db.select(sql,new String[]{motion_ID});
+			if(mots.size()>0){
 				db.update(table.my_motion_data.TNAME, new String[]{field_name},
 						new String[]{table.my_motion_data.motion_ID}, new String[]{value, motion_ID});
 			}else{

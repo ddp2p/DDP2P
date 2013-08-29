@@ -502,7 +502,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		}
 		
 		if((this.submitter_global_ID!=null) && (submitter_ID == null)) {
-			submitter_ID = D_Constituent.getConstituentLocalID(submitter_global_ID);
+			submitter_ID = D_Constituent.getConstituentLocalIDFromGID(submitter_global_ID);
 			if(tempConst && (submitter_ID == null))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(submitter_global_ID);
 				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
@@ -675,19 +675,20 @@ class D_Neighborhood extends ASNObj implements Summary{
 		if(DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: start on "+wn);
 		if(DEBUG) System.out.println("NeighborhoodHandling:integrateNewVerifiedNeighborhoodData: org_ID="+org_local_ID+" orgGID="+orgGID+" arrival="+arrival_time);
 		if(wn == null) {
-			if(_DEBUG) System.out.println("NeighborhoodHandling:integrateNewVerifiedNeighborhoodData: sexit "+wn);
+			if(_DEBUG) System.out.println("NeighborhoodHandling:integrateNewVerifiedNeighborhoodData: wn exit "+wn);
 			return null;
 		}
 		String pID, cID;
 		if(wn.parent!=null) pID=integrateNewNeighborhoodData(wn.parent, orgGID, org_local_ID, arrival_time, orgData);
 		if(wn.submitter!=null) cID=ConstituentHandling.integrateNewConstituentData(wn.submitter, orgGID, org_local_ID, arrival_time, orgData);
 
-		if((org_local_ID==null)&&(orgGID!=null)) 
+		if((org_local_ID==null)&&(orgGID!=null)) {
 			org_local_ID = Util.getStringID(D_Organization.getLocalOrgID(orgGID));
-		
+			if(_DEBUG) System.out.println("NeighborhoodHandling:integrateNewVerifiedNeighborhoodData: org_id ="+org_local_ID);
+		}
 		String submit_ID = null;
 		if(wn.submitter_ID != null) submit_ID = wn.submitter_ID;
-		else submit_ID = D_Constituent.getConstituentLocalID(wn.submitter_global_ID);
+		else submit_ID = D_Constituent.getConstituentLocalIDFromGID(wn.submitter_global_ID);
 		if(submit_ID==null)
 			submit_ID = Util.getStringID(D_Constituent.insertTemporaryConstituentGID(wn.submitter_global_ID, org_local_ID));
 		wn.submitter_ID = submit_ID;
@@ -706,6 +707,11 @@ class D_Neighborhood extends ASNObj implements Summary{
 			else{if((wn.neighborhoodID!=null)&&!id.equals(wn.neighborhoodID))Util.printCallPath("D_Neighborhood: Disagreement: id="+id+" vs old="+wn.neighborhoodID);}
 		}else
 			id=wn.neighborhoodID;
+		if(id==null){
+			id = D_Neighborhood.getLocalID(wn.global_neighborhood_ID);
+			if(id!=null)
+				if(_DEBUG)System.out.println("D_Neighborhood:integrateNewVerifNeigh: prereget id(GID)="+id);
+		}
 		// obviously GID is set by now, but may not have been saved for just edited neighborhoods. The we use the known ID for them
 		//if((wn.global_neighborhood_ID!=null)||(id==null)) id = wn.neighborhoodID;
 		wn.neighborhoodID = id;
@@ -736,7 +742,16 @@ class D_Neighborhood extends ASNObj implements Summary{
 		params[table.neighborhood.IDX_BROADCASTED] = Util.bool2StringInt(wn.broadcasted);
 		if(id==null){
 			if(DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: insert");
-			result = Util.getStringID(Application.db.insert(table.neighborhood.TNAME, fields, params, DEBUG));
+			long _neig_local_ID = -1;
+			try{
+				_neig_local_ID = Application.db.insert(table.neighborhood.TNAME, fields, params, DEBUG);
+			}catch(Exception e){
+				if(_DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: insert fail: "+wn.global_neighborhood_ID);
+				id = D_Neighborhood.getLocalID(wn.global_neighborhood_ID);
+				if(_DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: insert reget: "+id);
+				_neig_local_ID = Util.lval(id, -1);
+			}
+			result = Util.getStringID(_neig_local_ID);
 		}else{
 			if(DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: update");
 			if((date[0]==null)||(date[0].compareTo(params[table.neighborhood.IDX_CREATION_DATE])<0)){
@@ -758,13 +773,13 @@ class D_Neighborhood extends ASNObj implements Summary{
 		String date[]= new String[1];
 		return getNeighborhoodLocalIDAndDate(parent_global_ID, date);
 	}
-	public static String getNeighborhoodLocalIDAndDate(String parent_global_ID, String[] date) throws P2PDDSQLException {
+	public static String getNeighborhoodLocalIDAndDate(String global_ID, String[] date) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("NeighborhoodHandling:getNeighborhoodLocalIDAndDate: exit");		
-		if(parent_global_ID==null) return null;
+		if(global_ID==null) return null;
 		String sql = "SELECT "+table.neighborhood.neighborhood_ID+", "+table.neighborhood.creation_date+
 		" FROM "+table.neighborhood.TNAME+
 		" WHERE "+table.neighborhood.global_neighborhood_ID+"=?;";
-		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{parent_global_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{global_ID}, DEBUG);
 		if(n.size()==0) return null;
 		date[0] = Util.getString(n.get(0).get(1));
 		return Util.getString(n.get(0).get(0));

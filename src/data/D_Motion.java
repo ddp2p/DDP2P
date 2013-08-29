@@ -62,7 +62,7 @@ D_MOTION ::= SEQUENCE {
 
 public class D_Motion extends ASNObj implements util.Summary{
 	private static final String V0 = "V0";
-	private static final boolean DEBUG = false;
+	private static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final int DEFAULT_STATUS = 0;
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
@@ -334,6 +334,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("D_Motion:sign: this="+this+"\nsk="+sk);
 		signature = Util.sign(this.getSignableEncoder().getBytes(), sk);
+		if((signature!=null)&&(signature.length == 0)) signature = null;
 		if(DEBUG) System.out.println("D_Motion:sign:got this="+Util.byteToHexDump(signature));
 		return signature;
 	}
@@ -357,7 +358,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 		String newGID = make_ID();
 		if(!newGID.equals(this.global_motionID)) {
 			Util.printCallPath("D_Motion: WRONG EXTERNAL GID");
-			if(DEBUG) System.out.println("D_Motion:verifySignature: WRONG HASH GID="+this.global_motionID+" vs="+newGID);
+			if(_DEBUG) System.out.println("D_Motion:verifySignature: WRONG HASH GID="+this.global_motionID+" vs="+newGID);
 			if(DEBUG) System.out.println("D_Motion:verifySignature: WRONG HASH GID result="+false);
 			System.err.println("D_Motion: "+this.toString());
 			return false;
@@ -405,7 +406,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 			}
 			
 			if((this.constituent_ID == null ) && (this.global_constituent_ID != null))
-				this.constituent_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+				this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(this.global_constituent_ID);
 			if((this.constituent_ID == null ) && (this.global_constituent_ID != null)) {
 				constituent_ID =
 					""+D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID);
@@ -475,7 +476,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 		}
 			
 		if((this.global_constituent_ID!=null)&&(constituent_ID == null)){
-			this.constituent_ID = D_Constituent.getConstituentLocalID(global_constituent_ID);
+			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID);
 			if(tempConst && (constituent_ID == null ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
 				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
@@ -513,7 +514,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("D_Motion:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		if(this.constituent_ID == null )
-			constituent_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+			constituent_ID = D_Constituent.getConstituentLocalIDFromGID(this.global_constituent_ID);
 		if(constituent_ID == null){
 			if(DEBUG) System.out.println("D_Motion:storeVerified: no signer!");
 			return -1;
@@ -640,30 +641,6 @@ public class D_Motion extends ASNObj implements util.Summary{
 		return result;
 	}
 
-	public static void main(String[] args) {
-		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-			if(args.length>0){readSignSave(3,1); if(true) return;}
-			
-			D_Motion c=new D_Motion(3);
-			if(!c.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread="+c);
-			else System.out.println("\n************Signature Pass\n**********\nread="+c);
-			Decoder dec = new Decoder(c.getEncoder().getBytes());
-			D_Motion d = new D_Motion().decode(dec);
-			Calendar arrival_date = d.arrival_date=Util.CalendargetInstance();
-			//if(d.global_organization_ID==null) d.global_organization_ID = OrgHandling.getGlobalOrgID(d.organization_ID);
-			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
-			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
-			d.global_motionID = d.make_ID();
-			d.storeVerified(arrival_date);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		} catch (ASN1DecoderFail e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 	public static byte getASN1Type() {
 		return TAG;
 	}
@@ -680,8 +657,10 @@ public class D_Motion extends ASNObj implements util.Summary{
 			if(DEBUG) out.println("D_Motion:editable: no GID");
 			return true;
 		}
+		
 		if(!verifySignature()) {
 			if(_DEBUG) out.println("D_Motion:editable: no verifiable signature");
+			this.global_motionID = make_ID();
 			signature = null;
 			try {
 				storeVerified();
@@ -690,6 +669,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 			}
 			return true;			
 		}
+		
 		return false;
 	}
 	public String getDefaultChoice() {
@@ -709,4 +689,103 @@ public class D_Motion extends ASNObj implements util.Summary{
 		this.creation_date = this.arrival_date = Util.CalendargetInstance();
 		this.requested = this.blocked = this.broadcasted = false;		
 	}
+	/**
+	 * Called as:
+	 * database id fix verbose
+	 * id: 0 - traverse all
+	 * 
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		try {
+			if(args.length == 0) {
+				System.out.println("prog database id fix verbose");
+				return;
+			}
+			
+			String database = Application.DELIBERATION_FILE;
+			if(args.length>0) database = args[0];
+			
+			long id = 0;
+			if(args.length>1) id = Long.parseLong(args[1]);
+			
+			boolean fix = false;
+			if(args.length>2) fix = Util.stringInt2bool(args[2], false);
+			
+			//boolean verbose = false;
+			if(args.length>3) DEBUG = Util.stringInt2bool(args[3], false);
+			
+			
+			Application.db = new DBInterface(database);
+			
+			ArrayList<ArrayList<Object>> l;
+			if(id<=0){
+				l = Application.db.select(
+						"SELECT "+table.motion.motion_ID+
+						" FROM "+table.motion.TNAME, new String[]{}, DEBUG);
+				for(ArrayList<Object> a: l){
+					String m_ID = Util.getString(a.get(0));
+					long ID = Util.lval(m_ID, -1);
+					D_Motion m = new D_Motion(ID);
+					if(m.signature==null){
+						if(m.organization==null)m.organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						System.out.println("Fail:temporary "+m.motionID+":"+m.motion_title+" in "+m.organization_ID+":"+m.organization.name);
+						continue;
+					}
+					if(m.global_motionID==null){
+						if(m.organization==null)m.organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						System.out.println("Fail:edited "+m.motionID+":"+m.motion_title+" in "+m.organization_ID+":"+m.organization.name);
+						continue;
+					}
+					if(!m.verifySignature()){
+						if(m.organization==null)m.organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						System.out.println("Fail: "+m.motionID+":"+m.motion_title+" in "+m.organization_ID+":"+m.organization.name);
+						if(fix){
+							m.global_motionID = m.make_ID();
+							m.storeVerified();
+							readSignSave(ID, Util.lval(m.constituent_ID, -1));
+						}
+					}
+				}
+				return;
+			}else{
+				long ID = id;
+				D_Motion m = new D_Motion(ID);
+				if(fix)
+					if(!m.verifySignature()) {
+						m.global_motionID = m.make_ID();
+						m.storeVerified();
+						System.out.println("Fixing: "+m.motionID+":"+m.motion_title+" in "+m.organization_ID+":"+m.organization.name);
+						readSignSave(ID, Util.lval(m.constituent_ID, -1));
+					}
+				else if(!m.verifySignature())
+					System.out.println("Fail: "+m.motionID+":"+m.motion_title+" in "+m.organization_ID+":"+m.organization.name);
+				return;
+			}
+			
+			/*
+			if(args.length>0){readSignSave(3,1); if(true) return;}
+			
+			D_Motion c=new D_Motion(3);
+			if(!c.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread="+c);
+			else System.out.println("\n************Signature Pass\n**********\nread="+c);
+			Decoder dec = new Decoder(c.getEncoder().getBytes());
+			D_Motion d = new D_Motion().decode(dec);
+			Calendar arrival_date = d.arrival_date=Util.CalendargetInstance();
+			//if(d.global_organization_ID==null) d.global_organization_ID = OrgHandling.getGlobalOrgID(d.organization_ID);
+			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
+			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
+			d.global_motionID = d.make_ID();
+			d.storeVerified(arrival_date);
+			
+			*/
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		//catch (ASN1DecoderFail e) {e.printStackTrace();}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 }

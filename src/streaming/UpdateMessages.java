@@ -87,7 +87,10 @@ public class UpdateMessages {
 		}else{
 			//if(asr.address!=null) peer_GID = asr.address.globalID;
 		}
-		
+		if(asr.address!=null){
+			asr.address.peer_ID = peerID;
+			asr.address._peer_ID = Util.get_long(peerID);
+		}
 		// solved in record peer address
 		//if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("UpdateMessages: buildAnswer: recording plugins for pID="+peerID+" gID="+Util.trimmed(peer_GID));
 		//D_PluginInfo.recordPluginInfo(asr.plugin_info, peer_GID, peerID);
@@ -121,6 +124,7 @@ public class UpdateMessages {
 	}
 	public static SyncAnswer buildAnswer(ASNSyncRequest asr, String[] _maxDate, boolean justDate, HashSet<String> orgs) throws P2PDDSQLException {
 		// boolean DEBUG = true;
+		if(_DEBUG) System.out.println("UpdateMessages:buildAnswers: orgs start="+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
 		String maxDate =_maxDate[0];
 		if(!justDate && (maxDate==null) && (orgs.size()==0)) {
 			if(DEBUG) out.println("UpdateMessages:buildAnswer: START-EXIT Nothing new to send!");
@@ -143,6 +147,7 @@ public class UpdateMessages {
 			if(table.peer.G_TNAME.equals(asr.tableNames[k])){
 				if(DEBUG) out.println("UpdateMessages:buildAnswer: peers table from date: "+_maxDate[0]);
 				Table recentPeers=UpdatePeersTable.buildPeersTable(last_sync_date, _maxDate, justDate, orgs, LIMIT_PEERS_LOW, LIMIT_PEERS_MAX);
+				if(_DEBUG) System.out.println("UpdateMessages:buildAnswers: orgs after peers="+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
 				if(DEBUG) out.println("UpdateMessages:buildAnswer: got peers #"+recentPeers);
 				if(justDate){ if(DEBUG) out.println("UpdateMessages:buildAnswer: Date after peers: "+_maxDate[0]); continue;}
 				if(recentPeers.rows.length > 0) tableslist.add(recentPeers);
@@ -151,6 +156,7 @@ public class UpdateMessages {
 				if(DEBUG) out.println("UpdateMessages:buildAnswer: non peers table from date: "+_maxDate[0]);
 				if(table.news.G_TNAME.equals(asr.tableNames[k])){
 					if(DEBUG) out.println("UpdateMessages:buildAnswer: news table from date: "+_maxDate[0]);
+					if(_DEBUG) System.out.println("UpdateMessages:buildAnswers: orgs after news="+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
 					Table recentNews = UpdateNewsTable.buildNewsTable(last_sync_date, _maxDate, justDate, orgs, LIMIT_NEWS_LOW, LIMIT_NEWS_MAX);
 					if(justDate) {if(DEBUG) out.println("UpdateMessages:buildAnswer: Date after news: "+_maxDate[0]); continue;}
 					if(recentNews.rows.length > 0) tableslist.add(recentNews);							
@@ -389,7 +395,8 @@ public class UpdateMessages {
 					new String[]{crtDate, address_ID});
 		}else {
 			ArrayList<ArrayList<Object>> p_data=
-				Application.db.select("SELECT "+table.peer_address.address+", "+table.peer_address.peer_address_ID+" from "+table.peer_address.TNAME+
+				Application.db.select(
+						"SELECT "+table.peer_address.address+", "+table.peer_address.peer_address_ID+" from "+table.peer_address.TNAME+
 						" WHERE "+table.peer_address.peer_ID+" = ? AND "+table.peer_address.type+" = 'Socket'",
 						new String[]{_peer_ID});
 			for(ArrayList<Object> p: p_data) {
@@ -515,6 +522,9 @@ public class UpdateMessages {
 	 * @param obtained
 	 * @throws P2PDDSQLException
 	 */
+	/*
+	 * Deprecated since RequestData no longer used for this data structure 
+	@Deprecated
 	private static void purge(HashSet<String> orgs, RequestData obtained) throws P2PDDSQLException {
 		if(obtained==null) return;
 		if(obtained.empty()) return;
@@ -525,10 +535,12 @@ public class UpdateMessages {
 			rq.save(orgID);
 		}
 	}
+	@Deprecated
 	private static RequestData getOldDataRequest(D_Organization orgData) throws P2PDDSQLException {
 		long orgID = D_Organization.getLocalOrgID(orgData.global_organization_ID);
 		return new RequestData(orgID);
 	}
+	*/
 	private static void updateDataToRequest(D_Organization orgData, RequestData rq) throws P2PDDSQLException {
 		long orgID = D_Organization.getLocalOrgID(orgData.global_organization_ID);
 		rq.save(orgID);

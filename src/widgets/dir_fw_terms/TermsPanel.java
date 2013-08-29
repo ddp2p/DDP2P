@@ -384,7 +384,7 @@ public class TermsPanel extends JPanel implements  ActionListener, PeerListener{
 		termsTableScroll.addMouseListener(termsTable);
     }
     public void queryDir(){
-		if(_DEBUG) System.out.println("TermsPanel:queryDir:start");
+		if(DEBUG) System.out.println("TermsPanel:queryDir:start");
     	String sql = "SELECT "+peer_address.address+
     				" FROM  "+peer_address.TNAME+
     				" WHERE "+peer_address.peer_ID+" = ? "+
@@ -425,7 +425,7 @@ public class TermsPanel extends JPanel implements  ActionListener, PeerListener{
 		this.cascadeDtm.setSelected(false);			
 		this.cascadePtm.setSelected(false);
 		restoreListeners();
-		if(_DEBUG) System.out.println("TermsPanel:queryDir:done");
+		if(DEBUG) System.out.println("TermsPanel:queryDir:done");
     }
     public void setPeerID(long _peer_ID){
     	if(this.peerID == _peer_ID) return;
@@ -433,7 +433,7 @@ public class TermsPanel extends JPanel implements  ActionListener, PeerListener{
     	termsTable.getModel().setPeerID(_peer_ID);
     	queryDir();	
     	termsTable.getModel().setDirAddr(dirAddr);
-		if(_DEBUG) System.out.println("TermsPanel:setPeerID:call update");
+		if(DEBUG) System.out.println("TermsPanel:setPeerID:call update");
     	termsTable.getModel().update(null,null);
     	termsTable.setModel(termsTable.getModel());
     	termsTable.repaint();
@@ -480,7 +480,7 @@ public class TermsPanel extends JPanel implements  ActionListener, PeerListener{
 		}*/
 	public void setGeneralGlobal() {
 		this.cascadeBtm.setSelected(true);
-		if(_DEBUG) System.out.println("TermsPanel:setGeneralGlobal:Link to global");
+		if(DEBUG) System.out.println("TermsPanel:setGeneralGlobal:Link to global");
 	}
 	public void setGeneralDirectory() {
 		this.cascadeDtm.setSelected(true);

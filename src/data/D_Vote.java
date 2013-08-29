@@ -66,6 +66,8 @@ class D_Vote extends ASNObj{
 	private static final boolean _DEBUG = true;
 	private static final String V0 = "0";
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
+	// the value stored in choice for the vote counted as "yes"
+	public static final String DEFAULT_YES_COUNTED_LABEL = "0";
 	public String hash_alg = V0;
 	public String global_vote_ID; //Printable
 	public String global_constituent_ID; //Printable
@@ -452,7 +454,7 @@ class D_Vote extends ASNObj{
 		}
 		
 		if((this.constituent_ID == null ) && (this.global_constituent_ID != null))
-			this.constituent_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(this.global_constituent_ID);
 		if((this.constituent_ID == null ) && (this.global_constituent_ID != null)) {
 			constituent_ID =
 				Util.getStringID(D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID));
@@ -541,7 +543,7 @@ class D_Vote extends ASNObj{
 		}
 		
 		if((this.global_constituent_ID!=null)&&(constituent_ID == null)){
-			this.constituent_ID = D_Constituent.getConstituentLocalID(global_constituent_ID);
+			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID);
 			if(tempConst && (constituent_ID == null ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
 				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
@@ -597,7 +599,7 @@ class D_Vote extends ASNObj{
 		long result = -1;
 		if(DEBUG) System.out.println("WB_Vote:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		if(this.constituent_ID == null )
-			constituent_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+			constituent_ID = D_Constituent.getConstituentLocalIDFromGID(this.global_constituent_ID);
 		if(constituent_ID == null){
 			if(DEBUG) System.out.println("WB_Vote:storeVerified: no signer!");
 			return -1;

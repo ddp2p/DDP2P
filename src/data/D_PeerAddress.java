@@ -35,10 +35,14 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.Hashtable;
 import java.util.regex.Pattern;
 
 import javax.swing.JOptionPane;
+
+import ciphersuits.PK;
 
 import util.P2PDDSQLException;
 
@@ -63,11 +67,15 @@ public class D_PeerAddress extends ASNObj {
 	public static boolean DEBUG = false;
 	//private static final boolean encode_addresses = false;
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
-	public String version=DDAddress.V1;
+	public String version=DDAddress.V2;
+	private static final String DEFAULT_VERSION = DDAddress.V2;
+	private static final boolean old_addresses_code = false; // for old implementation of addresses
 	public String globalID;  //PrintableString
+	public String instance;  // not part of database entry, not signed, but encoded/decoded
 	public String name; //UTF8 OPT
 	public String slogan; //UTF8 OPT [APT 0]
 	public TypedAddress[] address=null; // OPT // should be null when signing
+	public TypedAddress[] address_orig=null; // OPT // should be null when signing
 	public boolean broadcastable;
 	public String[] signature_alg = hds.SR.HASH_ALG_V1; // of PrintStr OPT
 	public String hash_alg = D_PeerAddress.getStringFromHashAlg(hds.SR.HASH_ALG_V1);
@@ -78,6 +86,7 @@ public class D_PeerAddress extends ASNObj {
 	public String peer_ID;
 	public String globalIDhash;
 	public Calendar arrival_date;
+	public Calendar preferences_date; // TODO:
 	public String plugins_msg;
 	public String plugin_info;
 	// on addition of local fields do not forget to update them in setLocals()
@@ -92,6 +101,9 @@ public class D_PeerAddress extends ASNObj {
 	public String experience;
 	public String exp_avg;
 	public long _peer_ID = -1;
+	public String emails;
+	public String phones;
+	public Hashtable<String,D_PeerInstance> instances = null;  
 
 	static final Object monitor_init_myself = new Object();
 	private static D_PeerAddress _myself = null;
@@ -100,6 +112,11 @@ public class D_PeerAddress extends ASNObj {
 			_myself = new D_PeerAddress(gid);
 		}
 	}
+	/**
+	 * Reload myself (if previously loaded)
+	 * If previously unloaded, leave it alone!
+	 * @throws P2PDDSQLException
+	 */
 	public static void re_init_myself() throws P2PDDSQLException {
 		synchronized(monitor_init_myself) {
 			if(_myself==null) return; // Why?
@@ -115,26 +132,55 @@ public class D_PeerAddress extends ASNObj {
 	public static D_PeerAddress get_myself(String gid) throws P2PDDSQLException{
 		synchronized(monitor_init_myself) {
 			if(gid == null) return _myself;
-			if((_myself!=null) && (gid.equals(_myself))) return _myself;
+			if((_myself!=null) && (gid.equals(_myself.globalID))) return _myself;
 			_myself = new D_PeerAddress(gid);
 			return _myself;
 		}		
 	}
-
-	public D_PeerAddress(D_PeerAddress pa) {
-		globalID = pa.globalID; //Printable
-		name = pa.name; //UTF8
-		slogan = pa.slogan; //UTF8
-		address = pa.address; //UTF8
-		creation_date = pa.creation_date;
-		signature = pa.signature; //OCT STR
-		//global_peer_ID_hash =Util.getGIDhash(pa.globalID);
-		broadcastable = pa.broadcastable;
-		signature_alg = pa.signature_alg;
-		version = pa.version;
-		picture = pa.picture;
-		served_orgs = pa.served_orgs; //OPT
-		//type = pa.type;
+	/**
+	 * Used to create myself
+	 * @param id
+	 * @param _creation_date
+	 * @param creation_date2
+	 * @return
+	 * @throws P2PDDSQLException 
+	 */
+	public static D_PeerAddress get_or_create_myself(Identity id,
+			Calendar _creation_date, String creation_date2) throws P2PDDSQLException {
+		D_PeerAddress me = get_myself(id.globalID);
+		if(me.peer_ID == null) { // I did not exist (with this globID)
+			if(Server.DEBUG) out.println("Server:update_insert_peer_myself: required new peer");
+			
+			me.globalID = id.globalID; //Identity.current_peer_ID.globalID;
+			me.name = id.name; //Identity.current_peer_ID.name;
+			me.slogan = id.slogan; //Identity.current_peer_ID.slogan;
+			me.creation_date = _creation_date;//Util.CalendargetInstance();
+			me.signature_alg = SR.HASH_ALG_V1;
+			me.broadcastable = DD.DEFAULT_BROADCASTABLE_PEER_MYSELF;//Identity.getAmIBroadcastable();
+			
+			String picture = Identity.getMyCurrentPictureStr();
+			me.picture = Util.byteSignatureFromString(picture);
+			
+//			byte[] signature = me.sign(DD.getMyPeerSK());//Util.sign_peer(pa);
+//			if(Server.DEBUG) {
+//				if(!me.verifySignature()) {
+//					me.signature = signature;
+//					if(Server.DEBUG) out.println("Server:update_insert_peer_myself: signature verification failed at creation: "+me);
+//				}else{
+//					if(Server.DEBUG) out.println("Server:update_insert_peer_myself: signature verification passed at creation: "+me);			
+//				}
+//			}
+			
+			String IDhash = getGIDHashFromGID(id.globalID);
+			me.globalIDhash = IDhash;
+			if(Server.DEBUG) out.println("Server:update_insert_peer_myself: will insert new peer");
+			me.sign(DD.getMyPeerSK());
+			String pID=me.storeVerified(creation_date2);
+			Identity.current_identity_creation_date = me.creation_date;
+			Identity.peer_ID = pID;
+			if(Server.DEBUG) out.println("Server:update_insert_peer_myself: inserted"+pID);
+		}
+		return me;
 	}
 
 	public String toSummaryString() {
@@ -149,14 +195,20 @@ public class D_PeerAddress extends ASNObj {
 		return result+"]";
 	}	
 	public String toString() {
-		String result = "\nPeerAddress: v=" +version+
-				" [gID="+Util.trimmed(globalID)+" name="+((name==null)?"null":"\""+name+"\"")
-		+" slogan="+(slogan==null?"null":"\""+slogan+"\"") + " date="+Encoder.getGeneralizedTime(creation_date);
-		result += " address="+Util.nullDiscrimArray(address, " --- ");
+		String result = 
+				"\nD_PeerAddress: v=" +version+
+				" [gID="+Util.trimmed(globalID)+
+				" name="+((name==null)?"null":"\""+name+"\"")+
+				" slogan="+(slogan==null?"null":"\""+slogan+"\"") + 
+				" emails="+((emails==null)?"null":"\""+emails+"\"")+
+				" phones="+((phones==null)?"null":"\""+phones+"\"")+
+				" crea_date="+Encoder.getGeneralizedTime(creation_date);
+		
+		result += "\n\t address="+Util.nullDiscrimArray(address, " --- ");
 		result += "\n\t broadcastable="+(broadcastable?"1":"0");
-		result += " sign_alg["+((signature_alg==null)?"NULL":signature_alg.length)+"]="+Util.concat(signature_alg, ":") +" sign="+Util.byteToHexDump(signature, " ") 
-		+" pict="+Util.byteToHexDump(picture, " ")+
-		" served_org["+((served_orgs!=null)?served_orgs.length:"")+"]="+Util.concat(served_orgs, "----", "\"NULL\"");
+		result += "\n\t [] sign_alg["+((signature_alg==null)?"NULL":signature_alg.length)+"]="+Util.concat(signature_alg, ":") +" sign="+Util.byteToHexDump(signature, " ") 
+		+"\n\t[] pict="+Util.byteToHexDump(picture, " ")+
+		"\n\t served_org["+((served_orgs!=null)?served_orgs.length:"")+"]="+Util.concat(served_orgs, "----", "\"NULL\"");
 		return result+"]";
 	}
 	public static String[] getHashAlgFromString(String hash_alg) {
@@ -168,8 +220,11 @@ public class D_PeerAddress extends ASNObj {
 		return Util.concat(signature_alg, DD.APP_ID_HASH_SEP);
 	}
 	public Encoder getSignatureEncoder(){
+		if(DEBUG) System.out.println("D_PeerAddress: getSignatureEncoder_V2: start");
 		if(DDAddress.V0.equals(version)) return getSignatureEncoder_V0();
-		return getSignatureEncoder_V1();
+		if(DDAddress.V1.equals(version)) return getSignatureEncoder_V1();
+		if(DDAddress.V2.equals(version)) return getSignatureEncoder_V2();
+		return getSignatureEncoder_V0();
 	}
 	private Encoder getSignatureEncoder_V1() {
 		Encoder enc = new Encoder().initSequence();
@@ -177,6 +232,9 @@ public class D_PeerAddress extends ASNObj {
 		enc.addToSequence(new Encoder(globalID).setASN1Type(Encoder.TAG_PrintableString));
 		if(name!=null)enc.addToSequence(new Encoder(name,Encoder.TAG_UTF8String));
 		if(slogan!=null)enc.addToSequence(new Encoder(slogan,DD.TAG_AC0));
+		if(emails!=null)enc.addToSequence(new Encoder(emails,DD.TAG_AC1));
+		if(phones!=null)enc.addToSequence(new Encoder(phones,DD.TAG_AC2));
+		//if(instance!=null)enc.addToSequence(new Encoder(instance,DD.TAG_AC3));
 		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date));
 		//if(address!=null)enc.addToSequence(Encoder.getEncoder(address));
 		enc.addToSequence(new Encoder(broadcastable));
@@ -187,6 +245,31 @@ public class D_PeerAddress extends ASNObj {
 			enc.addToSequence(Encoder.getEncoder(this.served_orgs).setASN1Type(DD.TAG_AC12));
 			served_orgs = old;
 		}
+		//enc.addToSequence(new Encoder(signature));
+		//enc.setASN1Type(TAG);
+		return enc;
+	}
+	private Encoder getSignatureEncoder_V2() {
+		if(DEBUG) System.out.println("D_PeerAddress: getSignatureEncoder_V2: start: this="+this);
+		Encoder enc = new Encoder().initSequence();
+		enc.addToSequence(new Encoder(version,false));
+		enc.addToSequence(new Encoder(globalID).setASN1Type(Encoder.TAG_PrintableString));
+		if(name!=null)enc.addToSequence(new Encoder(name,Encoder.TAG_UTF8String));
+		if(slogan!=null)enc.addToSequence(new Encoder(slogan,DD.TAG_AC0));
+		if(emails!=null)enc.addToSequence(new Encoder(emails,DD.TAG_AC1));
+		if(phones!=null)enc.addToSequence(new Encoder(phones,DD.TAG_AC2));
+		//if(instance!=null)enc.addToSequence(new Encoder(instance,DD.TAG_AC3));
+		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date));
+		if(address!=null)enc.addToSequence(Encoder.getEncoder(address));
+		enc.addToSequence(new Encoder(broadcastable));
+		//if(signature_alg!=null)enc.addToSequence(Encoder.getStringEncoder(signature_alg, Encoder.TAG_PrintableString));
+		if((served_orgs!=null)&&(served_orgs.length>0)) {
+			D_PeerOrgs[] old = served_orgs;
+			served_orgs = makeSignaturePeerOrgs_VI(served_orgs);
+			enc.addToSequence(Encoder.getEncoder(this.served_orgs).setASN1Type(DD.TAG_AC12));
+			served_orgs = old;
+		}
+		if(DEBUG) System.out.println("D_PeerAddress: getSignatureEncoder_V2: got:"+Util.byteToHexDump(enc.getBytes()));
 		//enc.addToSequence(new Encoder(signature));
 		//enc.setASN1Type(TAG);
 		return enc;
@@ -235,7 +318,98 @@ public class D_PeerAddress extends ASNObj {
 		signature = _signature;
 		return enc;
 	}
+	public static D_PeerAddress getPeerAddress(String peer_ID, boolean _addresses, boolean _served) {
+		D_PeerAddress result=null;
+		try {
+			result = new D_PeerAddress(Util.lval(peer_ID,-1), false, _addresses, _served);
+		} catch (Exception e1) {
+			e1.printStackTrace();
+			return null;
+		}
+		return result;
+	}
+	/**
+	 * For unknown reason this method loads the peer twice 
+	 * @param peer_ID
+	 * @param _addresses
+	 * @param _served
+	 * @return
+	 */
+	@Deprecated
+	public static D_PeerAddress _getPeerAddress(String peer_ID, boolean _addresses, boolean _served) {
+		D_PeerAddress result=null;
+		try {
+			result = new D_PeerAddress(Util.lval(peer_ID,-1), false, _addresses, _served);
+		} catch (Exception e1) {
+			e1.printStackTrace();
+			return null;
+		}
+		String sql = "SELECT "+table.peer.broadcastable+
+			","+table.peer.creation_date+
+			","+table.peer.global_peer_ID+
+			","+table.peer.hash_alg+
+			","+table.peer.name+
+			","+table.peer.picture+
+			","+table.peer.signature+
+			","+table.peer.slogan+
+			" FROM "+table.peer.TNAME+
+			" WHERE "+table.peer.peer_ID+"=?;";
+		ArrayList<ArrayList<Object>> p;
+		try {
+			p = Application.db.select(sql, new String[]{peer_ID}, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		if(p.size()==0) return null;
+		if(DEBUG)System.out.println("D_PeerAddress:init:old peerID="+peer_ID);
+		result.broadcastable="1".equals(p.get(0).get(0));
+		result.creation_date=Util.getCalendar(Util.getString(p.get(0).get(1)));
+		result.globalID=Util.getString(p.get(0).get(2));
+		String hash_alg = Util.getString(p.get(0).get(3));
+		if(hash_alg!=null) result.signature_alg=hash_alg.split(Pattern.quote(DD.APP_ID_HASH_SEP));
+		result.name=Util.getString(p.get(0).get(4));
+		result.picture=Util.byteSignatureFromString(Util.getString(p.get(0).get(5)));
+		result.signature=Util.byteSignatureFromString(Util.getString(p.get(0).get(6)));
+		result.slogan=Util.getString(p.get(0).get(7));
+		String addresses=null;
+		if(_addresses) {
+			try {
+				addresses = UpdatePeersTable.getPeerAddresses(peer_ID, Encoder.getGeneralizedTime(0), Util.getGeneralizedTime());
+				result.address=TypedAddress.getAddress(addresses);
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		if(_served) result.served_orgs=data.D_PeerAddress._getPeerOrgs(result.globalID);;
+		return result;
+	}	
+	/**
+	 * No init
+	 */
 	public D_PeerAddress(){}
+	@SuppressWarnings("unchecked")
+	@Deprecated
+	public D_PeerAddress(D_PeerAddress pa) {
+		globalID = pa.globalID; //Printable
+		name = pa.name; //UTF8
+		slogan = pa.slogan; //UTF8
+		address = pa.address; //UTF8
+		address_orig = pa.address_orig;
+		creation_date = pa.creation_date;
+		signature = pa.signature; //OCT STR
+		//global_peer_ID_hash =Util.getGIDhash(pa.globalID);
+		broadcastable = pa.broadcastable;
+		signature_alg = pa.signature_alg;
+		version = pa.version;
+		picture = pa.picture;
+		served_orgs = pa.served_orgs; //OPT
+		//type = pa.type;
+		emails = pa.emails;
+		phones = pa.phones;
+		instances = (Hashtable<String, D_PeerInstance>) pa.instances.clone();
+	}
+
 	/**
 	 * 
 	 * @param peerID
@@ -303,6 +477,25 @@ public class D_PeerAddress extends ASNObj {
 	/**
 	 * 
 	 * @param peerID
+	 * @throws P2PDDSQLException
+	 */
+	public D_PeerAddress(long peerID) throws P2PDDSQLException{
+		String sql =
+			"SELECT "+table.peer.fields_peers+
+			" FROM "+table.peer.TNAME+
+			" WHERE "+table.peer.peer_ID+"=?;";
+		String _peerID = Util.getStringID(peerID);
+		ArrayList<ArrayList<Object>> p = Application.db.select(sql, new String[]{_peerID});
+		if(p.size()==0){
+			peer_ID = _peerID;
+			if(true) throw new RuntimeException("Absent peer "+peerID);
+		}else{
+			init(p.get(0), true, true);
+		}
+	}
+	/**
+	 * 
+	 * @param peerID
 	 * @param failOnNew
 	 * @param _addresses
 	 * @param _served_orgs
@@ -331,20 +524,11 @@ public class D_PeerAddress extends ASNObj {
 	public D_PeerAddress(String peerGID, int isGID, boolean failOnNew) throws P2PDDSQLException{
 		init(peerGID, isGID, failOnNew);
 	}
-	public void init(String peerGID, int isGID, boolean failOnNew) throws P2PDDSQLException{
-		if(DEBUG) System.out.println("D_PeerAddress: init: GID");
-		String sql =
-			"SELECT "+table.peer.fields_peers+
-			" FROM "+table.peer.TNAME+
-			" WHERE "+table.peer.global_peer_ID+"=?;";
-		ArrayList<ArrayList<Object>> p = Application.db.select(sql, new String[]{peerGID}, DEBUG);
-		if(p.size()==0){
-			if(failOnNew) throw new RuntimeException("Absent peer "+peerGID);
-			this.globalID = peerGID;
-		}else{
-			init(p.get(0));
-		}
-	}
+	/**
+	 * This does not fail on new
+	 * @param peerGID
+	 * @throws P2PDDSQLException
+	 */
 	public D_PeerAddress(String peerGID) throws P2PDDSQLException {
 		init(peerGID, 1, false);
 	}
@@ -371,11 +555,83 @@ public class D_PeerAddress extends ASNObj {
 				init(p.get(0), _addresses, _served);
 			}
 		}
+	public D_PeerAddress(D_PeerAddress dd, boolean encode_addresses) {
+		version = dd.version;
+		globalID = dd.globalID;
+		name = dd.name;
+		emails = dd.emails;
+		phones = dd.phones;
+		slogan = dd.slogan;
+		creation_date = dd.creation_date;
+		picture = dd.picture;
+		served_orgs = dd.served_orgs;
+		if(encode_addresses){
+			address = dd.address;
+		}
+		broadcastable = dd.broadcastable;
+		signature_alg = dd.signature_alg;
+		signature = dd.signature;
+	}
+	public D_PeerAddress(DDAddress dd, boolean encode_addresses) {
+		version = dd.version;
+		if(!encode_addresses && DDAddress.V2.equals(version))
+			Util.printCallPath("Here we thought that no address is needed");
+		globalID = dd.globalID;
+		name = dd.name;
+		slogan = dd.slogan;
+		emails = dd.emails;
+		phones = dd.phones;
+		creation_date = Util.getCalendar(dd.creation_date);
+		picture = dd.picture;
+		if(encode_addresses){
+			String[]addresses_l = Address.split(dd.address);
+			// may have to control addresses, to defend from DOS based on false addresses
+			address = new TypedAddress[addresses_l.length];
+			for(int k=0; k<addresses_l.length; k++) {
+				TypedAddress a = new TypedAddress();
+				String taddr[] = addresses_l[k].split(Pattern.quote(Address.ADDR_PART_SEP),TypedAddress.COMPONENTS);
+				if(taddr.length < 2) continue;
+				a.type = taddr[0];
+				String adr[] = taddr[1].split(Pattern.quote(TypedAddress.PRI_SEP), 2);
+				a.address = adr[0];
+				if(adr.length > 1) {
+					a.certified = true;
+					try{
+						a.priority = Integer.parseInt(adr[1]);
+					}catch(Exception e){e.printStackTrace();}
+				}
+				address[k] = a;
+			}
+		}
+		broadcastable = dd.broadcastable;
+		signature_alg = dd.hash_alg;
+		hash_alg = D_PeerAddress.getStringFromHashAlg(signature_alg);
+		signature = dd.signature;
+		served_orgs = dd.served_orgs;
+	}
+	public void init(String peerGID, int isGID, boolean failOnNew) throws P2PDDSQLException{
+		if(DEBUG) System.out.println("D_PeerAddress: init: GID");
+		String sql =
+			"SELECT "+table.peer.fields_peers+
+			" FROM "+table.peer.TNAME+
+			" WHERE "+table.peer.global_peer_ID+"=?;";
+		ArrayList<ArrayList<Object>> p = Application.db.select(sql, new String[]{peerGID}, DEBUG);
+		if(p.size()==0){
+			if(failOnNew) throw new RuntimeException("Absent peer "+peerGID);
+			this.globalID = peerGID;
+		}else{
+			init(p.get(0));
+		}
+	}
 	
 	private void init(ArrayList<Object> p) {
 		init(p, true, true);
 	}
 	private void init(ArrayList<Object> p, boolean encode_addresses, boolean encode_served_orgs) {
+		if(!encode_addresses)Util.printCallPath("Here we thought addresses are not needed!");
+		_init(p,true,encode_served_orgs);
+	}
+	private void _init(ArrayList<Object> p, boolean encode_addresses, boolean encode_served_orgs) {
 		version = Util.getString(p.get(table.peer.PEER_COL_VERSION));
 		peer_ID = Util.getString(p.get(table.peer.PEER_COL_ID));
 		_peer_ID = Util.lval(peer_ID, -1);
@@ -383,6 +639,8 @@ public class D_PeerAddress extends ASNObj {
 		globalID = Util.getString(p.get(table.peer.PEER_COL_GID)); //dd.globalID;
 		globalIDhash = Util.getString(p.get(table.peer.PEER_COL_GID_HASH)); //dd.globalID;
 		name =  Util.getString(p.get(table.peer.PEER_COL_NAME)); //dd.name;
+		emails =  Util.getString(p.get(table.peer.PEER_COL_EMAILS));
+		phones =  Util.getString(p.get(table.peer.PEER_COL_PHONES));
 		slogan = Util.getString(p.get(table.peer.PEER_COL_SLOGAN)); //dd.slogan;
 		creation_date = Util.getCalendar(Util.getString(p.get(table.peer.PEER_COL_CREATION)));
 		picture = Util.byteSignatureFromString(Util.getString(p.get(table.peer.PEER_COL_PICTURE)));
@@ -392,14 +650,24 @@ public class D_PeerAddress extends ASNObj {
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
-		if(encode_addresses) address = getPeerAddresses(peer_ID);
-		
+		if(encode_addresses){ //address = TypedAddress.getPeerAddresses(peer_ID);
+			// addresses always needed
+			address = TypedAddress.loadPeerAddresses(peer_ID);
+			this.address_orig = TypedAddress.deep_clone(address);
+		}
 		broadcastable = Util.stringInt2bool(Util.getString(p.get(table.peer.PEER_COL_BROADCAST)), false);
 		hash_alg = Util.getString(p.get(table.peer.PEER_COL_HASH_ALG));
 		signature_alg = D_PeerAddress.getHashAlgFromString(hash_alg);
 		signature = Util.byteSignatureFromString(Util.getString(p.get(table.peer.PEER_COL_SIGN)));
 
+		try {
+			instances = data.D_PeerInstance.loadInstancesToHash(peer_ID);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		
 		arrival_date = Util.getCalendar(Util.getString(p.get(table.peer.PEER_COL_ARRIVAL)));
+		preferences_date = Util.getCalendar(Util.getString(p.get(table.peer.PEER_COL_PREFERENCES_DATE)));
 		last_sync_date = Util.getCalendar(Util.getString(p.get(table.peer.PEER_COL_LAST_SYNC)));
 		last_reset = Util.getCalendar(Util.getString(p.get(table.peer.PEER_COL_LAST_RESET)), null);
 		//no_update = Util.stringInt2bool(Util.getString(p.get(table.peer.PEER_COL_NOUPDATE)), false);
@@ -567,60 +835,6 @@ public class D_PeerAddress extends ASNObj {
 		if(DEBUG) System.err.println("UpdateMessages:get_peer_only: exit: "+result);
 		return result;
 	}
-	public D_PeerAddress(D_PeerAddress dd, boolean encode_addresses) {
-		version = dd.version;
-		globalID = dd.globalID;
-		name = dd.name;
-		slogan = dd.slogan;
-		creation_date = dd.creation_date;
-		picture = dd.picture;
-		served_orgs = dd.served_orgs;
-		if(encode_addresses){
-			address = dd.address;
-		}
-		broadcastable = dd.broadcastable;
-		signature_alg = dd.signature_alg;
-		signature = dd.signature;
-	}
-	public static TypedAddress[] parseStringAddresses(String addr){
-			String[]addresses_l = Address.split(addr);
-			// may have to control addresses, to defend from DOS based on false addresses
-			TypedAddress[] address = new TypedAddress[addresses_l.length];
-			for(int k=0; k<addresses_l.length; k++) {
-				address[k] = new TypedAddress();
-				String taddr[] = addresses_l[k].split(Pattern.quote(Address.ADDR_PART_SEP),2);
-				if(taddr.length < 2) continue;
-				address[k].type = taddr[0];
-				address[k].address = taddr[1];
-			}	
-			return address;
-	}
-	public D_PeerAddress(DDAddress dd, boolean encode_addresses) {
-		version = dd.version;
-		globalID = dd.globalID;
-		name = dd.name;
-		slogan = dd.slogan;
-		creation_date = Util.getCalendar(dd.creation_date);
-		picture = dd.picture;
-		if(encode_addresses){
-			String[]addresses_l = Address.split(dd.address);
-			// may have to control addresses, to defend from DOS based on false addresses
-			address = new TypedAddress[addresses_l.length];
-			for(int k=0; k<addresses_l.length; k++) {
-				address[k] = new TypedAddress();
-				String taddr[] = addresses_l[k].split(Pattern.quote(Address.ADDR_PART_SEP),2);
-				if(taddr.length < 2) continue;
-				address[k].type = taddr[0];
-				address[k].address = taddr[1];
-			}
-		}
-		broadcastable = dd.broadcastable;
-		signature_alg = dd.hash_alg;
-		hash_alg = D_PeerAddress.getStringFromHashAlg(signature_alg);
-		signature = dd.signature;
-		served_orgs = dd.served_orgs;
-	}
-
 	/**
 	 * version, globalID, name, slogan, creation_date, address*, broadcastable, signature_alg, served_orgs, signature*
 	 */
@@ -630,6 +844,9 @@ public class D_PeerAddress extends ASNObj {
 		enc.addToSequence(new Encoder(globalID).setASN1Type(Encoder.TAG_PrintableString));
 		if(name!=null)enc.addToSequence(new Encoder(name,Encoder.TAG_UTF8String));
 		if(slogan!=null)enc.addToSequence(new Encoder(slogan,DD.TAG_AC0));
+		if(emails!=null)enc.addToSequence(new Encoder(emails,DD.TAG_AC1));
+		if(phones!=null)enc.addToSequence(new Encoder(phones,DD.TAG_AC2));
+		if(instance!=null)enc.addToSequence(new Encoder(instance,DD.TAG_AC3));
 		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date));
 		if(address!=null)enc.addToSequence(Encoder.getEncoder(address));
 		enc.addToSequence(new Encoder(broadcastable));
@@ -643,12 +860,11 @@ public class D_PeerAddress extends ASNObj {
 		Decoder content=dec.getContent();
 		version=content.getFirstObject(true).getString();
 		globalID=content.getFirstObject(true).getString();
-		if(content.getTypeByte() == Encoder.TAG_UTF8String)
-			name = content.getFirstObject(true).getString();
-		else name=null;
-		if(content.getTypeByte() == DD.TAG_AC0)
-			slogan = content.getFirstObject(true).getString();
-		else slogan = null;
+		if(content.getTypeByte() == Encoder.TAG_UTF8String)name = content.getFirstObject(true).getString();else name=null;
+		if(content.getTypeByte() == DD.TAG_AC0)slogan = content.getFirstObject(true).getString();else slogan = null;
+		if(content.getTypeByte() == DD.TAG_AC1)emails = content.getFirstObject(true).getString();else emails = null;
+		if(content.getTypeByte() == DD.TAG_AC2)phones = content.getFirstObject(true).getString();else phones = null;
+		if(content.getTypeByte() == DD.TAG_AC3)instance = content.getFirstObject(true).getString();else instance = null;
 		if(content.getTypeByte() == Encoder.TAG_GeneralizedTime)
 			creation_date = content.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
 		else creation_date = null;
@@ -672,40 +888,63 @@ public class D_PeerAddress extends ASNObj {
 	}
 	public byte[] sign(ciphersuits.SK sk){
 		//boolean DEBUG = true;
+		version = DEFAULT_VERSION;
 		TypedAddress[] addr = address;
 		byte[] pict = picture;
 		signature = new byte[0];
-		address=null;
+		address = TypedAddress.getOrderedCertifiedTypedAddresses(addr);
+		String old_instance = instance; instance = null;
 		picture=null;
 		signature_alg = SR.HASH_ALG_V1;
 		if(DEBUG)System.err.println("PeerAddress: sign: peer_addr="+this);
 		byte msg[] = this.getSignatureEncoder().getBytes();
-		if(DEBUG)System.out.println("PeerAddress: sign: msg["+msg.length+"]="+Util.byteToHex(msg)+" hash="+Util.getGID_as_Hash(msg));
+		if(DEBUG)System.out.println("PeerAddress: sign:\n\t msg["+msg.length+"]="+Util.byteToHex(msg)+"\n\t hash="+Util.getGID_as_Hash(msg));
 		signature = Util.sign(msg,  sk);
 		picture = pict;
 		address = addr;
+		instance = old_instance;
 		if(DEBUG)System.err.println("PeerAddress: sign: sign=["+signature.length+"]"+Util.byteToHex(signature, "")+" hash="+Util.getGID_as_Hash(signature));
 		return signature;
 	}
 	public boolean verifySignature(ciphersuits.PK pk) {
 		//boolean DEBUG = true;
-		if(DEBUG)System.err.println("PeerAddress: verifySignature: this="+this);
-		boolean result;
+		if(DEBUG)System.err.println("PeerAddress: verifySignature(pk): start this="+this);
+		boolean result=false;
 		byte[] sgn = signature;
-		if(DEBUG)System.err.println("PeerAddress: verifySignature: sign=["+signature.length+"]"+Util.byteToHex(signature, "")+" hash="+Util.getGID_as_Hash(signature));
+		if(DEBUG)System.err.println("PeerAddress: verifySignature:" +
+				"\n\t sign=["+signature.length+"]"+Util.byteToHex(signature, "")+
+				"\n\t hash(sign)="+Util.getGID_as_Hash(signature));
 		TypedAddress[] addr = address;
+		String old_instance = instance; instance = null;
 		byte[] pict = picture;
 		signature=new byte[0];
-		address=null;
+		address = TypedAddress.getOrderedCertifiedTypedAddresses(addr);
 		picture = null;
 		//result = Util.verifySign(this, pk, sgn);
 		byte msg[] =  this.getSignatureEncoder().getBytes();
-		if(DEBUG)System.out.println("PeerAddress: verifySignature: msg["+msg.length+"]="+Util.byteToHex(msg)+" hash="+Util.getGID_as_Hash(msg));
+		if(DEBUG)System.out.println("PeerAddress: verifySignature(pk): Will check: this" +
+				"\n\t msg["+msg.length+"]="+Util.byteToHex(msg)+
+				"\n\t hash(msg)="+Util.getGID_as_Hash(msg));
+		try{
 		result = Util.verifySign(msg, pk, sgn);
-		if(result==false) if(_DEBUG)System.out.println("PeerAddress:verifySignature: Failed verifying: "+this+"\n sgn="+Util.byteToHexDump(sgn,":"));
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		if(result==false){ if(_DEBUG)System.out.println("PeerAddress:verifySignature(pk): Failed verifying: "+this+
+				"\n sgn="+Util.byteToHexDump(sgn,":")+Util.getGID_as_Hash(sgn)+
+				"\n msg="+Util.byteToHexDump(msg,":")+Util.getGID_as_Hash(msg)+
+				"\n pk="+pk
+				);
+		}else{ if(DEBUG)System.out.println("PeerAddress:verifySignature(pk):Success verifying: "+this+
+				"\n sgn="+Util.byteToHexDump(sgn,":")+"\n\t hash(sgn)="+Util.getGID_as_Hash(sgn)+
+				"\n msg="+Util.byteToHexDump(msg,":")+"\n\t hash(msg)="+Util.getGID_as_Hash(msg)+
+				"\n pk="+pk
+				);
+		}
 		picture = pict;
 		address = addr;
 		signature=sgn;
+		instance = old_instance;
 		return result;
 	}
 	/**
@@ -714,88 +953,11 @@ public class D_PeerAddress extends ASNObj {
 	 */
 	public boolean verifySignature() {
 		//boolean DEBUG = true;
-		if(DEBUG)System.err.println("PeerAddress: verifySignature: peer_addr="+this);
-		boolean result = verifySignature(ciphersuits.Cipher.getPK(globalID));
-		if(DEBUG)System.err.println("PeerAddress: verifySignature: got="+result);
-		return result;
-	}
-	/**
-	 * Parses addresses found in the DDAddress string form
-	 * @param addresses
-	 * @return
-	 */
-	public static TypedAddress[] getAddress(String addresses) {
-		if(DEBUG) System.out.println("PeerAddress:getAddress: parsing addresses "+addresses);
-		String[]addresses_l = Address.split(addresses);
-		// may have to control addresses, to defend from DOS based on false addresses
-		TypedAddress[] address = new TypedAddress[addresses_l.length];
-		for(int k=0; k<addresses_l.length; k++) {
-			if(DEBUG)System.out.println("PeerAddress:getAddress: parsing address "+addresses_l[k]);
-			address[k] = new TypedAddress();
-			String taddr[] = addresses_l[k].split(Pattern.quote(Address.ADDR_TYPE_SEP),2);
-			if(taddr.length < 2) continue;
-			address[k].type = taddr[0];
-			address[k].address = taddr[1];
-			if(DEBUG)System.out.println("PeerAddress:getAddress: got typed address "+address[k]);
-		}
-		return address;
-	}
-	public static D_PeerAddress getPeerAddress(String peer_ID, boolean _addresses, boolean _served) {
-		D_PeerAddress result=null;
-		try {
-			result = new D_PeerAddress(Util.lval(peer_ID,-1), false, _addresses, _served);
-		} catch (Exception e1) {
-			e1.printStackTrace();
-			return null;
-		}
-		String sql = "SELECT "+table.peer.broadcastable+
-			","+table.peer.creation_date+
-			","+table.peer.global_peer_ID+
-			","+table.peer.hash_alg+
-			","+table.peer.name+
-			","+table.peer.picture+
-			","+table.peer.signature+
-			","+table.peer.slogan+
-			" FROM "+table.peer.TNAME+
-			" WHERE "+table.peer.peer_ID+"=?;";
-		ArrayList<ArrayList<Object>> p;
-		try {
-			p = Application.db.select(sql, new String[]{peer_ID}, DEBUG);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-			return null;
-		}
-		if(p.size()==0) return null;
-		if(DEBUG)System.out.println("D_PeerAddress:init:old peerID="+peer_ID);
-		result.broadcastable="1".equals(p.get(0).get(0));
-		result.creation_date=Util.getCalendar(Util.getString(p.get(0).get(1)));
-		result.globalID=Util.getString(p.get(0).get(2));
-		String hash_alg = Util.getString(p.get(0).get(3));
-		if(hash_alg!=null) result.signature_alg=hash_alg.split(Pattern.quote(DD.APP_ID_HASH_SEP));
-		result.name=Util.getString(p.get(0).get(4));
-		result.picture=Util.byteSignatureFromString(Util.getString(p.get(0).get(5)));
-		result.signature=Util.byteSignatureFromString(Util.getString(p.get(0).get(6)));
-		result.slogan=Util.getString(p.get(0).get(7));
-		String addresses=null;
-		if(_addresses) {
-			try {
-				addresses = UpdatePeersTable.getPeerAddresses(peer_ID, Encoder.getGeneralizedTime(0), Util.getGeneralizedTime());
-				result.address=D_PeerAddress.getAddress(addresses);
-			} catch (P2PDDSQLException e) {
-				e.printStackTrace();
-			}
-		}
-		if(_served) result.served_orgs=data.D_PeerAddress._getPeerOrgs(result.globalID);;
-		return result;
-	}
-	public static TypedAddress[] getPeerAddresses(String peer_ID){
-		TypedAddress[] result = null;
-		try {
-			String addresses = UpdatePeersTable.getPeerAddresses(peer_ID, Encoder.getGeneralizedTime(0), Util.getGeneralizedTime());
-			result=D_PeerAddress.getAddress(addresses);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
+		if(DEBUG)System.err.println("PeerAddress: verifySignature: start: peer_addr="+this+"\n\n");
+		PK c = ciphersuits.Cipher.getPK(globalID);
+		if(DEBUG)System.err.println("PeerAddress: verifySignature: pk="+c+"\n\n");
+		boolean result = verifySignature(c);
+		if(DEBUG)System.err.println("PeerAddress: verifySignature: got="+result+"\n\n");
 		return result;
 	}
 	static public long _getLocalPeerIDforGID(String peerGID) throws P2PDDSQLException{
@@ -948,9 +1110,9 @@ public class D_PeerAddress extends ASNObj {
 		return local._storeVerified(crt_date, _crt_date);
 	}
 	public void setRemote(D_PeerAddress pa) {
-		this.set(pa.globalID, pa.name, pa.arrival_date, pa.slogan,
+		this.set(pa.globalID, pa.name, pa.emails, pa.phones, pa.arrival_date, pa.slogan,
 				this.used, pa.broadcastable, pa.hash_alg, pa.signature,
-				pa.creation_date, pa.picture, pa.version);
+				pa.creation_date, pa.picture, pa.version, pa.preferences_date);
 		this.address = pa.address;
 		this.served_orgs = pa.served_orgs;
 	}
@@ -972,8 +1134,24 @@ public class D_PeerAddress extends ASNObj {
 		//this.signature_alg = la.signature_alg; // do not use local hash_alg
 		if(this.picture==null) this.picture = la.picture;
 	}
-
-	public static long storeVerified(String global_peer_ID, String name, String adding_date, String slogan,
+	/**
+	 * Store after loading new values
+	 * @param global_peer_ID
+	 * @param name
+	 * @param adding_date
+	 * @param slogan
+	 * @param used
+	 * @param broadcastable
+	 * @param hash_alg
+	 * @param signature
+	 * @param creation_date
+	 * @param picture
+	 * @param version
+	 * @param served_orgs2
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public static long storeVerified(String global_peer_ID, String name, String emails, String phones, String adding_date, String slogan,
 			boolean used, boolean broadcastable, String hash_alg, byte[] signature, String creation_date, byte[] picture, String version, D_PeerOrgs[] served_orgs2) throws P2PDDSQLException {
 		// boolean DEBUG = true;
 		if(DEBUG) System.err.println("D_PeerAddress: storeVerified: ");
@@ -996,8 +1174,9 @@ public class D_PeerAddress extends ASNObj {
 			return dpa._peer_ID;
 		}
 		
-		dpa.set( global_peer_ID,  name,  adding_date,  slogan,
-				 used,  broadcastable,  hash_alg,  signature,  creation_date,  picture,  version);
+		dpa.set( global_peer_ID,  name, emails, phones, adding_date,  slogan,
+				 used,  broadcastable,  hash_alg,  signature,  creation_date,
+				 picture,  version, null);
 		dpa.served_orgs = served_orgs2;
 		if(DEBUG) System.err.println("D_PeerAddress: storeVerified: will save!");
 		return dpa._storeVerified(adding_date);
@@ -1005,8 +1184,19 @@ public class D_PeerAddress extends ASNObj {
 	// public String storeVerified() throws P2PDDSQLException{return storeVerified(Util.getGeneralizedTime());}
 	public long _storeVerified() throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified()");
-		return _storeVerified(Util.CalendargetInstance());
+		long r = _storeVerified(Util.CalendargetInstance());
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(): done:"+r);
+		return r;
 	}
+	public String storeVerifiedForce() throws P2PDDSQLException{
+		if(DEBUG) System.err.println("D_PeerAddress: storeVerified()");
+		return Util.getStringID(_storeVerifiedForce(Util.CalendargetInstance()));
+	}
+	/**
+	 * Set the arrival date to now
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
 	public String storeVerified() throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: storeVerified()");
 		return Util.getStringID(_storeVerified(Util.CalendargetInstance()));
@@ -1023,9 +1213,22 @@ public class D_PeerAddress extends ASNObj {
 	public long _storeVerified(Calendar _crt_date) throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar)");
 		String crt_date = Encoder.getGeneralizedTime(_crt_date);
-		return _storeVerified(_crt_date, crt_date);
+		long r = _storeVerified(_crt_date, crt_date);
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar): got="+r);
+		return r;
+	}	
+	public long _storeVerifiedForce(Calendar _crt_date) throws P2PDDSQLException{
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar)");
+		String crt_date = Encoder.getGeneralizedTime(_crt_date);
+		return _storeVerified(_crt_date, crt_date, true);
 	}	
 	public long _storeVerified(Calendar _crt_date, String crt_date) throws P2PDDSQLException{
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar), str");
+		long r = _storeVerified(_crt_date, crt_date, false);
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar, str)");
+		return r;
+	}
+	private long _storeVerified(Calendar _crt_date, String crt_date, boolean force) throws P2PDDSQLException{
 		//boolean DEBUG=true;
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(_crt_date, crt_date)");
 		this.arrival_date = _crt_date;
@@ -1037,52 +1240,91 @@ public class D_PeerAddress extends ASNObj {
 		
 		D_PeerAddress old = new D_PeerAddress(this.globalID);
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified: old="+old);
-		if((old._peer_ID>0) && (old.creation_date!=null)) {
-			if(this.creation_date==null) return -1;
-			int cmp_creation_date = old.creation_date.compareTo(this.creation_date);
-			if(cmp_creation_date > 0){
-				if(DEBUG) System.err.println("D_PeerAddress: _storeVerified: newer old=: "+old+"\n vs new: "+this);
-				return old._peer_ID;
-			}
-			this._peer_ID = old._peer_ID;
-			this.peer_ID = old.peer_ID;
-
-			if((cmp_creation_date==0) || identical_except_addresses(old)) {
-				for(int k=0; k<this.address.length; k++) { // should be done only for addresses not in old
-					if(knownAddress(old.address,this.address[k].address, this.address[k].type)) continue;
-					//long address_ID = 
-					D_PeerAddress.get_peer_addresses_ID(this.address[k].address,
-							this.address[k].type, old._peer_ID, crt_date);			
+		if(!force) {
+			if((old._peer_ID>0) && (old.creation_date!=null)) {
+				if(this.creation_date==null) return -1;
+				int cmp_creation_date = old.creation_date.compareTo(this.creation_date);
+				if(cmp_creation_date > 0){
+					if(DEBUG) System.err.println("D_PeerAddress: _storeVerified: newer old=: "+old+"\n vs new: "+this);
+					return old._peer_ID;
 				}
-				if(DEBUG) System.err.println("D_PeerAddress: __storeVerified: identical: "+ old._peer_ID);
-				return old._peer_ID;
+				this._peer_ID = old._peer_ID;
+				this.peer_ID = old.peer_ID;
+				if(!old_addresses_code) {
+					/* // new implementation (but skipped since will not store new addresses)
+					if(((cmp_creation_date==0) || identical_except_addresses(old)) && (this.address!=null)) {
+						TypedAddress[] old_addr = TypedAddress.getPeerAddresses(this.peer_ID);
+						TypedAddress.init_intersection(old_addr, this.address);
+						TypedAddress.delete_difference(old_addr, this.address);
+						TypedAddress.store_and_update(this.address, crt_date);
+						if(DEBUG) System.err.println("D_PeerAddress: __storeVerified: identical: "+ old._peer_ID);
+						return old._peer_ID;					
+					}
+					*/
+					if(cmp_creation_date==0) { // same date
+						// TODO: can add extra addresses from the old/new one
+						if(DEBUG) System.err.println("D_PeerAddress: _storeVerified: exit with old="+old);
+						return old._peer_ID;
+					}
+				}else{
+					   // old implementation
+					if(this.address==null) Util.printCallPath("Null address:"+this);
+					if(((cmp_creation_date==0) || identical_except_addresses(old)) && (this.address!=null)) {
+						for(int k=0; k<this.address.length; k++) { // should be done only for addresses not in old
+							if(TypedAddress.knownAddress(old.address,this.address[k].address, this.address[k].type)) continue;
+							//long address_ID = 
+							D_PeerAddress.get_peer_addresses_ID(this.address[k].address,
+									this.address[k].type, old._peer_ID, crt_date,
+									this.address[k].certified, this.address[k].priority);
+						}
+						if(DEBUG) System.err.println("D_PeerAddress: __storeVerified: identical: "+ old._peer_ID);
+						return old._peer_ID;
+					}
+				}
+			}
+		}else{
+			if((old._peer_ID>0) && (old.creation_date!=null)) {
+				this._peer_ID = old._peer_ID;
+				this.peer_ID = old.peer_ID;
 			}
 		}
 		long new_peer_ID = doSave_except_Served_and_Addresses();
-		if(this.address!=null)
-			for(int k=0; k<this.address.length; k++) {
-				if((old.peer_ID!=null)&&knownAddress(old.address,this.address[k].address, this.address[k].type)) continue;
-				//long address_ID = 
-				D_PeerAddress.get_peer_addresses_ID(this.address[k].address,
-						this.address[k].type, new_peer_ID, crt_date);
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): done base");
+
+		if(!old_addresses_code){
+			if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code: save addr");
+			if(old.peer_ID!=null){
+				if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code:!old: save addr");
+				// TODO: when storage is unified, should use this
+				// TypedAddress[] old_addr = this.address_orig; 
+				if(_DEBUG) System.out.println("TODO: D_PeerAddress:storeVerified: should optimized here when storage unified!");
+				TypedAddress[] old_addr = TypedAddress.loadPeerAddresses(this.peer_ID);//.getPeerAddresses(this.peer_ID);
+				TypedAddress.init_intersection(old_addr, this.address);
+				TypedAddress.delete_difference(old_addr, this.address);
+			}
+			if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code: store");
+			TypedAddress.store_and_update(this.address, Util.getStringID(new_peer_ID));
+			this.address_orig = TypedAddress.deep_clone(address);
+		}else{
+			if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): old_address_code: save addr");
+			if(this.address!=null)
+				if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): old_address_code:addr: save addr");
+				for(int k=0; k<this.address.length; k++) {
+					if((old.peer_ID!=null)&&TypedAddress.knownAddress(old.address,this.address[k].address, this.address[k].type)) continue;
+					//long address_ID = 
+					D_PeerAddress.get_peer_addresses_ID(this.address[k].address,
+							this.address[k].type, new_peer_ID, crt_date,
+							this.address[k].certified, this.address[k].priority);
+				}
 		}
 		//long peers_orgs_ID = get_peers_orgs_ID(peer_ID, global_organizationID);
 		//long organizationID = get_organizationID(global_organizationID, org_name);
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): done addresses");
 		if((old.peer_ID==null) || !this.identical_served(old.served_orgs)) D_PeerAddress.integratePeerOrgs(this.served_orgs, new_peer_ID, crt_date);
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): got ID ="+new_peer_ID);
 		return new_peer_ID;
 		//return UpdateMessages.get_and_verify_peer_ID(pa, crt_date);
 	}
-	private static boolean knownAddress(TypedAddress[] old, String address3,
-			String type) {
-		if(old==null) return false;
-		for(int k=0; k<old.length; k++) {
-			if(Util.equalStrings_null_or_not(old[k].address, address3) && Util.equalStrings_null_or_not(old[k].type, type))
-				return true;
-		}
-		return false;
-	}
-
 	private boolean identical_except_addresses(D_PeerAddress old) {
 		if(Util.equalBytes(this.signature, old.signature)) return true;
 		if(!Util.equalStrings_null_or_not(this.slogan, old.slogan)) return false;
@@ -1161,6 +1403,8 @@ public class D_PeerAddress extends ASNObj {
 		params[table.peer.PEER_COL_GID_HASH]=globalIDhash;
 		params[table.peer.PEER_COL_NAME]=name;
 		params[table.peer.PEER_COL_SLOGAN]=slogan;
+		params[table.peer.PEER_COL_EMAILS]=emails;
+		params[table.peer.PEER_COL_PHONES]=phones;
 		params[table.peer.PEER_COL_HASH_ALG]=hash_alg;
 		params[table.peer.PEER_COL_SIGN]=Util.stringSignatureFromByte(signature);
 		params[table.peer.PEER_COL_CREATION]=Encoder.getGeneralizedTime(creation_date);
@@ -1171,6 +1415,7 @@ public class D_PeerAddress extends ASNObj {
 		params[table.peer.PEER_COL_FILTERED]=Util.bool2StringInt(filtered);
 		params[table.peer.PEER_COL_LAST_SYNC]=Encoder.getGeneralizedTime(last_sync_date);
 		params[table.peer.PEER_COL_ARRIVAL]=Encoder.getGeneralizedTime(arrival_date);
+		params[table.peer.PEER_COL_PREFERENCES_DATE]=Encoder.getGeneralizedTime(preferences_date);
 		params[table.peer.PEER_COL_LAST_RESET]=(last_reset!=null)?Encoder.getGeneralizedTime(last_reset):null;
 		params[table.peer.PEER_COL_USED]=Util.bool2StringInt(used);
 		params[table.peer.PEER_COL_BLOCKED]=Util.bool2StringInt(blocked);
@@ -1195,6 +1440,7 @@ public class D_PeerAddress extends ASNObj {
 					DEBUG);
 			if(DEBUG) System.out.println("D_PeerAddress: doSave: updated "+peer_ID);
 		}
+		data.D_PeerInstance.store(peer_ID, instances); // checks peer_ID and instances
 		if(DEBUG) System.out.println("D_PeerAddress: doSave: return "+_peer_ID);
 		return _peer_ID;
 	}
@@ -1211,12 +1457,16 @@ public class D_PeerAddress extends ASNObj {
 	 * @param creation_date
 	 * @param picture
 	 * @param version
+	 * @param preferences_date2 
 	 */
-	public void set(String global_peer_ID, String name, Calendar adding_date, String slogan,
-			boolean used, boolean broadcastable, String hash_alg, byte[] signature, Calendar creation_date, byte[] picture, String version) {
+	public void set(String global_peer_ID, String name, String emails, String phones, Calendar adding_date, String slogan,
+			boolean used, boolean broadcastable, String hash_alg, byte[] signature, Calendar creation_date, byte[] picture, String version, Calendar preferences_date2) {
 		this.globalID = global_peer_ID;
 		this.name = name;
+		this.emails = emails;
+		this.phones = phones;
 		this.arrival_date = adding_date;
+		this.preferences_date = preferences_date2;
 		this.slogan = slogan;
 		this.used = used;
 		this.broadcastable = broadcastable;
@@ -1241,9 +1491,13 @@ public class D_PeerAddress extends ASNObj {
 	 * @param picture
 	 * @param version
 	 */
-	public void set(String global_peer_ID, String name, String adding_date, String slogan,
-				boolean used, boolean broadcastable, String hash_alg, byte[] signature, String creation_date, byte[] picture, String version) {
-		set(global_peer_ID, name, Util.getCalendar(adding_date), slogan, used, broadcastable, hash_alg, signature, Util.getCalendar(creation_date), picture, version);
+	public void set(String global_peer_ID, String name, String emails,
+			String phones, String adding_date, String slogan,
+				boolean used, boolean broadcastable, String hash_alg, byte[] signature,
+				String creation_date, byte[] picture, String version, Calendar preferences_date) {
+		set(global_peer_ID, name, emails, phones, Util.getCalendar(adding_date),
+				slogan, used, broadcastable, hash_alg,
+				signature, Util.getCalendar(creation_date), picture, version, preferences_date);
 	}
 	/*		
 	public static long storeVerified(String global_peer_ID, String name, String adding_date, String slogan,
@@ -1309,11 +1563,14 @@ public class D_PeerAddress extends ASNObj {
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public static long readSignSave(long peer_ID, long signer_ID) throws P2PDDSQLException {
+	public static D_PeerAddress readSignSave(long peer_ID, long signer_ID, boolean trim) throws P2PDDSQLException {
 		D_PeerAddress w=new D_PeerAddress(Util.getStringID(peer_ID), true);
+		if(trim)w.address = TypedAddress.trimTypedAddresses(w.address, 2);
 		ciphersuits.SK sk = util.Util.getStoredSK(w.globalID);
+		w.creation_date = Util.CalendargetInstance();
 		w.sign(sk);
-		return w._storeVerified();
+		w._storeVerified();
+		return w;
 	}
 	public D_PeerAddress instance() throws CloneNotSupportedException{
 		return new D_PeerAddress();
@@ -1427,7 +1684,8 @@ public class D_PeerAddress extends ASNObj {
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public static long get_peer_addresses_ID(String address, String type, long peer_ID, String adding_date) throws P2PDDSQLException{
+	public static long get_peer_addresses_ID(String address, String type,
+			long peer_ID, String adding_date, boolean certificate, int priority) throws P2PDDSQLException{
 		if(DEBUG) err.println("UpdateMessages:get_peer_addresses_ID for: "+Util.trimmed(address)+" id="+peer_ID);
 		long result=0;
 		if((type==null)||(address==null)){
@@ -1440,17 +1698,42 @@ public class D_PeerAddress extends ASNObj {
 		}
 		//Util.printCallPath("peer");
 		String sql = 
-			"SELECT "+table.peer_address.peer_address_ID+
+			"SELECT "+table.peer_address.peer_address_ID+","+table.peer_address.certified+","+table.peer_address.priority+
 			" FROM "+table.peer_address.TNAME+
-			" WHERE "+table.peer_address.peer_ID+" = ? and "+table.peer_address.address+" = ? AND "+table.peer_address.type+" = ?;";
+			" WHERE "+table.peer_address.peer_ID+" = ? AND "+table.peer_address.address+" = ? AND "+table.peer_address.type+" = ?;";
 		ArrayList<ArrayList<Object>> dt=
 			Application.db.select(sql, new String[]{Util.getStringID(peer_ID), address, type}, DEBUG);
-		if((dt.size()>=1) && (dt.get(0).size()>=1)) 
+		if(dt.size()>=1) { // && (dt.get(0).size()>=1)) {
+			boolean old_c = Util.stringInt2bool(dt.get(0).get(1), false);
+			int old_p = Util.get_int(dt.get(0).get(2));
+			if((old_c!=certificate)||(old_p!=priority)){
+				Application.db.update(table.peer_address.TNAME,
+						new String[]{table.peer_address.certified, table.peer_address.priority},
+						new String[]{table.peer_address.peer_address_ID},
+						new String[]{Util.bool2StringInt(certificate), ""+priority, Util.getString(dt.get(0).get(0))}, DEBUG);
+			}
 			return Long.parseLong(Util.getString(dt.get(0).get(0)));
+		}
+		try{
 		result=Application.db.insert(table.peer_address.TNAME,
-				new String[]{table.peer_address.address,table.peer_address.type,table.peer_address.peer_ID,table.peer_address.arrival_date},
-				new String[]{address, type, Util.getStringID(peer_ID), adding_date}, 
+				new String[]{table.peer_address.address,table.peer_address.type,
+				table.peer_address.peer_ID,table.peer_address.arrival_date,
+				table.peer_address.certified, table.peer_address.priority},
+				new String[]{address, type, Util.getStringID(peer_ID), adding_date,
+				Util.bool2StringInt(certificate), ""+priority}, 
 				DEBUG);
+		}catch(Exception e){
+			e.printStackTrace();
+			dt=  Application.db.select(sql, new String[]{Util.getStringID(peer_ID), address, type}, DEBUG);
+			if(dt.size()>=1) {
+				long r = Long.parseLong(Util.getString(dt.get(0).get(0)));
+				if(DEBUG) System.out.println("D_PeerAddress:ger_peer_addresses_ID: failed:"+r);
+				return r;
+			}else{
+				if(DEBUG) System.out.println("D_PeerAddress:ger_peer_addresses_ID: failed: ?");
+				return -1;
+			}
+		}
 		Application.db.update(table.peer.TNAME,
 				new String[]{table.peer.arrival_date},
 				new String[]{table.peer.peer_ID},
@@ -1567,30 +1850,6 @@ public class D_PeerAddress extends ASNObj {
 		if((signature!=null) && (signature.length()!=0)) return 1;
 		return -1;
 	}
-	
-	public static void main(String[] args) {
-		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-			if(args.length>0){readSignSave(1,1); if(true) return;}
-			
-			D_PeerAddress c=new D_PeerAddress("1", true);
-			if(!c.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread="+c);
-			else System.out.println("\n************Signature Pass\n**********\nread="+c);
-			Decoder dec = new Decoder(c.getEncoder().getBytes());
-			D_PeerAddress d = new D_PeerAddress().decode(dec);
-			//Calendar arrival_date = d.arrival_date=Util.CalendargetInstance();
-			//if(d.global_organization_ID==null) d.global_organization_ID = OrgHandling.getGlobalOrgID(d.organization_ID);
-			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
-			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
-			//d.storeVerified(Encoder.getGeneralizedTime(arrival_date));
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		} catch (ASN1DecoderFail e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 	public static String queryName(Component win) {
 		String peer_Name = Identity.current_peer_ID.name;
 		String val=
@@ -1642,6 +1901,30 @@ public class D_PeerAddress extends ASNObj {
 			DD.touchClient();
 		}
 	}
+
+	public static void changeMyPeerEmails(Component win) throws P2PDDSQLException {
+		if(Identity.current_peer_ID.globalID==null){
+			JOptionPane.showMessageDialog(win,
+					_("You are not yet a peer.\n Start your server first!"),
+					_("Peer Init"), JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+		if(DEBUG)System.out.println("peer_ID: "+Identity.current_peer_ID.globalID);
+		//String peer_Slogan = Identity.current_peer_ID.slogan;
+		String peer_Emails = D_PeerAddress.get_myself(null).emails;
+		String val=JOptionPane.showInputDialog(win, _("Change Peer Email.\nPreviously: ")+peer_Emails, _("Peer Emails"), JOptionPane.QUESTION_MESSAGE);
+		if((val!=null)&&(!"".equals(val))){
+			D_PeerAddress me = D_PeerAddress.get_myself(null);
+			me.emails = val;
+			me.sign(DD.getMyPeerSK());
+			me.storeVerified();
+			//Identity.current_peer_ID.slogan = val;
+			//DD.setAppText(DD.APP_my_peer_slogan, val);
+			//Server.update_my_peer_ID_peers_name_slogan();
+			//D_PeerAddress.re_init_myself();
+			DD.touchClient();
+		}
+	}
 	/**
 	 * Updating my name and slogan based on my global peer ID
 	 * new values are taken from globals
@@ -1668,9 +1951,9 @@ public class D_PeerAddress extends ASNObj {
 			peer_data.picture = Util.byteSignatureFromString(Identity.getMyCurrentPictureStr());
 			if(DEBUG) out.println("Server.update_my_peer_ID_peers_name_slogan_broadcastable: sign: "+peer_data);
 			byte[] signature = peer_data.sign(DD.getMyPeerSK());//Util.sign_peer(pa);
+			peer_data.signature = signature;
 			if(DEBUG){
 				//out.println("Server.update_my_peer_ID_peers_name_slogan_broadcastable "+peer_data);
-				peer_data.signature = signature;
 				if(!peer_data.verifySignature()){
 					if(DEBUG) out.println("Server:update_my_peer_ID_peers_name_slogan_broadcastable: signature verification failed at creation: "+peer_data);
 				}else{
@@ -1696,39 +1979,77 @@ public class D_PeerAddress extends ASNObj {
 		String creation_date=Encoder.getGeneralizedTime(_creation_date);
 		long pID = -1;
 		
-		if(addresses!=null) {
+		D_PeerAddress me = D_PeerAddress.get_or_create_myself(id, _creation_date, creation_date);
+		
+		if(addresses != null) {
 			String address[] = addresses.split(Pattern.quote(DirectoryServer.ADDR_SEP));
-			for(int k=0; k<address.length; k++)
-				if(k==0){
-					pID = update_insert_peer_myself(id, address[k], Address.SOCKET, _creation_date, creation_date);
-					if(pID<=0) throw new RuntimeException("Failure to insert myself");
-				}
-				else insert_peer_address_if_new(Util.getStringID(pID), address[k], Address.SOCKET, creation_date);
+			for(int k=0; k<address.length; k++){
+//				if(k==0){
+//					pID = update_insert_peer_myself(id, address[k], Address.SOCKET, _creation_date, creation_date, false, 0);
+//					if(pID<=0) throw new RuntimeException("Failure to insert myself");
+//				}
+//				else insert_peer_address_if_new(Util.getStringID(pID), address[k], Address.SOCKET, creation_date, false, 0);
+				me.addAddress(address[k], Address.SOCKET, creation_date, false, 0);
+			}
 		}
 		
+		int i=0;
 		for(String dir : Identity.listing_directories_string ) {
 			if(Server.DEBUG) out.println("server: announce to: "+dir);
 			String address_dir=dir;//.getHostName()+":"+dir.getPort();
-			if(pID==-1){
-				pID = update_insert_peer_myself(id, address_dir, Address.DIR, _creation_date, creation_date);
-				if(pID<=0) throw new RuntimeException("Failure to insert my directories");
-			}
-			else insert_peer_address_if_new(Util.getStringID(pID), address_dir, Address.DIR, creation_date);
+//			if(pID==-1){
+//				pID = update_insert_peer_myself(id, address_dir, Address.DIR, _creation_date, creation_date, true, i);
+//				if(pID<=0) throw new RuntimeException("Failure to insert my directories");
+//			}
+//			else insert_peer_address_if_new(Util.getStringID(pID), address_dir, Address.DIR, creation_date, true, i);
+			me.addAddress(address_dir, Address.DIR, creation_date, true, i);
+			i++;
 		}
-		re_init_myself();
+		//re_init_myself();
 		if(Server.DEBUG) out.println("server: setID Done!");
 		return pID;
 	}
-
+	public void addAddress(String _address, String type,
+			String arrival_date, boolean certified, int priority) throws P2PDDSQLException {
+		TypedAddress ta = new TypedAddress();
+		ta.address = _address;
+		ta.type = type;
+		ta.certified=certified;
+		ta.priority = priority;
+		ta.arrival_date = arrival_date;
+		if(this.address==null){
+			address = new TypedAddress[]{ta};
+		}else{
+			TypedAddress c = TypedAddress.getLastContact(address, ta);
+			if(c==null){
+				address = TypedAddress.insert(address, ta);
+				if(ta.certified){
+					sign(DD.getMyPeerSK());
+					this.storeVerified(arrival_date);
+				}else{
+					ta.store_or_update(peer_ID, false);
+				}
+			}else{
+				c.certified = certified;
+				c.priority = priority;
+				ta.store_or_update(peer_ID, false);
+				//c.arrival_date = arrival_date;
+			}
+		}
+	}
 	/**
 	 * Either insert or update myself as peer in the peers table and in peer_addressess
 	 * Called from _set_my_peer_ID when starting a TCP or UDP server
 	 * @param id
 	 * @param address
 	 * @param type
+	 * @param certified 
+	 * @param priority 
 	 * @throws P2PDDSQLException
 	 */
-	public static long update_insert_peer_myself(Identity id, String address, String type, Calendar _creation_date, String creation_date) throws P2PDDSQLException{
+	@Deprecated
+	public static long update_insert_peer_myself(Identity id, String address, String type,
+			Calendar _creation_date, String creation_date, boolean certified, int priority) throws P2PDDSQLException{
 		if(Server.DEBUG) out.println("Server:update_insert_peer_myself: id="+id+" address="+address+" type="+type);
 		long pID;
 		D_PeerAddress peer_data = D_PeerAddress.get_myself(id.globalID);
@@ -1767,13 +2088,15 @@ public class D_PeerAddress extends ASNObj {
 			if(Server.DEBUG) out.println("Server:update_insert_peer_myself: inserted"+pID);
 			pID= Application.db.insert(table.peer_address.TNAME,
 					new String[]{table.peer_address.address, table.peer_address.type,
-					table.peer_address.peer_ID, table.peer_address.arrival_date},
-					new String[]{address, type, Util.getStringID(pID), creation_date},
+					table.peer_address.peer_ID, table.peer_address.arrival_date,
+					table.peer_address.certified, table.peer_address.priority},
+					new String[]{address, type, Util.getStringID(pID), creation_date,
+					Util.bool2StringInt(certified), ""+priority},
 					Server.DEBUG);
 		}else{
 			String my_peer_ID = peer_data.peer_ID;
 			if(Server.DEBUG) out.println("old val:"+my_peer_ID);
-			insert_peer_address_if_new(my_peer_ID, address, type, creation_date);
+			insert_peer_address_if_new(my_peer_ID, address, type, creation_date, certified, priority);
 		}
 		if(Server.DEBUG) out.println("Server:update_insert_peer_myself: done");
 		return pID;
@@ -1785,18 +2108,25 @@ public class D_PeerAddress extends ASNObj {
 	 * @param address
 	 * @param type
 	 * @param creation_date
+	 * @param certified 
+	 * @param priority 
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public static long insert_peer_address_if_new(String _peer_ID, String address, String type, String creation_date) throws P2PDDSQLException{
+	@Deprecated
+	public static long insert_peer_address_if_new(String _peer_ID, String address, String type,
+			String creation_date, boolean certified, int priority) throws P2PDDSQLException{
 		long result=-1;
-		ArrayList<ArrayList<Object>> op = Application.db.select("SELECT "+table.peer_address.peer_address_ID+" FROM "+table.peer_address.TNAME+" WHERE "+table.peer_address.peer_ID+" = ? AND "+table.peer_address.address+"=?;",
+		ArrayList<ArrayList<Object>> op = Application.db.select("SELECT "+table.peer_address.peer_address_ID+" FROM "+table.peer_address.TNAME+
+				" WHERE "+table.peer_address.peer_ID+" = ? AND "+table.peer_address.address+"=?;",
 				new String[]{_peer_ID+"", address});
 		if(Server.DEBUG) out.println("Server:update_insert_peer_address_myself:db addr results="+op.size());
 		if (op.size()==0) {
 			result = Application.db.insert(table.peer_address.TNAME,
-					new String[]{table.peer_address.address, table.peer_address.type, table.peer_address.peer_ID, table.peer_address.arrival_date},
-					new String[]{address, type, _peer_ID, creation_date} , Server.DEBUG);
+					new String[]{table.peer_address.address, table.peer_address.type,
+					table.peer_address.peer_ID, table.peer_address.arrival_date,
+					table.peer_address.certified, table.peer_address.priority},
+					new String[]{address, type, _peer_ID, creation_date, Util.bool2StringInt(certified), ""+ priority} , Server.DEBUG);
 		}
 		else result = Util.lval(op.get(0).get(0), -1);
 		return result;
@@ -1810,11 +2140,18 @@ public class D_PeerAddress extends ASNObj {
 	public static DDAddress getMyDDAddress() throws P2PDDSQLException {
 		DDAddress myAddress;
 		D_PeerAddress me = D_PeerAddress.get_myself(Identity.current_peer_ID.globalID);
-		if(!me.verifySignature()){
+		if(DEBUG) System.out.println("D_PeerAddress:getMyDDAddress: D_PeerAddress: "+me);
+		if(!me.verifySignature()) {
+			if(_DEBUG) System.out.println("D_PeerAddress:getMyDDAddress: fail signature: "+me);
+			me.sign(DD.getMyPeerSK());
+			me.storeVerifiedForce();
+		}
+		if(!me.verifySignature()) {
 			Application.warning(_("Inconsistent identity. Please restart app."), _("Inconsistant Identity"));
 			return null;
 		}
 		myAddress = new DDAddress(me);
+		if(DEBUG) System.out.println("D_PeerAddress:getMyDDAddress: DD_Address: "+myAddress);
 		return myAddress;
 	}
 		/*
@@ -1891,4 +2228,126 @@ public class D_PeerAddress extends ASNObj {
 		}
 		return false;
 	}
+	public static String getDisplayName(long peer_ID) {
+		String sql = 
+				"SELECT p."+table.peer.name+",m."+table.peer_my_data.name+
+					" FROM "+table.peer.TNAME+" AS p "+
+					" LEFT JOIN "+table.peer_my_data.TNAME+" AS m ON (p."+table.peer.peer_ID+"=m."+table.peer_my_data.peer_ID+") "+
+					" WHERE "+table.peer.peer_ID+"=? ;";
+		ArrayList<ArrayList<Object>> n;
+		try {
+			n = Application.db.select(sql, new String[]{Util.getStringID(peer_ID)}, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		if(n.size()==0) return null;
+		String my_name = Util.getString(n.get(0).get(1));
+		if(my_name!=null) return my_name;
+		String name = Util.getString(n.get(0).get(0));
+		return name;
+	}
+
+	
+	public static void _main(String[] args) {
+		try {
+			DEBUG = true;
+			hds.TypedAddress.DEBUG=true;
+			//hds.TypeAddress.DEBUG=true;
+			long id = 1;
+			if(args.length>0) id = Integer.parseInt(args[0]);
+			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			if(id<0){
+				id=-id;
+				D_PeerAddress w = readSignSave(id,id, true); 
+				System.out.println("\n************Signed\n**********\nread="+w);
+				if(!w.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread=");
+				else System.out.println("\n************Signature Pass\n**********\nread=");
+				if(true) return;}
+			
+			D_PeerAddress c=new D_PeerAddress(""+id, true);
+			if(!c.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread="+c);
+			else System.out.println("\n************Signature Pass\n**********\nread="+c);
+			Decoder dec = new Decoder(c.getEncoder().getBytes());
+			D_PeerAddress d = new D_PeerAddress().decode(dec);
+			//Calendar arrival_date = d.arrival_date=Util.CalendargetInstance();
+			//if(d.global_organization_ID==null) d.global_organization_ID = OrgHandling.getGlobalOrgID(d.organization_ID);
+			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
+			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
+			//d.storeVerified(Encoder.getGeneralizedTime(arrival_date));
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void main(String[] args){
+		try{
+			if(args.length == 0) {
+				System.out.println("prog database id fix verbose");
+				return;
+			}
+			
+			String database = Application.DELIBERATION_FILE;
+			if(args.length>0) database = args[0];
+			
+			long id = 0;
+			if(args.length>1) id = Long.parseLong(args[1]);
+			
+			boolean fix = false;
+			if(args.length>2) fix = Util.stringInt2bool(args[2], false);
+			
+			//boolean verbose = false;
+			if(args.length>3) DEBUG = Util.stringInt2bool(args[3], false);
+			
+			
+			Application.db = new DBInterface(database);
+			
+			ArrayList<ArrayList<Object>> l;
+			if(id<=0){
+				l = Application.db.select(
+						"SELECT "+table.peer.peer_ID+
+						" FROM "+table.peer.TNAME, new String[]{}, DEBUG);
+				for(ArrayList<Object> a: l){
+					String m_ID = Util.getString(a.get(0));
+					long ID = Util.lval(m_ID, -1);
+					D_PeerAddress m = new D_PeerAddress(ID);
+					if(m.signature==null){
+						System.out.println("Fail:temporary "+m_ID+":"+m.peer_ID+":"+m.name);
+						continue;
+					}
+					if(m.globalIDhash==null){
+						System.out.println("Fail:edited "+m_ID+":"+m.peer_ID+":"+m.name);
+						continue;
+					}
+					if(!m.verifySignature()){
+						System.out.println("Fail: "+m.peer_ID+":"+m.name);
+						if(fix){
+							readSignSave(ID,ID,true);
+						}
+					}
+				}
+				return;
+			}else{
+				long ID = id;
+				D_PeerAddress m = new D_PeerAddress(ID+"");
+				if(fix)
+					if(!m.verifySignature()) {
+						System.out.println("Fixing: "+m.peer_ID+":"+m.name);
+						readSignSave(ID, ID, true);
+					}
+				else if(!m.verifySignature())
+					System.out.println("Fail: "+m.peer_ID+":"+m.name);
+				return;
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 }

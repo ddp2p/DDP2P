@@ -36,12 +36,12 @@ import ASN1.Encoder;
 class RSA_PK extends PK{
 	final static String type="RSA";
 	final static String V0="0";
+	String version = V0; // version to write out, decoding converts to this version
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	String hash_alg="SHA-256";//"MD5";
 	BigInteger N;
 	BigInteger e;
-	String version = V0; // version to write out, decoding converts to this version
 	static SecureRandom sr = new SecureRandom();
 	public String toString() {
 		return "\nRSA_PK: [\ne="+e+"\n,N="+N+"]";

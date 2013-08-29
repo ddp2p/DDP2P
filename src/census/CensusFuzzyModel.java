@@ -361,9 +361,14 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 																				// Name
 			else
 				rowData.add(constituentName.get(0).get(0));// 1st Column:
-															// Constituent Name
-			rowData.add(statistic.value);// 2nd column: Value
-			rowData.add(statistic.threshold);// 3rd column: threshold testing:
+
+			// Constituent Name
+			if(statistic!=null){
+				rowData.add(statistic.value);// 2nd column: Value
+				rowData.add(statistic.threshold);// 3rd column: threshold testing:
+			}else{
+				System.err.println("CensusFuzzyModel:populateTable: statistics are null!");
+			}
 												// passed or fail
 			tableData[i] = rowData;// Populate dat of i-th row
 			i++;

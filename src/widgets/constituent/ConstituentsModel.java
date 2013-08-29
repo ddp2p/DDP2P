@@ -1385,7 +1385,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		
 		
 		if(_constituent_ID<0)
-			_constituent_ID = Util.lval(D_Constituent.getConstituentLocalID(global_constituent_ID), -1);
+			_constituent_ID = Util.lval(D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID), -1);
 
 		SK sk = DD.getConstituentSK(_constituent_ID);
 		if(sk==null){

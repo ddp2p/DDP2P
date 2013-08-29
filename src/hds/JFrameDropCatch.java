@@ -173,7 +173,7 @@ public class JFrameDropCatch extends JFrame {
                	}
 				in = (InputStream)o;
                	if(DEBUG) System.out.println("getFromInputStream: starting input");
-				result = data.fromBMPStreamSave(in);
+				result = EmbedInMedia.fromBMPStreamSave(in, data);
 			} catch (UnsupportedFlavorException e) {
                	if(DEBUG) System.out.println("getFromInputStream: not supported flavor "+e);
 				return false;
@@ -208,7 +208,7 @@ public class JFrameDropCatch extends JFrame {
 				//Object content = null; //url.getContent();
 				//System.out.println("Got url: content="+content+" data="+url.getFile()+" url="+url);
 				in = url.openStream();
-				result = data.fromBMPStreamSave(in);
+				result = EmbedInMedia.fromBMPStreamSave(in, data);
 			} catch (UnsupportedFlavorException e) {
                	if(DEBUG) System.out.println("getFromBMPStream: not supported flavor "+e);
 				return false;
@@ -239,7 +239,7 @@ public class JFrameDropCatch extends JFrame {
             	if(DEBUG) System.err.println("getFromURIString: Got string= "+i);
 				url = new URL(i);
 				in = url.openStream();
-				result = data.fromBMPStreamSave(in);
+				result = EmbedInMedia.fromBMPStreamSave(in, data);
 			} catch (UnsupportedFlavorException e) {
                	if(DEBUG) System.out.println("getFromURIString: not supported flavor "+e);
 				return false;
@@ -254,7 +254,7 @@ public class JFrameDropCatch extends JFrame {
           	return result;
         }
 
-        boolean getFromURIHTML(Transferable t, DataFlavor df, DDAddress data) throws P2PDDSQLException{
+        boolean getFromURIHTML(Transferable t, DataFlavor df, StegoStructure data) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromURIHTML: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -276,7 +276,7 @@ public class JFrameDropCatch extends JFrame {
             	if(DEBUG) System.err.println("getFromURIHTML: Got string= "+i);
 				url = new URL(i);
 				in = url.openStream();
-				result = data.fromBMPStreamSave(in);
+				result = EmbedInMedia.fromBMPStreamSave(in, data);
 			} catch (UnsupportedFlavorException e) {
                	if(DEBUG) System.out.println("getFromURIHTML: not supported flavor "+e);
 				return false;
@@ -292,7 +292,7 @@ public class JFrameDropCatch extends JFrame {
        		return result;
         }
 
-        boolean getFromImage(Transferable t, DataFlavor df, DDAddress data) throws P2PDDSQLException{
+        boolean getFromImage(Transferable t, DataFlavor df, StegoStructure data) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromImage: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -312,9 +312,10 @@ public class JFrameDropCatch extends JFrame {
               		Util.getPixBytes(bi, 0, bi.getHeight()-1);
               		Util.getPixBytes(bi, bi.getWidth()-1, bi.getHeight()-1);
               		if(DEBUG) System.err.println("importData: will Stegano image: "+i);
-                    DDAddress d= DDAddress.setSteganoImage(bi);
-                    data.setDDAddress(d);
-                    if(DEBUG) System.err.println("importData: did Stegano image: "+d);
+                    //DDAddress d= (DDAddress)EmbedInMedia.setSteganoImage(bi, new DDAddress());
+                    //data.setDDAddress(d);
+              		StegoStructure d= EmbedInMedia.setSteganoImage(bi, data);
+                    if(DEBUG) System.err.println("importData: did Stegano image: "+data);
             		if(d!=null){
             			if(DEBUG) System.err.println("importData: Got image successfully");
             			/*
@@ -373,7 +374,7 @@ public class JFrameDropCatch extends JFrame {
                 if(DEBUG) System.err.println("getFromFileList: Got files: "+l);
                 for (File f : l) {
                 	if(DEBUG) System.err.println("getFromFileList: Got file: "+f);
-                	result |= d.fromBMPFileSave(f);
+                	result |= EmbedInMedia.fromBMPFileSave(f,d);
                 	/*
                 	JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
                 			_("Obtained DDAddress:")+"\n"+d,

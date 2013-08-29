@@ -701,6 +701,8 @@ public class Prepare_messages {
 		TypedAddress pa_ta = new TypedAddress();
 		pa_ta.address = pa.get(0).toString();
 		pa_ta.type = pa.get(1).toString();
+		pa_ta.certified = Util.stringInt2bool(pa.get(2), false);
+		pa_ta.priority = Util.get_int(pa.get(3));
 		return pa_ta;
 	}
 
@@ -810,7 +812,7 @@ public class Prepare_messages {
 			l_peer.address = get_Paddress(Util.getString(peer.get(table.peer.PEER_COL_ID)));
 		}
 		l_peer.served_orgs = data.D_PeerAddress._getPeerOrgs(global_creator_id);
-		l_peer.address = D_PeerAddress.getAddress(UpdatePeersTable.getPeerAddresses(global_creator_id));
+		l_peer.address = TypedAddress.getAddress(UpdatePeersTable.getPeerAddresses(global_creator_id));
 		return l_peer;
 	}
 

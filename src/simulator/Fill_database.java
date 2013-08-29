@@ -943,6 +943,8 @@ private static D_PeerAddress get_peer_by_ID(long p_id) throws P2PDDSQLException 
 			pa.address[i] = new TypedAddress();
 			pa.address[i].address = "163.118.78.4"+i+":25123";
 			pa.address[i].type = "DIR";
+			pa.address[i].certified = true;
+			pa.address[i].priority = i;
 		}
 		try {
 			peer_ID = handling_wb.ReceivedBroadcastableMessages.add_peer(pa, false);

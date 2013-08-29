@@ -383,7 +383,7 @@ public class Orgs extends JTable implements MouseListener {
     	OrgsToggleServingAction sAction;
     	OrgsCustomAction cAction;
     	
-    	aAction = new OrgsAddAction(this, _("Add!"), delicon,_("Add new organization."), _("Add"),KeyEvent.VK_A);
+    	aAction = new OrgsAddAction(this, _("Add!"), addicon,_("Add new organization."), _("Add"),KeyEvent.VK_A);
     	aAction.putValue("row", new Integer(row));
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);
@@ -403,10 +403,10 @@ public class Orgs extends JTable implements MouseListener {
     	pdAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(pdAction));
     	
-    	if(getModel().isServing(row))
+    	if(getModel().isAdvertised(row))
     		sAction = new OrgsToggleServingAction(this, _("Stop Advertising!"), delicon,_("Stop advertising this organization."), _("Stop Advertising"),KeyEvent.VK_S);
     	else
-       		sAction = new OrgsToggleServingAction(this, _("Advertise!"), delicon,_("Advertise this organization."), _("Advertise"),KeyEvent.VK_S);
+       		sAction = new OrgsToggleServingAction(this, _("Advertise!"), addicon,_("Advertise this organization."), _("Advertise"),KeyEvent.VK_S);
     	sAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(sAction));
       	
@@ -445,6 +445,15 @@ public class Orgs extends JTable implements MouseListener {
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
+	public D_Organization getCurrentOrg() {
+		String gID = this.getModel().getOrgGID(convertRowIndexToModel(this.getSelectedRow()));
+		try {
+			return new D_Organization(gID, null);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 }
 
 
@@ -731,26 +740,32 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		return (String)_hash[row];
 	}
 	public boolean isServing(int row) {
-		if(DEBUG) System.out.println("\n************\nOrgs:OgsModel:isServing: row="+row);
+		if(DEBUG) System.out.println("\n************\nOrgs:OrgsModel:isServing: row="+row);
 		return isBroadcasted(row);
 		/*
+		*/
+	}
+	public boolean isAdvertised(int row) {
+		if(DEBUG) System.out.println("\n************\nOrgs:OrgsModel:isAdvertised: row="+row);
 		boolean result= false;
 		try {
 			if(isServingAndPresent(row)) result = true;
-		} catch (Exception e) {}
-		if(DEBUG) System.out.println("Orgs:OgsModel:isServing: exit with="+result);
+		} catch (Exception e) {
+			result = false;
+		}
+		if(DEBUG) System.out.println("Orgs:OgsModel:isAdvertised: exit with="+result);
 		if(DEBUG) System.out.println("*****************");
 		return result;
-		*/
-	}
+	}	
 	public boolean isServingAndPresent(int row) throws Exception {
 		boolean result= false;
-		if(DEBUG) System.out.println("\n************\nOrgs:OgsModel:isServingAndPresent: row="+row);
+		if(DEBUG) System.out.println("\n************\nOrgs:OrgsModel:isServingAndPresent: row="+row);
 		ArrayList<ArrayList<Object>> s;
-		String sql = "SELECT "+table.peer_org.served+
-			" FROM "+table.peer_org.TNAME+
-			" LEFT JOIN "+table.peer.TNAME+" ON("+table.peer.peer_ID+"="+table.peer_org.peer_ID+") "+
-			" WHERE "+table.peer.global_peer_ID +" = ? AND "+table.peer_org.organization_ID+" = ?;";
+		String sql = "SELECT po."+table.peer_org.served+
+			" FROM "+table.peer_org.TNAME+" AS po "+
+			" LEFT JOIN "+table.peer.TNAME+" AS p" +
+					" ON(p."+table.peer.peer_ID+"=po."+table.peer_org.peer_ID+") "+
+			" WHERE p."+table.peer.global_peer_ID +" = ? AND po."+table.peer_org.organization_ID+" = ?;";
 		String global_peer_ID = Identity.current_peer_ID.globalID;
 		//String pID = table.peer.getLocalPeerID(global_peer_ID);
 		String organization_ID = Util.getString(this._orgs[row]);
@@ -778,7 +793,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	 */
 	public static boolean toggleServing(String organization_ID, boolean toggle, boolean val) {
 		if(_DEBUG) System.err.println("\n************\nOrgs:OrgsModel:toggleServing: orgID=" + Util.trimmed(organization_ID)+" toggle="+toggle+" val="+val);
-		boolean serving = true;
+		boolean old_serving = true;
 		
 		// First set it in served orgs
 		String global_peer_ID = Identity.current_peer_ID.globalID;
@@ -795,23 +810,33 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 				" FROM "+table.peer_org.TNAME+
 				" WHERE "+table.peer_org.peer_ID +" = ? AND "+table.peer_org.organization_ID+" = ?;";
 			s = Application.db.select(sql, new String[]{ peer_ID, organization_ID}, _DEBUG);
-			if(s.size()==0) throw new Exception("No record found");//return false;
-			if(Util.stringInt2bool(Util.getString(s.get(0).get(0)), false)) serving = true;
-			else serving = false;
-			if(_DEBUG) System.out.println("\n************\nOrgs:OgsModel:toggleServing: old serving=" +serving);
+			if(s.size()==0){
+				old_serving = false;
+				throw new Exception("No record found");//return false;
+			}
+			if(Util.stringInt2bool(Util.getString(s.get(0).get(0)), false)) old_serving = true;
+			else old_serving = false;
+			if(_DEBUG) System.out.println("\n************\nOrgs:OgsModel:toggleServing: old serving=" +old_serving);
 
 			//set it in served orgs
-			if(toggle) val = !serving;
+			if(toggle) val = !old_serving;
 			String _serving = Util.bool2StringInt(val);
-			Application.db.update(table.peer_org.TNAME, new String[]{table.peer_org.served},
-					new String[]{table.peer_org.peer_ID, table.peer_org.organization_ID},
-					new String[]{_serving, peer_ID, organization_ID}, _DEBUG);
+			if(val) {
+				Application.db.update(table.peer_org.TNAME, new String[]{table.peer_org.served},
+						new String[]{table.peer_org.peer_ID, table.peer_org.organization_ID},
+						new String[]{_serving, peer_ID, organization_ID}, _DEBUG);
+			}else{
+				Application.db.delete(table.peer_org.TNAME,
+						new String[]{table.peer_org.peer_ID,  table.peer_org.organization_ID},
+						new String[]{peer_ID, organization_ID}, _DEBUG);
+			}
 			setBroadcasting(organization_ID, val); // set in organization.broadcasted
 		} catch (Exception e) {
 			// if not serve so far, serve now!
 			try {
-				if(_DEBUG) System.out.println("\n************\nOrgs:OgsModel:toggleServing: old serving=" +serving);
-				if(toggle) val = !serving;
+				if(_DEBUG) System.out.println("\n************\nOrgs:OrgModel:toggleServing: old serving=" +old_serving);
+				if(old_serving) util.Util.printCallPath("Old Serving unexpected!");
+				if(toggle) val = !old_serving;
 				String _serving = Util.bool2StringInt(val);
 				Application.db.insert(table.peer_org.TNAME,
 						new String[]{table.peer_org.served,table.peer_org.peer_ID,table.peer_org.organization_ID},
@@ -822,11 +847,26 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 				return false;
 			}
 		}
+		if(val) {
+			ArrayList<ArrayList<Object>> s;
+			String sql = "SELECT "+table.organization.broadcast_rule+
+				" FROM "+table.organization.TNAME+
+				" WHERE "+table.organization.organization_ID+" = ?;";
+			try {
+				s = Application.db.select(sql, new String[]{organization_ID}, _DEBUG);
+				if(s.size()>0)
+					if(!Util.stringInt2bool(s.get(0).get(0), false)){
+						Application.warning(_("It is not recommended to advertise a private organization!"), _("Private organization"));
+					}
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
 		// need to sign again my peer due to served_orgs
 		hds.Server.update_my_peer_ID_peers_name_slogan();
-		if(_DEBUG) System.out.println("Orgs:OgsModel:toggleServing: exit with="+(!serving));
+		if(_DEBUG) System.out.println("Orgs:OgsModel:toggleServing: exit with="+(!old_serving));
 		if(_DEBUG) System.out.println("*****************");
-		return !serving;
+		return !old_serving;
 	}
 	public void setCurrent(long org_id) {
 		//boolean DEBUG = true;
@@ -1231,11 +1271,13 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		}
 	}
 	/**
-	 * change org.broadcasted Better change with toggleServing which sets also peer.served_orgs
+	 * This function just sets the "broadcasted" flag (calling sync on the database).
+	 * To change "org.broadcasted" (if also advertising it!), better change with toggleServing
+	 *  which sets also "peer.served_orgs" (by calling this).
 	 * @param orgID
 	 * @param val
 	 */
-	private static void setBroadcasting(String orgID, boolean val) {
+	public static void setBroadcasting(String orgID, boolean val) {
 		if(DEBUG) System.out.println("Orgs:setBroadcasting: set="+val+" for orgID="+orgID);
 		try {
 			Application.db.update(table.organization.TNAME,

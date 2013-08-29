@@ -103,6 +103,12 @@ public class BMP {
 		palette=Util.extBytes(data, offset+PALETTE, palette);
 		palette_imp=Util.extBytes(data, offset+PALETTE_IMP, palette_imp);		
 	}
+	/**
+	 * Fill data array with values from, this header
+	 * @param data
+	 * @param offset
+	 * @return
+	 */
 	public byte[] getHeader(byte[] data, int offset){
 		Util.copyBytes(data,offset+BM,bm,2,0);
 		Util.copyBytes(data, offset+FILESIZE, filesize);

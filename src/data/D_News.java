@@ -348,7 +348,7 @@ class D_News extends ASNObj{
 		}
 		
 		if((this.constituent_ID == null ) && (this.global_constituent_ID != null))
-			this.constituent_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(this.global_constituent_ID);
 		if((this.constituent_ID == null ) && (this.global_constituent_ID != null)) {
 			constituent_ID =
 				""+D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID);
@@ -400,7 +400,7 @@ class D_News extends ASNObj{
 		}
 		
 		if((this.global_constituent_ID!=null)&&(constituent_ID == null)){
-			this.constituent_ID = D_Constituent.getConstituentLocalID(global_constituent_ID);
+			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID);
 			if(tempConst && (constituent_ID == null ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
 				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
@@ -439,7 +439,7 @@ class D_News extends ASNObj{
 		
 		if(DEBUG) System.out.println("WB_Motion:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		if(this.constituent_ID == null )
-			constituent_ID = D_Constituent.getConstituentLocalID(this.global_constituent_ID);
+			constituent_ID = D_Constituent.getConstituentLocalIDFromGID(this.global_constituent_ID);
 		if(constituent_ID == null){
 			if(DEBUG) System.out.println("WB_Motion:storeVerified: no signer!");
 			return -1;

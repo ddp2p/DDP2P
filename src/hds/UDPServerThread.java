@@ -26,6 +26,7 @@ import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import streaming.RequestData;
 import streaming.UpdateMessages;
@@ -46,11 +47,14 @@ import config.Identity;
 import data.D_PeerAddress;
 
 public class UDPServerThread extends Thread {
+	private static final HashSet<SocketAddress> handled = new HashSet<SocketAddress>();
 	public static boolean DEBUG = false;
 	public static boolean _DEBUG = true;
 	DatagramPacket pak;
 	UDPServer us;
 	String peer_address;
+	private static int verification_warning = 0;
+	private static final int MAX_VERIFICATION_WARNING = 3;
 	/**
 	 * Handle a UDP packet
 	 * @param _pak
@@ -123,8 +127,10 @@ public class UDPServerThread extends Thread {
 				try {
 					frag.decode(dec);
 					if(DEBUG)System.out.println("UDPServer:run: Packet received is fragment "+frag.msgID+" ack from: "+pak.getSocketAddress());
-					us.getFragmentAck(frag);
+					us.getFragmentAck(frag, pak.getSocketAddress());
 				} catch (ASN1DecoderFail e) {
+					e.printStackTrace();
+				} catch (IOException e) {
 					e.printStackTrace();
 				}
 				return;
@@ -254,6 +260,16 @@ public class UDPServerThread extends Thread {
 						System.err.println("UDPServer:run: Unsigned Request sent: "+asr.toSummaryString());
 						System.err.println("UDPServer:run: Unsigned Request rsent: "+asr.toString());
 						System.err.println("UDPServer:run: Unsigned Request old: "+asreq.toString());
+						if(verification_warning ++ < MAX_VERIFICATION_WARNING)
+							new Thread(){
+								public void run(){
+									Application.warning(Util._("Abandoned sending message with inconsistent request")+
+									"\n"+
+											Util._("You can disable verification of sent messages!")+
+											"\n"+verification_warning+"/"+MAX_VERIFICATION_WARNING,
+											Util._("Message no longer sent!"));
+								}
+							}.start();
 						return;
 					}					
 				}
@@ -310,6 +326,7 @@ public class UDPServerThread extends Thread {
 			if(DEBUG)System.out.println("UDPServer:run: UDPServer pinged on request: "+aup);
 		  } catch (ASN1DecoderFail e) {
 			  if(DEBUG)System.out.println("Ping decoding failed! "+e);
+			  e.printStackTrace();
 		  } catch (P2PDDSQLException e) {
 			  if(DEBUG)System.out.println("Database access failed! "+e);
 			e.printStackTrace();
@@ -335,10 +352,23 @@ public class UDPServerThread extends Thread {
 		}
 		
 		if(dec.getTypeByte()==DD.TAG_AC7) {
-		  ASNSyncRequest asr = new ASNSyncRequest();
+			
+		  ASNSyncRequest asr;
+		  SocketAddress psa = null;
 		  if(DEBUG)System.out.println("\n*******************\nUDPServer:run: Trying to decode request!");
 		  try { // This is not a ping. Check if it is a request
-			SocketAddress psa = pak.getSocketAddress();
+			psa = pak.getSocketAddress();
+
+			if(DD.DROP_DUPLICATE_REQUESTS){
+				synchronized(handled){
+					if(handled.contains(psa)){
+						if(_DEBUG)System.out.println("UDPServer: Abandoned duplicate request from: "+psa);
+						return;
+					}
+					handled.add(psa);
+				}
+			}
+			asr = new ASNSyncRequest();
 			asr.decode(dec);
 			if(DEBUG)System.out.println("UDPServer: Received request from: "+psa);
 			if(_DEBUG)System.out.println("UDPServer: Decoded request: "+asr.toSummaryString()+" from: "+psa);
@@ -346,7 +376,7 @@ public class UDPServerThread extends Thread {
 				DD.ed.fireServerUpdate(new CommEvent(this, null, psa, "UDPServer", "Unsigned Sync Request received: "+asr));
 				System.err.println("UDPServer:run: Unsigned Request received: "+asr.toSummaryString());
 				System.err.println("UDPServer:run: Unsigned Request received: "+asr.toString());
-				return;
+				throw new Exception("Unsigned request");
 			}
 			
 			Server.extractDataSyncRequest(asr, psa, this);
@@ -357,14 +387,15 @@ public class UDPServerThread extends Thread {
 			else{
 				if(DEBUG)System.out.println("UDPServer:run: request from UNKNOWN abandoned");
 				if(DEBUG)System.out.println("UDPServer:run: Answer not sent!");
-				return;			
+				throw new Exception("Unknown peer");
 			}
 			
 			if(UDPServer.transferringPeerAnswerMessage(peerGID)){
 				if(DEBUG)System.out.println("UDPServer:run: UDPServer Answer being sent for: "+Util.trimmed(peerGID));
-				return;
+				throw new Exception("While transferring answer to same peer");
 			}
 			String peer_ID = table.peer.getLocalPeerID(peerGID);
+			if(asr.address!=null)asr.address.peer_ID = peer_ID;
 			//D_PluginInfo.recordPluginInfo(asr.plugin_info, peerGID, peer_ID);
 			if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_UDP);
 			
@@ -386,54 +417,62 @@ public class UDPServerThread extends Thread {
 		  } catch (Exception e) {
 			e.printStackTrace();
 		  }
+		  
+		  if(DD.DROP_DUPLICATE_REQUESTS){
+			  synchronized(handled){
+				  if(psa!=null)handled.remove(psa);
+			  }
+		  }
 		  return;
 		}
 
 		if(dec.getTypeByte()==DD.TAG_AC8) {
-		  if(_DEBUG)System.out.println("\n*************\nUDPServer:run: Answer received fully from "+pak.getSocketAddress());
-		  SyncAnswer sa = new SyncAnswer();
-		  try {
-			sa.decode(dec);
-			// System.out.println("Answer received is: "+Util.trimmed(sa.toString(),Util.MAX_UPDATE_DUMP));
-			if(DEBUG)System.out.println("UDPServer:run: Answer received & decoded from: "+pak.getSocketAddress());
-			if(_DEBUG)System.out.println("UDPServer:run: Answer received is: "+sa.toSummaryString());
-			// integrate answer
-			//int len = dec.getMSGLength();
-			String global_peer_ID = sa.responderID;
-			D_PeerAddress peer =null;
-			String peer_ID = null;
-			boolean blocked[] = new boolean[]{true};
-			if(global_peer_ID!=null) {
-				peer = new D_PeerAddress(global_peer_ID, false, false, true);
-				peer_ID = peer.peer_ID; //table.peer.getLocalPeerID(global_peer_ID);
-				blocked[0] = peer.blocked;
-			}
-			//String peer_ID = table.peer.getLocalPeerID(global_peer_ID, blocked);
-			if((peer_ID!=null)&&blocked[0]) return;
-			if(peer_ID == null) {
-				if(_DEBUG)System.out.println("UDPServer:run: Answer received from unknown peer: "+global_peer_ID);
+			boolean DEBUG=true;
+			if(_DEBUG)System.out.println("\n*************\nUDPServer:run: Answer received fully from "+pak.getSocketAddress());
+			SyncAnswer sa = new SyncAnswer();
+			try {
+				sa.decode(dec);
+				// System.out.println("Answer received is: "+Util.trimmed(sa.toString(),Util.MAX_UPDATE_DUMP));
+				if(DEBUG)System.out.println("UDPServer:run: Answer received & decoded from: "+pak.getSocketAddress());
+				if(_DEBUG)System.out.println("UDPServer:run: Answer received is: "+sa.toSummaryString());
+				// integrate answer
+				//int len = dec.getMSGLength();
+				String global_peer_ID = sa.responderID;
+				D_PeerAddress peer =null;
+				String peer_ID = null;
+				boolean blocked[] = new boolean[]{true};
+				if(global_peer_ID!=null) {
+					// may decide to load addresses only for versions >= 2
+					peer = new D_PeerAddress(global_peer_ID, false, true, true);
+					peer_ID = peer.peer_ID; //table.peer.getLocalPeerID(global_peer_ID);
+					blocked[0] = peer.blocked;
+				}
+				//String peer_ID = table.peer.getLocalPeerID(global_peer_ID, blocked);
+				if((peer_ID!=null)&&blocked[0]) return;
+				if(peer_ID == null) {
+					if(_DEBUG)System.out.println("UDPServer:run: Answer received from unknown peer: "+global_peer_ID);
 				
-			} else
-				if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_UDP);
-			
-			//System.out.println("Got msg size: "+len);//+"  bytes: "+Util.byteToHex(update, 0, len, " "));
-			if(DEBUG)System.out.println("UDPServer:run: Answer received will be integrated");
-			InetSocketAddress saddr = (InetSocketAddress)pak.getSocketAddress();
-			String address_ID = null;
-			if(peer_ID != null) address_ID = D_PeerAddress.getAddressID(saddr, peer_ID);
-			RequestData rq = new RequestData();
-			if((UpdateMessages.integrateUpdate(sa, saddr, this, global_peer_ID, peer_ID, address_ID, rq, peer))||
-					((rq!=null) && !rq.empty())){
-				if(DEBUG) System.out.println("UDPServer:run: Should reply with request for: "+rq);
-				DD.touchClient();
-			}
-			if(DEBUG)System.out.println("UDPServer:run: Answer received and integrated "+pak.getSocketAddress());
-			if(DEBUG)if((rq!=null) && !rq.empty())System.out.println("UDPServer:run: Should reply with request for: "+rq);
-		  } catch (ASN1DecoderFail e) {
-			e.printStackTrace();
-		  } catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		  } 
+				} else
+					if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_UDP);
+				
+				//System.out.println("Got msg size: "+len);//+"  bytes: "+Util.byteToHex(update, 0, len, " "));
+				if(DEBUG)System.out.println("UDPServer:run: Answer received will be integrated");
+				InetSocketAddress saddr = (InetSocketAddress)pak.getSocketAddress();
+				String address_ID = null;
+				if(peer_ID != null) address_ID = D_PeerAddress.getAddressID(saddr, peer_ID);
+				RequestData rq = new RequestData();
+				if((UpdateMessages.integrateUpdate(sa, saddr, this, global_peer_ID, peer_ID, address_ID, rq, peer))||
+						((rq!=null) && !rq.empty())){
+					if(DEBUG) System.out.println("UDPServer:run: Should reply with request for: "+rq);
+					DD.touchClient();
+				}
+				if(DEBUG)System.out.println("UDPServer:run: Answer received and integrated "+pak.getSocketAddress());
+				if(DEBUG)if((rq!=null) && !rq.empty())System.out.println("UDPServer:run: Should reply with request for: "+rq);
+			} catch (ASN1DecoderFail e) {
+				e.printStackTrace();
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			} 
 		  return;
 		}
 		if(DEBUG)System.out.println("Unknown message["+pak.getLength()+"]: "+Util.byteToHexDump(buffer));

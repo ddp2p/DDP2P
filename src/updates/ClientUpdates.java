@@ -272,7 +272,7 @@ public class ClientUpdates extends Thread{
 			// Should update database with QoTS and RoTs
 			D_UpdatesInfo.store_QoTs_and_RoTs(versions);
 			
-			if(!DD.UPDATES_AUTOMATIC_VALITATION_AND_INSTALL) continue;
+			if(!DD.UPDATES_AUTOMATIC_VALIDATION_AND_INSTALL) continue;
 			
 			Hashtable<VersionInfo, Hashtable<String, VersionInfo>> valid_versions = D_UpdatesInfo.validateVersionInfo(versions);
 			if(valid_versions.size() == 0) continue;
@@ -311,8 +311,11 @@ public class ClientUpdates extends Thread{
 						def,
 						null
 						);
+				if(c==JOptionPane.CLOSED_OPTION) {
+					continue;
+				}
 				if(c==1) {
-					DD.UPDATES_AUTOMATIC_VALITATION_AND_INSTALL = false;
+					DD.UPDATES_AUTOMATIC_VALIDATION_AND_INSTALL = false;
 					continue;
 					//DD.controlPane.setClientUpdatesStatus(false);
 					//return;
@@ -978,17 +981,26 @@ public class ClientUpdates extends Thread{
 		String[] _script_absolute;
 		File _update_script;
 		File update_script = new File(script_absolute[0]);
-		if(!update_script.setExecutable(true, false)) {
-			if(DEBUG)System.out.println("ClientUpdates downloadNewer: "+_("Cannot set executable permission for ")+Util.concat(script_absolute,","));
+		if(update_script.exists()) {
+			if(!update_script.setExecutable(true, false)) {
+				if(DEBUG)System.out.println("ClientUpdates downloadNewer: downloaded "+_("Cannot set executable permission for ")+Util.concat(script_absolute,","));
 			//Application.warning(Util._("Cannot set executable permission for: ")+Util.concat(script_absolute,","), Util._("Cannot set exec permission"));
+			}
+		}else{
+			if(DEBUG)System.out.println("ClientUpdates downloadNewer: downloading "+_("Inexisting script")+" "+Util.concat(script_absolute,","));
 		}
+		if(DEBUG)System.out.println("ClientUpdates downloadNewer: Will tell it is downloaded");
 		Application.warning(_("A new version is dowloaded.")+"\n" +
 				_("Will first attempt to execute script:")+" \""+update_script+"\"\n"+
 				_("A separate confirmation will be requested before running it, if available."),
 				_("New Version Downloaded"));
-		if(update_script.exists()&&!update_script.setExecutable(true, false))
-			Application.warning(_("Cannot set executable permission for:")+" \""+script_absolute[0]+"\".",
+		if(DEBUG)System.out.println("ClientUpdates downloadNewer: Will try to make it executable again");
+		if(update_script.exists()&&!update_script.setExecutable(true, false)){
+			Application.warning(_("Cannot set executable permission for downloaded:")+" \""+script_absolute[0]+"\".",
 					_("Cannot set execution permission!"));
+			if(DEBUG)System.out.println("ClientUpdates downloadNewer: Nope executable base");
+		}
+		if(DEBUG)System.out.println("ClientUpdates downloadNewer: Will check executable base");
 		if(update_script.exists()&&update_script.canExecute()) {
 			if(DEBUG)System.out.println("ClientUpdates downloadNewer: "+_("Executing: ")+Util.concat(script_absolute,","));
 			int q = Application.ask(
@@ -996,7 +1008,10 @@ public class ClientUpdates extends Thread{
 							_("Execute script:")+" \""+update_script+"\"?",
 							_("New Version Downloaded"),
 					JOptionPane.OK_CANCEL_OPTION);
-			if(q!=0) return false;
+			if(q!=0){
+				System.out.println("\n\nClientUpdates:downloadNewer: User abandoned running install script!");
+				return false;
+			}
 			BufferedReader output = Util.getProcessOutput(script_absolute, null, newDirFile);
 			String outp = Util.readAll(output);
 			String lines[] = outp.split(Pattern.quote("\n"));
@@ -1008,6 +1023,7 @@ public class ClientUpdates extends Thread{
 			//Application.warning(Util._("A new version is dowloaded. Executed script: "+update_script), Util._("New Version Downloaded"));
 		}else{
 			int q;
+			System.out.println("\n\nClientUpdates:downloadNewer: updating script for OS="+DD.OS+"\n\n");
 			switch(DD.OS) {
 			case DD.LINUX:
 			case DD.MAC:
@@ -1019,7 +1035,7 @@ public class ClientUpdates extends Thread{
 						_("New Version Downloaded"));
 				if(!_update_script.setExecutable(true, false))
 					Application.warning(
-							_("Cannot set executable permission for:")+" \""+_script_absolute[0]+"\".",
+							_("Cannot set executable permission for UNiX:")+" \""+_script_absolute[0]+"\".",
 							_("Cannot set executable permission!"));
 				if(_update_script.exists()&&_update_script.canExecute()) {
 					q = Application.ask(
@@ -1054,7 +1070,7 @@ public class ClientUpdates extends Thread{
 						_("New Version Downloaded"));
 				if(!_update_script.setExecutable(true, false))
 					Application.warning(
-							_("Cannot set executable permission for:")+" \""+_script_absolute[0]+"\".",
+							_("Cannot set executable permission for WINDOWS:")+" \""+_script_absolute[0]+"\".",
 							_("Cannot set executable permission!"));
 				if(_update_script.exists()&&_update_script.canExecute()) {
 					q = Application.ask(
@@ -1081,7 +1097,7 @@ public class ClientUpdates extends Thread{
 				break;
 			default:
 				Application.warning(
-						_("A new version is dowloaded. No specific script founf for undetected OS:")+
+						_("A new version is dowloaded. No specific script found for undetected OS:")+
 						"\n"+System.getProperty("os.name"),
 						_("New Version Downloaded"));					
 			}

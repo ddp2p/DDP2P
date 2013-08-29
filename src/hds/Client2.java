@@ -78,10 +78,21 @@ public class Client2 extends Thread  implements IClient{
 	public Client2(){
 		if(ClientSync.DEBUG) System.out.println("Client2: <init>");
 		//Connections c = 
-		if(conn == null)
-			conn  = new Connections(Application.db);
 	}
 	public void run(){
+		synchronized(wait_lock ){
+			try {
+				wait_lock.wait(DD.PAUSE_BEFORE_CONNECTIONS_START);
+				if(_DEBUG)System.out.println("Client2: run: connections go");
+				if(conn == null)
+					conn  = new Connections(Application.db);
+				wait_lock.wait(DD.PAUSE_BEFORE_CLIENT_START);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+				return;
+			}
+		}
+		if(_DEBUG)System.out.println("Client2: run: go");
 		if(ClientSync.DEBUG) System.out.println("Client2: run: start");
 		try{_run();}catch(Exception e){e.printStackTrace();}
 		if(ClientSync.DEBUG) System.out.println("Client2: run: done");
@@ -130,7 +141,7 @@ public class Client2 extends Thread  implements IClient{
 				if(ClientSync._DEBUG) System.out.println("Client2: try_wait: overloaded threads = "+Application.aus.getThreads());
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Sleep: "+Client2.PAUSE));
 				synchronized(wait_lock ){
-					this.wait(Client2.PAUSE);
+					wait_lock.wait(Client2.PAUSE);
 				}
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Wakes Up"));
 				return true;
@@ -141,7 +152,7 @@ public class Client2 extends Thread  implements IClient{
 		}
 		try {
 			if((!Client2.recentlyTouched) && (crt >= Connections.peersAvailable)) {
-				if(ClientSync.DEBUG) out.println("Client2: try_wait: Will wait ms: "+Client2.PAUSE);
+				if(ClientSync._DEBUG) out.println("Client2: try_wait: Will wait ms: "+Client2.PAUSE+" p="+Connections.peersAvailable);
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Sleep: "+Client2.PAUSE));
 				synchronized(wait_lock ){
 					wait_lock.wait(Client2.PAUSE);

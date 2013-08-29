@@ -62,7 +62,13 @@ public class RequestData extends ASNObj implements Summary{
 	public ArrayList<String> news = new ArrayList<String>();
 	public String global_organization_ID_hash;
 	public RequestData() {}
-	public RequestData(long orgID) throws P2PDDSQLException {
+	/**
+	 * No longer used, since the specific requests now store OrgPeerDataHashes
+	 * @param orgID
+	 * @throws P2PDDSQLException
+	 */
+	@Deprecated
+	private RequestData(long orgID) throws P2PDDSQLException {
 		String sql =
 			"SELECT "+table.organization.specific_requests+
 			","+table.organization.global_organization_ID_hash+

@@ -19,9 +19,11 @@
 /* ------------------------------------------------------------------------- */
 package table;
 
+// Never really used (only deleted in the Peers widget)
 public class peer_plugin {
 	 public static final String peer_plugin_ID = "peer_plugin_ID";
 	 public static final String peer_ID = "peer_ID";
+	 public static final String peer_instance_ID = "peer_ID";
 	 public static final String plugin_ID = "plugin_ID";
 	public static final String TNAME = "peer_plugin";
 }

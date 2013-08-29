@@ -25,7 +25,6 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 import config.DD;
-
 public class D_PeerOrgs extends ASNObj{
 	public String org_name; //OPT
 	public String global_organization_IDhash; //OPT

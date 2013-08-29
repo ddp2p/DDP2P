@@ -226,7 +226,7 @@ public class OrgExtra extends JTable implements MouseListener, ActionListener {
     	OrgExtraDeleteAction pdAction;
     	OrgExtraAddAction aAction;
     	// uAction = new PeersUseAction(this, _("Toggle"),addicon,_("Toggle it."),_("Will be used to synchronize."),KeyEvent.VK_A);
-    	aAction = new OrgExtraAddAction(this, _("Add!"), delicon,_("Add new field."), _("Add"),KeyEvent.VK_A);
+    	aAction = new OrgExtraAddAction(this, _("Add!"), addicon,_("Add new field."), _("Add"),KeyEvent.VK_A);
     	aAction.putValue("row", new Integer(row));
     	aAction.putValue("org", this.getModel().org_id);
     	menuItem = new JMenuItem(aAction);

@@ -36,15 +36,20 @@ TitleDocument ::= Document
 
 public class D_Document_Title extends ASNObj{
 	
+	public static final String TD = "TD:";
 	public D_Document title_document;
 	public D_Document_Title(){
 		title_document = new D_Document();
 	}
 	
 	public String toString() {
-		return "TD:"+title_document;
+		return TD+title_document;
 	}
-	
+	public void decode(String s) {
+		if(s==null) return;
+		if(!s.startsWith(TD)) return;
+		this.title_document.decode(s.substring(TD.length()));
+	}
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
@@ -58,6 +63,5 @@ public class D_Document_Title extends ASNObj{
 		Decoder dec = decoder.getContent();
 		if(dec.getTypeByte()==DD.TAG_AC0)title_document = new D_Document().decode(dec.getFirstObject(true));
 		return this;
-	}
-	
+	}	
 }
