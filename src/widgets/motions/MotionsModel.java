@@ -186,7 +186,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 							if(s.startsWith(D_Document_Title.TD)){
 								D_Document_Title dt = new D_Document_Title();
 								dt.decode(s);
-								result = dt;
+								result = dt.title_document.getDocumentUTFString();
 							}else{
 								result = s;
 							}
@@ -612,24 +612,28 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	public String getMotionGID(int row) {
 		return Util.getString(this._hash[row]);
 	}
-
+	/**
+	 * Add hashes of motion, my_vote, my_used_justification to payload_fix
+	 * Not adding whole items to payload (payload only used for an instance of sending)
+	 * @param row
+	 */
 	public void advertise(int row) {
 		String hash = Util.getString(this._hash[row]);
 		String org_hash = this.organization.global_organization_IDhash;
 		ClientSync.addToPayloadFix(RequestData.MOTI, hash, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
-		ClientSync.payload.requested = new WB_Messages();
+		if(ClientSync.payload.requested == null)ClientSync.payload.requested = new WB_Messages();
 		try {
-			D_Motion m;
-			ClientSync.payload.requested.moti.add(m = new D_Motion(hash));
+			D_Motion m = new D_Motion(hash);
+			if(ClientSync.USE_PAYLOAD_REQUESTED) ClientSync.payload.requested.moti.add(m);
 			D_Vote vote = D_Vote.getMyVoteForMotion(m.motionID);
 			if(vote != null) {
 				ClientSync.addToPayloadFix(RequestData.SIGN, vote.global_vote_ID, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
-				ClientSync.payload.requested.sign.add(vote);
+				if(ClientSync.USE_PAYLOAD_REQUESTED) ClientSync.payload.requested.sign.add(vote);
 				if(vote.justification_ID!=null){
 					D_Justification just = new D_Justification(vote.justification_ID);
 					if(just!=null){
 						ClientSync.addToPayloadFix(RequestData.JUST, just.global_justificationID, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
-						ClientSync.payload.requested.just.add(just);
+						if(ClientSync.USE_PAYLOAD_REQUESTED) ClientSync.payload.requested.just.add(just);
 					}
 				}
 			}

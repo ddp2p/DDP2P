@@ -18,6 +18,7 @@ import static util.Util._;
 import ASN1.ASN1DecoderFail;
 import util.P2PDDSQLException;
 import config.Application;
+import config.DD;
 import util.DBInterface;
 
 public class GIF_Convert {
@@ -146,6 +147,7 @@ public class GIF_Convert {
 			e.printStackTrace();
 			return;
 		} 
+		short content_type = myAddress.getSignShort();
 //		if(DEBUG) System.out.println("Got to write: "+myAddress);
 		BMP data=null;
 		byte[] b=null; // old .bmp file 
@@ -178,7 +180,7 @@ public class GIF_Convert {
 			int word_bytes=1;
 			int bits = 4;
 			////Util.copyBytes(b, BMP.CREATOR, adr_bytes.length);
-			fo.write(EmbedInMedia.getSteganoBytes(adr_bytes, b, offset, word_bytes, bits));
+			fo.write(EmbedInMedia.getSteganoBytes(adr_bytes, b, offset, word_bytes, bits, content_type));
 			fo.close();
 			} catch (FileNotFoundException e1) {
 				fail = true;
@@ -192,7 +194,8 @@ public class GIF_Convert {
 	            			
 	}
     public static void extractData(File file){
-    	DDAddress adr = new DDAddress();
+    	StegoStructure[]adr = DD.getAvailableStegoStructureInstances();
+    	int[] selected = new int[1];
 		String explain="";
 		boolean fail= false;
 		FileInputStream fis=null;
@@ -215,7 +218,7 @@ public class GIF_Convert {
 			int word_bytes=1;
 			int bits = 4;
 			try {
-				EmbedInMedia.setSteganoBytes(adr, b, offset, word_bytes, bits);
+				EmbedInMedia.setSteganoBytes(adr, selected, b, offset, word_bytes, bits);
 			} catch (Exception e1) {
 				explain = " - "+ _("No valid data in picture!");
 				fail = true;

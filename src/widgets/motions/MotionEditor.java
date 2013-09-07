@@ -29,6 +29,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -45,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Scanner;
 
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -117,7 +119,7 @@ class MotionsGIDItem{
 @SuppressWarnings("serial")
 public class MotionEditor extends JPanel  implements MotionsListener, DocumentListener, ItemListener, ActionListener, LVListener {
 	
-	private static final int TITLE_LEN = 20;
+	private static final int TITLE_LEN = 60;
 	private static final int TEXT_LEN_ROWS = 10;
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -126,6 +128,9 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	public boolean SUBMIT = true;
 	
 	static final public JFileChooser fd = new JFileChooser();
+	private static final boolean VISIBILITY_MOTION = false; // hiding them messes up the body at switch between enabled and disabled
+	private static final boolean DISABLE_LABELS = true;
+	private static final boolean DISABLING_MOTION_TITLE_LABEL = false;
 	public JTextField motion_title_field;
 	public JComboBox motion_answer_field;
 	public DocumentEditor motion_body_field;
@@ -156,6 +161,12 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	VoteEditor vEditor;
 	private LVComboBox scoring_options_field;
 	JPanel panel_body = new JPanel();
+
+	TranslatedLabel label_choices;
+	TranslatedLabel label_category;
+	TranslatedLabel label_date;
+	TranslatedLabel label_motion_answer;
+	TranslatedLabel label_motion_title;
 	
 	private void disable_handling() {
 		if(this.requested!=null) this.requested.setEnabled(false);
@@ -164,39 +175,168 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	}
 	private void disable_it() {
 		enabled  = false;
-		if(this.motion_title_field!=null) this.motion_title_field.setEnabled(false);
-		if(this.motion_answer_field!=null) this.motion_answer_field.setEnabled(false);
-		if(this.motion_body_field!=null) this.motion_body_field.setEnabled(false);
-		if(this.motion_submit_field!=null) this.motion_submit_field.setEnabled(false);
-		if(this.date_field!=null) this.date_field.setEnabled(false);
-		if(this.scoring_options_field!=null) this.scoring_options_field.setEnabled(false);
-		if(this.dategen_field!=null) this.dategen_field.setEnabled(false);
-		if(this.load_field!=null) this.load_field.setEnabled(false);
-		if(this.setTxtMode!=null) this.setTxtMode.setEnabled(false);
-		if(this.setHTMMode!=null) this.setHTMMode.setEnabled(false);
-		if(this.category_field!=null) this.category_field.setEnabled(false);
-		if(this.category_field_editor!=null) this.category_field_editor.setEnabled(false);
+		if(this.motion_title_field!=null){
+			this.motion_title_field.setEditable(false);
+			//this.motion_title_field.setColumns(columns);
+		}
+		if(this.motion_body_field!=null){
+			this.motion_body_field.setEnabled(false);
+		}
+
+		if(this.motion_answer_field!=null){
+			this.motion_answer_field.setEnabled(false);
+			//this.motion_answer_field.setEditable(false);
+			//if(VISIBILITY_MOTION)this.motion_answer_field.setVisible(false);
+		}
+		if(this.scoring_options_field!=null){
+			this.scoring_options_field.setEnabled(false);
+			if(VISIBILITY_MOTION)this.scoring_options_field.setVisible(false);
+		}
+		if(this.category_field!=null){
+			this.category_field.setEnabled(false);
+			if(VISIBILITY_MOTION)this.category_field.setVisible(false);
+		}
+		if(this.category_field_editor!=null){
+			this.category_field_editor.setEnabled(false);
+			if(VISIBILITY_MOTION)this.category_field_editor.setVisible(false);
+		}
+		if(this.date_field!=null){
+			this.date_field.setEnabled(false);
+			if(VISIBILITY_MOTION)this.date_field.setVisible(false);
+		}
+		
+		if(DISABLE_LABELS){
+			if(this.label_choices!=null){
+				this.label_choices.setEnabled(false);
+				if(VISIBILITY_MOTION)this.label_choices.setVisible(false);
+			}
+			if(this.label_category!=null){
+				this.label_category.setEnabled(false);
+				if(VISIBILITY_MOTION)this.label_category.setVisible(false);
+			}
+			if(this.label_date!=null){
+				this.label_date.setEnabled(false);
+				if(VISIBILITY_MOTION)this.label_date.setVisible(false);
+			}
+			if(this.label_motion_answer!=null){
+				this.label_motion_answer.setEnabled(false);
+				//this.label_motion_answer.setVisible(false);
+			}
+			if(DISABLING_MOTION_TITLE_LABEL)
+				if(this.label_motion_title!=null){
+					this.label_motion_title.setEnabled(false);
+					if(VISIBILITY_MOTION)this.label_motion_title.setVisible(false);
+				}
+		}
+		
+		if(this.motion_submit_field!=null){
+			this.motion_submit_field.setEnabled(false);
+			if(VISIBILITY_MOTION)this.motion_submit_field.setVisible(false);
+		}
+		if(this.dategen_field!=null){
+			this.dategen_field.setEnabled(false);
+			if(VISIBILITY_MOTION)this.dategen_field.setVisible(false);
+		}
+		if(this.load_field!=null){
+			this.load_field.setEnabled(false);
+			if(VISIBILITY_MOTION)this.load_field.setVisible(false);
+		}
+		if(this.setTxtMode!=null){
+			this.setTxtMode.setEnabled(false);
+			if(VISIBILITY_MOTION)this.setTxtMode.setVisible(false);
+		}
+		if(this.setHTMMode!=null){
+			this.setHTMMode.setEnabled(false);
+			if(VISIBILITY_MOTION)this.setHTMMode.setVisible(false);
+		}
+
 		vEditor.disable_it();
 		jEditor.disable_it();
 	}
 	private void enable_it() {
 		enabled  = true;
 		if(DEBUG)System.out.println("MotionEditor:Enabling");
-		if(this.motion_title_field!=null) this.motion_title_field.setEnabled(true);
-		if(this.motion_answer_field!=null) this.motion_answer_field.setEnabled(true);
-		if(this.motion_body_field!=null) this.motion_body_field.setEnabled(true);
-		if(this.motion_submit_field!=null) this.motion_submit_field.setEnabled(true);
-		if(this.date_field!=null) this.date_field.setEnabled(true);
-		if(this.scoring_options_field!=null) this.scoring_options_field.setEnabled(true);
-		if(this.dategen_field!=null) this.dategen_field.setEnabled(true);
-		if(this.load_field!=null) this.load_field.setEnabled(true);
-		if(this.setTxtMode!=null) this.setTxtMode.setEnabled(true);
-		if(this.setHTMMode!=null) this.setHTMMode.setEnabled(true);
-		if(this.category_field!=null) this.category_field.setEnabled(true);
-		if(this.category_field_editor!=null) this.category_field_editor.setEnabled(true);
-		if(this.requested!=null) this.requested.setEnabled(true);
-		if(this.broadcasted!=null) this.broadcasted.setEnabled(true);
-		if(this.blocked!=null) this.blocked.setEnabled(true);
+		if(this.motion_title_field!=null){
+			this.motion_title_field.setEditable(true);
+		}
+		if(this.motion_body_field!=null){
+			this.motion_body_field.setEnabled(true);
+		}
+		if(this.motion_answer_field!=null){
+			this.motion_answer_field.setEnabled(true);
+			//this.motion_answer_field.setEditable(true);
+			//if(VISIBILITY_MOTION)this.motion_answer_field.setVisible(true);
+		}
+		if(this.category_field!=null){
+			this.category_field.setEnabled(true);
+			if(VISIBILITY_MOTION)this.category_field.setVisible(true);
+		}
+		if(this.category_field_editor!=null){
+			this.category_field_editor.setEnabled(true);
+			if(VISIBILITY_MOTION)this.category_field_editor.setVisible(true);
+		}
+		if(this.date_field!=null){
+			this.date_field.setEnabled(true);
+			if(VISIBILITY_MOTION)this.date_field.setVisible(true);
+		}
+		if(this.scoring_options_field!=null){
+			this.scoring_options_field.setEnabled(true);
+			if(VISIBILITY_MOTION)this.scoring_options_field.setVisible(true);
+		}
+		
+		if(DISABLE_LABELS){
+			if(this.label_choices!=null){
+				this.label_choices.setEnabled(true);
+				if(VISIBILITY_MOTION)this.label_choices.setVisible(true);
+			}
+			if(this.label_category!=null){
+				this.label_category.setEnabled(true);
+				if(VISIBILITY_MOTION)this.label_category.setVisible(true);
+			}
+			if(this.label_date!=null){
+				this.label_date.setEnabled(true);
+				if(VISIBILITY_MOTION)this.label_date.setVisible(true);
+			}
+			if(this.label_motion_answer!=null){
+				this.label_motion_answer.setEnabled(true);
+				//if(VISIBILITY_MOTION)this.label_motion_answer.setVisible(true);
+			}
+			if(DISABLING_MOTION_TITLE_LABEL)
+				if(this.label_motion_title!=null){
+					this.label_motion_title.setEnabled(true);
+					if(VISIBILITY_MOTION)this.label_motion_title.setVisible(true);
+				}
+		}
+		
+		if(this.motion_submit_field!=null){
+			this.motion_submit_field.setEnabled(true);
+			if(VISIBILITY_MOTION)this.motion_submit_field.setVisible(true);
+		}
+		if(this.dategen_field!=null){
+			this.dategen_field.setEnabled(true);
+			if(VISIBILITY_MOTION)this.dategen_field.setVisible(true);
+		}
+		if(this.load_field!=null){
+			this.load_field.setEnabled(true);
+			if(VISIBILITY_MOTION)this.load_field.setVisible(true);
+		}
+		if(this.setTxtMode!=null){
+			this.setTxtMode.setEnabled(true);
+			if(VISIBILITY_MOTION)this.setTxtMode.setVisible(true);
+		}
+		if(this.setHTMMode!=null){
+			this.setHTMMode.setEnabled(true);
+			if(VISIBILITY_MOTION)this.setHTMMode.setVisible(true);
+		}
+		if(this.requested!=null){
+			this.requested.setEnabled(true);
+		}
+		if(this.broadcasted!=null){
+			this.broadcasted.setEnabled(true);
+		}
+		if(this.blocked!=null){
+			this.blocked.setEnabled(true);
+		}
 		vEditor.enable_it();
 		if((signature!=null) && (signature.justification_ID!=null)) jEditor.enable_it();
 		else jEditor.disable_it();
@@ -213,25 +353,35 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		tabbedPane.setTabPlacement(JTabbedPane.TOP);
 		ImageIcon icon = config.DDIcons.getOrgImageIcon("General Org");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
 		int y[] = new int[]{0};
+		JPanel enc;
 		
 		JComponent generalPane = makeGeneralPanel(y);
-		tabbedPane.addTab(_("Motion Body"), icon, generalPane, _("Generic fields"));
+		enc = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		enc.add(generalPane);
+		tabbedPane.addTab(_("Motion Body"), icon, enc, _("Generic fields"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_G);
 		
 		jEditor = new JustificationEditor(JustificationEditor.ONLY);
 		
 		vEditor = new VoteEditor(this, jEditor, VoteEditor.CHOICE);
 		jEditor.setVoteEditor(vEditor);
-		tabbedPane.addTab(_("Choice"), icon,  vEditor, _("My Choice"));
+
+		enc = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		enc.add(vEditor);
+		tabbedPane.addTab(_("Choice"), icon,  enc, _("My Choice"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_C);
 		
-		tabbedPane.addTab(_("Justification"), icon, jEditor, _("Explain Motion"));
+		enc = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		enc.add(jEditor);
+		tabbedPane.addTab(_("Justification"), icon, enc, _("Explain Motion"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_C);
 
 		JPanel hp = new JPanel();
 		hp.setLayout(new GridBagLayout()); y[0] = 0;
 		JComponent handlingPane = makeHandlingPanel(hp, y);
-		tabbedPane.addTab(_("Handling"), icon, handlingPane, _("Handling fields"));
+		enc = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		enc.add(handlingPane);
+		tabbedPane.addTab(_("Handling"), icon, enc, _("Handling fields"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_H);
 
 		this.setLayout(new BorderLayout());
@@ -356,6 +506,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	 * returns whether to edit
 	 */
 	private boolean reloadMotion(boolean force){
+		//boolean DEBUG = true;
 		if(DEBUG) out.println("MotionEditor:reloadMotion: start force="+force+" justID="+motionID);
 		if(motionID==null) {
 			moti = null;
@@ -371,7 +522,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			return false;
 		}
 		if (!editable()){
-			if(DEBUG) out.println("MotionEditor:reloadMotion: quit not editable");
+			if(DEBUG) out.println("MotionEditor:reloadMotion: quit not editable: f="+force);
 			return force || DD.EDIT_RELEASED_JUST;
 		}
 		if(DEBUG) out.println("MotionEditor:reloadMotion: exit");
@@ -385,10 +536,14 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	}
 	@SuppressWarnings("unchecked")
 	private boolean update_it(boolean force) {
+		//boolean DEBUG=false;
+		boolean toEnable = false;
 		if(DEBUG) out.println("MotionEditor:updateit: start");
 		if(reloadMotion(force)){
 			if(DEBUG) out.println("MotionEditor:updateit: enable");
-			enable_it();
+			disable_it();
+			//enable_it();
+			toEnable = true;
 		}else{
 			if(DEBUG) out.println("MotionEditor:updateit: disable");
 			disable_it();
@@ -494,7 +649,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			","+table.motion.global_motion_ID+
 			","+table.motion.motion_ID+
 			" FROM "+table.motion.TNAME+
-			" WHERE "+table.motion.organization_ID+"=?;";
+			" WHERE "+table.motion.organization_ID+"=? LIMIT "+DD.MAX_MOTION_ANSWERTO_CHOICES+";";
 		try {
 			ArrayList<ArrayList<Object>> j = Application.db.select(sql, new String[]{moti.organization_ID}, DEBUG);
 			combo_answerTo = new MotionsGIDItem[j.size()+1];
@@ -512,8 +667,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		
 
 		//just_answer_field.setSelected("1".equals(Util.getString(org.get(table.organization.ORG_COL_REQUEST))));
-		motion_answer_field.removeItemListener(this);
-		motion_answer_field.removeAllItems();
+		if(motion_answer_field!=null) {
+			motion_answer_field.removeItemListener(this);
+			motion_answer_field.removeAllItems();
+		}
 		MotionsGIDItem sel=null;
 		/*
 		if(just.answerTo_ID!=null) {
@@ -536,26 +693,32 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			}
 		}
 		*/
-		for(MotionsGIDItem i : combo_answerTo){
-			motion_answer_field.addItem(i);
-			if(i.id==null) continue;
-			if(i.id.equals(moti.enhanced_motionID)){ sel = i;}
+		if(motion_answer_field!=null) {
+			for(MotionsGIDItem i : combo_answerTo){
+				motion_answer_field.addItem(i);
+				if(i.id==null) continue;
+				if(i.id.equals(moti.enhanced_motionID)){ sel = i;}
+			}
+			if(sel!=null)motion_answer_field.setSelectedItem(sel);
+			motion_answer_field.addItemListener(this);
 		}
-		if(sel!=null)motion_answer_field.setSelectedItem(sel);
-		motion_answer_field.addItemListener(this);
 		
-		if(DEBUG) System.out.println("MotionEditor: update_it: will set="+moti.motion_text.getFormatString());
-		this.motion_body_field.removeListener(this);
-		motion_body_field.getComponent().setVisible(false);
-		this.motion_body_field.setType(moti.motion_text.getFormatString()); // has to be done first
-		// text set only after format (editor) is specified
-		this.motion_body_field.setText(moti.motion_text.getDocumentString());
-		motion_body_field.getComponent().setVisible(true);
-		//this.panel_body.removeAll();
-		//this.panel_body.add(motion_body_field.getComponent());
-		this.motion_body_field.setEnabled(enabled);
-		this.motion_body_field.addListener(this);
-		if(DEBUG) System.out.println("MotionEditor: update_it: did set="+moti.motion_text.getFormatString());
+		try{
+			if(DEBUG) System.out.println("MotionEditor: update_it: will set="+moti.motion_text.getFormatString());
+			this.motion_body_field.removeListener(this);
+			motion_body_field.getComponent().setVisible(false);
+			this.motion_body_field.setType(moti.motion_text.getFormatString()); // has to be done first
+			// text set only after format (editor) is specified
+			this.motion_body_field.setText(moti.motion_text.getDocumentString());
+			motion_body_field.getComponent().setVisible(true);
+			//this.panel_body.removeAll();
+			//this.panel_body.add(motion_body_field.getComponent());
+			this.motion_body_field.setEnabled(enabled);
+			this.motion_body_field.addListener(this);
+			if(DEBUG) System.out.println("MotionEditor: update_it: did set="+moti.motion_text.getFormatString());
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 		
 		this.motion_title_field.getDocument().removeDocumentListener(this);
 		this.motion_title_field.setText(moti.motion_title.title_document.getDocumentString());
@@ -594,6 +757,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		category_field.addItemListener(this);
 		category_field_editor.getDocument().addDocumentListener(this);
 		
+		if(toEnable) enable_it();
 		return true;
 	}
 	
@@ -602,31 +766,67 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		return null;
 	}
     @SuppressWarnings("unchecked")
-    private JSplitPane makeGeneralPanel(int _y[]) {
+    private JComponent makeGeneralPanel(int _y[]) {
     	
-    	JPanel p=new JPanel(), p1=new JPanel(), p2=new JPanel();
-    	JSplitPane sp= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, p1, p2);
+     	JPanel p1=new JPanel(), p2=new JPanel();
+    	//p.setLayout(new BorderLayout());
+     	JPanel fill = new JPanel(new FlowLayout(FlowLayout.LEFT));
+     	fill.add(p2);
+    	JSplitPane sp= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, p1, fill);
     	//_p.setLayout(new FlowLayout());
     	//_p.add(sp);
-    	p1.setLayout(new BorderLayout());
-    	p1.add(p,BorderLayout.NORTH);
     	p2.setLayout(new GridBagLayout());
+    	//p2.setLayout(new BoxLayout(p2, BoxLayout.Y_AXIS));
+    	//p2.setLayout(new GridLayout(2,1));
     	GridBagConstraints t = new GridBagConstraints();
 		t.fill = GridBagConstraints.NONE;
 		t.gridx = 0; t.gridy = 0;
 		t.anchor = GridBagConstraints.WEST;
     	
     	int y = _y[0];
-    	p.setLayout(new GridBagLayout());
     	GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.NONE;
 		
 		JPanel p_t = new JPanel();
-		TranslatedLabel label_just_title = new TranslatedLabel("Title");
-		p_t.add(label_just_title);
+		label_motion_title = new TranslatedLabel("Title");
+		p_t.add(label_motion_title);
 		p_t.add(motion_title_field = new JTextField(TITLE_LEN));
 		motion_title_field.getDocument().addDocumentListener(this);
 		p2.add(p_t,t);
+		//p2.add(p_t,BorderLayout.WEST);
+
+		JPanel p_a = new JPanel();
+		label_motion_answer = new TranslatedLabel("Answer To");
+		p_a.add(label_motion_answer);
+		p_a.add(motion_answer_field = new JComboBox(combo_answerTo));
+		motion_answer_field.addItemListener(this);
+		t.gridx = 0; t.gridy = 1;
+		t.anchor = GridBagConstraints.WEST;
+		p2.add(p_a,t);
+
+		motion_body_field = new DocumentEditor();
+		motion_body_field.name = "Motion Editor";
+		// javax.swing.text.rtf.
+		// motion_body_field.setContentType("text/html");
+		// motion_body_field.setText("<html><body>This is <em>emphasized</em>.</body></html>");
+		motion_body_field.init(TEXT_LEN_ROWS);
+		motion_body_field.addListener(this);
+		t.gridx = 0; t.gridy = 2;
+		t.anchor = GridBagConstraints.WEST;
+		t.fill = GridBagConstraints.BOTH;
+		p2.add(panel_body,t); //, c);
+		//p2.add(panel_body,BorderLayout.WEST); //, c);
+
+		motion_body_field.getComponent(DocumentEditor.RTEDIT).setVisible(false);
+		motion_body_field.getComponent(DocumentEditor.TEXTAREA).setVisible(false);
+		motion_body_field.getComponent(DocumentEditor.PDFVIEW).setVisible(false);
+		panel_body.add(motion_body_field.getComponent(DocumentEditor.TEXTAREA));
+		panel_body.add(motion_body_field.getComponent(DocumentEditor.RTEDIT));
+		panel_body.add(motion_body_field.getComponent(DocumentEditor.PDFVIEW));
+		
+		motion_body_field.setType(DocumentEditor.DEFAULT_FORMAT);
+		motion_body_field.getComponent(DocumentEditor.DEFAULT_EDITOR).setVisible(true);
+		
 		/*
 		c.anchor = GridBagConstraints.WEST;
 		c.gridx = 0; c.gridy = y++;		
@@ -642,9 +842,13 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		*/
 		//p2.add(motion_title_field = new JTextField(TITLE_LEN),BorderLayout.NORTH);
 		
+       	JPanel p=new JPanel();
+       	p.setLayout(new GridBagLayout());
+    	p1.setLayout(new BorderLayout());
+    	p1.add(p,BorderLayout.NORTH);
 		c.gridx = 0; c.gridy = y++;		
 		c.anchor = GridBagConstraints.WEST;
-		TranslatedLabel label_choices = new TranslatedLabel("Default Choices");
+		label_choices = new TranslatedLabel("Default Choices");
 		p.add(label_choices, c);
 		//c.gridx = 1;
 		c.gridx = 0; c.gridy = y++;		
@@ -655,26 +859,27 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		p.add(scoring_options_field,c);
 		scoring_options_field.addLVListener(this);
 		c.fill = GridBagConstraints.NONE;
-		
+
+		if(false){
 		c.anchor = GridBagConstraints.WEST;
 		c.gridx = 0; c.gridy = y++;		
-		TranslatedLabel label_answer_just = new TranslatedLabel("Answer To");
-		p.add(label_answer_just, c);
+		label_motion_answer = new TranslatedLabel("Answer To");
+		p.add(label_motion_answer, c);
 		//c.gridx = 1;
 		c.gridx = 0; c.gridy = y++;		
-		c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.EAST;
 		c.anchor = GridBagConstraints.WEST;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		p.add(motion_answer_field = new JComboBox(combo_answerTo),c);
 		//p.add(just_answer_field = new JTextField(TITLE_LEN),c);
 		//just_answer_field.getDocument().addDocumentListener(this);
 		motion_answer_field.addItemListener(this);
-		c.fill = GridBagConstraints.NONE;
-		
+		//c.fill = GridBagConstraints.NONE;		
+		}
 		
 		c.gridx = 0; c.gridy = y++;		
 		c.anchor = GridBagConstraints.WEST;
-		TranslatedLabel label_category = new TranslatedLabel("Category");
+		label_category = new TranslatedLabel("Category");
 		p.add(label_category, c);
 		//c.gridx = 1;
 		c.gridx = 0; c.gridy = y++;		
@@ -694,7 +899,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		
 		c.gridx = 0; c.gridy = y++;		
 		c.anchor = GridBagConstraints.WEST;
-		TranslatedLabel label_date = new TranslatedLabel("Creation Date");
+		label_date = new TranslatedLabel("Creation Date");
 		p.add(label_date, c);
 		//c.gridx = 1;
 		c.gridx = 0; c.gridy = y++;		
@@ -755,28 +960,6 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		c.gridx = 0; c.gridy = y++;	 //c.gridwidth=2;
 		c.fill = GridBagConstraints.BOTH; //c.ipadx=c.ipady=2;
 		// c.anchor = GridBagConstraints.WEST;
-		motion_body_field = new DocumentEditor();
-		motion_body_field.name = "Motion Editor";
-		// javax.swing.text.rtf.
-		// motion_body_field.setContentType("text/html");
-		// motion_body_field.setText("<html><body>This is <em>emphasized</em>.</body></html>");
-		motion_body_field.init(TEXT_LEN_ROWS);
-		motion_body_field.addListener(this);
-		t.gridx = 0; t.gridy = 1;
-		t.anchor = GridBagConstraints.WEST;
-		t.fill = GridBagConstraints.BOTH;
-		p2.add(panel_body,t); //, c);
-
-		motion_body_field.getComponent(DocumentEditor.RTEDIT).setVisible(false);
-		motion_body_field.getComponent(DocumentEditor.TEXTAREA).setVisible(false);
-		motion_body_field.getComponent(DocumentEditor.PDFVIEW).setVisible(false);
-		panel_body.add(motion_body_field.getComponent(DocumentEditor.TEXTAREA));
-		panel_body.add(motion_body_field.getComponent(DocumentEditor.RTEDIT));
-		panel_body.add(motion_body_field.getComponent(DocumentEditor.PDFVIEW));
-		
-		motion_body_field.setType(DocumentEditor.DEFAULT_FORMAT);
-		motion_body_field.getComponent(DocumentEditor.DEFAULT_EDITOR).setVisible(true);
-		
 		/*
 		c.gridx = 0; c.gridy = 4;
 		//CheckboxGroup cg = null;//new CheckboxGroup();

@@ -81,6 +81,7 @@ public class DocumentEditor implements DocumentListener{
 	}
 
 	public Component getComponent(){
+		//boolean DEBUG=true;
 		switch(type_editor){
 		case TEXTAREA:
 			if(DEBUG) System.out.println("DocumentEditor: getComponent:: TXT");
@@ -98,13 +99,17 @@ public class DocumentEditor implements DocumentListener{
 	public Component getComponent(int type_editor){
 		switch(type_editor){
 		case TEXTAREA: return textArea;
-		case PDFVIEW: return viewController.getViewContainer();
+		case PDFVIEW:{
+			if(DEBUG) System.out.println("DocumentEditor: getComponent():: PDF");
+			return viewController.getViewContainer();
+		}
 		case RTEDIT: return rtEditor;
 		}
 		return null;
 	}
 	
 	public void setEnabled(boolean b) {
+		//boolean DEBUG = true;
 		//System.out.println("DocumentEditor: setEnabled: bool="+b);
 		switch(type_editor){
 		case TEXTAREA:
@@ -117,9 +122,14 @@ public class DocumentEditor implements DocumentListener{
             rtEditor.getHtmlTextArea().setEditable(b); //.setEnabled(b);
             rtEditor.getHtmlTextAreaPane().setEditable(b); //.setEnabled(b);
             break;
-            default:
-            	if(_DEBUG) System.out.println("DocumentEditor: setEnabled: unknown type: "+type_editor+" :"+b);
+		case PDFVIEW:
+			if(DEBUG) System.out.println("DocumentEditor: setEnabled: PDF type ("+type_editor+") :"+b);
+			//this.controller;
+			break;
+		default:
+			if(_DEBUG) System.out.println("DocumentEditor: setEnabled: unknown type: "+type_editor+" :"+b);
 		}
+		//Util.printCallPath("");
 	}
 	public void removeListener(DocumentListener obj) {
 		if(DEBUG) System.out.println("DocumentEditor: removeListener: "+name);		
@@ -172,13 +182,16 @@ public class DocumentEditor implements DocumentListener{
 			}
 			if(DEBUG) System.out.println("DocumentEditor: setText: pdf txt len="+documentString.length());
 			byte[] pdf = Util.byteSignatureFromString(documentString);
-			if(DEBUG) System.out.println("DocumentEditor: setText: pdf bin len="+pdf.length);
-			if(pdf!=null)
+			if(pdf!=null){
+				if(DEBUG) System.out.println("DocumentEditor: setText: pdf bin len="+pdf.length);
 				try{
 					controller.openDocument(pdf, 0, pdf.length, null, null);
 				}catch(Exception e){
 					e.printStackTrace();
 				}
+			}else{
+				if(DEBUG) System.out.println("DocumentEditor: setText: pdf bin null");
+			}
 		}
 	}
 	public void init(int TEXT_LEN_ROWS){
@@ -278,6 +291,7 @@ public class DocumentEditor implements DocumentListener{
 	}
 
 	public void setType(String formatString) {
+		//boolean DEBUG=true;
 		if(DEBUG) System.out.println("DocumentEditor: setType: type="+formatString);
 		if(formatString==null) type_editor = RTEDIT;//TEXTAREA; // default set to RTEDIT
 		if(PDF_BODY_FORMAT.equals(formatString)){
@@ -285,12 +299,14 @@ public class DocumentEditor implements DocumentListener{
 			if(DEBUG) System.out.println("DocumentEditor: setType: type=PDF!");
 			return;
 		}
+		if(DEBUG) System.out.println("DocumentEditor: setType: type=!PDF!");
 		if(TXT_BODY_FORMAT.equals(formatString)){
 			type_editor = TEXTAREA;
 			if(DEBUG) System.out.println("DocumentEditor: setType: type=txt!");
 			return;
 		}
 		type_editor = RTEDIT; // default set to RTEDIT
+		if(DEBUG) System.out.println("DocumentEditor: setType: type=RTE!");
 	}
 
 	@Override

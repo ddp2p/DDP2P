@@ -1,3 +1,23 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2013 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package hds;
 
 import static java.lang.System.out;
@@ -13,6 +33,7 @@ import ciphersuits.SK;
 
 import plugin_data.PluginRequest;
 
+import streaming.RequestData;
 import streaming.SpecificRequest;
 import table.organization;
 import table.peer;
@@ -22,26 +43,71 @@ import widgets.directories.DirectoriesData;
 import config.Application;
 import config.DD;
 import config.Identity;
+import data.D_OrgDistribution;
 import data.D_PeerAddress;
 import data.D_PluginData;
 import data.D_PluginInfo;
 
 public class ClientSync{
+	public static long PAUSE = 30000;	
+
 	public static boolean DEBUG = false;
 	static final boolean _DEBUG = true;
 	private static final String CLASS = "ClassSync";
+	/**
+	 * Not using payload.requested when packing message GIDs since the GIDs would spell trouble.
+	 * see message GID compression packing on the wire!!
+	 * 
+	 * No limit on size implemented
+	 */
+	public static final boolean USE_PAYLOAD_REQUESTED = false;
+	public static final int CYCLES_PAYLOAD = 8;
 	public static int MAX_ITEMS_PER_TYPE_PAYLOAD = 10;
-	//private static final boolean SIGN_PEER_ADDRESS_SEPARATELY = false;
-	public static SpecificRequest payload_recent = new SpecificRequest();
 	// cache for peer addresses contacted (to avoid latency from db disk accesses for plugins)
+	// private static final boolean SIGN_PEER_ADDRESS_SEPARATELY = false;
 	public static Hashtable<String,hds.ASNSyncRequest> peer_scheduled_requests = new Hashtable<String, ASNSyncRequest>();
 	public static Hashtable<String,ArrayList<Address>> peer_contacted_addresses = new Hashtable<String, ArrayList<Address>>();
 	public static Hashtable<String,ArrayList<String>> peer_contacted_dirs = new Hashtable<String, ArrayList<String>>();
+	/**
+	 * payload for an instance.
+	 * TODO. Should be maintained to contain reset dates for organizations
+	 *  since they are sent to each peer.
+	 *  
+	 *  When maintained, would no longer need to recompute them on each peer request
+	 *  Updated each CLIENT_PAYLOAD=8 client cycles in initPayload()
+	 *  
+	 *  Would be good to maintain a limit on the payload.requested part!
+	 * 
+	 */
 	public static ASNSyncPayload payload = new ASNSyncPayload();
-	// payload part present in all messages
+	/**
+	 * Short lived advertisement (not saved on disk).
+	 * Add motions and votes here when performed.
+	 * Probably should be emptied after one day?
+	 * Should be managed with addToPayloadAdvertisement() 
+	 * 
+	 * Used in buildRequest
+	 */
+	public static SpecificRequest payload_recent = new SpecificRequest();
+	/**
+	 *  payload part (SpecificRequest advertised) present in all messages
+	 *  Contains advertised constituents and motions.
+	 *  
+	 *  A limit is implemented with MAX_ITEMS_PER_TYPE_PAYLOAD
+	 *  
+	 *  TODO: should be saved and loaded from disk on startup.
+	 *        should allow removal of advertisements
+	 *  
+	 */
 	static SpecificRequest _payload_fix = new SpecificRequest();
 	public static void addToPayloadFix(int type, String hash, String org_hash, int MAX_ITEM){
 		_payload_fix.add(type, hash, org_hash, MAX_ITEM);
+	}
+	/**
+	 * Called each few client cycles
+	 */
+	public static void initPayload() {
+		 payload = new ASNSyncPayload();
 	}
 	/**
 	 *  The place to decide on a Client1 and Client2
@@ -150,7 +216,7 @@ public class ClientSync{
 		ClientSync.peer_scheduled_requests.put(msg.peer_GID, value);
 		if(DD.DEBUG_PLUGIN) System.out.println(CLASS+":schedule_for_sending: stop");
 	}
-
+	
 	/**
 	 * Called from PluginThread to immediately jumpstart sending plugin data
 	 * Extracts addresses from pca and attempts to contact them
@@ -192,21 +258,66 @@ public class ClientSync{
 		//System.out.print("c");
 		if(DD.DEBUG_PLUGIN) System.out.println(CLASS+":try_send: done");
 	}
-	public static ASNSyncRequest buildRequest(String _lastSnapshotString, Calendar _lastSnapshot, String peer_ID) {
-		if(DEBUG) System.out.println("Client: buildRequests: start: "+peer_ID);
+	public static ArrayList<ResetOrgInfo> getChangedOrgs(String peer_ID){
+		ArrayList<ResetOrgInfo> changed_orgs = null;
+		try {
+			/**
+			 * Ideally (instead of the next line) call:
+			changed_orgs = ClientSync.payload.changed_orgs.clone();
+			* but which is now not maintained with new reset requests in organizations
+			*/
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:buildRequest: Inefficient reloading of changes (should be maintained)");
+			changed_orgs = ClientSync.buildResetPayload();
+			if(changed_orgs!=null){ if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:buildRequest: changed orgs for all peers: "+Util.nullDiscrimArraySummary(changed_orgs,"--"));
+			}else{ if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:buildRequest: changed orgs for all peers: null");}
+			changed_orgs = ClientSync.add_Peer_Specific_ResetDates(peer_ID, changed_orgs);
+			if(changed_orgs!=null){ if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:buildRequest: changed orgs for this peer: "+Util.nullDiscrimArraySummary(changed_orgs,"--"));
+			}else{  if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:buildRequest: changed orgs for this peer: null");}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:buildRequest: done change org");
+		return changed_orgs;
+	}
+	/**
+	 * 
+	 * @param peer_ID
+	 * @return
+	 */
+	public static ASNSyncPayload getSyncReqPayload(String peer_ID){		
+		ArrayList<ResetOrgInfo> changed_orgs = getChangedOrgs(peer_ID);
+		if(!ClientSync.payload_recent.empty() || !ClientSync._payload_fix.empty()
+				|| ((changed_orgs != null)&&(changed_orgs.size()>0))) {
+			ASNSyncPayload _payload = new ASNSyncPayload();
+			if(ClientSync.USE_PAYLOAD_REQUESTED)_payload.requested.add(payload.requested);
+			_payload.changed_orgs = changed_orgs;
+			if(!ClientSync.payload_recent.empty() && !ClientSync._payload_fix.empty()) {
+				_payload.advertised = ClientSync.payload_recent.clone();
+				_payload.advertised.add(ClientSync._payload_fix);
+			}
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("Client: buildRequests: payload set");
+			return _payload;
+		}
+		return new ASNSyncPayload();
+	}
+	/**
+	 * Builds a request. Both versions of lastSnapshots should be provided
+	 *  (but at least the string one)
+	 * @param _lastSnapshotString
+	 * @param _lastSnapshot
+	 * @param peer_ID
+	 * @return
+	 */
+	public static ASNSyncRequest buildRequest(String _lastSnapshotString, Calendar _lastSnapshot,
+			String peer_ID) {
+		if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("Client: buildRequests: start: "+peer_ID);
 		if(_lastSnapshot==null) _lastSnapshot =  Util.getCalendar(_lastSnapshotString);
 		ASNSyncRequest sr = new ASNSyncRequest();
-		if(DEBUG) out.println("lastSnapshot = "+_lastSnapshotString);
+		if(DEBUG||DD.DEBUG_CHANGED_ORGS) out.println("lastSnapshot = "+_lastSnapshotString);
 		sr.lastSnapshot = _lastSnapshot;
 		sr.tableNames=SR.tableNames;
 		
-		if(!ClientSync.payload_recent.empty() || !ClientSync._payload_fix.empty()) {
-			if(!ClientSync.payload_recent.empty() && !ClientSync._payload_fix.empty()) {
-				ClientSync.payload.advertised = ClientSync.payload_recent.clone();
-				ClientSync.payload.advertised.add(ClientSync._payload_fix);
-			}
-			sr.pushChanges = ClientSync.payload;
-		}
+		sr.pushChanges = getSyncReqPayload(peer_ID);
 		
 		try {
 			sr.request = streaming.SpecificRequest.getPeerRequest(peer_ID);
@@ -428,7 +539,73 @@ public class ClientSync{
 			roi.hash = Util.getString(o.get(1));
 			changed_orgs.add(roi);
 		}
+		
 		return changed_orgs;
+	}
+	/**
+	 *  ChangedOrgs from OrgDistribution (resetDates) are added to payload
+	 *  May use/modify input
+	 * @param peer_ID
+	 * @param existing 
+	 * @return
+	 */
+	public static ArrayList<ResetOrgInfo> add_Peer_Specific_ResetDates(String peer_ID, ArrayList<ResetOrgInfo> existing) {
+		if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:add_peer_Specific_ResetDates:  start");
+		ArrayList<ResetOrgInfo> s = get_Peer_Specific_ResetDates(peer_ID);
+		if(s == null){
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:add_peerSpecific_RD:  s null");
+			return existing;
+		}
+		if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:add_peerSpecific_RD: changed orgs for this peer: "+Util.nullDiscrimArraySummary(s,"--"));
+		if(existing == null){
+			existing = new ArrayList<ResetOrgInfo>(s);
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:add_peerSpecific_RD: return s: "+Util.nullDiscrimArraySummary(existing,"--"));
+			return existing;
+		}
+		for (ResetOrgInfo a : s){
+			ResetOrgInfo old = getResetOrgInfo(existing, a.hash);
+			if(old != null) {
+				if(old.reset_date.before(a.reset_date))
+					old.reset_date = a.reset_date;
+				//else ok
+			}else{
+				existing.add(a);
+			}
+		}
+		if(DEBUG||DD.DEBUG_CHANGED_ORGS)System.out.println("ClientSync:add_peerSpecific_RD: return merged: "+Util.nullDiscrimArraySummary(existing,"--"));
+		return existing;
+	}
+	private static ResetOrgInfo getResetOrgInfo(
+			ArrayList<ResetOrgInfo> changed_orgs, String hash) {
+		if(changed_orgs == null) return null;
+		if(hash == null) return null;
+		for(ResetOrgInfo r : changed_orgs) {
+			if(hash.equals(r.hash)) return r;
+		}
+		return null;
+	}
+	public static ArrayList<ResetOrgInfo> get_Peer_Specific_ResetDates(String peer_ID) {
+		if(DEBUG||DD.DEBUG_CHANGED_ORGS) out.println("Client:get_Peer_Specific_ResetDates: id="+peer_ID);
+		ArrayList<ResetOrgInfo> r = new ArrayList<ResetOrgInfo>();
+		ArrayList<D_OrgDistribution> od =
+				D_OrgDistribution.get_Org_Distribution_byPeerID(peer_ID);
+		if(od == null){
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) out.println("Client:get_Peer_Specific_ResetDates: od =null");
+			return null;
+		}else{
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) out.println("Client:get_Peer_Specific_ResetDates: od!=null: #"+od.size());
+		}
+		for(D_OrgDistribution a: od){
+			ResetOrgInfo ro = new ResetOrgInfo();
+			ro.hash = a.organization_GIDhash;
+			ro.reset_date = Util.getCalendar(a.reset_date);
+			r.add(ro);
+		}
+		if(r.size() == 0){
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) out.println("Client:get_Peer_Specific_ResetDates: od=null");
+			return null;
+		}
+		return r;
 	}
 
 	/**
@@ -473,5 +650,32 @@ public class ClientSync{
 		if(peers.size()<=0) return null;
 		return (String)peers.get(0).get(2);
 	}
-	
+	/**
+	 * Add new items to advertisements
+	 * this touches the client
+	 * @param hash
+	 * @param org_hash
+	 * @param type
+	 */
+	public static void addToPayloadAdvertisements(String hash, String org_hash, int type) {
+		RequestData target = null;
+		for(RequestData a: payload_recent.rd) {
+			if(org_hash.equals(a.global_organization_ID_hash)) {
+				target = a;
+			}
+		}
+		if(target == null) {
+			target = new RequestData();
+			payload_recent.rd.add(target);
+		}
+		
+		if (target.addHashIfNewTo(hash, type, MAX_ITEMS_PER_TYPE_PAYLOAD))
+			try {
+				DD.touchClient();
+			} catch (NumberFormatException e) {
+				e.printStackTrace();
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+	}
 }

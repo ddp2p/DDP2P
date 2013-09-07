@@ -64,7 +64,7 @@ WB_Neighborhood ::= SEQUENCE {
 public 
 class D_Neighborhood extends ASNObj implements Summary{
 	private static final boolean _DEBUG = true;
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	public String global_neighborhood_ID;
 	public String name;
 	public String name_lang;
@@ -657,7 +657,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		}
 		if(!wn.verifySign(orgGID)){
 			if(_DEBUG) System.out.println("NeighborhoodHandling:integrateNewNeighborhoodData:Signature check failed for "+wn+"\n with orgGID="+orgGID);
-			if(!DD.ACCEPT_UNSIGNED_PEERS){
+			if(!DD.ACCEPT_UNSIGNED_NEIGHBORHOOD){
 				if(_DEBUG) System.out.println("NeighborhoodHandling:integrateNewNeighborhoodData: fail sign exit");
 				return null;
 			}

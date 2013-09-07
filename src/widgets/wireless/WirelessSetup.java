@@ -416,7 +416,12 @@ public class WirelessSetup {
 			System.out.println("Saved in application field="+DD.APP_LINUX_INSTALLATION_PATH+" value=\""+args[0]+"\"\nparent: \""+_linux_parent+"\"");
 			if(args.length==1) return;
 			String win_path = args[1];
-			if(!win_path.endsWith(Application.WINDOWS_PATH_SEPARATOR)) win_path += Application.WINDOWS_PATH_SEPARATOR;
+			if(!win_path.endsWith(Application.WINDOWS_PATH_SEPARATOR)){
+				System.out.println("Windows path without terminator="+win_path);
+				win_path += Application.WINDOWS_PATH_SEPARATOR;
+				System.out.println("Windows path with terminator="+win_path);
+			}
+			System.out.println("Windows path with terminator="+win_path);
 			String _win_parent=Util.getParent(win_path);
 			if((_win_parent!=null) && !_win_parent.endsWith(Application.WINDOWS_PATH_SEPARATOR)) _win_parent += Application.WINDOWS_PATH_SEPARATOR;
 			DD.setAppText(DD.APP_WINDOWS_INSTALLATION_PATH, win_path);

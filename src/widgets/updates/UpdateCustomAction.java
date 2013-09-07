@@ -38,6 +38,8 @@ import hds.DebateDecideAction;
 import data.D_UpdatesInfo;
 import data.D_TesterDefinition;
 import data.D_UpdatesKeysInfo;
+import updates.ClientUpdates;
+import updates.VersionInfo;
 
 import util.P2PDDSQLException;
 
@@ -57,6 +59,8 @@ public class UpdateCustomAction extends DebateDecideAction {
     
 	public static final int M_IMPORT = 4;
 	public static final int M_DELETE = 5;
+	public static final int USE_UPDATE = 6;
+	
 	UpdatesTable tree; ImageIcon icon; int cmd;
 	private JTable subTable;
     public UpdateCustomAction(UpdatesTable tree,
@@ -101,6 +105,39 @@ public class UpdateCustomAction extends DebateDecideAction {
 				} catch (P2PDDSQLException e1) {
 					e1.printStackTrace();
 				}
+    	}
+    	if(cmd == USE_UPDATE) {
+        	if((row>=0)&&(updates_ID!=null)){
+        		String updates_URL = model.get_UpdatesURL(row);
+        		String updates_LastVer = model.get_UpdatesLastVer(row);
+        		if(updates_LastVer == null){
+        			Application.warning(Util._("No update available from url: "+updates_URL), Util._("No update available"));
+        			//System.out.println("No update from url: "+updates_URL);
+        		}
+        		else
+        		{   
+        			ClientUpdates cu = new ClientUpdates();
+        			VersionInfo newest_version_obtained=cu.getNewerVersionInfos(updates_URL, updates_LastVer);
+        			if(newest_version_obtained!=null) {
+						try {
+							if(cu.downloadNewer(newest_version_obtained))
+								return;
+						} catch (Exception ee) {
+							ee.printStackTrace();
+						}
+        			}
+        		}
+        			System.out.println("url: "+updates_URL+" ver: "+updates_LastVer);
+        	}
+//				try {
+//					Application.db.delete(table.updates.TNAME,
+//							new String[]{table.updates.updates_ID},
+//							new String[]{updates_ID}, _DEBUG);
+//    	    	    ((UpdatesTable)tree).repaint();
+//    	    	    if(subTable!= null) subTable.repaint();
+//				} catch (P2PDDSQLException e1) {
+//					e1.printStackTrace();
+//				}
     	}
     	if(cmd == M_IMPORT) {
     		JFileChooser chooser = new JFileChooser();

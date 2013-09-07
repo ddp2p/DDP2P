@@ -53,6 +53,11 @@ public class DirModel extends AbstractTableModel implements TableModel, DBListen
 	private DirPanel panel;
 	
 	public DirModel(DBInterface _db, DirPanel _panel) { // constructor with dataSource -> DBInterface _db
+		if(_db==null){
+			System.err.println("DirModel:<init>: no directory database");
+			panel = _panel;
+			return;
+		}
 		db = _db;
 		panel = _panel;
 		db.addListener(this, new ArrayList<String>(Arrays.asList(table.Subscriber.TNAME,table.peer.TNAME)), null);

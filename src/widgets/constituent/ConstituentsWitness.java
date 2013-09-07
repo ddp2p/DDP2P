@@ -33,7 +33,7 @@ import javax.swing.event.*;
 import data.D_Witness;
 import util.Util;
 
-class ConstituentsWitness extends JDialog {
+public class ConstituentsWitness extends JDialog {
 	protected static final boolean DEBUG = false;
 	ConstituentsModel model;
 	ConstituentsTree tree;
@@ -89,8 +89,10 @@ class ConstituentsWitness extends JDialog {
 		tree = (ConstituentsTree) _tree;
 		model = (ConstituentsModel) _tree.getModel();
 		tp = _tp;
-		ConstituentsIDNode can = (ConstituentsIDNode)tp.getLastPathComponent();
-		if(DEBUG)System.out.println("ConstituentsWitness: Witnessing: "+can);
+		if(tp!=null) {
+			ConstituentsIDNode can = (ConstituentsIDNode)tp.getLastPathComponent();
+			if(DEBUG)System.out.println("ConstituentsWitness: Witnessing: "+can);
+		}
 		JButton bp;
 		panel.setLayout(new GridBagLayout());
 		setLayout(new GridBagLayout());

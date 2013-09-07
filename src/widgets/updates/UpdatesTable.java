@@ -155,6 +155,7 @@ public class UpdatesTable extends JTable implements MouseListener{
     	ImageIcon delicon = DDIcons.getDelImageIcon(_("delete an item")); 
     	ImageIcon reseticon = DDIcons.getResImageIcon(_("reset item"));
     	ImageIcon importicon = DDIcons.getImpImageIcon(_("import information"));
+    	ImageIcon useUpdateIcon = DDIcons.getImpImageIcon(_("use update"));
     	JPopupMenu popup = new JPopupMenu();
     	UpdateCustomAction aAction;
     	//System.out.println(importicon.toString());
@@ -164,6 +165,11 @@ public class UpdatesTable extends JTable implements MouseListener{
     	popup.add(menuItem);
     	
     	aAction = new UpdateCustomAction(this, _("Delete"), delicon,_("Delete Mirror"), _("Delete"),KeyEvent.VK_D, UpdateCustomAction.M_DELETE);
+    	aAction.putValue("row", new Integer(row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);
+    	
+    	aAction = new UpdateCustomAction(this, _("Use This Update"), useUpdateIcon,_("Use This Update"), _("Use This Update"),KeyEvent.VK_U, UpdateCustomAction.USE_UPDATE);
     	aAction.putValue("row", new Integer(row));
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);

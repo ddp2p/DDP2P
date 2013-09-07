@@ -21,6 +21,9 @@ package hds;
 
 import java.util.Calendar;
 
+import util.Summary;
+import util.Util;
+
 import config.DD;
 
 import ASN1.ASN1DecoderFail;
@@ -28,15 +31,22 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
-public class ResetOrgInfo extends ASNObj {
+public class ResetOrgInfo extends ASNObj implements Summary {
 	public String hash;
 	public Calendar reset_date;
+	public String toString(){
+		return "\n\t[ResetOrgInfo:date="+Encoder.getGeneralizedTime(reset_date)+",hash="+hash+"]";
+	}
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(hash, false));
 		enc.addToSequence(new Encoder(reset_date));
 		return enc.setASN1Type(getASN1Type());
+	}
+	@Override
+	public String toSummaryString() {
+		return "[Rst:date="+Encoder.getGeneralizedTime(reset_date)+",#="+Util.trimmed(hash,6)+"]";
 	}
 
 	@Override

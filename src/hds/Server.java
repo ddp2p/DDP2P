@@ -127,7 +127,7 @@ class ServerThread extends Thread {
 					asr.address.peer_ID = peer_ID = D_PeerAddress.getLocalPeerIDforGID(asr.address.globalID);
 				}else{
 					Application.warning(_("Peer does not authenticate itself"), _("Contact from unknown peer"));
-					if(!DD.ACCEPT_UNSIGNED_PEERS) break;
+					if(!DD.ACCEPT_DATA_FROM_UNSIGNED_PEERS) break;
 				}
 				SyncAnswer sa = UpdateMessages.buildAnswer(asr, peer_ID);
 				byte[]msg = sa.encode();
@@ -171,6 +171,85 @@ class ServerThread extends Thread {
 		server.decThreads();
 	}
 }
+
+class ThreadAskPull extends Thread{
+	D_PeerAddress pa;
+	String peer_ID;
+	 ASNSyncRequest asr;
+	 SocketAddress sa;
+	 Object caller;
+	ThreadAskPull(D_PeerAddress pa, String peer_ID, ASNSyncRequest asr, SocketAddress sa, Object caller){
+		this.pa = pa;
+		this.peer_ID = peer_ID;
+		this.asr = asr;
+		this.sa = sa;
+		this.caller = caller;
+	}
+	public void run() {
+		try {
+			_run();
+			if(pa.blocked) return;
+			/**
+			 * Run again the data extraction in case blocking is off
+			 */
+			Server.extractDataSyncRequest(asr, sa, caller);
+			
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
+	public void _run() throws P2PDDSQLException{
+		int i = 2;
+
+		Object sync = _("Pull from")+" "+Util.trimmed(pa.name);
+		Object options[] = new Object[]{
+				sync,
+				_("Do not pull from it"),
+				_("Use defaults"),
+				_("Use defaults, do not ask again"),
+				_("Block")
+				};
+		i = Application.ask(
+			_("Use new peer for synchronization?"),
+			_("A new peer is contacting you. Do you want to pull from it, too?")+" \n"+
+			//_("Select \"Cancel\" for not being asked again, but using defaults.")+"\n"+
+			_("Default for pulling is affected by the first 2 choices.")+"\n"+
+			_("Default for pulling from new peer currently is:")+"     "+(DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME?_("Sync from this"):_("Do not sync from this"))+"\n"+
+			_("Default for blocking (pushed data) is:")+"              "+(DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME?_("Blocked"):_("Not blocked"))+" \n"+
+			_("Name of Peer contacting you is:")+"                     \""+Util.trimmed(pa.name,30)+"\" \n"+
+			_("The current slogan of the peer is:")+"                  \""+Util.trimmed(pa.slogan,100)+"\"",
+			options, sync, null);
+			//JOptionPane.YES_NO_CANCEL_OPTION);
+
+		switch(i) {
+		case 0:
+			pa.blocked = false;
+			DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME = pa.used = true;
+			peer_ID = pa.storeVerifiedForce(); //in fact only the options should be forced
+			break;
+		case 1:
+			pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
+			DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME = pa.used = false;
+			peer_ID = pa.storeVerifiedForce();
+			break;
+		case 4:
+			pa.used = false;
+			pa.blocked = true;
+			peer_ID = pa.storeVerifiedForce();
+			break;
+		case 3:
+			DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME = false;
+		case 2:
+		case JOptionPane.CLOSED_OPTION:
+		default:
+			pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
+			pa.used = DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
+			peer_ID = pa.storeVerified();
+			break;
+		}
+	}
+}
+
 
 public class Server extends Thread {
 	public static final int TIMEOUT_Handler = 1000000;
@@ -226,45 +305,17 @@ public class Server extends Thread {
 					// Here the address only needed at version 2
 					D_PeerAddress local = new D_PeerAddress(pa.globalID, pa.globalIDhash, false, true, true);
 					if(local.peer_ID==null){
-						int i = 2;
-						pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
-						pa.used = false; //DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
-						peer_ID = pa.storeVerified();
-
 						if(DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME) {
-							Object sync = _("Synchronize from")+" "+pa.name;
-							Object options[] = new Object[]{sync, _("No Sync from it"), _("Use defaults"), _("Use defaults, do not ask again")};
-							i = Application.ask(
-								_("Use new peer for synchronization?"),
-								_("A new peer is contacting you. Do you want to sync from it, too?")+" \n"+
-								//_("Select \"Cancel\" for not being asked again, but using defaults.")+"\n"+
-								_("Defaults may be affected by the current choice.")+"\n"+
-								_("Current default for synchronizing with new peer is:")+" "+(DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME?_("Sync from this"):_("Do not sync from this"))+"\n"+
-								_("Default for blocking (employed at No Synchronizing) is:")+" "+(DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME?_("Blocked"):_("Not blocked"))+" \n"+
-								_("Name of Peer contacting you is:")+" \""+pa.name+"\" \n"+_("His current slogan is:")+" \""+pa.slogan+"\"",
-								options, sync, null);
-								//JOptionPane.YES_NO_CANCEL_OPTION);
-						}
-						switch(i) {
-						case 0:
-							pa.blocked = false;
-							DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME = pa.used = true;
+							pa.blocked = true; //DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
+							pa.used = false; //DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
 							peer_ID = pa.storeVerified();
-							break;
-						case 1:
-							pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
-							DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME = pa.used = false;
-							peer_ID = pa.storeVerified();
-							break;
-						case 3:
-							DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME = false;
-						case 2:
-						case JOptionPane.CLOSED_OPTION:
-						default:
+						}else{
 							pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
 							pa.used = DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
 							peer_ID = pa.storeVerified();
-							break;
+						}
+						if(DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME) {
+							new ThreadAskPull(pa, peer_ID, asr, sa, caller).start();
 						}
 					}else{
 						local.setRemote(pa);

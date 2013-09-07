@@ -129,7 +129,7 @@ HashExtern_D_Constituent ::= IMPLICIT [UNIVERSAL 48] SEQUENCE {
 */
 public class D_Constituent extends ASNObj implements Summary {
 	private static final boolean _DEBUG = true;
-	private static boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	public static final int EXPAND_NONE = 0;
 	public static final int EXPAND_ONE = 1;
 	public static final int EXPAND_ALL = 2;
@@ -167,18 +167,34 @@ public class D_Constituent extends ASNObj implements Summary {
 	public boolean blocked = false;
 	public boolean requested = false;
 	public boolean broadcasted = D_Organization.DEFAULT_BROADCASTED_ORG;
-	private String constituent_ID;
+	public String constituent_ID;
 	private long _constituent_ID;
-
+	
+	/**
+	 * All fields prefixed with alias "c."
+	 */
 	public static String c_fields_constituents = Util.setDatabaseAlias(table.constituent.fields_constituents,"c");
+	/**
+	 * Gets the constituent fields and its neighborhoodGID,
+	 * joins table constituent, neighborhood, and organization
+	 */
 	public static String sql_get_const =
 		"SELECT "+c_fields_constituents+",n."+table.neighborhood.global_neighborhood_ID+
 		" FROM "+table.constituent.TNAME+" as c " +
 		" LEFT JOIN "+table.neighborhood.TNAME+" AS n ON(c."+table.constituent.neighborhood_ID+" = n."+table.neighborhood.neighborhood_ID+") "+
 		" LEFT JOIN "+table.organization.TNAME+" AS o ON(c."+table.constituent.organization_ID+" = o."+table.organization.organization_ID+") ";
+	/**
+	 * Gets the constituent fields and its neighborhoodGID,
+	 * joins table constituent, neighborhood, and organization
+	 */
 	static String sql_get_const_by_ID =
 		sql_get_const +
 		" WHERE "+table.constituent.constituent_ID+" = ?;";
+	/**
+	 * Gets the constituent fields and its neighborhoodGID,
+	 * joins table constituent, neighborhood, and organization
+	 * by ID=? OR GID=?
+	 */
 	static String sql_get_const_by_GID =
 		sql_get_const +
 		" WHERE "+table.constituent.global_constituent_ID+" = ? "+
@@ -813,7 +829,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		if(!verifySignature(orgGID)){
 			if(_DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData:Signature check failed using orgGID: "+orgGID);
 			if(_DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData:Signature check failed for "+this);
-			if(!DD.ACCEPT_UNSIGNED_PEERS){
+			if(!DD.ACCEPT_UNSIGNED_PEERS_FOR_STORAGE){
 				if(_DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: exit due to signature failure");
 				
 				return _constituent_ID;
@@ -841,11 +857,11 @@ public class D_Constituent extends ASNObj implements Summary {
 		
 		if((this.global_constituent_id!=null)&&(this.constituent_ID==null)){
 			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_id);
-			if(_DEBUG) System.out.println("D_Constituent:storeVerified: id(GID)="+constituent_ID);
+			if(_DEBUG) System.out.println("D_Constituent:storeVerified: id(GID)="+constituent_ID+" for:"+this.getName());
 		}
 		if((this.global_constituent_id_hash!=null)&&(this.constituent_ID==null)){
 			this.constituent_ID = D_Constituent.getConstituentLocalIDByGID_or_Hash(this.global_constituent_id_hash, null);
-			if(_DEBUG) System.out.println("D_Constituent:storeVerified: id(hash)="+constituent_ID);
+			if(_DEBUG) System.out.println("D_Constituent:storeVerified: id(hash)="+constituent_ID+" for:"+this.getName());
 		}
 		this._constituent_ID = Util.lval(constituent_ID, -1);
 		if((org_local_ID==null) && (orgGID!=null)) {
@@ -915,8 +931,10 @@ public class D_Constituent extends ASNObj implements Summary {
 			}
 		}
 				
-		String[] fields = table.constituent._fields_constituents.split(Pattern.quote(","));
-		String[] params = new String[fields.length+((constituent_ID!=null)?1:0)];
+		//String[] fields = table.constituent.fields_constituents_no_ID_list;
+		String[] params = new String[(constituent_ID!=null)?
+				table.constituent.CONST_COLs:
+					table.constituent.CONST_COLs_NOID];
 		//params[table.constituent.CONST_COL_ID] = ;
 		params[table.constituent.CONST_COL_GID] = global_constituent_id;
 		params[table.constituent.CONST_COL_GID_HASH] = global_constituent_id_hash;
@@ -941,10 +959,25 @@ public class D_Constituent extends ASNObj implements Summary {
 		params[table.constituent.CONST_COL_BLOCKED] = Util.bool2StringInt(blocked);
 		params[table.constituent.CONST_COL_REQUESTED] = Util.bool2StringInt(requested);
 		params[table.constituent.CONST_COL_BROADCASTED] = Util.bool2StringInt(broadcasted);
+
+		if((this.global_constituent_id_hash!=null)&&(this.constituent_ID==null)){
+			/**
+			 * Not needed when there is no concurrency!
+			 */
+			this.constituent_ID = D_Constituent.getConstituentLocalIDByGID_or_Hash(this.global_constituent_id_hash, null);
+			if(_DEBUG) System.out.println("D_Constituent:storeVerified: late reget id=="+this.constituent_ID+" for:"+this.getName());
+			if(this.constituent_ID != null){
+				params = Util.extendArray(params, table.constituent.CONST_COLs);
+				params[table.constituent.CONST_COL_ID] = constituent_ID;
+				this._constituent_ID = Util.lval(this.constituent_ID, -1);
+			}
+		}
+		
 		if(constituent_ID==null){
 			if(DEBUG) System.out.println("ConstituentHandling:storeVerified: insert!");
 			try{
-				_constituent_ID=Application.db.insert(table.constituent.TNAME, fields, params, DEBUG);
+				_constituent_ID=Application.db.insert(table.constituent.TNAME,
+						table.constituent.fields_constituents_no_ID_list, params, DEBUG);
 			}catch(Exception e){
 				if(_DEBUG) System.out.println("D_Constituent:storeVerified: failed hash="+global_constituent_id_hash);
 				e.printStackTrace();
@@ -962,7 +995,8 @@ public class D_Constituent extends ASNObj implements Summary {
 			//params[table.constituent.CONST_COL_ID] = constituent_ID;
 			if((date[0]==null)||(date[0].compareTo(params[table.constituent.CONST_COL_DATE])<0)) {
 				params[params.length-1] = constituent_ID;
-				Application.db.update(table.constituent.TNAME, fields, new String[]{table.constituent.constituent_ID}, params, DEBUG);
+				Application.db.update(table.constituent.TNAME,
+						table.constituent.fields_constituents_no_ID_list, new String[]{table.constituent.constituent_ID}, params, DEBUG);
 			}else{
 				if(DEBUG) System.out.println("ConstituentHandling:storeVerified: not new data vs="+date[0]);				
 			}
@@ -1493,5 +1527,13 @@ public class D_Constituent extends ASNObj implements Summary {
 		catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	public String getName() {
+		if((this.forename==null)||(this.forename.trim().length()==0)) return surname;
+		if((this.surname==null)||(this.surname.trim().length()==0)) return surname;
+		return this.forename+", "+this.surname;
+	}
+	public boolean LocallyAvailable() {
+		return this.constituent_ID != null;
 	}
 }

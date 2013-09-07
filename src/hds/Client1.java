@@ -71,35 +71,6 @@ class Client1 extends Thread implements IClient{
 	}
 	
 	/**
-	 * Add new items to advertisements
-	 * this touches the client
-	 * @param hash
-	 * @param org_hash
-	 * @param type
-	 */
-	public static void addToPayloadAdvertisements(String hash, String org_hash, int type) {
-		RequestData target = null;
-		for(RequestData a: ClientSync.payload_recent.rd) {
-			if(org_hash.equals(a.global_organization_ID_hash)) {
-				target = a;
-			}
-		}
-		if(target == null) {
-			target = new RequestData();
-			ClientSync.payload_recent.rd.add(target);
-		}
-		
-		if (target.addHashIfNewTo(hash, type, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD))
-			try {
-				DD.touchClient();
-			} catch (NumberFormatException e) {
-				e.printStackTrace();
-			} catch (P2PDDSQLException e) {
-				e.printStackTrace();
-			}
-	}
-	
-	/**
 	 * This function tried both TCP and UDP connections, based on the DD.ClientUDP and DD.ClientTCP
 	 * @param s_address
 	 * @param type
@@ -408,7 +379,7 @@ class Client1 extends Thread implements IClient{
 		if(ClientSync.DEBUG) out.println("Client: getDirAddress: "+dir_address+" ID="+Util.trimmed(global_peer_ID));
 		InetSocketAddress sock_addr=getTCPSockAddress(dir_address);
 		if(sock_addr == null){
-			if(ClientSync._DEBUG) out.println("Client: getDirAddress");
+			if(ClientSync.DEBUG||DD.DEBUG_CHANGED_ORGS) out.println("Client: getDirAddress");
 			ClientSync.reportDa(dir_address, global_peer_ID, peer_name, null, _("Null Socket"));
 			return null;//"";
 		}

@@ -716,7 +716,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	public static final int TABLE_COL_CONNECTION = 5; // any activity in the last x days?
 	public static final int TABLE_COL_NEWS = 6; // unread news?
 	public static final int TABLE_COL_PLUGINS = 7;
-	private static final boolean DEBUG = false;
+	public static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	DBInterface db;
 	Object _orgs[]=new Object[0];
@@ -830,7 +830,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 						new String[]{table.peer_org.peer_ID,  table.peer_org.organization_ID},
 						new String[]{peer_ID, organization_ID}, _DEBUG);
 			}
-			setBroadcasting(organization_ID, val); // set in organization.broadcasted
+			D_Organization.setBroadcasting(organization_ID, val); // set in organization.broadcasted
 		} catch (Exception e) {
 			// if not serve so far, serve now!
 			try {
@@ -841,7 +841,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 				Application.db.insert(table.peer_org.TNAME,
 						new String[]{table.peer_org.served,table.peer_org.peer_ID,table.peer_org.organization_ID},
 						new String[]{_serving, peer_ID, organization_ID}, _DEBUG);
-				setBroadcasting(organization_ID, val);
+				D_Organization.setBroadcasting(organization_ID, val);
 			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 				return false;
@@ -1045,10 +1045,12 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			break;
 		case TABLE_COL_CREATOR:
 			String sql_cr =
-				"SELECT o."+table.organization.creator_ID+", m."+table.my_organization_data.creator+", p."+table.peer.name+
+				"SELECT o."+table.organization.creator_ID+", m."+table.my_organization_data.creator+
+				", p."+table.peer.name+", pm."+table.peer_my_data.name+
 				" FROM "+table.organization.TNAME+" AS o" +
 				" LEFT JOIN "+table.my_organization_data.TNAME+" AS m "+" ON(o."+table.organization.organization_ID+"=m."+table.my_organization_data.organization_ID+")"+
 				" LEFT JOIN "+table.peer.TNAME+" AS p "+" ON(o."+table.organization.creator_ID+"=p."+table.peer.peer_ID+")"+
+				" LEFT JOIN "+table.peer_my_data.TNAME+" AS pm "+" ON(o."+table.organization.creator_ID+"=pm."+table.peer_my_data.peer_ID+")"+
 				" WHERE o."+table.organization.organization_ID+" = ? LIMIT 1;";
 			try {
 				ArrayList<ArrayList<Object>> orgs = db.select(sql_cr, new String[]{orgID});
@@ -1058,8 +1060,14 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 						if(DEBUG)System.out.println("Orgs:Got my="+result);
 					}
 					else{
-						result = Util.getString(orgs.get(0).get(2));
-						if(DEBUG)System.out.println("Orgs:Got my="+result);
+						if(orgs.get(0).get(3)!=null){
+							result = Util.getString(orgs.get(0).get(1));
+							if(DEBUG)System.out.println("Orgs:Got my="+result);
+						}
+						else{
+							result = Util.getString(orgs.get(0).get(2));
+							if(DEBUG)System.out.println("Orgs:Got my="+result);
+						}
 					}
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
@@ -1258,46 +1266,5 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	public boolean isRequested(int row) {
 		if(row>=_req.length) return false;
 		return _req[row];
-	}
-	public static void setBlocking(String orgID, boolean val) {
-		if(DEBUG) System.out.println("Orgs:setBlocking: set="+val);
-		try {
-			Application.db.update(table.organization.TNAME,
-					new String[]{table.organization.blocked},
-					new String[]{table.organization.organization_ID},
-					new String[]{Util.bool2StringInt(val), orgID}, DEBUG);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
-	}
-	/**
-	 * This function just sets the "broadcasted" flag (calling sync on the database).
-	 * To change "org.broadcasted" (if also advertising it!), better change with toggleServing
-	 *  which sets also "peer.served_orgs" (by calling this).
-	 * @param orgID
-	 * @param val
-	 */
-	public static void setBroadcasting(String orgID, boolean val) {
-		if(DEBUG) System.out.println("Orgs:setBroadcasting: set="+val+" for orgID="+orgID);
-		try {
-			Application.db.update(table.organization.TNAME,
-					new String[]{table.organization.broadcasted, table.organization.reset_date},
-					new String[]{table.organization.organization_ID},
-					new String[]{Util.bool2StringInt(val),Util.getGeneralizedTime(), orgID}, DEBUG);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
-		if(DEBUG) System.out.println("Orgs:setBroadcasting: Done");
-	}
-	public static void setRequested(String orgID, boolean val) {
-		if(DEBUG) System.out.println("Orgs:setRequested: set="+val);
-		try {
-			Application.db.update(table.organization.TNAME,
-					new String[]{table.organization.requested},
-					new String[]{table.organization.organization_ID},
-					new String[]{Util.bool2StringInt(val), orgID}, DEBUG);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
 	}
 }

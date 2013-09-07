@@ -69,7 +69,6 @@ public class UDPServer extends Thread {
 	public static final int MAX_THREADS = 6;
 	private static final int UDP_BUFFER_LENGTH = 1000000;
 	public static final Object directoryAnnouncementLock = new Object();
-	public static boolean DEBUG_ALIVE = false;
 	public static boolean DEBUG_DIR = false;
 	public static DirectoryAnnouncement directoryAnnouncement = null;
 	private byte[] buffer;
@@ -84,8 +83,8 @@ public class UDPServer extends Thread {
 		for (UDPMessage um : Application.aus.recvMessages.values()) {
 			if (global_peer_ID.equals(um.senderID)&&
 					(um.type == DD.MSGTYPE_SyncAnswer)) {
-				if(_DEBUG)System.out.println("UDPServer: transfAnswer:now="+Util.CalendargetInstance().getTimeInMillis()+" checks="+um.checked +"/"+ DD.UDP_SENDING_CONFLICTS);
-				if(_DEBUG)System.out.println("UDPServer: transfAnswer:"+um);
+				if(DEBUG)System.out.println("UDPServer: transfAnswer:now="+Util.CalendargetInstance().getTimeInMillis()+" checks="+um.checked +"/"+ DD.UDP_SENDING_CONFLICTS);
+				if(DEBUG)System.out.println("UDPServer: transfAnswer:"+um);
 				um.checked++;
 				if(um.checked > DD.UDP_SENDING_CONFLICTS) // potentially lost
 					return false; //let it go further!
@@ -507,7 +506,7 @@ public class UDPServer extends Thread {
 	 * Synchronized on recvMessages
 	 */
 	public void sendFragmentReclaim(){
-		if(DEBUG_ALIVE) out.println("userver: UDPServer Reclaim! messages #"+recvMessages.size());
+		if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: UDPServer Reclaim! messages #"+recvMessages.size());
 		ArrayList<UDPMessage> bag = new ArrayList<UDPMessage>();
 		long crt_time = Util.CalendargetInstance().getTimeInMillis();
 		/**
@@ -843,7 +842,7 @@ public class UDPServer extends Thread {
 				return;
 			}
 		}
-		if(_DEBUG)System.out.println("UDPServer: run: go");
+		if(DEBUG||DD.DEBUG_LIVE_THREADS)System.out.println("UDPServer: run: go");
 		_name = name++;
 		try{
 			_run();
@@ -854,20 +853,20 @@ public class UDPServer extends Thread {
 	public static int name = 0;
 	public int _name;
 	public void _run() {
-		DD.ed.fireServerUpdate(new CommEvent(this, null, null, "LOCAL", "UDPServer starting"));
+		DD.ed.fireServerUpdate(new CommEvent(this, null, null, "LOCAL", "UDPServer starting at:"+Identity.udp_server_port));
 		//this.announceMyselfToDirectories();
 		int cnt = 0;
 		for(;;) {
-			if (_DEBUG) out.print("(UDP*)");
+			if (DEBUG||DD.DEBUG_LIVE_THREADS) out.print("(UDP*)");
 			if (turnOff) break;
-			if (DEBUG_ALIVE) out.println("userver: UDPServer reclaim!");
+			if (DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: UDPServer reclaim!");
 			try {
 				this.sendFragmentReclaim();
 				if(this.isInterrupted()) continue;
-				if(DEBUG_ALIVE) out.println("userver: ************* wait!");
+				if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: ************* wait!");
 				wait_if_needed();
 				if(this.isInterrupted()) continue;
-				if(DEBUG_ALIVE) out.println("userver: UDPServer will accept!*************");
+				if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: UDPServer will accept!*************");
 				buffer = new byte[UDP_BUFFER_LENGTH];
 				DatagramPacket pak = new DatagramPacket(buffer, UDP_BUFFER_LENGTH);
 				// calling the DatagramPacket receive call
@@ -886,7 +885,7 @@ public class UDPServer extends Thread {
 					if(DEBUG) out.println("userver: ************* UDPServer announce!");
 					UDPServer.announceMyselfToDirectories(ds);
 				}else{
-					if(DEBUG_ALIVE) out.println("userver: ************* UDPServer ping!");
+					if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: ************* UDPServer ping!");
 					this.pingDirectories();
 				}
 			}
@@ -896,7 +895,7 @@ public class UDPServer extends Thread {
 			catch(Exception e){
 				e.printStackTrace();
 			}
-			if(DEBUG_ALIVE) out.println("userver: ************* UDPServer loopend!");
+			if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: ************* UDPServer loopend!");
 		}
 		if(DEBUG) out.println("userver: ************* UDPServer Good Bye!");
 		DD.ed.fireServerUpdate(new CommEvent(this, null, null, "LOCAL", "UDPServer stopping"));
@@ -954,7 +953,7 @@ public class UDPServer extends Thread {
 				ASNSyncRequest _asr = new ASNSyncRequest();
 				_asr.decode(dec);
 				//if(DEBUG)System.out.println("UDPServer: Received request from: "+psa);
-				if(_DEBUG)System.out.println("UDPServer: verif sent Decoded request: "+_asr.toSummaryString());
+				if(DEBUG)System.out.println("UDPServer: verif sent Decoded request: "+_asr.toSummaryString());
 				if(!_asr.verifySignature()) {
 					//DD.ed.fireServerUpdate(new CommEvent(this, null, psa, "UDPServer", "Unsigned Sync Request received: "+asr));
 					System.err.println("UDPServer:run: Unsigned Request sent: "+_asr.toSummaryString());

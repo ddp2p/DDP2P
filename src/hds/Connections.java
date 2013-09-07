@@ -89,8 +89,10 @@ class Peer_Socket{
 	boolean last_contact_successful_UDP = false;
 	Socket tcp_connection_open = null; // non-null if a TCP connection is open (synchronized)
 	boolean tcp_connection_open_busy = false; // is some thread using this connection?
-	public Peer_Socket() {}
+	Address ad;
+	public Peer_Socket(Address ad2) {ad = ad2;}
 	public Peer_Socket(Address ad, InetAddress ia) {
+		this.ad = ad;
 		InetSocketAddress isa_t = null, isa_u = null;
 		if(ad.tcp_port > 0) isa_t = new InetSocketAddress(ia, ad.tcp_port);
 		if(ad.udp_port > 0) isa_u = new InetSocketAddress(ia, ad.udp_port);
@@ -99,6 +101,9 @@ class Peer_Socket{
 	}
 	public String toString() {
 		return "[Peer_Socket: ID="+address_ID+" addr="+addr+" date="+_last_contact+"]";
+	}
+	public Address getAddress() {
+		return ad;
 	}
 }
 class Peer_Connection {
@@ -224,7 +229,9 @@ public class Connections extends Thread implements DBListener{
 			switch_tmp_peers(); switch_tmp_dirs();
 		}
 	}
-	
+	/**
+	 * Creates peers in tmp_peers
+	 */
 	private static void init_peers(){
 		if(DEBUG) System.out.println("Connections: init_peers");
 		int QUERY_ID = 0;
@@ -274,6 +281,10 @@ public class Connections extends Thread implements DBListener{
 		}
 		if(DEBUG) System.out.println("Connections: init_peers: got="+_toString());
 	}
+	/**
+	 * Loads the addresses of Peer_Connection p in tmp_peers.
+	 * @param p
+	 */
 	private static void loadAddresses(Peer_Connection p) {
 		if(DEBUG) System.out.println("Connections: loadAddresses:"+p);
 		int QUERY_ADDR = 0;
@@ -317,28 +328,37 @@ public class Connections extends Thread implements DBListener{
 			if(DEBUG)System.out.println("Connection:loadAddresses: peer: loaded addresses: a="+a);
 			ArrayList<Object> item = peers_addr.get(a);
 			String type = Util.getString(item.get(QUERY_TYPE));
+			if(Address.NAT.equals(type)) continue;
 			String adr = Util.getString(item.get(QUERY_ADDR));
 			//System.out.println("Connectionr:loadAddresses: Address: "+adr);
 			Address ad = new Address(adr);
 			String domain = ad.domain;
-			InetSocketAddress isa_tcp = null;
-			InetSocketAddress isa_udp = null;
-			//if(DEBUG)System.out.println("Connection:loadAddresses: get nonblocking "+domain);
-			InetAddress ia = Util.getNonBlockingHostIA(domain);
-			//if(DEBUG)System.out.println("Connection:loadAddresses: got nonblocking "+ia);
-			if(ia != null) {
-				if(ad.tcp_port > 0) isa_tcp = new InetSocketAddress(ia, ad.tcp_port);
-				if(ad.udp_port > 0) isa_udp = new InetSocketAddress(ia, ad.udp_port);
-			}else{
-				if(DEBUG)System.out.println("Connection:loadAddresses: Unknown host: "+adr);
-				continue;
-			}
-			if(Address.NAT.equals(type)) continue;
+			
 			if(Address.DIR.equals(type)){
 				if(DEBUG)System.out.println("Connection:loadAddresses: DIR: locate");
 				Peer_Directory pd = locatePD(_p, ad);
 				if(DEBUG)System.out.println("Connection:loadAddresses: DIR: located");
 				if(pd == null){
+
+					/**
+					 * New addresses
+					 */
+					InetSocketAddress isa_tcp = null;
+					InetSocketAddress isa_udp = null;
+					//if(DEBUG)System.out.println("Connection:loadAddresses: get nonblocking "+domain);
+					InetAddress ia = Util.getNonBlockingHostIA(domain);
+					//if(DEBUG)System.out.println("Connection:loadAddresses: got nonblocking "+ia);
+					if(ia != null) {
+						if(ad.tcp_port > 0) isa_tcp = new InetSocketAddress(ia, ad.tcp_port);
+						if(ad.udp_port > 0) isa_udp = new InetSocketAddress(ia, ad.udp_port);
+					}else{
+						if(DEBUG)System.out.println("Connection:loadAddresses: Unknown host: "+adr);
+						continue;
+					}
+					/**
+					 * New Addresses retrieved
+					 */
+					
 					pd = new Peer_Directory();
 					pd.supernode_addr = new SocketAddress_Domain(isa_tcp, ad);
 					pd._last_contact = Util.getString(item.get(QUERY_LAST_CONN));
@@ -353,6 +373,28 @@ public class Connections extends Thread implements DBListener{
 					Peer_Socket ps = locatePS(_p, ad);
 					if(DEBUG)System.out.println("Connection:loadAddresses: Socket: located");
 					if(ps == null) {
+
+
+						/**
+						 * New addresses
+						 */
+						InetSocketAddress isa_tcp = null;
+						InetSocketAddress isa_udp = null;
+						//if(DEBUG)System.out.println("Connection:loadAddresses: get nonblocking "+domain);
+						InetAddress ia = Util.getNonBlockingHostIA(domain);
+						//if(DEBUG)System.out.println("Connection:loadAddresses: got nonblocking "+ia);
+						if(ia != null) {
+							if(ad.tcp_port > 0) isa_tcp = new InetSocketAddress(ia, ad.tcp_port);
+							if(ad.udp_port > 0) isa_udp = new InetSocketAddress(ia, ad.udp_port);
+						}else{
+							if(DEBUG)System.out.println("Connection:loadAddresses: Unknown host: "+adr);
+							continue;
+						}
+						/**
+						 * New Addresses retrieved
+						 */
+						
+						
 						if(DEBUG)System.out.println("Connection:loadAddresses: Socket: myself");
 						if((isa_udp!=null)&&
 								ClientSync.isMyself(Identity.udp_server_port, isa_udp, ad)){
@@ -367,7 +409,8 @@ public class Connections extends Thread implements DBListener{
 							isa_tcp = null;
 						}
 						if((isa_udp==null) && (isa_tcp==null)) continue;
-						ps = new Peer_Socket();
+						ps = new Peer_Socket(ad);
+						//ps.ad = ad;
 						//if(DEBUG)System.out.println("Connection:loadAddresses: Socket: PS");
 						ps.addr = new SocketAddresses_Domain(ia, isa_tcp, isa_udp, ad);
 						//if(DEBUG)System.out.println("Connection:loadAddresses: Socket: SAD");
@@ -378,6 +421,32 @@ public class Connections extends Thread implements DBListener{
 					p.peer_sockets.add(ps);
 					if(DEBUG)System.out.println("Connection:loadAddresses: Socket: "+adr);
 				}
+		}
+		try{
+			if(_p!=null) {
+				if(DEBUG)System.out.println("Connection:loadAddresses: Socket: old peer_socks #"+_p.peer_sockets.size());
+				for (int c = _p.peer_sockets.size()-1; c>=0; c--){
+					Peer_Socket tmpsock = _p.peer_sockets.get(c);
+				
+					if(tmpsock.address_ID>0){
+						if(DEBUG)System.out.println("Connection:loadAddresses: Socket: fix old peer_sock #"+tmpsock);
+						continue;
+					}
+					/**
+					 * Locate a new instance of tmpsock (received from Dir and not in the database)
+					 * that could be now in the database, and use it (to have its local address_ID
+					 */
+					Peer_Socket crt = locatePS(p, tmpsock.getAddress());
+					if(crt != null){
+						if(DEBUG)System.out.println("Connection:loadAddresses: Socket: fixated peer_sock #"+tmpsock);
+						continue;
+					}
+					if(DEBUG)System.out.println("Connection:loadAddresses: Socket: imported peer_sock #"+tmpsock);
+					p.peer_sockets.add(0, tmpsock);
+				}
+			}
+		}catch(Exception e){
+			e.printStackTrace();
 		}
 		if(DEBUG) System.out.println("Connections: loadAddresses: got: "+p);
 	}
@@ -437,8 +506,15 @@ public class Connections extends Thread implements DBListener{
 		}
 		if(DEBUG) System.out.println("Connections: update done");
 	}
+	/**
+	 * called on timeout alarm or on database changes
+	 */
 	private void updates(){	
-		if(DEBUG) System.out.println("Connections: updates");
+		if(DEBUG) System.out.println("Connections: updates: ***********");
+		if(DEBUG) System.out.println("Connections: updates: start");
+		/**
+		 * database changes
+		 */
 		if (update_dirs) {
 			if(DEBUG) System.out.println("Connections: updates dirs");
 			update_dirs = false;
@@ -453,6 +529,9 @@ public class Connections extends Thread implements DBListener{
 			Connections.init_peers();
 			Connections.switch_tmp_peers();
 		}
+		/**
+		 * The client cannot contact a peer and requests its re-evaluation
+		 */
 		if(update_pc.size()>0){
 			if(DEBUG) System.out.println("Connections: updates pc");
 			Peer_Connection pc;
@@ -466,6 +545,7 @@ public class Connections extends Thread implements DBListener{
 			if(DEBUG) System.out.println("Connections: updates pc done");
 		}
 		if(DEBUG) System.out.println("Connections: updates done");
+		if(DEBUG) System.out.println("Connections: updates: ^^^^^^^^");
 	}
 	
 	public void run(){
@@ -474,6 +554,9 @@ public class Connections extends Thread implements DBListener{
 		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Stop"));
 		if(DEBUG) out.println("Connections: run: turned Off");
 	}
+	/**
+	 * Continuously tries to update, each time something changes
+	 */
 	private void _run(){
 		init();
 		for(;;){
@@ -482,7 +565,7 @@ public class Connections extends Thread implements DBListener{
 				synchronized(wait_obj){
 					if(DEBUG) System.out.println("Connections: _run: got wait_obj");
 					if(!updates_available())
-						wait_obj.wait();
+						wait_obj.wait(60*1000);
 				}
 				updates();
 			}catch(InterruptedException e){
@@ -554,13 +637,14 @@ public class Connections extends Thread implements DBListener{
 		}else
 			sock_addr = pd.supernode_addr.isa;
 		if(sock_addr == null){
-			if(_DEBUG) out.println("Connections: getDirAddress:  reportDa");
+			if(DEBUG) out.println("Connections: getDirAddress: null dir address:  reportDa");
 			ClientSync.reportDa(dir_address, global_peer_ID, peer_name, null, _("Null Socket"));
 			return null; //"";
 		}
 		Socket socket = new Socket();
 		try {
 			socket.connect(sock_addr, Server.TIMEOUT_Client_wait_Dir);
+			if(DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: connected:"+sock_addr);
 			DirectoryRequest dr = new DirectoryRequest(global_peer_ID,
 					Identity.getMyPeerGID(),
 					Identity.udp_server_port, 
@@ -585,7 +669,7 @@ public class Connections extends Thread implements DBListener{
 			}
 			
 			if(da.addresses.size()==0){
-				if(_DEBUG) out.println("Connections: getDirAddress:  Got no addresses!");
+				if(_DEBUG) out.println("Connections: getDirAddress:  Got no addresses! da="+da+" for:"+_pc.name);
 				socket.close();
 				return null;
 			}
@@ -612,8 +696,13 @@ public class Connections extends Thread implements DBListener{
 		if(DEBUG) out.println("Connections: getDirAddress fail");
 		return null;
 	}
+	/**
+	 * 
+	 * @param _pc
+	 */
 	private static void update_supernode_address(Peer_Connection _pc) {
-		if(DEBUG) out.println("Connections: update_supernode_address="+_pc);
+		if(DEBUG) out.println("Connections: update_supernode_address: **********");
+		if(DEBUG) out.println("Connections: update_supernode_address: pc="+_pc);
 		String peer_name = _pc.name;
 		String peer_ID = _pc.peer.peer_ID;
 		String global_peer_ID = _pc.GID;
@@ -739,6 +828,10 @@ public class Connections extends Thread implements DBListener{
 			Peer_Directory pd, ArrayList<Address> adr_addresses, String global_peer_ID,
 			String type, String s_address, String peer_key, String now,
 			Hashtable<String, Hashtable<String, String>> pc) {
+		if(adr_addresses==null){
+			if(_DEBUG) System.out.println("Connections: integrateDirAddresses #null addresses");
+			return;
+		}
 		if(DEBUG) System.out.println("Connections: integrateDirAddresses #"+adr_addresses.size()+" "+pd);
 		for(int k=0; k<adr_addresses.size(); k++) {
 			Address ad = adr_addresses.get(k);

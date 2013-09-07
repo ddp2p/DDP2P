@@ -33,8 +33,15 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
+/**
+ * Structure encapsulating an ArrayList of RequestData.
+ * Each request data contains the data to be requested-from/advertised-to
+ * a given peer, with respect to an organization.
+ * @author msilaghi
+ *
+ */
 public class SpecificRequest extends ASNObj implements Summary{
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	public ArrayList<RequestData> rd = new ArrayList<RequestData>();
 	public boolean empty() {
 		if(rd.isEmpty()) return true;

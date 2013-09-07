@@ -481,7 +481,7 @@ public class UpdatePeersTable {
 			peer_data.served_orgs = table.peer_org.peerOrgsFromString(global_organizationIDs);
 			if(peer_signature == null) {
 				if(_DEBUG) out.println("UpdatePeersTable:integratePeersTable2: invalid empty signature");
-				if(!DD.ACCEPT_UNSIGNED_PEERS) continue;				
+				if(!DD.ACCEPT_UNSIGNED_PEERS_FROM_TABLES) continue;				
 			}else{
 				peer_data.signature = peer_signature;
 			}
@@ -504,7 +504,7 @@ public class UpdatePeersTable {
 				//if(!Util.verifySign(peer_data, pk, peer_signature)) {
 				if(!peer_data.verifySignature()) { //  Util.verifySign(peer_data, pk, peer_signature)) {
 					if(_DEBUG) System.err.println("UpdatePeersTable:integratePeersTable2: sign verification failed for "+peer_data);
-					if(!DD.ACCEPT_UNSIGNED_PEERS) continue;
+					if(!DD.ACCEPT_DATA_FROM_UNSIGNED_PEERS) continue;
 					peer_data.signature = null;
 				}else{
 					if(DEBUG) out.println("UpdatePeersTable:integratePeersTable2: sign verification passed for "+peer_data);					
@@ -562,7 +562,9 @@ public class UpdatePeersTable {
 		for(int j=0; j<addresses_l.length; j++) {
 			String adding_date = Encoder.getGeneralizedTime(Util.incCalendar(adding__date, 1));
 			if(addresses_l[j] == null){
-				if(_DEBUG)out.println("UpdatePeersTable:integratePeersTable2:#"+j+"/"+addresses_l.length+":got addr: "+addresses_l[j]);
+				if(DD.WARN_ABOUT_OTHER)out.println("UpdatePeersTable:integratePeersTable2: from peer:"+peer_ID+":#"+j+"/"+addresses_l.length+":got addr: "+addresses_l[j]);
+				for(int k=0; k<addresses_l.length; k++)
+					if(DD.WARN_ABOUT_OTHER)out.println("UpdatePeersTable:integratePeersTable2: list from peer:"+peer_ID+":#"+j+"/"+addresses_l.length+":got addr: ["+k+"]="+addresses_l[k]);
 				continue;
 			}
 			if(DEBUG)out.println("got addr: "+addresses_l[j]);

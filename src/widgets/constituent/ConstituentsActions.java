@@ -31,6 +31,7 @@ import javax.swing.event.*;
 
 import ASN1.Encoder;
 
+import util.EmailManager;
 import util.P2PDDSQLException;
 
 import ciphersuits.Cipher;
@@ -272,7 +273,7 @@ class ConstituentsWitnessAction extends DebateDecideAction {
     		return;
     	}
     }
-}
+ }
 
 /**
  * This class creates and handles the dialog for adding a neighbor and witnessing him
@@ -329,6 +330,7 @@ class ConstituentsCustomAction extends DebateDecideAction {
 	public static final int REFRESH_NEED = 9;
 	public static final int MOVE = 10;
 	public static final int ZAPP = 11;
+	public static final int IDENTIFY = 12;
 	ConstituentsTree tree;ImageIcon icon; int action;
     public ConstituentsCustomAction(ConstituentsTree tree,
 			     String text, ImageIcon icon,
@@ -346,6 +348,18 @@ class ConstituentsCustomAction extends DebateDecideAction {
     	if(tpath!=null) target = tpath.getLastPathComponent();
     	System.out.println("ConstAction:"+action);
     	try {
+    		if(action == IDENTIFY) {
+       			if (tpath != null) {
+    	    		if(target instanceof ConstituentsIDNode) {
+    	    	    	ConstituentsIDNode can = (ConstituentsIDNode) target;
+    	    	    	EmailManager.verify(can.get_constituentID());
+    	    		}
+//    	       		if(target instanceof ConstituentsAddressNode) {
+//    	       			ConstituentsAddressNode can = (ConstituentsAddressNode) target;
+//    	    	    	can.block(tree);
+//    	    		}
+     	    	}
+    		}
     		if(action == REFRESH_NEED) {
     			model.enableRefresh();
     		}

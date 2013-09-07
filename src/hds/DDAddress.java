@@ -279,6 +279,14 @@ public class DDAddress implements StegoStructure{
 //				long org_ID = UpdateMessages.get_organizationID(served_orgs[k].global_organization_ID, served_orgs[k].org_name, date, served_orgs[k].global_organization_IDhash);
 //				D_PeerAddress.get_peers_orgs_ID(peer_ID,org_ID, date);
 //			}
+
+		String description=null;
+		description = getNiceDescription();
+		JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
+           			_("Obtained Data:")+"\n"+description,
+           			_("Saved Data"), JOptionPane.INFORMATION_MESSAGE);
+
+		
 		if(DEBUG) Application.warning(_("Address Saved as #"+peer_ID+"!"), _("Saved!"));
 	}
 	String sane(String in) {
@@ -422,5 +430,9 @@ public class DDAddress implements StegoStructure{
 		this.signature = d.signature;
 		this.slogan = d.slogan;
 		this.served_orgs = d.served_orgs;
+	}
+	@Override
+	public short getSignShort() {
+		return DD.STEGO_SIGN_PEER;
 	}
 }

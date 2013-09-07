@@ -20,6 +20,7 @@
 package config;
 import static util.Util._;
 
+import java.awt.Component;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.regex.Pattern;
@@ -244,6 +245,20 @@ public class Application{
 				war,
 				title, type, JOptionPane.QUESTION_MESSAGE);
 	}
+	/**
+	 * type = JOptionPane.QUESTION_MESSAGE
+	 * @param prompt
+	 * @param title
+	 * @return
+	 */
+	public static String input(String prompt, String title, int type) {
+		String val=
+			JOptionPane.showInputDialog(JFrameDropCatch.mframe,
+							prompt, title,
+					type);
+		return val;
+	}
+
 	/**
 	 *  Returns the option of CLOSED_OPTION for default option
 	 * @param war

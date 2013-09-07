@@ -25,6 +25,7 @@ import java.util.Calendar;
 import streaming.RequestData;
 import streaming.SpecificRequest;
 import streaming.WB_Messages;
+import util.Summary;
 import util.Util;
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
@@ -75,6 +76,7 @@ public class ASNSyncPayload extends ASNObj{
 	public D_Organization orgData[]; //AC1 OPTIONAL
 	public OrgCRL orgCRL;   //AC2 OPTIONAL
 	public String responderID; // OPTIONAL
+	public String peer_instance; // the agent instance (not yet implemented)
 	public ASNPluginInfo plugins[]; //AC11 OPTIONAL
 	//ASNPluginData plugin_data[]; //AC12 OPTIONAL
 	public D_PluginData plugin_data_set; //AC12 OPTIONAL
@@ -685,6 +687,7 @@ public class ASNSyncPayload extends ASNObj{
 		result += "\n plugin_data_set="+Util.trimmed(plugin_data_set+"", 400);
 		result += "\n requested="+requested;
 		if(advertised_orgs_hash!=null) result += "\n advertised_orgs_hash="+Util.nullDiscrimArray(advertised_orgs_hash.toArray(new OrgsData_Hash[0]),"--");
+		if(changed_orgs!=null) result += "\n changed_org="+Util.nullDiscrimArray(changed_orgs.toArray(new ResetOrgInfo[0]),"--");
 		result += "\n advertised="+advertised+"";
 		if(advertised_orgs!=null)result += "\n advertised_orgs="+Util.nullDiscrimArray(advertised_orgs.toArray(new OrgInfo[0]),"--");
 		if(this.dictionary_GIDs!=null)result += "\n dictionay_GIDs="+Util.nullDiscrimArrayNumbered(dictionary_GIDs.toArray(new String[0]));
@@ -699,6 +702,7 @@ public class ASNSyncPayload extends ASNObj{
 		if(plugins!=null) result += "\n plugins="+Util.trimmed(""+Util.nullDiscrimArray(plugins,":"), 400);
 		//result += "\n plugin_data="+Util.trimmed(plugin_data+"");
 		if((plugin_data_set!=null) && !plugin_data_set.empty()) result += "\n plugin_data_set="+Util.trimmed(plugin_data_set+"", 400);
+		if(changed_orgs!=null) result += "\n ch_org="+Util.nullDiscrimArraySummary(changed_orgs.toArray(new Summary[0]),"--");
 		if((requested!=null)&&(!requested.empty()))result += "\n requested="+requested.toSummaryString();
 		//if(advertised_orgs_hash!=null) result += "\n advertised_orgs_hash="+Util.nullDiscrimArray(advertised_orgs_hash.toArray(new OrgsData_Hash[0]),"--");
 		if(advertised!=null)result += "\n advertised="+advertised.toSummaryString()+"";

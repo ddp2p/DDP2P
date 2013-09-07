@@ -159,6 +159,7 @@ public class Prepare_messages {
 					", t."+table.constituent.global_constituent_ID+
 					", s."+table.constituent.global_constituent_ID+
 					", o."+table.organization.global_organization_ID+
+					", o."+table.organization.organization_ID+
 					" FROM "+table.witness.TNAME+" AS w "+
 					" LEFT JOIN "+table.neighborhood.TNAME+" AS n ON(n."+table.neighborhood.neighborhood_ID+"=w."+table.witness.neighborhood_ID+") "+
 					" LEFT JOIN "+table.constituent.TNAME+" AS s ON(s."+table.constituent.constituent_ID+"=w."+table.witness.source_ID+") "+

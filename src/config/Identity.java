@@ -71,6 +71,10 @@ public class Identity {
 	public static int preferred_directory_idx = 0;
 	public static Calendar current_identity_creation_date;// = Util.CalendargetInstance();
 	public static String peer_ID;
+	/**
+	 * Only used on the first initialization of the system, to temporary store user input
+	 */
+	public static String emails;
 	
 	public static void init_Identity() {
 		current_identity = null;

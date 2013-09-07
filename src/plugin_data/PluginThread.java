@@ -121,7 +121,7 @@ class PluginThread extends Thread {
 				if(DD.WARN_OF_UNUSED_PEERS && (pca == null)){
 					D_PeerAddress peer;
 					try {
-						peer = new D_PeerAddress(msg.peer_GID, 0, true, false, false);
+						peer = new D_PeerAddress(msg.peer_GID, 0, true, true, true);
 					} catch (P2PDDSQLException e) {
 						if(DD.WARN_OF_INVALID_PLUGIN_MSG)
 							Application.warning(_("Plugin: "+plugin_name(msg.plugin_GID)+" sends request to unknown user"), _("Invalid plugin message"));

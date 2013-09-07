@@ -36,6 +36,7 @@ import util.DBListener;
 import util.P2PDDSQLException;
 
 import config.Application;
+import config.DD;
 class OrgDistributionListener implements DBListener{
 
 	@Override
@@ -46,12 +47,16 @@ class OrgDistributionListener implements DBListener{
 }
 public class D_OrgDistribution{
 	private static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
 	// left to be initialized after Application.db (on first query)
 	private static OrgDistributionListener listener = null;
 	public long od_ID;
 	public long organization_ID;
 	public long peer_ID;
 	public String peer_name;
+	public String emails;
+	public String reset_date;
+	public String organization_GIDhash;
 	
 	static Hashtable<String,ArrayList<D_OrgDistribution>> od_by_peerID;
 	static Hashtable<String,ArrayList<D_OrgDistribution>> od_by_orgID;
@@ -70,9 +75,12 @@ public class D_OrgDistribution{
 			"SELECT "+util.Util.setDatabaseAlias(table.org_distribution.fields,"o")+
 				",p."+table.peer.name+
 				",m."+table.peer_my_data.name+
+				",p."+table.peer.emails+
+				",g."+table.organization.global_organization_ID_hash+
 			" FROM "+table.peer.TNAME+" AS p "+
 			" JOIN "+table.org_distribution.TNAME+" AS o ON (o."+table.org_distribution.peer_ID+"=p."+table.peer.peer_ID+") "+
 			" LEFT JOIN "+table.peer_my_data.TNAME+" AS m ON (o."+table.org_distribution.peer_ID+"=m."+table.peer_my_data.peer_ID+") "+
+			" LEFT JOIN "+table.organization.TNAME+" AS g ON (o."+table.org_distribution.organization_ID+"=g."+table.organization.organization_ID+") "+
 			" WHERE p."+table.peer.peer_ID+"=? ;";
 	private static ArrayList<D_OrgDistribution> load_Org_Distribution(String peer_ID) throws P2PDDSQLException{
 		ArrayList<ArrayList<Object>> l = Application.db.select(sql_peerID, new String[]{peer_ID}, DEBUG);
@@ -83,8 +91,11 @@ public class D_OrgDistribution{
 				D_OrgDistribution r = new D_OrgDistribution();
 				r.od_ID = util.Util.lval(o.get(table.org_distribution.OD_ID), -1);
 				r.peer_ID = util.Util.lval(o.get(table.org_distribution.OD_PEER_ID), -1);
+				r.reset_date = util.Util.getString(o.get(table.org_distribution.OD_RESET_DATE));
 				r.organization_ID = util.Util.lval(o.get(table.org_distribution.OD_ORG_ID), -1);
 				r.peer_name = util.Util.getString(o.get(table.org_distribution.OD_FIELDS+1));
+				r.emails = util.Util.getString(o.get(table.org_distribution.OD_FIELDS+2));
+				r.organization_GIDhash = util.Util.getString(o.get(table.org_distribution.OD_FIELDS+3));
 				if((r.peer_name == null)||(r.peer_name.trim().length()==0)) { // use original
 					r.peer_name = util.Util.getString(o.get(table.org_distribution.OD_FIELDS));
 				}
@@ -97,6 +108,7 @@ public class D_OrgDistribution{
 			"SELECT "+util.Util.setDatabaseAlias(table.org_distribution.fields,"o")+
 				",p."+table.peer.name+
 				",m."+table.peer_my_data.name+
+				",p."+table.peer.emails+
 			" FROM "+table.org_distribution.TNAME+" AS o "+
 			" LEFT JOIN "+table.peer.TNAME+" AS p ON (o."+table.org_distribution.peer_ID+"=p."+table.peer.peer_ID+") "+
 			" LEFT JOIN "+table.peer_my_data.TNAME+" AS m ON (o."+table.org_distribution.peer_ID+"=m."+table.peer_my_data.peer_ID+") "+
@@ -106,7 +118,8 @@ public class D_OrgDistribution{
 			listener = new OrgDistributionListener();
 			Application.db.addListener(listener, new ArrayList<String>(Arrays.asList(table.peer.TNAME,table.peer_my_data.TNAME)), null);
 		}
-		ArrayList<ArrayList<Object>> l = Application.db.select(sql_orgID, new String[]{org_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> l =
+				Application.db.select(sql_orgID, new String[]{org_ID}, DEBUG);
 		ArrayList<D_OrgDistribution> res = new ArrayList<D_OrgDistribution>();
 		if ((l!=null)&&(l.size()!=0)){
 			for(int i=0; i<l.size(); i++){
@@ -114,8 +127,10 @@ public class D_OrgDistribution{
 				D_OrgDistribution r = new D_OrgDistribution();
 				r.od_ID = util.Util.lval(o.get(table.org_distribution.OD_ID), -1);
 				r.peer_ID = util.Util.lval(o.get(table.org_distribution.OD_PEER_ID), -1);
+				r.reset_date = util.Util.getString(o.get(table.org_distribution.OD_RESET_DATE));
 				r.organization_ID = util.Util.lval(o.get(table.org_distribution.OD_ORG_ID), -1);
 				r.peer_name = util.Util.getString(o.get(table.org_distribution.OD_FIELDS+1));
+				r.emails = util.Util.getString(o.get(table.org_distribution.OD_FIELDS+2));
 				if((r.peer_name == null)||(r.peer_name.trim().length()==0)) { // use original
 					r.peer_name = util.Util.getString(o.get(table.org_distribution.OD_FIELDS));
 				}
@@ -127,8 +142,12 @@ public class D_OrgDistribution{
 	synchronized public static ArrayList<D_OrgDistribution> get_Org_Distribution_byPeerID(String _peer_ID){
 		try{
 			ArrayList<D_OrgDistribution> res = od_by_peerID.get(_peer_ID);
-			if (res!=null) return res;
+			if (res!=null){
+				if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("O_OrgDistr: get_Org_Distribution_byPeerID: existing");
+				return res;
+			}
 			res = load_Org_Distribution(_peer_ID);
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("O_OrgDistr: get_Org_Distribution_byPeerID: loaded");
 			return res;
 		}catch(Exception e){
 			return null;
@@ -148,9 +167,15 @@ public class D_OrgDistribution{
 		long _org_ID = util.Util.lval(org_ID, -1);
 		long _peer_ID = util.Util.lval(peer_ID, -1);
 		ArrayList<D_OrgDistribution> op = od_by_peerID.get(peer_ID);
-		if(contains_org(op, _org_ID)) return;
+		if(contains_org(op, _org_ID)){
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("D_OrgDistrib:add: contained in org : p="+peer_ID+" o="+org_ID);
+			return;
+		}
 		ArrayList<D_OrgDistribution> oo = od_by_orgID.get(org_ID);
-		if(contains_peer(oo, _peer_ID)) return;
+		if(contains_peer(oo, _peer_ID)){
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("D_OrgDistrib:add: contained in peer: p="+peer_ID+" o="+org_ID);
+			return;
+		}
 		
 		String sql =
 				"SELECT "+table.org_distribution.peer_distribution_ID+
@@ -159,13 +184,19 @@ public class D_OrgDistribution{
 				" AND "+table.org_distribution.organization_ID+"=?; ";
 		ArrayList<ArrayList<Object>> od = Application.db.select(sql, new String[]{peer_ID, org_ID}, DEBUG);
 		long new_ID = -1;
+		String now = util.Util.getGeneralizedTime();
 		if(od.size()<=0){
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("D_OrgDistrib:add: insert org_distr: p="+peer_ID+" o="+org_ID);
 //			new_ID = Application.db.insertNoSync(
 			new_ID = Application.db.insert(
 					table.org_distribution.TNAME,
-				new String[]{table.org_distribution.peer_ID, table.org_distribution.organization_ID},
-				new String[]{peer_ID, org_ID}, DEBUG);
+				new String[]{table.org_distribution.peer_ID,
+							table.org_distribution.organization_ID,
+							table.org_distribution.reset_date},
+				new String[]{peer_ID, org_ID, now}, DEBUG||DD.DEBUG_CHANGED_ORGS);
+			
 		}else{
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("D_OrgDistrib:add:  preexisted: p="+peer_ID+" o="+org_ID);
 			return;
 			// since it existed, it must already be in Hashtable
 			// new_ID = util.Util.lval(od.get(0).get(0),-1);
@@ -176,9 +207,28 @@ public class D_OrgDistribution{
 		n.peer_ID = util.Util.lval(peer_ID, -1);
 		n.organization_ID = util.Util.lval(org_ID, -1);
 		n.od_ID = new_ID;
+		n.reset_date = now;
 		n.peer_name = D_PeerAddress.getDisplayName(n.peer_ID);
 		if(op!=null) op.add(n);
 		if(oo!=null) oo.add(n);
+	}
+	public static String getResetDate(String org_ID, String peer_ID2){
+		D_OrgDistribution v = D_OrgDistribution.get_peer(od_by_orgID.get(org_ID), util.Util.lval(peer_ID2,-1));
+		return v.reset_date;
+	}
+	public static void setResetDate(String org_ID, String peer_ID2) {
+		if(DEBUG) System.out.println("Orgs:setResetDate: for orgID="+org_ID);
+		try {
+			Application.db.update(table.organization.TNAME,
+					new String[]{table.org_distribution.reset_date},
+					new String[]{table.org_distribution.organization_ID,
+					table.org_distribution.peer_ID},
+					new String[]{util.Util.getGeneralizedTime(),
+					org_ID, peer_ID2}, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		if(DEBUG) System.out.println("Orgs:setBroadcasting: Done");
 	}
 	synchronized public static void del(String org_ID, String peer_ID) throws P2PDDSQLException{
 		long _org_ID = util.Util.lval(org_ID, -1);
@@ -204,6 +254,15 @@ public class D_OrgDistribution{
 		return false;
 	}
 
+	public static D_OrgDistribution get_org(ArrayList<D_OrgDistribution> op,
+			long _org_ID) {
+		if(op==null) return null;
+		for(int k=0; k<op.size(); k++){
+			if(op.get(k).organization_ID == _org_ID) return op.get(k);
+		}
+		return null;
+	}
+
 	private static boolean contains_peer(ArrayList<D_OrgDistribution> op,
 			long _peer_ID) {
 		if(op==null) return false;
@@ -211,6 +270,14 @@ public class D_OrgDistribution{
 			if(op.get(k).peer_ID == _peer_ID) return true;
 		}
 		return false;
+	}
+	private static D_OrgDistribution get_peer(ArrayList<D_OrgDistribution> op,
+			long _peer_ID) {
+		if(op==null) return null;
+		for(int k=0; k<op.size(); k++){
+			if(op.get(k).peer_ID == _peer_ID) return op.get(k);
+		}
+		return null;
 	}
 	private static boolean delete_org(ArrayList<D_OrgDistribution> op,
 			long _org_ID) {

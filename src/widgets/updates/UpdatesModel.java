@@ -288,4 +288,22 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			return -1;
 		}
 	}
+	public String get_UpdatesURL(int row) {
+		if(row<0) return null;
+		try{
+			return data.get(row).url;
+		}catch(Exception e){
+			e.printStackTrace();
+			return null;
+		}
+	}
+		public String get_UpdatesLastVer(int row) {
+		if(row<0) return null;
+		try{
+			return data.get(row).last_version;
+		}catch(Exception e){
+			e.printStackTrace();
+			return null;
+		}
+	}
 }

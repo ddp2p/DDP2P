@@ -193,6 +193,7 @@ public class SignatureHandling {
 
 	public static boolean integrateNewData(D_Vote[] signatures, String org_GID,
 			String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
+		//boolean DEBUG = true;
 		if(DEBUG) out.println("SignatureHandling:integrateNewData: start: #"+signatures);
 		if(signatures==null) {
 			if(DEBUG) out.println("SignatureHandling:integrateNewData: none available");

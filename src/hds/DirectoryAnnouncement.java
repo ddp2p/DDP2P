@@ -117,4 +117,8 @@ public class DirectoryAnnouncement extends ASNObj{
 		String result=" ID="+Util.trimmed(globalID)+"\n address="+address+"\n certif='"+Util.byteToHexDump(certificate)+"'\n sign='"+Util.byteToHexDump(signature)+"'";
 		return result;
 	}
+	public String toSummaryString() {
+		String result=" ID="+Util.getGIDhash(globalID)+"\n address="+address+"'";
+		return result;
+	}
 }

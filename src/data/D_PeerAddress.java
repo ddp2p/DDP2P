@@ -150,7 +150,7 @@ public class D_PeerAddress extends ASNObj {
 		D_PeerAddress me = get_myself(id.globalID);
 		if(me.peer_ID == null) { // I did not exist (with this globID)
 			if(Server.DEBUG) out.println("Server:update_insert_peer_myself: required new peer");
-			
+			me.emails = Identity.emails;
 			me.globalID = id.globalID; //Identity.current_peer_ID.globalID;
 			me.name = id.name; //Identity.current_peer_ID.name;
 			me.slogan = id.slogan; //Identity.current_peer_ID.slogan;
@@ -1211,10 +1211,10 @@ public class D_PeerAddress extends ASNObj {
 		return _storeVerified(_crt_date, crt_date);
 	}
 	public long _storeVerified(Calendar _crt_date) throws P2PDDSQLException{
-		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar)");
+		if(_DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar)");
 		String crt_date = Encoder.getGeneralizedTime(_crt_date);
 		long r = _storeVerified(_crt_date, crt_date);
-		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar): got="+r);
+		if(_DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar): got="+r);
 		return r;
 	}	
 	public long _storeVerifiedForce(Calendar _crt_date) throws P2PDDSQLException{
@@ -1223,9 +1223,9 @@ public class D_PeerAddress extends ASNObj {
 		return _storeVerified(_crt_date, crt_date, true);
 	}	
 	public long _storeVerified(Calendar _crt_date, String crt_date) throws P2PDDSQLException{
-		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar), str");
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar, str): start");
 		long r = _storeVerified(_crt_date, crt_date, false);
-		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar, str)");
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar, str): done");
 		return r;
 	}
 	private long _storeVerified(Calendar _crt_date, String crt_date, boolean force) throws P2PDDSQLException{
@@ -1297,7 +1297,7 @@ public class D_PeerAddress extends ASNObj {
 				if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code:!old: save addr");
 				// TODO: when storage is unified, should use this
 				// TypedAddress[] old_addr = this.address_orig; 
-				if(_DEBUG) System.out.println("TODO: D_PeerAddress:storeVerified: should optimized here when storage unified!");
+				if(_DEBUG) System.out.println("TODO: D_PeerAddress:storeVerified: should optimize here when storage unified!");
 				TypedAddress[] old_addr = TypedAddress.loadPeerAddresses(this.peer_ID);//.getPeerAddresses(this.peer_ID);
 				TypedAddress.init_intersection(old_addr, this.address);
 				TypedAddress.delete_difference(old_addr, this.address);
@@ -1384,6 +1384,7 @@ public class D_PeerAddress extends ASNObj {
 	 */
 	private long doSave_except_Served_and_Addresses() throws P2PDDSQLException{
 		//boolean DEBUG = true;
+		//if(DEBUG) Util.printCallPath("Saving");
 		if(DEBUG) System.out.println("\n\n***********\nD_PeerAddress: doSave: "+this);
 		if(peer_ID!=null) if(_peer_ID<=0) _peer_ID = Util.lval(peer_ID, -1);
 		if(_peer_ID>0) if(peer_ID == null) peer_ID = Util.getStringID(_peer_ID);
@@ -1874,10 +1875,18 @@ public class D_PeerAddress extends ASNObj {
 					_("Peer Init"), JOptionPane.WARNING_MESSAGE);
 				return;
 			}
-			
-			Server.update_my_peer_ID_peers_name_slogan();
-			D_PeerAddress.re_init_myself();
+
+			D_PeerAddress me = D_PeerAddress.get_myself(Identity.current_peer_ID.globalID);
+			me.name = val;
+			me.creation_date = Util.CalendargetInstance();
+			me.sign(DD.getMyPeerSK());
+			me.storeVerified();
 			DD.touchClient();
+			if(DEBUG) System.out.println("D_PeerAddress:changeMyPeerName:Saving:"+me);
+//
+//			Server.update_my_peer_ID_peers_name_slogan();
+//			D_PeerAddress.re_init_myself();
+//			DD.touchClient();
 		}else{
 			if(DEBUG)System.out.println("peer_ID: Empty Val");
 		}
@@ -1894,14 +1903,36 @@ public class D_PeerAddress extends ASNObj {
 		String peer_Slogan = Identity.current_peer_ID.slogan;
 		String val=JOptionPane.showInputDialog(win, _("Change Peer Slogan.\nPreviously: ")+peer_Slogan, _("Peer Slogan"), JOptionPane.QUESTION_MESSAGE);
 		if((val!=null)&&(!"".equals(val))){
-			Identity.current_peer_ID.slogan = val;
+			D_PeerAddress me = D_PeerAddress.get_myself(Identity.current_peer_ID.globalID);
 			DD.setAppText(DD.APP_my_peer_slogan, val);
-			Server.update_my_peer_ID_peers_name_slogan();
-			D_PeerAddress.re_init_myself();
+			me.slogan = val;
+			me.creation_date = Util.CalendargetInstance();
+			me.sign(DD.getMyPeerSK());
+			me.storeVerified();
 			DD.touchClient();
+			if(DEBUG) System.out.println("D_PeerAddress:changeMyPeerSlodan:Saving:"+me);
+
+//			Identity.current_peer_ID.slogan = val;
+//			DD.setAppText(DD.APP_my_peer_slogan, val);
+//			Server.update_my_peer_ID_peers_name_slogan();
+//			D_PeerAddress.re_init_myself();
+//			DD.touchClient();
 		}
 	}
 
+	public static String queryEmails (Component win) throws P2PDDSQLException{
+		String peer_Emails = D_PeerAddress.get_myself(Identity.current_peer_ID.globalID).emails;
+		String val=JOptionPane.showInputDialog(win, _("Change Peer Email.\nPreviously: ")+
+				peer_Emails,
+				_("Peer Emails"), JOptionPane.QUESTION_MESSAGE);
+		return val;
+	}
+	public static String queryNewEmails (Component win) throws P2PDDSQLException{
+		String val=JOptionPane.showInputDialog(win, _("Specify the email address where you can be verified by peers."),
+				_("Peer Emails"), JOptionPane.QUESTION_MESSAGE);
+		return val;
+	}
+	
 	public static void changeMyPeerEmails(Component win) throws P2PDDSQLException {
 		if(Identity.current_peer_ID.globalID==null){
 			JOptionPane.showMessageDialog(win,
@@ -1911,18 +1942,15 @@ public class D_PeerAddress extends ASNObj {
 		}
 		if(DEBUG)System.out.println("peer_ID: "+Identity.current_peer_ID.globalID);
 		//String peer_Slogan = Identity.current_peer_ID.slogan;
-		String peer_Emails = D_PeerAddress.get_myself(null).emails;
-		String val=JOptionPane.showInputDialog(win, _("Change Peer Email.\nPreviously: ")+peer_Emails, _("Peer Emails"), JOptionPane.QUESTION_MESSAGE);
+		String val = queryEmails(win);
 		if((val!=null)&&(!"".equals(val))){
 			D_PeerAddress me = D_PeerAddress.get_myself(null);
 			me.emails = val;
+			me.creation_date = Util.CalendargetInstance();
 			me.sign(DD.getMyPeerSK());
 			me.storeVerified();
-			//Identity.current_peer_ID.slogan = val;
-			//DD.setAppText(DD.APP_my_peer_slogan, val);
-			//Server.update_my_peer_ID_peers_name_slogan();
-			//D_PeerAddress.re_init_myself();
 			DD.touchClient();
+			if(DEBUG) System.out.println("D_PeerAddress:changeMyPeerEmails:Saving:"+me);
 		}
 	}
 	/**
@@ -2198,18 +2226,36 @@ public class D_PeerAddress extends ASNObj {
 		if(a.size()==0) return null;
 		return Util.getString(a.get(0).get(0));
 	}
-
+	/**
+	 * get the last reset date
+	 * @param _peerID
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
 	public static String getLastResetDate(String _peerID) throws P2PDDSQLException {
 		ArrayList<ArrayList<Object>> a = Application.db.select("SELECT "+table.peer.last_reset+" FROM "+table.peer.TNAME+" WHERE "+table.peer.peer_ID+"=?;", new String[]{_peerID});
 		if(a.size() == 0) return null;
 		return Util.getString(a.get(0).get(0));
 	}
-
-	public static void reset(String peerID) {
+	/**
+	 * Store "now" as the last date when reset was made,
+	 * and set last_sync_date to null
+	 * @param peerID
+	 * @param reset 
+	 */
+	public static void reset(String peerID, String instance, Calendar reset) {
     	try {
-    		String now = Util.getGeneralizedTime();
-			Application.db.update(table.peer.TNAME, new String[]{table.peer.last_reset, table.peer.last_sync_date}, new String[]{table.peer.peer_ID},
+    		String now = null;
+    		if(reset!=null) now = Encoder.getGeneralizedTime(reset);
+    		if(_DEBUG) System.out.println("\n***********\n\nD_PeerAddress:reset:"+peerID+" rst="+now+ " ins="+instance);
+    		if(now==null) now = Util.getGeneralizedTime();
+    		if(instance == null) {
+    			Application.db.update(table.peer.TNAME, new String[]{table.peer.last_reset, table.peer.last_sync_date}, new String[]{table.peer.peer_ID},
 					new String[]{now, null, peerID}, DEBUG);
+    		}else{
+    			Application.db.update(table.peer_instance.TNAME, new String[]{table.peer_instance.last_reset, table.peer_instance.last_sync_date}, new String[]{table.peer_instance.peer_ID,table.peer_instance.peer_instance},
+					new String[]{now, null, peerID, instance}, DEBUG);
+    		}
 		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}

@@ -42,7 +42,7 @@ import util.Util;
 
 public class WitnessingHandling {
 
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final int LIMIT = 5;
 	private static final int BIG_LIMIT = 500;
@@ -163,6 +163,7 @@ public class WitnessingHandling {
 				+", t."+table.constituent.global_constituent_ID
 				+", s."+table.constituent.global_constituent_ID
 				+", o."+table.organization.global_organization_ID//", w."+table.witness.source_ID+
+				+", o."+table.organization.organization_ID
 				+" FROM "+table.witness.TNAME+" AS w "+
 				//+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=w."+table.witness.source_ID+")"
 				" LEFT JOIN "+table.neighborhood.TNAME+" AS n ON(n."+table.neighborhood.neighborhood_ID+"=w."+table.witness.neighborhood_ID+") "+

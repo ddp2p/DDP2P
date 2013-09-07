@@ -129,6 +129,7 @@ public class Peers extends JTable implements MouseListener {
 	public static final int COMMAND_MENU_SHARE_ORG = 10;
 	static final int COMMAND_MENU_SET_EMAILS = 11;
 	public static final int COMMAND_MENU_REFRESH = 12;
+	public static final int COMMAND_MENU_BLOCK = 13;
 
 	
 	BulletRenderer bulletRenderer = new BulletRenderer();
@@ -142,6 +143,8 @@ public class Peers extends JTable implements MouseListener {
 	private JMenuItem myself_new = refresh;
 	private JMenuItem use_stop = refresh;
 	private JMenuItem use_start = refresh;
+	private JMenuItem block_stop = refresh;
+	private JMenuItem block_start = refresh;
 	private JMenuItem filter_stop = refresh;
 	private JMenuItem filter_start = refresh;
 	private JMenuItem serving_stop = refresh;
@@ -238,7 +241,7 @@ public class Peers extends JTable implements MouseListener {
 		String colName = plugin_name;
 		if(colName==null) colName=_("Plugin");
 		colName = colName.substring(0, 5)+" "+(crt-columns+2);
-		if(_DEBUG)System.out.println("Peers:registerPlugin: adding plugin column val="+ crt+" = "+colName+" column="+columns+" mc="+model_columns);
+		if(DEBUG)System.out.println("Peers:registerPlugin: adding plugin column val="+ crt+" = "+colName+" column="+columns+" mc="+model_columns);
 		if(crt > model_columns) {
 			if(_DEBUG)System.out.println("Peers:registerPlugin: fail adding plugin column val="+ crt+" = "+colName);
 			return false;
@@ -246,7 +249,7 @@ public class Peers extends JTable implements MouseListener {
 		if(crt < model_columns) {
 			if(crt == columns-1) {
 				String cl = this.getModel().getColumnName(crt);
-				if(_DEBUG)System.out.println("Peers:registerPlugin: adding plugin column val="+ crt+" = "+colName+" cl="+cl);
+				if(DEBUG)System.out.println("Peers:registerPlugin: adding plugin column val="+ crt+" = "+colName+" cl="+cl);
 				try{
 					TableColumn c = this.getColumn(cl); // Plugin not found
 					c.setHeaderValue(colName);
@@ -489,6 +492,9 @@ public class Peers extends JTable implements MouseListener {
        	use_stop = new JMenuItem(new PeersUseAction(this, _("Disuse!"),addicon,_("Stop using it."),_("Will not be used to synchronize."),KeyEvent.VK_A));
        	use_start = new JMenuItem(new PeersUseAction(this, _("Use!"),addicon,_("Use it."),_("Will be used to synchronize."),KeyEvent.VK_A));
     	//
+       	block_stop = new JMenuItem(new PeersRowAction(this, _("Unblock!"),addicon,_("Stop blocking it."),_("Will not be blocked to synchronize."),KeyEvent.VK_A,  Peers.COMMAND_MENU_BLOCK));
+       	block_start = new JMenuItem(new PeersRowAction(this, _("Block!"),addicon,_("Block it."),_("Will be blocked to synchronize."),KeyEvent.VK_A,  Peers.COMMAND_MENU_BLOCK));
+    	//
     	filter_stop = new JMenuItem(new PeersFilterAction(this, _("UnFilter!"),addicon,_("Get anything."),_("Will ask for anything new."),KeyEvent.VK_F));
     	filter_start = new JMenuItem(new PeersFilterAction(this, _("Filter!"),addicon,_("Request only specified orgs."),_("Will only ask for organizations marked as requested."),KeyEvent.VK_F));
     	//
@@ -566,6 +572,12 @@ public class Peers extends JTable implements MouseListener {
     	}else{
         	popup.add(setRow(this.use_start,_model_row));
     	}
+    	//blocked
+    	if(this.getModel().blocked(model_row)){
+        	popup.add(setRow(this.block_stop,_model_row));
+    	}else{
+        	popup.add(setRow(this.block_start,_model_row));
+    	}
     	//
     	if(this.getModel().broadcastable(model_row)){
         	popup.add(setRow(this.serving_stop,_model_row));
@@ -595,7 +607,11 @@ public class Peers extends JTable implements MouseListener {
     	//
     	popup.add(setRow(this.reset_peer,_model_row));
     	//
+    	popup.addSeparator();
+    	//
     	popup.add(setRow(this.delete_row,_model_row));
+    	//
+    	popup.addSeparator();
     	//
     	popup.add(setRow(this.wake_up,_model_row));
     	//
@@ -845,7 +861,7 @@ class PeersResetAction extends DebateDecideAction {
      	
      	
     	String peerID = Util.getString(model.getPeers().get(row).get(0));
-    	D_PeerAddress.reset(peerID);
+    	D_PeerAddress.reset(peerID, null, Util.CalendargetInstance());
     }
 }
 @SuppressWarnings("serial")
@@ -877,6 +893,9 @@ class PeersDeleteAction extends DebateDecideAction {
     	PeersModel model = (PeersModel)tree.getModel();
      	if(row<0) return;
     	String peerID = Util.getString(model.getPeers().get(row).get(0));
+    	int d = Application.ask(_("Are you willing to delete peer:")+" #"+peerID+":"+model.getName(row),
+    			_("It is not recommended to delete peers"), JOptionPane.YES_NO_OPTION);
+    	if(d!=0) return;
     	try {
 			Application.db.deleteNoSync(table.peer_address.TNAME, new String[]{table.peer_address.peer_ID}, new String[]{peerID}, DEBUG);
 			Application.db.deleteNoSync(table.peer_my_data.TNAME, new String[]{table.peer_my_data.peer_ID}, new String[]{peerID}, DEBUG);
@@ -997,6 +1016,7 @@ class PeersRowAction extends DebateDecideAction {
 	public final JFileChooser filterUpdates = new JFileChooser();
     public void actionPerformed(ActionEvent e) {
     	Object src = e.getSource();
+    	String peerID;
         if(DEBUG)System.out.println("PeersRowAction:command property: " + command);
     	JMenuItem mnu;
     	int row =-1;
@@ -1013,8 +1033,22 @@ class PeersRowAction extends DebateDecideAction {
     	PeersModel model = (PeersModel)tree.getModel();
     	ArrayList<ArrayList<Object>> a;
 		switch(command){
+		case Peers.COMMAND_MENU_BLOCK:
+	    	//PeersModel model = (PeersModel)tree.getModel();
+	     	if(row<0) return;
+	    	peerID = Util.getString(model.getPeers().get(row).get(0));
+	    	String blocked="1";
+	    	if(model.blocked(row)) blocked="0";
+	    	try {
+				Application.db.update(table.peer.TNAME, new String[]{table.peer.blocked}, new String[]{table.peer.peer_ID},
+						new String[]{blocked, peerID}, DEBUG);
+				DD.touchClient();
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
+			break;
 		case Peers.COMMAND_MENU_REFRESH:
-			new PeerUpdateThread(model).start();
+			new PeerUpdateThread(model);
 			break;
 		case Peers.COMMAND_MENU_SHARE_ORG:
 			String peer_ID = model.getID(row);
@@ -1061,6 +1095,7 @@ class PeersRowAction extends DebateDecideAction {
 			break;
 		case Peers.COMMAND_MENU_SET_EMAILS:
 			try {
+				if(_DEBUG)System.out.println("Peer:PeerRowAction: changing emails");
 				D_PeerAddress.changeMyPeerEmails(tree);
 			} catch (P2PDDSQLException e4) {
 				e4.printStackTrace();
@@ -1158,7 +1193,7 @@ class PeersRowAction extends DebateDecideAction {
     		break;
     	case Peers.COMMAND_MENU_SET_MYSELF:
     		if(row<0) return;
-    		String peerID = Util.getString(model.getPeers().get(row).get(0));
+    		peerID = Util.getString(model.getPeers().get(row).get(0));
     		try {
 				D_PeerAddress.setMyself(peerID);
 			} catch (P2PDDSQLException e1) {
@@ -1280,8 +1315,9 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	public static final int TABLE_COL_NAME = 0;
 	public static final int TABLE_COL_SERVING = 1;
 	public static final int TABLE_COL_CONNECTION = 2;
-	public static final int TABLE_COL_SLOGAN = 3;
-	public static final int TABLE_COL_PLUGINS = 4;
+	public static final int TABLE_COL_BLOCKED = 3;
+	public static final int TABLE_COL_SLOGAN = 4;
+	public static final int TABLE_COL_PLUGINS = 5;
 
 	static final int SELECT_COL_ID = 0;
 	static final int SELECT_COL_NAME = 1;
@@ -1336,7 +1372,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	//String _ld[];  //-
 	ArrayList<ArrayList<Object>> __peers;
 	
-	String columnNames[]={"Peer Data","Serving","Connection","Slogan","Pluggins"};
+	String columnNames[]={"Peer Data","Serving","Connection","B","Slogan","Pluggins"};
 	Hashtable<Integer,String> columnNamesHash=new Hashtable<Integer,String>();
 	int plugin_applets = 0;
 	int columns = columnNames.length-1 + plugin_applets;
@@ -1452,6 +1488,25 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		if(DEBUG) System.out.println("PeersModel:filtered: FILTERED val="+result);
 		return result;
 	}
+	public boolean blocked(int row) {
+		ArrayList<Object> ao;
+		synchronized(this.peers_monitor) {
+			if((row > getPeers().size()) || (row < 0)){
+				if(DEBUG) System.out.println("PeersModel:used: row>"+row+" psize="+getPeers().size());
+				return false;
+			}
+			ao=getPeers().get(row);
+		}
+		if(ao.size()<=SELECT_COL_BLOCKED){
+			if(DEBUG) System.out.println("PeersModel:used: USED cols>="+ao.size());
+			return false;
+		}
+		Object _used = ao.get(SELECT_COL_BLOCKED);
+		if(DEBUG) System.out.println("PeersModel:used: USED val=\""+_used+"\"");
+		boolean result = Util.stringInt2bool(_used, false);
+		if(DEBUG) System.out.println("PeersModel:used: USED val="+result);
+		return result;
+	}
 	public boolean used(int row) {
 		ArrayList<Object> ao;
 		synchronized(this.peers_monitor) {
@@ -1511,7 +1566,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	}
 	@Override
 	public Class<?> getColumnClass(int col) {
-			//if(col == COL_NAT) return Boolean.class;
+			if(col == this.TABLE_COL_BLOCKED) return Boolean.class;
 			return String.class;
 	}		
 	@Override
@@ -1576,6 +1631,9 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		case TABLE_COL_CONNECTION:
 			peerID = Util.getString(ao.get(0));
 			return this.connTCPByID.get(peerID);
+		case TABLE_COL_BLOCKED:
+			peerID = Util.getString(ao.get(0));
+			return Util.stringInt2bool(ao.get(this.SELECT_COL_BLOCKED), false);
 		default:
 			return null;	
 		}
@@ -1635,6 +1693,9 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		switch(col) {
 		case TABLE_COL_NAME:
 			set_my_data(table.peer_my_data.name, SELECT_COL_M_NAME, Util.getString(value), row);
+			break;
+		case TABLE_COL_BLOCKED:
+			set_my_data(table.peer_my_data.name, SELECT_COL_BLOCKED, Util.getString(value), row);
 			break;
 		case TABLE_COL_SLOGAN:
 			set_my_data(table.peer_my_data.slogan, SELECT_COL_M_SLOGAN, Util.getString(value), row);

@@ -30,13 +30,14 @@ import table.org_distribution;
 public class PrivateOrgModel extends AbstractTableModel implements TableModel, DBListener{
 	private static final boolean _DEBUG = true;
 	private static final int TABLE_COL_PEER_NAME = 0;
+	private static final int TABLE_COL_PEER_EMAIL = 1;
 	public static boolean DEBUG = false;
 	
 
 
 	private DBInterface db;
 	HashSet<Object> tables = new HashSet<Object>();
-	String columnNames[]={_("Peers To Share Organization")};//_("Organization"),_("Peer")};
+	String columnNames[]={_("Peers To Share Organization"),_("Emails")};//_("Organization"),_("Peer")};
 
 	//ArrayList<D_PrivateOrgInfo> data = new ArrayList<D_PrivateOrgInfo>(); // rows of type D_PrivateOrgInfo -> Bean
 	ArrayList<D_OrgDistribution> data = new ArrayList<D_OrgDistribution>(); // rows of type D_PrivateOrgInfo -> Bean
@@ -102,7 +103,7 @@ public class PrivateOrgModel extends AbstractTableModel implements TableModel, D
 		//case TABLE_COL_ID: return data.get(rowIndex).peer_distribution_ID;
 		//case TABLE_COL_ORGANIZATION_ID: return data.get(rowIndex).organization_ID;
 		case TABLE_COL_PEER_NAME: return data.get(rowIndex).peer_name;
-		//case TABLE_COL_PEER_EMAIL: return data.get(rowIndex).peer_ID;
+		case TABLE_COL_PEER_EMAIL: return data.get(rowIndex).emails;
 		}
 		return null;
 	}
@@ -236,6 +237,15 @@ public class PrivateOrgModel extends AbstractTableModel implements TableModel, D
 		}catch(Exception e){
 			e.printStackTrace();
 			return -1;
+		}
+	}
+	public String get_Emails(int row) {
+		if(row<0) return "";
+		try{
+			return data.get(row).emails;
+		}catch(Exception e){
+			e.printStackTrace();
+			return "";
 		}
 	}
 

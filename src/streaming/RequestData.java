@@ -39,6 +39,12 @@ import ASN1.Encoder;
 import util.Summary;
 import util.Util;
 
+/**
+ * Contains ArrayLists of GIDhash-es. An ordered hashtable for constituents (with date)
+ * Probably should be the same for authoritarian orgs!
+ * @author msilaghi
+ *
+ */
 public class RequestData extends ASNObj implements Summary{
 	public static final boolean DEBUG = false;
 	public static final int ORGS = 0;

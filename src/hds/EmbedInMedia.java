@@ -1,3 +1,24 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2012 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
+
 package hds;
 
 import static util.Util._;
@@ -18,6 +39,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
 import util.BMP;
+import util.DD_IdentityVerification_Request;
 import util.P2PDDSQLException;
 import util.Util;
 import ASN1.ASN1DecoderFail;
@@ -31,7 +53,6 @@ public class EmbedInMedia {
 	private static final boolean DEBUG = false;
 
 	public static final int STEGO_BITS = 4;
-	public static final short STEGO_SIGN = 0x0D0D;
 	//public final static int STEGO_PIX_HEADER=12;
 	public final static short STEGO_BYTE_HEADER=48;//STEGO_PIX_HEADER*3;
 	public static final int STEGO_LEN_OFFSET = 8;
@@ -40,6 +61,7 @@ public class EmbedInMedia {
 
 	/**
 	 * Exporting current Address
+	 * use test just to verify parsing (can be null)
 	 */
 	static void actionExport(JFileChooser fc, Component parent,
 			StegoStructure myAddress, StegoStructure test){
@@ -52,13 +74,15 @@ public class EmbedInMedia {
 		BMP[] _data=new BMP[1];
 		byte[][] _buffer_original_data=new byte[1][]; // old .bmp file 
 		byte[] adr_bytes = myAddress.getBytes();
-		try{
-			test.setBytes(adr_bytes);
-		}catch (ASN1DecoderFail e1) {
-							e1.printStackTrace();
-							Application.warning(_("Failed to parse file: \n"+e1.getMessage()), _("Failed to parse address!"));
-							return;
-						}
+		if(test != null){
+			try{
+				test.setBytes(adr_bytes);
+			}catch (ASN1DecoderFail e1) {
+								e1.printStackTrace();
+								Application.warning(_("Failed to parse file: \n"+e1.getMessage()), _("Failed to parse address!"));
+								return;
+							}
+		}
 		if(ControlPane.DEBUG) System.out.println("EmbedInMedia:actionExport: Got bytes("+adr_bytes.length+"): to write: "+Util.byteToHex(adr_bytes, " "));
 		int returnVal = fc.showSaveDialog(parent);
 	    if (returnVal == JFileChooser.APPROVE_OPTION) {
@@ -124,58 +148,14 @@ public class EmbedInMedia {
 					if("bmp".equals(extension)){
 						if(DEBUG )System.out.println("EmbedInMedia:actionExport:bmp");
 						if(!file.exists()) {
-							FileOutputStream fo=new FileOutputStream(file);
-							int offset = BMP.DATA;
-							int word_bytes=1;
-							int bits = 4;
-							int Bpp = 3;
-							int datasize;// = adr_bytes.length*(8/bits);
-							int height = Util.ceil(Math.sqrt(((adr_bytes.length+EmbedInMedia.STEGO_BYTE_HEADER*word_bytes)<<3)/(Bpp*bits))); //10;
-							height += 8-height%8;
-							int width = EmbedInMedia.getWidth(adr_bytes.length+EmbedInMedia.STEGO_BYTE_HEADER*word_bytes, bits, Bpp, height);
-							width += 8-width%8;
-							if((width&8) == 0) width+=8;
-							System.out.println("size="+adr_bytes.length+" width="+width+" h="+height);
-							datasize = width*height*3;
-							byte[]steg_buffer = new byte[BMP.DATA+datasize];
-							BMP data = new BMP(width, height);
-							////data.creator = adr_bytes.length;
-							data.getHeader(steg_buffer, 0);
-							System.out.println("startdata="+data.startdata);
-							int method = (int)Util.random(16);
-							for(int k=data.startdata; k<steg_buffer.length; k+=3){
-								int p = (k-data.startdata)/3;
-								int h = p/width;
-								int w = p%width;
-								byte v;
-								if((method&1)!=0){
-									v = (byte)(255*(((p+method)>>3)&1));
-									steg_buffer[k]=v;steg_buffer[k+1]=v;steg_buffer[k+2]=v;
-								}else{
-									v = (byte)(255*(((h>>3)&1)^((w>>3)&1)));
-									if(v!=0){
-										steg_buffer[k]=v;steg_buffer[k+1]=v;steg_buffer[k+2]=v;
-									}else{
-										if((w&16)==0)steg_buffer[k]=(byte)255;
-										if((w&16)==1)steg_buffer[k+1]=(byte) 128;//(Math.floor(Util.random(256))); 
-										if((h&16)==0)steg_buffer[k+2]=(byte)255;
-									}
-								}
-							}
-							//System.out.println("Got bytes to write: "+Util.byteToHex(adr_bytes, " "));
-							//System.out.println("After header: "+Util.byteToHex(steg_buffer, " "));
-							fo.write(EmbedInMedia.getSteganoBytes(adr_bytes, steg_buffer,
-									offset, word_bytes, bits));
-							//System.out.println("Wrote: "+Util.byteToHex(adr_bytes, " "));
-							//System.out.println("Got: "+Util.byteToHex(steg_buffer, " "));
-							fo.close();
+							saveSteganoBMP(file, adr_bytes, myAddress.getSignShort()); //DD.STEGO_SIGN_PEER);
 						}else{
 							FileOutputStream fo=new FileOutputStream(file);
 							int offset = _data[0].startdata;
 							int word_bytes=1;
 							int bits = 4;
 							////Util.copyBytes(b, BMP.CREATOR, adr_bytes.length);
-							fo.write(EmbedInMedia.getSteganoBytes(adr_bytes, _buffer_original_data[0], offset, word_bytes, bits));
+							fo.write(EmbedInMedia.getSteganoBytes(adr_bytes, _buffer_original_data[0], offset, word_bytes, bits, myAddress.getSignShort()));
 							fo.close();
 						}
 					}
@@ -183,6 +163,67 @@ public class EmbedInMedia {
 				Application.warning(_("Error writing file:")+file+" - "+ e1,_("Export Address"));
 			}
 	    }		
+	}
+	/**
+	 * Generates random picture and inserts data of type content_type in it
+	 * @param file
+	 * @param adr_bytes
+	 * @param content_type
+	 * @throws IOException
+	 */
+	public static void saveSteganoBMP(File file, byte[] adr_bytes, short content_type) throws IOException {
+		FileOutputStream fo=new FileOutputStream(file);
+		fo.write(createSteganoBMP(adr_bytes, content_type));
+		//System.out.println("Wrote: "+Util.byteToHex(adr_bytes, " "));
+		//System.out.println("Got: "+Util.byteToHex(steg_buffer, " "));
+		fo.close();
+	}
+
+	public static byte[] createSteganoBMP(byte[] adr_bytes, short content_type) {
+		int offset = BMP.DATA;
+		int word_bytes=1;
+		int bits = 4;
+		int Bpp = 3;
+		int datasize;// = adr_bytes.length*(8/bits);
+		int height = Util.ceil(Math.sqrt(((adr_bytes.length+EmbedInMedia.STEGO_BYTE_HEADER*word_bytes)<<3)/(Bpp*bits))); //10;
+		height += 8-height%8;
+		int width = EmbedInMedia.getWidth(adr_bytes.length+EmbedInMedia.STEGO_BYTE_HEADER*word_bytes, bits, Bpp, height);
+		width += 8-width%8;
+		if((width&8) == 0) width+=8;
+		if(DEBUG)System.out.println("size="+adr_bytes.length+" width="+width+" h="+height);
+		datasize = width*height*3;
+		byte[]steg_buffer = new byte[BMP.DATA+datasize];
+		BMP data = new BMP(width, height);
+		////data.creator = adr_bytes.length;
+		data.getHeader(steg_buffer, 0);
+		/**
+		 * Generate the random pattern
+		 */
+		if(DEBUG) System.out.println("startdata="+data.startdata);
+		int method = (int)Util.random(16);
+		for(int k=data.startdata; k<steg_buffer.length; k+=3){
+			int p = (k-data.startdata)/3;
+			int h = p/width;
+			int w = p%width;
+			byte v;
+			if((method&1)!=0){
+				v = (byte)(255*(((p+method)>>3)&1));
+				steg_buffer[k]=v;steg_buffer[k+1]=v;steg_buffer[k+2]=v;
+			}else{
+				v = (byte)(255*(((h>>3)&1)^((w>>3)&1)));
+				if(v!=0){
+					steg_buffer[k]=v;steg_buffer[k+1]=v;steg_buffer[k+2]=v;
+				}else{
+					if((w&16)==0)steg_buffer[k]=(byte)255;
+					if((w&16)==1)steg_buffer[k+1]=(byte) 128;//(Math.floor(Util.random(256))); 
+					if((h&16)==0)steg_buffer[k+2]=(byte)255;
+				}
+			}
+		}
+		//System.out.println("Got bytes to write: "+Util.byteToHex(adr_bytes, " "));
+		//System.out.println("After header: "+Util.byteToHex(steg_buffer, " "));
+		return EmbedInMedia.getSteganoBytes(adr_bytes, steg_buffer,
+				offset, word_bytes, bits, content_type);
 	}
 
 	private static boolean cannotEmbedInBMPFile(File file,
@@ -223,7 +264,7 @@ public class EmbedInMedia {
 		return fail;
 	}
 
-	static void actionImport(JFileChooser fc, Component parent, StegoStructure adr) throws P2PDDSQLException{
+	static void actionImport(JFileChooser fc, Component parent, StegoStructure[] adr, int[] selected) throws P2PDDSQLException{
 		if(ControlPane.DEBUG)System.err.println("ControlPane:actionImport: import file");
 		int returnVal = ControlPane.file_chooser_address_container.showOpenDialog(parent);
 		if(ControlPane.DEBUG)System.err.println("ControlPane:actionImport: Got: selected");
@@ -236,11 +277,19 @@ public class EmbedInMedia {
 	        try {
 	        	if("txt".equals(Util.getExtension(file))) {
 	        		if(ControlPane.DEBUG)System.err.println("ControlPane:actionImport: Got: txt");
-					String content = new Scanner(file).useDelimiter("\\Z").next(); 
-					if(!adr.parseAddress(content)){
+					String content = new Scanner(file).useDelimiter("\\Z").next();
+					int _selected = -1;
+					for(int k=0; k<adr.length; k++) {
+						if(adr[k].parseAddress(content)){
+							_selected = k;
+							break;
+						}
+					}
+					if(_selected == -1) {
 						Application.warning(_("Failed to parse file: "+file), _("Failed to parse address!"));
 						return;
 					}
+					if((selected!=null)&&(selected.length>0)) selected[0] = _selected;
 				}else if("gif".equals(Util.getExtension(file))){
 						if(ControlPane.DEBUG)System.err.println("ControlPane:actionImport: Got: gif");
 						FileInputStream fis=new FileInputStream(file);
@@ -267,17 +316,24 @@ public class EmbedInMedia {
 						System.arraycopy(b,i,addBy,0,b.length-i);
 						// System.out.println("Got bytes ("+addBy.length+") to write: "+Util.byteToHex(addBy, " "));
 						
-						try {
-						adr.setBytes(addBy);
-						} catch (ASN1DecoderFail e1) {
-							e1.printStackTrace();
-							Application.warning(_("Failed to parse file: "+file+"\n"+e1.getMessage()), _("Failed to parse address!"));
-							return;
+						int _selected = -1;
+						for(int k=0; k<adr.length; k++) {
+							try {
+								adr[k].setBytes(addBy);
+								_selected = k;
+								break;
+							} catch (ASN1DecoderFail e1) {
+								if(DEBUG){
+									e1.printStackTrace();
+									Application.warning(_("Failed to parse file: "+file+"\n"+e1.getMessage()), _("Failed to parse address!"));
+								}
+							}
 						}
-						
-						
-					
-				
+						if(_selected == -1){
+							Application.warning(_("Failed to parse file: "+file+"\n"), _("Failed to parse address!"));
+							return;							
+						}
+						if((selected!=null)&&(selected.length>0)) selected[0] = _selected;
 				}
 				else
 				if("ddb".equals(Util.getExtension(file))){
@@ -286,13 +342,24 @@ public class EmbedInMedia {
 					byte[] b = new byte[(int) file.length()];  
 					fis.read(b);
 					fis.close();
-					try {
-						adr.setBytes(b);
-					} catch (ASN1DecoderFail e1) {
-						e1.printStackTrace();
-						Application.warning(_("Failed to parse file: "+file+"\n"+e1.getMessage()), _("Failed to parse address!"));
-						return;
+					int _selected = -1;
+					for(int k=0; k<adr.length; k++) {
+						try {
+							adr[k].setBytes(b);
+							_selected = k;
+							break;
+						} catch (ASN1DecoderFail e1) {
+							if(DEBUG){
+								e1.printStackTrace();
+								Application.warning(_("Failed to parse file: "+file+"\n"+e1.getMessage()), _("Failed to parse address!"));
+							}
+						}
 					}
+					if(_selected == -1){
+						Application.warning(_("Failed to parse file: "+file+"\n"), _("Failed to parse address!"));
+						return;							
+					}
+					if((selected!=null)&&(selected.length>0)) selected[0] = _selected;
 				}else
 					if("bmp".equals(Util.getExtension(file))) {
 						//System.err.println("Got: bmp");
@@ -321,7 +388,7 @@ public class EmbedInMedia {
 							try {
 								//System.err.println("Got: steg");
 								////adr.setSteganoBytes(b, offset, word_bytes, bits,data.creator);
-								EmbedInMedia.setSteganoBytes(adr, b, offset, word_bytes, bits);
+								EmbedInMedia.setSteganoBytes(adr, selected, b, offset, word_bytes, bits);
 							} catch (ASN1DecoderFail e1) {
 								explain = " - "+ _("No valid data in picture!");
 								fail = true;
@@ -334,22 +401,29 @@ public class EmbedInMedia {
 								return;
 						}
 					}
-				if(ControlPane.DEBUG)System.err.println("Got DDAddress: "+adr);
-	        	adr.save();
-	        	Application.warning(adr.getNiceDescription(), _("Obtained Addresses"));
+	        	if(selected[0] != -1) {
+					if(ControlPane.DEBUG)System.err.println("Got Data: "+adr[selected[0]]);
+		        	Application.warning(adr[selected[0]].getNiceDescription(), _("Obtained Data"));
+		        	adr[selected[0]].save();
+	        	}
 	        }catch(IOException e3){
 	        	
 	        }
 	    }		
 	}
+//	@Deprecated
+//	public static byte[] getSteganoBytes(byte[] ddb, byte[] stg,
+//			int offset, int word_bytes, int bits) {
+//		return getSteganoBytes(ddb, stg, offset, word_bytes, bits, DD.STEGO_SIGN_PEER);
+//	}
 
 	public static byte[] getSteganoBytes(byte[] ddb, byte[] stg,
-			int offset, int word_bytes, int bits) {
+			int offset, int word_bytes, int bits, short content_type) {
 		byte[] len = new byte[4];
 		Util.copyBytes(len, 0, ddb.length);
 		EmbedInMedia.getSteganoBytesRaw(len, stg, offset+EmbedInMedia.STEGO_LEN_OFFSET, word_bytes, bits);
 		byte[] sign = new byte[2];
-		Util.copyBytes(sign, 0, EmbedInMedia.STEGO_SIGN);
+		Util.copyBytes(sign, 0, content_type);
 		EmbedInMedia.getSteganoBytesRaw(sign, stg, offset+EmbedInMedia.STEGO_SIGN_OFFSET, word_bytes, bits);
 		Util.copyBytes(sign, 0, EmbedInMedia.STEGO_BYTE_HEADER);
 		EmbedInMedia.getSteganoBytesRaw(sign, stg, offset+EmbedInMedia.STEGO_OFF_OFFSET, word_bytes, bits);
@@ -441,8 +515,24 @@ public class EmbedInMedia {
 		int bytes_len = (int)Math.round(Math.ceil(bits*(buffer.length - offset)/(word_bytes*8.0)));
 		return extractSteganoBytes(buffer, offset, word_bytes, bits, bytes_len);
 	}
-
+	@Deprecated
 	public static byte[] _setSteganoImage(BufferedImage bi) throws ASN1DecoderFail, P2PDDSQLException{
+		return _setSteganoImage(bi,
+				DD.getAvailableStegoStructureISignatures(),
+				//new short[]{DD.STEGO_SIGN_PEER, DD.STEGO_SIGN_CONSTITUENT_VERIF_REQUEST},
+				null);
+	}
+	/**
+	 * Extract content_type from image. Store its type in content_type[0]
+	 * if non-null. Fail if the type is not in content_types
+	 * @param bi
+	 * @param content_type
+	 * @return
+	 * @throws ASN1DecoderFail
+	 * @throws P2PDDSQLException
+	 */
+	public static byte[] _setSteganoImage(BufferedImage bi, short[] content_types, short[] content_type)
+			throws ASN1DecoderFail, P2PDDSQLException{
 		byte[] sign= Util.getBytes(bi,EmbedInMedia.STEGO_SIGN_OFFSET,
 				Util.ceil(2*8/EmbedInMedia.STEGO_BITS));
 		System.out.println("Got image sign bytes: "+Util.byteToHex(sign, " "));
@@ -469,7 +559,8 @@ public class EmbedInMedia {
 				EmbedInMedia.STEGO_BITS, 2);
 		short signature_val = 0;
 		signature_val=Util.extBytes(signature, 0, signature_val);
-		if(signature_val!=EmbedInMedia.STEGO_SIGN){
+		if((content_type!=null)&&(content_type.length>0)) content_type[0] = signature_val;
+		if(Util.contains(content_types, signature_val) == -1){
 			JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
 	    			_("When trying to use locally saved image got Wrong Signature: "+signature_val+
 	    					"\nThe source of the drag might have changed the image content (like Safari/use Firefox!). " +
@@ -503,7 +594,7 @@ public class EmbedInMedia {
 		//System.err.println("Imglen:"+Util.byteToHex(len, " ")+" l="+bytes_len);
 		int stegoBytes = Util.ceil((bytes_len*8)/EmbedInMedia.STEGO_BITS);
 		byte[] useful= Util.getBytes(bi, offset_val, stegoBytes);
-		System.err.println("StegData:"+Util.byteToHex(useful, " "));
+		if(DEBUG)System.out.println("StegData:"+Util.byteToHex(useful, " "));
 		byte datab[] = extractSteganoBytes(useful, 0, 1, EmbedInMedia.STEGO_BITS, bytes_len);
 		return datab;
 	}
@@ -516,9 +607,9 @@ public class EmbedInMedia {
 		return (int)Math.round(Math.ceil(getSteganoSize(size,bits)/(Bpp*height*1.0)));
 	}
 
-	public static byte[] getSteganoBytesAlocBuffer(byte[] ddb, int offset, int word_bytes, int bits) {
+	public static byte[] getSteganoBytesAlocBuffer(byte[] ddb, int offset, int word_bytes, int bits, short content_type) {
 		byte[] stg = new byte[offset+(int)Math.ceil(ddb.length/(double)bits)*word_bytes];
-		return getSteganoBytes(ddb, stg, offset, word_bytes, bits);
+		return getSteganoBytes(ddb, stg, offset, word_bytes, bits, content_type);
 	}
 
 	public static boolean verif_offset_interactive(short _off){
@@ -532,11 +623,31 @@ public class EmbedInMedia {
 		return true;
 	}
 
-	public static void verif_steg_sign(byte[]buffer, int offset, int word_bytes, int bits) throws ASN1DecoderFail{
+	public static void verif_steg_sign(StegoStructure[]d, int selected[], byte[]buffer, int offset, int word_bytes, int bits) throws ASN1DecoderFail{
+		// boolean DEBUG = true;
+		if(DEBUG) System.out.println("EmbedInMedia:verif_steg_sign: start");
 		byte[] sign=extractSteganoBytes(buffer, offset+STEGO_SIGN_OFFSET, word_bytes, bits, 2);
-		short _sign=0;
+		short _sign = 0;
 		_sign = Util.extBytes(sign, 0, _sign);
-		if(_sign!=STEGO_SIGN) throw new ASN1DecoderFail("Wrong SIGNATURE!");
+		if(DEBUG) System.out.println("EmbedInMedia:verif_steg_sign: sign = "+_sign);
+		
+		int[] types = new int[d.length];
+		for(int k=0; k<d.length; k++){
+			types[k] = d[k].getSignShort();
+			if(DEBUG) System.out.println("EmbedInMedia:verif_steg_sign: sign["+k+"]="+types[k]);
+		}
+		for(int k=0; k<d.length; k++){
+			types[k] = d[k].getSignShort();
+			if(DEBUG) System.out.println("EmbedInMedia:verif_steg_sign: sign = "+_sign+" vs "+types[k]);
+			if(_sign==types[k]){
+				if((selected!=null)&&(selected.length>0)) selected[0]= k;
+				if(DEBUG) System.out.println("EmbedInMedia:verif_steg_sign: selected = "+k);
+				return;
+			}
+		}
+		//if(_sign!=DD.STEGO_SIGN_PEER) 
+		if(DEBUG) System.out.println("EmbedInMedia:verif_steg_sign: done NO SIGNATURE");
+		throw new ASN1DecoderFail("Wrong SIGNATURE! "+_sign);
 	}
 
 	public static int verif_steg_length(byte[]buffer, int offset, int word_bytes, int bits){
@@ -554,6 +665,12 @@ public class EmbedInMedia {
 	}
 
 	public static byte[] _fromBMPStreamSave(InputStream in) throws IOException, ASN1DecoderFail, P2PDDSQLException {
+		return _fromBMPStreamSave(in,
+				DD.getAvailableStegoStructureISignatures(),
+				//new short[]{DD.STEGO_SIGN_PEER, DD.STEGO_SIGN_CONSTITUENT_VERIF_REQUEST},
+				null);
+	}
+	public static byte[] _fromBMPStreamSave(InputStream in, short[] content_types, short[] content_type) throws IOException, ASN1DecoderFail, P2PDDSQLException {
 		int k;
 		short sign_val=0, off_val=0;
 		byte[] bmp= new byte[BMP.DATA];
@@ -573,7 +690,11 @@ public class EmbedInMedia {
 		sign=extractSteganoBytes(stg, 0, 1, STEGO_BITS,2);
 		if(DDAddress.DEBUG) System.out.println("fromBMPStreamSave: Got mac signature: "+k+"..."+Util.byteToHex(sign, " "));
 		sign_val = Util.extBytes(sign, 0, sign_val);
-		if(sign_val!=STEGO_SIGN) throw new IOException("BAD sign Header");
+
+		if((content_type!=null)&&(content_type.length>0)) content_type[0] = sign_val;
+		if(Util.contains(content_types, sign_val) == -1){
+			throw new IOException("BAD sign Header: "+sign_val);
+		}
 	
 		k=Util.readAll(in, stg);if(k<stg.length) throw new IOException("EOF off Header");
 		if(DDAddress.DEBUG) System.out.println("fromBMPStreamSave: Got stg: "+k+"..."+Util.byteToHex(stg, " "));
@@ -608,7 +729,31 @@ public class EmbedInMedia {
 		sign=extractSteganoBytes(stg, 0, 1, STEGO_BITS, length_val);
 		return sign;
 	}
-
+	public static boolean fromBMPStreamSave(InputStream in, StegoStructure[] d, int[] selected)
+			throws IOException, ASN1DecoderFail, P2PDDSQLException {
+		short[] types = new short[d.length];
+		for(int k=0; k<types.length; k++) types[k] = d[k].getSignShort();
+		short[] type = new short[1];
+		byte []sign = _fromBMPStreamSave(in, types, type);
+		int k = Util.contains(types, type[0]);
+		if((selected!=null)&&(selected.length>0)) selected[0] = k;
+		if(k == -1) return false;
+		d[k].setBytes(sign);
+		if(DEBUG) System.out.println("fromBMPStreamSave: Got data: "+d);
+		d[k].save();
+		if(DEBUG) System.out.println("fromBMPStreamSave: Done");
+		return true;
+	}
+	/**
+	 * To get a DDAddress
+	 * @param in
+	 * @param d
+	 * @return
+	 * @throws IOException
+	 * @throws ASN1DecoderFail
+	 * @throws P2PDDSQLException
+	 */
+	@Deprecated
 	public static boolean fromBMPStreamSave(InputStream in, StegoStructure d) throws IOException, ASN1DecoderFail, P2PDDSQLException {
 		byte []sign = _fromBMPStreamSave(in);
 		//DDAddress data = new DDAddress();
@@ -623,8 +768,7 @@ public class EmbedInMedia {
 		
 		return true;
 	}
-
-	public static boolean fromBMPFileSave(File file, StegoStructure d) throws IOException, P2PDDSQLException{
+	public static boolean fromBMPFileSave(File file, StegoStructure d[], int[]selected) throws IOException, P2PDDSQLException{
 		String explain="";
 		boolean fail= false;
 		FileInputStream fis=new FileInputStream(file);
@@ -641,14 +785,14 @@ public class EmbedInMedia {
 			int word_bytes=1;
 			int bits = 4;
 			try {
-				EmbedInMedia.setSteganoBytes(d, b, offset, word_bytes, bits);
-			} catch (ASN1DecoderFail e1) {
+				EmbedInMedia.setSteganoBytes(d, selected, b, offset, word_bytes, bits);
+			} catch (Exception e1) {
 				explain = " - "+ _("No valid data in picture!");
 				fail = true;
 			}
 		}
 		if(fail) throw new IOException(explain);
-		d.save();
+		if(selected[0] != -1) d[selected[0]].save();
 		return true;
 	}
 
@@ -662,15 +806,21 @@ public class EmbedInMedia {
 	 * @param bits
 	 * @throws ASN1DecoderFail
 	 */
-	public static void setSteganoBytes(StegoStructure d, byte[]buffer, int offset, int word_bytes, int bits) throws ASN1DecoderFail{
-		verif_steg_sign(buffer, offset, word_bytes, bits);
+	public static void setSteganoBytes(StegoStructure d[], int[]selected, byte[]buffer, int offset, int word_bytes, int bits) throws ASN1DecoderFail{
+		if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes: start");
+		verif_steg_sign(d, selected, buffer, offset, word_bytes, bits);
 		int bytes_len=verif_steg_length(buffer, offset, word_bytes, bits);
 		short _off=verif_steg_offset(buffer, offset, word_bytes, bits);
 		if(!verif_offset_interactive(_off)) return;
 		int final_offset = offset+_off*word_bytes;
 		
-		
-		EmbedInMedia.setSteganoBytes(d, buffer, final_offset, word_bytes, bits, bytes_len);
+		if(selected[0] != -1) {
+			EmbedInMedia.setSteganoBytes(d[selected[0]], buffer, final_offset, word_bytes, bits, bytes_len);
+			if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes: set");
+		}else{
+			if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes: empty");			
+		}
+		if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes: end");
 		//setBytes(extractSteganoBytes(buffer, offset, word_bytes, bits));
 	}
 
@@ -684,9 +834,36 @@ public class EmbedInMedia {
 	 * @throws ASN1DecoderFail
 	 */
 	public static void setSteganoBytes(StegoStructure d, byte[]buffer, int offset, int word_bytes, int bits, int bytes_len) throws ASN1DecoderFail{
-		d.setBytes(extractSteganoBytes(buffer, offset, word_bytes, bits, bytes_len));
+		if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes(d): start");
+		byte[] a = extractSteganoBytes(buffer, offset, word_bytes, bits, bytes_len);
+		if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes(d): will set Bytes");
+		d.setBytes(a);
+		if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes(d): done");
 	}
-
+	/**
+	 * This also saves (calling save())
+	 * Returns the structure that succeded;
+	 * @param bi
+	 * @param data
+	 * @return
+	 * @throws ASN1DecoderFail
+	 * @throws P2PDDSQLException
+	 */
+	public static StegoStructure setSteganoImage(BufferedImage bi, StegoStructure[] data, int[] selected) throws ASN1DecoderFail, P2PDDSQLException{
+		short[] types = new short[data.length];
+		for(int k=0; k<types.length; k++) types[k] = data[k].getSignShort();
+		short[] type = new short[1];
+		byte []sign = _setSteganoImage(bi, types, type);
+		int k = Util.contains(types, type[0]);
+		if ((selected != null) && (selected.length > 0)) selected[0] = k;
+		if(k == -1) return null;
+		data[k].setBytes(sign);
+		if(DEBUG)System.out.println(data.toString());
+		data[k].save();
+		if(DEBUG) System.out.println("setSteganoImage: Done");
+		return data[k];
+	}
+	@Deprecated
 	public static StegoStructure setSteganoImage(BufferedImage bi, StegoStructure data) throws ASN1DecoderFail, P2PDDSQLException{
 		//DDAddress data = new DDAddress();
 		byte[] datab;
@@ -697,19 +874,19 @@ public class EmbedInMedia {
 		//	e.printStackTrace();
 		//	return null;
 		//}
-		System.out.println(data.toString());
+		if(DEBUG)System.out.println(data.toString());
 		data.save();
 		return data;
 	}
 
 	public static byte[] getSteganoBytes(StegoStructure d, int offset, int word_bytes, int bits) {
 		byte[] ddb = d.getBytes();
-		return getSteganoBytesAlocBuffer(ddb, offset, word_bytes, bits);
+		return getSteganoBytesAlocBuffer(ddb, offset, word_bytes, bits, d.getSignShort());
 	}
 
 	public static byte[] getSteganoBytes(StegoStructure d, byte[] stg, int offset, int word_bytes, int bits) {
 		byte[] ddb = d.getBytes();
-		return getSteganoBytes(ddb, stg, offset, word_bytes, bits);
+		return getSteganoBytes(ddb, stg, offset, word_bytes, bits, d.getSignShort());
 	}
 
 }

@@ -28,6 +28,8 @@ import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.TimeZone;
 
+import config.DD;
+
 
 import util.Util;
  
@@ -119,7 +121,7 @@ class Decoder {
 			//System.err.println("in ContentLength: len_len=="+data[offset+tlen]+" off="+offset);
 			return data[offset+tlen];
 		}
-		//System.err.println("Len_len="+data[offset+tlen]);
+		//System.err.println("Len_len="+data[offset+tlen]+" gs="+gs(data[offset+tlen]));
 		int len_len=gs(data[offset+tlen])-128;
 		//System.err.println("actual Len_len="+len_len);
 		if(length<len_len+tlen+1){
@@ -227,14 +229,16 @@ class Decoder {
 		int tlen = typeLen();
 		int llen = lenLen();
 		int cLen = contentLength();
-		//System.out.println("lens="+tlen+"+"+llen+"+"+cLen+"<="+length);
+		//System.out.println("Decoder: lens="+tlen+"+"+llen+"+"+cLen+"<="+length +" off="+offset);
 		int new_len = tlen+llen+cLen;
 		if(new_len>length) throw new RuntimeException("ASN1:Decoding:Invalid object length ["+new_len+"]: Too long given available data:"+length);
 		int old_offset = offset;
 		if(extract){
 			offset += new_len;
 			length -= new_len;
+			//System.out.println("Decoder: remains lens="+tlen+"+"+llen+"+"+cLen+"<="+length +" off="+offset);
 		}
+		//System.out.println("Decoder: extracts lens="+new_len+"<="+length +" off="+old_offset+"/"+data.length);
 		return new Decoder(data,old_offset,new_len);
 	}
 	/**
@@ -558,4 +562,10 @@ class Decoder {
 			e.printStackTrace();
 		}
     }
+	public boolean isFirstObjectTagByte(byte tag) {
+		return (getFirstObject(false)!=null)&&(getFirstObject(false).getTypeByte()==tag);
+	}
+	public boolean isEmptyContainer() {
+		return (getFirstObject(false)==null);
+	}
 }

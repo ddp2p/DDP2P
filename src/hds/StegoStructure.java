@@ -36,4 +36,9 @@ public interface StegoStructure{
 	 * @return
 	 */
 	public boolean parseAddress(String content);
+	/**
+	 * Return a type signature
+	 * @return
+	 */
+	public short getSignShort();
 }

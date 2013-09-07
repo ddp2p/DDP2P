@@ -63,7 +63,7 @@ public class NeighborhoodHandling {
 		+table.neighborhood.arrival_date+">?" +
 		" ORDER BY n."+table.neighborhood.arrival_date;
 
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 
 	public static String getNextNeighborhoodDate(String last_sync_date,

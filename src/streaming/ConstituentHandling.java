@@ -44,7 +44,7 @@ import util.Util;
 import ASN1.Encoder;
 
 public class ConstituentHandling {
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final int BIG_LIMIT = 300;
 	
@@ -80,6 +80,10 @@ public class ConstituentHandling {
 				new String[]{org_id, last_sync_date, maxDate}, DEBUG);
 		return Util.AL_AL_O_2_HSS_SS(result);
 	}
+	/**
+	 * Selects constituent data where the organization and the constituent are not blocked,
+	 * and where the arrival date is in the given interval
+	 */
 	static String sql_get_const_ops_min_max_no_terminator =
 		D_Constituent.sql_get_const +
 		" WHERE c."+table.constituent.sign+" IS NOT NULL AND "
@@ -88,6 +92,10 @@ public class ConstituentHandling {
 			+" AND c."+table.constituent.organization_ID+" = ? " +
 					" AND c."+table.constituent.arrival_date+" > ? AND c."+table.constituent.arrival_date+" <= ?" +
 				" GROUP BY c."+table.constituent.arrival_date;
+	/**
+	 * Selects constituent data where the organization and the constituent are not blocked,
+	 * and where the arrival date follows the given start
+	 */
 	static String sql_get_const_ops_min_no_terminator =
 		D_Constituent.sql_get_const +
 		" WHERE c."+table.constituent.sign+" IS NOT NULL AND "
@@ -95,7 +103,7 @@ public class ConstituentHandling {
 		+ " AND c."+table.constituent.broadcasted+" <> '0' "
 			+" AND c."+table.constituent.organization_ID+" = ? AND c."+table.constituent.arrival_date+">?";
 	/**
-	 * get the constituents between two dates
+	 * get the broadcastable constituents between two dates
 	 * @param asr
 	 * @param last_sync_date
 	 * @param gid
@@ -261,7 +269,12 @@ public class ConstituentHandling {
 		return result;
 	}
 	/**
-	 * Integrate the data coming from remote machines
+	 * Integrate array of constituents streamed from remote machines.
+	 * For each constituent it tries to locate the submitter and neighborhood,
+	 * and add missing annexes to the RequestData rq (inserting temporary ones).
+	 * 
+	 * For each constituent it calls integrateNewConstituentOPData().
+	 * 
 	 * @param constituents
 	 * @param id
 	 * @param org_local_ID
@@ -306,6 +319,7 @@ public class ConstituentHandling {
 	}
 	/**
 	 * Integrate one constituent
+	 * just calls integrateNewConstituentData() with the right parameters
 	 * @param constituent
 	 * @param orgGID
 	 * @param org_local_ID
@@ -319,10 +333,21 @@ public class ConstituentHandling {
 		if(constituent == null) return false;
 		D_Constituent wc = constituent.constituent;
 		boolean result;
-		result = null!=integrateNewConstituentData( wc, orgGID, org_local_ID, arrival_time, orgData);
+		result = (null!=integrateNewConstituentData( wc, orgGID, org_local_ID, arrival_time, orgData));
 		if(DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: exit with "+result);
 		return result;
 	}
+	/**
+	 * Checks constituent signature and stores it.
+	 * Fails on bad signature (if not for: ACCEPT_UNSIGNED_CONSTITUENTS)
+	 * @param wc
+	 * @param orgGID
+	 * @param org_local_ID
+	 * @param arrival_time
+	 * @param orgData
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
 	public static String integrateNewConstituentData( D_Constituent wc, String orgGID,
 			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: start on "+wc);
@@ -332,7 +357,7 @@ public class ConstituentHandling {
 		wc.organization_ID = org_local_ID;
 		if(!wc.verifySignature(orgGID)){
 			if(_DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData:Signature check failed for "+wc);
-			if(!DD.ACCEPT_UNSIGNED_PEERS){
+			if(!DD.ACCEPT_UNSIGNED_CONSTITUENTS){
 				if(_DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: exit");
 				return result;
 			}

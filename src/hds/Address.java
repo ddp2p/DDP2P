@@ -46,6 +46,8 @@ public class Address extends ASNObj{
 	public String toString(){
 		return ((protocol!=null)?(protocol+"://"):"")+domain+ADDR_PART_SEP+tcp_port+((udp_port>0)?(ADDR_PART_SEP+udp_port):"");
 	}
+	public Address instance() throws CloneNotSupportedException{return new Address();}
+	public Address(){} // For arrays
 	public Address(String domain_port){
 		if(domain_port == null) return;
 		protocol = getProtocol(domain_port);
@@ -135,6 +137,9 @@ public class Address extends ASNObj{
 		if(DBG) System.out.println("=");
 		return true;
 	}
+	public static byte getASN1Type() {
+		return Encoder.TAG_SEQUENCE;
+	}
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(domain).setASN1Type(Encoder.TAG_PrintableString));
@@ -142,6 +147,7 @@ public class Address extends ASNObj{
 		enc.addToSequence(new Encoder(udp_port));
 		if(protocol!=null)
 			enc.addToSequence(new Encoder(protocol).setASN1Type(Encoder.TAG_PrintableString));
+		enc.setASN1Type(getASN1Type());
 		return enc;
 	}
 	public Address decode(Decoder dec){

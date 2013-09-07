@@ -73,7 +73,7 @@ public class DirectoryServerUDP extends Thread {
 			Decoder dec=new Decoder(buffer,0,dp.getLength());
 			if(dec.getTypeByte() == DD.MSGTYPE_EmptyPing){
 				if(DEBUG) out.println("DS UDP EmptyPing");
-				if(DEBUG) out.print("^");
+				if(DEBUG) out.print("^"+dp.getSocketAddress()+"^");
 				continue;
 			}
 			
@@ -85,9 +85,10 @@ public class DirectoryServerUDP extends Thread {
 				try {
 					da = new DirectoryAnnouncement(dec);
 				} catch (ASN1DecoderFail e1) {
+					e1.printStackTrace();
 					continue;
 				}
-				if(DEBUG)out.println("DirectoryServerUDP: Received UDP announcement: "+da+"\n from: "+risa);
+				if(DEBUG)out.println("\n\nDirectoryServerUDP: Received UDP announcement: "+da.toSummaryString()+"\n from: "+risa+"\n");
 				String detected_sa = DirectoryServer.detectUDPAddress(risa, risa.getPort());
 				detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
 				byte[] answer;
@@ -108,13 +109,13 @@ public class DirectoryServerUDP extends Thread {
 				}
 				continue;
 			}else{
-				if(DEBUG) out.println("DirectoryServerUDP:run Detected ping request");
+				if(DEBUG) out.println("\nDirectoryServerUDP:run Detected ping request");
 				ASNUDPPing aup = new ASNUDPPing();
 				try { // check if this is a PING
 					aup.decode(dec);
-					if(DEBUG) System.out.println("DirectoryServerUDP:run: receives: "+aup);
+					if(DEBUG) System.out.println("\nDirectoryServerUDP:run: receives: "+aup);
 					if(!aup.senderIsInitiator){
-						if(DEBUG) System.out.println("DirectoryServerUDP:run: sender is not initiator => DROP");
+						if(_DEBUG) System.out.println("DirectoryServerUDP:run: sender is not initiator => DROP");
 						continue;
 					}
 					aup.senderIsInitiator=false;
@@ -129,7 +130,10 @@ public class DirectoryServerUDP extends Thread {
 					try{
 						isa = new InetSocketAddress(aup.peer_domain,aup.peer_port);
 					}catch(Exception e){e.printStackTrace(); continue;}
-					if(isa.isUnresolved()) continue;
+					if(isa.isUnresolved()){
+						System.err.println("DirectoryServerUDP:run:  unresolved: "+isa);
+						continue;
+					}
 					byte[] answer = aup.encode();
 					DatagramPacket ans = new DatagramPacket(answer, answer.length);
 					ans.setSocketAddress(isa);

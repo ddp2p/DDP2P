@@ -825,19 +825,19 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		if(this.broadcasted == source) {
 			boolean val = broadcasted.isSelected();
 			//OrgsModel.toggleServing(this.orgID, false, val);
-			OrgsModel.setBroadcasting(this.orgID, val);
+			D_Organization.setBroadcasting(this.orgID, val);
 			if(this.organization!=null) this.organization.broadcasted = val;
 			return;
 		}
 		if(this.blocked == source) {
 			boolean val = blocked.isSelected();
-			OrgsModel.setBlocking(this.orgID, val);
+			D_Organization.setBlocking(this.orgID, val);
 			if(this.organization!=null) this.organization.blocked = val;
 			return;
 		}
 		if(this.requested == source) {
 			boolean val = requested.isSelected();
-			OrgsModel.setRequested(this.orgID, val);
+			D_Organization.setRequested(this.orgID, val);
 			if(this.organization!=null) this.organization.requested = val;
 			return;
 		}

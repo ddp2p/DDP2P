@@ -26,6 +26,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import javax.swing.tree.TreePath;
+
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
@@ -45,6 +47,8 @@ import streaming.RequestData;
 import util.DBInterface;
 import util.Summary;
 import util.Util;
+import widgets.constituent.ConstituentsModel;
+import widgets.constituent.ConstituentsWitness;
 
 class D_WitnessStatements extends ASNObj {
 	public int version = 1;
@@ -92,7 +96,7 @@ class D_WitnessStatements extends ASNObj {
 public
 class D_Witness extends ASNObj implements Summary {
 	private static final boolean _DEBUG = true;
-	private static boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	public static final int FAVORABLE = 1;
 	public static final int UNFAVORABLE = -1;
 	public static final int UNKNOWN = 0;
@@ -171,6 +175,7 @@ class D_Witness extends ASNObj implements Summary {
 			+", t."+table.constituent.global_constituent_ID
 			+", s."+table.constituent.global_constituent_ID
 			+", o."+table.organization.global_organization_ID
+			+", o."+table.organization.organization_ID
 			+" FROM "+table.witness.TNAME+" AS w "+
 			" LEFT JOIN "+table.neighborhood.TNAME+" AS n ON(n."+table.neighborhood.neighborhood_ID+"=w."+table.witness.neighborhood_ID+") "+
 			" LEFT JOIN "+table.constituent.TNAME+" AS s ON(s."+table.constituent.constituent_ID+"=w."+table.witness.source_ID+") "+
@@ -192,6 +197,7 @@ class D_Witness extends ASNObj implements Summary {
 			+", t."+table.constituent.global_constituent_ID
 			+", s."+table.constituent.global_constituent_ID
 			+", o."+table.organization.global_organization_ID
+			+", o."+table.organization.organization_ID
 			+" FROM "+table.witness.TNAME+" AS w "+
 			" LEFT JOIN "+table.neighborhood.TNAME+" AS n ON(n."+table.neighborhood.neighborhood_ID+"=w."+table.witness.neighborhood_ID+") "+
 			" LEFT JOIN "+table.constituent.TNAME+" AS s ON(s."+table.constituent.constituent_ID+"=w."+table.witness.source_ID+") "+
@@ -269,6 +275,8 @@ class D_Witness extends ASNObj implements Summary {
 		witnessed_global_constituentID = Util.getString(w.get(table.witness.WIT_FIELDS+1));
 		witnessing_global_constituentID = Util.getString(w.get(table.witness.WIT_FIELDS+2));
 		global_organization_ID = Util.getString(w.get(table.witness.WIT_FIELDS+3));
+		organization_ID = Util.getString(w.get(table.witness.WIT_FIELDS+4));
+		
 		sense_y_n = Util.ival(w.get(table.witness.WIT_COL_SENSE),UNKNOWN);
 		sense_y_trustworthiness = Util.ival(w.get(table.witness.WIT_COL_SENSE_TRUSTWORTHINESS),UNKNOWN);
 		this.witness_trustworthiness_category = Util.getString(w.get(table.witness.WIT_COL_CAT_TRUSTWORTHINESS));
@@ -888,6 +896,78 @@ class D_Witness extends ASNObj implements Summary {
 		}
 	}
 
+	   
+    public static void witness(D_Constituent c){
+
+    	TreePath tp = null;
+		ConstituentsWitness dialog = new ConstituentsWitness(Application.constituents.tree, tp, 0);
+    	if (!dialog.accepted) return;
+    	String witness_category = Util.getJFieldText(dialog.witness_category);
+    	String witness_category_trustworthiness = Util.getJFieldText(dialog.witness_category_trustworthiness);
+    	//int sense;
+    	//int wItemIx = dialog.witness_category.getSelectedIndex();
+    	//if(wItemIx >= dialog.first_negative){
+    	//	sense = 0;
+    	//}else sense=1;
+    	String gcd = c.global_constituent_id;
+     	try {
+     		ConstituentsModel model = Application.constituents.tree.getModel();
+    		ArrayList<ArrayList<Object>> sel;
+    		String sql="select "+table.witness.witness_ID+" from "+table.witness.TNAME+" where " +
+    		table.witness.source_ID+"=? and "+table.witness.target_ID+"=?;";
+    		sel = Application.db.select(sql, 
+    				new String[]{model.getConstituentIDMyself()+"",
+    				c.constituent_ID+""});
+    		if(sel.size()>0){
+    			Application.db.delete(table.witness.TNAME,
+    					new String[]{table.witness.source_ID,table.witness.target_ID}, 
+    					new String[]{model.getConstituentIDMyself()+"",
+    					c.constituent_ID+""});
+    		}
+    		
+    		Calendar creation_date = Util.CalendargetInstance();
+    		
+    		long organizationID = model.getOrganizationID();//organizationID;
+    		String organizationGID = model.getOrgGID();//D_Organization.getGlobalOrgID(organizationID+"");
+    		
+     		SK sk = DD.getConstituentSK(model.getConstituentIDMyself());
+    		
+    		//String now = Util.getGeneralizedTime();		
+    		D_Witness wbw = new D_Witness();
+    		wbw.global_organization_ID(organizationGID);
+    		wbw.witnessed_constituentID = Util.lval(c.constituent_ID);
+    		wbw.witnessed_global_constituentID = c.global_constituent_id;
+    		wbw.witnessing_global_constituentID = model.getConstituentGIDMyself();
+    		wbw.witnessing_constituentID = model.getConstituentIDMyself();
+    		wbw.witness_eligibility_category = witness_category;
+    		//wbw.sense_y_n = sense;
+    		wbw.sense_y_n = ConstituentsWitness.sense_eligibility.get(witness_category).intValue();
+    		//System.out.println("ConstitAdd:: "+Util.concatSI(ConstituentsAdd.sense_eligibility, ":::", "NNN"));
+    		//System.out.println("ConstitAdd:: "+witness_category+" -> "+wbw.sense_y_n);
+    		wbw.witness_trustworthiness_category = witness_category_trustworthiness;
+    		if(!Util.emptyString(witness_category_trustworthiness))
+    			wbw.sense_y_trustworthiness = ConstituentsWitness.sense_trustworthiness.get(witness_category_trustworthiness).intValue();
+    		else wbw.sense_y_trustworthiness = D_Witness.UNKNOWN;
+    		wbw.creation_date = creation_date;
+    		wbw.arrival_date = creation_date;
+    		wbw.global_witness_ID = wbw.make_ID();
+        	if(DEBUG) System.out.println("CostituentsAction: addConst: signing="+wbw);
+    		wbw.sign(sk);
+    		long withID = wbw.storeVerified();
+       		if(DEBUG|| DD.TEST_SIGNATURES) {
+       			D_Witness w_test = new D_Witness(withID);
+       			if(!w_test.verifySignature()){
+       				if(_DEBUG) System.out.println("CostituentsAction: addConst: failed signing="+wbw+"\nvs\n"+w_test);    			
+       			}
+       		}
+
+     	}catch(Exception ev) {
+    		ev.printStackTrace();
+    		return;
+    	}
+    }
+
+	
 	public static void main(String[] args){
 		try{
 			if(args.length == 0) {

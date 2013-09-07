@@ -2,7 +2,7 @@ DIRS = scripts
 all:
 	-rm */*.class
 	-rm */*/*.class
-	javac -Xlint:unchecked -cp "jars/MultiSplit.jar:jars/sqlite4java.jar:jars/icepdf-viewer.jar:jars/icepdf-core.jar:jars/MetaphaseEditor-1.0.0.jar:./" MCMC/*.java handling_wb/*.java updates/*.java plugin_data/*.java streaming/*.java data/*.java table/*.java  util/*.java hds/*.java ASN1/*.java widgets/*/*.java config/*.java wireless/*.java ciphersuits/*.java simulator/*.java census/*.java
+	javac -Xlint:unchecked -cp "jars/MultiSplit.jar:jars/javax.mail.jar:jars/sqlite4java.jar:jars/icepdf-viewer.jar:jars/icepdf-core.jar:jars/MetaphaseEditor-1.0.0.jar:./" MCMC/*.java handling_wb/*.java updates/*.java plugin_data/*.java streaming/*.java data/*.java table/*.java  util/*.java hds/*.java ASN1/*.java widgets/*/*.java config/*.java wireless/*.java ciphersuits/*.java simulator/*.java census/*.java
 	-xgettext -k_ */*.java
 	-rm DD.jar
 	echo "Main-Class: config.DD" > MANIFEST.MF

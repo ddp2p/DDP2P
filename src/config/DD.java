@@ -24,14 +24,17 @@ import static java.lang.System.out;
 import static util.Util._;
 import hds.Client1;
 import hds.ClientSync;
+import hds.Connections;
 import hds.Console;
 import hds.ControlPane;
+import hds.DDAddress;
 import hds.DirectoryServer;
 import hds.EventDispatcher;
 import hds.IClient;
 import hds.JFrameDropCatch;
 import hds.Server;
 import hds.StartUpThread;
+import hds.StegoStructure;
 import hds.UDPServer;
 
 import java.awt.Component;
@@ -77,10 +80,18 @@ import javax.swing.event.DocumentListener;
 
 import simulator.Fill_database;
 import simulator.SimulationParameters;
+import streaming.ConstituentHandling;
+import streaming.NeighborhoodHandling;
 import streaming.OrgHandling;
+import streaming.SpecificRequest;
 import streaming.UpdateMessages;
+import streaming.WB_Messages;
+import streaming.WitnessingHandling;
 import table.HashConstituent;
 import util.DBInterface;
+import util.DD_DirectoryServer;
+import util.DD_IdentityVerification_Answer;
+import util.DD_IdentityVerification_Request;
 import util.P2PDDSQLException;
 import util.Util;
 import widgets.components.DDTranslation;
@@ -109,19 +120,22 @@ import ciphersuits.SK;
 
 
 import data.D_Constituent;
+import data.D_Neighborhood;
+import data.D_Organization;
 import data.D_PeerAddress;
+import data.D_Witness;
 
 
 import ASN1.Encoder;
 
 public class DD {
-	public static final String VERSION = "0.9.33";
+	public static final String VERSION = "0.9.37";
 	public static String _APP_NAME = _("Direct Democracy P2P");
 	//public static String _APP_NAME = _("La Bible A Petits Pas");
 	public static String APP_NAME = _APP_NAME+" "+VERSION;
 	public static JTabbedPane tabbedPane = new JTabbedPane();
 
-	public static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	
     public static widgets.org.Orgs orgsPane;
@@ -186,9 +200,43 @@ public class DD {
 	public static final byte TYPE_SignSyncReq = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5);
 	public static final byte MSGTYPE_EmptyPing = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)20);;
 	public static final byte TYPE_ORG_DATA = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)29);
-  
+	/*
+	 * TYPES OF IMAGES
+	 * should never go over 30 for the type value in one byte
+	 */
+	public static final byte TYPE_DD_IDENTITY_VERIFICATION = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)30);
+	public static final byte TYPE_DD_IDENTITY_VERIFICATION_ANSWER = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)29);
+	/**
+	 * SIGN of images
+	 */
+	public static final short STEGO_SIGN_PEER = 0x0D0D;
+	public static final short STEGO_SIGN_CONSTITUENT_VERIF_REQUEST = 0x7AAD;
+	public static final short STEGO_SIGN_CONSTITUENT_VERIF_ANSWER = 0x3EE3;
+	public static final short STEGO_SIGN_DIRECTORY_SERVER = 0x1881;
+
+	
 	public static byte asn1Type(int classASN1, int PCASN1, byte tag_number) {
+		if((tag_number&0x1F) >= 31){
+			Util.printCallPath("Need more bytes");
+			tag_number = 25;
+		}
 		return  (byte)((classASN1<<6)+(PCASN1<<5)+tag_number);
+	}
+	public static StegoStructure[] getAvailableStegoStructureInstances(){
+		DDAddress data1 = new DDAddress();
+		DD_IdentityVerification_Request data2 = new DD_IdentityVerification_Request();
+		DD_IdentityVerification_Answer data3 = new DD_IdentityVerification_Answer();
+		DD_DirectoryServer data4 = new DD_DirectoryServer();
+		return new StegoStructure[]{data1, data2, data3, data4};
+	}
+
+	public static short[] getAvailableStegoStructureISignatures() {
+		StegoStructure[] a = getAvailableStegoStructureInstances();
+		if(a==null) return new short[0];
+		short []r = new short[a.length];
+		for(int k =0 ; k<a.length; k++)
+			r[k] = a[k].getSignShort();
+		return r;
 	}
 	
 	static final Object monitor_getMyPeerGIDFromIdentity = new Object();
@@ -372,6 +420,26 @@ public class DD {
 	public static final long PAUSE_BEFORE_UDP_SERVER_START = 4*1000;
 	public static final boolean DROP_DUPLICATE_REQUESTS = false;
 	public static final int UDP_SENDING_CONFLICTS = 10; // how many requests are dropped waiting to send a message
+	public static final boolean ACCEPT_UNSIGNED_CONSTITUENTS = false;
+	public static final boolean ACCEPT_UNSIGNED_NEIGHBORHOOD = false;
+	public static final boolean ACCEPT_UNSIGNED_PEERS_FROM_TABLES = false;
+	public static final boolean ACCEPT_UNSIGNED_PEERS_FOR_STORAGE = false;
+	public static final boolean DEBUG_CHANGED_ORGS = false;
+	public static final boolean DEBUG_PRIVATE_ORGS = false;
+	/**
+	 * For debugging other peers (due to errors sent to us) set the next to true!
+	 */
+	public static final boolean WARN_ABOUT_OTHER = false;
+	public static int MAX_MOTION_ANSWERTO_CHOICES = 100;
+	/**
+	 * 0 = undecided
+	 * 1 = true
+	 * -1 = false
+	 */
+	public static int AUTOMATE_PRIVATE_ORG_SHARING = 0; 
+	public static boolean DEBUG_LIVE_THREADS = false;
+	public static boolean DEBUG_COMMUNICATION = false;
+	public static boolean DEBUG_COMMUNICATION_LOWLEVEL = false;
 	//public static int TCP_MAX_LENGTH = 10000000;
 	public static int UDP_MAX_FRAGMENT_LENGTH = 100000;
 	public static int UDP_MAX_FRAGMENTS = 100;
@@ -409,7 +477,7 @@ public class DD {
 	
 	public static  boolean TEST_SIGNATURES = false;
 	public static  boolean WARN_OF_UNUSED_PEERS = true;
-	public static  boolean ACCEPT_UNSIGNED_PEERS = false;
+	public static  boolean ACCEPT_DATA_FROM_UNSIGNED_PEERS = false;
 	public static  boolean EDIT_RELEASED_ORGS = false;
 	public static  boolean EDIT_RELEASED_JUST = false;
 	public static  boolean ACCEPT_UNSIGNED_DATA = false;
@@ -1555,7 +1623,9 @@ public class DD {
 			if((Identity.current_peer_ID.globalID==null)){ //&&(Identity.create_missing_ID())) {
 				if(DEBUG) out.println("DD:createMyPeerIDIfEmpty: will generate keys");
 				String name = D_PeerAddress.queryName(DD.frame);
+				Identity.emails = D_PeerAddress.queryNewEmails(DD.frame);
 				if(name==null) name = System.getProperty("user.name", _("MySelf"));
+				if(Identity.emails==null) name = System.getProperty("user.name", _("MySelf"))+"@localhost";
 				if(Identity.current_peer_ID.name==null)
 					Identity.current_peer_ID.name=name;
 				
@@ -1565,6 +1635,7 @@ public class DD {
 			Application.warning(_("Error accessing database!"), _("Database troubles"));
 		}	
 	}
+
 	/**
 	 * Is the data for me as constituent fully input?
 	 * @param organization_ID
@@ -1750,7 +1821,52 @@ public class DD {
 			return error;
 		}
 	}
+	
+
+	public static DBInterface load_Directory_DB(String dB_PATH) {
+		DBInterface dbdir = null;
+		String sql = "SELECT "+table.Subscriber.subscriber_ID+
+				" FROM "+table.Subscriber.TNAME+
+				" LIMIT 1;";
+		try {
+			String[]params = new String[]{};
+			String dbase = Application.DIRECTORY_FILE;
+			if(dB_PATH!=null) dbase = dB_PATH+Application.OS_PATH_SEPARATOR+dbase;
+			dbdir = new DBInterface(dbase);
+			dbdir.select(sql, params, DEBUG);
+		} catch (util.P2PDDSQLException e) {
+			System.out.print(sql);
+			e.printStackTrace();
+			return null;
+		}
+		
+		return dbdir;
+	}
+
+
+	public static String getTopic(String globalID, String peer_ID) {
+		String topic = null;
+		try {
+			topic = DD.getAppText(DD.MY_DEBATE_TOPIC);
+			if((topic == null)||(topic.length()==0)) {
+				topic = Util.getString(JOptionPane.showInputDialog(JFrameDropCatch.mframe,
+						_("Declare a topic for your discussions"),
+						_("Topic"), JOptionPane.PLAIN_MESSAGE, null, null, null));
+				if(topic != null) DD.setAppTextNoSync(DD.MY_DEBATE_TOPIC, topic);
+			}
+		} catch (util.P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return topic;
+	}
+
+
+	public static boolean isThisAnApprovedPeer(String senderID) {
+		// TODO Auto-generated method stub
+		return true;
+	}
 	static public void main(String arg[]) throws util.P2PDDSQLException {
+		set_DEBUG();
 		toolkit = Toolkit.getDefaultToolkit();
 		int screen_width = (int)toolkit.getScreenSize().getWidth();
 		int screen_height = (int)toolkit.getScreenSize().getHeight();
@@ -1908,48 +2024,26 @@ public class DD {
 		*/
 	}
 
-
-	public static DBInterface load_Directory_DB(String dB_PATH) {
-		DBInterface dbdir = null;
-		String sql = "SELECT "+table.Subscriber.subscriber_ID+
-				" FROM "+table.Subscriber.TNAME+
-				" LIMIT 1;";
-		try {
-			String[]params = new String[]{};
-			String dbase = Application.DIRECTORY_FILE;
-			if(dB_PATH!=null) dbase = dB_PATH+Application.OS_PATH_SEPARATOR+dbase;
-			dbdir = new DBInterface(dbase);
-			dbdir.select(sql, params, DEBUG);
-		} catch (util.P2PDDSQLException e) {
-			System.out.print(sql);
-			e.printStackTrace();
-			return null;
-		}
-		
-		return dbdir;
-	}
-
-
-	public static String getTopic(String globalID, String peer_ID) {
-		String topic = null;
-		try {
-			topic = DD.getAppText(DD.MY_DEBATE_TOPIC);
-			if((topic == null)||(topic.length()==0)) {
-				topic = Util.getString(JOptionPane.showInputDialog(JFrameDropCatch.mframe,
-						_("Declare a topic for your discussions"),
-						_("Topic"), JOptionPane.PLAIN_MESSAGE, null, null, null));
-				if(topic != null) DD.setAppTextNoSync(DD.MY_DEBATE_TOPIC, topic);
-			}
-		} catch (util.P2PDDSQLException e) {
-			e.printStackTrace();
-		}
-		return topic;
-	}
-
-
-	public static boolean isThisAnApprovedPeer(String senderID) {
-		// TODO Auto-generated method stub
-		return true;
+	static public void set_DEBUG(){
+		/*
+		DD.DEBUG = true;
+		DD.DEBUG_LIVE_THREADS = true;
+		DD.DEBUG_COMMUNICATION = true;
+		ClientSync.DEBUG = true;
+		Connections.DEBUG=true;
+		D_Constituent.DEBUG = true;
+		D_Witness.DEBUG = true;
+		D_Organization.DEBUG = true;
+		D_Neighborhood.DEBUG = true;
+		UpdateMessages.DEBUG = true;
+		OrgHandling.DEBUG = true;
+		SpecificRequest.DEBUG = true;
+		WB_Messages.DEBUG = true;
+		WitnessingHandling.DEBUG = true;
+		NeighborhoodHandling.DEBUG = true;
+		ConstituentHandling.DEBUG = true;
+		/*
+		*/
 	}
 
 }

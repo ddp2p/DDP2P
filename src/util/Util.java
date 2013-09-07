@@ -18,8 +18,6 @@
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 /* ------------------------------------------------------------------------- */
  package util;
-
-
 import static java.lang.System.out;
 
 import handling_wb.BroadcastQueueRequested;
@@ -97,6 +95,7 @@ import ASN1.Encoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+
 public class Util {
     private static ResourceBundle myResources = Util.getResourceBundle();
     private static final JLabel resizer = new JLabel();
@@ -205,6 +204,26 @@ public class Util {
     public static <T> String nullDiscrimArray(T o[], String sep){
     	if(o==null) return "null";
     	return "#["+o.length+"]=\""+Util.concat(o, sep)+"\"";
+    }
+    public static <T> String nullDiscrimArraySummary(Summary o[], String sep){
+    	if(o==null) return "null";
+    	return "#["+o.length+"]=\""+Util.concatSummary(o, sep, "null")+"\"";
+    }
+    public static <T> String nullDiscrimArraySummary(ArrayList<T> o, String sep){
+    	if(o==null) return "null";
+    	try{
+    		return "#["+o.size()+"]=\""+Util.concatSummary(o.toArray(new Summary[0]), sep, "null")+"\"";
+    	}catch(Exception e){
+    		return e.getLocalizedMessage();
+    	}
+    }
+    public static <T> String nullDiscrimArray(ArrayList<T> o, String sep){
+    	if(o==null) return "null";
+    	try{
+    		return "#["+o.size()+"]=\""+Util.concat(o.toArray(new Object[0]), sep, "null")+"\"";
+    	}catch(Exception e){
+    		return e.getLocalizedMessage();
+    	}
     }
 	public static String nullDiscrimArrayNumbered(Object[] o) {
     	if(o==null) return "null";
@@ -522,6 +541,14 @@ public class Util {
 			return _default;
 		}
 	}
+	/**
+	 * Returns "-1" on null.
+	 * @param obj
+	 * @return
+	 */
+	public static long lval(Object obj){
+		return lval(obj, -1);
+	}
 	public static float fval(Object obj, float _default){
 		if(obj == null) return _default;
 		try{
@@ -829,7 +856,7 @@ public class Util {
 			return false;
 		}
 		if(!result) {
-			Util.printCallPath("verifying failed");
+			if(DD.WARN_ABOUT_OTHER)Util.printCallPath("verifying failed");
 		}
 		if(DEBUG)System.err.println("Util:verifySign: return "+result);
 		return result;
@@ -2116,6 +2143,68 @@ public class Util {
 	public static boolean emptyString(String in) {
 		if(in==null) return true;
 		return "".equals(in);
+	}
+	public static String sanitizeFileName(String name) {
+		String result="";
+		if(name==null) return result;
+		for(int k=0; k<name.length(); k++){
+			char c = name.charAt(k);
+			if(Character.isLetterOrDigit(c)) result+=c;
+			else result+="_";
+		}
+		return result;
+	}
+	/**
+	 * Is the val available in the list?
+	 * Return the index, or "-1"
+	 * @param list
+	 * @param val
+	 * @return
+	 */
+	public static int contains(short[] list, short val) {
+		int absent = -1;
+		if(list == null) return absent;
+		for(int k=0; k<list.length; k++){
+			if(DEBUG) System.out.println("Util:contains: "+k+"/"+list.length+":"+val+" in "+list[k]);
+			if(val==list[k]){
+				if(DEBUG) System.out.println("Util:contains: found "+k+":"+val+" in "+list[k]);
+				return k;
+			}
+		}
+		return absent;
+	}
+	/**
+	 * returns -1 on error
+	 * @param list
+	 * @param val
+	 * @return
+	 */
+	public static int contains(String[] list, String val) {
+		int absent = -1;
+		if(val == null) return -1;
+		val = val.trim();
+		if(list == null) return absent;
+		for(int k = 0; k<list.length; k++) {
+			if(list[k]==null) continue;
+			if(val.equals(list[k].trim())) return k;
+		}
+		return absent;
+	}
+	/**
+	 * 
+	 * @param params
+	 * @param len
+	 * @return
+	 */
+	public static String[] extendArray(String[] list, int len) {
+		if(len < 0) return null;
+		String[] result = new String[len];
+		if(list == null) return result;
+		int cpy = Math.min(len, list.length);
+		for(int k=0; k<cpy; k++){
+			result[k] = list[k];
+		}
+		return result;
 	}
 }
 class GetHostName extends Thread{

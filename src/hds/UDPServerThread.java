@@ -87,7 +87,7 @@ public class UDPServerThread extends Thread {
 		}catch(Exception e){e.printStackTrace();}
 	}
 	public void _run() {
-		if(DEBUG)System.out.println("UDPServer:run: Running UDPHandler thread:"+us.getThreads()+" from"+pak.getSocketAddress());
+		if(DEBUG)System.out.println("UDPServerThread:run: Running UDPHandler thread:"+us.getThreads()+" from"+pak.getSocketAddress());
 		byte[] buffer = pak.getData();
 		byte[] msg=null;
 		Decoder dec = new Decoder(pak.getData(),pak.getOffset(),pak.getLength());
@@ -218,8 +218,16 @@ public class UDPServerThread extends Thread {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
-				}else
+					if(DEBUG || DD.DEBUG_COMMUNICATION||DD.DEBUG_CHANGED_ORGS)
+						if(asreq.pushChanges!=null)System.out.println("\n\n\nUDPServer:run: sched Request snd! ch_org="+Util.nullDiscrimArraySummary(asreq.pushChanges.changed_orgs,"--"));
+						else System.out.println("\n\n\nUDPServer:run: sched Request snd! ch_org=null");
+				}else{
+					if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("\n\n\nUDPServer:run: build Request");
 					asreq = ClientSync.buildRequest(_lastSnapshotString, null, peer_ID);
+					if(DEBUG || DD.DEBUG_COMMUNICATION||DD.DEBUG_CHANGED_ORGS)
+						if(asreq.pushChanges!=null)System.out.println("\n\n\nUDPServer:run: Request snd! ch_org="+Util.nullDiscrimArraySummary(asreq.pushChanges.changed_orgs,"--"));
+						else System.out.println("\n\n\nUDPServer:run: Request snd! ch_org=null");
+				}
 				if(filtered) asreq.orgFilter=UpdateMessages.getOrgFilter(peer_ID);
 				SK sk = asreq.sign();
 				
@@ -362,7 +370,7 @@ public class UDPServerThread extends Thread {
 			if(DD.DROP_DUPLICATE_REQUESTS){
 				synchronized(handled){
 					if(handled.contains(psa)){
-						if(_DEBUG)System.out.println("UDPServer: Abandoned duplicate request from: "+psa);
+						if(DEBUG||DD.DEBUG_COMMUNICATION)System.out.println("UDPServer: Abandoned duplicate request from: "+psa);
 						return;
 					}
 					handled.add(psa);
@@ -371,7 +379,9 @@ public class UDPServerThread extends Thread {
 			asr = new ASNSyncRequest();
 			asr.decode(dec);
 			if(DEBUG)System.out.println("UDPServer: Received request from: "+psa);
-			if(_DEBUG)System.out.println("UDPServer: Decoded request: "+asr.toSummaryString()+" from: "+psa);
+			if(DEBUG||DD.DEBUG_COMMUNICATION)System.out.println("UDPServer: Decoded request: "+asr.toSummaryString()+" from: "+psa);
+			if(DEBUG || DD.DEBUG_COMMUNICATION||DD.DEBUG_CHANGED_ORGS)
+				if(asr.pushChanges!=null)System.out.println("\n\n\nUDPServer:run: Request rcv! ch_org="+Util.nullDiscrimArraySummary(asr.pushChanges.changed_orgs,"--"));
 			if(!DD.ACCEPT_STREAMING_REQUEST_UNSIGNED && !asr.verifySignature()) {
 				DD.ed.fireServerUpdate(new CommEvent(this, null, psa, "UDPServer", "Unsigned Sync Request received: "+asr));
 				System.err.println("UDPServer:run: Unsigned Request received: "+asr.toSummaryString());
@@ -394,11 +404,15 @@ public class UDPServerThread extends Thread {
 				if(DEBUG)System.out.println("UDPServer:run: UDPServer Answer being sent for: "+Util.trimmed(peerGID));
 				throw new Exception("While transferring answer to same peer");
 			}
-			String peer_ID = table.peer.getLocalPeerID(peerGID);
-			if(asr.address!=null)asr.address.peer_ID = peer_ID;
+			boolean blocked[] = new boolean[1];
+			String peer_ID = table.peer.getLocalPeerID(peerGID, blocked);
+			if(asr.address!=null) asr.address.peer_ID = peer_ID;
 			//D_PluginInfo.recordPluginInfo(asr.plugin_info, peerGID, peer_ID);
 			if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_UDP);
-			
+			if(blocked[0]){
+				if(DEBUG)System.out.println("UDPServer:run: Blocked! "+peer_ID+" "+((asr.address!=null)?asr.address.name:"noname"));
+				return;
+			}
 			//if data is a request from a peer
 			// then send an answer to that peer
 			SyncAnswer sa = UpdateMessages.buildAnswer(asr, peer_ID);
@@ -406,7 +420,9 @@ public class UDPServerThread extends Thread {
 			//System.out.println("Prepared answer: "+Util.trimmed(sa.toString()));
 			byte[]sa_msg = sa.encode();
 			us.sendLargeMessage(psa, sa_msg, DD.MTU, peerGID, DD.MSGTYPE_SyncAnswer);
-			if(_DEBUG)System.out.println("UDPServer:run: Answer sent! "+sa.toSummaryString());
+			if(DEBUG || DD.DEBUG_COMMUNICATION)System.out.println("UDPServer:run: Answer sent! "+sa.toSummaryString());
+			if(DEBUG || DD.DEBUG_COMMUNICATION||DD.DEBUG_CHANGED_ORGS)
+				System.out.println("\n\n\nUDPServer:run: Answer sent! ch_org="+Util.nullDiscrimArraySummary(sa.changed_orgs,"--"));
 			//System.out.println("Answer sent: "+Util.trimmed(sa.toString(),Util.MAX_UPDATE_DUMP));
 		  } catch (ASN1DecoderFail e) {
 			e.printStackTrace();
@@ -427,14 +443,16 @@ public class UDPServerThread extends Thread {
 		}
 
 		if(dec.getTypeByte()==DD.TAG_AC8) {
-			boolean DEBUG=true;
-			if(_DEBUG)System.out.println("\n*************\nUDPServer:run: Answer received fully from "+pak.getSocketAddress());
+			//boolean DEBUG=true;
+			if(DEBUG||DD.DEBUG_COMMUNICATION)System.out.println("\n*************\nUDPServer:run: Answer received fully from "+pak.getSocketAddress());
 			SyncAnswer sa = new SyncAnswer();
 			try {
 				sa.decode(dec);
 				// System.out.println("Answer received is: "+Util.trimmed(sa.toString(),Util.MAX_UPDATE_DUMP));
 				if(DEBUG)System.out.println("UDPServer:run: Answer received & decoded from: "+pak.getSocketAddress());
-				if(_DEBUG)System.out.println("UDPServer:run: Answer received is: "+sa.toSummaryString());
+				if(DEBUG || DD.DEBUG_COMMUNICATION)System.out.println("UDPServer:run: Answer received is: "+sa.toSummaryString());
+				if(DEBUG || DD.DEBUG_COMMUNICATION||DD.DEBUG_CHANGED_ORGS)
+					System.out.println("\n\n\nUDPServer:run: Answer rcv! ch_org="+Util.nullDiscrimArraySummary(sa.changed_orgs,"--"));
 				// integrate answer
 				//int len = dec.getMSGLength();
 				String global_peer_ID = sa.responderID;

@@ -45,6 +45,7 @@ import javax.swing.TransferHandler;
 import javax.swing.event.InternalFrameAdapter;
 
 import util.BMP;
+import util.DD_IdentityVerification_Request;
 import util.Util;
 
 import ASN1.ASN1DecoderFail;
@@ -52,6 +53,7 @@ import ASN1.ASN1DecoderFail;
 import util.P2PDDSQLException;
 
 import config.Application;
+import config.DD;
 
 public class JFrameDropCatch extends JFrame {
 	protected static final boolean DEBUG = false;
@@ -155,7 +157,7 @@ public class JFrameDropCatch extends JFrame {
             return true;
         }
 
-        boolean getFromInputStream(Transferable t, DataFlavor df, DDAddress data) throws P2PDDSQLException{
+        boolean getFromInputStream(Transferable t, DataFlavor df, StegoStructure[] data, int[] selected) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromInputStream: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -173,7 +175,7 @@ public class JFrameDropCatch extends JFrame {
                	}
 				in = (InputStream)o;
                	if(DEBUG) System.out.println("getFromInputStream: starting input");
-				result = EmbedInMedia.fromBMPStreamSave(in, data);
+				result = EmbedInMedia.fromBMPStreamSave(in, data, selected);
 			} catch (UnsupportedFlavorException e) {
                	if(DEBUG) System.out.println("getFromInputStream: not supported flavor "+e);
 				return false;
@@ -190,8 +192,8 @@ public class JFrameDropCatch extends JFrame {
            	if(DEBUG) System.out.println("getFromInputStream: result "+result);
        		return result;
         }
-
-        boolean getFromBMPStream(Transferable t, DataFlavor df, DDAddress data) throws P2PDDSQLException{
+        
+        boolean getFromBMPStream(Transferable t, DataFlavor df, StegoStructure[] data, int[] selected) throws P2PDDSQLException{
         	//boolean DEBUG=true;
         	if(DEBUG) System.out.println("getFromBMPStream: "+df);
         	if(df==null) return false;
@@ -208,7 +210,7 @@ public class JFrameDropCatch extends JFrame {
 				//Object content = null; //url.getContent();
 				//System.out.println("Got url: content="+content+" data="+url.getFile()+" url="+url);
 				in = url.openStream();
-				result = EmbedInMedia.fromBMPStreamSave(in, data);
+				result = EmbedInMedia.fromBMPStreamSave(in, data, selected);
 			} catch (UnsupportedFlavorException e) {
                	if(DEBUG) System.out.println("getFromBMPStream: not supported flavor "+e);
 				return false;
@@ -223,7 +225,7 @@ public class JFrameDropCatch extends JFrame {
           	return result;
         }
 
-        boolean getFromURIString(Transferable t, DataFlavor df, DDAddress data) throws P2PDDSQLException{
+        boolean getFromURIString(Transferable t, DataFlavor df, StegoStructure[] data, int[] selected) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromURIString: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -239,7 +241,7 @@ public class JFrameDropCatch extends JFrame {
             	if(DEBUG) System.err.println("getFromURIString: Got string= "+i);
 				url = new URL(i);
 				in = url.openStream();
-				result = EmbedInMedia.fromBMPStreamSave(in, data);
+				result = EmbedInMedia.fromBMPStreamSave(in, data, selected);
 			} catch (UnsupportedFlavorException e) {
                	if(DEBUG) System.out.println("getFromURIString: not supported flavor "+e);
 				return false;
@@ -254,7 +256,7 @@ public class JFrameDropCatch extends JFrame {
           	return result;
         }
 
-        boolean getFromURIHTML(Transferable t, DataFlavor df, StegoStructure data) throws P2PDDSQLException{
+        boolean getFromURIHTML(Transferable t, DataFlavor df, StegoStructure[] data, int[] selected) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromURIHTML: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -276,7 +278,7 @@ public class JFrameDropCatch extends JFrame {
             	if(DEBUG) System.err.println("getFromURIHTML: Got string= "+i);
 				url = new URL(i);
 				in = url.openStream();
-				result = EmbedInMedia.fromBMPStreamSave(in, data);
+				result = EmbedInMedia.fromBMPStreamSave(in, data, selected);
 			} catch (UnsupportedFlavorException e) {
                	if(DEBUG) System.out.println("getFromURIHTML: not supported flavor "+e);
 				return false;
@@ -292,7 +294,7 @@ public class JFrameDropCatch extends JFrame {
        		return result;
         }
 
-        boolean getFromImage(Transferable t, DataFlavor df, StegoStructure data) throws P2PDDSQLException{
+        boolean getFromImage(Transferable t, DataFlavor df, StegoStructure[] data, int[] selected) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromImage: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -314,7 +316,7 @@ public class JFrameDropCatch extends JFrame {
               		if(DEBUG) System.err.println("importData: will Stegano image: "+i);
                     //DDAddress d= (DDAddress)EmbedInMedia.setSteganoImage(bi, new DDAddress());
                     //data.setDDAddress(d);
-              		StegoStructure d= EmbedInMedia.setSteganoImage(bi, data);
+              		StegoStructure d= EmbedInMedia.setSteganoImage(bi, data, selected);
                     if(DEBUG) System.err.println("importData: did Stegano image: "+data);
             		if(d!=null){
             			if(DEBUG) System.err.println("importData: Got image successfully");
@@ -359,7 +361,7 @@ public class JFrameDropCatch extends JFrame {
         		return false;
         	}
         }
-        boolean getFromFileList(Transferable t, DataFlavor df, DDAddress d) throws P2PDDSQLException{
+        boolean getFromFileList(Transferable t, DataFlavor df, StegoStructure[] data, int[] selected) throws P2PDDSQLException{
         	if(DEBUG) System.out.println("getFromFileList: "+df);
         	if(df==null) return false;
         	if(!t.isDataFlavorSupported (df)){
@@ -374,7 +376,7 @@ public class JFrameDropCatch extends JFrame {
                 if(DEBUG) System.err.println("getFromFileList: Got files: "+l);
                 for (File f : l) {
                 	if(DEBUG) System.err.println("getFromFileList: Got file: "+f);
-                	result |= EmbedInMedia.fromBMPFileSave(f,d);
+                	result |= EmbedInMedia.fromBMPFileSave(f, data, selected);
                 	/*
                 	JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
                 			_("Obtained DDAddress:")+"\n"+d,
@@ -433,28 +435,31 @@ public class JFrameDropCatch extends JFrame {
            	
         
            	boolean result = false;
-           	DDAddress data=new DDAddress();
+           	int selected[] = new int[1];
+           	
+           	StegoStructure[] data = DD.getAvailableStegoStructureInstances();
+
            	try {
             	if(DEBUG)System.err.println("JFrameDropCatch: try mozFilePromise! ");
-				result=getFromInputStream(t, mozFilePromise, data);
+				result=getFromInputStream(t, mozFilePromise, data, selected);
 				
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: try inputStream!");
-				if(!result)result=getFromInputStream(t, chromeNamed, data);
+				if(!result)result=getFromInputStream(t, chromeNamed, data, selected);
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: try urlFlavor!");
-				if(!result)result=getFromBMPStream(t, urlFlavor, data);
+				if(!result)result=getFromBMPStream(t, urlFlavor, data, selected);
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: try mozFilePromise!");
-				if(!result)result=getFromBMPStream(t, mozFilePromiseURL, data);
+				if(!result)result=getFromBMPStream(t, mozFilePromiseURL, data, selected);
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: try imageFlavor!");
-				if(!result)result=getFromImage(t, DataFlavor.imageFlavor, data);
+				if(!result)result=getFromImage(t, DataFlavor.imageFlavor, data, selected);
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: try javaFileListFlavor!");
-				if(!result)result=getFromFileList(t, DataFlavor.javaFileListFlavor, data);
+				if(!result)result=getFromFileList(t, DataFlavor.javaFileListFlavor, data, selected);
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: try stringFlavor!");
-				if(!result)result=getFromURIString(t, DataFlavor.stringFlavor, data);
+				if(!result)result=getFromURIString(t, DataFlavor.stringFlavor, data, selected);
 				//if(!result)result=getFromURIString(t, DataFlavor.stringFlavor, data);
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: try textURIList!");
-				if(!result)result=getFromURIString(t, textURIList, data);
+				if(!result)result=getFromURIString(t, textURIList, data, selected);
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: try textHTML!");
-				if(!result)result=getFromURIHTML(t, textHTML, data);
+				if(!result)result=getFromURIHTML(t, textHTML, data, selected);
 				if(!result)if(DEBUG)System.err.println("JFrameDropCatch: no try worked!");
 			} catch (P2PDDSQLException e1) {
 				Application.warning(_("Database Error: ")+e1, _("Importing Address From Image"));
@@ -646,14 +651,8 @@ public class JFrameDropCatch extends JFrame {
 			}
 			*/
 			if(DEBUG)System.err.println("getDrop: pre result: "+result);
-			String description=null;
-			if(data!=null) description = data.getNiceDescription();
 			if(!result)
 				Application.warning(_("Abandoning drag and drop import attempt. Try to save file and load directly."), _("Importing address"));
-			else
-				JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
-            			_("Obtained DDAddress:")+"\n"+description,
-            			_("Saved Address"), JOptionPane.INFORMATION_MESSAGE);
 			if(DEBUG)System.err.println("getDrop: result: "+result);
 			return result;
         }

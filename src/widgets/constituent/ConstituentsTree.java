@@ -255,6 +255,8 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
 	private ConstituentsAddMyselfAction addMeAction;
 	private ConstituentsSetMyselfAction setMeAction;
 	private ConstituentsCustomAction refreshAction;
+	private ConstituentsCustomAction verifyAction;
+	private JMenuItem m_verify_const;
     void preparePopup() {
     	if(DEBUG) System.out.println("ConstituentsTree:preparePopup: start");
     	ImageIcon addicon = DDIcons.getAddImageIcon(_("add an item")); 
@@ -282,6 +284,15 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
     		witnessAction = new ConstituentsWitnessAction(this, _("Witness"),witnessicon,_("Witness constituents."),_("You may bear witness."),KeyEvent.VK_W);
     		m_witness_const = new JMenuItem(witnessAction);//_("Delete");
     		popup_leaf.add(m_witness_const);
+    	}else{
+    		if(DEBUG) System.out.println("ConstituentsTree:preparePopup: no constituentID:"+model.getConstituentIDMyself());
+    		//Application.warning(_("To act, you should select/create a constituent!"), _("No constituent ID"));
+    	}
+
+    	if(model.getConstituentIDMyself()>0) {
+    		verifyAction = new ConstituentsCustomAction(this, _("Verify Identity by Email"), witnessicon,_("Identify constituents."),_("You may identify constituent."),KeyEvent.VK_I, ConstituentsCustomAction.IDENTIFY);
+    		m_verify_const = new JMenuItem(verifyAction);//_("Delete");
+    		popup_leaf.add(m_verify_const);
     	}else{
     		if(DEBUG) System.out.println("ConstituentsTree:preparePopup: no constituentID:"+model.getConstituentIDMyself());
     		//Application.warning(_("To act, you should select/create a constituent!"), _("No constituent ID"));

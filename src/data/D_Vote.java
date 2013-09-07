@@ -62,7 +62,7 @@ WB_VOTE ::= SEQUENCE {
  */
 public
 class D_Vote extends ASNObj{
-	private static final boolean DEBUG = false;
+	private static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final String V0 = "0";
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
@@ -703,31 +703,6 @@ class D_Vote extends ASNObj{
 		return Util.getString(o.get(0).get(0));
 	}
 
-	public static void main(String[] args) {
-		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-			if(args.length>0){readSignSave(3,1); if(true) return;}
-			
-			D_Vote c=new D_Vote(1);
-			if(!c.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread="+c);
-			else System.out.println("\n************Signature Pass\n**********\nread="+c);
-			Decoder dec = new Decoder(c.getEncoder().getBytes());
-			D_Vote d = new D_Vote().decode(dec);
-			Calendar arrival_date = d.arrival_date=Util.CalendargetInstance();
-			//if(d.global_organization_ID==null) d.global_organization_ID = OrgHandling.getGlobalOrgID(d.organization_ID);
-			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
-			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
-			d.global_vote_ID = d.make_ID();
-			//d.storeVerified(arrival_date);
-			if(_DEBUG) out.println("D_Vote:editable: ID="+d.global_vote_ID);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		} catch (ASN1DecoderFail e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 	public boolean setEditable() {
 		if(signature == null){
 			if(DEBUG) out.println("D_Vote:editable: no sign");
@@ -743,7 +718,12 @@ class D_Vote extends ASNObj{
 			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String hash : hashes) {
-			if(!available(hash, orgID, DBG)) result.add(hash);
+			if(!available(hash, orgID, DBG)){
+				if(DEBUG) out.println("D_Vote:editable: not available: requested: "+hash);
+				result.add(hash);
+			}else{
+				if(DEBUG) out.println("D_Vote:editable: available already: "+hash);
+			}
 		}
 		return result;
 	}
@@ -797,4 +777,127 @@ class D_Vote extends ASNObj{
 		if((signature!=null) && (signature.length()!=0)) return 1;
 		return -1;
 	}
+	
+
+	public static void _main(String[] args) {
+		try {
+			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			if(args.length>0){readSignSave(3,1); if(true) return;}
+			
+			D_Vote c=new D_Vote(1);
+			if(!c.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread="+c);
+			else System.out.println("\n************Signature Pass\n**********\nread="+c);
+			Decoder dec = new Decoder(c.getEncoder().getBytes());
+			D_Vote d = new D_Vote().decode(dec);
+			Calendar arrival_date = d.arrival_date=Util.CalendargetInstance();
+			//if(d.global_organization_ID==null) d.global_organization_ID = OrgHandling.getGlobalOrgID(d.organization_ID);
+			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
+			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
+			d.global_vote_ID = d.make_ID();
+			//d.storeVerified(arrival_date);
+			if(_DEBUG) out.println("D_Vote:editable: ID="+d.global_vote_ID);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public static void main(String[] args) {
+		try {
+			if(args.length == 0) {
+				System.out.println("prog database id fix verbose");
+				return;
+			}
+			
+			String database = Application.DELIBERATION_FILE;
+			if(args.length>0) database = args[0];
+			
+			long id = 0;
+			if(args.length>1) id = Long.parseLong(args[1]);
+			
+			boolean fix = false;
+			if(args.length>2) fix = Util.stringInt2bool(args[2], false);
+			
+			//boolean verbose = false;
+			if(args.length>3) DEBUG = Util.stringInt2bool(args[3], false);
+			
+			
+			Application.db = new DBInterface(database);
+			
+			ArrayList<ArrayList<Object>> l;
+			D_Organization organization = null;
+			D_Constituent constituent = null;
+			D_Motion motion = null;
+			if(id<=0){
+				l = Application.db.select(
+						"SELECT "+table.signature.signature_ID+
+						" FROM "+table.signature.TNAME, new String[]{}, DEBUG);
+				for(ArrayList<Object> a: l){
+					String m_ID = Util.getString(a.get(0));
+					long ID = Util.lval(m_ID, -1);
+					D_Vote m = new D_Vote(ID);
+					if(m.signature==null){
+						if(organization==null)organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						if(constituent==null)constituent = new D_Constituent(Util.lval(m.constituent_ID, -1));
+						if(motion==null)motion = new D_Motion(Util.lval(m.motion_ID, -1));
+						System.out.println("Fail:temporary "+m.vote_ID+": from c="+m.constituent_ID+":"+constituent.getName()+",m="+m.motion_ID+":"+motion.motion_title+" in "+m.organization_ID+":"+organization.name);
+
+//						if(fix){
+//							m.global_vote_ID = m.make_ID();
+//							m.storeVerified();
+//							readSignSave(ID, Util.lval(m.constituent_ID, -1));
+//						}
+						continue;
+					}
+					if(!m.verifySignature()){
+						if(organization==null)organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						if(constituent==null)constituent = new D_Constituent(Util.lval(m.constituent_ID, -1));
+						if(motion==null)motion = new D_Motion(Util.lval(m.motion_ID, -1));
+						System.out.println("Fail:signature "+m.vote_ID+": from c="+m.constituent_ID+":"+constituent.getName()+",m="+m.motion_ID+":"+motion.motion_title+" in "+m.organization_ID+":"+organization.name);
+						//System.out.println("Fail:signature "+m.vote_ID+": from c="+constituent.getName()+",m="+motion.motion_title+" in "+m.organization_ID+":"+organization.name);
+
+						if(fix){
+							m.global_vote_ID = m.make_ID();
+							m.storeVerified();
+							readSignSave(ID, Util.lval(m.constituent_ID, -1));
+							System.out.println("Fixed:signature "+m.vote_ID+": from c="+m.constituent_ID+":"+constituent.getName()+",m="+m.motion_ID+":"+motion.motion_title+" in "+m.organization_ID+":"+organization.name);
+						}
+						continue;
+					}
+				}
+				return;
+			}else{
+				long ID = id;
+				D_Vote m = new D_Vote(ID);
+				if(fix)
+					if(!m.verifySignature()) {
+						if(organization==null)organization = new D_Organization(Util.lval(m.organization_ID, -1));
+						if(constituent==null)constituent = new D_Constituent(Util.lval(m.constituent_ID, -1));
+						if(motion==null)motion = new D_Motion(Util.lval(m.motion_ID, -1));
+						m.storeVerified();
+						System.out.println("Fixing:signature "+m.vote_ID+": from c="+m.constituent_ID+":"+constituent.getName()+",m="+m.motion_ID+":"+motion.motion_title+" in "+m.organization_ID+":"+organization.name);
+						//System.out.println("Fixing:signature "+m.vote_ID+": from c="+constituent.getName()+",m="+motion.motion_title+" in "+m.organization_ID+":"+organization.name);
+						//System.out.println("Fixing: "+m.constituent_ID+":"+m.surname+","+m.forename+" in "+m.organization_ID+":"+organization.name);
+						readSignSave(ID, Util.lval(m.constituent_ID, -1));
+					}
+				else if(!m.verifySignature()){
+					if(organization==null)organization = new D_Organization(Util.lval(m.organization_ID, -1));
+					if(constituent==null)constituent = new D_Constituent(Util.lval(m.constituent_ID, -1));
+					if(motion==null)motion = new D_Motion(Util.lval(m.motion_ID, -1));
+					System.out.println("Fail:signature "+m.vote_ID+": from c="+m.constituent_ID+":"+constituent.getName()+",m="+m.motion_ID+":"+motion.motion_title+" in "+m.organization_ID+":"+organization.name);
+					//System.out.println("Fail:signature "+m.vote_ID+": from c="+constituent.getName()+",m="+motion.motion_title+" in "+m.organization_ID+":"+organization.name);
+				}
+				return;
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		//catch (ASN1DecoderFail e) {e.printStackTrace();}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 }

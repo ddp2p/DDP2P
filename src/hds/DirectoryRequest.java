@@ -85,7 +85,8 @@ class DIR_Terms_Preaccepted extends ASNObj{
 
 public class DirectoryRequest extends ASNObj{
 	private static boolean DEBUG = false;
-	public int version = 1;
+	private static int MAX_VERSION_SUPPORTED = 2;
+	public int version = MAX_VERSION_SUPPORTED;
 	public String globalID;
 	public String peer_ID;
 	public String dir_address;
@@ -96,13 +97,24 @@ public class DirectoryRequest extends ASNObj{
 	
 	@Override
 	public Object decode(Decoder dec) throws ASN1DecoderFail {
-		Decoder dr = dec.getContent(); version = 0;
-		if(dr.getTypeByte() == Encoder.TAG_INTEGER) version = dr.getFirstObject(true).getInteger().intValue();
+		Decoder dr = dec.getContent();
+		version = 0;
+		if(dr.getTypeByte() == Encoder.TAG_INTEGER){
+			int _version = dr.getFirstObject(true).getInteger().intValue();
+			if(_version > MAX_VERSION_SUPPORTED){
+				Util.printCallPath("Need to update software. I do not understand Requests v:"+_version+" v="+version);
+				version = MAX_VERSION_SUPPORTED;
+			}else 
+				version = _version;
+		}
+		
 		globalID = dr.getFirstObject(true).getString();
-		if(dr.getTypeByte() == DD.TAG_AC5) terms = dr.getFirstObject(true).getSequenceOf(DIR_Terms_Preaccepted.getASN1Type(), new DIR_Terms_Preaccepted[]{}, new DIR_Terms_Preaccepted());
+		if(dr.getTypeByte() == DD.TAG_AC5)
+			terms = dr.getFirstObject(true).getSequenceOf(DIR_Terms_Preaccepted.getASN1Type(), new DIR_Terms_Preaccepted[]{}, new DIR_Terms_Preaccepted());
 		initiator_globalID = dr.getFirstObject(true).getString();
 		this.UDP_port = dr.getFirstObject(true).getInteger().intValue();
-		if((version!=0) && (dr.getTypeByte()==Encoder.TAG_OCTET_STRING)) signature = dr.getFirstObject(true).getBytesAnyType();
+		if((version!=0) && (dr.getTypeByte()==Encoder.TAG_OCTET_STRING))
+			signature = dr.getFirstObject(true).getBytesAnyType();
 		return this;
 	}
 	@Override

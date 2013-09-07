@@ -223,20 +223,20 @@ public class DirectoryServer extends Thread{
 				out.println("Turned off");
 				break;
 			}
-			out.println("Next loop!");
+			//out.println("DirServ: *******");
 			try{
 				Socket client = ss.accept();
-				out.println("Accepted...");
+				//out.println("DirServ: Accepted... from: "+client.getRemoteSocketAddress());
 				byte buffer[]=new byte[DirectoryServer.MAX_DR];
 				int peek=client.getInputStream().read(buffer);
-				out.println("Got: "+Util.byteToHexDump(buffer,peek));
+				//out.println("DirServ: Got ASN1 dump: "+Util.byteToHexDump(buffer,peek));
 				Decoder test=new Decoder(buffer,0,peek);
-				out.println("Decoded: class="+test.typeClass()+" val="+test.tagVal());
+				//out.println("DirServ: Decoded ASN1: class="+test.typeClass()+" val="+test.tagVal());
 				if(test.typeClass()==Encoder.CLASS_APPLICATION && test.tagVal()==DirectoryAnnouncement.TAG) {
-					out.println("Detected directory announcement");
+					//out.println("DirServ: Detected directory announcement");
 					InetSocketAddress isa= (InetSocketAddress)client.getRemoteSocketAddress();
 					DirectoryAnnouncement da = new DirectoryAnnouncement(buffer,peek,client.getInputStream());
-					out.println("Received TCP announcement: "+da+"\n from: "+isa);
+					out.println("DirServ: got announcement: "+da+"\n from: "+isa);
 					String detected_sa = detectUDPAddress(isa, da.address.udp_port);
 					detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
 					byte[] answer = handleAnnouncement(da, detected_sa, db, false);
@@ -245,16 +245,17 @@ public class DirectoryServer extends Thread{
 				}else{
 					if(DEBUG)out.println("Received directory request");
 					DirectoryRequest dr = new DirectoryRequest(buffer,peek,client.getInputStream());
-					out.println("Looking for: "+Util.trimmed(dr.globalID)+"\n  by "+
-							Util.trimmed(dr.initiator_globalID)+"\n  with source udp="+dr.UDP_port);
+					if(DEBUG)out.println("DirServ: Looking for: "+Util.getGIDhash(dr.globalID)+"\n  by "+
+							Util.getGIDhash(dr.initiator_globalID));//+"\n  with source udp="+dr.UDP_port);
 					String sql = "select addresses, timestamp, strftime('%Y%m%d%H%M%fZ',timestamp,'unixepoch') from registered where global_peer_ID = ?;";
 					ArrayList<ArrayList<Object>> adr = 
 						db.select(sql,
-							new String[]{dr.globalID});
+							new String[]{dr.globalID}, DEBUG);
 					
 					if(DEBUG) System.out.println("Query: "+sql+" with ?= "+Util.trimmed(dr.globalID));
-					if(DEBUG)System.out.println("Found addresses #: "+adr.size());
+					if(DEBUG) System.out.println("Found addresses #: "+adr.size());
 					DirectoryAnswer da = new DirectoryAnswer();
+					da.version = dr.version;
 					if (adr.size() != 0) {
 						Integer time= Util.Ival(adr.get(0).get(1));
 						if(time==null) {
@@ -266,18 +267,22 @@ public class DirectoryServer extends Thread{
 						da.date.setTime(date);
 					
 						String addresses = (String)adr.get(0).get(0);
-						System.out.println("This address: "+addresses);
+						if(DEBUG)System.out.println("This address: "+addresses);
 						String a[] = Address.split(addresses);
 						for(int k=0; k<a.length; k++) {
 							if((a[k]==null)||("".equals(a[k]))||("null".equals(a[k]))) continue;
-							System.out.println("This address ["+k+"]"+a[k]);
+							if(DEBUG)System.out.println("This address ["+k+"]"+a[k]);
 							da.addresses.add(new Address(a[k]));
 						}
 					}else{
 						if(DEBUG) out.print("Empty ");
 					}
 					byte msg[] = da.encode();
-					out.println("answer: "+Util.byteToHexDump(msg, " ")+"\n\tI.e.: "+da);
+					//out.println("answer: "+Util.byteToHexDump(msg, " ")+"\n\tI.e.: "+da);
+					if(_DEBUG&&(da.addresses.size()>0)){
+						out.println("DirServ: *******");
+						out.println("DirServ: Aanswer: "+client.getRemoteSocketAddress()+" <- "+da.toString());
+					}
 					client.getOutputStream().write(msg);
 				}
 				client.close();

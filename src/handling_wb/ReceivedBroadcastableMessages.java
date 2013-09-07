@@ -494,7 +494,7 @@ public class ReceivedBroadcastableMessages {
 		if(needs_verification) {
 			D_PeerAddress pa = new D_PeerAddress(creator, false);
 			if(!pa.verifySignature())
-				if(!DD.ACCEPT_UNSIGNED_PEERS) throw new SignatureVerificationException("Invalid Signature");
+				if(!DD.ACCEPT_UNSIGNED_PEERS_FROM_TABLES) throw new SignatureVerificationException("Invalid Signature");
 		}
 		long peer_id =  D_PeerAddress._storeReceived(creator, creator.arrival_date, crt_date); //._storeVerified();
 		/*

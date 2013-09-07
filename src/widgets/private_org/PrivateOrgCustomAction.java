@@ -58,6 +58,7 @@ public class PrivateOrgCustomAction extends DebateDecideAction {
     	PrivateOrgModel model = tree.getModel();
     	String privateOrg_ID = Util.getStringID(model.get_PrivateOrgID(row));
     	String peer_ID = Util.getStringID(model.get_PeerID(row));
+    	String emails = model.get_Emails(row);
     	String org_ID = Util.getStringID(model.get_OrgID(row));
 //    	if(model.peerID==-1){
 //    		Application.warning(_("Select a peer first!"), _("Select a peer first!"));

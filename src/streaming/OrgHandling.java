@@ -111,14 +111,45 @@ public class OrgHandling {
 				od.creator_ID = od.creator.peer_ID;
 		}
 		long id=-1;
-		if((od.signature!=null)&&((od.signature_initiator!=null) 
-				||!DD.ENFORCE_ORG_INITIATOR)){
+		if(
+				(od.signature!=null)
+				&&
+				(
+						(od.signature_initiator!=null)
+						||
+						!DD.ENFORCE_ORG_INITIATOR
+						)
+				)
+		{
 			id = od.store(_changed, _rq); // should set blocking new orgs
+			if(DEBUG||DD.DEBUG_PRIVATE_ORGS)System.out.println("OrgHandling:updateOrg: org changed: ch="+_changed[0]+
+					" br="+od.broadcast_rule+" id="+id+" creat="+od.creator_ID);
+			if(
+					(od.broadcast_rule == false) &&
+					(id > 0) &&
+					(od.creator_ID != null) &&
+					(_changed[0])
+					)
+			{
+				if(DEBUG||DD.DEBUG_PRIVATE_ORGS)System.out.println("OrgHandling:updateOrg: private org changed: auto="+DD.AUTOMATE_PRIVATE_ORG_SHARING);
+				if(DD.AUTOMATE_PRIVATE_ORG_SHARING == 0) {
+					int r = Application.ask(_("In this session, do you want to share data of private orgs\n to all those sending it to you?"),
+							_("Share private orgs with your providers"), JOptionPane.YES_NO_OPTION);
+					if(r==0) DD.AUTOMATE_PRIVATE_ORG_SHARING = 1;
+					else DD.AUTOMATE_PRIVATE_ORG_SHARING = -1;
+					if(DEBUG || DD.DEBUG_PRIVATE_ORGS)System.out.println("OrgHandling:updateOrg: sharing: auto:="+DD.AUTOMATE_PRIVATE_ORG_SHARING);
+				}
+				if(DD.AUTOMATE_PRIVATE_ORG_SHARING == 1)
+				{
+					D_OrgDistribution.add(Util.getStringID(id), od.creator_ID);
+				}
+			}
 		}
-		if(_DEBUG)System.out.println("OrgHandling:updateOrg: org id="+id+" name="+od.name);
+		
+		if(DEBUG)System.out.println("OrgHandling:updateOrg: org id="+id+" name="+od.name);
 		if(id<=0){
 			id = D_Organization.getLocalOrgID(od.global_organization_ID);
-			if(_DEBUG)System.out.println("OrgHandling:updateOrg: org id(GID)="+id+" name="+od.name);
+			if(DEBUG)System.out.println("OrgHandling:updateOrg: org id(GID)="+id+" name="+od.name);
 			if(id<=0) {
 				if(od.signature != null){
 					od.blocked = DD.BLOCK_NEW_ARRIVING_ORGS_WITH_BAD_SIGNATURE;
@@ -142,7 +173,7 @@ public class OrgHandling {
 				String name = od.name;
 				if(id<=0)
 					id = D_Organization.insertTemporaryGID(od.global_organization_ID, od.global_organization_IDhash, od.blocked, od.name);
-				if(_DEBUG)System.out.println("OrgHandling:updateOrg: tmp id="+id+" name="+name);
+				if(DEBUG)System.out.println("OrgHandling:updateOrg: tmp id="+id+" name="+name);
 			}
 			od._organization_ID = id;
 			od.organization_ID = Util.getStringID(od._organization_ID);
@@ -719,7 +750,7 @@ public class OrgHandling {
 		D_Organization dorg;
 		try {
 			dorg = new D_Organization(Util.lval(org_id, -1));
-		} catch (P2PDDSQLException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			return true;
 		}
@@ -758,16 +789,26 @@ public class OrgHandling {
 					throw new RuntimeException("Failure signature witness");
 				}	
 	}
+	/**
+	 * Do we serve org_id to the peer generating asr.
+	 * @param asr
+	 * @param org_id
+	 * @return
+	 */
 	static boolean serving(ASNSyncRequest asr, String org_id){
+		if(org_id == null){
+			System.err.println("OrgHandling:serving: cannot check null organization!");
+			return false;
+		}
 		boolean serving_peer = serving_org_to_peer(org_id, asr.address);
 		if(!serving_peer && privateOrg(org_id)){
-			if(WB_Messages._DEBUG) System.out.println("OrgHandling:getOrgData: not serving="+org_id+" to="+asr.address);
+			if(DEBUG||DD.DEBUG_PRIVATE_ORGS) System.out.println("OrgHandling:getOrgData: not serving="+org_id+" to="+asr.address);
 			return false;
 		}else{
 			if(serving_peer){
-				if(WB_Messages._DEBUG) System.out.println("OrgHandling:getOrgData: serving private orgID="+org_id);
+				if(DEBUG||DD.DEBUG_PRIVATE_ORGS) System.out.println("OrgHandling:getOrgData: serving private orgID="+org_id);
 			}else{
-				if(WB_Messages._DEBUG) System.out.println("OrgHandling:getOrgData: serving non-private orgID="+org_id);
+				if(DEBUG||DD.DEBUG_PRIVATE_ORGS) System.out.println("OrgHandling:getOrgData: serving non-private orgID="+org_id);
 			}
 		}
 		return true;

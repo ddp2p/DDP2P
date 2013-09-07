@@ -10,6 +10,13 @@ CREATE TABLE "key" ( # keys -> key
     "name" TEXT, # date
     "type" TEXT
 );
+CREATE TABLE "constituent_verification" (
+	"constituent_ID" INTEGER NOT NULL,
+	"challenge" TEXT,
+	"date" TEXT,
+	UNIQUE (constituent_ID) ON CONFLICT FAIL,
+	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID)
+);
 CREATE TABLE directory_forwarding_terms (
 	"term_ID" INTEGER PRIMARY KEY,
 	"priority"	INTEGER,
@@ -206,6 +213,7 @@ CREATE TABLE "org_distribution" (
        "peer_distribution_ID" INTEGER PRIMARY KEY NOT NULL,
        "organization_ID" TEXT,
        "peer_ID" TEXT,  # peer that can get this organization
+       "reset_date" TEXT,
        UNIQUE (organization_ID, peer_ID) ON CONFLICT FAIL,
  	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
  	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)

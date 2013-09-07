@@ -23,6 +23,7 @@ import hds.ASNDatabase;
 import hds.ASNSyncPayload;
 import hds.ASNSyncRequest;
 import hds.Address;
+import hds.ClientSync;
 import hds.ResetOrgInfo;
 import hds.SyncAnswer;
 import hds.Table;
@@ -80,7 +81,7 @@ public class UpdateMessages {
 		String[] _maxDate = new String[1];
 		HashSet<String> orgs = new HashSet<String>();
 		String peer_GID=null;
-
+		
 		if((peerID==null)&&(asr.address!=null)){
 			peer_GID = asr.address.globalID;
 			peerID = D_PeerAddress.getLocalPeerIDforGID(peer_GID);
@@ -94,10 +95,15 @@ public class UpdateMessages {
 		// solved in record peer address
 		//if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("UpdateMessages: buildAnswer: recording plugins for pID="+peerID+" gID="+Util.trimmed(peer_GID));
 		//D_PluginInfo.recordPluginInfo(asr.plugin_info, peer_GID, peerID);
+
 		
 		buildAnswer(asr, _maxDate, true, orgs);
-		if(_maxDate[0] == null) _maxDate[0] = Util.getGeneralizedTime();
+		if(_maxDate[0] == null){
+			_maxDate[0] = Util.getGeneralizedTime();
+			if(DEBUG) System.out.println("UpdateMessages:buildAnswer<top>: null maxDate->now="+_maxDate[0]);
+		}
 		sa = buildAnswer(asr, _maxDate, false, orgs);
+		sa.changed_orgs = ClientSync.getChangedOrgs(peerID);
 		
 		// pack requested data
 		sa.requested=WB_Messages.getRequestedData(asr,sa);
@@ -124,7 +130,7 @@ public class UpdateMessages {
 	}
 	public static SyncAnswer buildAnswer(ASNSyncRequest asr, String[] _maxDate, boolean justDate, HashSet<String> orgs) throws P2PDDSQLException {
 		// boolean DEBUG = true;
-		if(_DEBUG) System.out.println("UpdateMessages:buildAnswers: orgs start="+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+		if(DEBUG) System.out.println("UpdateMessages:buildAnswers: orgs start="+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
 		String maxDate =_maxDate[0];
 		if(!justDate && (maxDate==null) && (orgs.size()==0)) {
 			if(DEBUG) out.println("UpdateMessages:buildAnswer: START-EXIT Nothing new to send!");
@@ -135,7 +141,7 @@ public class UpdateMessages {
 		if(asr.lastSnapshot!=null) last_sync_date = Encoder.getGeneralizedTime(asr.lastSnapshot);
 		try{
 			if(DEBUG) out.println("UpdateMessages:buildAnswer: Server Handler has obtained a Sync Request for: "+asr);
-			if(DEBUG) out.println("UpdateMessages:buildAnswer: Server building asnwer for request with last sync date: "+last_sync_date+" from: "+asr.address);
+			if(DEBUG) out.println("UpdateMessages:buildAnswer: Server building answer for request with last sync date: "+last_sync_date+" from: "+asr.address);
 		}catch(Exception e){e.printStackTrace();}
 		ArrayList<Table> tableslist = new ArrayList<Table>();
 		int tables_nb=0;
@@ -147,7 +153,7 @@ public class UpdateMessages {
 			if(table.peer.G_TNAME.equals(asr.tableNames[k])){
 				if(DEBUG) out.println("UpdateMessages:buildAnswer: peers table from date: "+_maxDate[0]);
 				Table recentPeers=UpdatePeersTable.buildPeersTable(last_sync_date, _maxDate, justDate, orgs, LIMIT_PEERS_LOW, LIMIT_PEERS_MAX);
-				if(_DEBUG) System.out.println("UpdateMessages:buildAnswers: orgs after peers="+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+				if(DEBUG) System.out.println("UpdateMessages:buildAnswers: orgs after peers="+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
 				if(DEBUG) out.println("UpdateMessages:buildAnswer: got peers #"+recentPeers);
 				if(justDate){ if(DEBUG) out.println("UpdateMessages:buildAnswer: Date after peers: "+_maxDate[0]); continue;}
 				if(recentPeers.rows.length > 0) tableslist.add(recentPeers);
@@ -156,7 +162,7 @@ public class UpdateMessages {
 				if(DEBUG) out.println("UpdateMessages:buildAnswer: non peers table from date: "+_maxDate[0]);
 				if(table.news.G_TNAME.equals(asr.tableNames[k])){
 					if(DEBUG) out.println("UpdateMessages:buildAnswer: news table from date: "+_maxDate[0]);
-					if(_DEBUG) System.out.println("UpdateMessages:buildAnswers: orgs after news="+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
+					if(DEBUG) System.out.println("UpdateMessages:buildAnswers: orgs after news="+" :"+Util.nullDiscrimArray(orgs.toArray(new String[0])," : "));
 					Table recentNews = UpdateNewsTable.buildNewsTable(last_sync_date, _maxDate, justDate, orgs, LIMIT_NEWS_LOW, LIMIT_NEWS_MAX);
 					if(justDate) {if(DEBUG) out.println("UpdateMessages:buildAnswer: Date after news: "+_maxDate[0]); continue;}
 					if(recentNews.rows.length > 0) tableslist.add(recentNews);							
@@ -296,25 +302,41 @@ public class UpdateMessages {
 		
 		boolean future_requests = false;
 		
+		
 		if(asa.changed_orgs != null) { // currently implemented only in group (one date per peer, not per peer per org)
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) err.println("UpdateMessages:integrateUpdate: changed_orgs="+Util.nullDiscrimArray(asa.changed_orgs.toArray(new ResetOrgInfo[0]),"--"));
 			Calendar reset = null;
+			/**
+			 * Here we take the earlier among the reset dates for the orgs of this peer
+			 */
 			for(ResetOrgInfo roi: asa.changed_orgs) {
-				if(reset == null) reset = roi.reset_date;
-				if(reset.before(roi.reset_date)) reset = roi.reset_date;
+				if(reset == null){
+					reset = roi.reset_date;
+				}
+				if(reset.before(roi.reset_date)){
+					reset = roi.reset_date;
+				}
 			}
 			if(reset != null) {
 				String old = D_PeerAddress.getLastResetDate(_peer_ID);
-				if(old!=null) {
-					Calendar _old = Util.getCalendar(old);
-					if(_old.before(reset)) {
-						D_PeerAddress.reset(_peer_ID);
+				if(DEBUG||DD.DEBUG_CHANGED_ORGS) err.println("UpdateMessages:integrateUpdate: changed_orgs: old reset="+old);
+				Calendar _old = null;
+				if(old != null) 
+					_old = Util.getCalendar(old);
+				if((_old == null) || _old.before(reset)) {
+					D_PeerAddress.reset(_peer_ID, asa.peer_instance, reset);
+					if(DEBUG||DD.DEBUG_CHANGED_ORGS) err.println("UpdateMessages:integrateUpdate: changed_orgs: called reset="+old+" new="+Encoder.getGeneralizedTime(reset));
+
 //						String date = Util.getGeneralizedTime();//Encoder.getGeneralizedTime(reset);
 //						Application.db.updateNoSync(table.peer_address.TNAME,
 //								new String[]{table.peer.last_reset, table.peer.last_sync_date},
 //								new String[]{table.peer.peer_ID}, new String[]{date, null, _peer_ID}, DEBUG);
-					}
 				}
+			}else{
+				if(DEBUG||DD.DEBUG_CHANGED_ORGS) err.println("UpdateMessages:integrateUpdate: changed_orgs: called reset=null");
 			}
+		}else{
+			if(DEBUG||DD.DEBUG_CHANGED_ORGS) err.println("UpdateMessages:integrateUpdate: changed_orgs=null");
 		}
 		
 		D_PluginInfo.recordPluginInfo(asa.plugins, _global_peer_ID, _peer_ID);
@@ -326,7 +348,7 @@ public class UpdateMessages {
 		Hashtable<String, RequestData> sq_sr = new Hashtable<String, RequestData>();
 		
 		String crt_date = Util.getGeneralizedTime();
-		WB_Messages.store(asa.requested, sq_sr, obtained_sr, orgs);
+		WB_Messages.store(asa.requested, sq_sr, obtained_sr, orgs, " from:"+peer_ID+" ");
 		integrate(sq_sr, obtained_sr, _global_peer_ID, peer_ID, peer);
 
 		if(asa.orgData != null) {

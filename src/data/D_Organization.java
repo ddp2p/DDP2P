@@ -805,7 +805,7 @@ class D_Organization extends ASNObj implements Summary {
 				((this.params==null)
 						||((this.params.creator_global_ID==null)
 								&&(this.creator_ID ==  null)))) {
-			if(DEBUG)Util.printCallPath("cannot store org with no peerGID");
+			if(DEBUG)Util.printCallPath("cannot store org with no peerGID (while enforcing INITIATOR)");
 			return false;
 		}
 		
@@ -1202,6 +1202,64 @@ class D_Organization extends ASNObj implements Summary {
 				Util.bool2StringInt(requested),
 				this.organization_ID}, _DEBUG);
 	}	
+	public static void setRequested(String orgID, boolean val) {
+		if(DEBUG) System.out.println("Orgs:setRequested: set="+val);
+		try {
+			Application.db.update(table.organization.TNAME,
+					new String[]{table.organization.requested},
+					new String[]{table.organization.organization_ID},
+					new String[]{Util.bool2StringInt(val), orgID}, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
+	public static void setBlocking(String orgID, boolean val) {
+		if(DEBUG) System.out.println("Orgs:setBlocking: set="+val);
+		try {
+			Application.db.update(table.organization.TNAME,
+					new String[]{table.organization.blocked},
+					new String[]{table.organization.organization_ID},
+					new String[]{Util.bool2StringInt(val), orgID}, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
+	/**
+	 * Mark "now" as a request to have this organization 
+	 * re-updated from scratch by remote peers
+	 * @param orgID
+	 */
+	public static void setResetDate(String orgID) {
+		if(DEBUG) System.out.println("Orgs:setResetDate: for orgID="+orgID);
+		try {
+			Application.db.update(table.organization.TNAME,
+					new String[]{table.organization.reset_date},
+					new String[]{table.organization.organization_ID},
+					new String[]{Util.getGeneralizedTime(), orgID}, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		if(DEBUG) System.out.println("Orgs:setBroadcasting: Done");
+	}
+	/**
+	 * This function just sets the "broadcasted" flag (calling sync on the database).
+	 * To change "org.broadcasted" (if also advertising it!), better change with toggleServing
+	 *  which sets also "peer.served_orgs" (by calling this).
+	 * @param orgID
+	 * @param val
+	 */
+	public static void setBroadcasting(String orgID, boolean val) {
+		if(DEBUG) System.out.println("Orgs:setBroadcasting: set="+val+" for orgID="+orgID);
+		try {
+			Application.db.update(table.organization.TNAME,
+					new String[]{table.organization.broadcasted, table.organization.reset_date},
+					new String[]{table.organization.organization_ID},
+					new String[]{Util.bool2StringInt(val),Util.getGeneralizedTime(), orgID}, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		if(DEBUG) System.out.println("Orgs:setBroadcasting: Done");
+	}
 	/**
 	 * Is this editable(not ready)?
 	 * @param method   grassroot?

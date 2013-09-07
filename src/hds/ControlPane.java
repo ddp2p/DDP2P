@@ -73,6 +73,8 @@ import data.D_PeerAddress;
 //import song.peers.DualListBox;
 import streaming.OrgHandling;
 import updates.ClientUpdates;
+import util.DD_DirectoryServer;
+import util.DD_IdentityVerification_Request;
 import util.P2PDDSQLException;
 import util.Util;
 import util.GIF_Convert;
@@ -108,7 +110,7 @@ class DDAddressFilter extends FileFilter {
 
 	@Override
 	public String getDescription() {
-		return _("DD Address File Type (.txt, .bmp, .gif, .ddb)");
+		return _("DDP2P File Type (.txt, .bmp, .gif, .ddb)");
 	}
 }
 
@@ -190,12 +192,15 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	JButton broadcastingQueueProbabilities = new JButton(_("Set Broadcasting Queue Probability"));
 	JButton generationProbabilities = new JButton(_("Set Generation Probability"));
 	JButton setListingDirectories = new JButton(_("Set Listing Directories"));
+	JButton exportDirectories = new JButton(_("Export Directories"));
 	JButton setUpdateServers = new JButton(_("Set Update Servers"));
 	JButton keepThisVersion = new JButton(_("Fix: Keep This Version"));
 	JButton setLinuxScriptsPath = new JButton(_("Set Linux Scripts Path"));
 	JButton setWindowsScriptsPath = new JButton(_("Set Windows Scripts Path"));
 	public final static JFileChooser file_chooser_address_container = new JFileChooser();
 	public final static JFileChooser file_chooser_updates_to_sign = new JFileChooser();
+	private static final String exportDirectories_action = "saveDirectories";
+	private static final String setListingDirectories_action = "listingDirectories";
 	public JCheckBox serveDirectly;
 	public JCheckBox tcpButton;
 	public JCheckBox udpButton;
@@ -218,6 +223,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public JCheckBox m_dbgPlugin;
 	public JCheckBox m_dbgUpdates;
 	public JCheckBox m_dbgClient;
+	public JCheckBox m_dbgConnections;
 	public JCheckBox m_dbgUDPServerComm;
 	public JCheckBox m_dbgUDPServerCommThread;
 	public JCheckBox m_dbgDirServerComm;
@@ -250,6 +256,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		c.add(m_dbgClient);
 		m_dbgClient.addItemListener(this);
 		
+		m_dbgConnections = new JCheckBox("DBG Connections",hds.Connections.DEBUG);
+		c.add(m_dbgClient);
+		m_dbgClient.addItemListener(this);
+		
 		m_dbgUDPServerComm = new JCheckBox("DBG Communication UDP Streaming",hds.UDPServer.DEBUG);
 		c.add(m_dbgUDPServerComm);
 		m_dbgUDPServerComm.addItemListener(this);
@@ -262,7 +272,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		c.add(m_dbgDirServerComm);
 		m_dbgDirServerComm.addItemListener(this);
 		
-		m_dbgAliveServerComm = new JCheckBox("DBG Communication Alive Check",hds.UDPServer.DEBUG_ALIVE);
+		m_dbgAliveServerComm = new JCheckBox("DBG Communication Alive Check",DD.DEBUG_COMMUNICATION_LOWLEVEL);
 		c.add(m_dbgAliveServerComm);
 		m_dbgAliveServerComm.addItemListener(this);
 		
@@ -311,6 +321,9 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    } else if (source == this.m_dbgClient) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	hds.ClientSync.DEBUG = val;
+	    } else if (source == this.m_dbgConnections) {
+	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
+	    	hds.Connections.DEBUG = val;
 	    } else if (source == this.m_dbgUDPServerComm) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	hds.UDPServer.DEBUG = val;
@@ -322,7 +335,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    	hds.UDPServer.DEBUG_DIR = val;
 	    } else if (source == this.m_dbgAliveServerComm) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
-	    	hds.UDPServer.DEBUG_ALIVE = val;
+	    	DD.DEBUG_COMMUNICATION_LOWLEVEL = val;
 	    } else if (source == this.m_dbgOrgs) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	data.D_Organization.DEBUG = val;
@@ -516,6 +529,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public JCheckBox m_comm_Block_New_Arriving_Peers_Contacting_Me;
 	public JCheckBox m_comm_Block_New_Arriving_Peers_Answering_Me;
 	public JCheckBox m_comm_Block_New_Arriving_Peers_Forwarded_To_Me;
+	private JTextField clientPause;
 	
 	public boolean itemStateChangedCOMM(ItemEvent e, Object source) {
 	    if (source == this.m_comm_Block_New_Orgs) {
@@ -647,13 +661,23 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    udpButton.addItemListener(this);
 	    c.add(cli);
 	    
+	    JPanel intervals = new JPanel();
 	    JPanel nats = new JPanel();
 	    natBorer = new JTextField(Server.TIMEOUT_UDP_NAT_BORER+"");
 	    nats.add(new TranslatedLabel("NAT: "));
 	    nats.add(natBorer);
 	    natBorer.setActionCommand("natBorer");
 	    natBorer.addActionListener(this);
-	    c.add(nats);
+	    intervals.add(nats);
+	    
+	    JPanel client_pause = new JPanel();
+	    clientPause = new JTextField(ClientSync.PAUSE+"");
+	    client_pause.add(new TranslatedLabel("Pull Interval: "));
+	    client_pause.add(clientPause);
+	    clientPause.setActionCommand("clientPause");
+	    clientPause.addActionListener(this);
+	    intervals.add(client_pause);
+	    c.add(intervals);
 	    
 	    return c;
 	}
@@ -691,7 +715,11 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		
 		headerControls.add(setListingDirectories);
 		setListingDirectories.addActionListener(this);
-		setListingDirectories.setActionCommand("listingDirectories");
+		setListingDirectories.setActionCommand(setListingDirectories_action);
+		
+		headerControls.add(exportDirectories);
+		exportDirectories.addActionListener(this);
+		exportDirectories.setActionCommand(exportDirectories_action);
 		headerControls.setBackground(Color.DARK_GRAY);
 		
 		JPanel p= new JPanel(new BorderLayout());
@@ -1284,7 +1312,13 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 						Application.switchToWindowsPaths();
 					}
 				}
-			}else if("listingDirectories".equals(e.getActionCommand())){
+			}else if(exportDirectories_action.equals(e.getActionCommand())){
+				String listing_directories = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
+				if(_DEBUG)System.out.println("export directories: "+listing_directories);
+				DD_DirectoryServer ds = new DD_DirectoryServer();
+				ds.parseAddress(listing_directories);
+				hds.EmbedInMedia.actionExport(file_chooser_address_container, this, ds, null);
+			}else if(setListingDirectories_action.equals(e.getActionCommand())){
 				String listing_directories = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
 				if(_DEBUG)System.out.println("listing directories: "+listing_directories);
 				listing_directories = Util.concat(listing_directories.split(Pattern.quote(",")),"\n ");
@@ -1381,14 +1415,21 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			else if ("signUpdates".equals(e.getActionCommand())) {
 				actionSignUpdates();
 			}else if ("export".equals(e.getActionCommand())) {
-				actionExport(file_chooser_address_container, JFrameDropCatch.mframe);
+				actionExportPeerAddress(file_chooser_address_container, JFrameDropCatch.mframe);
 			}else if ("import".equals(e.getActionCommand())) {
-				EmbedInMedia.actionImport(ControlPane.file_chooser_address_container, JFrameDropCatch.mframe, new DDAddress());
+				StegoStructure d[] = DD.getAvailableStegoStructureInstances();
+				int[] selected = new int[1];
+				EmbedInMedia.actionImport(ControlPane.file_chooser_address_container, JFrameDropCatch.mframe, d, selected);
 			}else if ("natBorer".equals(e.getActionCommand())) {
 				String text = natBorer.getText();
 				try{Server.TIMEOUT_UDP_NAT_BORER = Integer.parseInt(text);}catch(Exception a){}
 				if(DEBUG)System.out.println("Now NAT Borrer is: "+Server.TIMEOUT_UDP_NAT_BORER);
+			}else if ("clientPause".equals(e.getActionCommand())) {
+				String text = clientPause.getText();
+				try{ClientSync.PAUSE = Integer.parseInt(text);}catch(Exception a){}
+				if(DEBUG)System.out.println("Now Pull Interval is: "+ClientSync.PAUSE);
 			}
+			
 		} catch (NumberFormatException e1) {
 				e1.printStackTrace();
 		} catch (P2PDDSQLException e1) {
@@ -1397,7 +1438,12 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			e3.printStackTrace();
 		}
 	}
-	static void actionExport(JFileChooser fc, Component parent){
+	/**
+	 * Export the peer addresses  (IPs)
+	 * @param fc
+	 * @param parent
+	 */
+	static void actionExportPeerAddress(JFileChooser fc, Component parent){
 		//boolean DEBUG = true;
 		DDAddress myAddress;
 		try {

@@ -19,6 +19,10 @@
 /* ------------------------------------------------------------------------- */
 package table;
 
+import java.util.regex.Pattern;
+
+import util.Util;
+
 public class constituent {
 	 public static final String constituent_ID = "constituent_ID";
 	 public static final String submitter_ID = "submitter_ID";
@@ -55,7 +59,7 @@ public class constituent {
 
 	public static final String INIT_SLOGAN = util.Util._("I have just arrived");
 
-	public static final String _fields_constituents = 
+	public static final String fields_constituents_no_ID = 
 		" "+global_constituent_ID+
 		", "+global_constituent_ID_hash+
 		", "+hash_constituent_alg+
@@ -88,7 +92,7 @@ public class constituent {
 		", "+peer_transmitter_ID+
 		" ";
 	public static final String fields_constituents = 
-		_fields_constituents+", "+constituent_ID+
+		fields_constituents_no_ID+", "+constituent_ID+
 		" ";
 
 	public static final int CONST_COL_GID = 0;
@@ -124,8 +128,11 @@ public class constituent {
 	public static final int CONST_COL_ID = 29;
 
 	public static final String CURRENT_HASH_CONSTITUENT_ALG = "V1";
-	public static final int CONST_COLs = fields_constituents.split(",").length;
+	
+	public static final String[] fields_constituents_no_ID_list = Util.trimmed(table.constituent.fields_constituents_no_ID.split(Pattern.quote(",")));
+	public static final String[] fields_constituents_list = Util.trimmed(table.constituent.fields_constituents.split(Pattern.quote(",")));
+	public static final int CONST_COLs_NOID = fields_constituents_no_ID_list.length;
+	public static final int CONST_COLs = fields_constituents_list.length;
 	public static final String SEP_languages = ":";
 	public static final String INIT_EXTERNAL_SLOGAN = util.Util._("I may not be aware that I am listed here!");
-	
 }

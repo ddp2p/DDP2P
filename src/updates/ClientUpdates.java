@@ -143,14 +143,17 @@ public class ClientUpdates extends Thread{
 		run = false;
 		this.notifyAll();
 	}
-	
+
+	static boolean forceStart = false;
 	public void run() {
 		if(DEBUG)System.out.println("ClientUpdates run: start");
 
 		Calendar crt = Util.CalendargetInstance();
-		if( crt.getTimeInMillis() - DD.startTime.getTimeInMillis() < DD.UPDATES_WAIT_ON_STARTUP_MILLISECONDS )
+		if(!forceStart ||
+				( crt.getTimeInMillis() - DD.startTime.getTimeInMillis() < DD.UPDATES_WAIT_ON_STARTUP_MILLISECONDS ))
 		synchronized (this){
 			try {
+				forceStart = true;
 				this.wait(DD.UPDATES_WAIT_ON_STARTUP_MILLISECONDS);
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
@@ -598,7 +601,78 @@ public class ClientUpdates extends Thread{
 		}
 		return is;
 	}
-	
+	public VersionInfo getNewerVersionInfos(String url_str, String ver) {
+		String _latestAvailable = latestAvailable_Including_Current_And_Downloaded();
+		VersionInfo a= null;
+	 
+		if(DEBUG) System.out.println(" ClientUpdates: will work on url: "+url_str +" ver:"+ ver);
+		
+		URL _url = HandleService.isWSVersionInfoService(url_str);
+		// old update
+		if(_url == null) {
+			URL url;
+			try {
+				url = new URL(url_str);
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+				return null;
+			}
+			if(url==null) return null;
+			a = fetchLastVersionNumberAndSiteTXT(url);
+		}else{
+			String myPeerGID = DD.getMyPeerGIDFromIdentity();
+			SK myPeerSK = DD.getMyPeerSK();
+			if (myPeerSK!=null) {
+				try{
+					a = HandleService.getWSVersionInfo(_url, myPeerGID, myPeerSK, ctx);
+				}catch(Exception e){System.err.println("ClientUpdates:run:WSupdate:"+e.getLocalizedMessage());}
+			}
+		}
+		if(!a.version.equals(ver))
+			{
+				Application.warning(Util._("No update available from url: "+url_str), Util._("No update available"));
+				return null;
+			}
+		// a is null if 1) invalid Mirror Signature 2) receive fault(s) from Mirror server
+		if(a==null){
+			if(DEBUG) System.out.println(" ClientUpdates: got : null from "+url_str);
+			return null;
+		}
+		// This used to be displayed all the time: will be in GUI
+		if(DEBUG) System.out.println(" ClientUpdates: got : "+a.version+" from "+url_str);
+		if(DEBUG) {
+			for(int i=0; i<a.releaseQD.length; i++){
+				if(DEBUG) System.out.println("QL ( "+ i+" ) desc: "+ a.releaseQD[i].description);
+				for(int j=0; j<a.releaseQD[i]._quality.length;j++)
+					if(DEBUG) System.out.println("Level ("+j+")"+ a.releaseQD[i]._quality[j] );
+			}
+			if(DEBUG) System.out.println("QL END .............");
+		}
+		if(DEBUG){				
+				for(int i=0; i<a.testers_data.length; i++){
+					if(DEBUG) System.out.println("tester name : "+ i+" : "+ a.testers_data[i].name);
+					if(DEBUG) System.out.println("tester PK_hash : "+ i+" : "+ a.testers_data[i].public_key_hash);
+					for(int j=0; j<a.testers_data[i].tester_QoT.length;j++){
+						if(DEBUG) System.out.println("tester_QoT ref = " + j + " "+ a.testers_data[i].tester_QoT[j] );
+						if(DEBUG) System.out.println("tester_RoT ref = " + j + " "+ a.testers_data[i].tester_RoT[j] );
+					}
+				}
+			if(DEBUG) System.out.println("Tester END .............");
+			}
+		if(!newer(a.version, _latestAvailable)) { //DD.VERSION)){
+			if(DEBUG) System.out.println(" ClientUpdates: got : obtained is not newer than "+DD.VERSION);
+			return null;
+		}
+		boolean signed = false;
+		// need to verify all testers signatures
+		signed = D_UpdatesKeysInfo.verifySignaturesOfVI(a);
+		if(!signed) {
+			if(_DEBUG) System.out.println(" ClientUpdates: run: unsigned updates info\n from "+url_str+": "+a);
+			Application.warning(Util._("Unsigned updates info\n from "+url_str+": "+a.warningPrint()), Util._("Unsigned updates info!"));
+			return null;
+		}
+		return a;
+	}
 	static String latestAvailable_Including_Current_And_Downloaded(){
 		String latest = DD.VERSION;
 		String db=null;

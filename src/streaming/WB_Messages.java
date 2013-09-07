@@ -20,6 +20,7 @@
 
 package streaming;
 
+import static util.Util._;
 import hds.ASNSyncRequest;
 import hds.SyncAnswer;
 
@@ -27,14 +28,18 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
 
+import javax.swing.JOptionPane;
+
 import util.Util;
 
 import util.P2PDDSQLException;
 
+import config.Application;
 import config.DD;
 
 
 import data.D_News;
+import data.D_OrgDistribution;
 import data.D_Organization;
 import data.D_Message;
 import data.D_Motion;
@@ -51,10 +56,15 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
+/**
+ * The structure containing ArrayLists with various types of data
+ * @author msilaghi
+ *
+ */
 public class WB_Messages extends ASNObj{
 
 	static final boolean _DEBUG = true;
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	public ArrayList<D_Constituent> cons = new ArrayList<D_Constituent>();
 	public ArrayList<D_Neighborhood> neig = new ArrayList<D_Neighborhood>();
 	public ArrayList<D_Witness> witn = new ArrayList<D_Witness>();
@@ -193,14 +203,23 @@ public class WB_Messages extends ASNObj{
 			for(String gid: r.witn) {
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: witn gid="+gid);
 				if((sa!=null)&&sa.hasWitness(gid)) continue;
+				D_Witness w = null;
 				try {
-					D_Witness w = new D_Witness(gid);
+					w = new D_Witness(gid);
 					if(!OrgHandling.serving(asr, w.organization_ID)) continue;
 					result.witn.add(w);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got witn");
-				} catch (Exception e) {
+				}
+				catch (data.D_NoDataException e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested witn: "+gid);
-					//e.printStackTrace();
+				}
+				catch (Exception e) {
+					if(_DEBUG) System.out.println("WB_Messages: getRequestedData: Failure requesting witn: "+gid);
+					if(w!=null){
+						if(_DEBUG) System.out.println("WB_Messages: getRequestedData: git witn="+w.organization_ID);
+					}
+					if(_DEBUG) System.out.println("WB_Messages: getRequestedData: git witn="+w);
+					e.printStackTrace();
 				}
 			}
 			for(String gid: r.moti) {
@@ -211,9 +230,13 @@ public class WB_Messages extends ASNObj{
 					if(!OrgHandling.serving(asr, m.organization_ID)) continue;
 					result.moti.add(m);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got moti");
-				} catch (Exception e) {
-					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested moti: "+gid);
-					//e.printStackTrace();
+				}
+				catch (data.D_NoDataException e) {
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested motion: "+gid);
+				}
+				catch (Exception e) {
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: Error for moti: "+gid);
+					e.printStackTrace();
 				}
 			}
 			for(String gid: r.just) {
@@ -224,9 +247,13 @@ public class WB_Messages extends ASNObj{
 					if(!OrgHandling.serving(asr, j.organization_ID)) continue;
 					result.just.add(j);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got just");
-				} catch (Exception e) {
+				}
+				catch (data.D_NoDataException e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested just: "+gid);
-					//e.printStackTrace();
+				}
+				catch (Exception e) {
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: Error for justification: "+gid);
+					e.printStackTrace();
 				}
 			}			
 			for(String gid: r.sign) {
@@ -237,9 +264,13 @@ public class WB_Messages extends ASNObj{
 					if(!OrgHandling.serving(asr, v.organization_ID)) continue;
 					result.sign.add(v);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got vote");
-				} catch (Exception e) {
+				}
+				catch (data.D_NoDataException e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested vote: "+gid);
-					//e.printStackTrace();
+				}
+				catch (Exception e) {
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: Error for vote: "+gid);
+					e.printStackTrace();
 				}
 			}			
 		}
@@ -258,7 +289,10 @@ public class WB_Messages extends ASNObj{
 	 * @param orgs : the list of orgs mentioned
 	 * @throws P2PDDSQLException
 	 */
-	public static void store(WB_Messages r, Hashtable<String, RequestData> sq_sr, Hashtable<String, RequestData> obtained_sr, HashSet<String> orgs) throws P2PDDSQLException {
+	public static void store(WB_Messages r,
+			Hashtable<String, RequestData> sq_sr,
+			Hashtable<String, RequestData> obtained_sr,
+			HashSet<String> orgs, String dbg_msg) throws P2PDDSQLException {
 		RequestData obtained, rq = new RequestData();
 		if(DEBUG) System.out.println("WB_Messages: store: start");
 		if(r == null) {
@@ -271,6 +305,33 @@ public class WB_Messages extends ASNObj{
 			///_obtained.orgs.add(org.global_organization_ID);
 			//obtained.orgs.add(org.global_organization_ID_hash);
 			orgs.add(org.global_organization_ID);
+
+			boolean _changed[] = new boolean[1];
+			long id = org.store(_changed, sq_sr.get(org.global_organization_ID)); // should set blocking new orgs
+			if(_DEBUG)System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
+					" br="+org.broadcast_rule+" id="+id+" creat="+org.creator_ID);
+			if(_DEBUG)System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
+					" br="+org.broadcast_rule+" id="+id+" creat="+org.creator_ID);
+			if(
+					(org.broadcast_rule == false) &&
+					(id > 0) &&
+					(org.creator_ID != null) &&
+					(_changed[0])
+					)
+			{
+				if(_DEBUG)System.out.println("OrgHandling:updateOrg: sharing: auto="+DD.AUTOMATE_PRIVATE_ORG_SHARING);
+				if(DD.AUTOMATE_PRIVATE_ORG_SHARING == 0) {
+					int pos = Application.ask(_("In this session, do you want to share data of private orgs\n to all those sending it to you?"),
+							_("Share private orgs with your providers"), JOptionPane.YES_NO_OPTION);
+					if(pos==0) DD.AUTOMATE_PRIVATE_ORG_SHARING = 1;
+					else DD.AUTOMATE_PRIVATE_ORG_SHARING = -1;
+					if(_DEBUG)System.out.println("OrgHandling:updateOrg: sharing: auto:="+DD.AUTOMATE_PRIVATE_ORG_SHARING);
+				}
+				if(DD.AUTOMATE_PRIVATE_ORG_SHARING == 1)
+				{
+					D_OrgDistribution.add(Util.getStringID(id), org.creator_ID);
+				}
+			}
 		}
 		for(D_Constituent c: r.cons) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle const: "+c);
@@ -348,16 +409,21 @@ public class WB_Messages extends ASNObj{
 		}
 		for(D_Vote v: r.sign) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle vote: "+v);
-			rq = sq_sr.get(v.global_organization_ID);
-			if(rq==null) rq = new RequestData();
-			v.store(rq);
-			sq_sr.put(v.global_organization_ID, rq);			
-			
-			obtained = obtained_sr.get(v.global_organization_ID);
-			if(obtained==null) obtained = new RequestData();
-			obtained.sign.add(v.global_vote_ID);
-			obtained_sr.put(v.global_organization_ID, obtained);
-			orgs.add(v.global_organization_ID);
+			try{
+				rq = sq_sr.get(v.global_organization_ID);
+				if(rq==null) rq = new RequestData();
+				v.store(rq);
+				sq_sr.put(v.global_organization_ID, rq);			
+				
+				obtained = obtained_sr.get(v.global_organization_ID);
+				if(obtained==null) obtained = new RequestData();
+				obtained.sign.add(v.global_vote_ID);
+				obtained_sr.put(v.global_organization_ID, obtained);
+				orgs.add(v.global_organization_ID);
+			}catch(Exception e){
+				if(_DEBUG) System.out.println("WB_Messages: store: failed vote: "+dbg_msg+" for v="+v);
+				e.printStackTrace();
+			}
 		}
 		for(D_News w: r.news) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle news: "+w);
@@ -399,5 +465,10 @@ public class WB_Messages extends ASNObj{
 				sign.size()+
 				tran.size()+
 				news.size();
+	}
+
+	public void add(WB_Messages requested) {
+		// TODO Auto-generated method stub
+		
 	}
 }
