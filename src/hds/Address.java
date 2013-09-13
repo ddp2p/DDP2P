@@ -71,7 +71,7 @@ public class Address extends ASNObj{
 		else udp_port = tcp_port;
 		*/
 	}
-	Address(String _domain, int _tcp_port, int _udp_port){
+	public Address(String _domain, int _tcp_port, int _udp_port){
 		if(_domain == null) return;
 		domain = _domain; tcp_port = _tcp_port; udp_port = _udp_port;
 	}

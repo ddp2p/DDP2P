@@ -28,6 +28,7 @@ import streaming.UpdatePeersTable;
 import util.P2PDDSQLException;
 import util.Util;
 import config.Application;
+import config.DD;
 import data.D_PeerAddress;
 import data.TypedAddressComparator;
 import ASN1.ASN1DecoderFail;
@@ -38,6 +39,7 @@ import ASN1.Encoder;
 public class TypedAddress extends ASNObj{
 	public static final int COMPONENTS = 2; // http://domain:tcp:udp/priority
 	public static final String PRI_SEP = "/"; // http://domain:tcp:udp/priority
+	public static final boolean _DEBUG = true;
 	public static boolean DEBUG = false;
 	public String address; //utf8
 	public String type; //PrintableString
@@ -78,6 +80,7 @@ public class TypedAddress extends ASNObj{
 			init(a.get(0));
 	}
 	public TypedAddress(TypedAddress i) {
+		if(i==null) return;
 		address = i.address;
 		type = i.type;
 		certified = i.certified;
@@ -127,18 +130,33 @@ public class TypedAddress extends ASNObj{
 		}
 		return this;
 	}
+	static Object monitored_store_or_update = new Object();
 	/**
 	 * 
 	 * @param peer_ID
 	 * @param assume_absent set true to try insert, and update on failure
 	 */
+
 	public void store_or_update(String peer_ID, boolean assume_absent) {
+		synchronized(monitored_store_or_update){
+			try{
+				_monitored_store_or_update(peer_ID, assume_absent);
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+		}
+	}
+	public void _monitored_store_or_update(String peer_ID, boolean assume_absent) {
 		if(DEBUG) System.out.println("TypedAddress:store_and_update: enter peer_ID="+peer_ID);
 		String[] params;
 		if((this.peer_address_ID == null)&&!assume_absent) {
 			try {
 				TypedAddress ta = new TypedAddress(peer_ID, address, type);
 				this.peer_address_ID = ta.peer_address_ID;
+				if(ta.peer_address_ID != null) {
+					this.arrival_date = ta.arrival_date;
+					this.last_contact = ta.last_contact;
+				}
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
@@ -188,8 +206,9 @@ public class TypedAddress extends ASNObj{
 					table.peer_address.fields_noID_list,
 					new String[]{table.peer_address.peer_address_ID},
 					params, DEBUG);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			System.out.println("TypedAddress: unnecessary updating: ID="+this.peer_address_ID+"" +this);
+			//e.printStackTrace();
 		}
 		
 		if(DEBUG) System.out.println("TypedAddress:store_and_update: return done");
@@ -320,10 +339,22 @@ public class TypedAddress extends ASNObj{
 	public static TypedAddress[] getOrderedCertifiedTypedAddresses(TypedAddress[] addr) {
 		if((addr==null) || (addr.length==0)) return null;
 		ArrayList<TypedAddress> result = new ArrayList<TypedAddress>();
+		int k=0;
 		for(TypedAddress ta : addr) {
+			if(ta==null){
+				if(DEBUG||DD.DEBUG_TODO){
+					System.out.println("TypedAddress:getOrdCer: No address: "+k);
+				
+					for(int i=0;i<addr.length; i++) {
+						System.out.println("TypedAddress:getOrdCert: adr["+i+"]="+ta);
+					}
+				}
+				continue;
+			}
 			if(!ta.certified) continue;
 			if(ta.address == null) continue;
 			result.add(ta);
+			k++;
 		}
 		if(result.size() == 0) return null;
 		TypedAddress[] r = result.toArray(new TypedAddress[]{});
@@ -370,10 +401,12 @@ public class TypedAddress extends ASNObj{
 	}
 	public static TypedAddress[] deep_clone(TypedAddress[] in) {
 		if(in==null) return null;
-		TypedAddress[] out = new TypedAddress[in.length];
+		ArrayList<TypedAddress> result = new ArrayList<TypedAddress>();
 		for(int k=0; k<in.length; k++){
-			out[k] = new TypedAddress(in[k]);
+			if(in[k]==null) continue;
+			result.add(new TypedAddress(in[k]));
 		}
+		TypedAddress[] out = result.toArray(new TypedAddress[0]);// new TypedAddress[in.length];
 		return out;
 	}
 	public static void delete_difference(TypedAddress[] old_with_contact, TypedAddress[] arr){
@@ -432,6 +465,10 @@ public class TypedAddress extends ASNObj{
 			return;
 		}
 		for(TypedAddress a: addr){
+			if(a==null) {
+				if(_DEBUG) System.out.println("TypedAddress:store_and_update: handle null address from "+peer_ID);				
+				continue;
+			}
 			if(DEBUG) System.out.println("TypedAddress:store_and_update: handle "+a);
 			a.store_or_update(peer_ID, true);
 		}

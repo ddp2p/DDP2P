@@ -66,12 +66,13 @@ class NewsHandling {
 
 	public static boolean integrateNewData(D_News[] news,
 			String global_organization_ID, String org_local_ID,
-			String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
+			String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(news==null) return false;
 		for(int k=0; k<news.length; k++) {
 			news[k].global_organization_ID = global_organization_ID;
 			news[k].organization_ID = org_local_ID;
-			news[k].store(rq);
+			news[k].store(sol_rq, new_rq);
 		}
 		return news.length>0;
 	}

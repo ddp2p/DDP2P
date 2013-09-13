@@ -21,6 +21,7 @@
 package streaming;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
 import util.P2PDDSQLException;
 
@@ -179,6 +180,16 @@ public class SpecificRequest extends ASNObj implements Summary{
 		RequestData tmp = new RequestData();
 		tmp.global_organization_ID_hash = org_hash;
 		tmp.addHashIfNewTo(hash, type, MAX_ITEM);
+		add(tmp);
+	}
+	public void add(int type, String hash, Calendar date, String org_hash, int MAX_ITEM) {
+		if((org_hash==null) || (hash == null)) {
+			Util.printCallPath("Something is null!\n"+this+"\n hash ="+hash+"\norg_hash="+org_hash);
+			return;
+		}
+		RequestData tmp = new RequestData();
+		tmp.global_organization_ID_hash = org_hash;
+		tmp.addHashIfNewTo(hash, Encoder.getGeneralizedTime(date), type, MAX_ITEM);
 		add(tmp);
 	}
 }

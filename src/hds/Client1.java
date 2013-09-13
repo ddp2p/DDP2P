@@ -560,7 +560,7 @@ class Client1 extends Thread implements IClient{
 					}
 					value.put(PeerContacts.ALREADY_CONTACTED, Util.getGeneralizedTime());
 					PeerContacts.peer_contacts.put(peer_name, pc);
-					if(Application.peer!=null)Application.peer.update(PeerContacts.peer_contacts);
+					if(Application.peer_contacts!=null)Application.peer_contacts.update(PeerContacts.peer_contacts);
 					break;					
 				}
 
@@ -575,10 +575,10 @@ class Client1 extends Thread implements IClient{
 				// This function tried both TCP and UDP connections, based on the DD.ClientUDP and DD.ClientTCP, true if TCP
 				if(!try_connect(address, type, global_peer_ID, peer_name, peer_directories_sockets, peer_directories, peer_ID)){
 					if(ClientSync.DEBUG)System.out.println("Client:run: Ping failed for: \""+peer_name+"\" at \""+address+"\" id="+Util.trimmed(global_peer_ID));
-					if(Application.peer!=null) Application.peer.update(PeerContacts.peer_contacts);
+					if(Application.peer_contacts!=null) Application.peer_contacts.update(PeerContacts.peer_contacts);
 					continue;
 				}
-				if(Application.peer!=null)Application.peer.update(PeerContacts.peer_contacts);
+				if(Application.peer_contacts!=null)Application.peer_contacts.update(PeerContacts.peer_contacts);
 				if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_TCP);
 				if(ClientSync.DEBUG) out.println("Client: Connected!");
 				DD.ed.fireClientUpdate(new CommEvent(this, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Connected"));

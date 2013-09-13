@@ -106,6 +106,8 @@ public class D_PeerAddress extends ASNObj {
 	public Hashtable<String,D_PeerInstance> instances = null;  
 
 	static final Object monitor_init_myself = new Object();
+	public static int MAX_LOADED_PEERS = 10000;
+	public static long MAX_PEERS_RAM = 10000000;
 	private static D_PeerAddress _myself = null;
 	public static void init_myself(String gid) throws P2PDDSQLException {
 		synchronized(monitor_init_myself){
@@ -137,6 +139,101 @@ public class D_PeerAddress extends ASNObj {
 			return _myself;
 		}		
 	}
+	/**
+	 * These two may be redundant,
+	 * message is enough if adding an array of bytes is equivalent to adding an encoder (during encoding)
+	 */
+	byte[] message = null;
+	Encoder encoder = null;
+	boolean locals_loaded = false; //have we loaded localIDs (for item received from remote)
+	boolean globals_loaded = false; //have we loaded GIDs (for item loaded from database)
+	
+	/**
+	 * Currently loaded peers, ordered by the access time
+	 */
+	private static ArrayList<D_PeerAddress> loaded_peers = new ArrayList<D_PeerAddress>();
+	private static Hashtable<Long, D_PeerAddress> loaded_peer_By_LocalID = new Hashtable<Long, D_PeerAddress>();
+	private static Hashtable<String, D_PeerAddress> loaded_peer_By_GID = new Hashtable<String, D_PeerAddress>();
+	private static Hashtable<String, D_PeerAddress> loaded_peer_By_GIDhash = new Hashtable<String, D_PeerAddress>();
+	private static long current_space = 0;
+	
+	/**
+	 * no exception on error
+	 * @param ID
+	 * @return
+	 */
+	public D_PeerAddress getPeer(long ID){
+		Long id = new Long(ID);
+		D_PeerAddress crt = loaded_peer_By_LocalID.get(id);
+		if(crt != null) return crt;
+		try {
+			crt = new D_PeerAddress(ID);
+		} catch (Exception e) {
+			if(DEBUG) e.printStackTrace();
+			return null;
+		}
+		register_loaded(crt);
+		return crt;
+	}
+	/**
+	 * exception raised on error
+	 * @param GID
+	 * @return
+	 */
+	public D_PeerAddress getPeerByGID(String GID){
+		D_PeerAddress crt = loaded_peer_By_GID.get(GID);
+		if(crt != null) return crt;
+		try {
+			crt = new D_PeerAddress(GID);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		register_loaded(crt);
+		return crt;
+	}
+	/**
+	 * exception raised on error
+	 * @param GIDhash
+	 * @return
+	 */
+	public D_PeerAddress getPeerByGIDhash(String GIDhash){
+		D_PeerAddress crt = loaded_peer_By_GIDhash.get(GIDhash);
+		if(crt != null) return crt;
+		try {
+			crt = new D_PeerAddress(GIDhash, false, 0);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		register_loaded(crt);
+		return crt;
+	}
+	/**
+	 * Here we manage the registered peers.
+	 * @param crt
+	 */
+	private void register_loaded(D_PeerAddress crt){
+		crt.encoder = crt.getEncoder();
+		crt.message = encoder.getBytes();
+		synchronized(loaded_peers) {
+			loaded_peers.add(0, crt);
+			loaded_peer_By_LocalID.put(new Long(crt._peer_ID), crt);
+			loaded_peer_By_GID.put(crt.globalID, crt);
+			loaded_peer_By_GIDhash.put(crt.globalIDhash, crt);
+			if(crt.message != null) current_space += crt.message.length;
+			
+			while((loaded_peers.size() > MAX_LOADED_PEERS)
+					|| (current_space > MAX_PEERS_RAM)) {
+				D_PeerAddress removed = loaded_peers.remove(loaded_peers.size()-1);
+				loaded_peer_By_LocalID.remove(new Long(removed._peer_ID));
+				loaded_peer_By_GID.remove(removed.globalID);
+				loaded_peer_By_GIDhash.remove(removed.globalIDhash);
+				if(removed.message != null) current_space -= removed.message.length;				
+			}
+		}
+	}
+	
 	/**
 	 * Used to create myself
 	 * @param id
@@ -475,7 +572,7 @@ public class D_PeerAddress extends ASNObj {
 		}
 	}
 	/**
-	 * 
+	 * Exits with Exception when no such peer exists
 	 * @param peerID
 	 * @throws P2PDDSQLException
 	 */
@@ -516,6 +613,7 @@ public class D_PeerAddress extends ASNObj {
 	}
 	/**
 	 * 
+	 * Simple presence of parameter isGID signals a GID
 	 * @param peerGID
 	 * @param isGID dummy parameter to differentiate from case with local peerID
 	 * @param failOnNew
@@ -609,6 +707,13 @@ public class D_PeerAddress extends ASNObj {
 		signature = dd.signature;
 		served_orgs = dd.served_orgs;
 	}
+	/**
+	 * Simple presence of parameter isGID signals a GID
+	 * @param peerGID
+	 * @param isGID
+	 * @param failOnNew
+	 * @throws P2PDDSQLException
+	 */
 	public void init(String peerGID, int isGID, boolean failOnNew) throws P2PDDSQLException{
 		if(DEBUG) System.out.println("D_PeerAddress: init: GID");
 		String sql =
@@ -619,6 +724,32 @@ public class D_PeerAddress extends ASNObj {
 		if(p.size()==0){
 			if(failOnNew) throw new RuntimeException("Absent peer "+peerGID);
 			this.globalID = peerGID;
+			this.globalIDhash = getGIDHashFromGID(peerGID);
+		}else{
+			init(p.get(0));
+		}
+	}
+	/**
+	 * 
+	 * @param GIDhash
+	 * @param failOnNew
+	 * @param dummy
+	 * @throws P2PDDSQLException 
+	 */
+	private D_PeerAddress(String GIDhash, boolean failOnNew, int dummy) throws P2PDDSQLException{
+		inithash(GIDhash, dummy, failOnNew);
+	}
+	public void inithash(String peerGIDhash, int isGID, boolean failOnNew) throws P2PDDSQLException{
+		if(DEBUG) System.out.println("D_PeerAddress: init: GID");
+		String sql =
+			"SELECT "+table.peer.fields_peers+
+			" FROM "+table.peer.TNAME+
+			" WHERE "+table.peer.global_peer_ID+"=?;";
+		ArrayList<ArrayList<Object>> p = Application.db.select(sql, new String[]{peerGIDhash}, DEBUG);
+		if(p.size()==0){
+			if(failOnNew) throw new RuntimeException("Absent peer "+peerGIDhash);
+			this.globalID = null;
+			this.globalIDhash = peerGIDhash; //getGIDHashFromGID(peerGID);
 		}else{
 			init(p.get(0));
 		}
@@ -930,7 +1061,7 @@ public class D_PeerAddress extends ASNObj {
 		}catch(Exception e){
 			e.printStackTrace();
 		}
-		if(result==false){ if(_DEBUG)System.out.println("PeerAddress:verifySignature(pk): Failed verifying: "+this+
+		if(result==false){ if(DEBUG||DD.DEBUG_TODO)System.out.println("PeerAddress:verifySignature(pk): Failed verifying: "+this+
 				"\n sgn="+Util.byteToHexDump(sgn,":")+Util.getGID_as_Hash(sgn)+
 				"\n msg="+Util.byteToHexDump(msg,":")+Util.getGID_as_Hash(msg)+
 				"\n pk="+pk
@@ -1112,7 +1243,7 @@ public class D_PeerAddress extends ASNObj {
 	public void setRemote(D_PeerAddress pa) {
 		this.set(pa.globalID, pa.name, pa.emails, pa.phones, pa.arrival_date, pa.slogan,
 				this.used, pa.broadcastable, pa.hash_alg, pa.signature,
-				pa.creation_date, pa.picture, pa.version, pa.preferences_date);
+				pa.creation_date, pa.picture, pa.version, pa.preferences_date, pa.address);
 		this.address = pa.address;
 		this.served_orgs = pa.served_orgs;
 	}
@@ -1152,7 +1283,8 @@ public class D_PeerAddress extends ASNObj {
 	 * @throws P2PDDSQLException
 	 */
 	public static long storeVerified(String global_peer_ID, String name, String emails, String phones, String adding_date, String slogan,
-			boolean used, boolean broadcastable, String hash_alg, byte[] signature, String creation_date, byte[] picture, String version, D_PeerOrgs[] served_orgs2) throws P2PDDSQLException {
+			boolean used, boolean broadcastable, String hash_alg, byte[] signature, String creation_date, byte[] picture, String version, D_PeerOrgs[] served_orgs2,
+			TypedAddress[] _a, boolean existing[]) throws P2PDDSQLException {
 		// boolean DEBUG = true;
 		if(DEBUG) System.err.println("D_PeerAddress: storeVerified: ");
 		//long result_peer_ID=-1;
@@ -1171,12 +1303,13 @@ public class D_PeerAddress extends ASNObj {
 				//&& Util.eq(dpa.signature,picture_str)
 				)){
 			if(DEBUG) System.err.println("D_PeerAddress: storeVerified: do not change!");
+			existing[0] = true;
 			return dpa._peer_ID;
 		}
-		
+		existing[0] = false;
 		dpa.set( global_peer_ID,  name, emails, phones, adding_date,  slogan,
 				 used,  broadcastable,  hash_alg,  signature,  creation_date,
-				 picture,  version, null);
+				 picture,  version, null, _a);
 		dpa.served_orgs = served_orgs2;
 		if(DEBUG) System.err.println("D_PeerAddress: storeVerified: will save!");
 		return dpa._storeVerified(adding_date);
@@ -1211,10 +1344,10 @@ public class D_PeerAddress extends ASNObj {
 		return _storeVerified(_crt_date, crt_date);
 	}
 	public long _storeVerified(Calendar _crt_date) throws P2PDDSQLException{
-		if(_DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar)");
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar)");
 		String crt_date = Encoder.getGeneralizedTime(_crt_date);
 		long r = _storeVerified(_crt_date, crt_date);
-		if(_DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar): got="+r);
+		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar): got="+r);
 		return r;
 	}	
 	public long _storeVerifiedForce(Calendar _crt_date) throws P2PDDSQLException{
@@ -1297,7 +1430,7 @@ public class D_PeerAddress extends ASNObj {
 				if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code:!old: save addr");
 				// TODO: when storage is unified, should use this
 				// TypedAddress[] old_addr = this.address_orig; 
-				if(_DEBUG) System.out.println("TODO: D_PeerAddress:storeVerified: should optimize here when storage unified!");
+				if(DD.DEBUG_TODO) System.out.println("TODO: D_PeerAddress:storeVerified: should optimize here when storage unified!");
 				TypedAddress[] old_addr = TypedAddress.loadPeerAddresses(this.peer_ID);//.getPeerAddresses(this.peer_ID);
 				TypedAddress.init_intersection(old_addr, this.address);
 				TypedAddress.delete_difference(old_addr, this.address);
@@ -1461,7 +1594,9 @@ public class D_PeerAddress extends ASNObj {
 	 * @param preferences_date2 
 	 */
 	public void set(String global_peer_ID, String name, String emails, String phones, Calendar adding_date, String slogan,
-			boolean used, boolean broadcastable, String hash_alg, byte[] signature, Calendar creation_date, byte[] picture, String version, Calendar preferences_date2) {
+			boolean used, boolean broadcastable, String hash_alg, byte[] signature, Calendar creation_date, byte[] picture,
+			String version, Calendar preferences_date2, TypedAddress[] _a) {
+		if(_a !=null )address = _a;
 		this.globalID = global_peer_ID;
 		this.name = name;
 		this.emails = emails;
@@ -1495,10 +1630,11 @@ public class D_PeerAddress extends ASNObj {
 	public void set(String global_peer_ID, String name, String emails,
 			String phones, String adding_date, String slogan,
 				boolean used, boolean broadcastable, String hash_alg, byte[] signature,
-				String creation_date, byte[] picture, String version, Calendar preferences_date) {
+				String creation_date, byte[] picture, String version,
+				Calendar preferences_date, TypedAddress[] _a) {
 		set(global_peer_ID, name, emails, phones, Util.getCalendar(adding_date),
 				slogan, used, broadcastable, hash_alg,
-				signature, Util.getCalendar(creation_date), picture, version, preferences_date);
+				signature, Util.getCalendar(creation_date), picture, version, preferences_date, _a);
 	}
 	/*		
 	public static long storeVerified(String global_peer_ID, String name, String adding_date, String slogan,
@@ -1685,7 +1821,7 @@ public class D_PeerAddress extends ASNObj {
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public static long get_peer_addresses_ID(String address, String type,
+	private static long _monitored_get_peer_addresses_ID(String address, String type,
 			long peer_ID, String adding_date, boolean certificate, int priority) throws P2PDDSQLException{
 		if(DEBUG) err.println("UpdateMessages:get_peer_addresses_ID for: "+Util.trimmed(address)+" id="+peer_ID);
 		long result=0;
@@ -1742,6 +1878,24 @@ public class D_PeerAddress extends ASNObj {
 		return result;		
 	}
 
+	static Object monitor_get_peer_addresses_ID = new Object();
+	/**
+	 * Tries to get the ID, and inserts if the tuple is empty
+	 * @param address
+	 * @param type
+	 * @param peer_ID
+	 * @param adding_date
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public static long get_peer_addresses_ID(String address, String type,
+			long peer_ID, String adding_date, boolean certificate, int priority) throws P2PDDSQLException{
+
+		synchronized(monitor_get_peer_addresses_ID){
+			return _monitored_get_peer_addresses_ID(address, type, peer_ID, adding_date, certificate, priority);
+		}
+	}
+	
 	/**
 	 * Create and set a new peerID, and its keys in "key" table and "application" table
 	 * @throws P2PDDSQLException
@@ -2017,7 +2171,7 @@ public class D_PeerAddress extends ASNObj {
 //					if(pID<=0) throw new RuntimeException("Failure to insert myself");
 //				}
 //				else insert_peer_address_if_new(Util.getStringID(pID), address[k], Address.SOCKET, creation_date, false, 0);
-				me.addAddress(address[k], Address.SOCKET, creation_date, false, 0);
+				me.addAddress(address[k], Address.SOCKET, creation_date, false, 0, true);
 			}
 		}
 		
@@ -2030,15 +2184,18 @@ public class D_PeerAddress extends ASNObj {
 //				if(pID<=0) throw new RuntimeException("Failure to insert my directories");
 //			}
 //			else insert_peer_address_if_new(Util.getStringID(pID), address_dir, Address.DIR, creation_date, true, i);
-			me.addAddress(address_dir, Address.DIR, creation_date, true, i);
+			me.addAddress(address_dir, Address.DIR, creation_date, true, i, true);
 			i++;
 		}
+		me.creation_date = Util.CalendargetInstance();
+		me.sign(DD.getMyPeerSK());
+		me.storeVerified();
 		//re_init_myself();
 		if(Server.DEBUG) out.println("server: setID Done!");
 		return pID;
 	}
 	public void addAddress(String _address, String type,
-			String arrival_date, boolean certified, int priority) throws P2PDDSQLException {
+			String arrival_date, boolean certified, int priority, boolean keep_old_priority_if_exists) throws P2PDDSQLException {
 		TypedAddress ta = new TypedAddress();
 		ta.address = _address;
 		ta.type = type;
@@ -2048,22 +2205,50 @@ public class D_PeerAddress extends ASNObj {
 		if(this.address==null){
 			address = new TypedAddress[]{ta};
 		}else{
+			if(ta.certified && existsCertifiedAddressPriority(address, priority)) {
+				priority = getMaxCertifiedAddressPriority()+1;
+			}
 			TypedAddress c = TypedAddress.getLastContact(address, ta);
 			if(c==null){
 				address = TypedAddress.insert(address, ta);
 				if(ta.certified){
-					sign(DD.getMyPeerSK());
+					this.creation_date = Util.CalendargetInstance();
+					signMe();
 					this.storeVerified(arrival_date);
 				}else{
 					ta.store_or_update(peer_ID, false);
 				}
 			}else{
-				c.certified = certified;
-				c.priority = priority;
-				ta.store_or_update(peer_ID, false);
-				//c.arrival_date = arrival_date;
+				if(keep_old_priority_if_exists && (c.certified == ta.certified)) {
+					ta.priority = c.priority;
+					ta.store_or_update(peer_ID, false);
+				}else{
+					c.certified = certified;
+					c.priority = priority;
+					ta.store_or_update(peer_ID, false);
+					//c.arrival_date = arrival_date;
+				}
 			}
 		}
+	}
+	/**
+	 * Returns -1 if there is no certified address
+	 * @return
+	 */
+	public int getMaxCertifiedAddressPriority() {
+		int crt_max = -1;
+		if(address == null) return crt_max;
+		for(int k=0; k < address.length; k++)
+			if(address[k].certified)
+				crt_max = Math.max(crt_max, address[k].priority); 
+		return crt_max;
+	}
+	private static boolean existsCertifiedAddressPriority(TypedAddress[] _address,
+			int priority) {
+		if(_address == null) return false;
+		for(int k=0; k < _address.length; k++)
+			if((_address[k].priority == priority)&&_address[k].certified) return true; 
+		return false;
 	}
 	/**
 	 * Either insert or update myself as peer in the peers table and in peer_addressess
@@ -2394,6 +2579,22 @@ public class D_PeerAddress extends ASNObj {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	public void signMe() {
+		sign(DD.getMyPeerSK());
+	}
+	public boolean removeAddress(int row, boolean me) {
+		if((address == null) || (address.length==0) ||
+				(!me && address[row].certified)) return false;
+		int dst = 0;
+		TypedAddress[] _address = new TypedAddress[address.length - 1];
+		for(int k=0; k<address.length; k++){
+			if(row==k) continue;
+			_address[dst] = address[k];
+			dst++;
+		}
+		address = _address;
+		return true;
 	}
 
 }

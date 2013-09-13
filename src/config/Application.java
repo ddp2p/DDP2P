@@ -223,7 +223,7 @@ public class Application{
 	//public static RegistrationServer rs; // Song's server
 	public static ControlPane controlPane;
 	public static DirectoriesData directoriesData;
-	public static PeerContacts peer;
+	public static PeerContacts peer_contacts;
 	public static UpdatesPanel panelUpdates;
 	public static String DB_PATH = null;
 	

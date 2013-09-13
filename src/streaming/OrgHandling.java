@@ -74,13 +74,16 @@ public class OrgHandling {
 	 * prepare GIDhash
 	 * Integrate newly arrived data for one organization
 	 * organizationID expected to be already set if org is not blocked
+	 * 
+	 * Will removed hashes/hash-dates of newly fully received items from _rq
 	 * @param od
 	 * @param _orgID
 	 * @param arrival_time
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public	static boolean updateOrg(D_Organization od, String[] _orgID, String arrival_time, RequestData _rq, D_PeerAddress peer) throws P2PDDSQLException {
+	public	static boolean updateOrg(D_Organization od, String[] _orgID, String arrival_time,
+			RequestData _sol_rq, RequestData _new_rq, D_PeerAddress peer) throws P2PDDSQLException {
 		boolean changed=false;
 		//String id_hash;
 		if(DEBUG) out.println("OrgHandling:updateOrg: enter");
@@ -121,7 +124,7 @@ public class OrgHandling {
 						)
 				)
 		{
-			id = od.store(_changed, _rq); // should set blocking new orgs
+			id = od.store(_changed, _sol_rq, _new_rq); // should set blocking new orgs
 			if(DEBUG||DD.DEBUG_PRIVATE_ORGS)System.out.println("OrgHandling:updateOrg: org changed: ch="+_changed[0]+
 					" br="+od.broadcast_rule+" id="+id+" creat="+od.creator_ID);
 			if(
@@ -184,26 +187,27 @@ public class OrgHandling {
 		//changed = (id>0);
 		
 		if((id > 0)&&(!od.blocked))
-			integrateOtherOrgData(od, _orgID[0], arrival_time, changed, _rq);
+			integrateOtherOrgData(od, _orgID[0], arrival_time, changed, _sol_rq, _new_rq);
 		if(DEBUG) out.println("OrgHandling:updateOrg: return="+changed);
 		return changed;
 	}
 	private static boolean integrateOtherOrgData(D_Organization od, String org_local_ID,
-			String arrival_time, boolean recent_org_data, RequestData rq) throws P2PDDSQLException {
+			String arrival_time, boolean recent_org_data,
+			RequestData _sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		boolean result = false;
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed start="+result);
-		result |= streaming.ConstituentHandling.integrateNewData(od.constituents, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		result |= streaming.ConstituentHandling.integrateNewData(od.constituents, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed cons="+result);
-		result |= streaming.NeighborhoodHandling.integrateNewData(od.neighborhoods, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		result |= streaming.NeighborhoodHandling.integrateNewData(od.neighborhoods, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed neig="+result);
-		result |= streaming.WitnessingHandling.integrateNewData(od.witnesses, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		result |= streaming.WitnessingHandling.integrateNewData(od.witnesses, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed witn="+result);
-		result |= streaming.MotionHandling.integrateNewData(od.motions, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		result |= streaming.MotionHandling.integrateNewData(od.motions, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed moti="+result);
-		result |= streaming.JustificationHandling.integrateNewData(od.justifications, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
-		result |= streaming.SignatureHandling.integrateNewData(od.signatures, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
-		result |= streaming.TranslationHandling.integrateNewData(od.translations, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
-		result |= streaming.NewsHandling.integrateNewData(od.news, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, rq);
+		result |= streaming.JustificationHandling.integrateNewData(od.justifications, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
+		result |= streaming.SignatureHandling.integrateNewData(od.signatures, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
+		result |= streaming.TranslationHandling.integrateNewData(od.translations, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
+		result |= streaming.NewsHandling.integrateNewData(od.news, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
 		return result;
 	}
 	/**

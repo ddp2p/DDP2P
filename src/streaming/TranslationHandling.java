@@ -47,12 +47,13 @@ public class TranslationHandling {
 
 	public static boolean integrateNewData(D_Translations[] translations,
 			String global_organization_ID, String org_local_ID,
-			String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
+			String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(translations==null) return false;
 		for(int k=0; k<translations.length; k++) {
 			translations[k].global_organization_ID = global_organization_ID;
 			translations[k].organization_ID = org_local_ID;
-			translations[k].store(rq);
+			translations[k].store(sol_rq, new_rq);
 		}
 		return translations.length>0;
 	}

@@ -45,7 +45,7 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 
 public class EmailManager {
-	private static final String SMTP_PASSWORD = "SMTP_PASSWORD";
+	public static final String SMTP_PASSWORD = "SMTP_PASSWORD";
 	private static final String SMTP_USERNAME = "SMTP_USERNAME";
 	private static final String SMTP_HOST = "SMTP_HOST";
 	static boolean DEBUG = false;
@@ -238,6 +238,48 @@ public class EmailManager {
 			sendEmail(iv);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
+		}
+	}
+
+	public static void setEmailPassword(Object current_id_branch, String object) {
+		try {
+			DD.setAppTextNoSync(util.EmailManager.SMTP_PASSWORD, object);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void setEmailUsername(Object current_id_branch, String object) {
+		try {
+			DD.setAppTextNoSync(util.EmailManager.SMTP_USERNAME, object);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void setSMTPHost(Object current_id_branch, String object) {
+		try {
+			DD.setAppTextNoSync(util.EmailManager.SMTP_HOST, object);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static String getSMTPHost(Object current_id_branch) {
+		try {
+			return DD.getExactAppText(util.EmailManager.SMTP_HOST);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public static String getEmailUsername(Object current_id_branch) {
+		try {
+			return DD.getExactAppText(util.EmailManager.SMTP_USERNAME);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return null;
 		}
 	}
 }

@@ -256,9 +256,9 @@ public class WB_Messages extends ASNObj{
 					e.printStackTrace();
 				}
 			}			
-			for(String gid: r.sign) {
+			for(String gid: r.sign.keySet()) {
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: vote just="+gid);
-				if((sa!=null)&&sa.hasSignature(gid)) continue;
+				if((sa!=null)&&sa.hasSignature(gid, r.sign.get(gid))) continue;
 				try{
 					D_Vote v = new D_Vote(gid);
 					if(!OrgHandling.serving(asr, v.organization_ID)) continue;
@@ -293,7 +293,8 @@ public class WB_Messages extends ASNObj{
 			Hashtable<String, RequestData> sq_sr,
 			Hashtable<String, RequestData> obtained_sr,
 			HashSet<String> orgs, String dbg_msg) throws P2PDDSQLException {
-		RequestData obtained, rq = new RequestData();
+		RequestData obtained;
+		RequestData rq, sol_rq, new_rq; 
 		if(DEBUG) System.out.println("WB_Messages: store: start");
 		if(r == null) {
 			if(DEBUG) System.out.println("WB_Messages: store: exit null requested");
@@ -307,10 +308,10 @@ public class WB_Messages extends ASNObj{
 			orgs.add(org.global_organization_ID);
 
 			boolean _changed[] = new boolean[1];
-			long id = org.store(_changed, sq_sr.get(org.global_organization_ID)); // should set blocking new orgs
-			if(_DEBUG)System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
+			long id = org.store(_changed, sq_sr.get(org.global_organization_ID), null); // should set blocking new orgs
+			if(DEBUG)System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
 					" br="+org.broadcast_rule+" id="+id+" creat="+org.creator_ID);
-			if(_DEBUG)System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
+			if(DEBUG)System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
 					" br="+org.broadcast_rule+" id="+id+" creat="+org.creator_ID);
 			if(
 					(org.broadcast_rule == false) &&
@@ -319,13 +320,13 @@ public class WB_Messages extends ASNObj{
 					(_changed[0])
 					)
 			{
-				if(_DEBUG)System.out.println("OrgHandling:updateOrg: sharing: auto="+DD.AUTOMATE_PRIVATE_ORG_SHARING);
+				if(DEBUG)System.out.println("OrgHandling:updateOrg: sharing: auto="+DD.AUTOMATE_PRIVATE_ORG_SHARING);
 				if(DD.AUTOMATE_PRIVATE_ORG_SHARING == 0) {
 					int pos = Application.ask(_("In this session, do you want to share data of private orgs\n to all those sending it to you?"),
 							_("Share private orgs with your providers"), JOptionPane.YES_NO_OPTION);
 					if(pos==0) DD.AUTOMATE_PRIVATE_ORG_SHARING = 1;
 					else DD.AUTOMATE_PRIVATE_ORG_SHARING = -1;
-					if(_DEBUG)System.out.println("OrgHandling:updateOrg: sharing: auto:="+DD.AUTOMATE_PRIVATE_ORG_SHARING);
+					if(DEBUG)System.out.println("OrgHandling:updateOrg: sharing: auto:="+DD.AUTOMATE_PRIVATE_ORG_SHARING);
 				}
 				if(DD.AUTOMATE_PRIVATE_ORG_SHARING == 1)
 				{
@@ -337,7 +338,10 @@ public class WB_Messages extends ASNObj{
 			if(DEBUG) System.out.println("WB_Messages: store: handle const: "+c);
 			rq = sq_sr.get(c.global_organization_ID);
 			if(rq==null) rq = new RequestData();
-			c.store(rq);
+			sol_rq = new RequestData();
+			new_rq = new RequestData();
+			c.store(sol_rq, new_rq);
+			rq.update(sol_rq, new_rq);
 			sq_sr.put(c.global_organization_ID, rq);			
 			
 			obtained = obtained_sr.get(c.global_organization_ID);
@@ -352,7 +356,10 @@ public class WB_Messages extends ASNObj{
 			if(DEBUG) System.out.println("WB_Messages: store: handle neig: "+n);
 			rq = sq_sr.get(n.global_organization_ID);
 			if(rq==null) rq = new RequestData();
-			n.store(rq);
+			sol_rq = new RequestData();
+			new_rq = new RequestData();
+			n.store(sol_rq, new_rq);
+			rq.update(sol_rq, new_rq);
 			sq_sr.put(n.global_organization_ID, rq);			
 			
 			obtained = obtained_sr.get(n.global_organization_ID);
@@ -365,7 +372,10 @@ public class WB_Messages extends ASNObj{
 			if(DEBUG) System.out.println("WB_Messages: store: handle witn: "+w);
 			rq = sq_sr.get(w.global_organization_ID);
 			if(rq==null) rq = new RequestData();
-			w.store(rq);
+			sol_rq = new RequestData();
+			new_rq = new RequestData();
+			w.store(sol_rq, new_rq);
+			rq.update(sol_rq, new_rq);
 			sq_sr.put(w.global_organization_ID, rq);			
 			
 			obtained = obtained_sr.get(w.global_organization_ID);
@@ -376,9 +386,13 @@ public class WB_Messages extends ASNObj{
 		}
 		for(D_Motion m: r.moti) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle moti: "+m);
+			if(DEBUG) System.out.println("WB_Messages: store: handle moti: "+m.global_motionID+" "+m.motion_title);
 			rq = sq_sr.get(m.global_organization_ID);
 			if(rq==null) rq = new RequestData();
-			m.store(rq);
+			sol_rq = new RequestData();
+			new_rq = new RequestData();
+			m.store(sol_rq, new_rq);
+			rq.update(sol_rq, new_rq);
 			sq_sr.put(m.global_organization_ID, rq);			
 			
 			obtained = obtained_sr.get(m.global_organization_ID);
@@ -386,6 +400,7 @@ public class WB_Messages extends ASNObj{
 			obtained.moti.add(m.global_motionID);
 			obtained_sr.put(m.global_organization_ID, obtained);
 			orgs.add(m.global_organization_ID);
+			if(DEBUG) System.out.println("WB_Messages: store: handled moti: "+m.global_motionID+" "+m.motion_title);
 		}
 		for(D_Justification j: r.just) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle just: "+j);
@@ -398,7 +413,10 @@ public class WB_Messages extends ASNObj{
 			}
 			rq = sq_sr.get(j.global_organization_ID);
 			if(rq==null) rq = new RequestData();
-			j.store(rq);
+			sol_rq = new RequestData();
+			new_rq = new RequestData();
+			j.store(sol_rq, new_rq);
+			rq.update(sol_rq, new_rq);
 			sq_sr.put(j.global_organization_ID, rq);			
 			
 			obtained = obtained_sr.get(j.global_organization_ID);
@@ -412,12 +430,16 @@ public class WB_Messages extends ASNObj{
 			try{
 				rq = sq_sr.get(v.global_organization_ID);
 				if(rq==null) rq = new RequestData();
-				v.store(rq);
+				sol_rq = new RequestData();
+				new_rq = new RequestData();
+				v.store(sol_rq, new_rq);
+				if(DEBUG) System.out.println("WB_Messages: store: handled vote: "+v);
+				rq.update(sol_rq, new_rq);
 				sq_sr.put(v.global_organization_ID, rq);			
 				
 				obtained = obtained_sr.get(v.global_organization_ID);
 				if(obtained==null) obtained = new RequestData();
-				obtained.sign.add(v.global_vote_ID);
+				obtained.sign.put(v.global_vote_ID, DD.EMPTYDATE);
 				obtained_sr.put(v.global_organization_ID, obtained);
 				orgs.add(v.global_organization_ID);
 			}catch(Exception e){
@@ -429,7 +451,10 @@ public class WB_Messages extends ASNObj{
 			if(DEBUG) System.out.println("WB_Messages: store: handle news: "+w);
 			rq = sq_sr.get(w.global_organization_ID);
 			if(rq==null) rq = new RequestData();
-			w.store(rq);
+			sol_rq = new RequestData();
+			new_rq = new RequestData();
+			w.store(sol_rq, new_rq);
+			rq.update(sol_rq, new_rq);
 			sq_sr.put(w.global_organization_ID, rq);			
 			
 			obtained = obtained_sr.get(w.global_organization_ID);
@@ -442,7 +467,10 @@ public class WB_Messages extends ASNObj{
 			if(DEBUG) System.out.println("WB_Messages: store: handle tran: "+t);
 			rq = sq_sr.get(t.global_organization_ID);
 			if(rq==null) rq = new RequestData();
-			t.store(rq);
+			sol_rq = new RequestData();
+			new_rq = new RequestData();
+			t.store(sol_rq, new_rq);
+			rq.update(sol_rq, new_rq);
 			sq_sr.put(t.global_organization_ID, rq);			
 			
 			obtained = obtained_sr.get(t.global_organization_ID);

@@ -28,6 +28,7 @@ import hds.ClientSync;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Hashtable;
 
 import streaming.ConstituentHandling;
 import streaming.JustificationHandling;
@@ -412,13 +413,13 @@ class D_Vote extends ASNObj{
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public long store(streaming.RequestData rq) throws P2PDDSQLException {
-		return store(null, rq);
+	public long store(streaming.RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
+		return store(null, sol_rq, new_rq);
 	}
-	public long store(PreparedMessage pm, streaming.RequestData rq) throws P2PDDSQLException {
+	public long store(PreparedMessage pm, streaming.RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Vote:store: signature start");
 		
-		boolean locals = fillLocals(rq, true, true, true, true, true);
+		boolean locals = fillLocals(new_rq, true, true, true, true, true);
 		if(!locals) return -1;
 		
 		if(!this.verifySignature()){
@@ -450,7 +451,7 @@ class D_Vote extends ASNObj{
 			this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
 		if((this.organization_ID == null ) && (this.global_organization_ID != null)) {
 			organization_ID = ""+data.D_Organization.insertTemporaryGID(global_organization_ID);
-			rq.orgs.add(global_organization_ID);
+			new_rq.orgs.add(global_organization_ID);
 		}
 		
 		if((this.constituent_ID == null ) && (this.global_constituent_ID != null))
@@ -458,24 +459,24 @@ class D_Vote extends ASNObj{
 		if((this.constituent_ID == null ) && (this.global_constituent_ID != null)) {
 			constituent_ID =
 				Util.getStringID(D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID));
-			rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
+			new_rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
 		}
 		
 		if ((this.motion_ID == null) && (this.global_motion_ID != null))
 			this.motion_ID = D_Motion.getMotionLocalID(this.global_motion_ID);
 		if ((this.motion_ID == null) && (this.global_motion_ID != null)) {
 			this.motion_ID = Util.getStringID(D_Motion.insertTemporaryGID(global_motion_ID, this.organization_ID));
-			rq.moti.add(global_motion_ID);
+			new_rq.moti.add(global_motion_ID);
 		}
 
 		if ((this.justification_ID == null) && (this.global_justification_ID != null))
 			this.justification_ID = JustificationHandling.getJustificationLocalID(this.global_justification_ID);
 		if ((this.justification_ID == null) && (this.global_justification_ID != null)) {
 			this.justification_ID = Util.getStringID(D_Justification.insertTemporaryGID(global_justification_ID, this.motion_ID));
-			rq.just.add(global_justification_ID);
+			new_rq.just.add(global_justification_ID);
 		}
 
-		rq.sign.remove(this.global_vote_ID);
+		if(sol_rq!=null)sol_rq.sign.put(this.global_vote_ID, DD.EMPTYDATE);
 		
 		return storePMVerified(pm);
 	
@@ -515,7 +516,7 @@ class D_Vote extends ASNObj{
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion, boolean tempJust) throws P2PDDSQLException {
+	public boolean fillLocals(RequestData new_rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion, boolean tempJust) throws P2PDDSQLException {
 	
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
@@ -535,7 +536,7 @@ class D_Vote extends ASNObj{
 			organization_ID = Util.getStringID(D_Organization.getLocalOrgID(global_organization_ID));
 			if(tempOrg && (organization_ID == null)) {
 				String orgGID_hash = D_Organization.getOrgGIDHashGuess(global_organization_ID);
-				if(rq!=null)rq.orgs.add(orgGID_hash);
+				if(new_rq!=null)new_rq.orgs.add(orgGID_hash);
 				organization_ID = Util.getStringID(D_Organization.insertTemporaryGID(global_organization_ID, orgGID_hash, default_blocked_org));
 				if(default_blocked_org) return false;
 			}
@@ -546,7 +547,7 @@ class D_Vote extends ASNObj{
 			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID);
 			if(tempConst && (constituent_ID == null ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
-				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
+				if(new_rq!=null)new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
 				constituent_ID = Util.getStringID(D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, organization_ID));
 			}
 			if(constituent_ID == null) return false;
@@ -555,7 +556,7 @@ class D_Vote extends ASNObj{
 		if((this.global_motion_ID!=null)&&(motion_ID == null)){
 			this.motion_ID = D_Motion.getMotionLocalID(global_motion_ID);
 			if(tempMotion && (motion_ID == null ))  {
-				if(rq!=null)rq.moti.add(global_motion_ID);
+				if(new_rq!=null)new_rq.moti.add(global_motion_ID);
 				motion_ID = Util.getStringID(D_Motion.insertTemporaryGID(global_motion_ID, organization_ID));
 			}
 			if(motion_ID == null) return false;
@@ -564,7 +565,7 @@ class D_Vote extends ASNObj{
 		if((this.global_justification_ID!=null)&&(justification_ID == null)){
 			this.justification_ID = D_Justification.getLocalID(global_justification_ID);
 			if(tempJust && (justification_ID == null ))  {
-				if(rq!=null)rq.just.add(global_justification_ID);
+				if(new_rq!=null)new_rq.just.add(global_justification_ID);
 				justification_ID = Util.getStringID(D_Justification.insertTemporaryGID(global_justification_ID, organization_ID));
 			}
 			if(justification_ID == null) return false;
@@ -594,7 +595,13 @@ class D_Vote extends ASNObj{
 	public long storeVerified(Calendar arrival_date) throws P2PDDSQLException {
 		return storePMVerified(null, arrival_date);
 	}
+	static Object monitored_storePMVerified = new Object();
 	public long storePMVerified(PreparedMessage pm, Calendar arrival_date) throws P2PDDSQLException {
+		synchronized(monitored_storePMVerified) {
+			return _monitored_storePMVerified(pm, arrival_date);
+		}
+	}
+	private long _monitored_storePMVerified(PreparedMessage pm, Calendar arrival_date) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		long result = -1;
 		if(DEBUG) System.out.println("WB_Vote:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
@@ -676,7 +683,7 @@ class D_Vote extends ASNObj{
 					
 						BroadcastClient.msgs.registerRecent(pm, BroadcastQueueHandled.VOTE);
 					}
-					ClientSync.payload_recent.add(streaming.RequestData.SIGN, this.global_vote_ID, D_Organization.getOrgGIDHashGuess(this.global_organization_ID), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
+					ClientSync.payload_recent.add(streaming.RequestData.SIGN, this.global_vote_ID, this.creation_date, D_Organization.getOrgGIDHashGuess(this.global_organization_ID), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 				}
 			}
 		}
@@ -714,10 +721,27 @@ class D_Vote extends ASNObj{
 		}
 		return false;
 	}
-	public static ArrayList<String> checkAvailability(ArrayList<String> hashes,
+	public static Hashtable<String, String> checkAvailability(
+			Hashtable<String, String> sign, String orgID, boolean DBG) throws P2PDDSQLException {
+		Hashtable<String, String> result = new Hashtable<String, String>();
+		if(DEBUG||DBG) out.println("D_Vote:checkAvailability: not available: ads #"+sign.size());
+		for (String vHash : sign.keySet()) {
+			if(vHash == null){
+				if(DEBUG||DBG) out.println("D_Vote:checkAvailability: null hash");
+				continue;
+			}
+			String date = sign.get(vHash);
+			if(!available(vHash, date, orgID, DBG)){
+				result.put(vHash, DD.EMPTYDATE);
+			}else
+				if(DEBUG||DBG) out.println("D_Vote:checkAvailability: available here: "+vHash +" date="+date);
+		}
+		return result;
+	}
+	public static ArrayList<String> checkAvailability(ArrayList<String> sign,
 			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
-		for (String hash : hashes) {
+		for (String hash : sign) {
 			if(!available(hash, orgID, DBG)){
 				if(DEBUG) out.println("D_Vote:editable: not available: requested: "+hash);
 				result.add(hash);
@@ -745,6 +769,31 @@ class D_Vote extends ASNObj{
 		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{hash}, DEBUG);
 		if(a.size()==0) result = false;
 		if(DEBUG||DBG) System.out.println("D_Vote:available: "+hash+" in "+orgID+"(?) = "+result);
+		return result;
+	}
+	/**
+	 * TODO: Could check whether the motion/constituent/org are not blocked/broadcastable
+	 * @param hash
+	 * @param creation
+	 * @param orgID
+	 * @param DBG
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public static boolean available(String hash, String creation_date, String orgID, boolean DBG) throws P2PDDSQLException {
+		String sql = 
+			"SELECT "+table.signature.signature_ID+
+			" FROM "+table.signature.TNAME+
+			" WHERE "+table.signature.global_signature_ID+"=? "+
+			//" AND "+table.signature.organization_ID+"=? "+
+			" AND "+table.signature.creation_date+">= ? "+
+			" AND ( "+table.signature.signature + " IS NOT NULL " +
+			// " OR "+table.signature.blocked+" = '1'" +
+					");";
+		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{hash, creation_date}, DEBUG || DBG);
+		boolean result = true;
+		if(a.size()==0) result = false;
+		if(DEBUG||DBG) System.out.println("D_Vote:available: "+hash+" in "+orgID+" = "+result);
 		return result;
 	}
 	public static byte getASN1Type() {

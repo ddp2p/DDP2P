@@ -224,7 +224,7 @@ public class UpdateMessages {
 
 		long peer_ID = Util.lval(_peer_ID, -1);
 		if(peer_ID<=0){
-			err.println("UpdateMessages:integrateUpdate: peer unknown but may announce self: "+peer);
+			if(DEBUG||DD.DEBUG_TODO)err.println("UpdateMessages:integrateUpdate: peer unknown but may announce self: "+peer);
 			if(!DD.ACCEPT_STREAMING_ANSWER_FROM_NEW_PEERS) return false;
 		}
 		DD.ed.fireClientUpdate(new CommEvent(src, null, s_address, "Integrating", asa.toSummaryString()));
@@ -259,7 +259,7 @@ public class UpdateMessages {
 			_peer_ID = table.peer.getLocalPeerID(asa.responderID);
 			peer_ID = Util.lval(_peer_ID, -1);
 			if(peer_ID<=0){
-				err.println("UpdateMessages:integrateUpdate: peer unknown GID not annouced in message:"+asa.responderID);
+				if(DEBUG||DD.DEBUG_TODO)err.println("UpdateMessages:integrateUpdate: peer unknown GID not annouced in message:"+asa.responderID);
 				if(!DD.ACCEPT_STREAMING_ANSWER_FROM_ANONYMOUS_PEERS) return false;
 			}
 		}
@@ -364,10 +364,22 @@ public class UpdateMessages {
 				//long organization_ID = Util.lval(D_Organization.getLocalOrgID_fromGIDIfNotBlocked(asa.orgData[i].global_organization_ID), -1);
 				//if(organization_ID>0) asa.orgData[i].organization_ID = Util.getStringID(organization_ID);
 				OrgPeerDataHashes opdh = new OrgPeerDataHashes(asa.orgData[i]._organization_ID);
-				RequestData _rq = opdh.getRequestData();//getOldDataRequest(asa.orgData[i]);
+				/**
+				 * From the following set of hashes we remove what we received now fully
+				 *  
+				 */
+				RequestData old_rq = opdh.getRequestData();//getOldDataRequest(asa.orgData[i]);
+				/**
+				 * Here we add what is newly advertised and needed
+				 */
+				RequestData _new_rq = new RequestData();
+				/**
+				 * Here we add what is newly fully received (solved rq)
+				 */
+				RequestData _sol_rq = new RequestData();
 				//_rq.purge(obtained);
 				arrival_time = Encoder.getGeneralizedTime(Util.incCalendar(arrival__time, 1));
-				boolean changed=OrgHandling.updateOrg(asa.orgData[i], _orgID, arrival_time, _rq, peer); // integrated other data, stores all if not blocked
+				boolean changed=OrgHandling.updateOrg(asa.orgData[i], _orgID, arrival_time, _sol_rq, _new_rq, peer); // integrated other data, stores all if not blocked
 				//if(asa.orgData[i].signature==null) continue;
 				changes |= changed;
 				
@@ -387,7 +399,7 @@ public class UpdateMessages {
 				}
 				// and save future specific requests
 				if(! asa.orgData[i].blocked) {
-					opdh.updateAfterChanges(_rq, peer_ID, crt_date);
+					opdh.updateAfterChanges(old_rq, _sol_rq, _new_rq, peer_ID, crt_date);
 					if(!opdh.empty()) future_requests = true;
 					opdh.save(asa.orgData[i]._organization_ID, peer_ID, peer);
 				}else{
@@ -500,7 +512,7 @@ public class UpdateMessages {
 		sp_rq.neig = D_Neighborhood.checkAvailability(advertised.neig, orgID, DEBUG);
 		sp_rq.moti = D_Motion.checkAvailability(advertised.moti, orgID, DEBUG);
 		sp_rq.just = D_Justification.checkAvailability(advertised.just, orgID, DEBUG);
-		sp_rq.sign = D_Vote.checkAvailability(advertised.sign, orgID, DEBUG);
+		sp_rq.sign = D_Vote.checkAvailability(advertised.sign, orgID, DEBUG); // set this debug to true to check votes delivery
 		sp_rq.news = D_News.checkAvailability(advertised.news, orgID, DEBUG);
 		sp_rq.tran = D_Translations.checkAvailability(advertised.tran, orgID, DEBUG);
 	}

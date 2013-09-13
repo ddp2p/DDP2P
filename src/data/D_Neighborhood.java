@@ -455,7 +455,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		if(DEBUG) System.out.println("WB_Neighborhood:verifySign: sign=\""+Util.byteToHexDump(signature)+"\"");
 		return Util.verifySignByID(this.getSignableEncoder(orgGID).getBytes(), pk_ID, signature);
 	}
-	public String storeVerified(String constituent_ID, String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
+	public String storeVerified(String constituent_ID, String orgGID, String org_local_ID, String arrival_time, RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Neighborhood:storeVerified: setting orgGID="+orgGID+"\nl_org="+org_local_ID);
 		this.global_organization_ID = orgGID;
 		this.organization_ID = Util.lval(org_local_ID, organization_ID);
@@ -464,7 +464,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 			return null;
 		}
 		if(DEBUG) System.out.println("WB_Neighborhood:storeVerified: org_ID="+org_local_ID+" orgGID="+orgGID+" arrival="+arrival_time);
-		return integrateNewVerifiedNeighborhoodData(this, orgGID, org_local_ID, arrival_time, null);
+		return integrateNewVerifiedNeighborhoodData(this, orgGID, org_local_ID, arrival_time, null, sol_rq, new_rq);
 	}
 	/**
 	 * 
@@ -529,10 +529,10 @@ class D_Neighborhood extends ASNObj implements Summary{
 		return true;
 	}
 	
-	public long store(RequestData rq) throws P2PDDSQLException {
+	public long store(RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Neighborhood: store: start");
 		
-		boolean locals = fillLocals(rq, true, true, true, true);
+		boolean locals = fillLocals(new_rq, true, true, true, true);
 		if(!locals){
 			if(_DEBUG) System.out.println("D_Neighborhood: store: exit no locals");
 			return -1;
@@ -555,7 +555,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 			return -1;
 		}
 		*/
-		String nID = store(this.global_organization_ID, ""+this.organization_ID, now);
+		String nID = store(this.global_organization_ID, ""+this.organization_ID, now, sol_rq, new_rq);
 		if (nID==null){
 			if(_DEBUG) System.out.println("D_Neighborhood: store: exit fail storing");
 			return -1;
@@ -565,8 +565,8 @@ class D_Neighborhood extends ASNObj implements Summary{
 		return _nID;
 	}
 
-	public String store(String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
-		return integrateNewNeighborhoodData(this, orgGID, org_local_ID, arrival_time, null);
+	public String store(String orgGID, String org_local_ID, String arrival_time, RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
+		return integrateNewNeighborhoodData(this, orgGID, org_local_ID, arrival_time, null, sol_rq, new_rq);
 	}
 	
 	public static Object localForNeighborhoodGID(String gID) throws P2PDDSQLException {
@@ -577,10 +577,11 @@ class D_Neighborhood extends ASNObj implements Summary{
 		Application.db.select(sql, params, DEBUG);
 		return null;
 	}
-	public static void readSignStore(long nID, SK sk, String orgGID, String submitter_ID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
+	public static void readSignStore(long nID, SK sk, String orgGID, String submitter_ID,
+			String org_local_ID, String arrival_time) throws P2PDDSQLException {
 		D_Neighborhood w = D_Neighborhood.getNeighborhood(nID+"",null);
 		w.sign(sk, orgGID);
-		w.storeVerified(submitter_ID, orgGID, org_local_ID, arrival_time);
+		w.storeVerified(submitter_ID, orgGID, org_local_ID, arrival_time, null, null);
 	}
 	/**
 	 * Used for storing [val,val] into database 
@@ -649,7 +650,8 @@ class D_Neighborhood extends ASNObj implements Summary{
 	 */
 	public static String integrateNewNeighborhoodData(
 			D_Neighborhood wn, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
+			String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Neighborhood: integrateNewNeighborhoodData: exit start");
 		if(wn == null){
 			if(_DEBUG) System.out.println("D_Neighborhood: integrateNewNeighborhoodData: exit no data");
@@ -662,14 +664,15 @@ class D_Neighborhood extends ASNObj implements Summary{
 				return null;
 			}
 		}
-		return integrateNewVerifiedNeighborhoodData(wn, orgGID, org_local_ID, arrival_time, orgData);
+		return integrateNewVerifiedNeighborhoodData(wn, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
 	}
 	public void storeVerified() throws P2PDDSQLException{
-		integrateNewVerifiedNeighborhoodData(this, this.global_organization_ID, Util.getStringID(this.organization_ID), Util.getGeneralizedTime(), null);
+		integrateNewVerifiedNeighborhoodData(this, this.global_organization_ID, Util.getStringID(this.organization_ID), Util.getGeneralizedTime(), null, null, null);
 	}
 	public static String integrateNewVerifiedNeighborhoodData(
 			D_Neighborhood wn, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
+			String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		try{
 		String result = null;
 		if(DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: start on "+wn);
@@ -679,8 +682,8 @@ class D_Neighborhood extends ASNObj implements Summary{
 			return null;
 		}
 		String pID, cID;
-		if(wn.parent!=null) pID=integrateNewNeighborhoodData(wn.parent, orgGID, org_local_ID, arrival_time, orgData);
-		if(wn.submitter!=null) cID=ConstituentHandling.integrateNewConstituentData(wn.submitter, orgGID, org_local_ID, arrival_time, orgData);
+		if(wn.parent!=null) pID=integrateNewNeighborhoodData(wn.parent, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
+		if(wn.submitter!=null) cID=ConstituentHandling.integrateNewConstituentData(wn.submitter, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
 
 		if((org_local_ID==null)&&(orgGID!=null)) {
 			org_local_ID = Util.getStringID(D_Organization.getLocalOrgID(orgGID));
@@ -762,6 +765,8 @@ class D_Neighborhood extends ASNObj implements Summary{
 			result = id;
 		}
 		wn.neighborhoodID = id;
+		if(result!=null)if(sol_rq!=null)sol_rq.neig.add(wn.global_neighborhood_ID);
+
 		if(DEBUG) System.out.println("NeighborhoodHandling:integrateNewVerifiedNeighborhoodData:  exit id="+id);
 		return result;
 		}catch(Exception e){e.printStackTrace();return null;}
@@ -808,13 +813,24 @@ class D_Neighborhood extends ASNObj implements Summary{
 				DEBUG);
 
 	}
+	static Object monitored_insertTemporaryNeighborhoodGID = new Object();
 	public static long _insertTemporaryNeighborhoodGID(String neighborhood_GID,
 			String org_ID, long _default) throws P2PDDSQLException {
+		synchronized(monitored_insertTemporaryNeighborhoodGID){
+			return _monitored_insertTemporaryNeighborhoodGID(neighborhood_GID,
+					org_ID, _default);
+		}
+	}
+	private static long _monitored_insertTemporaryNeighborhoodGID(String neighborhood_GID,
+				String org_ID, long _default) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("NeighborhoodHandling:insertTemporaryNeighborhoodGID: start");	
 		if(neighborhood_GID==null){
 			if(_DEBUG) System.out.println("NeighborhoodHandling:insertTemporaryNeighborhoodGID: null GID");
 			return _default;
 		}
+
+		long r = Util.lval(D_Neighborhood.getLocalID(neighborhood_GID), -1);
+		if(r>0) return r;
 		return Application.db.insert(table.neighborhood.TNAME,
 				new String[]{table.neighborhood.global_neighborhood_ID, table.neighborhood.organization_ID},
 				new String[]{neighborhood_GID, org_ID},

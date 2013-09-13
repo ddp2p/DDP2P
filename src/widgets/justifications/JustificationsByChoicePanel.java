@@ -48,6 +48,7 @@ import util.DBListener;
 import util.DBSelector;
 import util.Util;
 import widgets.motions.MotionsListener;
+import static util.Util._;
 
 //46 * 40 LSSBS
 @SuppressWarnings("serial")
@@ -187,13 +188,18 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 		js = new JScrollPane[choices.length];
 		jl = new JLabel[choices.length];
 		for(int k=0; k<choices.length; k++){
-			j[k] = new Justifications(300);
-			j[k].getModel().setCrtChoice(choices[k].short_name);
+			Justifications jus;
+			jus = new Justifications(300);
+			j[k]=jus;
+			JustificationsModel model = jus.getModel();
+			D_MotionChoice choice = choices[k];
+			String short_name = (choice==null)?(_("Choice")+"_"+k):choice.short_name;
+			model.setCrtChoice(short_name);
 			if(DEBUG) System.out.println("JBC:update_layout: name="+choices[k].short_name);
-			js[k]=j[k].getScrollPane();
+			js[k]=jus.getScrollPane();
 			jl[k]=new JLabel();
 			jl[k].setPreferredSize(new Dimension(0,TOTALS_HEIGHT));
-			multiSplitPane.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT,jl[k],js[k]),choices[k].short_name);
+			multiSplitPane.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT,jl[k],js[k]),short_name);
 			//j[k].setPreferredSize(new Dimension(1000,1000));
 		}
 		//multiSplitPane.setPreferredSize(new Dimension(1000,1000));
@@ -215,7 +221,9 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 	private void clean() {
 		if(DEBUG) System.out.println("JBC:clean");
 		if(multiSplitPane!=null) this.remove(multiSplitPane);
-		for(Component comp : j) this.remove(comp);
+		try{
+			for(Component comp : j) this.remove(comp);
+		}catch(Exception e){if(DD.DEBUG_TODO)e.printStackTrace();}
 		j = new Justifications[0];
 		choices = new D_MotionChoice[0];
 		jl = new JLabel[0];

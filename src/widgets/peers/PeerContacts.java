@@ -130,7 +130,7 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 		old_l.setHorizontalTextPosition(SwingConstants.LEFT);
 		this.add(old_l, BorderLayout.NORTH);
 		this.addMouseListener(this);
-		Application.peer = this;
+		Application.peer_contacts = this;
 		if(Application.peers!=null)Application.peers.addListener(this);
 		//l.setHorizontalAlignment(JLabel.LEFT);
 	}
@@ -160,17 +160,17 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 				String now = Util.getGeneralizedTime();
 				if(DEBUG) System.out.println("PeerContacts: invoked later:do "+now);
 				//Application.peer.remo.removeAll();
-				if(old_jt!=null) Application.peer.remove(old_jt);
+				if(old_jt!=null) Application.peer_contacts.remove(old_jt);
 				old_jt = jt;
-				if(jt!=null)Application.peer.add(jt,BorderLayout.CENTER);
-				if(old_l!=null) Application.peer.remove(old_l);
+				if(jt!=null)Application.peer_contacts.add(jt,BorderLayout.CENTER);
+				if(old_l!=null) Application.peer_contacts.remove(old_l);
 				l = new JLabel(_("Latest Contacts for this Peer:")+" "+now);
 				l.setHorizontalTextPosition(SwingConstants.LEFT);
 				old_l = l;
-				Application.peer.add(l, BorderLayout.NORTH);
+				Application.peer_contacts.add(l, BorderLayout.NORTH);
 //				l.repaint();
 //				jt.repaint();
-				Application.peer.revalidate();
+				Application.peer_contacts.revalidate();
 				if(DEBUG) System.out.println("PeerContacts: invoked later:did");
 			}}
 		);		

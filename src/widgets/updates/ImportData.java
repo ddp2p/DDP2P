@@ -49,7 +49,10 @@ public class ImportData {
 	public static final String STOP = "END";
 	public static final String TESTERINFO_START = "TESTERINFO_START";
 	public static final String TESTERINFO_STOP = "TESTERINFO_END";
-	
+	/**
+	 * Check with Khalid. It seems to be more about testers than about mirrors.
+	 * @param f
+	 */
 	public void importMirrorFromFile(File f){
 			//boolean DEBUG = true;
 		BufferedReader in =null;
@@ -103,8 +106,8 @@ public class ImportData {
 			}// loop
 			if(testerDef.size()!=0)result.testerDef = testerDef.toArray(new D_TesterDefinition[0]);
 			
-			if(result.existsInDB()) result.store("update"); 
-			else result.store("insert");
+			if(result.existsInDB()) result.store(D_UpdatesInfo.action_update); 
+			else result.store(D_UpdatesInfo.action_insert);
 			
 			
 		} catch (IOException e) {

@@ -39,6 +39,7 @@ import table.peer;
 import util.P2PDDSQLException;
 
 import streaming.OrgHandling;
+import streaming.OrgPeerDataHashes;
 import streaming.RequestData;
 import util.DBInterface;
 import util.Summary;
@@ -800,7 +801,7 @@ class D_Organization extends ASNObj implements Summary {
 		if((this.creator_ID != null ) && (this.params.creator_global_ID == null))
 			this.params.creator_global_ID = D_Organization.getGlobalOrgID(this.creator_ID);
 	}
-	public boolean fillLocals(RequestData rq, boolean tempPeer, String arrival_time) throws P2PDDSQLException {
+	public boolean fillLocals(RequestData new_rq, boolean tempPeer, String arrival_time) throws P2PDDSQLException {
 		if(DD.ENFORCE_ORG_INITIATOR &&
 				((this.params==null)
 						||((this.params.creator_global_ID==null)
@@ -816,7 +817,7 @@ class D_Organization extends ASNObj implements Summary {
 				creator_ID = D_PeerAddress.storePeerAndGetOrInsertTemporaryLocalForPeerGID(this.params.creator_global_ID, creator, arrival_time);
 				
 				String consGID_hash = D_PeerAddress.getGIDHashFromGID(this.params.creator_global_ID);
-				if(rq!=null)rq.peers.add(consGID_hash);
+				if(new_rq!=null) new_rq.peers.add(consGID_hash);
 				//creator_ID = Util.getStringID(D_PeerAddress.insertTemporaryGID(this.params.creator_global_ID, consGID_hash));
 			}
 			if(DD.ENFORCE_ORG_INITIATOR && (creator_ID == null)) return false;
@@ -825,17 +826,18 @@ class D_Organization extends ASNObj implements Summary {
 		return true;
 	}
 	public long store(boolean[] _changed) throws P2PDDSQLException {
-		return store(_changed, null);
+		return store(_changed, null, null);
 	}
 	/**
 	 * Probably one should store a temporary if not signed and unavailable (not yet done)
 	 * @param _changed
+	 * @param _new_rq TODO
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public long store(boolean _changed[], RequestData _rq) throws P2PDDSQLException {
+	public long store(boolean _changed[], RequestData _sol_rq, RequestData _new_rq) throws P2PDDSQLException {
 		if(_organization_ID==0){ _organization_ID=-1; organization_ID = null;}
-		boolean locals = fillLocals(_rq, true, Util.getGeneralizedTime());
+		boolean locals = fillLocals(_new_rq, true, Util.getGeneralizedTime());
 		if(!locals)//return -1;
 			if(_DEBUG) out.println("D_Organization: store: locals failed");
 
@@ -1102,18 +1104,26 @@ class D_Organization extends ASNObj implements Summary {
 		if(a.size()==0) return null;
 		return Util.getString(a.get(0).get(0));
 	}
+	public OrgPeerDataHashes getSpecificRequests(){
+		try {
+			return new OrgPeerDataHashes(_organization_ID);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 	public void getLocalIDfromGIDandBlock() throws P2PDDSQLException {
 		String sql = 
 				"SELECT "+
 						table.organization.organization_ID+","
 						+table.organization.blocked+","
 						+table.organization.broadcasted+","
-						+table.organization.requested+","
-						+table.organization.plugins_excluding+","
-						+table.organization.specific_requests+","
-						+table.organization.motions_excluding+
-				" FROM "+table.organization.TNAME+
-				" WHERE "+table.organization.global_organization_ID+"=?;";
+						+table.organization.requested
+						+","+table.organization.plugins_excluding
+						//+","+table.organization.specific_requests+","
+						//+table.organization.motions_excluding
+				+" FROM "+table.organization.TNAME
+				+" WHERE "+table.organization.global_organization_ID+"=?;";
 			ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{this.global_organization_ID}, DEBUG);
 			if(a.size()==0){
 				this.blocked = DD.BLOCK_NEW_ARRIVING_ORGS;

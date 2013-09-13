@@ -199,14 +199,15 @@ public class WitnessingHandling {
 	}
 
 	public static boolean integrateNewData(D_Witness[] witnesses, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
+			String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(DEBUG) out.println("WitnessHandling:integrateNewData: start oID="+org_local_ID+" gid="+orgGID);
 		if(witnesses==null) return false;
 		for(int k=0; k<witnesses.length; k++) {
 			if(DEBUG) out.println("WitnessHandling:integrateNewData: store w="+witnesses[k]);
 			witnesses[k].organization_ID = org_local_ID;
 			witnesses[k].global_organization_ID = orgGID;
-			long id=witnesses[k].store(rq);
+			long id=witnesses[k].store(sol_rq, new_rq);
 			if(DEBUG) out.println("WitnessHandling:integrateNewData: store got id="+id);
 		}
 		return witnesses.length>0;
@@ -239,7 +240,8 @@ public class WitnessingHandling {
 			System.out.println("\n***\nw="+W);
 		}
 		Calendar now=Util.CalendargetInstance();
-		RequestData rq = new RequestData();
-		integrateNewData(w, org_gid, "1", Encoder.getGeneralizedTime(now), null, rq);
+		RequestData sol_rq = new RequestData();
+		RequestData new_rq = new RequestData();
+		integrateNewData(w, org_gid, "1", Encoder.getGeneralizedTime(now), null, sol_rq, new_rq);
 	}
 }

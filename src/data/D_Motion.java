@@ -374,10 +374,10 @@ public class D_Motion extends ASNObj implements util.Summary{
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public long store(streaming.RequestData rq) throws P2PDDSQLException {
+	public long store(streaming.RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		synchronized(D_Motion.motion_GID_saving_lock ) {
 			boolean failure = false;
-			boolean locals = fillLocals(rq, true, true, true);
+			boolean locals = fillLocals(new_rq, true, true, true);
 			if(!locals) failure = true;
 	
 			if(!this.verifySignature())
@@ -402,7 +402,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 				this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
 			if((this.organization_ID == null ) && (this.global_organization_ID != null)) {
 				organization_ID = ""+data.D_Organization.insertTemporaryGID(global_organization_ID);
-				rq.orgs.add(global_organization_ID);
+				new_rq.orgs.add(global_organization_ID);
 			}
 			
 			if((this.constituent_ID == null ) && (this.global_constituent_ID != null))
@@ -410,7 +410,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 			if((this.constituent_ID == null ) && (this.global_constituent_ID != null)) {
 				constituent_ID =
 					""+D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID);
-				rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
+				new_rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
 			}
 	
 			if(this.global_motionID.equals(this.global_enhanced_motionID)) {
@@ -422,10 +422,10 @@ public class D_Motion extends ASNObj implements util.Summary{
 				this.enhanced_motionID = getMotionLocalID(this.global_enhanced_motionID);
 			if ((this.enhanced_motionID == null) && (this.global_enhanced_motionID != null)) {
 				this.enhanced_motionID = ""+ insertTemporaryGID(global_enhanced_motionID, this.organization_ID);
-				rq.moti.add(global_enhanced_motionID);
+				new_rq.moti.add(global_enhanced_motionID);
 			}
 			
-			rq.moti.remove(this.global_motionID);
+			if(sol_rq!=null)sol_rq.moti.add(this.global_motionID);
 			
 			return storeVerified();
 		}	
@@ -454,7 +454,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst) throws P2PDDSQLException {
+	public boolean fillLocals(RequestData new_rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst) throws P2PDDSQLException {
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
 			return false;
@@ -468,7 +468,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 			organization_ID = Util.getStringID(D_Organization.getLocalOrgID(global_organization_ID));
 			if(tempOrg && (organization_ID == null)) {
 				String orgGID_hash = D_Organization.getOrgGIDHashGuess(global_organization_ID);
-				if(rq!=null)rq.orgs.add(orgGID_hash);
+				if(new_rq!=null) new_rq.orgs.add(orgGID_hash);
 				organization_ID = Util.getStringID(D_Organization.insertTemporaryGID(global_organization_ID, orgGID_hash, default_blocked_org));
 				if(default_blocked_org) return false;
 			}
@@ -479,7 +479,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID);
 			if(tempConst && (constituent_ID == null ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
-				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
+				if(new_rq!=null) new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
 				constituent_ID = Util.getStringID(D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, organization_ID));
 			}
 			if(constituent_ID == null) return false;
@@ -502,6 +502,10 @@ public class D_Motion extends ASNObj implements util.Summary{
 		Calendar now = Util.CalendargetInstance();
 		return storeVerified(now, DEBUG);
 	}
+	public long storeVerifiedNoSync() throws P2PDDSQLException {
+		Calendar now = Util.CalendargetInstance();
+		return storeVerifiedNoSync(now, DEBUG, false);
+	}
 	public long storeVerified(boolean DEBUG) throws P2PDDSQLException {
 		Calendar now = Util.CalendargetInstance();
 		return storeVerified(now, DEBUG);
@@ -510,6 +514,9 @@ public class D_Motion extends ASNObj implements util.Summary{
 		return storeVerified(arrival_date, DEBUG);
 	}
 	public long storeVerified(Calendar arrival_date, boolean DEBUG) throws P2PDDSQLException {
+		return storeVerifiedNoSync(arrival_date, DEBUG, true);
+	}
+	public long storeVerifiedNoSync(Calendar arrival_date, boolean DEBUG, boolean sync) throws P2PDDSQLException {
 		long result = -1;
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("D_Motion:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
@@ -551,25 +558,46 @@ public class D_Motion extends ASNObj implements util.Summary{
 		params[table.motion.M_BROADCASTED] = Util.bool2StringInt(broadcasted);
 		if(this.motionID == null) {
 			if(DEBUG) System.out.println("D_Motion:storeVerified:inserting");
-			result = Application.db.insert(table.motion.TNAME,
-					table.motion.fields_array,
-					params,
-					DEBUG
-					);
+			if(sync){
+				result = Application.db.insert(table.motion.TNAME,
+						table.motion.fields_array,
+						params,
+						DEBUG
+						);
+			}else{
+				result = Application.db.insertNoSync(table.motion.TNAME,
+						table.motion.fields_array,
+						params,
+						DEBUG
+						);
+			}
 			motionID=Util.getStringID(result);
 		}else{
 			if(DEBUG) System.out.println("D_Motion:storeVerified:inserting");
 			params[table.motion.M_MOTION_ID] = motionID;
-			Application.db.update(table.motion.TNAME,
-					table.motion.fields_noID_array,
-					new String[]{table.motion.motion_ID},
-					params,
-					DEBUG
-					);
+			if(sync) {
+				Application.db.update(table.motion.TNAME,
+						table.motion.fields_noID_array,
+						new String[]{table.motion.motion_ID},
+						params,
+						DEBUG
+						);
+			}else{
+				Application.db.updateNoSync(table.motion.TNAME,
+						table.motion.fields_noID_array,
+						new String[]{table.motion.motion_ID},
+						params,
+						DEBUG
+						);
+			}
 			result = Util.lval(this.motionID, -1);
 		}
-		Application.db.delete(table.motion_choice.TNAME, new String[]{table.motion_choice.motion_ID}, new String[]{result+""}, DEBUG);
-		D_MotionChoice.save(choices, motionID);
+		if(sync) {
+			Application.db.delete(table.motion_choice.TNAME, new String[]{table.motion_choice.motion_ID}, new String[]{result+""}, DEBUG);
+		}else{
+			Application.db.deleteNoSync(table.motion_choice.TNAME, new String[]{table.motion_choice.motion_ID}, new String[]{result+""}, DEBUG);
+		}
+		D_MotionChoice.save(choices, motionID, sync);
 		
 		if((this.signature!=null) && (global_motionID != null))
 			ClientSync.payload_recent.add(streaming.RequestData.MOTI, this.global_motionID, D_Organization.getOrgGIDHashGuess(this.global_organization_ID), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
@@ -684,10 +712,11 @@ public class D_Motion extends ASNObj implements util.Summary{
 		this.signature = null;
 		this.constituent_ID = null;
 		this.global_constituent_ID = null;
-		this.motion_title.title_document.setDocumentString(_("Answer To:")+" "+this.motion_title.title_document.getDocumentUTFString());
-		this.motion_text.setDocumentString(_("Answer To:")+" \n"+this.motion_text.getDocumentUTFString());
+		this.motion_title.title_document.setDocumentString(_("Enhancement Of:")+" "+this.motion_title.title_document.getDocumentUTFString());
+		this.motion_text.setDocumentString(_("Enhancement Of:")+" \n"+this.motion_text.getDocumentUTFString());
 		this.creation_date = this.arrival_date = Util.CalendargetInstance();
-		this.requested = this.blocked = this.broadcasted = false;		
+		this.requested = this.blocked = false;
+		this.broadcasted = true;		
 	}
 	/**
 	 * Called as:

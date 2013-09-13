@@ -61,6 +61,8 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	public static final int TABLE_COL_RECENT = 5; // any activity in the last x days?
 	public static final int TABLE_COL_NEWS = 6; // unread news?
 	public static final int TABLE_COL_CREATION_DATE = 7; // unread news?
+	public static final int TABLE_COL_BROADCASTED = 8; // unread news?
+	public static final int TABLE_COL_BLOCKED = 9; // unread news?
 	//public static final int TABLE_COL_PLUGINS = 7;
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -80,8 +82,8 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	
 	String columnNames[]={
 			_("Name"),_("Initiator"),_("Category"),
-			_("Voters"),_("Activity"),
-			_("Hot"),_("News"),_("Date")
+			_("Support"),_("Voters"),
+			_("Hot"),_("News"),_("Date"), _("^"), _("X")
 			};
 	ArrayList<Motions> tables= new ArrayList<Motions>();
 	private String crt_orgID;
@@ -154,6 +156,8 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		if(col == this.TABLE_COL_ACTIVITY) return Integer.class;
 		if(col == this.TABLE_COL_VOTERS_NB) return Integer.class;
 		if(col == this.TABLE_COL_NEWS) return Integer.class;
+		if(col == this.TABLE_COL_BROADCASTED) return Boolean.class;
+		if(col == this.TABLE_COL_BLOCKED) return Boolean.class;
 		
 		return String.class;
 	}
@@ -166,6 +170,12 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		Object result = null;
 		String motID = Util.getString(this._motions[row]);
 		switch(col) {
+		case TABLE_COL_BROADCASTED:
+			if((row>=0) && (row<this._crea_date.length))result = new Boolean(this._bro[row]);
+			break;
+		case TABLE_COL_BLOCKED:
+			if((row>=0) && (row<this._crea_date.length))result = new Boolean(this._blo[row]);
+			break;
 		case TABLE_COL_CREATION_DATE:
 			if((row>=0) && (row<this._crea_date.length))result = this._crea_date[row];
 			break;
@@ -325,6 +335,8 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		case TABLE_COL_NAME:
 		case TABLE_COL_CREATOR:
 		case TABLE_COL_CATEGORY:
+		case TABLE_COL_BROADCASTED:
+		case TABLE_COL_BLOCKED:
 			return true;
 		}
 		return false;
@@ -422,9 +434,9 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 				_hash[k] = moti.get(k).get(2);
 				_crea[k] = moti.get(k).get(3);
 				_gid[k] = (moti.get(k).get(3) != null);
-				_blo[k] = "1".equals(moti.get(k).get(4));
-				_bro[k] = "1".equals(moti.get(k).get(5));
-				_req[k] = "1".equals(moti.get(k).get(6));
+				_blo[k] = Util.stringInt2bool(moti.get(k).get(4), false);
+				_bro[k] = Util.stringInt2bool(moti.get(k).get(5), false);
+				_req[k] = Util.stringInt2bool(moti.get(k).get(6), false);
 				_crea_date[k] = moti.get(k).get(7);
 			}
 			if(DEBUG) System.out.println("widgets.org.Motions: A total of: "+_motions.length);
@@ -474,6 +486,16 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		case TABLE_COL_CATEGORY:
 			set_my_data(table.my_motion_data.category, Util.getString(value), row);
 			break;
+		case TABLE_COL_BROADCASTED:
+			if(!(value instanceof Boolean)) break;
+			boolean val1 = ((Boolean)value).booleanValue();
+			set_data(table.motion.broadcasted, Util.bool2StringInt(val1), row);
+			break;
+		case TABLE_COL_BLOCKED:
+			if(!(value instanceof Boolean)) break;
+			boolean val2 = ((Boolean)value).booleanValue();
+			set_data(table.motion.blocked, Util.bool2StringInt(val2), row);
+			break;
 		}
 		fireTableCellUpdated(row, col);
 	}
@@ -492,6 +514,28 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 				if(value==null) return;
 				db.insert(table.my_motion_data.TNAME,
 						new String[]{field_name,table.my_motion_data.motion_ID},
+						new String[]{value, motion_ID});
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
+	private void set_data(String field_name, String value, int row) {
+		if(row >= _motions.length) return;
+		if("".equals(value)) value = null;
+		if(DEBUG)System.out.println("Set value =\""+value+"\"");
+		String motion_ID = Util.getString(_motions[row]);
+		try {
+			String sql = "SELECT "+field_name+" FROM "+table.motion.TNAME+
+					" WHERE "+table.motion.motion_ID+"=?;";
+			ArrayList<ArrayList<Object>> mots = db.select(sql,new String[]{motion_ID});
+			if(mots.size()>0){
+				db.update(table.motion.TNAME, new String[]{field_name},
+						new String[]{table.motion.motion_ID}, new String[]{value, motion_ID});
+			}else{
+				if(value==null) return;
+				db.insert(table.motion.TNAME,
+						new String[]{field_name,table.motion.motion_ID},
 						new String[]{value, motion_ID});
 			}
 		} catch (P2PDDSQLException e) {

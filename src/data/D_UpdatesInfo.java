@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 
 import util.P2PDDSQLException;
+import util.Summary;
 
 import config.Application;
 import config.DD;
@@ -42,8 +43,10 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
-public class D_UpdatesInfo extends ASN1.ASNObj{
+public class D_UpdatesInfo extends ASN1.ASNObj implements Summary{
 	private static final boolean _DEBUG = true;
+	public static final String action_update = "update";
+	public static final String action_insert = "insert";
 	public static  boolean DEBUG = false;
 	public D_TesterDefinition[] testerDef;     // dragged (optional) it should be read from a mirror 
 	public String url;                    // dragged
@@ -56,6 +59,7 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 	public long updates_ID = -1;
 	public Calendar last_contact_date;
 	public String activity;
+	public int version = 0;
 	public D_UpdatesInfo() {
 		
 	}
@@ -74,10 +78,24 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 	public D_UpdatesInfo(ArrayList<Object> _u) {
 		init(_u);
 	}
+	public D_UpdatesInfo(long id) {
+		String sql = "SELECT "+updates.fields_updates+" FROM "+updates.TNAME+" WHERE "+table.updates.updates_ID+"=?;";
+		String[]params = new String[]{Util.getStringID(id)};// where clause?
+		ArrayList<ArrayList<Object>> u;
+		try {
+			u = Application.db.select(sql, params, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return;
+		}		
+		if(u.size()>0) init(u.get(0));
+	}
 	public boolean existsInDB() {
 		D_UpdatesInfo old = new D_UpdatesInfo(url);
 		return old.updates_ID >=0 ;
 	}
+	@Override
+	public D_UpdatesInfo instance() throws CloneNotSupportedException{return new D_UpdatesInfo();}
 	public void init(ArrayList<Object> _u){
 		if(DEBUG) System.out.println("D_UpdatesInfo: <init>: start");
 		updates_ID = Util.lval(_u.get(table.updates.F_ID),-1);
@@ -177,16 +195,33 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 //    		result.add((String)urls.get(i).get(0)) ;
    		return result;
 	}
-
 	@Override
-	public Encoder getEncoder() {
-		// TODO Auto-generated method stub
-		return null;
+	public String toSummaryString() {
+		return "D_UpdateInfo: v="+version+"\nname="+this.original_mirror_name+"\n"+"url="+this.url;
+	}
+	public String toString(){
+		return toSummaryString();
 	}
 	@Override
-	public Object decode(Decoder dec) throws ASN1DecoderFail {
-		// TODO Auto-generated method stub
-		return null;
+	public Encoder getEncoder() {
+		Encoder enc = new Encoder().initSequence();
+		enc.addToSequence(new Encoder(version));
+		enc.addToSequence(new Encoder(this.original_mirror_name));
+		enc.addToSequence(new Encoder(url));
+		enc.setASN1Type(getASNType());
+		return enc;
+	}
+	@Override
+	public D_UpdatesInfo decode(Decoder dec) throws ASN1DecoderFail {
+		Decoder d = dec.getContent();
+		version = d.getFirstObject(true).getInteger().intValue();
+		this.original_mirror_name = d.getFirstObject(true).getString();
+		this.url = d.getFirstObject(true).getString();
+		return this;
+	}
+	public void store() throws P2PDDSQLException {
+		if(this.existsInDB()) this.store(action_update); 
+		else this.store(action_insert);
 	}
 	public void store(String cmd) throws P2PDDSQLException {
 		String params[] = new String[table.updates.F_FIELDS];
@@ -200,11 +235,11 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 		params[table.updates.F_LAST_CONTACT] = Encoder.getGeneralizedTime(this.last_contact_date);
 		params[table.updates.F_ACTIVITY] = this.activity;
 		params[table.updates.F_ID] = Util.getStringID(this.updates_ID);
-	    if(cmd.equals("update"))
+	    if(cmd.equals(action_update))
 		Application.db.updateNoSync(table.updates.TNAME, table.updates._fields_updates_no_ID,
 				new String[]{table.updates.updates_ID},
 				params,DEBUG);
-		if(cmd.equals("insert")){
+		if(cmd.equals(action_insert)){
 		// check the existance based on PK or url?
 		String params2[]=new String[table.updates.F_FIELDS_NOID];
 		System.arraycopy(params,0,params2,0,params2.length);
@@ -403,23 +438,47 @@ public class D_UpdatesInfo extends ASN1.ASNObj{
 		for(VersionInfo v : versions.keySet()) {
 			Hashtable<String, VersionInfo> available = versions.get(v);
 			for(String url:available.keySet()) {
-			try{	
-				VersionInfo vi = available.get(url);
-				D_UpdatesInfo ui = getUpdateInfo(url);
-				ui.last_version = vi.version;
-				ui.last_contact_date = new GregorianCalendar();
-				ui.releaseQoT = vi.releaseQD;
-				ui.testerInfo = vi.testers_data;
-				ui.store("update");
-				if(DEBUG)System.out.println("store_QoTs_and_RoTs()ui.last_version= "+ui.last_version);
+				try{	
+					VersionInfo vi = available.get(url);
+					D_UpdatesInfo ui = getUpdateInfo(url);
+					ui.last_version = vi.version;
+					ui.last_contact_date = new GregorianCalendar();
+					ui.releaseQoT = vi.releaseQD;
+					ui.testerInfo = vi.testers_data;
+					ui.store(D_UpdatesInfo.action_update);
+					if(DEBUG)System.out.println("store_QoTs_and_RoTs()ui.last_version= "+ui.last_version);
 				}catch (P2PDDSQLException e) {
-		    	e.printStackTrace();
-			    return;		
-  			    }
+					e.printStackTrace();
+					return;		
+				}
 			}
 			Application.db.sync(new ArrayList<String>(Arrays.asList(table.updates.TNAME,table.updatesKeys.TNAME)));		
 		}
 		if(DEBUG)System.out.println("end store_QoTs_and_RoTs()");
+	}
+	public static byte getASNType() {
+		return DD.TAG_AC10;
+	}
+	public static ArrayList<D_UpdatesInfo> retrieveMirrorDefinitions() {
+		ArrayList<D_UpdatesInfo> result = new ArrayList<D_UpdatesInfo>();
+		String sql = "SELECT "+table.updates.updates_ID+
+				" FROM  " + table.updates.TNAME+";";
+		ArrayList<ArrayList<Object>> list=null;
+		try{
+			list = Application.db.select(sql, new String[]{}, DEBUG);
+		}catch(util.P2PDDSQLException e){
+			System.out.println(e);
+		}
+		if(list == null ){
+			return null;
+		}
+		for(ArrayList<Object> id : list){
+			long _id = Util.lval(id.get(0));
+			if(DEBUG)System.out.println("D_UpdatesInfo:<init>:Found: "+_id);
+			D_UpdatesInfo ui = new D_UpdatesInfo(_id);
+			result.add(ui);
+		}
+		return result;
 	}
 	
 }

@@ -26,6 +26,7 @@ import java.util.Hashtable;
 import util.P2PDDSQLException;
 
 import config.Application;
+import config.DD;
 
 
 import data.D_Organization;
@@ -41,7 +42,7 @@ import util.Util;
 
 /**
  * Contains ArrayLists of GIDhash-es. An ordered hashtable for constituents (with date)
- * Probably should be the same for authoritarian orgs!
+ * Probably should be the same for authoritarian orgs! and for signatures!
  * @author msilaghi
  *
  */
@@ -63,10 +64,11 @@ public class RequestData extends ASNObj implements Summary{
 	public ArrayList<String> witn = new ArrayList<String>();
 	public ArrayList<String> moti = new ArrayList<String>();
 	public ArrayList<String> just = new ArrayList<String>();
-	public ArrayList<String> sign = new ArrayList<String>();
+	public Hashtable<String,String> sign = new Hashtable<String,String>();
 	public ArrayList<String> tran = new ArrayList<String>();
 	public ArrayList<String> news = new ArrayList<String>();
 	public String global_organization_ID_hash;
+	public int version = 2; // From version 2 on, sign is a Hashtable
 	public RequestData() {}
 	/**
 	 * No longer used, since the specific requests now store OrgPeerDataHashes
@@ -107,14 +109,17 @@ public class RequestData extends ASNObj implements Summary{
 		result.witn = new ArrayList<String>(witn);
 		result.moti = new ArrayList<String>(moti);
 		result.just = new ArrayList<String>(just);
-		result.sign = new ArrayList<String>(sign);
+		result.sign = new Hashtable<String,String>(sign);
 		result.tran = new ArrayList<String>(tran);
 		result.news = new ArrayList<String>(news);
 		return result;
 	}
 	public boolean addHashIfNewTo(String hash, String date, int type, int MAX_ITEM) {
 		switch(type) {
-			case CONS: return addIfNewToHash(hash, date, cons, MAX_ITEM);
+		case CONS: return addIfNewToHash(hash, date, cons, MAX_ITEM);
+		case SIGN: return addIfNewToHash(hash, date, sign, MAX_ITEM);
+		default:
+			Util.printCallPath("Unknown data type: "+type);
 		}
 		return false;
 	}
@@ -125,9 +130,14 @@ public class RequestData extends ASNObj implements Summary{
 		case WITN: return addIfNewToArray(hash, witn, MAX_ITEM);
 		case MOTI: return addIfNewToArray(hash, moti, MAX_ITEM);
 		case JUST: return addIfNewToArray(hash, just, MAX_ITEM);
-		case SIGN: return addIfNewToArray(hash, sign, MAX_ITEM);
+		case SIGN: //return addIfNewToArray(hash, sign, MAX_ITEM);
+			Util.printCallPath("Signatures are not arrays");
+			return addHashIfNewTo(hash, DD.EMPTYDATE, type, MAX_ITEM);
+			//throw new RuntimeException("Never come here!");
 		case TRAN: return addIfNewToArray(hash, tran, MAX_ITEM);
 		case NEWS: return addIfNewToArray(hash, news, MAX_ITEM);
+		default:
+			Util.printCallPath("Unknown data type: "+type);
 		}
 		return false;
 	}
@@ -150,13 +160,21 @@ public class RequestData extends ASNObj implements Summary{
 		byte[] req = Util.byteSignatureFromString(rd);
 		if(rd==null) return;
 		Decoder d = new Decoder(req).getContent();
+		if(d.isFirstObjectTagByte(Encoder.TAG_SEQUENCE)) {
+			if(DEBUG)System.out.println("Old version on the other side");
+			version  = 1;
+		}else{
+			if(d.isFirstObjectTagByte(Encoder.TAG_INTEGER)) {
+				version = d.getFirstObject(true).getInteger().intValue();
+			}
+		}
 		orgs = d.getSequenceOfAL(Encoder.TAG_PrintableString);
 		neig = d.getSequenceOfAL(Encoder.TAG_PrintableString);
-		cons = d.getSequenceOfHSS(Encoder.TAG_PrintableString);
+		cons = d.getSequenceOfHSS(Encoder.TAG_PrintableString, false);
 		witn = d.getSequenceOfAL(Encoder.TAG_PrintableString);
 		moti = d.getSequenceOfAL(Encoder.TAG_PrintableString);
 		just = d.getSequenceOfAL(Encoder.TAG_PrintableString);		
-		sign = d.getSequenceOfAL(Encoder.TAG_PrintableString);		
+		sign = d.getSequenceOfHSS(Encoder.TAG_PrintableString, (version<2));
 		tran = d.getSequenceOfAL(Encoder.TAG_PrintableString);		
 		news = d.getSequenceOfAL(Encoder.TAG_PrintableString);		
 	}
@@ -182,7 +200,7 @@ public class RequestData extends ASNObj implements Summary{
 		witn = appendSet(witn, n.witn);
 		moti = appendSet(moti, n.moti);
 		just = appendSet(just, n.just);
-		sign = appendSet(sign, n.sign);
+		sign = appendHash(sign, n.sign);
 		tran = appendSet(tran, n.tran);
 		news = appendSet(news, n.news);
 	}
@@ -208,7 +226,7 @@ public class RequestData extends ASNObj implements Summary{
 		witn = appendSet(witn, n.witn, _peer_ID, generalizedTime);
 		moti = appendSet(moti, n.moti, _peer_ID, generalizedTime);
 		just = appendSet(just, n.just, _peer_ID, generalizedTime);
-		sign = appendSet(sign, n.sign, _peer_ID, generalizedTime);
+		sign = appendHash(sign, n.sign, _peer_ID, generalizedTime);
 		tran = appendSet(tran, n.tran, _peer_ID, generalizedTime);
 		news = appendSet(news, n.news, _peer_ID, generalizedTime);
 	}
@@ -229,6 +247,24 @@ public class RequestData extends ASNObj implements Summary{
 	}
 	@Override
 	public Encoder getEncoder() {
+		if(version >= 2) return getEncoder_2();
+		else return getEncoder_1();
+	}
+	public Encoder getEncoder_2() {
+		Encoder enc = new Encoder().initSequence();
+		enc.addToSequence(Encoder.getStringEncoder(orgs.toArray(new String[0]), Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC15));
+		enc.addToSequence(Encoder.getStringEncoder(neig.toArray(new String[0]), Encoder.TAG_PrintableString));
+		enc.addToSequence(Encoder.getHashStringEncoder(cons, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC13));
+		enc.addToSequence(Encoder.getStringEncoder(witn.toArray(new String[0]), Encoder.TAG_PrintableString));
+		enc.addToSequence(Encoder.getStringEncoder(moti.toArray(new String[0]), Encoder.TAG_PrintableString));
+		enc.addToSequence(Encoder.getStringEncoder(just.toArray(new String[0]), Encoder.TAG_PrintableString));
+		enc.addToSequence(Encoder.getHashStringEncoder(sign, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC13));
+		enc.addToSequence(Encoder.getStringEncoder(tran.toArray(new String[0]), Encoder.TAG_PrintableString));
+		enc.addToSequence(Encoder.getStringEncoder(news.toArray(new String[0]), Encoder.TAG_PrintableString));
+		enc.addToSequence(new Encoder(this.global_organization_ID_hash, false));
+		return enc;
+	}
+	public Encoder getEncoder_1() {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(Encoder.getStringEncoder(orgs.toArray(new String[0]), Encoder.TAG_PrintableString));
 		enc.addToSequence(Encoder.getStringEncoder(neig.toArray(new String[0]), Encoder.TAG_PrintableString));
@@ -236,7 +272,7 @@ public class RequestData extends ASNObj implements Summary{
 		enc.addToSequence(Encoder.getStringEncoder(witn.toArray(new String[0]), Encoder.TAG_PrintableString));
 		enc.addToSequence(Encoder.getStringEncoder(moti.toArray(new String[0]), Encoder.TAG_PrintableString));
 		enc.addToSequence(Encoder.getStringEncoder(just.toArray(new String[0]), Encoder.TAG_PrintableString));
-		enc.addToSequence(Encoder.getStringEncoder(sign.toArray(new String[0]), Encoder.TAG_PrintableString));
+		enc.addToSequence(Encoder.getKeysStringEncoder(sign, Encoder.TAG_PrintableString));			
 		enc.addToSequence(Encoder.getStringEncoder(tran.toArray(new String[0]), Encoder.TAG_PrintableString));
 		enc.addToSequence(Encoder.getStringEncoder(news.toArray(new String[0]), Encoder.TAG_PrintableString));
 		enc.addToSequence(new Encoder(this.global_organization_ID_hash, false));
@@ -245,13 +281,21 @@ public class RequestData extends ASNObj implements Summary{
 	@Override
 	public RequestData decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();
+		if(d.isFirstObjectTagByte(Encoder.TAG_SEQUENCE)) {
+			if(DEBUG)System.out.println("Old version on the other side");
+			version  = 1;
+		}else{
+			if(d.isFirstObjectTagByte(Encoder.TAG_INTEGER)) {
+				version = d.getFirstObject(true).getInteger().intValue();
+			}
+		}
 		orgs = d.getFirstObject(true).getSequenceOfAL(Encoder.TAG_PrintableString);
 		neig = d.getFirstObject(true).getSequenceOfAL(Encoder.TAG_PrintableString);
-		cons = d.getFirstObject(true).getSequenceOfHSS(Encoder.TAG_PrintableString);
+		cons = d.getFirstObject(true).getSequenceOfHSS(Encoder.TAG_PrintableString, false);
 		witn = d.getFirstObject(true).getSequenceOfAL(Encoder.TAG_PrintableString);
 		moti = d.getFirstObject(true).getSequenceOfAL(Encoder.TAG_PrintableString);
 		just = d.getFirstObject(true).getSequenceOfAL(Encoder.TAG_PrintableString);
-		sign = d.getFirstObject(true).getSequenceOfAL(Encoder.TAG_PrintableString);
+		sign = d.getFirstObject(true).getSequenceOfHSS(Encoder.TAG_PrintableString, (version<2));
 		tran = d.getFirstObject(true).getSequenceOfAL(Encoder.TAG_PrintableString);
 		news = d.getFirstObject(true).getSequenceOfAL(Encoder.TAG_PrintableString);
 		this.global_organization_ID_hash = d.getFirstObject(true).getString();
@@ -333,9 +377,28 @@ public class RequestData extends ASNObj implements Summary{
 		for(String s : obtained.witn) witn.remove(s);
 		for(String s : obtained.moti) moti.remove(s);
 		for(String s : obtained.just) just.remove(s);
-		for(String s : obtained.sign) sign.remove(s);
+		for(String s : obtained.sign.keySet()) sign.remove(s);
 		for(String s : obtained.tran) tran.remove(s);
 		for(String s : obtained.news) news.remove(s);
 		if(DEBUG)System.out.println("RequestData:purge: Got "+this);
+	}
+	public void update(RequestData sol_rq, RequestData new_rq) {
+		for(String s : new_rq.cons.keySet()) if(!this.cons.contains(s)) this.cons.put(s, DD.EMPTYDATE);
+		for(String s : new_rq.neig) if(!this.neig.contains(s)) this.neig.add(s);
+		for(String s : new_rq.witn) if(!this.witn.contains(s)) this.witn.add(s);
+		for(String s : new_rq.moti) if(!this.moti.contains(s)) this.moti.add(s);
+		for(String s : new_rq.just) if(!this.just.contains(s)) this.just.add(s);
+		for(String s : new_rq.sign.keySet()) if(!this.sign.contains(s)) this.sign.put(s, DD.EMPTYDATE);
+		for(String s : new_rq.tran) if(!this.tran.contains(s)) this.tran.add(s);
+		for(String s : new_rq.news) if(!this.news.contains(s)) this.news.add(s);
+		
+		for(String s : sol_rq.cons.keySet()) this.cons.remove(s);
+		for(String s : sol_rq.neig) this.neig.remove(s);
+		for(String s : sol_rq.witn) this.witn.remove(s);
+		for(String s : sol_rq.moti) this.moti.remove(s);
+		for(String s : sol_rq.just) this.just.remove(s);
+		for(String s : sol_rq.sign.keySet()) this.sign.remove(s);
+		for(String s : sol_rq.tran) this.tran.remove(s);
+		for(String s : sol_rq.news) this.news.remove(s);		
 	}
 }

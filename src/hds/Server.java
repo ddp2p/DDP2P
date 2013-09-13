@@ -262,7 +262,7 @@ public class Server extends Thread {
 	public static final String SOCKET = "Socket";
 	public static int TIMEOUT_UDP_NAT_BORER = 2000;
 	public static final long TIMEOUT_UDP_Reclaim = 2000;
-	public static final int TIMEOUT_UDP_Announcement_Diviser = 100;
+	public static final int TIMEOUT_UDP_Announcement_Diviser = 30;
 	public static final boolean DEBUG = false;
 	public static final boolean _DEBUG = true;
 	Object lock = new Object();
@@ -424,6 +424,7 @@ public class Server extends Thread {
 		detectDomain(Identity.port);
 	}
 	public static void detectDomain(int port) throws SocketException{
+		//boolean DEBUG=true;
 		synchronized (Identity.my_server_domains) {
 			if ((Identity.my_server_domains.size()>0) || (Identity.my_server_domains_loopback.size()>0)) return;
 			if(DEBUG) out.println("END Server.detectDomain");
@@ -516,6 +517,7 @@ public class Server extends Thread {
 	 * @param da A prepared Directory Announcement
 	 */
 	public static void announceMyselfToDirectories(DirectoryAnnouncement da) {
+		//boolean DEBUG = true;
 		if(DEBUG) out.println("Server:announceMyselfToDirectories:");
 		boolean first = true;
 		String dir_address=null;
@@ -530,12 +532,19 @@ public class Server extends Thread {
 				byte msg[]=da.encode();
 				s.getOutputStream().write(msg);
 				if(DEBUG) out.println("Server:announceMyselfToDirectories: sent: "+da);//+"\n"+Util.byteToHex(msg," "));
-				byte answer[] = new byte[10];
+				byte answer[] = new byte[200];
 				if(DEBUG) out.println("Server:announceMyselfToDirectories: Waiting answer!");
 				int alen=s.getInputStream().read(answer);
 				if(DEBUG) out.println("Server:announceMyselfToDirectories: Got answer: "+Util.byteToHex(answer, 0, alen, " "));
 				Decoder answer_dec=new Decoder(answer);
-				if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+answer_dec.getContent().getBoolean());
+				try{
+					D_DAAnswer ans = new D_DAAnswer(answer_dec);
+					if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+ans);
+					//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+answer_dec.getContent().getFirstObject(true).getBoolean());
+					//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: ");
+				}catch(Exception e){if(DD.DEBUG_TODO)e.printStackTrace();}
+				//D_DAAnswer ans = new D_DAAnswer(answer_dec);
+				//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+ans);
 				s.close();
 				if(first){
 					Identity.preferred_directory_idx = Identity.listing_directories_inet.indexOf(dir);
@@ -548,7 +557,9 @@ public class Server extends Thread {
 				DD.directories_failed.add(dir);
 				if(Application.ld!=null)
 					Application.ld.setTCPOn(dir_address, new Boolean(false));
+				if(DEBUG) err.println("Server: "+_("Announcing myself to directory:")+dir+" "+e.getLocalizedMessage());
 				if(DEBUG) err.println("Server: "+_("Error announcing myself to directory:")+dir);
+				if(DD.DEBUG_TODO)e.printStackTrace();
 				//e.printStackTrace();
 			}
 		}

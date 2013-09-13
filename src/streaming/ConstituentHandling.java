@@ -276,14 +276,16 @@ public class ConstituentHandling {
 	 * For each constituent it calls integrateNewConstituentOPData().
 	 * 
 	 * @param constituents
-	 * @param id
 	 * @param org_local_ID
 	 * @param arrival_time
 	 * @param orgData
+	 * @param new_rq TODO
+	 * @param id
 	 * @throws P2PDDSQLException 
 	 */
 	public static boolean integrateNewData(ASNConstituentOP[] constituents,
-			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
+			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(constituents == null) return false;
 		boolean result = false;
 		for(int k=0; k<constituents.length; k++) {
@@ -294,9 +296,9 @@ public class ConstituentHandling {
 				else submit_ID = D_Constituent.getConstituentLocalIDFromGID(constituents[k].constituent.global_submitter_id);
 				if(submit_ID==null) {
 					submit_ID = ""+D_Constituent.insertTemporaryConstituentGID(constituents[k].constituent.global_submitter_id, org_local_ID);
-					rq.cons.put(constituents[k].constituent.global_submitter_id, DD.EMPTYDATE);
+					new_rq.cons.put(constituents[k].constituent.global_submitter_id, DD.EMPTYDATE);
 				}else{
-					rq.cons.remove(constituents[k].constituent.global_submitter_id);
+					sol_rq.cons.put(constituents[k].constituent.global_submitter_id, DD.EMPTYDATE);
 				}
 				constituents[k].constituent.submitter_ID = submit_ID;
 			}			
@@ -306,13 +308,13 @@ public class ConstituentHandling {
 			
 			if((neighborhood_ID == null)&&(constituents[k].constituent.global_neighborhood_ID!=null)) {
 				neighborhood_ID = D_Neighborhood.insertTemporaryNeighborhoodGID(constituents[k].constituent.global_neighborhood_ID, org_local_ID);
-				rq.neig.add(constituents[k].constituent.global_neighborhood_ID);
+				new_rq.neig.add(constituents[k].constituent.global_neighborhood_ID);
 			}else{
 				//rq.neig.remove(constituents[k].constituent.global_neighborhood_ID);
 			}
 			constituents[k].constituent.neighborhood_ID = neighborhood_ID;
 
-			result |= integrateNewConstituentOPData(constituents[k],
+			result |= integrateNewConstituentOPData(sol_rq, new_rq, constituents[k],
 					orgGID, org_local_ID, arrival_time, orgData);
 		}
 		return result;
@@ -327,13 +329,14 @@ public class ConstituentHandling {
 	 * @param orgData
 	 * @throws P2PDDSQLException 
 	 */
-	private static boolean integrateNewConstituentOPData( ASNConstituentOP constituent, String orgGID,
+		static boolean integrateNewConstituentOPData(RequestData sol_rq, RequestData new_rq,
+			ASNConstituentOP constituent, String orgGID,
 			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: start on "+constituent);
 		if(constituent == null) return false;
 		D_Constituent wc = constituent.constituent;
 		boolean result;
-		result = (null!=integrateNewConstituentData( wc, orgGID, org_local_ID, arrival_time, orgData));
+		result = (null!=integrateNewConstituentData(wc, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq));
 		if(DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: exit with "+result);
 		return result;
 	}
@@ -349,7 +352,8 @@ public class ConstituentHandling {
 	 * @throws P2PDDSQLException
 	 */
 	public static String integrateNewConstituentData( D_Constituent wc, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
+			String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: start on "+wc);
 		String result = null;
 		if(wc == null) return result;
@@ -362,7 +366,11 @@ public class ConstituentHandling {
 				return result;
 			}
 		}
-		result = ""+wc.storeVerified(orgGID, org_local_ID, arrival_time);
+		wc.fillLocals(new_rq, true, true, true, true);
+		long _result = wc.storeVerified(orgGID, org_local_ID, arrival_time);
+		if(_result>0)
+			sol_rq.cons.put(wc.global_constituent_id, DD.EMPTYDATE);
+		result = Util.getStringID(_result);
 		if(DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: exit");
 		return result;
 	}

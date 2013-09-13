@@ -461,7 +461,13 @@ public class Connections extends Thread implements DBListener{
 			return;
 		}
     	if(ld == null){
-    		Application.warning(_("No default listing_directories found!"), _("Configuration"));
+    		if(! DD.WARNED_NO_DIRS) {
+    			Application.warning(_("No listing_directories for connections found at initialization: " +
+    					"\nDo not forget to add some later \n" +
+    					"(e.g., from the DirectDemocracyP2P.net list)!\n" +
+    					"If you have a stable IP, than you probably do not need it."), _("Configuration"));
+    			DD.WARNED_NO_DIRS = true;
+    		}
     		return;
     	}
     	String dirs[] = ld.split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_SEP));
@@ -669,7 +675,7 @@ public class Connections extends Thread implements DBListener{
 			}
 			
 			if(da.addresses.size()==0){
-				if(_DEBUG) out.println("Connections: getDirAddress:  Got no addresses! da="+da+" for:"+_pc.name);
+				if(DEBUG) out.println("Connections: getDirAddress:  Got no addresses! da="+da+" for:"+_pc.name);
 				socket.close();
 				return null;
 			}

@@ -441,10 +441,10 @@ class D_Witness extends ASNObj implements Summary {
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public long store(RequestData rq) throws P2PDDSQLException {
+	public long store(RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(DEBUG) out.println("D_Witness:store: start "+this.global_witness_ID);
 		
-		boolean locals = fillLocals(rq, true, true, true, true);
+		boolean locals = fillLocals(new_rq, true, true, true, true);
 		if(!locals){
 			if(_DEBUG) out.println("D_Witness:store: locals fail");
 			return -1;
@@ -458,6 +458,8 @@ class D_Witness extends ASNObj implements Summary {
 			}
 			if(_DEBUG) out.println("D_Witness:store: sign fail");
 
+		}else{
+			if(sol_rq!=null) sol_rq.witn.add(this.global_witness_ID);
 		}
 		
 		if ((this.witnessID <= 0) && (this.global_witness_ID != null))
@@ -485,17 +487,17 @@ class D_Witness extends ASNObj implements Summary {
 		if((witnessing_constituentID <=0 ) && (witnessing_global_constituentID!=null)) {
 			witnessing_constituentID =
 				D_Constituent.insertTemporaryConstituentGID(witnessing_global_constituentID, this.organization_ID);
-			rq.cons.put(witnessing_global_constituentID,DD.EMPTYDATE);
+			new_rq.cons.put(witnessing_global_constituentID,DD.EMPTYDATE);
 		}
 		if((witnessed_neighborhoodID <=0 ) && (witnessed_global_neighborhoodID!=null)) {
 			witnessed_neighborhoodID =
 				D_Neighborhood._insertTemporaryNeighborhoodGID(witnessed_global_neighborhoodID, this.organization_ID, 0);
-			rq.neig.add(witnessed_global_neighborhoodID);
+			new_rq.neig.add(witnessed_global_neighborhoodID);
 		}
 		if((witnessed_constituentID <=0 ) && (witnessed_global_constituentID != null)) {
 			witnessed_constituentID =
 				D_Constituent.insertTemporaryConstituentGID(witnessed_global_constituentID, this.organization_ID);
-			rq.cons.put(witnessed_global_constituentID,DD.EMPTYDATE);
+			new_rq.cons.put(witnessed_global_constituentID,DD.EMPTYDATE);
 		}
 		
 		return storeVerified();
@@ -516,7 +518,7 @@ class D_Witness extends ASNObj implements Summary {
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempNeig) throws P2PDDSQLException {
+	public boolean fillLocals(RequestData new_rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempNeig) throws P2PDDSQLException {
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
 			return false;
@@ -530,7 +532,7 @@ class D_Witness extends ASNObj implements Summary {
 			organization_ID = Util.getStringID(D_Organization.getLocalOrgID(global_organization_ID));
 			if(tempOrg && (organization_ID == null)) {
 				String orgGID_hash = D_Organization.getOrgGIDHashGuess(global_organization_ID);
-				if(rq!=null)rq.orgs.add(orgGID_hash);
+				if(new_rq!=null)new_rq.orgs.add(orgGID_hash);
 				organization_ID = Util.getStringID(D_Organization.insertTemporaryGID(global_organization_ID, orgGID_hash, default_blocked_org));
 				if(default_blocked_org){
 					Util.printCallPath("cannot store witness, blocked");
@@ -547,7 +549,7 @@ class D_Witness extends ASNObj implements Summary {
 			this.witnessing_constituentID = Util.lval(D_Constituent.getConstituentLocalIDFromGID(witnessing_global_constituentID), this.witnessing_constituentID);
 			if(tempConst && (witnessing_constituentID <= 0 ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(witnessing_global_constituentID);
-				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
+				if(new_rq!=null)new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
 				witnessing_constituentID = D_Constituent.insertTemporaryConstituentGID(witnessing_global_constituentID, organization_ID);
 			}
 			if(witnessing_constituentID <= 0){
@@ -561,7 +563,7 @@ class D_Witness extends ASNObj implements Summary {
 			this.witnessed_constituentID = Util.lval(witned_id, this.witnessed_constituentID);
 			if(tempConst && (this.witnessed_constituentID <= 0 ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(this.witnessed_global_constituentID);
-				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
+				if(new_rq!=null)new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
 				witned_id=D_Constituent.getConstituentLocalIDByGID_or_Hash(this.witnessed_global_constituentID, consGID_hash, null);
 				this.witnessed_constituentID = Util.lval(witned_id, this.witnessed_constituentID);
 				if(this.witnessed_constituentID>0)
@@ -579,7 +581,7 @@ class D_Witness extends ASNObj implements Summary {
 		if((this.witnessed_global_neighborhoodID!=null) && (witnessed_neighborhoodID <= 0)){
 			this.witnessed_neighborhoodID = Util.lval(D_Neighborhood.getLocalID(witnessed_global_neighborhoodID), this.witnessed_neighborhoodID);
 			if(tempNeig && (witnessed_neighborhoodID <= 0)) {
-				if(rq!=null)rq.neig.add(witnessed_global_neighborhoodID);
+				if(new_rq!=null)new_rq.neig.add(witnessed_global_neighborhoodID);
 				witnessed_neighborhoodID = D_Neighborhood._insertTemporaryNeighborhoodGID(witnessed_global_neighborhoodID, organization_ID, -1);
 			}
 			if(witnessed_neighborhoodID <= 0){
@@ -608,7 +610,13 @@ class D_Witness extends ASNObj implements Summary {
 		Calendar now = Util.CalendargetInstance();
 		return storeVerified(now);
 	}
+	static Object monitored_storeVerified = new Object();
 	public long storeVerified(Calendar arrival_date) throws P2PDDSQLException {
+		synchronized(monitored_storeVerified){
+			return _monitored_storeVerified(arrival_date);
+		}
+	}
+	private long _monitored_storeVerified(Calendar arrival_date) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("D_Witness:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		

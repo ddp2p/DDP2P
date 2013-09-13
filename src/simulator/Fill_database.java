@@ -777,7 +777,7 @@ private static D_Neighborhood add_neighborhood(long organization_ID, long cID, S
 	   wbn.global_organization_ID = D_Organization.getGlobalOrgID(Util.getStringID(organization_ID));
 	   wbn.global_neighborhood_ID = wbn.make_ID(wbn.global_organization_ID);
 	  wbn.signature = wbn.sign(sk, wbn.global_organization_ID);
-	  wbn.neighborhoodID =  wbn.storeVerified(Util.getStringID(cID), wbn.global_organization_ID, ""+organization_ID, now);
+	  wbn.neighborhoodID =  wbn.storeVerified(Util.getStringID(cID), wbn.global_organization_ID, ""+organization_ID, now, null, null);
 	  if(DEBUG)System.out.println("Fill_database : add_neighborhood() : NEIGH ADDED Neig_id="+ wbn.neighborhoodID);
 	   return wbn;
    }

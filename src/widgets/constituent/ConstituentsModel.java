@@ -1940,7 +1940,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
     			//WB_Neighborhood.readSignStore(neigh.n_data.neighborhoodID, sk, orgGID, submitter_ID, org_local_ID, arrival_time);
      			d_neighborhood.global_neighborhood_ID = d_neighborhood.make_ID(orgGID);
      			d_neighborhood.sign(sk, orgGID);
-     			d_neighborhood.storeVerified(submitter_ID, orgGID, org_local_ID, arrival_time);
+     			d_neighborhood.storeVerified(submitter_ID, orgGID, org_local_ID, arrival_time, null, null);
      			
      			ndo.global_nID = d_neighborhood.global_neighborhood_ID;
      			ndo.signature = d_neighborhood.signature;

@@ -26,6 +26,7 @@ import hds.ASNSyncRequest;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Hashtable;
 
 import util.P2PDDSQLException;
 
@@ -112,7 +113,7 @@ public class SignatureHandling {
 		return _maxDate;
 	}
 	static String sql_get_hashes=
-		"SELECT v."+table.signature.global_signature_ID+
+		"SELECT v."+table.signature.global_signature_ID+", v."+table.signature.creation_date+
 		" FROM "+table.signature.TNAME+" AS v "+
 		" JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=v."+table.signature.constituent_ID+")"+
 		" JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=v."+table.signature.motion_ID+")"+
@@ -131,13 +132,31 @@ public class SignatureHandling {
 //			" AND j."+table.justification.broadcasted+" <> '0' "+
 			" ORDER BY v."+table.signature.arrival_date
 		;
-	public static ArrayList<String> getSignatureHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
+	public static ArrayList<String> _getSignatureHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
 		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
 				new String[]{org_id, last_sync_date, maxDate}, DEBUG);
 		return Util.AL_AL_O_2_AL_S(result);
+	}
+//	public static Hashtable<String,String> getConstituentHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
+//		String maxDate;
+//		if(DEBUG) out.println("CostituentHandling:getConstituentHashes: start");
+//		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
+//		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
+//		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
+//				new String[]{org_id, last_sync_date, maxDate}, DEBUG);
+//		return Util.AL_AL_O_2_HSS_SS(result);
+//	}
+	public static Hashtable<String,String> getSignatureHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
+		String maxDate;
+		if(DEBUG) out.println("SignatureHandling:getSignatureHashes: start");
+		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
+		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
+		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
+				new String[]{org_id, last_sync_date, maxDate}, DEBUG);
+		return Util.AL_AL_O_2_HSS_SS(result);
 	}
 
 	public static D_Vote[] getSignaturesData(ASNSyncRequest asr,
@@ -192,7 +211,8 @@ public class SignatureHandling {
 	}
 
 	public static boolean integrateNewData(D_Vote[] signatures, String org_GID,
-			String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
+			String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) out.println("SignatureHandling:integrateNewData: start: #"+signatures);
 		if(signatures==null) {
@@ -203,7 +223,7 @@ public class SignatureHandling {
 			if(DEBUG) out.println("SignatureHandling:integrateNewData: doing["+k+"]: #"+signatures[k]);
 			signatures[k].global_organization_ID = org_GID;
 			signatures[k].organization_ID = org_local_ID;
-			signatures[k].store(rq);
+			signatures[k].store(sol_rq, new_rq);
 		}
 		if(DEBUG) out.println("SignatureHandling:integrateNewData: done for:"+signatures.length);
 		return signatures.length>0;

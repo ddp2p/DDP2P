@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- */
-/*   Copyright (C) 2012
+/*   Copyright (C) 2012 Khalid Alhamed and Marius Silaghi
 		Author: Khalid Alhamed and Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
    

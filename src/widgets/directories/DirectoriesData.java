@@ -141,7 +141,7 @@ public class DirectoriesData extends JPanel implements MouseListener  {
 				if(old_jt!=null)Application.directoriesData.remove(old_jt);
 				old_jt = jt;
 				Application.directoriesData.add(jt,BorderLayout.CENTER);
-				Application.peer.revalidate();
+				Application.peer_contacts.revalidate();
 			}}
 		);
 	}

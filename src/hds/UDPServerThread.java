@@ -402,7 +402,8 @@ public class UDPServerThread extends Thread {
 			
 			if(UDPServer.transferringPeerAnswerMessage(peerGID)){
 				if(DEBUG)System.out.println("UDPServer:run: UDPServer Answer being sent for: "+Util.trimmed(peerGID));
-				throw new Exception("While transferring answer to same peer");
+				//throw new Exception("While transferring answer to same peer");
+				return;
 			}
 			boolean blocked[] = new boolean[1];
 			String peer_ID = table.peer.getLocalPeerID(peerGID, blocked);
@@ -420,7 +421,7 @@ public class UDPServerThread extends Thread {
 			//System.out.println("Prepared answer: "+Util.trimmed(sa.toString()));
 			byte[]sa_msg = sa.encode();
 			us.sendLargeMessage(psa, sa_msg, DD.MTU, peerGID, DD.MSGTYPE_SyncAnswer);
-			if(DEBUG || DD.DEBUG_COMMUNICATION)System.out.println("UDPServer:run: Answer sent! "+sa.toSummaryString());
+			//if(_DEBUG || DD.DEBUG_COMMUNICATION)System.out.println("UDPServer:run: Answer sent! "+sa.toSummaryString());
 			if(DEBUG || DD.DEBUG_COMMUNICATION||DD.DEBUG_CHANGED_ORGS)
 				System.out.println("\n\n\nUDPServer:run: Answer sent! ch_org="+Util.nullDiscrimArraySummary(sa.changed_orgs,"--"));
 			//System.out.println("Answer sent: "+Util.trimmed(sa.toString(),Util.MAX_UPDATE_DUMP));
@@ -451,6 +452,7 @@ public class UDPServerThread extends Thread {
 				// System.out.println("Answer received is: "+Util.trimmed(sa.toString(),Util.MAX_UPDATE_DUMP));
 				if(DEBUG)System.out.println("UDPServer:run: Answer received & decoded from: "+pak.getSocketAddress());
 				if(DEBUG || DD.DEBUG_COMMUNICATION)System.out.println("UDPServer:run: Answer received is: "+sa.toSummaryString());
+				//if(_DEBUG || DD.DEBUG_COMMUNICATION)System.out.println("UDPServer:run: Answer received is: "+sa.toSummaryString());
 				if(DEBUG || DD.DEBUG_COMMUNICATION||DD.DEBUG_CHANGED_ORGS)
 					System.out.println("\n\n\nUDPServer:run: Answer rcv! ch_org="+Util.nullDiscrimArraySummary(sa.changed_orgs,"--"));
 				// integrate answer
@@ -468,7 +470,7 @@ public class UDPServerThread extends Thread {
 				//String peer_ID = table.peer.getLocalPeerID(global_peer_ID, blocked);
 				if((peer_ID!=null)&&blocked[0]) return;
 				if(peer_ID == null) {
-					if(_DEBUG)System.out.println("UDPServer:run: Answer received from unknown peer: "+global_peer_ID);
+					if(DEBUG||DD.DEBUG_TODO)System.out.println("UDPServerThread:_run: Answer received from unknown peer: "+global_peer_ID);
 				
 				} else
 					if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_UDP);

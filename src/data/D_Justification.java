@@ -359,11 +359,11 @@ public class D_Justification extends ASNObj{
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public long store(streaming.RequestData rq) throws P2PDDSQLException {
+	public long store(streaming.RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		
 		
-		boolean locals = fillLocals(rq, true, true, true, true);
+		boolean locals = fillLocals(new_rq, true, true, true, true);
 		if(!locals) return -1;
 
 		
@@ -391,7 +391,7 @@ public class D_Justification extends ASNObj{
 			this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
 		if((this.organization_ID == null ) && (this.global_organization_ID != null)) {
 			organization_ID = ""+data.D_Organization.insertTemporaryGID(global_organization_ID);
-			rq.orgs.add(global_organization_ID);
+			new_rq.orgs.add(global_organization_ID);
 		}
 		
 		if((this.constituent_ID == null ) && (this.global_constituent_ID != null))
@@ -399,24 +399,24 @@ public class D_Justification extends ASNObj{
 		if((this.constituent_ID == null ) && (this.global_constituent_ID != null)) {
 			constituent_ID =
 				""+D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID);
-			rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
+			new_rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
 		}
 		
 		if ((this.motion_ID == null) && (this.global_motionID != null))
 			this.motion_ID = D_Motion.getMotionLocalID(this.global_motionID);
 		if ((this.motion_ID == null) && (this.global_motionID != null)) {
 			this.motion_ID = ""+ D_Motion.insertTemporaryGID(global_motionID, this.organization_ID);
-			rq.moti.add(global_motionID);
+			new_rq.moti.add(global_motionID);
 		}
 
 		if ((this.answerTo_ID == null) && (this.global_answerTo_ID != null))
 			this.answerTo_ID = JustificationHandling.getJustificationLocalID(this.global_answerTo_ID);
 		if ((this.answerTo_ID == null) && (this.global_answerTo_ID != null)) {
 			this.answerTo_ID = ""+ insertTemporaryGID(global_answerTo_ID, this.motion_ID);
-			rq.just.add(global_answerTo_ID);
+			new_rq.just.add(global_answerTo_ID);
 		}
 
-		rq.just.remove(this.global_justificationID);
+		if(sol_rq!=null) sol_rq.just.add(this.global_justificationID);
 		
 		long result = storeVerified();
 		if(DEBUG) System.out.println("D_Justification:store: result ID= "+result);
@@ -461,7 +461,7 @@ public class D_Justification extends ASNObj{
 		return D_Organization.getGlobalOrgID(Util.getStringID(oID));
 	}
 
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion) throws P2PDDSQLException {
+	public boolean fillLocals(RequestData new_rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion) throws P2PDDSQLException {
 		/*
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
@@ -481,7 +481,7 @@ public class D_Justification extends ASNObj{
 			organization_ID = Util.getStringID(D_Organization.getLocalOrgID(global_organization_ID));
 			if(tempOrg && (organization_ID == null)) {
 				String orgGID_hash = D_Organization.getOrgGIDHashGuess(global_organization_ID);
-				if(rq!=null)rq.orgs.add(orgGID_hash);
+				if(new_rq!=null) new_rq.orgs.add(orgGID_hash);
 				organization_ID = Util.getStringID(D_Organization.insertTemporaryGID(global_organization_ID, orgGID_hash, default_blocked_org));
 				if(default_blocked_org) return false;
 			}
@@ -492,7 +492,7 @@ public class D_Justification extends ASNObj{
 			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID);
 			if(tempConst && (constituent_ID == null ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
-				if(rq!=null)rq.cons.put(consGID_hash, DD.EMPTYDATE);
+				if(new_rq!=null) new_rq.cons.put(consGID_hash, DD.EMPTYDATE);
 				constituent_ID = Util.getStringID(D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, organization_ID));
 			}
 			if(constituent_ID == null) return false;
@@ -501,7 +501,7 @@ public class D_Justification extends ASNObj{
 		if((this.global_motionID!=null)&&(motion_ID == null)){
 			this.motion_ID = D_Motion.getMotionLocalID(global_motionID);
 			if(tempMotion && (motion_ID == null ))  {
-				if(rq!=null)rq.moti.add(global_motionID);
+				if(new_rq!=null) new_rq.moti.add(global_motionID);
 				motion_ID = Util.getStringID(D_Motion.insertTemporaryGID(global_motionID, organization_ID));
 			}
 			if(motion_ID == null) return false;
@@ -532,7 +532,13 @@ public class D_Justification extends ASNObj{
 	public long storeVerified(Calendar arrival_date) throws P2PDDSQLException {
 		return storeVerified(arrival_date, DEBUG);
 	}
+	static Object monitored_storeVerified = new Object();
 	public long storeVerified(Calendar arrival_date, boolean DEBUG) throws P2PDDSQLException {
+		synchronized(monitored_storeVerified) {
+			return _monitored_storeVerified(arrival_date, DEBUG);
+		}
+	}
+	public long _monitored_storeVerified(Calendar arrival_date, boolean DEBUG) throws P2PDDSQLException {
 		long result = -1;
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("WB_Justification:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));

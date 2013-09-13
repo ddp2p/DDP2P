@@ -37,6 +37,7 @@ import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
+import config.Identity;
 import data.D_PeerAddress;
 
 public class UpdatePeersTable {
@@ -44,7 +45,7 @@ public class UpdatePeersTable {
 	private static final boolean _DEBUG = true;
 	private static int MAX_ROWS = 30;
 	//private static final int MAX_ADDR = 40;
-	public static final String peersFields2[] = new String[]{table.peer.global_peer_ID,table.peer.name,table.peer.slogan,table.peer_address.address,table.peer.creation_date,table.organization.Gs_global_organization_ID,table.peer.hash_alg,table.peer.signature,table.peer.broadcastable,table.peer.version};
+	public static final String peersFields2[] = new String[]{table.peer.global_peer_ID,table.peer.name,table.peer.slogan,table.peer_address.address,table.peer.creation_date,table.organization.Gs_global_organization_ID,table.peer.hash_alg,table.peer.signature,table.peer.broadcastable,table.peer.version,table.peer.emails,table.peer.phones};
 	public static final String peersFieldsTypes2[] = new String[]{"TEXT","TEXT","TEXT","TEXT","TEXT","TEXT","TEXT","TEXT","TEXT","TEXT"};
 	private static final boolean LIMITING_DATE_ALWAYS = false;
 	
@@ -323,6 +324,8 @@ public class UpdatePeersTable {
 			",p."+table.peer.broadcastable+
 			",MAX(p."+table.peer.arrival_date+",a."+table.peer_address.arrival_date+") " + 
 			",p."+table.peer.version+
+			",p."+table.peer.emails+
+			",p."+table.peer.phones+
 				" FROM "+table.peer.TNAME+" AS p " +
 				" LEFT JOIN "+table.peer_my_data.TNAME+" AS m ON (p."+table.peer.peer_ID+"==m."+table.peer_my_data.peer_ID+")" +
 				" LEFT JOIN "+table.peer_address.TNAME+" AS a ON (p."+table.peer.peer_ID+"==a."+table.peer_address.peer_ID+")" +
@@ -354,47 +357,71 @@ public class UpdatePeersTable {
 			String signature = Util.getString(p.get(6));
 			String broadcastable = Util.getString(p.get(7));
 			String version = Util.getString(p.get(9));
+			String emails = Util.getString(p.get(10));
+			String phones = Util.getString(p.get(11));
 			
-			/*
-			// Verify signature of peer
-			D_PeerAddress peer_data = new D_PeerAddress(global_peer_ID,0,false);
-			if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: prepare: "+peer_data);
-			if(!peer_data.verifySignature()) { //Util.verifySign(peer_data, pk, peer_signature)) {
-				if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: dir sign verification failed: "+peer_data);
-				//if(!DD.ACCEPT_UNSIGNED_PEERS) continue;
-			}else{
-				if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: dir sign verification passed");
-			}			
-			
-			
-			if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: will get peer orgs from: "+orgs);
-			peer_data.served_orgs = table.peer_org.peerOrgsFromString(orgs);
-			byte[] peer_signature = Util.byteSignatureFromString(signature);
-			// version, globalID, name, slogan, creation_date, address*, broadcastable, signature_alg, served_orgs, signature*
-			if(peer_signature != null) {
-				peer_data.version = version;
-				peer_data.globalID = global_peer_ID;
-				peer_data.name = name;
-				peer_data.slogan = slogan;
-				peer_data.creation_date = Util.getCalendar(date);
-				peer_data.signature = peer_signature;
-				peer_data.signature_alg = D_PeerAddress.getHashAlgFromString(hash_alg);
-				//peer_data.signature = new byte[0];
-				peer_data.broadcastable = Util.stringInt2bool(broadcastable, false);//"1".equals(broadcastable);
-				if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: handling row ["+i+"] "+peer_data);
-				ciphersuits.PK pk = ciphersuits.Cipher.getPK(global_peer_ID);
-				if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: pk= "+pk+" sign=["+peer_signature.length+"]"+Util.byteToHexDump(peer_signature)+" text="+signature);
+			if(global_peer_ID.equals(Identity.getMyPeerGID())) {
+				D_PeerAddress me = D_PeerAddress.get_myself(global_peer_ID);
+				if(!me.verifySignature()){
+					me.creation_date = Util.CalendargetInstance();
+					me.signMe();
+					me.storeVerified();
+				}
 				
-				if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: prepared now: "+peer_data);
-
+				peer_ID = me.peer_ID;
+				name = me.name;
+				slogan = me.slogan;
+				date = Encoder.getGeneralizedTime(me.creation_date);
+				hash_alg = me.hash_alg;
+				signature = Util.stringSignatureFromByte(me.signature);
+				broadcastable = Util.bool2StringInt(me.broadcastable);
+				version = me.version;
+				emails = me.emails;
+				phones = me.phones;
+			}
+			/*
+			if(true) { // verify sent peer signature & on failure refill data from D_PeerAddress
+				// Verify signature of peer
+				D_PeerAddress peer_data = new D_PeerAddress(global_peer_ID,0,false);
+				if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: prepare: "+peer_data);
 				if(!peer_data.verifySignature()) { //Util.verifySign(peer_data, pk, peer_signature)) {
-					if(_DEBUG) out.println("UpdatePeersTable:buildPeersTable2: sign verification failed: "+peer_data);
+					if(_DEBUG) out.println("UpdatePeersTable:buildPeersTable2: dir sign verification failed: "+peer_data.name);
+					if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: dir sign verification failed: "+peer_data);
 					//if(!DD.ACCEPT_UNSIGNED_PEERS) continue;
 				}else{
-					if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: sign verification passed");
+					if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: dir sign verification passed");
+				}			
+				
+				
+				if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: will get peer orgs from: "+orgs);
+				peer_data.served_orgs = table.peer_org.peerOrgsFromString(orgs);
+				byte[] peer_signature = Util.byteSignatureFromString(signature);
+				// version, globalID, name, slogan, creation_date, address*, broadcastable, signature_alg, served_orgs, signature*
+				if(peer_signature != null) {
+					peer_data.version = version;
+					peer_data.globalID = global_peer_ID;
+					peer_data.name = name;
+					peer_data.slogan = slogan;
+					peer_data.creation_date = Util.getCalendar(date);
+					peer_data.signature = peer_signature;
+					peer_data.signature_alg = D_PeerAddress.getHashAlgFromString(hash_alg);
+					//peer_data.signature = new byte[0];
+					peer_data.broadcastable = Util.stringInt2bool(broadcastable, false);//"1".equals(broadcastable);
+					if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: handling row ["+i+"] "+peer_data);
+					ciphersuits.PK pk = ciphersuits.Cipher.getPK(global_peer_ID);
+					if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: pk= "+pk+" sign=["+peer_signature.length+"]"+Util.byteToHexDump(peer_signature)+" text="+signature);
+					
+					if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: prepared now: "+peer_data);
+	
+					if(!peer_data.verifySignature()) { //Util.verifySign(peer_data, pk, peer_signature)) {
+						if(_DEBUG) out.println("UpdatePeersTable:buildPeersTable2: sign verification failed: "+peer_data);
+						//if(!DD.ACCEPT_UNSIGNED_PEERS) continue;
+					}else{
+						if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: sign verification passed");
+					}
+				}else{
+					if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: signature absent");
 				}
-			}else{
-				if(DEBUG) out.println("UpdatePeersTable:buildPeersTable2: signature absent");
 			}
 			*/
 
@@ -410,6 +437,8 @@ public class UpdatePeersTable {
 			row[7] = getFieldData(signature);
 			row[8] = getFieldData(broadcastable);
 			row[9] = getFieldData(version);
+			row[10] = getFieldData(emails);
+			row[11] = getFieldData(phones);
 			if(DEBUG) out.println("UpdatePeersTable: buildPT2: got row:"+concatRowFields(row, ":"));
 			recentPeers.rows[i] = row;i++;
 		}
@@ -447,10 +476,11 @@ public class UpdatePeersTable {
 				continue;
 			}
 			if(tab.rows[i].length<=9){
-				if(_DEBUG) Application.warning(Util._("Peer has wrong message format"), Util._("Old version peer"));
-				if(_DEBUG) System.out.println("UpdatePeersTable: integratePeersTable2: old version of peers, too few columns");
+				if(DEBUG||DD.DEBUG_TODO) Application.warning(Util._("Peer has wrong message format"), Util._("Old version peer"));
+				if(DEBUG||DD.DEBUG_TODO) System.out.println("UpdatePeersTable: integratePeersTable2: old version of peers, too few columns");
 				continue;
 			}
+			String emails = null, phones = null;
 			String name = Util.getBString(tab.rows[i][1]);
 			String slogan = Util.getBString(tab.rows[i][2]);
 			String addresses = Util.getBString(tab.rows[i][3]);
@@ -461,6 +491,8 @@ public class UpdatePeersTable {
 			String peer_sign = Util.getBString(tab.rows[i][7]);
 			String broadcastable = Util.getBString(tab.rows[i][8]);
 			String version = Util.getBString(tab.rows[i][9]);
+			if(tab.rows[i].length>10) emails = Util.getBString(tab.rows[i][10]);
+			if(tab.rows[i].length>11) phones = Util.getBString(tab.rows[i][11]);
 			boolean _broadcastable = Util.stringInt2bool(broadcastable, false);
 			boolean _used = DD.DEFAULT_RECEIVED_PEERS_ARE_USED;
 			
@@ -477,10 +509,13 @@ public class UpdatePeersTable {
 				else
 					peer_data.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_FORWARDED_TO_ME;
 			}
+			/**
+			 * Fill the peer_data with the received one
+			 */
 			
 			peer_data.served_orgs = table.peer_org.peerOrgsFromString(global_organizationIDs);
 			if(peer_signature == null) {
-				if(_DEBUG) out.println("UpdatePeersTable:integratePeersTable2: invalid empty signature");
+				if(DEBUG||DD.DEBUG_TODO) out.println("UpdatePeersTable:integratePeersTable2: invalid empty signature");
 				if(!DD.ACCEPT_UNSIGNED_PEERS_FROM_TABLES) continue;				
 			}else{
 				peer_data.signature = peer_signature;
@@ -488,12 +523,17 @@ public class UpdatePeersTable {
 			
 			// version, globalID, name, slogan, creation_date, address*, broadcastable, signature_alg, served_orgs, signature*
 			peer_data.version = version;
+			peer_data.emails = emails;
+			peer_data.phones = phones;
 			peer_data.globalID = global_peer_ID;
 			peer_data.name = name;
 			peer_data.slogan = slogan;
 			peer_data.creation_date = Util.getCalendar(creation_date);
 			peer_data.broadcastable = _broadcastable;
 			peer_data.signature_alg = D_PeerAddress.getHashAlgFromString(peer_hash_alg);
+			if(DEBUG)out.println("UpdatePeersTable:integratePeersTable2: got addresses: "+addresses);
+			hds.TypedAddress[] typed_address = hds.TypedAddress.getAddress(addresses);
+			peer_data.address = typed_address;
 			
 			if(peer_data.signature != null) {
 				//peer_data.signature = new byte[0];
@@ -503,7 +543,8 @@ public class UpdatePeersTable {
 				if(DEBUG) out.println("UpdatePeersTable:integratePeersTable2: pk= "+pk+" sign=["+peer_signature.length+"]"+Util.byteToHexDump(peer_signature)+" text="+peer_sign);
 				//if(!Util.verifySign(peer_data, pk, peer_signature)) {
 				if(!peer_data.verifySignature()) { //  Util.verifySign(peer_data, pk, peer_signature)) {
-					if(_DEBUG) System.err.println("UpdatePeersTable:integratePeersTable2: sign verification failed for "+peer_data);
+					if(DEBUG||DD.DEBUG_TODO) System.err.println("UpdatePeersTable:integratePeersTable2: sign verification failed for "+peer_data.name);
+					if(DEBUG) System.err.println("UpdatePeersTable:integratePeersTable2: sign verification failed for "+peer_data);
 					if(!DD.ACCEPT_DATA_FROM_UNSIGNED_PEERS) continue;
 					peer_data.signature = null;
 				}else{
@@ -533,8 +574,7 @@ public class UpdatePeersTable {
 
 			
 			if(DEBUG)out.println("UpdatePeersTable:integratePeersTable2: got addresses: "+addresses);
-			hds.TypedAddress[] typed_address = hds.TypedAddress.getAddress(addresses);
-			integratePeerAddresses(peer_ID, typed_address, adding__date);
+			//integratePeerAddresses(peer_ID, typed_address, adding__date);
 			if(filteredID!=null) return peer_data;
 			/*
 			String[]addresses_l = Address.split(addresses);

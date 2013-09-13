@@ -192,12 +192,13 @@ public class JustificationHandling {
 	}
 
 	public static boolean integrateNewData(D_Justification[] justifications,
-			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
+			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(justifications==null) return false;
 		for(int k=0; k<justifications.length; k++) {
 			justifications[k].global_organization_ID = orgGID;
 			justifications[k].organization_ID = org_local_ID;
-			justifications[k].store(rq);
+			justifications[k].store(sol_rq, new_rq);
 		}
 		return justifications.length>0;
 	}

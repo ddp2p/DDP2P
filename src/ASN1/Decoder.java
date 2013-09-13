@@ -36,6 +36,7 @@ import util.Util;
 public
 class Decoder {
 	private static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
 	byte[] data;
 	int offset;
 	int length;
@@ -162,18 +163,38 @@ class Decoder {
 	public String[] getSequenceOf(byte type) throws ASN1DecoderFail{
 		return getSequenceOfAL(type).toArray(new String[]{});
 	}
-	public Hashtable<String, String> getSequenceOfHSS(byte type) throws ASN1DecoderFail {
+	/**
+	 * 
+	 * @param type
+	 * @param al : from ArrayList?
+	 * @return
+	 * @throws ASN1DecoderFail
+	 */
+	public Hashtable<String, String> getSequenceOfHSS(byte type, boolean alist) throws ASN1DecoderFail {
 		Decoder dec = getContent();
 		Hashtable<String,String> al= new Hashtable<String,String>();
+		long pos = 0;
 		for(;;) {
 			Decoder d_t = dec.getFirstObject(true);
 			if(d_t==null) break;
-			d_t = d_t.getContent();
+			if(!alist)
+				d_t = d_t.getContent();
 			String k = d_t.getFirstObject(true).getString(type);
 			String val=null;
-			d_t = d_t.getFirstObject(true);
-			if(d_t!=null) val = d_t.getString(type);
+			if(!alist){
+				d_t = d_t.getFirstObject(true);
+				if(d_t!=null) val = d_t.getString(type);
+			}
+			if(val == null){
+				if(DD.DEBUG_TODO)System.out.println("Decoder: transient versions!");
+				//if(_DEBUG)Util.printCallPath("Who?");
+				Calendar c = Util.CalendargetInstance();
+				c.setTimeInMillis(pos+Encoder.CALENDAR_DISPLACEMENT);
+				//val = DD.EMPTYDATE;
+				val = Encoder.getGeneralizedTime(c);
+			}
 			al.put(k, val);
+			pos++;
 		}
 		return al;
 	}

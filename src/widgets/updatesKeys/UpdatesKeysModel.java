@@ -233,7 +233,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 	public void actionPerformed(ActionEvent e) {
 		TableJButton bb =(TableJButton)e.getSource();
 		D_UpdatesKeysInfo uKey =data.get(bb.rowNo);
-	    TesterInfoPanel testerPanel= new TesterInfoPanel(D_TesterDefinition.retriveTesterInfo(uKey.original_tester_name, uKey.public_key ));
+	    TesterInfoPanel testerPanel= new TesterInfoPanel(D_TesterDefinition.retrieveTesterDefinition(uKey.original_tester_name, uKey.public_key ));
 //		QualitesTable q = new QualitesTable(data.get(bb.rowNo));
 		JPanel p = new JPanel(new BorderLayout());
 //		p.add(q.getScrollPane());

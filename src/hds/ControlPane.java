@@ -184,6 +184,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	JButton setNewPeerID=new JButton(_("Set New Peer ID"));
 	JButton addTabPeer=new JButton(_("Add Peer Tab"));
 	JButton setPeerSlogan=new JButton(_("Set Peer Slogan"));
+	JButton button_clean_SMTP=new JButton(_("Clear SMTP"));
+	JButton button_clean_SMTP_password=new JButton(_("Clear SMTP Password"));
 	JButton startDirectoryServer=new JButton(START_DIR);
 	JButton saveMyAddress = new JButton(_("Save Address"));
 	JButton signUpdates = new JButton(_("Sign Updates"));
@@ -201,6 +203,12 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public final static JFileChooser file_chooser_updates_to_sign = new JFileChooser();
 	private static final String exportDirectories_action = "saveDirectories";
 	private static final String setListingDirectories_action = "listingDirectories";
+	private static final String action_button_clean_SMTP = "clean_SMTP";
+	private static final String action_button_clean_SMTP_password = "clean_SMTP_password";
+	private static final String action_textfield_SMTPHost = "SMTPHosts";
+	private static final String action_clientPause = "clientPause";
+	private static final String action_natBorer = "natBorer";
+	private static final String action_textfield_EmailUsername = "emailUsername";
 	public JCheckBox serveDirectly;
 	public JCheckBox tcpButton;
 	public JCheckBox udpButton;
@@ -257,8 +265,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		m_dbgClient.addItemListener(this);
 		
 		m_dbgConnections = new JCheckBox("DBG Connections",hds.Connections.DEBUG);
-		c.add(m_dbgClient);
-		m_dbgClient.addItemListener(this);
+		c.add(m_dbgConnections);
+		m_dbgConnections.addItemListener(this);
 		
 		m_dbgUDPServerComm = new JCheckBox("DBG Communication UDP Streaming",hds.UDPServer.DEBUG);
 		c.add(m_dbgUDPServerComm);
@@ -530,6 +538,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public JCheckBox m_comm_Block_New_Arriving_Peers_Answering_Me;
 	public JCheckBox m_comm_Block_New_Arriving_Peers_Forwarded_To_Me;
 	private JTextField clientPause;
+	private JTextField textfield_SMTPHost;
+	private TranslatedLabel label_SMTPHost;
+	private JTextField textfield_EmailUsername;
+	private TranslatedLabel label_EmailUsername;
 	
 	public boolean itemStateChangedCOMM(ItemEvent e, Object source) {
 	    if (source == this.m_comm_Block_New_Orgs) {
@@ -666,7 +678,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    natBorer = new JTextField(Server.TIMEOUT_UDP_NAT_BORER+"");
 	    nats.add(new TranslatedLabel("NAT: "));
 	    nats.add(natBorer);
-	    natBorer.setActionCommand("natBorer");
+	    natBorer.setActionCommand(action_natBorer);
 	    natBorer.addActionListener(this);
 	    intervals.add(nats);
 	    
@@ -674,7 +686,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    clientPause = new JTextField(ClientSync.PAUSE+"");
 	    client_pause.add(new TranslatedLabel("Pull Interval: "));
 	    client_pause.add(clientPause);
-	    clientPause.setActionCommand("clientPause");
+	    clientPause.setActionCommand(action_clientPause);
 	    clientPause.addActionListener(this);
 	    intervals.add(client_pause);
 	    c.add(intervals);
@@ -749,6 +761,65 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		startClientUpdates.setActionCommand("updates_client");
 		
 		return c;
+	}
+	public Container makeSMTPPanel(Container cc){
+		JPanel p = new JPanel(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+        //c.ipadx=40;
+        //c.ipady=30;
+        //c.insets= new Insets(5, 5, 5, 5);//Insets(int top, int left, int bottom, int right)  
+        //c.fill = GridBagConstraints.BOTH;//.HORIZONTAL;
+        c.fill = GridBagConstraints.NONE;
+
+        button_clean_SMTP.setFont(new Font("Times New Roman",Font.BOLD,14));
+        button_clean_SMTP.addActionListener(this);
+        button_clean_SMTP.setActionCommand(action_button_clean_SMTP);
+		c.gridx = 0;
+        c.gridy = 0;
+        c.fill = GridBagConstraints.BOTH;
+        c.anchor = GridBagConstraints.LINE_START;
+		p.add(button_clean_SMTP, c);
+		
+        button_clean_SMTP_password.setFont(new Font("Times New Roman",Font.BOLD,14));
+        button_clean_SMTP_password.addActionListener(this);
+        button_clean_SMTP.setActionCommand(action_button_clean_SMTP_password);
+		c.gridx = 1;
+        c.gridy = 0;
+        c.fill = GridBagConstraints.BOTH;
+        c.anchor = GridBagConstraints.LINE_START;
+		p.add(button_clean_SMTP_password, c);
+		
+	    textfield_SMTPHost = new JTextField(util.EmailManager.getSMTPHost(Identity.current_id_branch));
+	    label_SMTPHost = new TranslatedLabel("SMTP Host");
+	    textfield_SMTPHost.setActionCommand(action_textfield_SMTPHost);
+	    textfield_SMTPHost.addActionListener(this);
+		c.gridx = 0;
+        c.gridy = 1;
+        c.anchor = GridBagConstraints.LINE_START;
+        c.fill = GridBagConstraints.NONE;
+	    p.add(label_SMTPHost, c);
+		c.gridx = 1;
+        c.gridy = 1;
+        c.fill = GridBagConstraints.BOTH;
+	    p.add(textfield_SMTPHost, c);
+		
+	    textfield_EmailUsername = new JTextField(util.EmailManager.getEmailUsername(Identity.current_id_branch));
+	    label_EmailUsername = new TranslatedLabel("Email Username");
+	    textfield_EmailUsername.setActionCommand(action_textfield_EmailUsername);
+	    textfield_EmailUsername.addActionListener(this);
+		c.gridx = 0;
+        c.gridy = 2;
+        c.fill = GridBagConstraints.NONE;
+        c.anchor = GridBagConstraints.LINE_START;
+	    p.add(label_EmailUsername, c);
+		c.gridx = 1;
+        c.gridy = 2;
+        c.fill = GridBagConstraints.BOTH;
+	    p.add(textfield_EmailUsername, c);
+		
+        cc.add(p);
+        JScrollPane js = new JScrollPane(cc);
+		return js;//pBL;
 	}
 	public Container makePeerPanel(Container cc){
 
@@ -849,6 +920,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		
 		tabs.addTab("Peers Data", makePeerPanel(new JPanel(gl)));
 		tabs.addTab("Comm", makeWiredCommunicationPanel(new JPanel(gl)));
+		tabs.addTab("SMTP", makeSMTPPanel(new JPanel(gl)));
 		tabs.addTab("Paths", makePathsPanel(new JPanel(gl)));
 		tabs.addTab("Dirs", makeDirectoriesPanel(new JPanel(gl)));
 		tabs.addTab("Updates", makeUpdatesPanel(new JPanel(gl)));
@@ -1178,7 +1250,23 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public void actionPerformed(ActionEvent e) {
 		if(DEBUG)System.out.println("Action ="+e);
 		try {
-			if ("adh_IP".equals(e.getActionCommand())) {
+			if(action_button_clean_SMTP.equals(e.getActionCommand())) {
+				util.EmailManager.setEmailPassword(Identity.current_id_branch, null);
+				util.EmailManager.setEmailUsername(Identity.current_id_branch, null);
+				util.EmailManager.setSMTPHost(Identity.current_id_branch, null);
+			}else if(action_button_clean_SMTP_password.equals(e.getActionCommand())) {
+				String val = Application.input(_("You may enter a new password (it is visible!!!)"),
+						_("New password"), JOptionPane.QUESTION_MESSAGE);
+				if(val==null) {
+					Application.warning(_("Cleaning of password abandoned"), _("Canceled"));
+					return;
+				}
+				if(val!=null) {
+					val = val.trim();
+					if("".equals(val)) val = null;
+				}
+				util.EmailManager.setEmailPassword(Identity.current_id_branch, val);
+			}else if ("adh_IP".equals(e.getActionCommand())) {
 				String old = DD.WIRELESS_ADHOC_DD_NET_IP_BASE;
 				DD.WIRELESS_ADHOC_DD_NET_IP_BASE = Util.validateIPBase(this.m_area_ADHOC_IP.getText(), DD.WIRELESS_ADHOC_DD_NET_IP_BASE);
 				if(!Util.equalStrings_null_or_not(this.m_area_ADHOC_IP.getText(), DD.WIRELESS_ADHOC_DD_NET_IP_BASE))
@@ -1420,11 +1508,19 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				StegoStructure d[] = DD.getAvailableStegoStructureInstances();
 				int[] selected = new int[1];
 				EmbedInMedia.actionImport(ControlPane.file_chooser_address_container, JFrameDropCatch.mframe, d, selected);
-			}else if ("natBorer".equals(e.getActionCommand())) {
+			}else if (action_textfield_SMTPHost.equals(e.getActionCommand())) {
+				String text = this.textfield_SMTPHost.getText();
+				util.EmailManager.setSMTPHost(Identity.current_id_branch, text);
+				if(DEBUG)System.out.println("ControlPanel: Now Host is: "+text);
+			}else if (action_textfield_EmailUsername.equals(e.getActionCommand())) {
+				String text = this.textfield_EmailUsername.getText();
+				util.EmailManager.setEmailUsername(Identity.current_id_branch, text);
+				if(DEBUG)System.out.println("ControlPanel: Now Username is: "+text);
+			}else if (action_natBorer.equals(e.getActionCommand())) {
 				String text = natBorer.getText();
 				try{Server.TIMEOUT_UDP_NAT_BORER = Integer.parseInt(text);}catch(Exception a){}
 				if(DEBUG)System.out.println("Now NAT Borrer is: "+Server.TIMEOUT_UDP_NAT_BORER);
-			}else if ("clientPause".equals(e.getActionCommand())) {
+			}else if (action_clientPause.equals(e.getActionCommand())) {
 				String text = clientPause.getText();
 				try{ClientSync.PAUSE = Integer.parseInt(text);}catch(Exception a){}
 				if(DEBUG)System.out.println("Now Pull Interval is: "+ClientSync.PAUSE);

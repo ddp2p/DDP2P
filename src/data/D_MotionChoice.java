@@ -88,7 +88,7 @@ class D_MotionChoice extends ASNObj{
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public long save(String motionID) throws P2PDDSQLException {
+	public long save(String motionID, boolean sync) throws P2PDDSQLException {
 		long result = -1;
 		String sql =
 			"SELECT "+table.motion_choice.choice_ID+
@@ -104,15 +104,19 @@ class D_MotionChoice extends ASNObj{
 			params[table.motion_choice.CH_MOTION_ID] = motionID;
 			params[table.motion_choice.CH_NAME] = name;
 			params[table.motion_choice.CH_SHORT_NAME] = short_name;
-			result = Application.db.insert(table.motion_choice.TNAME, table.motion_choice.fields_array,params,DEBUG);
+			if(sync){
+				result = Application.db.insert(table.motion_choice.TNAME, table.motion_choice.fields_array,params,DEBUG);
+			}else{
+				result = Application.db.insertNoSync(table.motion_choice.TNAME, table.motion_choice.fields_array,params,DEBUG);
+			}
 			choice_ID = result+"";
 		}
 		return result;
 	}
-	public static void save(D_MotionChoice[] choices, String motionID) throws P2PDDSQLException {
+	public static void save(D_MotionChoice[] choices, String motionID, boolean sync) throws P2PDDSQLException {
 		if(choices==null) return;
 		for(D_MotionChoice c: choices){
-			c.save(motionID);
+			c.save(motionID, sync);
 		}
 	}
 	public static D_MotionChoice[] getChoices(String motionID) throws P2PDDSQLException {

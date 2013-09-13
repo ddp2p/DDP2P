@@ -47,31 +47,59 @@ class SyncAnswer extends ASNSyncPayload{
 	public Encoder getEncoder(){
 		return super.getEncoder();
 	}
+	/**
+	 * TODO the following methods should be implemented to enable detection of whether a data 
+	 * was already added to the answer (either in the requested or in the list of orgs_data), to not add it twice! Any taker?
+	 */
 	public boolean hasConstituent(String gid, String creation_date) {
 		// TODO Auto-generated method stub
 		return false;
 	}
+	/**
+	 * TODO the following methods should be implemented to enable detection of whether a data 
+	 * was already added to the answer (either in the requested or in the list of orgs_data), to not add it twice! Any taker?
+	 */
 	public boolean hasWitness(String gid) {
 		// TODO Auto-generated method stub
 		return false;
 	}
+	/**
+	 * TODO the following methods should be implemented to enable detection of whether a data 
+	 * was already added to the answer (either in the requested or in the list of orgs_data), to not add it twice! Any taker?
+	 */
 	public boolean hasNeighborhod(String gid) {
 		// TODO Auto-generated method stub
 		return false;
 	}
+	/**
+	 * TODO the following methods should be implemented to enable detection of whether a data 
+	 * was already added to the answer (either in the requested or in the list of orgs_data), to not add it twice! Any taker?
+	 */
 	public boolean hasMotion(String gid) {
 		// TODO Auto-generated method stub
 		return false;
 	}
+	/**
+	 * TODO the following methods should be implemented to enable detection of whether a data 
+	 * was already added to the answer (either in the requested or in the list of orgs_data), to not add it twice! Any taker?
+	 */
 	public boolean hasJustification(String gid) {
 		// TODO Auto-generated method stub
 		return false;
 	}
+	/**
+	 * TODO the following methods should be implemented to enable detection of whether a data 
+	 * was already added to the answer (either in the requested or in the list of orgs_data), to not add it twice! Any taker?
+	 */
 	public boolean hasOrg(String gid) {
 		// TODO Auto-generated method stub
 		return false;
 	}
-	public boolean hasSignature(String gid) {
+	/**
+	 * TODO the following methods should be implemented to enable detection of whether a data 
+	 * was already added to the answer (either in the requested or in the list of orgs_data), to not add it twice! Any taker?
+	 */
+	public boolean hasSignature(String gid, String creation_date) {
 		// TODO Auto-generated method stub
 		return false;
 	}

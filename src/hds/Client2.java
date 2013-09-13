@@ -323,7 +323,7 @@ public class Client2 extends Thread  implements IClient{
 		boolean filtered = Util.stringInt2bool(peer.filtered, false);
 		String _lastSnapshotString = peer.last_sync_date;
 		Calendar _lastSnapshot = Util.getCalendar(_lastSnapshotString);
-		if(Application.peer!=null)Application.peer.update(PeerContacts.peer_contacts);
+		if(Application.peer_contacts!=null)Application.peer_contacts.update(PeerContacts.peer_contacts);
 		if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_TCP);
 		if(ClientSync.DEBUG) out.println("Client2: transfer_TCP: Connected!");
 		DD.ed.fireClientUpdate(new CommEvent(Application.ac, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Connected"));

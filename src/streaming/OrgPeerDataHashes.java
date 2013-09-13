@@ -55,6 +55,7 @@ import data.D_PeerAddress;
 public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claimed  
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
+	int version = 2;
 	public Hashtable<String,Hashtable<Long,String>> cons=new Hashtable<String,Hashtable<Long,String>>();
 	public Hashtable<String,Hashtable<Long,String>> witn=new Hashtable<String,Hashtable<Long,String>>();
 	public Hashtable<String,Hashtable<Long,String>> neig=new Hashtable<String,Hashtable<Long,String>>();
@@ -168,6 +169,11 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 		this.decode(d);
 	}
 	
+	/**
+	 * Extracts the keys i.e., hashes (and sometimes creation_dates) from the stored
+	 * claims in OrgPeerData
+	 * @return
+	 */
 	RequestData getRequestData() {
 		RequestData r = new RequestData();
 		r.global_organization_ID_hash = this.global_organization_ID_hash;
@@ -176,7 +182,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 		r.neig = new ArrayList<String>(this.neig.keySet());
 		r.moti = new ArrayList<String>(this.moti.keySet());
 		r.just = new ArrayList<String>(this.just.keySet());
-		r.sign = new ArrayList<String>(this.sign.keySet());
+		r.sign = new Hashtable<String,String>(Util.getHSS(this.sign.keySet()));
 		r.news = new ArrayList<String>(this.news.keySet());
 		r.tran = new ArrayList<String>(this.tran.keySet());
 		return r;
@@ -226,13 +232,19 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 			witn = appendSet(witn, n.witn, _peer_ID, generalizedTime);
 			moti = appendSet(moti, n.moti, _peer_ID, generalizedTime);
 			just = appendSet(just, n.just, _peer_ID, generalizedTime);
-			sign = appendSet(sign, n.sign, _peer_ID, generalizedTime);
+			sign = appendHash(sign, n.sign, _peer_ID, generalizedTime);
 			tran = appendSet(tran, n.tran, _peer_ID, generalizedTime);
 			news = appendSet(news, n.news, _peer_ID, generalizedTime);
 		}
 		if(DEBUG)System.out.println("OrgPeerDataHashes:add: Got "+this);
 	}
-
+/**
+ * ads to "to" {s , {peer_ID, generalizedTime}}
+ * @param to
+ * @param s
+ * @param peer_ID
+ * @param generalizedTime
+ */
 	private static void add(Hashtable<String, Hashtable<Long, String>> to, String s, long peer_ID, String generalizedTime) {
 		if(DEBUG)System.out.println("\nOrgPeerDataHashes:add: static peer="+peer_ID+" hash="+s+"\n   t="+generalizedTime+"\n    to:" +to);
 		Hashtable<Long, String> peers = to.get(s);
@@ -430,43 +442,70 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 			for(String s : obtained.witn) witn.remove(s);
 			for(String s : obtained.moti) moti.remove(s);
 			for(String s : obtained.just) just.remove(s);
-			for(String s : obtained.sign) sign.remove(s);
+			for(String s : obtained.sign.keySet()) sign.remove(s);
 			for(String s : obtained.tran) tran.remove(s);
 			for(String s : obtained.news) news.remove(s);
 		}
 		if(DEBUG)System.out.println("RequestData:purge: Got "+this);
 	}
 	/**
-	 * The hashtable could be concurrently modified.
-	 * One needs synchronization
+	 * Add each obtained key to this, as coming from peer_ID at crt_date.
+	 * Then remove from this keys that were not in "obtained"
 	 * @param obtained
 	 * @param peer_ID
 	 * @param crt_date
 	 */
-	public void updateAfterChanges(RequestData obtained, long peer_ID, String crt_date) {
-		if(DEBUG)System.out.println("RequestData:updateAfterChanges: Will updateAfterChanges by "+peer_ID+" on \n"+this+" with \n"+obtained);
-		synchronized(cons) {
-			for(String s : obtained.cons.keySet()) add(cons, s, peer_ID, crt_date);
-			for(String s : obtained.neig) add(neig, s, peer_ID, crt_date);
-			for(String s : obtained.witn) add(witn, s, peer_ID, crt_date);
-			for(String s : obtained.moti) add(moti, s, peer_ID, crt_date);
-			for(String s : obtained.just) add(just, s, peer_ID, crt_date);
-			for(String s : obtained.sign) add(sign, s, peer_ID, crt_date);
-			for(String s : obtained.tran) add(tran, s, peer_ID, crt_date);
-			for(String s : obtained.news) add(news, s, peer_ID, crt_date);
+	public void updateAfterChanges(RequestData orig_rq, RequestData sol_rq, RequestData new_rq, long peer_ID, String crt_date) {
+		if(DEBUG)System.out.println("RequestData:updateAfterChanges: Will updateAfterChanges by "+peer_ID+" on \n"+this+
+				" with \n new="+new_rq+"\nsolved="+sol_rq);
+		//synchronized(cons) {
+			for(String s : new_rq.cons.keySet()) add(cons, s, peer_ID, crt_date);
+			for(String s : new_rq.neig) add(neig, s, peer_ID, crt_date);
+			for(String s : new_rq.witn) add(witn, s, peer_ID, crt_date);
+			for(String s : new_rq.moti) add(moti, s, peer_ID, crt_date);
+			for(String s : new_rq.just) add(just, s, peer_ID, crt_date);
+			for(String s : new_rq.sign.keySet()) add(sign, s, peer_ID, crt_date);
+			for(String s : new_rq.tran) add(tran, s, peer_ID, crt_date);
+			for(String s : new_rq.news) add(news, s, peer_ID, crt_date);
 			
-			for(String s : this.cons.keySet()) if(!obtained.cons.contains(s)) cons.remove(s);
-			for(String s : this.neig.keySet()) if(!obtained.neig.contains(s)) neig.remove(s);
-			for(String s : this.witn.keySet()) if(!obtained.witn.contains(s)) witn.remove(s);
-			for(String s : this.moti.keySet()) if(!obtained.moti.contains(s)) moti.remove(s);
-			for(String s : this.just.keySet()) if(!obtained.just.contains(s)) just.remove(s);
-			for(String s : this.sign.keySet()) if(!obtained.sign.contains(s)) sign.remove(s);
-			for(String s : this.tran.keySet()) if(!obtained.tran.contains(s)) tran.remove(s);
-			for(String s : this.news.keySet()) if(!obtained.news.contains(s)) news.remove(s);
-		}
+			setIntersectionFirstFromSecond(this.cons, sol_rq.cons);
+			setIntersectionFirstFromSecond(this.neig, sol_rq.neig);
+			setIntersectionFirstFromSecond(this.witn, sol_rq.witn);
+			setIntersectionFirstFromSecond(this.moti, sol_rq.moti);
+			setIntersectionFirstFromSecond(this.just, sol_rq.just);
+			setIntersectionFirstFromSecond(this.sign, sol_rq.sign);
+			setIntersectionFirstFromSecond(this.tran, sol_rq.tran);
+			setIntersectionFirstFromSecond(this.news, sol_rq.news);
+		//}
 		if(DEBUG)System.out.println("RequestData:updateAfterChanges: Got "+this);
 	}
-
+	/**
+	 * Keep in first only what is also in second
+	 * @param first
+	 * @param second
+	 */
+	public static void setIntersectionFirstFromSecond(
+			Hashtable<String, Hashtable<Long, String>> first,
+			ArrayList<String> second) {
+		ArrayList<String>  itemsToRemove = new ArrayList<String>();
+		for(String s : first.keySet()) if(second.contains(s)) itemsToRemove.add(s);
+		synchronized (first) {
+			for(String s : itemsToRemove) first.remove(s);
+		}
+	}
+	/**
+	 * Keep in first only what is also in second
+	 * @param first
+	 * @param second
+	 */
+	public static void setIntersectionFirstFromSecond(
+			Hashtable<String, Hashtable<Long, String>> first,
+			Hashtable<String,String> second) {
+		ArrayList<String>  itemsToRemove = new ArrayList<String>();
+		for(String s : first.keySet()) if(!second.contains(s)) itemsToRemove.add(s);
+		for(String s : itemsToRemove) first.remove(s);		
+	}
+	
 	public boolean empty() {
 		return 0==
 				neig.size()+

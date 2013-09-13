@@ -164,7 +164,8 @@ public class NeighborhoodHandling {
 	
 
 	public static boolean integrateNewData(ASNNeighborhoodOP[] neighborhoods,
-			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
+			String orgGID, String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(neighborhoods == null) return false;
 		boolean result = false;
 		for(int k=0; k<neighborhoods.length; k++) {
@@ -175,12 +176,17 @@ public class NeighborhoodHandling {
 
 			if(submit_ID==null){
 				submit_ID = ""+D_Constituent.insertTemporaryConstituentGID(neighborhoods[k].neighborhood.submitter_global_ID, org_local_ID);
-				rq.cons.put(neighborhoods[k].neighborhood.submitter_global_ID, DD.EMPTYDATE);
+				new_rq.cons.put(neighborhoods[k].neighborhood.submitter_global_ID, DD.EMPTYDATE);
 			}else{
-				if(rq.cons.contains(neighborhoods[k].neighborhood.submitter_global_ID)) {
+				/*
+				if(old_rq.cons.contains(neighborhoods[k].neighborhood.submitter_global_ID)) {
 					if((existingConstituentSigned[0]) || (1==D_Constituent.isGID_or_Hash_available(neighborhoods[k].neighborhood.submitter_global_ID, DEBUG)))//not temporary
 						rq.cons.remove(neighborhoods[k].neighborhood.submitter_global_ID);
 				}
+				*/
+				// TODO: probably next operation is not neeeded
+				if((existingConstituentSigned[0]) || (1==D_Constituent.isGID_or_Hash_available(neighborhoods[k].neighborhood.submitter_global_ID, DEBUG)))//not temporary
+					sol_rq.cons.put(neighborhoods[k].neighborhood.submitter_global_ID, DD.EMPTYDATE);
 			}
 			neighborhoods[k].neighborhood.submitter_ID = submit_ID;
 
@@ -198,16 +204,19 @@ public class NeighborhoodHandling {
 					if(parent_neighborhood_GID != null) {
 						if(DEBUG) System.out.println("\nNeighborhoodHandling: integrateNewData: will temp neigh: \n "+neighborhoods[k].neighborhood);
 						parent_neighborhood_ID = D_Neighborhood.insertTemporaryNeighborhoodGID(parent_neighborhood_GID, org_local_ID);
-						rq.neig.add(parent_neighborhood_GID);
+						new_rq.neig.add(parent_neighborhood_GID);
 					}
 				}else{
-					if(rq.neig.contains(neighborhoods[k].neighborhood.parent_global_ID)) {
-						if((existingNeighborhoodSigned[0]) || (1==D_Neighborhood.isGIDavailable(neighborhoods[k].neighborhood.parent_global_ID, DEBUG))){						
-							if(DEBUG) System.out.println("\nNeighborhoodHandling: integrateNewData: available: \n "+neighborhoods[k].neighborhood);
-							rq.neig.remove(neighborhoods[k].neighborhood.parent_global_ID);
-						}else{
-							if(DEBUG) System.out.println("\nNeighborhoodHandling: integrateNewData: un-available: \n "+neighborhoods[k].neighborhood);							
-						}
+					// TODO next op not needed probably
+					if((existingNeighborhoodSigned[0]) || (1==D_Neighborhood.isGIDavailable(neighborhoods[k].neighborhood.parent_global_ID, DEBUG))){
+						sol_rq.neig.add(neighborhoods[k].neighborhood.parent_global_ID);
+//					if(rq.neig.contains(neighborhoods[k].neighborhood.parent_global_ID)) {
+//						if((existingNeighborhoodSigned[0]) || (1==D_Neighborhood.isGIDavailable(neighborhoods[k].neighborhood.parent_global_ID, DEBUG))){						
+//							if(DEBUG) System.out.println("\nNeighborhoodHandling: integrateNewData: available: \n "+neighborhoods[k].neighborhood);
+//							sol_rq.neig.add(neighborhoods[k].neighborhood.parent_global_ID);
+//						}else{
+//							if(DEBUG) System.out.println("\nNeighborhoodHandling: integrateNewData: un-available: \n "+neighborhoods[k].neighborhood);							
+//						}
 					}else{
 						if(DEBUG) System.out.println("\nNeighborhoodHandling: integrateNewData: needed???: \n "+neighborhoods[k].neighborhood);						
 					}
@@ -218,23 +227,24 @@ public class NeighborhoodHandling {
 			}
 
 			if(DEBUG) System.out.println("\nNeighborhoodHandling: integrateNewData: will integrate: \n "+neighborhoods[k].neighborhood);						
-			rq.neig.remove(neighborhoods[k].neighborhood.global_neighborhood_ID);
+			sol_rq.neig.add(neighborhoods[k].neighborhood.global_neighborhood_ID);
 			result |= integrateNewNeighborhoodOPData(neighborhoods[k],
-					orgGID, org_local_ID, arrival_time, orgData);
+					orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
 		}
 		return result;
 	}
 
 	private static boolean integrateNewNeighborhoodOPData(
 			ASNNeighborhoodOP neighborhood, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData) throws P2PDDSQLException {
+			String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewNeighborhoodData: start on "+neighborhood);
 		if(neighborhood == null) return false;
 		boolean result = false;
 		D_Neighborhood wn = neighborhood.neighborhood;
 		wn.global_organization_ID = orgGID;
 		wn.organization_ID = Util.lval(org_local_ID,-1);
-		result = null!= D_Neighborhood.integrateNewNeighborhoodData(wn, orgGID, org_local_ID, arrival_time, orgData);
+		result = null!= D_Neighborhood.integrateNewNeighborhoodData(wn, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
 		if(DEBUG) System.out.println("NeighborhoodHandling:integrateNewNeighborhoodData: exit");
 		return result;
 	}

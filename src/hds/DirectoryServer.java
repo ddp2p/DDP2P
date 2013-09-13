@@ -66,7 +66,13 @@ class D_DAAnswer extends ASN1.ASNObj{
 	public String toString() {
 		return "D_DAAnswer: ["+Util.concat(remote_IP, ".", "?.?.?.?")+":"+remote_port+"]";
 	}
-	
+	public D_DAAnswer(Decoder d){
+		try {
+			decode(d);
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+	}
 	public D_DAAnswer(String detected_sa) {
 		if(detected_sa != null) {
 			Address ad = new Address(detected_sa);
@@ -108,7 +114,7 @@ class D_DAAnswer extends ASN1.ASNObj{
 
 // TODO Make it concurrent ... any takers?
 public class DirectoryServer extends Thread{
-	public static final int PORT = 25123;
+	public static int PORT = 25123;
 	static final int MAX_DR = 100000;
 	static final int MAX_DR_DA = 100000;
 	static final int MAX_LEN = 100000;
@@ -301,6 +307,9 @@ public class DirectoryServer extends Thread{
 	public static void main(String[] args) {
 		try {
 			if(args.length>0) Application.DIRECTORY_FILE = args[0];
+			try{
+				if(args.length>1) DirectoryServer.PORT = Integer.parseInt(args[1]);
+			}catch(Exception e){e.printStackTrace();}
 			DirectoryServer ds = new DirectoryServer(DirectoryServer.PORT);
 			ds.start();
 		}catch(Exception e) {

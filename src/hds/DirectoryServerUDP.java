@@ -73,7 +73,7 @@ public class DirectoryServerUDP extends Thread {
 			Decoder dec=new Decoder(buffer,0,dp.getLength());
 			if(dec.getTypeByte() == DD.MSGTYPE_EmptyPing){
 				if(DEBUG) out.println("DS UDP EmptyPing");
-				if(DEBUG) out.print("^"+dp.getSocketAddress()+"^");
+				if(_DEBUG) out.print("^"+dp.getSocketAddress()+"^");
 				continue;
 			}
 			
@@ -88,7 +88,7 @@ public class DirectoryServerUDP extends Thread {
 					e1.printStackTrace();
 					continue;
 				}
-				if(DEBUG)out.println("\n\nDirectoryServerUDP: Received UDP announcement: "+da.toSummaryString()+"\n from: "+risa+"\n");
+				if(_DEBUG)out.println("\n\nDirectoryServerUDP: Received UDP announcement: "+da.toSummaryString()+"\n from: "+risa+"\n");
 				String detected_sa = DirectoryServer.detectUDPAddress(risa, risa.getPort());
 				detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
 				byte[] answer;
@@ -114,6 +114,7 @@ public class DirectoryServerUDP extends Thread {
 				try { // check if this is a PING
 					aup.decode(dec);
 					if(DEBUG) System.out.println("\nDirectoryServerUDP:run: receives: "+aup);
+					if(_DEBUG) System.out.println("\nDirectoryServerUDP:run: ping req from: "+dp.getSocketAddress());
 					if(!aup.senderIsInitiator){
 						if(_DEBUG) System.out.println("DirectoryServerUDP:run: sender is not initiator => DROP");
 						continue;

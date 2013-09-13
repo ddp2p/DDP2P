@@ -49,7 +49,7 @@ import data.D_PluginData;
 import data.D_PluginInfo;
 
 public class ClientSync{
-	public static long PAUSE = 30000;	
+	public static long PAUSE = 40000;	
 
 	public static boolean DEBUG = false;
 	static final boolean _DEBUG = true;

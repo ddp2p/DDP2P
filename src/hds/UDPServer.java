@@ -782,7 +782,16 @@ public class UDPServer extends Thread {
 				DatagramPacket dp = new DatagramPacket(msg, msg.length);
 				dp.setSocketAddress(dir);
 				ds.send(dp);
-				if(DEBUG_DIR) out.println("UDPServer:__announceMyselfToDirectories: sent: "+da+"\n"+Util.byteToHexDump(msg," "));
+				if(DEBUG_DIR) out.println("UDPServer:__announceMyselfToDirectories: sent: "+
+				da+"\n"+Util.byteToHexDump(msg," ")+" to "+dp.getSocketAddress());
+				String sgn= "P";
+				if(da instanceof DirectoryAnnouncement) sgn = "*";
+				if(DEBUG) out.println("UDPServer:__announceMyselfToDirectories: sent: announcement to "+dp.getSocketAddress()+" "+sgn);
+
+				if(da instanceof DirectoryAnnouncement) {
+					DirectoryAnnouncement Da = (DirectoryAnnouncement)da;
+					new AnnouncingThread(Da).start();
+				}
 				//Directories.setUDPOn(address, new Boolean(true));
 			}catch(Exception e) {
 				//Application.warning(_("Error announcing myself to directory:")+dir, _("Announcing Myself to Directory"));
@@ -881,13 +890,15 @@ public class UDPServer extends Thread {
 				if(DEBUG) out.println("userver: ************* UDPServer started!");
 			}
 			catch (SocketTimeoutException e){
-				if(((++cnt) %Server.TIMEOUT_UDP_Announcement_Diviser) == 0) {
+				if((((++cnt) %Server.TIMEOUT_UDP_Announcement_Diviser) == 0)) {
 					if(DEBUG) out.println("userver: ************* UDPServer announce!");
 					UDPServer.announceMyselfToDirectories(ds);
 				}else{
+					if(DEBUG) out.println(""+cnt);
 					if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: ************* UDPServer ping!");
 					this.pingDirectories();
 				}
+				continue;
 			}
 			catch (SocketException e){
 				if(DEBUG) out.println("server: ************* "+e);
@@ -895,6 +906,16 @@ public class UDPServer extends Thread {
 			catch(Exception e){
 				e.printStackTrace();
 			}
+
+			if(((++cnt) %Server.TIMEOUT_UDP_Announcement_Diviser) == 0) {
+				if(DEBUG) out.println("userver: 2************* UDPServer announce!");
+				UDPServer.announceMyselfToDirectories(ds);
+			}else{
+				if(DEBUG) out.println(":"+cnt);
+				if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: 2************* UDPServer ping!");
+				this.pingDirectories();
+			}
+
 			if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: ************* UDPServer loopend!");
 		}
 		if(DEBUG) out.println("userver: ************* UDPServer Good Bye!");
@@ -1035,5 +1056,14 @@ public class UDPServer extends Thread {
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();
 		}
+	}
+}
+class AnnouncingThread extends Thread{
+	DirectoryAnnouncement Da;
+	AnnouncingThread(DirectoryAnnouncement Da){
+		this.Da = Da;
+	}
+	public void run(){
+		Server.announceMyselfToDirectories(Da);
 	}
 }

@@ -158,7 +158,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			if(crt.my_mirror_name!=null) crt.my_mirror_name = crt.my_mirror_name.trim();
 			if("".equals(crt.my_mirror_name)) crt.my_mirror_name = null;
 			try {
-				data.get(row).store("update");
+				data.get(row).store(D_UpdatesInfo.action_update);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
@@ -166,7 +166,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 		case TABLE_COL_URL:
 			data.get(row).url = Util.getString(aValue);
 			try {
-				data.get(row).store("update");
+				data.get(row).store(D_UpdatesInfo.action_update);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
@@ -174,7 +174,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 		case TABLE_COL_USED:
 			data.get(row).used = ((Boolean) aValue).booleanValue();
 			try {
-				data.get(row).store("update");
+				data.get(row).store(D_UpdatesInfo.action_update);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}

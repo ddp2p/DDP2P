@@ -88,6 +88,11 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 		}
 		if(u.size()>0) init(u.get(0));
 	}
+	public D_UpdatesKeysInfo(D_TesterDefinition d) {
+		this.original_tester_name = d.name;
+		this.public_key = d.public_key;
+		this.public_key_hash = Util.getGIDhash(d.public_key);
+	}
 	public boolean existsInDB() {
 		D_UpdatesKeysInfo old = new D_UpdatesKeysInfo(public_key);
 		return old.updates_keys_ID >=0 ;

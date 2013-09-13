@@ -397,7 +397,7 @@ class ConstituentsCustomAction extends DebateDecideAction {
        						SK sk=model.getConstituentSKMyself();
        						dc.signModified(sk, dc.global_organization_ID);
        						//dc.signModified(dc.global_organization_ID, dc.global_constituent_id);
-       						dc.store(new RequestData());
+       						dc.store(new RequestData(), new RequestData());
        						ConstituentsIDNode cin = model.expandConstituentID(tree, ""+cID, true);
        						if(cin!=null) {
        							//cin.constituent.slogan = val;
@@ -488,7 +488,7 @@ class ConstituentsCustomAction extends DebateDecideAction {
     					SK sk=model.getConstituentSKMyself();
     					dc.signModified(sk, dc.global_organization_ID);
     					//dc.signModified(dc.global_organization_ID, dc.global_constituent_id);
-    					dc.store(new RequestData());
+    					dc.store(new RequestData(), new RequestData());
     					ConstituentsIDNode cin = model.expandConstituentID(tree, ""+cID, true);
     					if(cin!=null) {
     						cin.constituent.slogan = val;
@@ -729,7 +729,7 @@ class ConstituentsAddAction extends DebateDecideAction {
         				wbn.global_organization_ID = model.getOrgGID();//D_Organization.getGlobalOrgID(model.getOrganizationID()+"");
         				wbn.global_neighborhood_ID = wbn.make_ID(wbn.global_organization_ID); //gID;
         				wbn.sign(sk, wbn.global_organization_ID);
-        				String _neighborhoodID=wbn.storeVerified(Util.getStringID(constituentID), wbn.global_organization_ID, ""+model.getOrganizationID(), now);
+        				String _neighborhoodID=wbn.storeVerified(Util.getStringID(constituentID), wbn.global_organization_ID, ""+model.getOrganizationID(), now, null, null);
         				cand.n_data.neighborhoodID = Util.lval(_neighborhoodID, -1);
         				/*
     					cand.n_data.neighborhoodID=model.db.insert(table.neighborhood.TNAME,
@@ -828,7 +828,7 @@ class ConstituentsAddAction extends DebateDecideAction {
     				wbn.global_organization_ID = model.getOrgGID();//D_Organization.getGlobalOrgID(model.getOrganizationID()+"");
     				wbn.global_neighborhood_ID = wbn.make_ID(wbn.global_organization_ID);//gID;
     				wbn.sign(sk, wbn.global_organization_ID);
-    				String _neighborhoodID=wbn.storeVerified(Util.getStringID(constituentID), wbn.global_organization_ID, Util.getStringID(model.getOrganizationID()), now);
+    				String _neighborhoodID=wbn.storeVerified(Util.getStringID(constituentID), wbn.global_organization_ID, Util.getStringID(model.getOrganizationID()), now, null, null);
     				n_data.neighborhoodID = Util.lval(_neighborhoodID, -1);
 					n_data.global_nID = wbn.global_neighborhood_ID;//gID;
     				if(DEBUG) System.out.println("ConstituentAddAction:storeNewConstituentData: obtained nID="+n_data.neighborhoodID+" for:"+ wbn);
@@ -1227,7 +1227,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     					//String gID=Util.getGlobalID("neighborhoods", n_key);
         				wbn.global_neighborhood_ID = wbn.make_ID(wbn.global_organization_ID);//gID;
         				wbn.sign(sk, wbn.global_organization_ID);
-        				String _neighborhoodID=wbn.storeVerified(Util.getStringID(constituentID), wbn.global_organization_ID, Util.getStringID(model.getOrganizationID()), now);
+        				String _neighborhoodID=wbn.storeVerified(Util.getStringID(constituentID), wbn.global_organization_ID, Util.getStringID(model.getOrganizationID()), now, null, null);
         				cand.n_data.neighborhoodID = Util.lval(_neighborhoodID, -1);
 /*
     					cand.n_data.neighborhoodID=model.db.insert(table.neighborhood.TNAME,
@@ -1331,7 +1331,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     				wbn.global_organization_ID = model.getOrgGID();//D_Organization.getGlobalOrgID(Util.getStringID(model.getOrganizationID()));
     				wbn.global_neighborhood_ID = wbn.make_ID(wbn.global_organization_ID);
     				wbn.sign(sk, wbn.global_organization_ID);
-    				String _nID=wbn.storeVerified(Util.getStringID(constituentID), wbn.global_organization_ID, Util.getStringID(model.getOrganizationID()), now);
+    				String _nID=wbn.storeVerified(Util.getStringID(constituentID), wbn.global_organization_ID, Util.getStringID(model.getOrganizationID()), now, null, null);
     				
     				n_data.global_nID = wbn.global_neighborhood_ID;
     				n_data.neighborhoodID=Util.lval(_nID, -1);

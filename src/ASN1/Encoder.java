@@ -71,6 +71,7 @@ class Encoder{
 
 	static final BigInteger BN127 = new BigInteger(""+127);
 	private static final boolean DEBUG = false;
+	public static final long CALENDAR_DISPLACEMENT = 1000000000;
 	
 	int bytes=0;
 	byte[] header_type=new byte[0];
@@ -552,6 +553,34 @@ class Encoder{
 			else enc.addToSequence(Encoder.getNullEncoder());
 		}
 		return enc;
+	}
+	public static Encoder getKeysStringEncoder(Hashtable<String,String> _param, byte type){
+		if(_param == null) {
+			return Encoder.getNullEncoder();
+		}
+		Encoder enc = new Encoder().initSequence();
+		String[] param = convertHashtableToArray(_param);
+		for(int k=0; k<param.length; k++) {
+			if(param[k]!=null) enc.addToSequence(new Encoder(param[k],type));
+			else enc.addToSequence(Encoder.getNullEncoder());
+		}
+		return enc;
+	}
+	private static String[] convertHashtableToArray(
+			Hashtable<String, String> _param) {
+		if(_param==null) return null;
+		String[] result = new String[_param.size()];
+		for(String key: _param.keySet()){
+			String _idx = _param.get(key);
+			Calendar _c = Util.getCalendar(_idx);
+			long idx = _c.getTimeInMillis() -  CALENDAR_DISPLACEMENT;
+			if((idx<0) || (idx >= result.length) ){
+				System.out.println("Encoder:convertHashtableToArray: unexpected length: "+idx+" c="+_c);
+				idx = 0;
+			}
+			result[(int) idx] = key;
+		}
+		return result;
 	}
 	public static Encoder getHashStringEncoder(Hashtable<String, String> param,
 			byte type) {

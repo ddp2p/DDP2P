@@ -39,6 +39,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
@@ -499,6 +500,33 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 					signature.justification_ID = Util.getStringID(j_id);//justificationEditor.just.justification_ID;
 				}
 				signature.global_vote_ID = signature.make_ID();
+				
+				D_Vote old = new D_Vote(signature.global_vote_ID);
+				if(old.vote_ID!=null){
+					String old_date = Encoder.getGeneralizedTime(old.creation_date);
+					String new_date = Encoder.getGeneralizedTime(signature.creation_date);
+					if(old_date.equals(new_date)){
+						int attack = Application.ask(
+								_("Are you sure you want to create a new vote \n" +
+								"with the same date as your previous vote? \n" +
+								"This can amount to an attack where you give different people different votes!\n" +
+								"Except if they order such votes by signature (to be implemented)\n" +
+								"On selecting NO, we will update the creation date to now."),
+								_("Votes from you on the same issue and with same date!"), JOptionPane.YES_NO_CANCEL_OPTION);
+						switch(attack) {
+						case 0: //YES
+							break;
+						case 1: // NO
+							signature.creation_date = Util.CalendargetInstance();
+							this.vote_date_field.setText(Encoder.getGeneralizedTime(this.signature.creation_date));
+							break;
+						case 2: // CANCEL
+						default:
+							return;
+						}
+					}
+				}
+				
 				signature.sign();
 				long v_id = this.signature.storeVerified();
 				if(v_id<=0){
@@ -514,6 +542,11 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				*/
 				disable_it();
 				justificationEditor.disable_it();
+				try{
+					D_Motion m = new D_Motion(Util.lval(signature.motion_ID));
+					m.broadcasted = true;
+					m.storeVerified();
+				}catch(Exception e){e.printStackTrace();}
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}

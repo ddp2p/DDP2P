@@ -291,8 +291,8 @@ class D_Translations extends ASNObj{
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public long store(streaming.RequestData rq) throws P2PDDSQLException {
-		boolean locals = fillLocals(rq, true, true, true);
+	public long store(streaming.RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
+		boolean locals = fillLocals(new_rq, true, true, true);
 		if(!locals) return -1;
 
 		if(!this.verifySignature())
@@ -314,7 +314,7 @@ class D_Translations extends ASNObj{
 			this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
 		if((this.organization_ID == null ) && (this.global_organization_ID != null)) {
 			organization_ID = ""+data.D_Organization.insertTemporaryGID(global_organization_ID);
-			rq.orgs.add(global_organization_ID);
+			new_rq.orgs.add(global_organization_ID);
 		}
 		
 		if((this.submitter_ID == null ) && (this.global_constituent_ID != null))
@@ -322,8 +322,9 @@ class D_Translations extends ASNObj{
 		if((this.submitter_ID == null ) && (this.global_constituent_ID != null)) {
 			submitter_ID =
 				""+D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, this.organization_ID);
-			rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
+			new_rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
 		}
+		if(sol_rq!=null)sol_rq.tran.add(this.global_translation_ID);
 		
 		return storeVerified();
 	}
@@ -362,7 +363,7 @@ class D_Translations extends ASNObj{
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
-	public boolean fillLocals(RequestData rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst) throws P2PDDSQLException {
+	public boolean fillLocals(RequestData new_rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst) throws P2PDDSQLException {
 		if((global_organization_ID==null)&&(organization_ID == null)){
 			Util.printCallPath("cannot store witness with not orgGID");
 			return false;
@@ -376,7 +377,7 @@ class D_Translations extends ASNObj{
 			organization_ID = Util.getStringID(D_Organization.getLocalOrgID(global_organization_ID));
 			if(tempOrg && (organization_ID == null)) {
 				String orgGID_hash = D_Organization.getOrgGIDHashGuess(global_organization_ID);
-				if(rq!=null)rq.orgs.add(orgGID_hash);
+				if(new_rq!=null)new_rq.orgs.add(orgGID_hash);
 				organization_ID = Util.getStringID(D_Organization.insertTemporaryGID(global_organization_ID, orgGID_hash, default_blocked_org));
 				if(default_blocked_org) return false;
 			}
@@ -387,7 +388,7 @@ class D_Translations extends ASNObj{
 			this.submitter_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID);
 			if(tempConst && (submitter_ID == null ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
-				if(rq!=null)rq.cons.put(consGID_hash,DD.EMPTYDATE);
+				if(new_rq!=null)new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
 				submitter_ID = Util.getStringID(D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, organization_ID));
 			}
 			if(submitter_ID == null) return false;

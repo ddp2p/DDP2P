@@ -1,3 +1,22 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2012 KhalidAlhamed
+		Author: Khalid Alhamed
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package data;
 
 import ASN1.ASN1DecoderFail;
@@ -10,13 +29,15 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import util.P2PDDSQLException;
+import util.Summary;
 
 import config.Application;
 
 import util.Util;
 
 
-public class D_TesterDefinition extends ASNObj{
+public class D_TesterDefinition extends ASNObj implements Summary{
+	private static final boolean _DEBUG = true;
 	public static boolean DEBUG = false;
 	public long tester_ID = -1;
 	public String name;
@@ -24,10 +45,28 @@ public class D_TesterDefinition extends ASNObj{
 	public String email;
 	public String url; // just for ads
 	public String description;
-		
+
+	@Override
+	public String toString() {
+		return "Tester: name="+name+"\n"+
+			"email="+email+"\n"+
+			"url="+url+"\n"+
+			"description="+description+"\n"+
+			"PK="+public_key;
+	}
+
+	@Override
+	public String toSummaryString() {
+		return "Tester: name="+name+"\n"+
+			"email="+email+"\n"+
+			"url="+url+"\n"+
+			"description="+description;
+	}
+
 	public D_TesterDefinition( String pk) {
 		if(pk==null) return;
-		String sql = "SELECT "+table.tester.fields_tester+" FROM  " +table.tester.TNAME +
+		String sql = "SELECT "+table.tester.fields_tester+
+				" FROM  " +table.tester.TNAME +
 				" WHERE "+ table.tester.public_key+"=?;";
 		ArrayList<ArrayList<Object>> result=null;
 		try{
@@ -36,6 +75,24 @@ public class D_TesterDefinition extends ASNObj{
 			System.out.println(e);
 		}
 		if(result.size()>0) init(result.get(0));
+	}
+	public D_TesterDefinition(long id) {
+		if(id < 0) return;
+		String sql = "SELECT "+table.tester.fields_tester+
+				" FROM  " +table.tester.TNAME +
+				" WHERE "+ table.tester.tester_ID+"=?;";
+		ArrayList<ArrayList<Object>> result=null;
+		try{
+			result = Application.db.select(sql,new String[]{Util.getStringID(id)},DEBUG);
+		}catch(util.P2PDDSQLException e){
+			System.out.println(e);
+		}
+		if(result.size()>0){
+			init(result.get(0));
+			if(DEBUG)System.out.println("D_TesterDefinition:<init>:Got: "+this);
+		}else{
+			if(DEBUG)System.out.println("D_TesterDefinition:<init>:Not found: "+id);
+		}
 	}
 	public D_TesterDefinition() {
 		
@@ -77,7 +134,8 @@ public class D_TesterDefinition extends ASNObj{
 		public_key = d.getFirstObject(true).getString();
 		return this;
 	}
-	public ASNObj instance() throws CloneNotSupportedException{return new D_TesterInfo();}
+	@Override
+	public D_TesterDefinition instance() throws CloneNotSupportedException{return new D_TesterDefinition();}
 	public static byte getASNType() {
 		if(DEBUG) System.out.println("DD.TAG_AC23= "+ DD.TAG_AC23);
 		return DD.TAG_AC23;
@@ -117,24 +175,45 @@ public class D_TesterDefinition extends ASNObj{
 			
 			String params2[]=new String[table.tester.F_FIELDS_NOID];
 			System.arraycopy(params,0,params2,0,params2.length);
-			System.out.println("params2[last]: "+ params2[table.tester.F_FIELDS_NOID-1]);
+			if(DEBUG)System.out.println("params2[last]: "+ params2[table.tester.F_FIELDS_NOID-1]);
 			this.tester_ID = Application.db.insert(table.tester.TNAME, table.tester._fields_tester_no_ID,params2, DEBUG);
 		}
 	}
-//	public static D_TesterDefinition retriveTesterInfo(long testerID){
-//		//Application.db.   select ...
-//	}
-	public static D_TesterDefinition retriveTesterInfo(String name, String pubKey){
+	public static ArrayList<D_TesterDefinition> retrieveTesterDefinitions(){
+		ArrayList<D_TesterDefinition> result = new ArrayList<D_TesterDefinition>();
+		String sql = "SELECT "+table.tester.tester_ID+
+				" FROM  " + table.tester.TNAME+";";
+		ArrayList<ArrayList<Object>> list=null;
+		try{
+			list = Application.db.select(sql, new String[]{}, DEBUG);
+		}catch(util.P2PDDSQLException e){
+			System.out.println(e);
+		}
+		if(list == null ){
+			return null;
+		}
+		for(ArrayList<Object> id : list){
+			long _id = Util.lval(id.get(0));
+			if(DEBUG)System.out.println("D_TesterDefinition:<init>:Found: "+_id);
+			D_TesterDefinition td = new D_TesterDefinition(_id);
+			result.add(td);
+		}
+		return result;
+	}
+	public static D_TesterDefinition retrieveTesterDefinition(String name, String pubKey){
 		String[] params = new String[]{name, pubKey};
-		String sql = "SELECT "+table.tester.fields_tester+" FROM  " + table.tester.TNAME +
-			         " WHERE "+table.tester.name + " = ? AND "+table.tester.public_key+"= ?";
+		String sql = "SELECT "+table.tester.fields_tester+
+				" FROM  " + table.tester.TNAME +
+				" WHERE "+table.tester.name + " = ? AND "+table.tester.public_key+"= ?";
 		ArrayList<ArrayList<Object>> result=null;
 		try{
 			result = Application.db.select(sql, params, DEBUG);
 		}catch(util.P2PDDSQLException e){
 			System.out.println(e);
 		}
-		if(result == null ) return null;
+		if(result == null ){
+			return null;
+		}
 		return new D_TesterDefinition(result.get(0));
 	}
 }

@@ -1,10 +1,12 @@
 package util;
 
 import static util.Util._;
+import hds.Server;
 import hds.StegoStructure;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
@@ -75,6 +77,18 @@ class SaverThread extends Thread {
 	    	}
     	}
     	DD.setAppText(DD.APP_LISTING_DIRECTORIES, ld);
+//		try {
+//			DD.load_listing_directories();
+//		} catch (NumberFormatException | UnknownHostException e) {
+//			e.printStackTrace();
+//		}
+		if(Application.as!=null) {
+			Identity peer_ID = new Identity();
+			peer_ID.globalID = Identity.current_peer_ID.globalID;
+			peer_ID.name = Identity.current_peer_ID.name;
+			peer_ID.slogan = Identity.current_peer_ID.slogan;
+			Server.set_my_peer_ID_TCP(peer_ID);
+		}
 	}
 }
 
@@ -145,7 +159,8 @@ public class DD_DirectoryServer extends ASNObj implements StegoStructure {
     			try{
     				this.add(d[0], Integer.parseInt(d[1]));
     			}catch(Exception e){
-    				e.printStackTrace();
+    				if(DEBUG)e.printStackTrace();
+    				return false;
     			}
     		}
     	}

@@ -47,12 +47,13 @@ public class MotionHandling {
 	private static final int BIG_LIMIT = 500;
 
 	public static boolean integrateNewData(D_Motion[] motions, String orgGID,
-			String org_local_ID, String arrival_time, D_Organization orgData, RequestData rq) throws P2PDDSQLException {
+			String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(motions==null) return false;
 		for(int k=0; k<motions.length; k++) {
 			motions[k].global_organization_ID = orgGID;
 			motions[k].organization_ID = org_local_ID;
-			motions[k].store(rq);
+			motions[k].store(sol_rq, new_rq);
 		}
 		return motions.length>0;
 	}
@@ -200,7 +201,20 @@ public class MotionHandling {
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
 		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
 				new String[]{org_id, last_sync_date, maxDate}, DEBUG);
-		return Util.AL_AL_O_2_AL_S(result);
+		
+		ArrayList<String> r = new ArrayList<String>();
+		/*
+		if(_DEBUG&&result.size()>0){
+			if(_DEBUG)System.out.println("MotionHandling:getMH:got 1="+result.size());
+			result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
+					new String[]{org_id, last_sync_date, maxDate}, _DEBUG);
+			if(_DEBUG)System.out.println("MotionHandling:getMH:got 2="+result.size());
+			r = Util.AL_AL_O_2_AL_S(result);
+			if(_DEBUG)System.out.println("MotionHandling:getMH:got="+Util.concat(r, "\n", "null"));
+		}
+		*/
+		r = Util.AL_AL_O_2_AL_S(result);
+		return r;
 	}
 
 

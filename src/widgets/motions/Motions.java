@@ -452,7 +452,7 @@ class MotionCustomAction extends DebateDecideAction {
 			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
-			if(DEBUG) System.out.println("Morions:MotionCustomAction:WLANRequest: done ");
+			if(DEBUG) System.out.println("Motions:MotionCustomAction:WLANRequest: done ");
     	}
         if(cmd == M_DEL) {
     		String _m_ID = model.getMotionID(row);

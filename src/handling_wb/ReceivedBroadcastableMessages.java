@@ -282,9 +282,10 @@ public class ReceivedBroadcastableMessages {
 		if(vote.justification!=null) {
 			if(DEBUG)System.out.println("with JUSTIFICATION");
 			if(DEBUG)System.out.println("JUST Data : "+vote.justification);
-			RequestData rq = new RequestData();
+			RequestData sol_rq = new RequestData();
+			RequestData new_rq = new RequestData();
 			try{
-				just_id =  vote.justification.store(rq);//pm should be passed
+				just_id =  vote.justification.store(sol_rq, new_rq);//pm should be passed
 			}catch(Exception e){e.printStackTrace();}
 			if(DEBUG)System.out.println("JUST ID : "+just_id);
 		}
@@ -295,9 +296,10 @@ public class ReceivedBroadcastableMessages {
 		if(vote.motion!=null) {
 			if(DEBUG)System.out.println("with MOTION");
 			if(DEBUG)System.out.println("MOTION Data : "+vote.motion);
-			RequestData rq = new RequestData();
+			RequestData sol_rq = new RequestData();
+			RequestData new_rq = new RequestData();
 			try{
-				motion_id =  vote.motion.store(rq);//pm should be passed
+				motion_id =  vote.motion.store(sol_rq, new_rq);//pm should be passed
 			}catch(Exception e){e.printStackTrace();}
 			if(DEBUG)System.out.println("MOTION ID : "+motion_id);
 		}
@@ -305,9 +307,10 @@ public class ReceivedBroadcastableMessages {
 			if(DEBUG)System.out.println("WITHOUT MOTION");
 
 		long vote_id = -1;
-		RequestData rq = new RequestData();
+		RequestData sol_rq = new RequestData();
+		RequestData new_rq = new RequestData();
 		try{
-			vote_id =  vote.store(pm, rq);//pm should be passed
+			vote_id =  vote.store(pm, sol_rq, new_rq);//pm should be passed
 		}catch(Exception e){e.printStackTrace();}
 		if(DEBUG)System.out.println("vote ID : "+vote_id);
 
@@ -316,9 +319,10 @@ public class ReceivedBroadcastableMessages {
 
 	private static long handle_witness(PreparedMessage pm, D_Witness witness) throws P2PDDSQLException {
 		long add_witness =-1;
-		RequestData rq = new RequestData();
+		RequestData sol_rq = new RequestData();
+		RequestData new_rq = new RequestData();
 		try{
-			add_witness = witness.store(rq);//pm should be passed to this function.
+			add_witness = witness.store(sol_rq, new_rq);//pm should be passed to this function.
 			if(DEBUG)System.out.println("handle_witness : after witness.stor");
 		}catch(Exception e){e.printStackTrace();}
 		return add_witness;
@@ -340,14 +344,15 @@ public class ReceivedBroadcastableMessages {
 		if(DEBUG)System.out.println("Global_Org_id : "+goid);
 		if(DEBUG)System.out.println("handle_constituent: Neighborhood data : "+constituent.neighborhood[0]);
 		if(DEBUG)System.out.println("Reaceived : handle_constituent() : CON HASH : "+constituent.global_constituent_id_hash);
-		return constituent.store(pm, goid,Util.getStringID(added_Org), now);	
+		return constituent.store(pm, goid,Util.getStringID(added_Org), now, null, null);
 	}
 
 	private static long handle_Neighborhoods(PreparedMessage pm,D_Neighborhood neigh) {
 		long neigh_id = -1;
-		RequestData rq = new RequestData();
+		RequestData sol_rq = new RequestData();
+		RequestData new_rq = new RequestData();
 		try{
-			neigh_id = neigh.store(rq);//pm should be passed to this function.
+			neigh_id = neigh.store(sol_rq, new_rq);//pm should be passed to this function.
 		}catch(Exception e){e.printStackTrace();}
 		return neigh_id;
 	}

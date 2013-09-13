@@ -796,7 +796,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		//p2.add(p_t,BorderLayout.WEST);
 
 		JPanel p_a = new JPanel();
-		label_motion_answer = new TranslatedLabel("Answer To");
+		label_motion_answer = new TranslatedLabel("Enhancement Of");
 		p_a.add(label_motion_answer);
 		p_a.add(motion_answer_field = new JComboBox(combo_answerTo));
 		motion_answer_field.addItemListener(this);
@@ -1210,7 +1210,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			this.moti.creation_date = Util.getCalendar(creationTime);
 			this.moti.setEditable();
 			try {
-				this.moti.storeVerified();
+				this.moti.storeVerifiedNoSync();
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
@@ -1444,6 +1444,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				long m_id = this.moti.storeVerified(DEBUG);
 				
 				D_Motion mot = new D_Motion(Util.lval(this.moti.motionID, -1));
+				mot.broadcasted = true; // if you sign it, you probably want to broadcast it...
 				this.moti.global_motionID = mot.global_motionID = mot.make_ID();
 				this.moti.signature = mot.signature = mot.sign();
 				m_id = mot.storeVerified(DEBUG);

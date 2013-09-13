@@ -248,11 +248,11 @@ public class DDAddress implements StegoStructure{
 		}
 		if(DEBUG) System.out.println("DDAddress:save: will save");
 		String date = Util.getGeneralizedTime();
-		long peer_ID = D_PeerAddress.storeVerified(globalID, name, emails, phones, date, slogan, true, broadcastable, Util.concat(hash_alg,":"),
-				signature, this.creation_date, this.picture, this.version, served_orgs);
 		//UpdatePeersTable.integratePeerOrgs(pa.served_orgs, peer_ID, crt_date);
 		String adr[] = address.split(Pattern.quote(DirectoryServer.ADDR_SEP));
 		if(DEBUG) System.out.println("DDAddress:save: will save address: ["+adr.length+"] "+address);
+
+		TypedAddress[] _a = new TypedAddress[adr.length];
 		for(int k=0; k<adr.length; k++) {
 			if(DEBUG) System.out.println("DDAddress:save: will save address: "+adr[k]);
 			String pr[] = adr[k].split(Pattern.quote(TypedAddress.PRI_SEP));
@@ -269,9 +269,47 @@ public class DDAddress implements StegoStructure{
 				certificate = true;
 				priority=Util.get_int(pr[1]);
 			}
-			D_PeerAddress.get_peer_addresses_ID(target, type, peer_ID, date, certificate, priority);
+			_a[k] = new TypedAddress();
+			_a[k].type = type;
+			_a[k].address = target;
+			_a[k].certified = certificate;
+			_a[k].priority = priority;
+			//D_PeerAddress.get_peer_addresses_ID(target, type, peer_ID, date, certificate, priority);
 			//long peers_orgs_ID = Client.get_peers_orgs_ID(peer_ID, global_organizationID);
 			//long organizationID = Client.get_organizationID (global_organizationID, org_name);
+		}
+		/*
+		boolean existing[] = new boolean[1];
+		long peer_ID = D_PeerAddress.storeVerified(globalID, name, emails, phones, date, slogan, true, broadcastable, Util.concat(hash_alg,":"),
+				signature, this.creation_date, this.picture, this.version, served_orgs, _a, existing);
+		 */
+		D_PeerAddress pa;
+		if(V2.equals(version))
+			pa = new D_PeerAddress(this,true);
+		else //V0+(!existing[0]))
+			pa = new D_PeerAddress(this,true); // false
+		D_PeerAddress old = new D_PeerAddress(pa.globalID, 0, false);
+		long peer_ID;
+		if(old._peer_ID > 0) {
+			old.used = true;
+			old.name = pa.name;
+			old.emails = pa.emails;
+			old.phones = pa.phones;
+			old.slogan = pa.slogan;
+			old.address = pa.address;
+			old.creation_date = pa.creation_date;
+			old.version = pa.version;
+			old.globalID = pa.globalID;
+			old.broadcastable = pa.broadcastable;
+			old.served_orgs = pa.served_orgs;
+			old.signature = pa.signature;
+			old.picture = pa.picture;
+			old.hash_alg = pa.hash_alg;
+			old.globalIDhash = pa.globalIDhash;
+			old.storeVerified();
+		}else{
+			pa.used = true;
+			peer_ID = pa._storeVerified();
 		}
 		//D_PeerAddress.integratePeerOrgs(served_orgs, peer_ID, date);
 //		if(this.served_orgs!=null)
@@ -287,7 +325,7 @@ public class DDAddress implements StegoStructure{
            			_("Saved Data"), JOptionPane.INFORMATION_MESSAGE);
 
 		
-		if(DEBUG) Application.warning(_("Address Saved as #"+peer_ID+"!"), _("Saved!"));
+		if(DEBUG) Application.warning(_("Address Saved as #")+peer_ID+"! ", _("Saved!"));
 	}
 	String sane(String in) {
 		if(in==null) return "";

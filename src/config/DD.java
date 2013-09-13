@@ -92,6 +92,8 @@ import util.DBInterface;
 import util.DD_DirectoryServer;
 import util.DD_IdentityVerification_Answer;
 import util.DD_IdentityVerification_Request;
+import util.DD_Mirrors;
+import util.DD_Testers;
 import util.P2PDDSQLException;
 import util.Util;
 import widgets.components.DDTranslation;
@@ -106,6 +108,7 @@ import widgets.motions.MotionEditor;
 import widgets.motions.Motions;
 import widgets.news.NewsEditor;
 import widgets.news.NewsTable;
+import widgets.peers.PeerAddresses;
 import widgets.wireless.WLAN_widget;
 import wireless.BroadcastClient;
 import wireless.BroadcastConsummerBuffer;
@@ -129,7 +132,7 @@ import data.D_Witness;
 import ASN1.Encoder;
 
 public class DD {
-	public static final String VERSION = "0.9.37";
+	public static final String VERSION = "0.9.49";
 	public static String _APP_NAME = _("Direct Democracy P2P");
 	//public static String _APP_NAME = _("La Bible A Petits Pas");
 	public static String APP_NAME = _APP_NAME+" "+VERSION;
@@ -213,6 +216,8 @@ public class DD {
 	public static final short STEGO_SIGN_CONSTITUENT_VERIF_REQUEST = 0x7AAD;
 	public static final short STEGO_SIGN_CONSTITUENT_VERIF_ANSWER = 0x3EE3;
 	public static final short STEGO_SIGN_DIRECTORY_SERVER = 0x1881;
+	public static final short STEGO_SIGN_TESTERS = 0x588C;
+	public static final short STEGO_SIGN_MIRRORS = 0x4774;
 
 	
 	public static byte asn1Type(int classASN1, int PCASN1, byte tag_number) {
@@ -227,7 +232,9 @@ public class DD {
 		DD_IdentityVerification_Request data2 = new DD_IdentityVerification_Request();
 		DD_IdentityVerification_Answer data3 = new DD_IdentityVerification_Answer();
 		DD_DirectoryServer data4 = new DD_DirectoryServer();
-		return new StegoStructure[]{data1, data2, data3, data4};
+		DD_Testers data5 = new DD_Testers();
+		DD_Mirrors data6 = new DD_Mirrors();
+		return new StegoStructure[]{data1, data2, data3, data4, data5, data6};
 	}
 
 	public static short[] getAvailableStegoStructureISignatures() {
@@ -430,6 +437,7 @@ public class DD {
 	 * For debugging other peers (due to errors sent to us) set the next to true!
 	 */
 	public static final boolean WARN_ABOUT_OTHER = false;
+	public static final boolean DEBUG_TODO = false;
 	public static int MAX_MOTION_ANSWERTO_CHOICES = 100;
 	/**
 	 * 0 = undecided
@@ -519,6 +527,7 @@ public class DD {
 	private static JTextField clientsockets_long_sleep_minutes_start;
 	public static byte[] Random_peer_Number;
 	public static boolean SCRIPTS_ERRORS_WARNING = true;
+	public static boolean WARNED_NO_DIRS = false;
 
 
     
@@ -958,12 +967,16 @@ public class DD {
 		//tabbedPane.addTab("New", _nedit.getScrollPane());
 		 
     	tabbedPane.addTab("WLAN", makeWLanPanel(wirelessInterfacesPane));
+    	
+    	tabbedPane.addTab("Addr", new JScrollPane(new PeerAddresses()));
+    	
         //frame.setVisible(false);
         frame.remove(splash_label);
         frame.setContentPane(tabbedPane);
         //frame.pack();
         frame.setVisible(true);		
 
+        
         /*
 		Dimension dim = frame.getPreferredSize();
 		System.out.println("Old preferred="+dim);
@@ -1107,11 +1120,18 @@ public class DD {
 	public static void load_listing_directories() throws P2PDDSQLException, NumberFormatException, UnknownHostException{
     	String ld = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
     	if(ld == null){
-    		Application.warning(_("No default listing_directories found!"), _("Configuration"));
+    		if(!DD.WARNED_NO_DIRS) {
+    			Application.warning(_("No listing_directories found at initialization: " +
+    					"\nDo not forget to add some later \n" +
+    					"(e.g., from the DirectDemocracyP2P.net list)!\n" +
+    					"If you have a stable IP, than you probably do not need it."), _("Configuration"));
+    			DD.WARNED_NO_DIRS = true;
+    		}
     		return;
     	}
     	String dirs[] = ld.split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_SEP));
     	Identity.listing_directories_string.clear();
+    	Identity.listing_directories_inet.clear(); // just added
     	for(int k=0; k<dirs.length; k++) {
     		String[] d=dirs[k].split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_ELEM_SEP));
     		Identity.listing_directories_string.add(dirs[k]);
