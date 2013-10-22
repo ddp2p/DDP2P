@@ -53,7 +53,7 @@ public class key {
 			Util.trimmed(fields_list_noID.split(Pattern.quote(",")));
 	public static String[] fields =
 			Util.trimmed(fields_list.split(Pattern.quote(",")));
-	public static final int FIELDS = fields_list.length();
-	public static final int FIELDS_NOID = fields_list_noID.length();
+	public static final int FIELDS = fields.length;
+	public static final int FIELDS_NOID = fields_noID.length;
 	public static final int COL_ID = FIELDS_NOID;
 }

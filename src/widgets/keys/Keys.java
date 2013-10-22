@@ -193,6 +193,15 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
+		this.fireTableDataChanged();
+	}
+	public boolean isCellEditable(int row, int col) {
+		switch(col){
+		case TABLE_COL_NAME:
+		case TABLE_COL_HIDE:
+			return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -223,21 +232,49 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 		case TABLE_COL_HIDE:
 			Object h = _keydata.get(rowIndex).get(table.key.COL_HIDE);
 			return new Boolean(Util.stringInt2bool(h, false));
-			/*
+			
 		case TABLE_COL_PEER:
 			return _keydata.get(rowIndex).get(SELECT_COL_PEER);
 		case TABLE_COL_ORG:
 			return _keydata.get(rowIndex).get(SELECT_COL_ORG);
 		case TABLE_COL_CONS:
-			long consts = 1;
-			/*
+			//long consts = 1;
+		
 			long consts = Util.lval(_keydata.get(rowIndex).get(SELECT_COL_CONST_NB));
 			if(consts == 1)
 				consts = (_keydata.get(rowIndex).get(SELECT_COL_CONST_ID)==null)?0:1;
-*/
-			//return new Integer((int)consts);
+
+			return new Integer((int)consts);
 		}
 		return null;
+	}
+	@Override
+	public void setValueAt(Object value, int row, int col) {
+		switch(col) {
+		case TABLE_COL_NAME:
+			set_my_data(table.key.name, Util.getString(value), row);
+			//set_my_data(table.key.preference_date, Util.getGeneralizedTime(), row);
+			break;
+		case TABLE_COL_HIDE:
+			String val = Util.stringInt2bool(value, false)?"1":"0";
+			set_my_data(table.key.hide, val, row);
+			//set_my_data(table.key.preference_date, Util.getGeneralizedTime(), row);
+			break;
+		}
+		//fireTableCellUpdated(row, col);
+		//fireTableCellUpdated(row, TABLE_COL_DATE);
+	}
+	private void set_my_data(String field_name, String value, int row) {
+		if(row >= _keydata.size()) return;
+		if("".equals(value)) value = null;
+		if(_DEBUG)System.out.println("Set value =\""+value+"\"");
+		String _ID = Util.getString(_keydata.get(row).get(table.key.COL_ID));
+		try {
+			db.update(table.key.TNAME, new String[]{field_name, table.key.preference_date},
+					new String[]{table.key.key_ID}, new String[]{value, Util.getGeneralizedTime(), _ID}, _DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
 	}
 	@Override
 	public String getColumnName(int col) {
