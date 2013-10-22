@@ -219,10 +219,12 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 					maxColumn = Integer.parseInt(util.Util.getString(sqlResult
 							.get(0).get(0)));
 				}
-				edgeTable = new Integer[maxRow + 1][maxColumn + 1];
-				for (int i = 0; i < edgeTable.length; i++) {
-					for (int j = 0; j < edgeTable[i].length; j++) {
-						edgeTable[i][j] = 2;
+				synchronized(this){
+					edgeTable = new Integer[maxRow + 1][maxColumn + 1];
+					for (int i = 0; i < edgeTable.length; i++) {
+						for (int j = 0; j < edgeTable[i].length; j++) {
+							edgeTable[i][j] = 2;
+						}
 					}
 				}
 				witness_stances = Application.db.select(sql_witness_stances,
@@ -234,7 +236,11 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 							.getString(witnessStance.get(1)));
 					sense = Integer.parseInt(util.Util.getString(witnessStance
 							.get(2)));// 1 or 0
-					edgeTable[sourceID][targetID] = sense;
+					synchronized(this){
+						if((sourceID>edgeTable.length)||(targetID>edgeTable[sourceID].length))
+							continue;
+						edgeTable[sourceID][targetID] = sense;
+					}
 				}
 			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();

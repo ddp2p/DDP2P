@@ -232,6 +232,11 @@ class Encoder{
 		}
 		bytes += prefix.bytes;
 	}
+	/**
+	 * Equivalent to addToSequence(asn1_data.getBytes)
+	 * @param asn1_data
+	 * @return
+	 */
 	public Encoder addToSequence(Encoder asn1_data){
 		////incrementASN1Length(asn1_data.bytes);
 		//bytes += asn1_data.bytes;
@@ -243,9 +248,25 @@ class Encoder{
 		//System.err.println("addASN1ToASN1Sequence:: "+this+"+"+asn1_data);
 		return addToSequence(asn1_data.getBytes());
 	}
+	/**
+	 * Equivalent to addToSequence(asn1_data, 0, asn1_data.length);
+	 * @param asn1_data
+	 * @return
+	 */
 	public Encoder addToSequence(byte[] asn1_data){
 		return addToSequence(asn1_data, 0, asn1_data.length);
 	}
+	/**
+	 * Adds data from array asn1_data from index offset, of length "length"
+	 * 
+	 * Sets this to the top of the tree, and delegates previous content to the "prefix_data",
+	 * updating "bytes"
+	 * 
+	 * @param asn1_data
+	 * @param offset
+	 * @param length
+	 * @return
+	 */
 	public Encoder addToSequence(byte[] asn1_data, int offset, int length){
 		//System.err.println("addASN1ToASN1Sequence_1: "+bytes+"+"+length);
 		//System.err.println("addASN1ToASN1Sequence_2: "+this+"+"+Util.byteToHex(asn1_data," "));

@@ -181,9 +181,9 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 		for(String peer : peer_contacts.keySet()){
 			if(DEBUG) System.out.println("PeerContacts: getTree: peer="+peer);
 			if(filter && (dpa!=null)){
-				if(!peer.equals(this.dpa.name) &&
+				if(!peer.equals(this.dpa.component_basic_data.name) &&
 						!peer.equals(this.my_peer_name) &&
-						!(peer.equals(Util.trimmed(dpa.globalID))))
+						!(peer.equals(Util.trimmed(dpa.component_basic_data.globalID))))
 					continue;
 			}
 			DNode n = new DNode();

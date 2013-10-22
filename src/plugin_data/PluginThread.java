@@ -128,7 +128,7 @@ class PluginThread extends Thread {
 						e.printStackTrace();
 						continue;
 					}
-					if(!peer.used)
+					if(!peer.component_preferences.used)
 						Application.warning(_("Plugin: "+plugin_name(msg.plugin_GID)+" sends request to blocked/unused user"),
 								_("Jammed plugin message"));
 					if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: Peer = "+peer);

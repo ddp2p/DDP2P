@@ -151,8 +151,19 @@ public class DBInterface implements DB_Implementation {
     public synchronized long insertNoSync(String table, String[] fields, String[] params) throws P2PDDSQLException {
     	return insertNoSync(table, fields, params, DEBUG);
     }
-    public String makeInsertSQL(String table, String[] fields, String[] params){
+    public static String makeInsertSQL(String table, String[] fields, String[] params){
     	String sql="insert into "+table;
+    	if(fields.length==0) return sql+" (ROWID) VALUES (NULL);";
+//    	if(fields.length==0) return _insert(sql+" (ROWID) VALUES (NULL);", params, dbg);
+    	sql+=" ("+fields[0];
+    	for( int k=1; k<fields.length; k++) sql = sql+","+fields[k];
+    	sql = sql+") values (?";
+    	for( int k=1; k<params.length; k++) sql = sql+",?";
+    	sql = sql+");";
+    	return sql;
+    }
+    public static String makeInsertOrIgnoreSQL(String table, String[] fields, String[] params){
+    	String sql="insert or ignore into "+table;
     	if(fields.length==0) return sql+" (ROWID) VALUES (NULL);";
 //    	if(fields.length==0) return _insert(sql+" (ROWID) VALUES (NULL);", params, dbg);
     	sql+=" ("+fields[0];
@@ -336,7 +347,13 @@ public class DBInterface implements DB_Implementation {
  */
     DB_Implementation db;
     public DBInterface(String _filename) throws P2PDDSQLException{
-    	//db = new DB_Implementation_SQLite();
+    	init(_filename);
+    }
+    public DBInterface(File _filename) throws P2PDDSQLException{
+     	init(_filename.getAbsolutePath());
+    }
+    public void init(String _filename) throws P2PDDSQLException{
+     	//db = new DB_Implementation_SQLite();
     	db = new DB_Implementation_JDBC_SQLite();
     	db.open(_filename);
     }
@@ -345,8 +362,9 @@ public class DBInterface implements DB_Implementation {
      * @param conn
      */
     public DBInterface(SQLiteConnection conn) {
-    	db = new DB_Implementation_SQLite();
-    	db.keep_open(conn);
+    	DB_Implementation_SQLite idb = new DB_Implementation_SQLite();
+    	db = idb;
+    	idb.keep_open(conn);
 	}
 //    public synchronized void exec(String sql) throws P2PDDSQLException{
 //    	db = new SQLiteConnection(file);
@@ -396,9 +414,12 @@ public class DBInterface implements DB_Implementation {
 	public void open(String _filename) throws P2PDDSQLException {
 		db.open(_filename);
 	}
-	@Override
-	public void keep_open(SQLiteConnection conn) {
-		db.keep_open(conn);
+//	@Override
+//	public void keep_open(SQLiteConnection conn) {
+//		db.keep_open(conn);
+//	}
+	public DB_Implementation getImplementation() {
+		return db;
 	}	
 
 }

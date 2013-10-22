@@ -327,6 +327,14 @@ public class Motions extends JTable implements MouseListener  {
     	aAction.putValue("row", new Integer(model_row));
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);    	
+
+    	if(MotionsModel.hide)
+    		aAction = new MotionCustomAction(this, _("Show Hidden!"), addicon,_("Show Hidden."), _("Show Hidden"),KeyEvent.VK_H, MotionCustomAction.M_TOGGLE_HIDE);
+    	else
+    		aAction = new MotionCustomAction(this, _("Hide!"), addicon,_("Hide this."), _("Hide"),KeyEvent.VK_H, MotionCustomAction.M_TOGGLE_HIDE);
+    	aAction.putValue("row", new Integer(model_row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);    	
        	
 
     	aAction = new MotionCustomAction(this, _("WLAN_Request!"), addicon,_("Request this on WLAN."), _("Request"),KeyEvent.VK_R, MotionCustomAction.M_WLAN_REQUEST);
@@ -386,6 +394,7 @@ class MotionCustomAction extends DebateDecideAction {
 	public static final int M_ENHANCE = 6;
 	public static final int M_ADVERTISE = 7;
 	public static final int M_WLAN_REQUEST = 8;
+	public static final int M_TOGGLE_HIDE = 9;
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
 	Motions tree; ImageIcon icon; int cmd;
@@ -520,6 +529,9 @@ class MotionCustomAction extends DebateDecideAction {
     	}
     	if(cmd == M_ADVERTISE) {
     		model.advertise(row);
+    	}
+    	if(cmd == M_TOGGLE_HIDE) {
+    		MotionsModel.hide = !MotionsModel.hide;
     	}
     	if(cmd == M_ENHANCING_THIS) {
     		model.setCrtEnhanced(model.getMotionID(row));

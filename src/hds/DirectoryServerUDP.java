@@ -89,11 +89,11 @@ public class DirectoryServerUDP extends Thread {
 					continue;
 				}
 				if(_DEBUG)out.println("\n\nDirectoryServerUDP: Received UDP announcement: "+da.toSummaryString()+"\n from: "+risa+"\n");
-				String detected_sa = DirectoryServer.detectUDPAddress(risa, risa.getPort());
+				Address detected_sa = DirectoryServer.detectUDP_Address(risa, risa.getPort());
 				detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
 				byte[] answer;
 				try {
-					answer = DirectoryServer.handleAnnouncement(da, detected_sa, ds.db, true);
+					answer = DirectoryServer.handleAnnouncement(da, detected_sa, ds.db, true, false);
 				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 					continue;

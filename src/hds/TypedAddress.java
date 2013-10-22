@@ -162,6 +162,18 @@ public class TypedAddress extends ASNObj{
 			}
 		}
 		if(this.peer_address_ID == null) {
+			try{
+				TypedAddress ta = new TypedAddress(peer_ID, address, type);
+				if(ta.peer_address_ID!=null){
+					this.peer_address_ID=ta.peer_address_ID;
+					if(_DEBUG) System.out.println("TypedAddress:_monitored_update: address duplicate");
+				}
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+		}
+		
+		if(this.peer_address_ID == null) {
 			params = new String[table.peer_address.FIELDS_NOID];
 			params[table.peer_address.PA_ADDRESS] = this.address;
 			params[table.peer_address.PA_TYPE] = this.type;
@@ -180,15 +192,15 @@ public class TypedAddress extends ASNObj{
 			} catch (Exception e) {
 				//e.printStackTrace();
 				if(DEBUG) System.out.println("TypedAddress:store_or_update:"+peer_ID+"->err="+e.getLocalizedMessage());
-				TypedAddress ta;
+				TypedAddress _ta;
 				try {
-					ta = new TypedAddress(peer_ID, address, type);
+					_ta = new TypedAddress(peer_ID, address, type);
 				} catch (P2PDDSQLException e1) {
 					e1.printStackTrace();
 					return;
 				}
-				if(ta.peer_address_ID==null) return;
-				this.peer_address_ID = ta.peer_address_ID;
+				if(_ta.peer_address_ID==null) return;
+				this.peer_address_ID = _ta.peer_address_ID;
 			}
 		}
 		// on failure will update
@@ -449,6 +461,9 @@ public class TypedAddress extends ASNObj{
 	 * @return
 	 */
 	public static TypedAddress getLastContact(TypedAddress[] list, TypedAddress b) {
+		if(list == null){
+			return null;
+		}
 		TypedAddressComparator c = new TypedAddressComparator();
 		for(TypedAddress r: list) {
 			// if(c.compare(r, b)==0) return r; else continue; // this would check priority

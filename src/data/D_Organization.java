@@ -70,6 +70,7 @@ class D_Organization extends ASNObj implements Summary {
 	public D_OrgParams params; // AC1 OPTIONAL
 	public D_OrgConcepts concepts; //AC2 OPTIONAL
 	public byte[] signature;//=new byte[0];
+	public OrgPeerDataHashes specific_request = null;
 	
 	public D_PeerAddress creator;
 	public data.D_Message requested_data[]; //AC11, data requested on a GID basis
@@ -92,6 +93,7 @@ class D_Organization extends ASNObj implements Summary {
 	public Calendar arrival_date;
 	public long _organization_ID;
 	public byte[] signature_initiator;
+	public int status_references = 0; 
 
 	@Override
 	public String toSummaryString() {
@@ -262,6 +264,16 @@ class D_Organization extends ASNObj implements Summary {
 		this.signature = getSignatureFromString(Util.getString(row.get(table.organization.ORG_COL_SIGN),null));
 		this.signature_initiator = getSignatureFromString(Util.getString(row.get(table.organization.ORG_COL_SIGN_INITIATOR),null));
 		
+		try {
+			String d = Util.getString(row.get(table.organization.ORG_COL_SPECIFIC));
+			if(d!=null) {
+				this.specific_request = new OrgPeerDataHashes().decode(new Decoder(Util.byteSignatureFromString(d)));
+			}
+			if(DEBUG) System.out.println("OrgPeerDataHashes: "+this.specific_request);
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+		
 		if(extra_fields)this.params.orgParam = D_Organization.getOrgParams(organization_ID);
 		if(DEBUG) System.out.println("D_Organization:init: extra_creator="+extra_creator+" ID="+creator_ID);
 		if(extra_creator){
@@ -277,7 +289,7 @@ class D_Organization extends ASNObj implements Summary {
 			//Application.warning(Util._("Missing organization creator, or may have incomplete data. You should create a new one!"), Util._("Missing organization creator."));
 			//throw new Exception("No creator");
 		}else
-			this.params.creator_global_ID = creator.globalID;
+			this.params.creator_global_ID = creator.component_basic_data.globalID;
 		if((this.signature_initiator == null)&&(this.params.creator_global_ID!=null)){
 
 			byte[]msg = this.getSignableEncoder().getBytes();
@@ -801,7 +813,7 @@ class D_Organization extends ASNObj implements Summary {
 		if((this.creator_ID != null ) && (this.params.creator_global_ID == null))
 			this.params.creator_global_ID = D_Organization.getGlobalOrgID(this.creator_ID);
 	}
-	public boolean fillLocals(RequestData new_rq, boolean tempPeer, String arrival_time) throws P2PDDSQLException {
+	public boolean fillLocals(D_PeerAddress __peer, RequestData new_rq, boolean tempPeer, String arrival_time) throws P2PDDSQLException {
 		if(DD.ENFORCE_ORG_INITIATOR &&
 				((this.params==null)
 						||((this.params.creator_global_ID==null)
@@ -814,7 +826,7 @@ class D_Organization extends ASNObj implements Summary {
 			creator_ID = D_PeerAddress.getLocalPeerIDforGID(this.params.creator_global_ID);
 			
 			if(tempPeer && (creator_ID == null))  {
-				creator_ID = D_PeerAddress.storePeerAndGetOrInsertTemporaryLocalForPeerGID(this.params.creator_global_ID, creator, arrival_time);
+				creator_ID = D_PeerAddress.storePeerAndGetOrInsertTemporaryLocalForPeerGID(__peer, this.params.creator_global_ID, creator, arrival_time);
 				
 				String consGID_hash = D_PeerAddress.getGIDHashFromGID(this.params.creator_global_ID);
 				if(new_rq!=null) new_rq.peers.add(consGID_hash);
@@ -826,7 +838,7 @@ class D_Organization extends ASNObj implements Summary {
 		return true;
 	}
 	public long store(boolean[] _changed) throws P2PDDSQLException {
-		return store(_changed, null, null);
+		return store(null, _changed, null, null);
 	}
 	/**
 	 * Probably one should store a temporary if not signed and unavailable (not yet done)
@@ -835,9 +847,9 @@ class D_Organization extends ASNObj implements Summary {
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public long store(boolean _changed[], RequestData _sol_rq, RequestData _new_rq) throws P2PDDSQLException {
+	public long store(D_PeerAddress peer, boolean _changed[], RequestData _sol_rq, RequestData _new_rq) throws P2PDDSQLException {
 		if(_organization_ID==0){ _organization_ID=-1; organization_ID = null;}
-		boolean locals = fillLocals(_new_rq, true, Util.getGeneralizedTime());
+		boolean locals = fillLocals(peer, _new_rq, true, Util.getGeneralizedTime());
 		if(!locals)//return -1;
 			if(_DEBUG) out.println("D_Organization: store: locals failed");
 
@@ -900,7 +912,7 @@ class D_Organization extends ASNObj implements Summary {
 			if(organization_ID != null) filter = 1;
 			
 			if(creator_ID == null)
-				creator_ID = D_PeerAddress.storePeerAndGetOrInsertTemporaryLocalForPeerGID(params.creator_global_ID,creator,arrival_time);
+				creator_ID = D_PeerAddress.storePeerAndGetOrInsertTemporaryLocalForPeerGID(null, params.creator_global_ID,creator,arrival_time);
 			
 			String field_sign = (signature!=null)?Util.stringSignatureFromByte(signature):null;
 			if((field_sign!=null) && (params.certifMethods == table.organization._GRASSROOT)){
@@ -936,6 +948,7 @@ class D_Organization extends ASNObj implements Summary {
 			p[table.organization.ORG_COL_REQUEST] = Util.bool2StringInt(requested);
 			p[table.organization.ORG_COL_BROADCASTED] = Util.bool2StringInt(broadcasted);
 			p[table.organization.ORG_COL_BROADCAST_RULE] = Util.bool2StringInt(broadcast_rule);
+			if(this.specific_request != null) p[table.organization.ORG_COL_SPECIFIC] = Util.stringSignatureFromByte(this.specific_request.encode());
 			
 			//String orgID;
 			if(organization_ID == null) {
@@ -1346,10 +1359,10 @@ class D_Organization extends ASNObj implements Summary {
 		System.out.println("D_Organization:readSignSave:creatorID="+o.creator_ID+
 				" GID="+o.params.creator_global_ID+" peer="+o.creator);
 		if(o.creator!=null){
-			sk_ini = Util.getStoredSK(o.creator.globalID, o.creator.globalIDhash);
+			sk_ini = Util.getStoredSK(o.creator.component_basic_data.globalID, o.creator.component_basic_data.globalIDhash);
 			if(sk_ini==null)
 				Util.printCallPath("Why!!");
-			if(!Util.equalStrings_null_or_not(o.creator.globalID, o.params.creator_global_ID))
+			if(!Util.equalStrings_null_or_not(o.creator.component_basic_data.globalID, o.params.creator_global_ID))
 				System.out.println("D_Organization:readSignSave: diff GIDs:!!!");
 		}else
 			if(o.params.creator_global_ID!=null){

@@ -47,8 +47,8 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 					+"Date: "+d+"\n"
 					+"Verified: "+((verified!=null)?verified.getName():null)+"\n"
 					+"Verified: GID="+((verified!=null)?verified.global_constituent_id_hash:null)+"\n"
-					+"Verifier: "+((verifier!=null)?verifier.name:null)+"\n"
-					+"Verifier: email="+((verifier!=null)?verifier.emails:null)+"\n"
+					+"Verifier: "+((verifier!=null)?verifier.component_basic_data.name:null)+"\n"
+					+"Verifier: email="+((verifier!=null)?verifier.component_basic_data.emails:null)+"\n"
 				;
 	}
 
@@ -197,15 +197,15 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 
 	@Override
 	public String get_From() {
-		if((verifier==null)||(verifier.emails==null)){
+		if((verifier==null)||(verifier.component_basic_data.emails==null)){
 			Application.warning(_("No emails set in your peer!"), _("Sender email absent"));
 			return Application.input(_("Can you enter the sender email?"), _("Sender"),
 					JOptionPane.QUESTION_MESSAGE);
 			// return "unknown@unknown";
 		}
-		String my_email = verifier.emails;
+		String my_email = verifier.component_basic_data.emails;
 		if(my_email!=null) my_email = my_email.split(Pattern.quote(","))[0].trim();
-		return  verifier.name +"<"+my_email+">";
+		return  verifier.component_basic_data.name +"<"+my_email+">";
 	}
 
 	@Override
@@ -216,7 +216,7 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 	@Override
 	public String get_FileName() {
 		return _("DirectDemocracyP2P_Verif_from_")+
-				((verifier!=null)?Util.sanitizeFileName(verifier.name):null)+".bmp";
+				((verifier!=null)?Util.sanitizeFileName(verifier.component_basic_data.name):null)+".bmp";
 	}
 
 	@Override
@@ -232,7 +232,7 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 					_("GID:")+" \""+verified.global_constituent_id_hash+"\"\r\n"+
 					_("R:")+" \""+r+"\"\r\n"+
 					_("Please drag the attached image to your agent, to perfom the test.")+"\r\n"+
-				"\r\n\t"+_("Sincerely,")+" "+verifier.name;
+				"\r\n\t"+_("Sincerely,")+" "+verifier.component_basic_data.name;
 		return g;
 	}
 	

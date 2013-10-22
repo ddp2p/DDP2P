@@ -234,7 +234,7 @@ public class UDPServerThread extends Thread {
 				ciphersuits.PK _pk=null;
 				if(DD.VERIFY_SENT_SIGNATURES){
 					try {
-						_pk = ciphersuits.Cipher.getPK(asreq.address.globalID);
+						_pk = ciphersuits.Cipher.getPK(asreq.address.component_basic_data.globalID);
 						if(!Cipher.isPair(sk,_pk)){
 							Util.printCallPath("Unmatched keys undecoded");
 						}
@@ -255,7 +255,7 @@ public class UDPServerThread extends Thread {
 
 					ciphersuits.PK pk;
 					try {
-						pk = ciphersuits.Cipher.getPK(asr.address.globalID);
+						pk = ciphersuits.Cipher.getPK(asr.address.component_basic_data.globalID);
 						if(!Cipher.isPair(sk,pk)){
 							Util.printCallPath("Unmatched keys");
 							System.out.println("UDPServThread: _run: pk ="+pk);
@@ -291,7 +291,7 @@ public class UDPServerThread extends Thread {
 				}
 				if(DEBUG) {
 					String slogan=null;
-					if(asreq.address!=null) slogan = asreq.address.slogan;
+					if(asreq.address!=null) slogan = asreq.address.component_basic_data.slogan;
 					if(DEBUG)System.out.println("UDPServer:run: sends request: "+slogan+" to: "+rsa);
 					if(DEBUG)System.out.println("UDPServer:run: sends request: "+asreq+" to: "+rsa);
 				}
@@ -342,12 +342,12 @@ public class UDPServerThread extends Thread {
 		  return;
 		}
 		
-		if(dec.getTypeByte()==DD.TAG_AC14) {
+		if(dec.getTypeByte()==DirectoryAnnouncement_Answer.getASN1Type()) {// AC14
 		  if(DEBUG)System.out.println("UDPServer:run: Announcement answer decoding!");
 		  try{
 			Decoder answer_dec=dec;
-			DA_Answer daa=new DA_Answer();
-			daa.decode(answer_dec);
+			DirectoryAnnouncement_Answer daa=new DirectoryAnnouncement_Answer(answer_dec);
+			//daa.decode(answer_dec);
 			if(DEBUG) out.println("UDPServer: Directory Answer: "+daa.result);
 			if(Application.ld!=null)
 				Application.ld.setUDPOn(peer_address, new Boolean(true));
@@ -389,11 +389,14 @@ public class UDPServerThread extends Thread {
 				throw new Exception("Unsigned request");
 			}
 			
-			Server.extractDataSyncRequest(asr, psa, this);
+			if(!Server.extractDataSyncRequest(asr, psa, this)){
+				if(_DEBUG)System.out.println("UDPServer:run: Request Discarded *************************");
+				return;
+			}
 			if(DEBUG)System.out.println("UDPServer:run: Request Data extracted *************************");
 
 			String peerGID = null;
-			if(asr.address!=null) peerGID = asr.address.globalID;
+			if(asr.address!=null) peerGID = asr.address.component_basic_data.globalID;
 			else{
 				if(DEBUG)System.out.println("UDPServer:run: request from UNKNOWN abandoned");
 				if(DEBUG)System.out.println("UDPServer:run: Answer not sent!");
@@ -411,7 +414,7 @@ public class UDPServerThread extends Thread {
 			//D_PluginInfo.recordPluginInfo(asr.plugin_info, peerGID, peer_ID);
 			if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_UDP);
 			if(blocked[0]){
-				if(DEBUG)System.out.println("UDPServer:run: Blocked! "+peer_ID+" "+((asr.address!=null)?asr.address.name:"noname"));
+				if(DEBUG)System.out.println("UDPServer:run: Blocked! "+peer_ID+" "+((asr.address!=null)?asr.address.component_basic_data.name:"noname"));
 				return;
 			}
 			//if data is a request from a peer
@@ -465,7 +468,7 @@ public class UDPServerThread extends Thread {
 					// may decide to load addresses only for versions >= 2
 					peer = new D_PeerAddress(global_peer_ID, false, true, true);
 					peer_ID = peer.peer_ID; //table.peer.getLocalPeerID(global_peer_ID);
-					blocked[0] = peer.blocked;
+					blocked[0] = peer.component_preferences.blocked;
 				}
 				//String peer_ID = table.peer.getLocalPeerID(global_peer_ID, blocked);
 				if((peer_ID!=null)&&blocked[0]) return;

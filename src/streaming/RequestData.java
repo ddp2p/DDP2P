@@ -183,6 +183,7 @@ public class RequestData extends ASNObj implements Summary{
 	 * @param orgID
 	 * @throws P2PDDSQLException
 	 */
+	@Deprecated
 	public void save(long orgID) throws P2PDDSQLException {
 		String old = this.global_organization_ID_hash;
 		this.global_organization_ID_hash = null;

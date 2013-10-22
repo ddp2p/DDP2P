@@ -91,6 +91,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 	
 	public boolean blocked=false, requested=false, broadcasted=true;
 	private String name_charset;
+	public int status_references = 0; 
 	
 	public String toSummaryString() {
 		return "WB_Neighborhood: ["+

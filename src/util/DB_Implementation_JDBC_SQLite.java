@@ -15,19 +15,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.swing.JOptionPane;
-
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
-
 import config.Application;
 
 class DB_Implementation_JDBC_SQLite implements DB_Implementation {
     private static final boolean DEBUG = false;
-	SQLiteConnection db;
+	//SQLiteConnection db;
     File file;
 	private boolean conn_open;
-	private Connection conn;
+	Connection conn;
 	private String filename;
 	
 	static boolean loaded = loadClass();
@@ -47,14 +42,14 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
     	//db = new SQLiteConnection(file);
     	try {
 			tmp_open(true);
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			//e.printStackTrace();
 			throw new P2PDDSQLException(e);
 		}
     	ArrayList<ArrayList<Object>> result = _select(sql, params, DEBUG);
     	try {
 			tmp_dispose();
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
     	//conn_open = false;
@@ -68,6 +63,25 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
      * @return
      * @throws com.almworks.sqlite4java.SQLiteException
      */
+    public synchronized void _query(String sql, String[] params, boolean DEBUG) throws P2PDDSQLException{
+    	PreparedStatement st;
+    	try {
+    		st = conn.prepareStatement(sql);
+    		if(DEBUG) System.out.println("sqlite_jdbc:query:sql: "+sql+" length="+params.length);
+    		try {
+    			for(int k=0; k<params.length; k++){
+    				st.setString(k+1, params[k]);//.bind(k+1, params[k]);
+    				if(DEBUG) System.out.println("sqlite_jdbc:query:bind: "+params[k]);
+    			}
+    			//ResultSet rs = st.executeQuery();
+    		} finally {st.close();}
+    	} catch (SQLException e) {
+    		e.printStackTrace();
+    		throw new P2PDDSQLException(e);
+    	}
+    	if(DEBUG) System.out.println("DBInterface_jdbc:query:results#=ok");
+    	return;
+    }
     public synchronized ArrayList<ArrayList<Object>> _select(String sql, String[] params, boolean DEBUG) throws P2PDDSQLException{
     	//if(!conn_open) throw new RuntimeException("Assumption failed!");
     	ArrayList<ArrayList<Object>> result = new ArrayList<ArrayList<Object>>();
@@ -82,12 +96,12 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
     			}
     			ResultSet rs = st.executeQuery();
     			ResultSetMetaData md = rs.getMetaData();
-    			md.getColumnCount(); 
+    			int cols = md.getColumnCount(); 
     			//if(DEBUG) System.out.println("F: populateIDs will step");
     			while (rs.next()) {
     				//if(DEBUG) System.out.println("F: populateIDs step");
     				ArrayList<Object> cresult = new ArrayList<Object>();
-    				for(int j=1; j<=md.getColumnCount(); j++){
+    				for(int j=1; j<=cols; j++){
     					//if(DEBUG) System.out.println("F: populateIDs col:"+j);
     					cresult.add(rs.getString(j));
     				}
@@ -115,16 +129,22 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 			tmp_open(true);
 			result = _insert(sql, params, DEBUG);
 			tmp_dispose();
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			throw new P2PDDSQLException(e);
 		}
     	return result;
     }
     public synchronized long _insert(String sql, String[] params, boolean DEBUG) throws P2PDDSQLException{
-    	long result;
+    	return _nosyncinsert(sql, params, DEBUG, true);
+    }
+    public long _nosyncinsert(String sql, String[] params, boolean DEBUG, boolean return_result) throws P2PDDSQLException{
+    	long result = -1;
     	PreparedStatement st;
     	try {
-    		st = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+    		if(return_result)
+    			st = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+    		else
+    			st = conn.prepareStatement(sql, Statement.NO_GENERATED_KEYS);
     		if(DEBUG) System.out.println("sqlite:insert:sql: "+sql);
     		try {
     			for(int k=0; k<params.length; k++){
@@ -132,17 +152,19 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
     				if(DEBUG) System.out.println("sqlite:insert:bind: "+Util.nullDiscrim(params[k]));
     			}
     			st.execute(); //Statement.RETURN_GENERATED_KEYS);
-    			ResultSet keys = st.getGeneratedKeys();
-//    			for(int i = 0; i<100; i++) {
-//    				try{
-//    					System.out.println("sqlite:insert:result: "+i+" "+keys.getString(i));
-//    				}catch(Exception e){}
-//    				//System.out.println("sqlite:insert:result: "+keys..getString(i));
-//    			}
-    			//System.out.println("sqlite:insert:result: "+" "+keys.getMetaData().getColumnLabel(1)+" n=" +keys.getMetaData().getColumnName(1));
-    			//result = keys.getLong(1);//db.getLastInsertId();
-    			result = keys.getLong("last_insert_rowid()");//db.getLastInsertId();
-    			//result = keys.getRow();//db.getLastInsertId();
+    			if(return_result) {
+	    			ResultSet keys = st.getGeneratedKeys();
+	//    			for(int i = 0; i<100; i++) {
+	//    				try{
+	//    					System.out.println("sqlite:insert:result: "+i+" "+keys.getString(i));
+	//    				}catch(Exception e){}
+	//    				//System.out.println("sqlite:insert:result: "+keys..getString(i));
+	//    			}
+	    			//System.out.println("sqlite:insert:result: "+" "+keys.getMetaData().getColumnLabel(1)+" n=" +keys.getMetaData().getColumnName(1));
+	    			//result = keys.getLong(1);//db.getLastInsertId();
+	    			result = keys.getLong("last_insert_rowid()");//db.getLastInsertId();
+	    			//result = keys.getRow();//db.getLastInsertId();
+    			}
     			if(DEBUG) System.out.println("sqlite:insert:result: "+result);
     		}
     		catch(SQLException e){
@@ -164,7 +186,7 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 			tmp_open(true);
 			_update(sql, params, dbg);    	
 			tmp_dispose();
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			throw new P2PDDSQLException(e);
 		}
 	}	
@@ -209,19 +231,33 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 			throw new P2PDDSQLException(e);
     	}
     }
-	private void tmp_dispose() throws SQLException {
-		conn.close();
+	private void tmp_dispose() throws P2PDDSQLException {
+		try {
+			conn.close();
+		} catch (SQLException e) {
+			throw new P2PDDSQLException(e);
+		}
 	}
 
-	private void tmp_open(boolean b) throws SQLException {
-		conn = DriverManager.getConnection("jdbc:sqlite:"+filename);
+	private void tmp_open(boolean b) throws P2PDDSQLException {
+		try {
+			conn = DriverManager.getConnection("jdbc:sqlite:"+filename);
+		} catch (SQLException e) {
+			throw new P2PDDSQLException(e);
+		}
+	}
+	public void open_and_keep(boolean b) throws P2PDDSQLException {
+		tmp_open(b);
+	}
+	public void dispose_and_keep() throws P2PDDSQLException {
+		tmp_dispose();
 	}
 
-	@Override
-	public void keep_open(SQLiteConnection conn) {
-    	db = conn;
-    	conn_open = true;
-	}
+//	@Override
+//	public void keep_open(SQLiteConnection conn) {
+//    	db = conn;
+//    	conn_open = true;
+//	}
 	@Override
 	public void open(String _filename) throws P2PDDSQLException {
 		try {
@@ -248,5 +284,11 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void _insert(String table, String[] fields, String[] params,
+			boolean dbg) throws P2PDDSQLException {
+    	String sql = DBInterface.makeInsertOrIgnoreSQL(table, fields, params);
+    	_nosyncinsert(sql, params, dbg, false);
 	}
 }

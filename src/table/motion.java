@@ -36,6 +36,8 @@ public class motion {
 	 public static final String choices = "choices";
 	 public static final String creation_date = "creation_date";
 	 public static final String arrival_date = "arrival_date";
+	 public static final String hidden = "hidden";
+	 public static final String temporary = "temporary";
 
 	 //not yet really implemented
 		public static final String requested = "requested";
@@ -65,7 +67,9 @@ public class motion {
 	public static final int M_REQUESTED = 16;
 	public static final int M_BLOCKED = 17;
 	public static final int M_BROADCASTED = 18;
-	public static final int M_MOTION_ID = 19;
+	public static final int M_HIDDEN = 19;
+	public static final int M_TEMPORARY = 20;
+	public static final int M_MOTION_ID = 21;
 	public static final String fields_noID =
 		global_motion_ID+","+
 		hash_motion_alg+","+
@@ -85,7 +89,9 @@ public class motion {
 		choices+ "," +
 		requested+ "," +
 		blocked+ "," +
-		broadcasted
+		broadcasted+ "," +
+		hidden + "," +
+		temporary
 		;
 	public static final String fields = fields_noID + "," + motion_ID;
 	public static final String[] fields_array = fields.split(",");

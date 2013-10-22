@@ -115,11 +115,15 @@ public class DirectoryAnswer extends ASNObj {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	int version = 2;
+	int[] agent_version;
 	String remote_GIDhash;
+	String instance;
 	public Calendar date = Util.CalendargetInstance();
 	//ArrayList<Address> address=new ArrayList<InetSocketAddress>();
 	public ArrayList<Address> addresses=new ArrayList<Address>();
 	public DIR_Terms_Requested[] terms;
+	byte[] signature_peer = new byte[0];
+	byte[] signature_directory = new byte[0];
 	
 	@Override
 	public Encoder getEncoder() {
@@ -129,15 +133,28 @@ public class DirectoryAnswer extends ASNObj {
 		case 0: return getEncoder_0(da);
 		case 1: return getEncoder_1(da);
 		case 2:
-		default:
 			return getEncoder_2(da);
+		case 3:
+		default:
+			return getEncoder_3(da);
 		}
+	}
+	private Encoder getEncoder_3(Encoder da) {
+		if(agent_version!=null)da.addToSequence(new Encoder(agent_version).setASN1Type(DD.TAG_AC2));
+		da.addToSequence(new Encoder(date));
+		da.addToSequence(Encoder.getEncoder(addresses));
+		if(terms!=null) da.addToSequence(Encoder.getEncoder(terms).setASN1Type(DD.TAG_AC4));
+		if(remote_GIDhash != null) da.addToSequence(new Encoder(remote_GIDhash).setASN1Type(DD.TAG_AC5));
+		if(instance != null) da.addToSequence(new Encoder(instance).setASN1Type(DD.TAG_AC6));
+		if(signature_peer.length>0)da.addToSequence(new Encoder(signature_peer, DD.TAG_AC7));
+		if(signature_directory.length>0)da.addToSequence(new Encoder(signature_directory, DD.TAG_AC8));
+		return da;
 	}
 	private Encoder getEncoder_2(Encoder da) {
 		da.addToSequence(new Encoder(date));
 		da.addToSequence(Encoder.getEncoder(addresses));
 		if(terms!=null) da.addToSequence(Encoder.getEncoder(terms).setASN1Type(DD.TAG_AC4));
-		if(remote_GIDhash != null) da.addToSequence(new Encoder(remote_GIDhash));
+		if(remote_GIDhash != null) da.addToSequence(new Encoder(remote_GIDhash).setASN1Type(DD.TAG_AC5));
 		return da;
 	}
 	private Encoder getEncoder_1(Encoder da) {
@@ -184,11 +201,30 @@ public class DirectoryAnswer extends ASNObj {
 		case 1:
 			return decode_1(dec_da_content);
 		case 2:
-		default:
 			return decode_2(dec_da_content);
+		case 3:
+		default:
+			return decode_3(dec_da_content);
 		}
 	}
 	
+	private DirectoryAnswer decode_3(Decoder d) throws ASN1DecoderFail {
+		if(d.isFirstObjectTagByte(DD.TAG_AC2))
+			agent_version = d.getFirstObject(true).getIntsArray();
+		date = d.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
+		addresses = d.getFirstObject(true).getSequenceOfAL(Address.getASN1Type(), new Address());
+		if(d.isFirstObjectTagByte(DD.TAG_AC4))
+			terms = d.getFirstObject(true).getSequenceOf(DIR_Terms_Requested.getASN1Type(), new DIR_Terms_Requested[]{}, new DIR_Terms_Requested());
+		if(d.isFirstObjectTagByte(DD.TAG_AC5))
+			remote_GIDhash = d.getFirstObject(true).getString();
+		if(d.isFirstObjectTagByte(DD.TAG_AC6))
+			instance = d.getFirstObject(true).getString();
+		if(d.isFirstObjectTagByte(DD.TAG_AC7))
+			signature_peer = d.getFirstObject(true).getBytes();
+		if(d.isFirstObjectTagByte(DD.TAG_AC8))
+			signature_directory = d.getFirstObject(true).getBytes();
+		return this;
+	}
 	private DirectoryAnswer decode_2(Decoder d) throws ASN1DecoderFail {
 		date = d.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
 		addresses = d.getFirstObject(true).getSequenceOfAL(Address.getASN1Type(), new Address());

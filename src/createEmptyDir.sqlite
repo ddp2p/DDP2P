@@ -1,10 +1,16 @@
 BEGIN TRANSACTION;
 CREATE TABLE registered (
        registeredID INTEGER PRIMARY KEY, 
-       global_peer_ID TEXT UNIQUE, 
-       certificate BLOB, addresses TEXT, 
+       global_peer_ID TEXT, 
+	global_peer_ID_hash TEXT,
+	instance TEXT,
+	certificate BLOB,
+	addresses TEXT, 
        signature BLOB, 
-       "timestamp" TIMESTAMP);
+       "timestamp" TIMESTAMP,
+	UNIQUE (global_peer_ID,instance) ON CONFLICT FAIL,
+	UNIQUE (global_peer_ID_hash,instance) ON CONFLICt FAIL	
+);
 
 
 CREATE TABLE subscriber (

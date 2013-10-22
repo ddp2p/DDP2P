@@ -155,7 +155,7 @@ public class ReceivedBroadcastableMessages {
 					//added_org=handle_org(msg.organization);
 					pm.org_ID_hash = msg.organization.global_organization_IDhash;
 					added_org=handle_org(pm, msg.organization);
-					WirelessLog.RCV_logging(WirelessLog.org_type,msg.sender.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
+					WirelessLog.RCV_logging(WirelessLog.org_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
 					count_dots++;
 				}
@@ -183,7 +183,7 @@ public class ReceivedBroadcastableMessages {
 					if(added_Org<=0) added_Org = D_Organization.insertTemporaryGID(goid);
 					int result = D_Constituent.isGIDHash_available(msg.constituent.global_constituent_id_hash, false);				
 					added_constituent = handle_constituent(pm,msg.constituent,goid,added_Org);
-					WirelessLog.RCV_logging(WirelessLog.const_type,msg.sender.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
+					WirelessLog.RCV_logging(WirelessLog.const_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage: .");
 					count_dots++;
 				}
@@ -204,7 +204,7 @@ public class ReceivedBroadcastableMessages {
 					if(msg.witness.witnessing!=null) added_witnessing_cons = handle_constituent(pm, msg.witness.witnessing,goid,added_Org);
 					int result = D_Witness.isGIDavailable(msg.witness.global_witness_ID, false);
 					added_witness = handle_witness(pm,msg.witness);
-					WirelessLog.RCV_logging(WirelessLog.wit_type,msg.sender.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
+					WirelessLog.RCV_logging(WirelessLog.wit_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
 					count_dots++;
 				}
@@ -217,7 +217,7 @@ public class ReceivedBroadcastableMessages {
 						added_neigh = handle_Neighborhoods(pm,msg.neighborhoods[i]);
 						if(DEBUG)System.out.println("RCV NID : "+added_neigh);
 					}
-					WirelessLog.RCV_logging(WirelessLog.neigh_type,msg.sender.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
+					WirelessLog.RCV_logging(WirelessLog.neigh_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
 					count_dots++;
 				}
@@ -236,7 +236,7 @@ public class ReceivedBroadcastableMessages {
 					//else{System.out.println("ReceivedBroacastableMessage:integrateMessage ms.organization is null");}
 					int result = D_Vote.isGIDavailable(msg.vote.global_vote_ID, false);
 					added_vote = handle_vote(pm, msg.vote);
-					WirelessLog.RCV_logging(WirelessLog.vote_type,msg.sender.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
+					WirelessLog.RCV_logging(WirelessLog.vote_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
 					if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:VOTE DATA : "+msg.vote.global_vote_ID);
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
 					count_dots++;
@@ -244,9 +244,9 @@ public class ReceivedBroadcastableMessages {
 
 				if(msg.Peer!=null){
 					if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:RECEIVE PEER");
-					int result = D_PeerAddress.isGIDavailable(msg.Peer.globalIDhash, false);
+					int result = D_PeerAddress.isGIDavailable(msg.Peer.component_basic_data.globalIDhash, false);
 					added_peer = get_peer(msg.Peer);
-					WirelessLog.RCV_logging(WirelessLog.peer_type,msg.sender.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
+					WirelessLog.RCV_logging(WirelessLog.peer_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
 					count_dots++;
 				}
@@ -469,7 +469,7 @@ public class ReceivedBroadcastableMessages {
 		String sql = "select "+table.peer.peer_ID+
 				" from "+table.peer.TNAME+" WHERE "+table.peer.global_peer_ID+
 				"=?;";
-		peers = Application.db.select(sql, new String[]{creator.globalID});
+		peers = Application.db.select(sql, new String[]{creator.component_basic_data.globalID});
 		if(peers.isEmpty()) 
 		{
 			if(DEBUG)System.out.println("Its a new Peer");
@@ -490,18 +490,18 @@ public class ReceivedBroadcastableMessages {
 //		String creation_date = Encoder.getGeneralizedTime(creator.creation_date);
 //		String slogan = creator.slogan;
 //		String name = creator.name;
-		String signature = Util.stringSignatureFromByte(creator.signature);
+		String signature = Util.stringSignatureFromByte(creator.component_basic_data.signature);
 		if(DEBUG)System.out.println("SIGNATURE : "+signature);
 //		String broadcastable = creator.broadcastable?"1":"0";
 //		String hash_alg = Util.concat(creator.signature_alg, DD.APP_ID_HASH_SEP);
-		creator.arrival_date=Util.CalendargetInstance();
-		String crt_date = Encoder.getGeneralizedTime(creator.arrival_date);
+		creator.component_local_agent_state.arrival_date=Util.CalendargetInstance();
+		String crt_date = Encoder.getGeneralizedTime(creator.component_local_agent_state.arrival_date);
 		if(needs_verification) {
 			D_PeerAddress pa = new D_PeerAddress(creator, false);
 			if(!pa.verifySignature())
 				if(!DD.ACCEPT_UNSIGNED_PEERS_FROM_TABLES) throw new SignatureVerificationException("Invalid Signature");
 		}
-		long peer_id =  D_PeerAddress._storeReceived(creator, creator.arrival_date, crt_date); //._storeVerified();
+		long peer_id =  D_PeerAddress._storeReceived(creator, creator.component_local_agent_state.arrival_date, crt_date); //._storeVerified();
 		/*
 		Calendar adding_date = Util.CalendargetInstance();
 		String s_adding_date = Encoder.getGeneralizedTime(adding_date);
@@ -595,7 +595,7 @@ public class ReceivedBroadcastableMessages {
 	 */
 	private static boolean check_global_peerID(D_Message msg) throws P2PDDSQLException, IOException {
 		String my_GPID = DD.getMyPeerGIDFromIdentity();
-		String hash_GID = Util.getGIDhash(msg.sender.globalID);
+		String hash_GID = Util.getGIDhash(msg.sender.component_basic_data.globalID);
 		my_GPIDhash = Util.getGIDhash(my_GPID);
 		
 		if(hash_GID.compareTo(my_GPIDhash)==0)  {

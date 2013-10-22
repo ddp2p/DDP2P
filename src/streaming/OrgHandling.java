@@ -22,6 +22,7 @@ package streaming;
 
 import static util.Util._;
 import static java.lang.System.out;
+import hds.ASNSyncPayload;
 import hds.ASNSyncRequest;
 
 import java.util.ArrayList;
@@ -82,11 +83,11 @@ public class OrgHandling {
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public	static boolean updateOrg(D_Organization od, String[] _orgID, String arrival_time,
+	public	static boolean updateOrg(ASNSyncPayload asa, D_Organization od, String[] _orgID, String arrival_time,
 			RequestData _sol_rq, RequestData _new_rq, D_PeerAddress peer) throws P2PDDSQLException {
 		boolean changed=false;
 		//String id_hash;
-		if(DEBUG) out.println("OrgHandling:updateOrg: enter");
+		if(_DEBUG) out.println("OrgHandling:updateOrg: enter");
 		
 		/*
 		if((od.signature==null)||(od.signature.length==0)) {
@@ -110,7 +111,7 @@ public class OrgHandling {
 			//if(DEBUG) out.println("OrgHandling:updateOrg: store peer");
 			D_PeerAddress.storeReceived(od.creator, Util.getCalendar(arrival_time), arrival_time);
 			//if(DEBUG) out.println("OrgHandling:updateOrg: stored peer");
-			if((od.creator.globalID!=null)&&od.creator.globalID.equals(od.params.creator_global_ID))
+			if((od.creator.component_basic_data.globalID!=null)&&od.creator.component_basic_data.globalID.equals(od.params.creator_global_ID))
 				od.creator_ID = od.creator.peer_ID;
 		}
 		long id=-1;
@@ -124,7 +125,7 @@ public class OrgHandling {
 						)
 				)
 		{
-			id = od.store(_changed, _sol_rq, _new_rq); // should set blocking new orgs
+			id = od.store(peer, _changed, _sol_rq, _new_rq); // should set blocking new orgs
 			if(DEBUG||DD.DEBUG_PRIVATE_ORGS)System.out.println("OrgHandling:updateOrg: org changed: ch="+_changed[0]+
 					" br="+od.broadcast_rule+" id="+id+" creat="+od.creator_ID);
 			if(
@@ -159,8 +160,8 @@ public class OrgHandling {
 					if(DD.WARN_OF_FAILING_SIGNATURE_ONRECEPTION) {
 						String peer_name = _("Unknown");
 						if(peer != null){
-							peer_name = peer.name;
-							if(peer_name==null) peer_name = Util.trimmed(peer.globalID);
+							peer_name = peer.component_basic_data.name;
+							if(peer_name==null) peer_name = Util.trimmed(peer.component_basic_data.globalID);
 							if(peer_name == null) peer_name = _("Unknown");
 						}
 						Application.warning(
@@ -382,7 +383,7 @@ public class OrgHandling {
 			Application.warning(Util._("Missing organization creator, or may have incomplete data. You should create a new one!"), Util._("Missing organization creator."));
 			return null;
 		}
-		od.params.creator_global_ID = creator.globalID;
+		od.params.creator_global_ID = creator.component_basic_data.globalID;
 		od.params.orgParam = D_Organization.getOrgParams(local_id);
 		
 		od.concepts = new D_OrgConcepts();
@@ -444,10 +445,10 @@ public class OrgHandling {
 		D_Organization od = signableOrgData(ofi_orgGID, local_id, row);
 		if(DD.VERIFY_SENT_SIGNATURES && od.creator!=null){
 			if(!od.creator.verifySignature()) {
-				SK sk = Util.getStoredSK(od.creator.globalID);
+				SK sk = Util.getStoredSK(od.creator.component_basic_data.globalID);
 				if(sk!=null) {
 					int a = Application.ask(
-							_("Signature fails for peer:")+od.creator.name+"\n"+
+							_("Signature fails for peer:")+od.creator.component_basic_data.name+"\n"+
 							_("Do you want to sign it now (YES)?, to not send the peer (NO)?")+"\n"+
 							_("or to send it with bad signature (Cancel)?"),
 							_("Verifying sent organization Initiator Signature"),
@@ -459,7 +460,7 @@ public class OrgHandling {
 					}
 				}else{
 					int a = Application.ask(
-							_("Signature fails for peer:")+od.creator.name+"\n"+
+							_("Signature fails for peer:")+od.creator.component_basic_data.name+"\n"+
 							_("Do you want to drop  peer (OK)?")+"\n"+
 							_("or to send it with bad signature (Cancel)?"),
 							_("Verifying sent organization Initiator Signature"),

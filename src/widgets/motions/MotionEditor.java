@@ -160,7 +160,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	JustificationEditor jEditor;
 	VoteEditor vEditor;
 	private LVComboBox scoring_options_field;
-	JPanel panel_body = new JPanel();
+	JPanel panel_body = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
 	TranslatedLabel label_choices;
 	TranslatedLabel label_category;
@@ -814,6 +814,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		t.gridx = 0; t.gridy = 2;
 		t.anchor = GridBagConstraints.WEST;
 		t.fill = GridBagConstraints.BOTH;
+		//panel_body.setL
 		p2.add(panel_body,t); //, c);
 		//p2.add(panel_body,BorderLayout.WEST); //, c);
 

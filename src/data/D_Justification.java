@@ -80,6 +80,7 @@ public class D_Justification extends ASNObj{
 	public boolean requested = false;
 	public boolean blocked = false;
 	public boolean broadcasted = D_Organization.DEFAULT_BROADCASTED_ORG;
+	public int status_references = 0;
 
 	
 	public D_Justification() {}

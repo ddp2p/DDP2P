@@ -1,8 +1,12 @@
 @ECHO OFF
 SETLOCAL
+echo delib
 scripts\sqlite3.exe deliberation-app.db < createEmptyDelib.sqlite
+echo delib done
 scripts\sqlite3.exe deliberation-app.db < createInitDelib.sqlite
-scripts\sqlite3.exe deliberation-app.db < createTrigDelib.sqlite
+echo init done
+rem scripts\sqlite3.exe deliberation-app.db < createTrigDelib.sqlite
+echo trig done
 scripts\sqlite3 directory-app.db < createEmptyDir.sqlite
 
 REM compile.bat

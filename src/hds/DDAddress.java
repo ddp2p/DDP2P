@@ -88,14 +88,14 @@ public class DDAddress implements StegoStructure{
 	}
 	public DDAddress(D_PeerAddress dd) {
 		boolean encode_addresses = true;
-		version = dd.version;
-		globalID = dd.globalID;
-		name = dd.name;
-		slogan = dd.slogan;
-		emails = dd.emails;
-		phones = dd.phones;
-		creation_date = Encoder.getGeneralizedTime(dd.creation_date);
-		picture = dd.picture;
+		version = dd.component_basic_data.version;
+		globalID = dd.component_basic_data.globalID;
+		name = dd.component_basic_data.name;
+		slogan = dd.component_basic_data.slogan;
+		emails = dd.component_basic_data.emails;
+		phones = dd.component_basic_data.phones;
+		creation_date = Encoder.getGeneralizedTime(dd.component_basic_data.creation_date);
+		picture = dd.component_basic_data.picture;
 		if(encode_addresses && (dd.address!=null)){
 			address = "";
 			for(int k=0; k<dd.address.length; k++) {
@@ -108,10 +108,10 @@ public class DDAddress implements StegoStructure{
 				if(dd.address[k].certified) address += TypedAddress.PRI_SEP+dd.address[k].priority;
 			}
 		}
-		broadcastable = dd.broadcastable;
+		broadcastable = dd.component_basic_data.broadcastable;
 		hash_alg = dd.signature_alg;
 		//signature_alg = D_PeerAddress.getStringFromHashAlg(signature_alg);
-		signature = dd.signature;
+		signature = dd.component_basic_data.signature;
 		served_orgs = dd.served_orgs;
 	}
 	/**
@@ -288,27 +288,27 @@ public class DDAddress implements StegoStructure{
 			pa = new D_PeerAddress(this,true);
 		else //V0+(!existing[0]))
 			pa = new D_PeerAddress(this,true); // false
-		D_PeerAddress old = new D_PeerAddress(pa.globalID, 0, false);
+		D_PeerAddress old = new D_PeerAddress(pa.component_basic_data.globalID, 0, false);
 		long peer_ID;
 		if(old._peer_ID > 0) {
-			old.used = true;
-			old.name = pa.name;
-			old.emails = pa.emails;
-			old.phones = pa.phones;
-			old.slogan = pa.slogan;
+			old.component_preferences.used = true;
+			old.component_basic_data.name = pa.component_basic_data.name;
+			old.component_basic_data.emails = pa.component_basic_data.emails;
+			old.component_basic_data.phones = pa.component_basic_data.phones;
+			old.component_basic_data.slogan = pa.component_basic_data.slogan;
 			old.address = pa.address;
-			old.creation_date = pa.creation_date;
-			old.version = pa.version;
-			old.globalID = pa.globalID;
-			old.broadcastable = pa.broadcastable;
+			old.component_basic_data.creation_date = pa.component_basic_data.creation_date;
+			old.component_basic_data.version = pa.component_basic_data.version;
+			old.component_basic_data.globalID = pa.component_basic_data.globalID;
+			old.component_basic_data.broadcastable = pa.component_basic_data.broadcastable;
 			old.served_orgs = pa.served_orgs;
-			old.signature = pa.signature;
-			old.picture = pa.picture;
-			old.hash_alg = pa.hash_alg;
-			old.globalIDhash = pa.globalIDhash;
+			old.component_basic_data.signature = pa.component_basic_data.signature;
+			old.component_basic_data.picture = pa.component_basic_data.picture;
+			old.component_basic_data.hash_alg = pa.component_basic_data.hash_alg;
+			old.component_basic_data.globalIDhash = pa.component_basic_data.globalIDhash;
 			old.storeVerified();
 		}else{
-			pa.used = true;
+			pa.component_preferences.used = true;
 			peer_ID = pa._storeVerified();
 		}
 		//D_PeerAddress.integratePeerOrgs(served_orgs, peer_ID, date);

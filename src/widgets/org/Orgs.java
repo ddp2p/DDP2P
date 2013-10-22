@@ -1046,27 +1046,34 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		case TABLE_COL_CREATOR:
 			String sql_cr =
 				"SELECT o."+table.organization.creator_ID+", m."+table.my_organization_data.creator+
-				", p."+table.peer.name+", pm."+table.peer_my_data.name+
+				", p."+table.peer.name+", pm."+table.peer_my_data.name+",p."+table.peer.name_verified+
 				" FROM "+table.organization.TNAME+" AS o" +
 				" LEFT JOIN "+table.my_organization_data.TNAME+" AS m "+" ON(o."+table.organization.organization_ID+"=m."+table.my_organization_data.organization_ID+")"+
 				" LEFT JOIN "+table.peer.TNAME+" AS p "+" ON(o."+table.organization.creator_ID+"=p."+table.peer.peer_ID+")"+
 				" LEFT JOIN "+table.peer_my_data.TNAME+" AS pm "+" ON(o."+table.organization.creator_ID+"=pm."+table.peer_my_data.peer_ID+")"+
 				" WHERE o."+table.organization.organization_ID+" = ? LIMIT 1;";
 			try {
-				ArrayList<ArrayList<Object>> orgs = db.select(sql_cr, new String[]{orgID});
+				ArrayList<ArrayList<Object>> orgs = db.select(sql_cr, new String[]{orgID}, DEBUG);
+				Object creator_org_custom = orgs.get(0).get(1);
+				Object creator_peer_custom = orgs.get(0).get(3);
+				Object creator_orig = orgs.get(0).get(2);
+				Object creator_orig_verified = orgs.get(0).get(4);
 				if(orgs.size()>0)
-					if(orgs.get(0).get(1)!=null){
-						result = Util.getString(orgs.get(0).get(1));
-						if(DEBUG)System.out.println("Orgs:Got my="+result);
+					if(creator_org_custom!=null){
+						result = "O: "+Util.getString(creator_org_custom);
+						if(DEBUG)System.out.println("Orgs:Got initiator org my="+result);
 					}
 					else{
-						if(orgs.get(0).get(3)!=null){
-							result = Util.getString(orgs.get(0).get(1));
-							if(DEBUG)System.out.println("Orgs:Got my="+result);
+						if(creator_peer_custom!=null){
+							result = "P: "+Util.getString(creator_peer_custom);
+							if(DEBUG)System.out.println("Orgs:Got initiator peer my="+result);
 						}
 						else{
-							result = Util.getString(orgs.get(0).get(2));
-							if(DEBUG)System.out.println("Orgs:Got my="+result);
+							result = Util.getString(creator_orig);
+							boolean verified = Util.stringInt2bool(creator_orig_verified, false);
+							if(!verified) result = "(?) "+result;
+							else result  = "V: "+result;
+							if(DEBUG)System.out.println("Orgs:Got initiator="+result);
 						}
 					}
 			} catch (P2PDDSQLException e) {
@@ -1180,7 +1187,9 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			set_my_data(table.my_organization_data.name, Util.getString(value), row);
 			break;
 		case TABLE_COL_CREATOR:
-			set_my_data(table.my_organization_data.creator, Util.getString(value), row);
+			String creator = Util.getString(value);
+			if("".equals(creator)) creator = null;
+			set_my_data(table.my_organization_data.creator, creator, row);
 			break;
 		case TABLE_COL_CATEGORY:
 			set_my_data(table.my_organization_data.category, Util.getString(value), row);
@@ -1191,19 +1200,19 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	private void set_my_data(String field_name, String value, int row) {
 		if(row >= _orgs.length) return;
 		if("".equals(value)) value = null;
-		if(DEBUG)System.out.println("Set value =\""+value+"\"");
+		if(_DEBUG)System.out.println("Set value =\""+value+"\"");
 		String org_ID = Util.getString(_orgs[row]);
 		try {
 			String sql = "SELECT "+field_name+" FROM "+table.my_organization_data.TNAME+" WHERE "+table.my_organization_data.organization_ID+"=?;";
 			ArrayList<ArrayList<Object>> orgs = db.select(sql,new String[]{org_ID});
 			if(orgs.size()>0){
 				db.update(table.my_organization_data.TNAME, new String[]{field_name},
-						new String[]{table.my_organization_data.organization_ID}, new String[]{value, org_ID});
+						new String[]{table.my_organization_data.organization_ID}, new String[]{value, org_ID}, _DEBUG);
 			}else{
 				if(value==null) return;
 				db.insert(table.my_organization_data.TNAME,
 						new String[]{field_name,table.my_organization_data.organization_ID},
-						new String[]{value, org_ID});
+						new String[]{value, org_ID}, _DEBUG);
 			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();

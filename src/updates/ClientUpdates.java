@@ -374,7 +374,7 @@ public class ClientUpdates extends Thread{
 			version_ids.add(vi.version);
 			choice.add(vi);
 			if(newest==null){ newest = vi.version; _newest_version_obtained[0] = vi;}
-			else if(newer(vi.version, newest)) { newest = vi.version; _newest_version_obtained[0] = vi;}
+			else if(Util.isVersionNewer(vi.version, newest)) { newest = vi.version; _newest_version_obtained[0] = vi;}
 		}
 		Object def_option=_("Select Newest");
 		Object[] options = new Object[]{def_option, _("Let me select"), _("Turn off auto-updates")};
@@ -430,7 +430,7 @@ public class ClientUpdates extends Thread{
 		
 		for(String url_str : is.keySet()) {
 			VersionInfo a = is.get(url_str);
-			if(newer(a.version, _latestAvailable)) {
+			if(Util.isVersionNewer(a.version, _latestAvailable)) {
 				if(newest == null){
 					newest = a.version;
 					newest_version_obtained = a;
@@ -441,7 +441,7 @@ public class ClientUpdates extends Thread{
 					Object def_option = _("Upgrade to:")+a.version;
 					Object[] options = new Object[]{_("Upgrade to:")+" "+newest, def_option, _("Cancel and disconfigure auto-updates")};
 					
-					if(newer(a.version, newest)){
+					if(Util.isVersionNewer(a.version, newest)){
 						int c = Application.ask(
 										_("Found different new versions!"),
 								_("Continue updating and take newest, 2nd below or cancel to disconfigure auto updates?")+"\n"+
@@ -570,7 +570,7 @@ public class ClientUpdates extends Thread{
 					}
 					System.out.println("Tester END .............");
 				}
-			if(!newer(a.version, _latestAvailable)) { //DD.VERSION)){
+			if(!Util.isVersionNewer(a.version, _latestAvailable)) { //DD.VERSION)){
 				if(DEBUG) System.out.println(" ClientUpdates: got : obtained is not newer than "+DD.VERSION);
 				continue;
 			}
@@ -659,7 +659,7 @@ public class ClientUpdates extends Thread{
 				}
 			if(DEBUG) System.out.println("Tester END .............");
 			}
-		if(!newer(a.version, _latestAvailable)) { //DD.VERSION)){
+		if(!Util.isVersionNewer(a.version, _latestAvailable)) { //DD.VERSION)){
 			if(DEBUG) System.out.println(" ClientUpdates: got : obtained is not newer than "+DD.VERSION);
 			return null;
 		}
@@ -684,85 +684,9 @@ public class ClientUpdates extends Thread{
 		}
 		if(db!=null) {
 			if(latest == null) latest = db;
-			else if(newer(db,latest)) latest = db;
+			else if(Util.isVersionNewer(db,latest)) latest = db;
 		}
 		return latest;
-	}
-	
-	/**
-	 * 
-	 * @param version_server
-	 * @param version_local
-	 * @return : true if server is newer than local
-	 */
-	public static boolean newer(String version_server, String version_local) {
-		if(DEBUG)System.out.println("ClientUpdates newer: start server="+version_server+" vs local="+version_local);
-		//Util.printCallPath("newer?");
-		boolean result = false;
-		String v_server[];
-		String v_local[];
-		if(version_server==null){
-			if(DEBUG)System.out.println("ClientUpdates newer: start v_server null");
-			return false;
-		}
-		v_server = version_server.split(Pattern.quote("."));
-		if(v_server.length<3){
-			if(DEBUG)System.out.println("ClientUpdates newer: start v_server < 3 : "+v_server.length+" "+Util.concat(v_server, "--"));
-			return false;
-		}
-		if(version_local==null){
-			if(DEBUG)System.out.println("ClientUpdates newer:  local null");
-			return true;
-		}
-		v_local = version_local.split(Pattern.quote("."));
-		if(v_local.length<3){
-			if(DEBUG)System.out.println("ClientUpdates newer:  v_local < 3");
-			return true;
-		}
-		if(DEBUG)System.out.println("ClientUpdates newer: server["+Util.concat(v_server,",")+"] ? v_local ["+Util.concat(v_local,",")+"]");
-		
-		result = false;
-		
-		int i_server[] = new int[3];
-		int i_local[] = new int[3];
-		for(int k=0; k<3; k++){
-			try{
-				i_server[k] = Integer.parseInt(v_server[k]);
-				i_local[k] = Integer.parseInt(v_local[k]);
-				if(i_server[k]<i_local[k]) return false;
-				if(i_server[k]>i_local[k]) return true;
-			}catch(Exception e){
-				int s = Util.prefixNumber(v_server[k]);
-				int l = Util.prefixNumber(v_local[k]);
-				if(s<l) return false;
-				if(s>l) return true;
-
-				if(v_server[k].compareTo(v_local[k]) > 0) return true; 
-				if(v_server[k].compareTo(v_local[k]) < 0) return false; 
-			}
-		}
-		/*
-		if(v_server[0].compareTo(v_local[0]) > 0) {
-			if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[0]+"] > v_local ["+v_local[0]+"]");
-			result = true;
-		}else{
-			if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[0]+"] <= v_local ["+v_local[0]+"]");
-			if(v_server[1].compareTo(v_local[1]) > 0) {
-				if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[1]+"] > v_local ["+v_local[1]+"]");
-				result = true;
-			}else{
-				if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[1]+"] <= v_local ["+v_local[1]+"]");
-				if(v_server[2].compareTo(v_local[2]) > 0) {
-					if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[2]+"] > v_local ["+v_local[2]+"]");
-					result = true;
-				}else{
-					if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[2]+"] <= v_local ["+v_local[2]+"]");
-				}
-			}	
-		}
-*/		
-		if(DEBUG)System.out.println("ClientUpdates newer: "+result);
-		return result;
 	}
 	
 	public static VersionInfo fetchLastVersionNumberAndSiteTXT(URL url) {

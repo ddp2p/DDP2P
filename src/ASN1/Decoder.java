@@ -520,6 +520,10 @@ class Decoder {
     public String dumpHexDump() {
         return dumpHex(Util.MAX_DUMP);
     }
+    /**
+     * Returns an array of ints
+     * @return
+     */
 	public int[] getIntsArray() {
 		if (this.getTypeByte() == Encoder.TAG_NULL) return null;
 		Decoder dec;

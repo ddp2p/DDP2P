@@ -17,7 +17,9 @@ public class TableUpdater implements Runnable{
 	}
 	public void run() {
 		if(DEBUG) System.out.println("PrivateOrgModel: update: run start");
-		model.fireTableDataChanged();
+		try{
+			model.fireTableDataChanged();
+		}catch(Exception e){}
 		if(mytable!=null) mytable.repaint();
 		if(DEBUG) System.out.println("PrivateOrgModel: update: run done "+mytable);
 	}

@@ -43,8 +43,8 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 				+"Date: "+d+"\n"
 					+"Verified: "+((verified!=null)?verified.getName():null)+"\n"
 					+"Verified: GID="+((verified!=null)?verified.global_constituent_id_hash:null)+"\n"
-					+"Verifier: "+((verifier!=null)?verifier.name:null)+"\n"
-					+"Verifier: email="+((verifier!=null)?verifier.emails:null)+"\n"
+					+"Verifier: "+((verifier!=null)?verifier.component_basic_data.name:null)+"\n"
+					+"Verifier: email="+((verifier!=null)?verifier.component_basic_data.emails:null)+"\n"
 				+"Signature: "+Util.byteToHexDump(signature, 20)+"\n"
 				+"R: "+this.r+"\n"
 				+"R_Prim: "+this.r_prim+"\n"
@@ -217,15 +217,15 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 
 	@Override
 	public String get_To() {
-		if((verifier==null)||(verifier.emails==null)){
+		if((verifier==null)||(verifier.component_basic_data.emails==null)){
 			Application.warning(_("No emails set in peer!"), _("Destination email absent"));
 			return Application.input(_("Can you enter the destination email?"), _("Destination"),
 					JOptionPane.QUESTION_MESSAGE);
 			// return "unknown@unknown";
 		}
-		String my_email = verifier.emails;
+		String my_email = verifier.component_basic_data.emails;
 		if(my_email!=null) my_email = my_email.split(Pattern.quote(","))[0].trim();
-		return  verifier.name +"<"+my_email+">";
+		return  verifier.component_basic_data.name +"<"+my_email+">";
 	}
 
 	@Override
@@ -247,7 +247,7 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 	@Override
 	public String get_FileName() {
 		return _("DirectDemocracyP2P_Verif_Reply_from_")+
-				((verifier!=null)?Util.sanitizeFileName(verifier.name):null)+".bmp";
+				((verifier!=null)?Util.sanitizeFileName(verifier.component_basic_data.name):null)+".bmp";
 	}
 
 	@Override
@@ -269,7 +269,7 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 
 	@Override
 	public String get_Greetings() {
-		String g = _("Dear")+" "+verifier.name+"\r\n"+
+		String g = _("Dear")+" "+verifier.component_basic_data.name+"\r\n"+
 				_("I answer to verification of this constituent.")+"\r\n"+
 				_("Name:")+" \""+verified.getName()+"\"\r\n"+
 				_("GID:")+" \""+verified.global_constituent_id_hash+"\"\r\n"+

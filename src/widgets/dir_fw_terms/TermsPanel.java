@@ -490,7 +490,13 @@ public class TermsPanel extends JPanel implements  ActionListener, PeerListener{
 	}
 	@Override
 	public void update(D_PeerAddress peer, String my_peer_name) {
-		if(peer!=null)this.setPeerID(peer._peer_ID);
+		if(DEBUG) System.out.println("TermsPanel:update:set my="+my_peer_name);
+		if(peer!=null){
+			if(DEBUG) System.out.println("TermsPanel:update:set="+peer.component_basic_data.name);
+			this.setPeerID(peer._peer_ID);
+		}else{
+			if(DEBUG) System.out.println("TermsPanel:update:set"+null);
+		}
 	}
     
 }

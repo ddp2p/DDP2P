@@ -8,7 +8,9 @@ CREATE TABLE "key" (
     "secret_key" TEXT,
     "ID_hash" TEXT,
     "name" TEXT, 
-    "type" TEXT
+    "preference_date" TEXT,
+    "type" TEXT,
+    "hide" TEXT
 );
 CREATE TABLE "constituent_verification" (
 	"constituent_ID" INTEGER NOT NULL,
@@ -28,6 +30,7 @@ CREATE TABLE directory_forwarding_terms (
 	"peer_ID" INTEGER NOT NULL,
     	"dir_addr" TEXT,
     	"service" TEXT,
+   	"preference_date" TEXT,
     	"priority_type" TEXT,
     	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 );
@@ -64,7 +67,8 @@ CREATE TABLE tester (
 	"revoked" INTEGER, 
 	"description" TEXT
 );
-CREATE TABLE peer ( 
+
+CREATE TABLE peer (
     "peer_ID" INTEGER PRIMARY KEY NOT NULL,
     "global_peer_ID" TEXT UNIQUE ON CONFLICT FAIL,
     "global_peer_ID_hash" TEXT UNIQUE ON CONFLICT FAIL,
@@ -84,14 +88,21 @@ CREATE TABLE peer (
     "last_sync_date" TEXT,
     "last_reset" TEXT, 
     "emails" TEXT,
+	"email_verified" TEXT,
+	"name_verified" TEXT,
+	"category" TEXT,
     "phones" TEXT,
     "urls" TEXT,
     "plugins_msg" BLOB, 
     "revoked" INTEGER DEFAULT (0), 
+    "revokation_instructions" TEXT,
+    "revokation_replacement_GIDhash" TEXT,
     "hidden" INTEGER DEFAULT (0),
     "creation_date" TEXT, 
     "arrival_date" TIMESTAMP, 
-    "preferences_date" TEXT
+    "first_provider_peer" INTEGER DEFAULT NULL,
+    "preferences_date" TEXT,
+    FOREIGN KEY (first_provider_peer) REFERENCES peer(peer_ID)
 );
 
 
@@ -107,6 +118,8 @@ CREATE TABLE peer_instance (
    "last_sync_date" TEXT, 
    "last_reset" TEXT,  
    "last_contact_date" TEXT,
+   "signature_date" TEXT,
+   "signature" TEXT,
     UNIQUE ("peer_ID", "peer_instance") ON CONFLICT FAIL,
     FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 );
@@ -190,6 +203,7 @@ CREATE TABLE organization (
 	"creation_date" TEXT, 
 	"arrival_date" TIMESTAMP, 
 	"reset_date" TEXT, 
+	"preferences_date" TEXT,
  	FOREIGN KEY(creator_ID) REFERENCES peer(peer_ID),
  	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
 );
@@ -214,6 +228,8 @@ CREATE TABLE "org_distribution" (
        "organization_ID" TEXT,
        "peer_ID" TEXT,  
        "reset_date" TEXT,
+       "distribute" INTEGER DEFAULT(1),
+       arrival_date TEXT,
        UNIQUE (organization_ID, peer_ID) ON CONFLICT FAIL,
  	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
  	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
@@ -293,6 +309,8 @@ CREATE TABLE motion (
 	requested INTEGER DEFAULT (0),
 	broadcasted INTEGER DEFAULT (1),
 	blocked INTEGER DEFAULT (0),
+	hidden INTEGER DEFAULT (0),
+	temporary INTEGER DEFAULT (0),
 	creation_date TEXT, 
 	arrival_date TIMESTAMP, 
 	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),

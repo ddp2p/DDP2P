@@ -886,17 +886,17 @@ private static D_PeerAddress get_peer_by_ID(long p_id) throws P2PDDSQLException 
 		ArrayList<ArrayList<Object>> p_data = Application.db.select(sql, new String[]{""+p_id});
 		
 		for(ArrayList<Object> peer : p_data){
-			pa.globalID =Util.getString(peer.get(table.peer.PEER_COL_GID));
-			pa.name = Util.getString(peer.get(table.peer.PEER_COL_NAME));
+			pa.component_basic_data.globalID =Util.getString(peer.get(table.peer.PEER_COL_GID));
+			pa.component_basic_data.name = Util.getString(peer.get(table.peer.PEER_COL_NAME));
 			pa.served_orgs = data.D_PeerAddress._getPeerOrgs(p_id);
-			pa.slogan = Util.getString(peer.get(table.peer.PEER_COL_SLOGAN));
+			pa.component_basic_data.slogan = Util.getString(peer.get(table.peer.PEER_COL_SLOGAN));
 			pa.signature_alg = Util.getString(peer.get(table.peer.PEER_COL_HASH_ALG)).split(":");
-			pa.signature = Util.byteSignatureFromString(Util.getString(peer.get(table.peer.PEER_COL_SIGN)));
-			pa.creation_date = Util.getCalendar(Util.getString(peer.get(table.peer.PEER_COL_CREATION)));
+			pa.component_basic_data.signature = Util.byteSignatureFromString(Util.getString(peer.get(table.peer.PEER_COL_SIGN)));
+			pa.component_basic_data.creation_date = Util.getCalendar(Util.getString(peer.get(table.peer.PEER_COL_CREATION)));
 			if(Util.getString(peer.get(table.peer.PEER_COL_BROADCAST)).compareTo("0")==0)
-				pa.broadcastable = Boolean.FALSE;
+				pa.component_basic_data.broadcastable = Boolean.FALSE;
 			if(peer.get(table.peer.PEER_COL_BROADCAST).toString().compareTo("1")==0)
-				pa.broadcastable = Boolean.TRUE;
+				pa.component_basic_data.broadcastable = Boolean.TRUE;
 			pa.address = handling_wb.Prepare_messages.get_Paddress(Util.getString(peer.get(table.peer.PEER_COL_ID)));
 		}
 		return pa;
@@ -932,12 +932,12 @@ private static D_PeerAddress get_peer_by_ID(long p_id) throws P2PDDSQLException 
 		String gp_id = Util.getKeyedIDPK(keys); 
 		
 		D_PeerAddress pa = new D_PeerAddress();
-		pa.broadcastable = true;
-		pa.creation_date = _creation_date;
-		pa.globalID = gp_id;
-		pa.name = name;
-		pa.slogan = slogan;
-		pa.signature = pa.sign(keys.getSK());
+		pa.component_basic_data.broadcastable = true;
+		pa.component_basic_data.creation_date = _creation_date;
+		pa.component_basic_data.globalID = gp_id;
+		pa.component_basic_data.name = name;
+		pa.component_basic_data.slogan = slogan;
+		pa.component_basic_data.signature = pa.sign(keys.getSK());
 		pa.address = new TypedAddress[4];
 		for(int i=0;i<4;i++){
 			pa.address[i] = new TypedAddress();

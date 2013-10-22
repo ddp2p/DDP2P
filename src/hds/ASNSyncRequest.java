@@ -18,7 +18,6 @@
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 /* ------------------------------------------------------------------------- */
  package hds;
-import java.math.BigInteger;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -751,101 +750,6 @@ class ASNSignature extends ASNObj {
 		"";
 	}
 }
-class DA_Answer extends ASNObj{
-	boolean result;
-	public String toString(){
-		return "Directory Answer: "+result;
-	}
-	@Override
-	public Encoder getEncoder() {
-		Encoder enc = new Encoder();
-		enc.initSequence();
-		enc.addToSequence(new Encoder(result));
-		enc.setASN1Type(DD.TAG_AC14);
-		return enc;
-	}
-
-	@Override
-	public DA_Answer decode(Decoder decoder) throws ASN1DecoderFail {
-		if(decoder.getTypeByte()!=DD.TAG_AC14) throw new ASN1DecoderFail("Wrong tag");
-		Decoder dec = decoder.getContent();
-		if(dec.getFirstObject(false)==null) throw new ASN1DecoderFail("Missing boolean: "+decoder.dumpHex());
-		result=dec.getFirstObject(true).getBoolean();
-		if(dec.getFirstObject(false)!=null) throw new ASN1DecoderFail("Extra Objects in decoder: "+decoder.dumpHex());
-		return this;
-	}
-}
-/**
- * ASNUDPPing = IMPLICIT [APPLICATION 13] SEQUENCE {
- * 		senderIsPeer BOOLEAN,
- * 		senderIsInitiator BOOLEAN,
- * 		peer_port INTEGER,
- * 		initiator_port INTEGER,
- * 		peer_domain UTF8String,
- * 		initiator_domain UTF8String,
- * 		peer_globalID	PrintableString OPTIONAL
- * 		initiator_globalID	PrintableString OPTIONAL
- * }
- * @author msilaghi
- *
- */
-class ASNUDPPing extends ASNObj{
-	boolean senderIsPeer=false;
-	boolean senderIsInitiator=false;
-	String peer_globalID; // contacted peer ID
-	int peer_port;		 // ping sender port
-	//String peer_domains[]; // ping sender domains
-	String peer_domain; // ping sender domains
-
-	String initiator_globalID; // initiator ID
-	int initiator_port;		 // ping initiator port
-	public String initiator_domain;
-	@Override
-	public Encoder getEncoder() {
-		if(ASNSyncRequest.DEBUG)System.out.println("Encoding ASNUDPPing");
-		Encoder enc = new Encoder().initSequence();
-		enc.addToSequence(new Encoder(senderIsPeer));
-		enc.addToSequence(new Encoder(senderIsInitiator));
-		enc.addToSequence(new Encoder(new BigInteger(""+peer_port)));
-		enc.addToSequence(new Encoder(new BigInteger(""+initiator_port)));
-		//enc.addToSequence(Encoder.getStringEncoder(peer_domains, Encoder.TAG_UTF8String));
-		enc.addToSequence(new Encoder(peer_domain));
-		//enc.addToSequence(Encoder.getStringEncoder(initiator_domains, Encoder.TAG_UTF8String));
-		enc.addToSequence(new Encoder(initiator_domain));
-		if(peer_globalID!=null) enc.addToSequence(new Encoder(peer_globalID, false));
-		if(initiator_globalID!=null) enc.addToSequence(new Encoder(initiator_globalID,false));
-		enc.setASN1Type(DD.TAG_AC13);
-		return enc;
-	}
-	@Override
-	public ASNUDPPing decode(Decoder dec) throws ASN1DecoderFail {
-		try{
-		Decoder d = dec.getContent();
-		senderIsPeer = d.getFirstObject(true).getBoolean();
-		senderIsInitiator = d.getFirstObject(true).getBoolean();
-		peer_port = d.getFirstObject(true).getInteger().intValue();
-		initiator_port = d.getFirstObject(true).getInteger().intValue();
-		//peer_domains = d.getFirstObject(true).getSequenceOf(Encoder.TAG_UTF8String);
-		peer_domain = d.getFirstObject(true).getString();
-		//initiator_domains = d.getFirstObject(true).getSequenceOf(Encoder.TAG_UTF8String);
-		initiator_domain = d.getFirstObject(true).getString();
-		peer_globalID = d.getFirstObject(true).getString();
-		initiator_globalID = d.getFirstObject(true).getString();
-		}catch(RuntimeException e){
-			//e.printStackTrace();
-			//System.out.println(e+"\n: "+dec);
-			throw new ASN1DecoderFail(e+"");
-		}
-		return this;
-	}
-	public String toString() {
-		return "ASNUDPPing: fromPeer:"+senderIsPeer+" fromInitiator:"+senderIsInitiator
-		//+" peer port:"+peer_port+"; domains:"+Util.concat(peer_domains, ",")+"; ID="+peer_globalID
-		+"\n peer port:"+peer_port+";\n    domains:"+peer_domain+";\n    ID="+Util.trimmed(peer_globalID)
-		//+" initiator port:"+initiator_port+"; domains:"+Util.concat(initiator_domains, ",")+"; ID="+initiator_globalID;
-		+"\n initiator port:"+initiator_port+";\n     domains:"+initiator_domain+";\n     ID="+Util.trimmed(initiator_globalID);
-	}
-}
 /**
 TableName := IMPLICIT [PRIVATE 0] UTF8String
 NULLOCTETSTRING := CHOICE {
@@ -1082,17 +986,17 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 			System.err.println("ASNSyncRequest:verifySignature: null address="+this);
 			return false;
 		}
-		if(address.globalID==null){
+		if(address.component_basic_data.globalID==null){
 			System.err.println("ASNSyncRequest:verifySignature: null address.GID="+this);
 			return false;
 		}
 		ciphersuits.PK pk;
 		try {
-			pk = ciphersuits.Cipher.getPK(this.address.globalID);
+			pk = ciphersuits.Cipher.getPK(this.address.component_basic_data.globalID);
 		}catch(Exception e){
 			e.printStackTrace();
 			if(DD.WARN_OF_FAILING_SIGNATURE_ONRECEPTION){
-				Application.warning(_("Failed signature verification with:")+" "+this.address.globalID, _("Failed Signature Verification"));
+				Application.warning(_("Failed signature verification with:")+" "+this.address.component_basic_data.globalID, _("Failed Signature Verification"));
 			}
 			System.err.println("ASNSyncRequest:verifySignature: Faulty message="+this);
 			return false;
@@ -1103,8 +1007,8 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 			System.err.println("ASNSyncRequest:verifySignature: Faulty address key="+pk);
 			if(0==Application.ask(_("Should we fix wrong signature for your peer address?")+"\n"+address.toSummaryString(),
 					_("Wrong Signature"), JOptionPane.YES_NO_OPTION)){
-				address.creation_date=Util.CalendargetInstance();
-				address.sign(Util.getStoredSK(this.address.globalID));
+				address.component_basic_data.creation_date=Util.CalendargetInstance();
+				address.sign(Util.getStoredSK(this.address.component_basic_data.globalID));
 				try {
 					address.storeVerified();
 				} catch (P2PDDSQLException e) {
@@ -1128,7 +1032,7 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 		*/
 	}
 	public SK sign() {
-		if ((this.address == null) || (this.address.globalID == null)) {
+		if ((this.address == null) || (this.address.component_basic_data.globalID == null)) {
 			if(DD.WARN_OF_FAILING_SIGNATURE_ONSEND) {
 				Application.warning(
 						_("Failure to sign request to remote peers: Peer identity is not sent!\nThis may be due to an internal inconsistency.\n Report a bug, and restart!"),
@@ -1136,7 +1040,7 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 			}
 			return null;
 		}
-		SK sk = Util.getStoredSK(address.globalID);
+		SK sk = Util.getStoredSK(address.component_basic_data.globalID);
 		if(DD.WARN_OF_WRONG_SYNC_REQ_SK && !sk.sameAs(DD.getMyPeerSK())){
 			Application.warning(
 					_("Inconsistency in my identity.\n Report bug code 1762!\n and restart :)"),

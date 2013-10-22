@@ -178,8 +178,8 @@ public class KeyManagement {
 				return;
 			}
 			D_PeerAddress peer = new D_PeerAddress(_pk);
-			peer.globalID = _pk;
-			peer.globalIDhash=null;
+			peer.component_basic_data.globalID = _pk;
+			peer.component_basic_data.globalIDhash=null;
 			peer._peer_ID = -1;
 			peer.peer_ID = null;
 			peer.sign(new_sk);

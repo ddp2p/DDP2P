@@ -21,6 +21,7 @@
 package streaming;
 
 import static util.Util._;
+import hds.ASNSyncPayload;
 import hds.ASNSyncRequest;
 import hds.SyncAnswer;
 
@@ -46,6 +47,7 @@ import data.D_Motion;
 import data.D_Constituent;
 import data.D_Justification;
 import data.D_Neighborhood;
+import data.D_PeerAddress;
 import data.D_Translations;
 import data.D_Vote;
 import data.D_Witness;
@@ -289,7 +291,7 @@ public class WB_Messages extends ASNObj{
 	 * @param orgs : the list of orgs mentioned
 	 * @throws P2PDDSQLException
 	 */
-	public static void store(WB_Messages r,
+	public static void store(ASNSyncPayload asa, D_PeerAddress peer, WB_Messages r,
 			Hashtable<String, RequestData> sq_sr,
 			Hashtable<String, RequestData> obtained_sr,
 			HashSet<String> orgs, String dbg_msg) throws P2PDDSQLException {
@@ -308,7 +310,7 @@ public class WB_Messages extends ASNObj{
 			orgs.add(org.global_organization_ID);
 
 			boolean _changed[] = new boolean[1];
-			long id = org.store(_changed, sq_sr.get(org.global_organization_ID), null); // should set blocking new orgs
+			long id = org.store(peer, _changed, sq_sr.get(org.global_organization_ID), null); // should set blocking new orgs
 			if(DEBUG)System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
 					" br="+org.broadcast_rule+" id="+id+" creat="+org.creator_ID);
 			if(DEBUG)System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
@@ -340,7 +342,11 @@ public class WB_Messages extends ASNObj{
 			if(rq==null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
-			c.store(sol_rq, new_rq);
+			long lid = c.store(sol_rq, new_rq);
+			if(lid<=0){
+				if(_DEBUG) System.out.println("WB_Messages: store: failed to handled const: "+c+" "+dbg_msg);
+				continue;
+			}
 			rq.update(sol_rq, new_rq);
 			sq_sr.put(c.global_organization_ID, rq);			
 			
@@ -358,7 +364,11 @@ public class WB_Messages extends ASNObj{
 			if(rq==null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
-			n.store(sol_rq, new_rq);
+			long lid=n.store(sol_rq, new_rq);
+			if(lid<=0){
+				if(_DEBUG) System.out.println("WB_Messages: store: failed to handled neigh: "+n+" "+dbg_msg);
+				continue;
+			}
 			rq.update(sol_rq, new_rq);
 			sq_sr.put(n.global_organization_ID, rq);			
 			
@@ -374,7 +384,11 @@ public class WB_Messages extends ASNObj{
 			if(rq==null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
-			w.store(sol_rq, new_rq);
+			long lid = w.store(sol_rq, new_rq);
+			if(lid<=0){
+				if(_DEBUG) System.out.println("WB_Messages: store: failed to handled witn: "+w+" "+dbg_msg);
+				continue;
+			}
 			rq.update(sol_rq, new_rq);
 			sq_sr.put(w.global_organization_ID, rq);			
 			
@@ -391,7 +405,11 @@ public class WB_Messages extends ASNObj{
 			if(rq==null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
-			m.store(sol_rq, new_rq);
+			long lid=m.store(sol_rq, new_rq);
+			if(lid<=0){
+				if(_DEBUG) System.out.println("WB_Messages: store: failed to handled motion: "+m+" "+dbg_msg);
+				continue;
+			}
 			rq.update(sol_rq, new_rq);
 			sq_sr.put(m.global_organization_ID, rq);			
 			
@@ -415,7 +433,11 @@ public class WB_Messages extends ASNObj{
 			if(rq==null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
-			j.store(sol_rq, new_rq);
+			long lid=j.store(sol_rq, new_rq);
+			if(lid<=0){
+				if(_DEBUG) System.out.println("WB_Messages: store: failed to handled just: "+j+" "+dbg_msg);
+				continue;
+			}
 			rq.update(sol_rq, new_rq);
 			sq_sr.put(j.global_organization_ID, rq);			
 			
@@ -432,7 +454,11 @@ public class WB_Messages extends ASNObj{
 				if(rq==null) rq = new RequestData();
 				sol_rq = new RequestData();
 				new_rq = new RequestData();
-				v.store(sol_rq, new_rq);
+				long lid=v.store(sol_rq, new_rq);
+				if(lid<=0){
+					if(_DEBUG) System.out.println("WB_Messages: store: failed to handled vote: "+v+" "+dbg_msg);
+					continue;
+				}
 				if(DEBUG) System.out.println("WB_Messages: store: handled vote: "+v);
 				rq.update(sol_rq, new_rq);
 				sq_sr.put(v.global_organization_ID, rq);			
@@ -453,7 +479,11 @@ public class WB_Messages extends ASNObj{
 			if(rq==null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
-			w.store(sol_rq, new_rq);
+			long lid=w.store(sol_rq, new_rq);
+			if(lid<=0){
+				if(_DEBUG) System.out.println("WB_Messages: store: failed to handled news: "+w+" "+dbg_msg);
+				continue;
+			}
 			rq.update(sol_rq, new_rq);
 			sq_sr.put(w.global_organization_ID, rq);			
 			
@@ -469,7 +499,11 @@ public class WB_Messages extends ASNObj{
 			if(rq==null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
-			t.store(sol_rq, new_rq);
+			long lid=t.store(sol_rq, new_rq);
+			if(lid<=0){
+				if(_DEBUG) System.out.println("WB_Messages: store: failed to handled translation: "+t+" "+dbg_msg);
+				continue;
+			}
 			rq.update(sol_rq, new_rq);
 			sq_sr.put(t.global_organization_ID, rq);			
 			

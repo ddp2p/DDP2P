@@ -168,7 +168,6 @@ class DB_Implementation_SQLite implements DB_Implementation {
 			throw new P2PDDSQLException(e);
     	}
     }
-	@Override
 	public void keep_open(SQLiteConnection conn) {
     	db = conn;
     	conn_open = true;

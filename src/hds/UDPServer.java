@@ -69,6 +69,7 @@ public class UDPServer extends Thread {
 	public static final int MAX_THREADS = 6;
 	private static final int UDP_BUFFER_LENGTH = 1000000;
 	public static final Object directoryAnnouncementLock = new Object();
+	private static final boolean ANNOUNCE_TCP = false;
 	public static boolean DEBUG_DIR = false;
 	public static DirectoryAnnouncement directoryAnnouncement = null;
 	private byte[] buffer;
@@ -729,7 +730,7 @@ public class UDPServer extends Thread {
 				da = new DirectoryAnnouncement();
 				da.globalID = Identity.current_peer_ID.globalID;
 				//da.address.domain=Identity.domain.toString().split("/")[1];
-				da.address.addresses=Identity.current_server_addresses();
+				da.address.setAddresses(Identity.current_server_addresses());
 				da.address.udp_port=Identity.udp_server_port;
 				UDPServer.directoryAnnouncement = da;
 			} else {
@@ -748,14 +749,14 @@ public class UDPServer extends Thread {
 		prepareDirectoryAnnouncement();
 		if(DEBUG_DIR) out.println("UDPServer: announceMyselfToDirectory: prepeared");
 		DirectoryAnnouncement da = UDPServer.directoryAnnouncement;
-		if(DEBUG_DIR) out.println("UDPServer: announceMyselfToDirectory Registering: domain=\""+da.address.addresses+"\" UDP port=\""+da.address.udp_port+"\"");
+		if(DEBUG_DIR) out.println("UDPServer: announceMyselfToDirectory Registering: domain=\""+da.address.addresses()+"\" UDP port=\""+da.address.udp_port+"\"");
 		_announceMyselfToDirectories(UDPServer.directoryAnnouncement, ds);
 		if(DEBUG_DIR) out.println("UDPServer: announceMyselfToDirectory: done");
 	}	
 	public static void announceMyselfToDirectoriesTCP(){
 		if(DEBUG_DIR) out.println("Server: announceMyselfToDirectories");
 		DirectoryAnnouncement da = prepareDirectoryAnnouncement();
-		if(DEBUG_DIR) out.println("Server: Registering: "+da.address.addresses+":"+da.address.udp_port);
+		if(DEBUG_DIR) out.println("Server: Registering: "+da.address.addresses()+":"+da.address.udp_port);
 		Server.announceMyselfToDirectories(da);		
 	}
 	public void pingDirectories(){
@@ -774,6 +775,12 @@ public class UDPServer extends Thread {
 	public static void __announceMyselfToDirectories(byte[] msg, Object da, DatagramSocket ds) {
 		//boolean DEBUG_DIR = true;
 		if(DEBUG_DIR) out.println("UDPServer: __announceMyselfToDirectory: start");
+		if(ANNOUNCE_TCP){
+			if(da instanceof DirectoryAnnouncement) {
+				DirectoryAnnouncement Da = (DirectoryAnnouncement)da;
+				new AnnouncingThread(Da).start();
+			}
+		}		
 		for(InetSocketAddress dir : Identity.listing_directories_inet ) {
 			if(DEBUG_DIR) out.println("UDPServer:__announceMyselfToDirectories: announce to: "+dir);
 			String address=null;
@@ -787,11 +794,6 @@ public class UDPServer extends Thread {
 				String sgn= "P";
 				if(da instanceof DirectoryAnnouncement) sgn = "*";
 				if(DEBUG) out.println("UDPServer:__announceMyselfToDirectories: sent: announcement to "+dp.getSocketAddress()+" "+sgn);
-
-				if(da instanceof DirectoryAnnouncement) {
-					DirectoryAnnouncement Da = (DirectoryAnnouncement)da;
-					new AnnouncingThread(Da).start();
-				}
 				//Directories.setUDPOn(address, new Boolean(true));
 			}catch(Exception e) {
 				//Application.warning(_("Error announcing myself to directory:")+dir, _("Announcing Myself to Directory"));

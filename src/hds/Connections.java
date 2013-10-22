@@ -298,7 +298,7 @@ public class Connections extends Thread implements DBListener{
 		try { // addresses are found below, ordered by last connection
 			peer = new D_PeerAddress(p.ID, false, true, true);
 			p.peer = peer;
-			p.GID = peer.globalID;
+			p.GID = peer.component_basic_data.globalID;
 		} catch (P2PDDSQLException e2) {
 			e2.printStackTrace();
 		}

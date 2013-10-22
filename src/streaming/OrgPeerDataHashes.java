@@ -130,6 +130,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	 * @throws P2PDDSQLException
 	 */
 	public void save(long orgID, long peer_ID, D_PeerAddress peer) throws P2PDDSQLException {
+		//boolean DEBUG = true;
 		if(DEBUG)System.out.println("\nOrgPeerDataHashes: save: saving "+this);
 		//Util.printCallPath("Try");
 		String old = this.global_organization_ID_hash;
@@ -282,7 +283,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	}
 	
 	@Override
-	public Object decode(Decoder dec) throws ASN1DecoderFail {
+	public OrgPeerDataHashes decode(Decoder dec) throws ASN1DecoderFail {
 		if(dec==null) return this;
 		if(dec.getTypeByte()!=DD.TAG_AC15) {
 			Util.printCallPath("wrong TAG");

@@ -91,7 +91,10 @@ public class D_Motion extends ASNObj implements util.Summary{
 	public boolean blocked = false;
 	public boolean broadcasted = D_Organization.DEFAULT_BROADCASTED_ORG;
 	public String category;
-	
+	public boolean hidden = false;
+	public boolean temporary = false;
+	public int status_references = 0;
+
 	public D_Motion() {}
 	public D_Motion(long motion_ID) throws P2PDDSQLException {
 		if(motion_ID<=0) return;
@@ -200,6 +203,8 @@ public class D_Motion extends ASNObj implements util.Summary{
 		this.category = Util.getString(o.get(table.motion.M_CATEGORY));		
 		this.blocked = Util.stringInt2bool(o.get(table.motion.M_BLOCKED),false);
 		this.requested = Util.stringInt2bool(o.get(table.motion.M_REQUESTED),false);
+		this.hidden = Util.stringInt2bool(o.get(table.motion.M_HIDDEN),false);
+		this.temporary = Util.stringInt2bool(o.get(table.motion.M_TEMPORARY),false);
 		this.broadcasted = Util.stringInt2bool(o.get(table.motion.M_BROADCASTED), D_Organization.DEFAULT_BROADCASTED_ORG_ITSELF);
 		
 		global_motionID = Util.getString(o.get(table.motion.M_MOTION_GID));
@@ -338,13 +343,17 @@ public class D_Motion extends ASNObj implements util.Summary{
 		if(DEBUG) System.out.println("D_Motion:sign:got this="+Util.byteToHexDump(signature));
 		return signature;
 	}
+	/**
+	 * This does not set the GID, to enable tests
+	 * @return
+	 */
 	public String make_ID(){
 		try {
 			fillGlobals();
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
-		// return this.global_witness_ID =  
+		// return this.global_motion_ID =  
 		return "M:"+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
 	}
 	public boolean verifySignature(){
@@ -434,8 +443,10 @@ public class D_Motion extends ASNObj implements util.Summary{
 		if(DEBUG) System.out.println("ConstituentHandling:insertTemporaryConstituentGID: start");
 		//Util.printCallPath("temporary motion: "+motion_GID);
 		return Application.db.insert(table.motion.TNAME,
-				new String[]{table.motion.global_motion_ID, table.motion.organization_ID},
-				new String[]{motion_GID, org_ID},
+				new String[]{
+				table.motion.global_motion_ID, table.motion.organization_ID,
+				table.motion.temporary, table.motion.hidden},
+				new String[]{motion_GID, org_ID, "1", "1"},
 				DEBUG);
 	}
 	private static String getDateFor(String motionID) throws P2PDDSQLException {
@@ -468,8 +479,10 @@ public class D_Motion extends ASNObj implements util.Summary{
 			organization_ID = Util.getStringID(D_Organization.getLocalOrgID(global_organization_ID));
 			if(tempOrg && (organization_ID == null)) {
 				String orgGID_hash = D_Organization.getOrgGIDHashGuess(global_organization_ID);
-				if(new_rq!=null) new_rq.orgs.add(orgGID_hash);
-				organization_ID = Util.getStringID(D_Organization.insertTemporaryGID(global_organization_ID, orgGID_hash, default_blocked_org));
+				if(orgGID_hash!=null) {
+					if(new_rq!=null) new_rq.orgs.add(orgGID_hash);
+					organization_ID = Util.getStringID(D_Organization.insertTemporaryGID(global_organization_ID, orgGID_hash, default_blocked_org));
+				}
 				if(default_blocked_org) return false;
 			}
 			if(organization_ID == null) return false;
@@ -554,6 +567,8 @@ public class D_Motion extends ASNObj implements util.Summary{
 		params[table.motion.M_ARRIVAL] = Encoder.getGeneralizedTime(arrival_date);
 		params[table.motion.M_CATEGORY] = this.category;
 		params[table.motion.M_BLOCKED] = Util.bool2StringInt(blocked);
+		params[table.motion.M_HIDDEN] = Util.bool2StringInt(hidden);
+		params[table.motion.M_TEMPORARY] = Util.bool2StringInt(temporary);
 		params[table.motion.M_REQUESTED] = Util.bool2StringInt(requested);
 		params[table.motion.M_BROADCASTED] = Util.bool2StringInt(broadcasted);
 		if(this.motionID == null) {

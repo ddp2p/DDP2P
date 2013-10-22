@@ -321,9 +321,9 @@ public class ASNSyncPayload extends ASNObj{
 	*/
 	public static void preparePeerDictionary(D_PeerAddress p,
 			ArrayList<String> dictionary_GIDs) {
-		if(p.globalID!=null) p.globalIDhash = null;
-		if(p.globalID!=null) p.globalID = addToDictionaryGetIdxS(dictionary_GIDs, p.globalID);
-		if(p.globalIDhash!=null) p.globalIDhash = addToDictionaryGetIdxS(dictionary_GIDs, p.globalIDhash);
+		if(p.component_basic_data.globalID!=null) p.component_basic_data.globalIDhash = null;
+		if(p.component_basic_data.globalID!=null) p.component_basic_data.globalID = addToDictionaryGetIdxS(dictionary_GIDs, p.component_basic_data.globalID);
+		if(p.component_basic_data.globalIDhash!=null) p.component_basic_data.globalIDhash = addToDictionaryGetIdxS(dictionary_GIDs, p.component_basic_data.globalIDhash);
 		if(p.served_orgs!=null)
 			for(D_PeerOrgs _p : p.served_orgs) {
 				prepareServedDictionary(_p, dictionary_GIDs);
@@ -342,9 +342,9 @@ public class ASNSyncPayload extends ASNObj{
 	*/
 	public static void expandPeerDictionariesAtDecoding(D_PeerAddress p,
 			ArrayList<String> dictionary_GIDs) {
-		if(p.globalID!=null) p.globalID = getDictionaryValueOrKeep(dictionary_GIDs, p.globalID);
-		if(p.globalIDhash!=null) p.globalIDhash = getDictionaryValueOrKeep(dictionary_GIDs, p.globalIDhash);
-		if(p.globalID!=null) p.globalIDhash = D_PeerAddress.getGIDHashFromGID(p.globalID);
+		if(p.component_basic_data.globalID!=null) p.component_basic_data.globalID = getDictionaryValueOrKeep(dictionary_GIDs, p.component_basic_data.globalID);
+		if(p.component_basic_data.globalIDhash!=null) p.component_basic_data.globalIDhash = getDictionaryValueOrKeep(dictionary_GIDs, p.component_basic_data.globalIDhash);
+		if(p.component_basic_data.globalID!=null) p.component_basic_data.globalIDhash = D_PeerAddress.getGIDHashFromGID(p.component_basic_data.globalID);
 		if(p.served_orgs!=null)
 			for(D_PeerOrgs _p : p.served_orgs) {
 				expandServedDictionariesAtDecoding(_p, dictionary_GIDs);

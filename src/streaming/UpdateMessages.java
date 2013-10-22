@@ -83,7 +83,7 @@ public class UpdateMessages {
 		String peer_GID=null;
 		
 		if((peerID==null)&&(asr.address!=null)){
-			peer_GID = asr.address.globalID;
+			peer_GID = asr.address.component_basic_data.globalID;
 			peerID = D_PeerAddress.getLocalPeerIDforGID(peer_GID);
 		}else{
 			//if(asr.address!=null) peer_GID = asr.address.globalID;
@@ -220,6 +220,7 @@ public class UpdateMessages {
 	public static boolean integrateUpdate(ASNSyncPayload asa, InetSocketAddress s_address, Object src,
 			String _global_peer_ID, String _peer_ID, String address_ID, RequestData __rq, D_PeerAddress peer) throws ASN1DecoderFail, P2PDDSQLException {
 
+		//boolean DEBUG = true;
 		if(DEBUG || DD.DEBUG_PLUGIN) err.println("UpdateMessages:integrateUpdate: start gID="+Util.trimmed(_global_peer_ID));
 
 		long peer_ID = Util.lval(_peer_ID, -1);
@@ -243,7 +244,7 @@ public class UpdateMessages {
 							asa.tables.tables[k].name+", rows="+asa.tables.tables[k].rows.length);
 					if(table.peer.G_TNAME.equals(asa.tables.tables[k].name)) {
 						D_PeerAddress p;
-						p=UpdatePeersTable.integratePeersTable(asa.tables.tables[k], asa.responderID);
+						p=UpdatePeersTable.integratePeersTable(asa, peer, asa.tables.tables[k], asa.responderID);
 						if(p!=null) {
 							peer_ID = p._peer_ID;
 							_peer_ID = p.peer_ID;
@@ -271,7 +272,7 @@ public class UpdateMessages {
 			if(DEBUG) err.println("Client: Handling table: "+
 					asa.tables.tables[k].name+", rows="+asa.tables.tables[k].rows.length);
 			if(table.peer.G_TNAME.equals(asa.tables.tables[k].name)) {
-					UpdatePeersTable.integratePeersTable(asa.tables.tables[k], null); continue;
+					UpdatePeersTable.integratePeersTable(asa, peer, asa.tables.tables[k], null); continue;
 			}
 			if(table.news.G_TNAME.equals(asa.tables.tables[k].name)) continue;
 			if(_DEBUG) err.println("Client: I do not handle table: "+asa.tables.tables[k].name);
@@ -348,7 +349,7 @@ public class UpdateMessages {
 		Hashtable<String, RequestData> sq_sr = new Hashtable<String, RequestData>();
 		
 		String crt_date = Util.getGeneralizedTime();
-		WB_Messages.store(asa.requested, sq_sr, obtained_sr, orgs, " from:"+peer_ID+" ");
+		WB_Messages.store(asa, peer, asa.requested, sq_sr, obtained_sr, orgs, " from:"+peer_ID+" ");
 		integrate(sq_sr, obtained_sr, _global_peer_ID, peer_ID, peer);
 
 		if(asa.orgData != null) {
@@ -379,7 +380,7 @@ public class UpdateMessages {
 				RequestData _sol_rq = new RequestData();
 				//_rq.purge(obtained);
 				arrival_time = Encoder.getGeneralizedTime(Util.incCalendar(arrival__time, 1));
-				boolean changed=OrgHandling.updateOrg(asa.orgData[i], _orgID, arrival_time, _sol_rq, _new_rq, peer); // integrated other data, stores all if not blocked
+				boolean changed=OrgHandling.updateOrg(asa, asa.orgData[i], _orgID, arrival_time, _sol_rq, _new_rq, peer); // integrated other data, stores all if not blocked
 				//if(asa.orgData[i].signature==null) continue;
 				changes |= changed;
 				
@@ -458,6 +459,8 @@ public class UpdateMessages {
 	private static boolean store_detected_interests(SpecificRequest sp,
 			long _peer_ID, String generalizedTime, D_PeerAddress peer) throws P2PDDSQLException {
 		boolean result = false;
+		//boolean DEBUG = true;
+		if(DEBUG) out.println("UpdateMessages: store_detected_interests: start");
 		for (RequestData rq: sp.rd) {
 			String org = rq.global_organization_ID_hash;
 			long orgID = Util.lval(D_Organization.getLocalOrgID_fromHashIfNotBlocked(org), -1);
@@ -575,6 +578,7 @@ public class UpdateMessages {
 		return new RequestData(orgID);
 	}
 	*/
+	@Deprecated
 	private static void updateDataToRequest(D_Organization orgData, RequestData rq) throws P2PDDSQLException {
 		long orgID = D_Organization.getLocalOrgID(orgData.global_organization_ID);
 		rq.save(orgID);

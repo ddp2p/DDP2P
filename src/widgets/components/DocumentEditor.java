@@ -62,6 +62,7 @@ public class DocumentEditor implements DocumentListener{
 	public static final int  MAX_PDF = 1000000;
 	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
+	private static final int TEXTAREA_WIDTH = 1000;
 	
 	int type_editor = TEXTAREA;
 	String type_document = TXT_BODY_FORMAT;
@@ -114,7 +115,8 @@ public class DocumentEditor implements DocumentListener{
 		switch(type_editor){
 		case TEXTAREA:
     		if(DEBUG) System.out.println("DocumentEditor: setEnabled: TXT: "+b);
-			textArea.setEnabled(b); break;
+			//textArea.setEnabled(b); break;
+			textArea.setEditable(b); break;
 		case RTEDIT:
 			if(DEBUG) System.out.println("DocumentEditor: setEnabled: RTE: "+b);
 			//rtEditor.setToolbarComponentEnable(b);
@@ -198,10 +200,10 @@ public class DocumentEditor implements DocumentListener{
 		switch(type_editor){
 		case TEXTAREA:
 			textArea.setEditable(true);
-			textArea.setSize(500, 200);
+			textArea.setSize(TEXTAREA_WIDTH, 200);
 			//.setEditorKit(RTFEditorKit);
-			textArea.setLineWrap(true);
-			textArea.setWrapStyleWord(true);
+			//textArea.setLineWrap(true);
+			//textArea.setWrapStyleWord(true);
 			textArea.setRows(TEXT_LEN_ROWS);
 			textArea.setAutoscrolls(true);
 			//result.setMaximumSize(new java.awt.Dimension(300,100));
@@ -214,11 +216,11 @@ public class DocumentEditor implements DocumentListener{
 		switch(type_editor){
 		case TEXTAREA:
 			textArea.setEditable(true);
-			textArea.setSize(500, 200);
+			textArea.setSize(TEXTAREA_WIDTH, 200);
 			//.setEditorKit(RTFEditorKit);
-			textArea.setLineWrap(true);
-			textArea.setWrapStyleWord(true);
-			textArea.setColumns(TEXT_LEN_COLS);
+			//textArea.setLineWrap(true);
+			//textArea.setWrapStyleWord(true);
+			//textArea.setColumns(TEXT_LEN_COLS);
 			textArea.setRows(TEXT_LEN_ROWS);
 			textArea.setAutoscrolls(true);
 			//result.setMaximumSize(new java.awt.Dimension(300,100));

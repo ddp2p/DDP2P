@@ -225,7 +225,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 				D_Witness wbw = new D_Witness();
 				D_Message asn1=new D_Message();
 				asn1.sender = new D_PeerAddress(); 
-				asn1.sender.globalID = DD.getMyPeerGIDFromIdentity();
+				asn1.sender.component_basic_data.globalID = DD.getMyPeerGIDFromIdentity();
 				last_row = Integer.parseInt(witness.get(table.witness.WIT_COL_ID).toString());
 				try{
 					wbw.init_all(witness);
@@ -329,7 +329,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					D_Constituent con = new D_Constituent();
 					D_Message asn1=new D_Message();
 					asn1.sender = new D_PeerAddress(); 
-					asn1.sender.globalID = DD.getMyPeerGIDFromIdentity();
+					asn1.sender.component_basic_data.globalID = DD.getMyPeerGIDFromIdentity();
 					last_row = Integer.parseInt(constituent.get(table.constituent.CONST_COL_ID).toString());
 					con.load(constituent,D_Constituent.EXPAND_ALL);
 					asn1.constituent = con;
@@ -521,7 +521,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					D_Vote v = new D_Vote();
 					D_Message asn1=new D_Message();
 					asn1.sender = new D_PeerAddress(); 
-					asn1.sender.globalID = DD.getMyPeerGIDFromIdentity();
+					asn1.sender.component_basic_data.globalID = DD.getMyPeerGIDFromIdentity();
 					last_row = Integer.parseInt(vote.get(table.signature.S_ID).toString());
 					v.init_all(vote);
 					asn1.vote = v;
@@ -621,7 +621,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 				for(ArrayList<Object> neigh : neighs) {
 					D_Message asn1=new D_Message();
 					asn1.sender = new D_PeerAddress(); 
-					asn1.sender.globalID = DD.getMyPeerGIDFromIdentity();
+					asn1.sender.component_basic_data.globalID = DD.getMyPeerGIDFromIdentity();
 					String local_id = Util.getString(neigh.get(0));
 
 					String gid = D_Neighborhood.getNeighborhoodGlobalID(local_id);
@@ -717,22 +717,22 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 	private byte[] buildPeerMessage(ArrayList<Object> peer, long rowID) throws P2PDDSQLException, ASN1DecoderFail {
 		D_Message asn1=new D_Message();
 		asn1.sender = new D_PeerAddress();
-		asn1.sender.globalID = DD.getMyPeerGIDFromIdentity();
+		asn1.sender.component_basic_data.globalID = DD.getMyPeerGIDFromIdentity();
 		asn1.Peer = new D_PeerAddress();
-		asn1.Peer.globalID = Util.getString(peer.get(table.peer.PEER_COL_GID));
+		asn1.Peer.component_basic_data.globalID = Util.getString(peer.get(table.peer.PEER_COL_GID));
 		asn1.Peer.served_orgs = data.D_PeerAddress._getPeerOrgs(rowID);
-		if(peer.get(3)!=null) asn1.Peer.name = Util.getString(peer.get(table.peer.PEER_COL_NAME));
-		if(peer.get(4)!=null) asn1.Peer.slogan = Util.getString(peer.get(table.peer.PEER_COL_SLOGAN));
+		if(peer.get(3)!=null) asn1.Peer.component_basic_data.name = Util.getString(peer.get(table.peer.PEER_COL_NAME));
+		if(peer.get(4)!=null) asn1.Peer.component_basic_data.slogan = Util.getString(peer.get(table.peer.PEER_COL_SLOGAN));
 		asn1.Peer.signature_alg = D_PeerAddress.getHashAlgFromString(Util.getString(peer.get(table.peer.PEER_COL_HASH_ALG)));
-		asn1.Peer.signature = Util.byteSignatureFromString(Util.getString(peer.get(table.peer.PEER_COL_SIGN)));
-		asn1.Peer.creation_date = Util.getCalendar(Util.getString(peer.get(table.peer.PEER_COL_CREATION)));
+		asn1.Peer.component_basic_data.signature = Util.byteSignatureFromString(Util.getString(peer.get(table.peer.PEER_COL_SIGN)));
+		asn1.Peer.component_basic_data.creation_date = Util.getCalendar(Util.getString(peer.get(table.peer.PEER_COL_CREATION)));
 		if(Util.getString(peer.get(table.peer.PEER_COL_BROADCAST)).compareTo("0")==0)
-			asn1.Peer.broadcastable = Boolean.FALSE;
+			asn1.Peer.component_basic_data.broadcastable = Boolean.FALSE;
 		if(peer.get(table.peer.PEER_COL_BROADCAST).toString().compareTo("1")==0)
-			asn1.Peer.broadcastable = Boolean.TRUE;
+			asn1.Peer.component_basic_data.broadcastable = Boolean.TRUE;
 		asn1.Peer.address = get_Paddress(Util.getString(peer.get(table.peer.PEER_COL_ID)));
 		if(DEBUG)System.out.println("PEER DATA : "+asn1.Peer);
-		if(DEBUG)System.out.println("PEER_ID : "+asn1.Peer.getLocalPeerIDforGID(asn1.Peer.globalID));
+		if(DEBUG)System.out.println("PEER_ID : "+asn1.Peer.getLocalPeerIDforGID(asn1.Peer.component_basic_data.globalID));
 		Encoder enc = asn1.getEncoder();	
 		byte msg [] = enc.getBytes();
 		return msg;
@@ -774,7 +774,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 	byte[] buildOrganizationMessage(ArrayList<Object> org, String local_id) throws P2PDDSQLException, ASN1DecoderFail{
 		D_Message asn1=new D_Message();
 		asn1.sender = new D_PeerAddress(); 
-		asn1.sender.globalID = DD.getMyPeerGIDFromIdentity();
+		asn1.sender.component_basic_data.globalID = DD.getMyPeerGIDFromIdentity();
 		asn1.organization = new D_Organization();
 		asn1.organization =  get_ASN_Organization_by_OrgID(org,local_id);
 		if(DEBUG){
@@ -853,17 +853,17 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		;
 		peers = Application.db.select(sql,new String[]{global_creator_id});
 		for(ArrayList<Object> peer : peers) {
-			l_peer.globalID =Util.getString(peer.get(table.peer.PEER_COL_GID)); ;
+			l_peer.component_basic_data.globalID =Util.getString(peer.get(table.peer.PEER_COL_GID)); ;
 			l_peer.served_orgs = data.D_PeerAddress._getPeerOrgs(global_creator_id);
-			if(peer.get(table.peer.PEER_COL_NAME)!=null) l_peer.name = Util.getString(peer.get(table.peer.PEER_COL_NAME));
-			if(peer.get(table.peer.PEER_COL_SLOGAN)!=null) l_peer.slogan = Util.getString(peer.get(table.peer.PEER_COL_SLOGAN));
+			if(peer.get(table.peer.PEER_COL_NAME)!=null) l_peer.component_basic_data.name = Util.getString(peer.get(table.peer.PEER_COL_NAME));
+			if(peer.get(table.peer.PEER_COL_SLOGAN)!=null) l_peer.component_basic_data.slogan = Util.getString(peer.get(table.peer.PEER_COL_SLOGAN));
 			l_peer.signature_alg = Util.getString(peer.get(table.peer.PEER_COL_HASH_ALG)).split(":");
-			l_peer.signature = Util.byteSignatureFromString(Util.getString(peer.get(table.peer.PEER_COL_SIGN)));
-			l_peer.creation_date = Util.getCalendar(Util.getString(peer.get(table.peer.PEER_COL_CREATION)));
+			l_peer.component_basic_data.signature = Util.byteSignatureFromString(Util.getString(peer.get(table.peer.PEER_COL_SIGN)));
+			l_peer.component_basic_data.creation_date = Util.getCalendar(Util.getString(peer.get(table.peer.PEER_COL_CREATION)));
 			if(Util.getString(peer.get(table.peer.PEER_COL_BROADCAST)).compareTo("0")==0)
-				l_peer.broadcastable = Boolean.FALSE;
+				l_peer.component_basic_data.broadcastable = Boolean.FALSE;
 			if(peer.get(table.peer.PEER_COL_BROADCAST).toString().compareTo("1")==0)
-				l_peer.broadcastable = Boolean.TRUE;
+				l_peer.component_basic_data.broadcastable = Boolean.TRUE;
 			l_peer.address = get_Paddress(Util.getString(peer.get(table.peer.PEER_COL_ID)));
 		}
 		l_peer.served_orgs = data.D_PeerAddress._getPeerOrgs(global_creator_id);

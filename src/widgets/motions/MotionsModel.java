@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 
+import javax.swing.JOptionPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
@@ -49,6 +50,7 @@ import util.DBInfo;
 import util.DBInterface;
 import util.DBListener;
 import util.Util;
+import widgets.GUI_STATUS;
 import widgets.org.OrgListener;
 
 @SuppressWarnings("serial")
@@ -63,9 +65,14 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	public static final int TABLE_COL_CREATION_DATE = 7; // unread news?
 	public static final int TABLE_COL_BROADCASTED = 8; // unread news?
 	public static final int TABLE_COL_BLOCKED = 9; // unread news?
+	public static final int TABLE_COL_TMP = 10; // GID without remaining data and signature
+	public static final int TABLE_COL_GID_VALID = 11; // GID matches data
+	public static final int TABLE_COL_SIGN_VALID = 12; // motion signed
+	public static final int TABLE_COL_HIDDEN = 13; // hidden
 	//public static final int TABLE_COL_PLUGINS = 7;
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
+	public static boolean hide = true;
 	DBInterface db;
 	Object _motions[]=new Object[0];
 	//Object _meth[]=new Object[0];
@@ -83,7 +90,8 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	String columnNames[]={
 			_("Name"),_("Initiator"),_("Category"),
 			_("Support"),_("Voters"),
-			_("Hot"),_("News"),_("Date"), _("^"), _("X")
+			_("Hot"),_("News"),_("Date"), _("^"), _("X"),
+			_("T"), _("G"), _("S"), _("H")
 			};
 	ArrayList<Motions> tables= new ArrayList<Motions>();
 	private String crt_orgID;
@@ -158,6 +166,10 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		if(col == this.TABLE_COL_NEWS) return Integer.class;
 		if(col == this.TABLE_COL_BROADCASTED) return Boolean.class;
 		if(col == this.TABLE_COL_BLOCKED) return Boolean.class;
+		if(col == this.TABLE_COL_HIDDEN) return Boolean.class;
+		if(col == this.TABLE_COL_TMP) return Boolean.class;
+		if(col == this.TABLE_COL_GID_VALID) return Boolean.class;
+		if(col == this.TABLE_COL_SIGN_VALID) return Boolean.class;
 		
 		return String.class;
 	}
@@ -169,7 +181,45 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	public Object getValueAt(int row, int col) {
 		Object result = null;
 		String motID = Util.getString(this._motions[row]);
+		long _motID = Util.lval(this._motions[row]);
 		switch(col) {
+		case TABLE_COL_HIDDEN:
+			try {
+				D_Motion m = new D_Motion(_motID);
+				result = new Boolean(m.hidden);
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
+			break;
+		case TABLE_COL_TMP:
+			try {
+				D_Motion m = new D_Motion(_motID);
+				String newGID = m.make_ID();
+				if(newGID==null) result = new Boolean(false);
+				else result = new Boolean(m.temporary || !newGID.equals(m.global_motionID));
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
+			break;
+		case TABLE_COL_GID_VALID:
+			try {
+				D_Motion m = new D_Motion(_motID);
+				String newGID = m.make_ID();
+				if(newGID==null) result = new Boolean(false);
+				else result = new Boolean(newGID.equals(m.global_motionID));
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
+			break;
+		case TABLE_COL_SIGN_VALID:
+			try {
+				D_Motion m = new D_Motion(_motID);
+				if((m.global_motionID==null)||(m.global_constituent_ID==null)) result = new Boolean(false);
+				else result = new Boolean(m.verifySignature());
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
+			break;
 		case TABLE_COL_BROADCASTED:
 			if((row>=0) && (row<this._crea_date.length))result = new Boolean(this._bro[row]);
 			break;
@@ -337,6 +387,10 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		case TABLE_COL_CATEGORY:
 		case TABLE_COL_BROADCASTED:
 		case TABLE_COL_BLOCKED:
+		case TABLE_COL_TMP:
+		case TABLE_COL_HIDDEN:
+		case TABLE_COL_GID_VALID:
+		case TABLE_COL_SIGN_VALID:
 			return true;
 		}
 		return false;
@@ -394,17 +448,17 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		if(DEBUG) System.out.println("MotionsModel:setCurrent: Done");
 		
 	}
-	@Override
-	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
-		if(DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update table= "+_table+": info= "+info);
-		if(crt_orgID==null) return;
-		String sql = 
+	String sql_motions = 
 			"SELECT "+table.motion.motion_ID+","+table.motion.creation_date+","
 			+table.motion.global_motion_ID+","+table.motion.constituent_ID+
 			","+table.motion.blocked+","+table.motion.broadcasted+","+table.motion.requested+
 			","+table.motion.creation_date
 			+" FROM "+table.motion.TNAME+
 			" WHERE "+table.motion.organization_ID + "=? ";
+	@Override
+	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
+		if(DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update table= "+_table+": info= "+info);
+		if(crt_orgID==null) return;
 		Object old_sel[] = new Object[tables.size()];
 		for(int i=0; i<old_sel.length; i++){
 			int sel = tables.get(i).getSelectedRow();
@@ -412,6 +466,8 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		}
 		try {
 			ArrayList<ArrayList<Object>> moti;
+			String sql = sql_motions;
+			if(hide)	sql	 +=	" AND "+table.motion.hidden+" != '1' ";
 			if(crt_enhanced!=null){
 				sql += " AND "+table.motion.enhances_ID+" = ?;";
 				moti = db.select(sql, new String[]{crt_orgID, crt_enhanced});
@@ -468,6 +524,8 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	}
 	@Override
 	public void setValueAt(Object value, int row, int col) {
+		String motID = Util.getString(this._motions[row]);
+		long _motID = Util.lval(this._motions[row]);
 		switch(col) {
 		case TABLE_COL_NAME:
 			if(value instanceof D_Document_Title){
@@ -495,6 +553,56 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			if(!(value instanceof Boolean)) break;
 			boolean val2 = ((Boolean)value).booleanValue();
 			set_data(table.motion.blocked, Util.bool2StringInt(val2), row);
+			break;
+		case TABLE_COL_HIDDEN:
+			if(!(value instanceof Boolean)) break;
+			boolean val3 = ((Boolean)value).booleanValue();
+			set_data(table.motion.hidden, Util.bool2StringInt(val3), row);
+			break;
+		case TABLE_COL_TMP:
+			if(!(value instanceof Boolean)) break;
+			boolean val4 = ((Boolean)value).booleanValue();
+			int q = 1;
+			if(val4){
+				q = Application.ask(_("Are you sure you want to reget this?"),
+						_("Set temporary?"), JOptionPane.OK_CANCEL_OPTION);
+			}else{
+				q = Application.ask(_("Are you sure you want to never reget this?"),
+						_("Set temporary?"), JOptionPane.OK_CANCEL_OPTION);
+			}
+			if(0==q){
+				set_data(table.motion.temporary, Util.bool2StringInt(val4), row);
+			}
+			break;
+		case TABLE_COL_GID_VALID:
+			if(!(value instanceof Boolean)) break;
+			boolean val5 = ((Boolean)value).booleanValue();
+			int qq;
+			try {
+				if(val5){
+					qq = Application.ask(_("Are you sure you want to recompute this GID?"),
+							_("Set GID valid?"), JOptionPane.OK_CANCEL_OPTION);
+					if(qq==0){
+						D_Motion m = new D_Motion(_motID);
+						if((m.constituent_ID!=null)&&
+								(Util.lval(m.constituent_ID) != GUI_STATUS.getCrt_ConstituentID())) break;
+						m.global_motionID = m.make_ID();
+						if(m.constituent_ID!=null)
+							m.signature = m.sign();
+						m.storeVerified();
+					}
+				}else{
+					qq = Application.ask(_("Are you sure you want to remove this GID?"),
+							_("Set GID valid?"), JOptionPane.OK_CANCEL_OPTION);
+					if(qq==0){
+						D_Motion m = new D_Motion(_motID);
+						m.global_motionID = null;
+						m.storeVerified();
+					}
+				}
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
 			break;
 		}
 		fireTableCellUpdated(row, col);
@@ -536,7 +644,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 				if(value==null) return;
 				db.insert(table.motion.TNAME,
 						new String[]{field_name,table.motion.motion_ID},
-						new String[]{value, motion_ID});
+						new String[]{value, motion_ID},_DEBUG);
 			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();

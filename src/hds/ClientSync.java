@@ -349,12 +349,12 @@ public class ClientSync{
 			*/
 			SK sk = DD.getMyPeerSK();
 			if(DEBUG)System.out.println("Client: buildRequests: will verify: "+sr.address);
-			sr.address.signature = sr.address.sign(sk); // not needed as encompassed by request signature
+			sr.address.component_basic_data.signature = sr.address.sign(sk); // not needed as encompassed by request signature
 			if(DD.VERIFY_SENT_SIGNATURES||DD.VERIFY_SIGNATURE_MYPEER_IN_REQUEST) {
 				if(!sr.address.verifySignature()) {
 					System.err.println("Client: buildRequests: Signature failure for: "+sr.address);
 					//System.err.println("Client: buildRequests: Signature failure for sk: "+sk);
-					System.err.println("Client: buildRequests: Signature failure for pk: "+ciphersuits.Cipher.getPK(sr.address.globalID));
+					System.err.println("Client: buildRequests: Signature failure for pk: "+ciphersuits.Cipher.getPK(sr.address.component_basic_data.globalID));
 				}else{
 					if(DEBUG)System.out.println("Client: buildRequests: Signature success for: "+sr.address);				
 				}

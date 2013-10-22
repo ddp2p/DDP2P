@@ -124,7 +124,7 @@ class ServerThread extends Thread {
 				Server.extractDataSyncRequest(asr, isa, this);
 				if(DEBUG)out.println("Request received: "+asr.toString());
 				if(asr.address!=null){
-					asr.address.peer_ID = peer_ID = D_PeerAddress.getLocalPeerIDforGID(asr.address.globalID);
+					asr.address.peer_ID = peer_ID = D_PeerAddress.getLocalPeerIDforGID(asr.address.component_basic_data.globalID);
 				}else{
 					Application.warning(_("Peer does not authenticate itself"), _("Contact from unknown peer"));
 					if(!DD.ACCEPT_DATA_FROM_UNSIGNED_PEERS) break;
@@ -188,7 +188,7 @@ class ThreadAskPull extends Thread{
 	public void run() {
 		try {
 			_run();
-			if(pa.blocked) return;
+			if(pa.component_preferences.blocked) return;
 			/**
 			 * Run again the data extraction in case blocking is off
 			 */
@@ -201,49 +201,56 @@ class ThreadAskPull extends Thread{
 	public void _run() throws P2PDDSQLException{
 		int i = 2;
 
-		Object sync = _("Pull from")+" "+Util.trimmed(pa.name);
+		Object sync = _("Pull from")+" "+Util.trimmed(pa.component_basic_data.name);
 		Object options[] = new Object[]{
 				sync,
 				_("Do not pull from it"),
 				_("Use defaults"),
 				_("Use defaults, do not ask again"),
-				_("Block")
+				_("Block"),
+				_("Discard")
 				};
 		i = Application.ask(
 			_("Use new peer for synchronization?"),
 			_("A new peer is contacting you. Do you want to pull from it, too?")+" \n"+
 			//_("Select \"Cancel\" for not being asked again, but using defaults.")+"\n"+
+			_("Default for discarding:")+"     "+(DD.REJECT_NEW_ARRIVING_PEERS_CONTACTING_ME?_("Discard"):_("Do not discard"))+"\n"+
 			_("Default for pulling is affected by the first 2 choices.")+"\n"+
 			_("Default for pulling from new peer currently is:")+"     "+(DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME?_("Sync from this"):_("Do not sync from this"))+"\n"+
 			_("Default for blocking (pushed data) is:")+"              "+(DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME?_("Blocked"):_("Not blocked"))+" \n"+
-			_("Name of Peer contacting you is:")+"                     \""+Util.trimmed(pa.name,30)+"\" \n"+
-			_("The current slogan of the peer is:")+"                  \""+Util.trimmed(pa.slogan,100)+"\"",
+			_("Name of Peer contacting you is:")+"                     \""+Util.trimmed(pa.component_basic_data.name,30)+"\" \n"+
+			_("Email of Peer contacting you is:")+"                    \""+Util.trimmed(pa.component_basic_data.emails,30)+"\" \n"+
+			_("Address of Peer contacting you is:")+"                    \""+Util.trimmed(pa.getAddressesDesc(),30)+"\" \n"+
+			_("The current slogan of the peer is:")+"                  \""+Util.trimmed(pa.component_basic_data.slogan,100)+"\"",
 			options, sync, null);
 			//JOptionPane.YES_NO_CANCEL_OPTION);
 
 		switch(i) {
 		case 0:
-			pa.blocked = false;
-			DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME = pa.used = true;
+			pa.component_preferences.blocked = false;
+			DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME = pa.component_preferences.used = true;
 			peer_ID = pa.storeVerifiedForce(); //in fact only the options should be forced
 			break;
 		case 1:
-			pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
-			DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME = pa.used = false;
+			pa.component_preferences.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
+			DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME = pa.component_preferences.used = false;
 			peer_ID = pa.storeVerifiedForce();
 			break;
 		case 4:
-			pa.used = false;
-			pa.blocked = true;
+			pa.component_preferences.used = false;
+			pa.component_preferences.blocked = true;
 			peer_ID = pa.storeVerifiedForce();
+			break;
+		case 5:
+			DD.REJECT_NEW_ARRIVING_PEERS_CONTACTING_ME = true;
 			break;
 		case 3:
 			DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME = false;
 		case 2:
 		case JOptionPane.CLOSED_OPTION:
 		default:
-			pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
-			pa.used = DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
+			pa.component_preferences.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
+			pa.component_preferences.used = DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
 			peer_ID = pa.storeVerified();
 			break;
 		}
@@ -292,26 +299,29 @@ public class Server extends Thread {
 		if (port <= 1000) port = 1000;
 		return port;
 	}
-	public static void extractDataSyncRequest(ASNSyncRequest asr, SocketAddress sa, Object caller) throws P2PDDSQLException {
+	public static boolean extractDataSyncRequest(ASNSyncRequest asr, SocketAddress sa, Object caller) throws P2PDDSQLException {
 		Calendar crt_date = Util.CalendargetInstance();
 		String _crt_date = Encoder.getGeneralizedTime(crt_date);
 		D_PeerAddress pa = asr.address;
 		if(pa != null) {
 			String peer_ID = null;
-			DD.ed.fireServerUpdate(new CommEvent(caller, pa.name, sa, "Client", "Peer Name decoded"));
-			if((pa!=null)&&(pa.signature!=null)&&((pa.globalID!=null)||(pa.globalIDhash!=null))) {
+			DD.ed.fireServerUpdate(new CommEvent(caller, pa.component_basic_data.name, sa, "Client", "Peer Name decoded"));
+			if((pa!=null)&&(pa.component_basic_data.signature!=null)&&((pa.component_basic_data.globalID!=null)||(pa.component_basic_data.globalIDhash!=null))) {
 				boolean verif = pa.verifySignature();
 				if(verif) {
 					// Here the address only needed at version 2
-					D_PeerAddress local = new D_PeerAddress(pa.globalID, pa.globalIDhash, false, true, true);
+					D_PeerAddress local = new D_PeerAddress(pa.component_basic_data.globalID, pa.component_basic_data.globalIDhash, false, true, true);
 					if(local.peer_ID==null){
 						if(DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME) {
-							pa.blocked = true; //DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
-							pa.used = false; //DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
+							pa.component_preferences.blocked = true; //DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
+							pa.component_preferences.used = false; //DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
 							peer_ID = pa.storeVerified();
 						}else{
-							pa.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
-							pa.used = DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
+							if(DD.REJECT_NEW_ARRIVING_PEERS_CONTACTING_ME){
+								return false;
+							}
+							pa.component_preferences.blocked = DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME;
+							pa.component_preferences.used = DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
 							peer_ID = pa.storeVerified();
 						}
 						if(DD.ASK_USAGE_NEW_ARRIVING_PEERS_CONTACTING_ME) {
@@ -327,11 +337,11 @@ public class Server extends Thread {
 				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nD_PluginData: distributeToPlugins: discard message from peer=null!");	
 				//return;
 			}else{
-				D_PluginInfo.recordPluginInfo(asr.plugin_info, pa.globalID, peer_ID);
+				D_PluginInfo.recordPluginInfo(asr.plugin_info, pa.component_basic_data.globalID, peer_ID);
 				if(asr.plugin_msg != null){
 					try {
 						if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nD_PluginData: distributeToPlugins: message "+asr.plugin_msg);
-						asr.plugin_msg.distributeToPlugins(pa.globalID);
+						asr.plugin_msg.distributeToPlugins(pa.component_basic_data.globalID);
 					} catch (ASN1DecoderFail e) {
 						e.printStackTrace();
 					}
@@ -346,7 +356,7 @@ public class Server extends Thread {
 					InetSocketAddress isa = (InetSocketAddress)sa;
 					String address_ID = D_PeerAddress.getAddressID(isa, peer_ID);
 					try {
-						UpdateMessages.integrateUpdate(asr.pushChanges, isa, caller, pa.globalID, peer_ID, address_ID, _rq, asr.address);
+						UpdateMessages.integrateUpdate(asr.pushChanges, isa, caller, pa.component_basic_data.globalID, peer_ID, address_ID, _rq, asr.address);
 					} catch (ASN1DecoderFail e) {
 						e.printStackTrace();
 					}
@@ -355,7 +365,7 @@ public class Server extends Thread {
 		}else{
 			if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nD_PluginData: distributeToPlugins: no peer address for plugin data!");
 		}
-		
+		return true;
 	}
 	void try_connect(int port) {
 		if(DEBUG) out.println("BEGIN Server.try_connect: port="+port);
@@ -538,7 +548,7 @@ public class Server extends Thread {
 				if(DEBUG) out.println("Server:announceMyselfToDirectories: Got answer: "+Util.byteToHex(answer, 0, alen, " "));
 				Decoder answer_dec=new Decoder(answer);
 				try{
-					D_DAAnswer ans = new D_DAAnswer(answer_dec);
+					DirectoryAnnouncement_Answer ans = new DirectoryAnnouncement_Answer(answer_dec);
 					if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+ans);
 					//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+answer_dec.getContent().getFirstObject(true).getBoolean());
 					//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: ");
@@ -554,7 +564,8 @@ public class Server extends Thread {
 					Application.ld.setTCPOn(dir_address, new Boolean(true));
 			}catch(Exception e) {
 				//Application.warning(_("Error announcing myself to directory:")+dir, _("Announcing Myself to Directory"));
-				DD.directories_failed.add(dir);
+
+				try{DD.directories_failed.add(dir);}catch(Exception e2){e2.printStackTrace();}
 				if(Application.ld!=null)
 					Application.ld.setTCPOn(dir_address, new Boolean(false));
 				if(DEBUG) err.println("Server: "+_("Announcing myself to directory:")+dir+" "+e.getLocalizedMessage());

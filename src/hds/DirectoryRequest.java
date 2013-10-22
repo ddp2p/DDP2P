@@ -84,19 +84,26 @@ class DIR_Terms_Preaccepted extends ASNObj{
 }
 
 public class DirectoryRequest extends ASNObj{
+	private static final int V1 = 1;
+	private static final int V2 = 2;
+	private static final int V3 = 3;
 	private static boolean DEBUG = false;
-	private static int MAX_VERSION_SUPPORTED = 2;
-	public int version = MAX_VERSION_SUPPORTED;
+	private static int MAX_VERSION_SUPPORTED = V3;
+	public int version = V2; //MAX_VERSION_SUPPORTED;
+	public int[] agent_version = Util.getMyVersion();
 	public String globalID;
-	public String peer_ID;
-	public String dir_address;
+	public String globalIDhash; // or this, or GID
 	public DIR_Terms_Preaccepted[] terms;
-	public String initiator_globalID;
+	public String initiator_globalID; // used to verify signatures
+	public String initiator_globalIDhash; // used to verify signatures
 	public int UDP_port;
 	public byte[] signature;
 	
+	private String dir_address; // used to build terms
+	private String peer_ID; // localID
+	
 	@Override
-	public Object decode(Decoder dec) throws ASN1DecoderFail {
+	public DirectoryRequest decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder dr = dec.getContent();
 		version = 0;
 		if(dr.getTypeByte() == Encoder.TAG_INTEGER){
@@ -107,7 +114,18 @@ public class DirectoryRequest extends ASNObj{
 			}else 
 				version = _version;
 		}
-		
+		switch(version){
+		case 0:
+		case 1:
+		case 2:
+			return decode_2(dr);
+			
+		case 3:
+		default:
+			return decode_3(dr);
+		}
+	}
+	public DirectoryRequest decode_2(Decoder dr) throws ASN1DecoderFail {
 		globalID = dr.getFirstObject(true).getString();
 		if(dr.getTypeByte() == DD.TAG_AC5)
 			terms = dr.getFirstObject(true).getSequenceOf(DIR_Terms_Preaccepted.getASN1Type(), new DIR_Terms_Preaccepted[]{}, new DIR_Terms_Preaccepted());
@@ -117,19 +135,71 @@ public class DirectoryRequest extends ASNObj{
 			signature = dr.getFirstObject(true).getBytesAnyType();
 		return this;
 	}
+	public DirectoryRequest decode_3(Decoder dr) throws ASN1DecoderFail {
+		if((version>=3)&&(dr.isFirstObjectTagByte(DD.TAG_AC2)))
+			agent_version = dr.getFirstObject(true).getIntsArray();
+		
+		if(((version < 3)||dr.isFirstObjectTagByte(DD.TAG_AC2)))
+			globalID = dr.getFirstObject(true).getString();
+		if(dr.isFirstObjectTagByte(DD.TAG_AC3))
+			globalIDhash = dr.getFirstObject(true).getString();
+		if(dr.getTypeByte() == DD.TAG_AC5)
+			terms = dr.getFirstObject(true).getSequenceOf(DIR_Terms_Preaccepted.getASN1Type(), new DIR_Terms_Preaccepted[]{}, new DIR_Terms_Preaccepted());
+		if((version < 3)||(dr.isFirstObjectTagByte(DD.TAG_AC6)))
+			initiator_globalID = dr.getFirstObject(true).getString();
+		if(dr.isFirstObjectTagByte(DD.TAG_AC7))
+			initiator_globalIDhash = dr.getFirstObject(true).getString();
+		if(dr.isFirstObjectTagByte(DD.TAG_AC10))
+			this.UDP_port = dr.getFirstObject(true).getInteger().intValue();
+		if((version!=0) && (dr.getTypeByte()==Encoder.TAG_OCTET_STRING))
+			signature = dr.getFirstObject(true).getBytesAnyType();
+		return this;
+	}
 	@Override
 	public Encoder getEncoder() {
+		switch(version){
+		case 0:
+		case 1:
+		case 2:
+			return getEncoder_2();
+		case 3:
+		default:
+			return getEncoder_3();
+		}
+	}
+	public Encoder getEncoder_2() {
 		Encoder enc = new Encoder().initSequence();
 		if(version != 0) enc.addToSequence(new Encoder(version));
-		enc.addToSequence(new Encoder(globalID, false));
+		if(globalID!=null)enc.addToSequence(new Encoder(globalID, false));
+		else{
+			System.out.println("DirectoryRequest: This version expects a globalID. v="+version);
+		}
 		if((version!=0)&&(terms!=null)) enc.addToSequence(Encoder.getEncoder(terms).setASN1Type(DD.TAG_AC5));
-		enc.addToSequence(new Encoder(this.initiator_globalID, false));
+		if(this.initiator_globalID!=null)enc.addToSequence(new Encoder(this.initiator_globalID, false));
+		else{
+			System.out.println("DirectoryRequest: This version expects an initiator_globalID. v="+version);
+		}
 		enc.addToSequence(new Encoder(this.UDP_port));
 		if(version!=0) enc.addToSequence(new Encoder(signature));
 		return enc;
 	}
+	public Encoder getEncoder_3() {
+		Encoder enc = new Encoder().initSequence();
+		if(version != 0) enc.addToSequence(new Encoder(version));
+		if(version>=3) enc.addToSequence(new Encoder(agent_version).setASN1Type(DD.TAG_AC1));
+		if(globalID!=null)enc.addToSequence(new Encoder(globalID, false).setASN1Type(DD.TAG_AC2));
+		if(globalIDhash!=null)enc.addToSequence(new Encoder(globalIDhash, false).setASN1Type(DD.TAG_AC3));
+		if((version!=0)&&(terms!=null)) enc.addToSequence(Encoder.getEncoder(terms).setASN1Type(DD.TAG_AC5));
+		if(this.initiator_globalID!=null)enc.addToSequence(new Encoder(this.initiator_globalID, false).setASN1Type(DD.TAG_AC6));
+		if(this.initiator_globalIDhash!=null)enc.addToSequence(new Encoder(this.initiator_globalIDhash, false).setASN1Type(DD.TAG_AC7));
+		if(this.UDP_port > 0)enc.addToSequence(new Encoder(this.UDP_port).setASN1Type(DD.TAG_AC10));
+		if(version!=0) enc.addToSequence(new Encoder(signature));
+		return enc;
+	}
 	public String toString() {
-		String result= "[DirectoryRequest:\n gID="+Util.trimmed(globalID)+
+		String result= "[DirectoryRequest:v="+version+
+				((this.globalID!=null)?"\n gID="+Util.trimmed(globalID):"")+
+				((this.globalIDhash!=null)?"\n gIDH="+Util.trimmed(globalIDhash):"")+
 		       "\n  from:"+Util.trimmed(initiator_globalID)+"\n  UDPport="+UDP_port ;
 			if(terms!=null)
 		       for(int i=0; i<terms.length; i++){

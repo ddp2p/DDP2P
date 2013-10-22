@@ -58,6 +58,7 @@ public class Identity {
 	private String preferred_lang;
 	private String preferred_charset;
 	private String secret_credential;
+	public int status_references = 0;
 	/* Default user Identity from the identities table */
 	private static Identity current_identity = null;
 	/* Peer Identity from the DD database registry */

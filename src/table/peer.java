@@ -21,6 +21,7 @@ package table;
 
 
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 import streaming.UpdatePeersTable;
 import util.Util;
@@ -65,6 +66,14 @@ public class peer {
 	public static final String version = "version";
 	public static final String emails = "emails";
 	public static final String phones = "phones";
+	public static final String name_verified = "name_verified";
+	public static final String email_verified = "email_verified";
+	public static final String category = "category";
+	public static final String revoked = "revoked";
+	public static final String revokation_instructions = "revokation_instructions";
+	public static final String revokation_replacement_GIDhash = "revokation_replacement_GIDhash";
+	public static final String hidden = "hidden";
+	public static final String first_provider_peer = "first_provider_peer";
 	public static final String TNAME = "peer";
 
 	/*
@@ -98,29 +107,45 @@ public class peer {
 			name+","+
 			slogan+","+
 			hash_alg+","+
+
 			signature+","+
 			creation_date+","+
 			broadcastable+","+
 			plugin_info+","+
 			plugins_msg+","+
+			
 			filtered+","+
 			last_sync_date+","+
 			last_reset+","+
 			arrival_date+","+
 			used+","+
+			
 			picture+","+
 			exp_avg+","+
 			experience+","+
 			blocked+","+
 			version+","+
+			
 			emails+","+
 			phones+","+
-			preferences_date
+			preferences_date+","+			
+			name_verified +","+
+			email_verified +","+
+			
+			category +","+
+			revoked +","+
+			revokation_instructions +","+
+			revokation_replacement_GIDhash +","+
+			hidden+","+
+			
+			first_provider_peer
 			;
 //			no_update+","+
+	public static final String[] list_fields_peers_no_ID = Util.trimmed(fields_peers_no_ID.split(Pattern.quote(",")));
 	public static final String fields_peers = fields_peers_no_ID + "," + peer_ID;
-	public static final int PEER_COL_FIELDS_NO_ID = table.peer.fields_peers_no_ID.split(",").length;
-	public static final int PEER_COL_FIELDS = table.peer.fields_peers.split(",").length;
+	public static final String[] list_fields_peers = Util.trimmed(fields_peers.split(Pattern.quote(",")));
+	public static final int PEER_COL_FIELDS_NO_ID = table.peer.list_fields_peers_no_ID.length;
+	public static final int PEER_COL_FIELDS = table.peer.list_fields_peers.length;
 			
 	public static final int PEER_COL_GID = 0;
 	public static final int PEER_COL_GID_HASH = 1;
@@ -145,6 +170,14 @@ public class peer {
 	public static final int PEER_COL_EMAILS = 20;
 	public static final int PEER_COL_PHONES = 21;
 	public static final int PEER_COL_PREFERENCES_DATE = 22;
+	public static final int PEER_COL_VER_NAME = 23;
+	public static final int PEER_COL_VER_EMAIL = 24;
+	public static final int PEER_COL_CATEG = 25;
+	public static final int PEER_COL_REVOKED = 26;
+	public static final int PEER_COL_REVOK_INSTR = 27;
+	public static final int PEER_COL_REVOK_GIDH = 28;
+	public static final int PEER_COL_HIDDEN = 29;
+	public static final int PEER_COL_FIRST_PROVIDER_PEER = 29;
 	public static final int PEER_COL_ID = PEER_COL_FIELDS_NO_ID;
 
 	//public static final int PEER_COL_NOUPDATE = ?; // replaced by blocked

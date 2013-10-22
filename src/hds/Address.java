@@ -234,5 +234,21 @@ public class Address extends ASNObj{
 			}
 		return result;
 	}
-	
+	public static String joinAddresses(Address[] addresses) {
+		return Util.concat(addresses, DirectoryServer.ADDR_SEP, null);
+	}
+	/**
+	 * Assumes that the string is well formed
+	 * @param a
+	 * @return
+	 */
+	public static Address[] getAddresses(String a) {
+		if(a == null) return null;
+		String[] s = split(a);
+		Address[] A = new Address[s.length];
+		for(int k=0; k<A.length; k++) {
+			A[k] = new Address(s[k]);
+		}
+		return A;
+	}
 }

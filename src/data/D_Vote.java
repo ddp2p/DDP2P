@@ -547,8 +547,12 @@ class D_Vote extends ASNObj{
 			this.constituent_ID = D_Constituent.getConstituentLocalIDFromGID(global_constituent_ID);
 			if(tempConst && (constituent_ID == null ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
-				if(new_rq!=null)new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
-				constituent_ID = Util.getStringID(D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, organization_ID));
+				if(consGID_hash!=null){
+					if(new_rq!=null)new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
+					constituent_ID = Util.getStringID(D_Constituent.insertTemporaryConstituentGID(global_constituent_ID, organization_ID));
+				}else{
+					if(_DEBUG) System.out.println("D_Vote:fill_locals: invalidGID:"+this.global_constituent_ID);
+				}
 			}
 			if(constituent_ID == null) return false;
 		}
@@ -668,8 +672,8 @@ class D_Vote extends ASNObj{
 					this.global_organization_ID = D_Organization.getGlobalOrgID(this.organization_ID);
 				dm.vote = this; // may have to add GIDs
 				dm.sender = new D_PeerAddress();
-				dm.sender.globalID = DD.getMyPeerGIDFromIdentity(); //DD.getAppText(DD.APP_my_global_peer_ID);
-				dm.sender.name = DD.getAppText(DD.APP_my_peer_name);
+				dm.sender.component_basic_data.globalID = DD.getMyPeerGIDFromIdentity(); //DD.getAppText(DD.APP_my_global_peer_ID);
+				dm.sender.component_basic_data.name = DD.getAppText(DD.APP_my_peer_name);
 
 				if((this.signature!=null) && (global_vote_ID != null)) {
 					if(pm != null) {

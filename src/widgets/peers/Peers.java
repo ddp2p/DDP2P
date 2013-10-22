@@ -39,7 +39,9 @@ import java.util.Arrays;
 import java.util.Hashtable;
 
 import javax.swing.Action;
+import javax.swing.DefaultCellEditor;
 import javax.swing.ImageIcon;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -55,6 +57,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
@@ -107,6 +110,61 @@ class NoPluginRenderer implements TableCellRenderer{
 	}
 	
 }
+
+class MyComboBoxRenderer extends JLabel  implements TableCellRenderer {
+//	class MyComboBoxRenderer extends DefaultTableCellRenderer  implements TableCellRenderer {
+  public MyComboBoxRenderer() {
+    super();
+	setOpaque(true);
+  }
+
+  public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+      boolean hasFocus, int row, int column) {
+	  if(value instanceof JComboBox){
+		  int cnt = ((JComboBox) value).getItemCount();
+		  String text;
+		  if(cnt <= 0) text = "#0";
+		  text = "/#"+cnt+": "+Util.getString(((JComboBox) value).getItemAt(0));
+		  if(cnt > 1) this.setBackground(Color.YELLOW);
+		  else this.setBackground(Color.LIGHT_GRAY);
+		  //if(cnt>1) text = text;
+		  setText(text);
+	  }else{
+			setBackground(Color.WHITE);
+		  setText(Util.getString(value));
+	  }
+    return this;
+  }
+}
+
+@SuppressWarnings("serial")
+class MyCComboBoxRenderer extends JComboBox<Object> implements TableCellRenderer {
+  public MyCComboBoxRenderer() {
+    super();
+  }
+
+  @SuppressWarnings("unchecked")
+public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+      boolean hasFocus, int row, int column) {
+	  this.removeAllItems();
+	  if(value instanceof JComboBox){
+		  for(int k=0; k<((JComboBox<Object>) value).getItemCount(); k++)
+			  this.addItem(((JComboBox<Object>) value).getItemAt(k));
+		  return this;
+	  }
+	  this.addItem(value);
+    if (isSelected) {
+      setForeground(table.getSelectionForeground());
+      super.setBackground(table.getSelectionBackground());
+    } else {
+      setForeground(table.getForeground());
+      setBackground(table.getBackground());
+    }
+    setSelectedItem(value);
+    return this;
+  }
+}
+
 @SuppressWarnings("serial")
 public class Peers extends JTable implements MouseListener {
 	// Different icons should be displayed for each state... for now just on/off
@@ -133,6 +191,7 @@ public class Peers extends JTable implements MouseListener {
 
 	
 	BulletRenderer bulletRenderer = new BulletRenderer();
+	MyComboBoxRenderer myComboBoxRenderer;
 	ColorRenderer colorRenderer;
 	NoPluginRenderer noPluginRenderer = new NoPluginRenderer();
 	protected String[] columnToolTips = {null,null,_("A name you provide")};
@@ -289,6 +348,7 @@ public class Peers extends JTable implements MouseListener {
 		addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
 		colorRenderer = new ColorRenderer(getModel());
+		myComboBoxRenderer = new MyComboBoxRenderer();
 		initColumnSizes();
 		this.getTableHeader().setToolTipText(
         _("Click to sort; Shift-Click to sort in reverse order"));
@@ -300,6 +360,7 @@ public class Peers extends JTable implements MouseListener {
 		return scrollPane;
 	}
     public JPanel getPanel() {
+    	if(DEBUG) System.out.println("Peers:getPanel: start");
     	JPanel jp = new JPanel(new BorderLayout());
     	JScrollPane scrollPane = getScrollPane();
         scrollPane.setPreferredSize(new Dimension(400, 200));
@@ -313,7 +374,9 @@ public class Peers extends JTable implements MouseListener {
 	//	p.add(Application.peer);
 //        scrollPane.setPreferredSize(new Dimension(400, 200));
         termsPanel = new TermsPanel();
-        JScrollPane scrollPane2 = new JScrollPane(termsPanel);
+        this.addListener(termsPanel);
+    	if(DEBUG) System.out.println("Peers:getPanel: added termsPanel");
+    	JScrollPane scrollPane2 = new JScrollPane(termsPanel);
         scrollPane2.setMinimumSize(new Dimension(100,100));
         //p.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane2 ,new JScrollPane(Application.peer)));
        // p.add(new JScrollPane(new JScrollPane(Application.peer)) );
@@ -321,20 +384,32 @@ public class Peers extends JTable implements MouseListener {
         privateOrgPanel = new PrivateOrgPanel();
         JScrollPane scrollPane3 = new JScrollPane(privateOrgPanel);
         scrollPane3.setMinimumSize(new Dimension(100,100));
-        p.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JSplitPane(JSplitPane.VERTICAL_SPLIT,scrollPane2,scrollPane3) ,new JScrollPane(Application.peer_contacts)));
-
+        p.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+        		new JSplitPane(JSplitPane.VERTICAL_SPLIT,scrollPane2,scrollPane3),
+        		new JScrollPane(Application.peer_contacts)));
         
-        this.addListener(termsPanel);
         jp.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, p ), BorderLayout.CENTER);
 		return jp;
     }
 
+	@Override
+	public TableCellEditor getCellEditor(int row, int column) {
+	   Object value = super.getValueAt(row, column);
+	   if(value != null) {
+	      if(value instanceof JComboBox) {
+	           return new DefaultCellEditor((JComboBox)value);
+	      }
+	            return getDefaultEditor(value.getClass());
+	   }
+	   return super.getCellEditor(row, column);
+	}
 	public TableCellRenderer getCellRenderer(int row, int column) {
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("Peers:getCellRenderer: start row="+row);
 		//if ((column == PeersModel.COL_UDP_ON)) return bulletRenderer;
 		//if ((column == PeersModel.COL_TCP_ON)) return bulletRenderer;
 		//if ((column == DirectoriesModel.COL_NAT)) return bulletRenderer;
+		if ((column == PeersModel.TABLE_COL_SERVING)) return myComboBoxRenderer;
 		if ((column == PeersModel.TABLE_COL_NAME)) return colorRenderer;
 		if ((column == PeersModel.TABLE_COL_SLOGAN)) return colorRenderer;
 		if ((column == PeersModel.TABLE_COL_CONNECTION)) return bulletRenderer;
@@ -435,10 +510,14 @@ public class Peers extends JTable implements MouseListener {
             headerWidth = comp.getPreferredSize().width;
  
             for(int r=0; r<model.getRowCount(); r++) {
-            	comp = this.getDefaultRenderer(model.getColumnClass(i)).
-                             getTableCellRendererComponent(
-                                 this, getValueAt(r, i),
-                                 false, false, 0, i);
+            	/*comp = this.getDefaultRenderer(model.getColumnClass(i)).
+                        getTableCellRendererComponent(
+                            this, getValueAt(r, i),
+                            false, false, 0, i);*/
+            	comp = this.getCellRenderer(r,i).
+                        getTableCellRendererComponent(
+                            this, getValueAt(r, i),
+                            false, false, 0, i);
             	cellWidth = Math.max(comp.getPreferredSize().width, cellWidth);
             }
             if (DEBUG) {
@@ -731,6 +810,7 @@ public class Peers extends JTable implements MouseListener {
 		}
 
 		public void run(){
+			if(DEBUG) System.out.println("DispatchPeer:run:start");
 			PeersModel model = peers.getModel();
 			long id =-1;
 			D_PeerAddress peer = null;
@@ -746,6 +826,7 @@ public class Peers extends JTable implements MouseListener {
 				}
 				my_peer_name = Util.getString(model.getValueAt(model_row, PeersModel.TABLE_COL_NAME));
 			}
+			if(DEBUG) System.out.println("DispatchPeer:run:listeners=#"+listeners.size());
 			for(PeerListener l : listeners) {
 				try{l.update(peer, my_peer_name);}catch(Exception e){e.printStackTrace();}
 			}
@@ -779,9 +860,12 @@ public class Peers extends JTable implements MouseListener {
     			if(getModel().updates_requested){
     				getModel().updates_requested = false;
     				getModel().__update(null,null);
+    				initColumnSizes();
     			}	
     			return;
     		}else{
+    			if(DEBUG) System.out.println("Peer:jtableMouseRelease: press");
+    	        dispatchToListeners(model_row);
     			return;
     		}
     	}
@@ -789,7 +873,8 @@ public class Peers extends JTable implements MouseListener {
     	if(popup != null)
     		popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
         dispatchToListeners(model_row);
-    }
+		if(DEBUG) System.out.println("Peer:jtabkeMouseRelease: end");
+   }
 	public static String getPeerID(String global_peer_ID) throws P2PDDSQLException {
 		String result = "-1";
 		ArrayList<ArrayList<Object>> dt=Application.db.select("SELECT "+table.peer.peer_ID+" FROM "+table.peer.TNAME+" WHERE "+table.peer.global_peer_ID+" = ?;",
@@ -1164,8 +1249,8 @@ class PeersRowAction extends DebateDecideAction {
 				String old_gid = model.getGID(row);
 				String _pk=__pk[0];//Util.stringSignatureFromByte(new_sk.getPK().getEncoder().getBytes());
 				D_PeerAddress peer = new D_PeerAddress(old_gid);
-				peer.globalID = _pk;
-				peer.globalIDhash=null;
+				peer.component_basic_data.globalID = _pk;
+				peer.component_basic_data.globalIDhash=null;
 				peer._peer_ID = -1;
 				peer.peer_ID = null;
 				peer.sign(new_sk);
@@ -1312,12 +1397,22 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	static final int COL_UDP_ON = 5;
 	static final int COL_TCP_ON = 6;
 
-	public static final int TABLE_COL_NAME = 0;
-	public static final int TABLE_COL_SERVING = 1;
-	public static final int TABLE_COL_CONNECTION = 2;
-	public static final int TABLE_COL_BLOCKED = 3;
-	public static final int TABLE_COL_SLOGAN = 4;
-	public static final int TABLE_COL_PLUGINS = 5;
+	static int idx=0;
+	public static final int TABLE_COL_NAME = 0;//idx++;
+	public static final int TABLE_COL_VERIF_NAME = 1;//idx++;
+	public static final int TABLE_COL_SERVING = 2;//idx++;
+	public static final int TABLE_COL_CONNECTION = 3;//idx++;
+	public static final int TABLE_COL_BLOCKED = 4;//idx++;
+	public static final int TABLE_COL_HIDDEN = 5;//idx++;
+	public static final int TABLE_COL_VALID = 6;//idx++;
+	public static final int TABLE_COL_TEMP = 7;//idx++;
+	public static final int TABLE_COL_REVOKED = 8;//idx++;
+	public static final int TABLE_COL_EMAIL = 9;//idx++;
+	public static final int TABLE_COL_VERIF_EMAIL = 10;//idx++;
+	public static final int TABLE_COL_CATEGORY = 11;//idx++;
+	public static final int TABLE_COL_SLOGAN = 12;//idx++;
+	public static final int TABLE_COL_PROVIDER = 13;//idx++;
+	public static final int TABLE_COL_PLUGINS = 14;//idx++;
 
 	static final int SELECT_COL_ID = 0;
 	static final int SELECT_COL_NAME = 1;
@@ -1334,6 +1429,15 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	static final int SELECT_COL_M_BROADCASTABLE = 17;
 	static final int SELECT_COL_GID = 18;
 	static final int SELECT_COL_M_TOPIC = 19;
+	static final int SELECT_COL_HIDDEN = 20;
+	static final int SELECT_COL_REVOKED = 21;
+	static final int SELECT_COL_REVOKATION_INSTR = 22;
+	static final int SELECT_COL_EMAIL_VERIF = 23;
+	static final int SELECT_COL_NAME_VERIF = 24;
+	static final int SELECT_COL_CATEG = 25;
+	static final int SELECT_COL_EMAIL = 26;
+	static final int SELECT_COL_SIGN = 27;
+	static final int SELECT_COL_PROVIDER = 28;
 
 	static final String select_fields =
 		" p."+table.peer.peer_ID+
@@ -1355,7 +1459,16 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		", m."+table.peer_my_data.picture+
 		", m."+table.peer_my_data.broadcastable+
 		", p."+table.peer.global_peer_ID+
-		", m."+table.peer_my_data.my_topic
+		", m."+table.peer_my_data.my_topic+
+		", p."+table.peer.hidden+
+		", p."+table.peer.revoked+
+		", p."+table.peer.revokation_instructions+
+		", p."+table.peer.email_verified+
+		", p."+table.peer.name_verified+
+		", p."+table.peer.category+
+		", p."+table.peer.emails+
+		", p."+table.peer.signature+
+		", p."+table.peer.first_provider_peer
 		;
 
 	private static final boolean DEBUG = false;
@@ -1372,7 +1485,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	//String _ld[];  //-
 	ArrayList<ArrayList<Object>> __peers;
 	
-	String columnNames[]={"Peer Data","Serving","Connection","B","Slogan","Pluggins"};
+	String columnNames[]={"Peer Data","V","Serving","Connection","B","H","S","T","R","Email","V","Categ","Slogan","Provider","Pluggins"};
 	Hashtable<Integer,String> columnNamesHash=new Hashtable<Integer,String>();
 	int plugin_applets = 0;
 	int columns = columnNames.length-1 + plugin_applets;
@@ -1566,7 +1679,13 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	}
 	@Override
 	public Class<?> getColumnClass(int col) {
-			if(col == this.TABLE_COL_BLOCKED) return Boolean.class;
+		if(col == this.TABLE_COL_BLOCKED) return Boolean.class;
+		if(col == this.TABLE_COL_HIDDEN) return Boolean.class;
+		if(col == this.TABLE_COL_REVOKED) return Boolean.class;
+		if(col == this.TABLE_COL_VERIF_EMAIL) return Boolean.class;
+		if(col == this.TABLE_COL_VERIF_NAME) return Boolean.class;
+		if(col == this.TABLE_COL_TEMP) return Boolean.class;
+		if(col == this.TABLE_COL_VALID) return Boolean.class;
 			return String.class;
 	}		
 	@Override
@@ -1597,6 +1716,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			if(Peers.presentPlugin(this, row, this.getPluginGIDcol(col))) return peerID;
 			return null;
 		}
+		//if((col==0)&&(row==0))  Util.printCallPath("No");
 		switch(col){
 		case TABLE_COL_NAME:
 			if((ao.size() > SELECT_COL_M_NAME) &&
@@ -1626,7 +1746,9 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 				return null;
 			}
 			if ((orgs == null) || (orgs.size()==0)) return _("Nothing");
-			return orgs.get(0).get(1)+" (/#"+orgs.size()+")";
+			if(orgs.size()==1) return orgs.get(0).get(1);
+			JComboBox<Object> ed = new JComboBox<Object>(Util.getColumn(orgs,1).toArray());
+			return ed;//orgs.get(0).get(1)+" (/#"+orgs.size()+")";
 			//break;
 		case TABLE_COL_CONNECTION:
 			peerID = Util.getString(ao.get(0));
@@ -1634,6 +1756,33 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		case TABLE_COL_BLOCKED:
 			peerID = Util.getString(ao.get(0));
 			return new Boolean(Util.stringInt2bool(ao.get(this.SELECT_COL_BLOCKED), false));
+		case TABLE_COL_HIDDEN:
+			peerID = Util.getString(ao.get(0));
+			return new Boolean(Util.stringInt2bool(ao.get(this.SELECT_COL_HIDDEN), false));
+		case TABLE_COL_PROVIDER:
+			peerID = Util.getString(ao.get(0));
+			return D_PeerAddress.getDisplayName(Util.lval(ao.get(this.SELECT_COL_PROVIDER)));
+		case TABLE_COL_VALID:
+			peerID = Util.getString(ao.get(0));
+			return new Boolean(D_PeerAddress.checkValid(Util.lval(peerID)));
+		case TABLE_COL_TEMP:
+			peerID = Util.getString(ao.get(0));
+			return new Boolean(ao.get(this.SELECT_COL_SIGN)==null);
+		case TABLE_COL_REVOKED:
+			peerID = Util.getString(ao.get(0));
+			return new Boolean(Util.stringInt2bool(ao.get(this.SELECT_COL_REVOKED), false));
+		case TABLE_COL_VERIF_EMAIL:
+			peerID = Util.getString(ao.get(0));
+			return new Boolean(Util.stringInt2bool(ao.get(this.SELECT_COL_EMAIL_VERIF), false));
+		case TABLE_COL_VERIF_NAME:
+			peerID = Util.getString(ao.get(0));
+			return new Boolean(Util.stringInt2bool(ao.get(this.SELECT_COL_NAME_VERIF), false));
+		case TABLE_COL_EMAIL:
+			peerID = Util.getString(ao.get(0));
+			return ao.get(this.SELECT_COL_EMAIL);
+		case TABLE_COL_CATEGORY:
+			peerID = Util.getString(ao.get(0));
+			return ao.get(this.SELECT_COL_CATEG);
 		default:
 			return null;	
 		}
@@ -1656,7 +1805,15 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	public boolean isCellEditable(int row, int col) {
 		switch(col){
 		case TABLE_COL_NAME:
+		case TABLE_COL_CATEGORY:
 		case TABLE_COL_SLOGAN:
+		case TABLE_COL_BLOCKED:
+		case TABLE_COL_HIDDEN:
+		case TABLE_COL_VERIF_NAME:
+		case TABLE_COL_VERIF_EMAIL:
+		case TABLE_COL_TEMP:
+		case TABLE_COL_VALID:
+		case TABLE_COL_SERVING:
 			return true;
 		}
 		return false;
@@ -1713,6 +1870,33 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			break;
 		case TABLE_COL_BLOCKED:
 			set_data(table.peer.blocked, SELECT_COL_BLOCKED, Util.getString(value), row);
+			break;
+		case TABLE_COL_CATEGORY:
+			set_data(table.peer.category, SELECT_COL_CATEG, Util.getString(value), row);
+			break;
+		case TABLE_COL_HIDDEN:
+			set_data(table.peer.hidden, SELECT_COL_HIDDEN, Util.getString(value), row);
+			break;
+		case TABLE_COL_TEMP:
+			if(0 == Application.ask(_("Do you really want to drop signature for:"+" "+getName(row)),
+					_("Are you sure?"), JOptionPane.OK_CANCEL_OPTION)){
+				String _value = null;
+				set_data(table.peer.signature, SELECT_COL_SIGN, _value, row);
+			}
+			break;
+		case TABLE_COL_VALID:
+			if(0 == Application.ask(_("Do you really want to attempt re-signature for:"+" "+getName(row)),
+					_("Are you sure?"), JOptionPane.OK_CANCEL_OPTION)){
+				long ID = Util.lval(getID(row));
+				try {
+					D_PeerAddress.readSignSave(ID, ID, true);
+				} catch (P2PDDSQLException e) {
+					e.printStackTrace();
+				}
+			}
+			break;
+		case TABLE_COL_VERIF_NAME:
+			set_data(table.peer.name_verified, SELECT_COL_NAME_VERIF, Util.getString(value), row);
 			break;
 		case TABLE_COL_SLOGAN:
 			set_my_data(table.peer_my_data.slogan, SELECT_COL_M_SLOGAN, Util.getString(value), row);
@@ -1812,7 +1996,10 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			__peers = _peers;
 			__rowByPeerID = _rowByPeerID;
 		}
-		this.fireTableStructureChanged();
+		//this.fireTableStructureChanged();
+		try{
+			this.fireTableDataChanged();
+		}catch(Exception e){if(DEBUG)e.printStackTrace();}
 		new TableUpdater(this, null);
 		//this.fireTableDataChanged();
 		if(DEBUG) System.out.println("Peers:update:peers done");

@@ -18,6 +18,8 @@
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 /* ------------------------------------------------------------------------- */
  package hds;
+import hds.DirectoryServerCache.D_DirectoryEntry;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -39,78 +41,12 @@ import java.util.Enumeration;
 import util.P2PDDSQLException;
 
 import config.Application;
-import config.DD;
 
 import util.DBInterface;
 import util.Util;
 import static java.lang.System.out;
-import ASN1.ASN1DecoderFail;
 import ASN1.Decoder;
 import ASN1.Encoder;
-
-/**
- * @author msilaghi
- *
- * DAAnswer = IMPLICIT [APPLICATION 14] SEQUENCE {
- * 		result BOOLEAN,
- * 		remote_IP OCTET STRING OPTIONAL,
- *      remote_port INTEGER OPTIONAL
- * }
- */
-
-class D_DAAnswer extends ASN1.ASNObj{
-	boolean result = true;
-	byte[] remote_IP;
-	int remote_port = 0;
-	
-	public String toString() {
-		return "D_DAAnswer: ["+Util.concat(remote_IP, ".", "?.?.?.?")+":"+remote_port+"]";
-	}
-	public D_DAAnswer(Decoder d){
-		try {
-			decode(d);
-		} catch (ASN1DecoderFail e) {
-			e.printStackTrace();
-		}
-	}
-	public D_DAAnswer(String detected_sa) {
-		if(detected_sa != null) {
-			Address ad = new Address(detected_sa);
-			remote_port = ad.udp_port;
-			remote_IP = Util.getBytesFromCleanIPString(Util.get_IP_from_SocketAddress(ad.domain));
-		}
-	}
-
-	@Override
-	public Encoder getEncoder() {
-		Encoder enc = new Encoder().initSequence();
-		enc.addToSequence(new Encoder(result));
-		if(remote_IP!=null) enc.addToSequence(new Encoder(remote_IP));
-		if(remote_port > 0) enc.addToSequence(new Encoder(remote_port));
-		enc.setASN1Type(DD.TAG_AC14);
-		return enc;
-	}
-
-	@Override
-	public D_DAAnswer decode(Decoder dec) throws ASN1DecoderFail {
-		Decoder d = dec.getContent();
-		result = d.getFirstObject(true).getBoolean();
-		Decoder rest = d.getFirstObject(true);
-		if(rest == null) return this;
-		if(rest.getTypeByte() == Encoder.TAG_OCTET_STRING){
-			remote_IP = rest.getBytes();
-			rest = d.getFirstObject(true);
-		}
-		if(rest == null) return this;
-		if(rest.getTypeByte() == Encoder.TAG_INTEGER){
-			remote_port = rest.getInteger().intValue();
-			rest = d.getFirstObject(true);
-		}
-		if(rest != null) throw new ASN1DecoderFail("Extra bytes in answer");
-		return this;
-	}
-	
-}
 
 // TODO Make it concurrent ... any takers?
 public class DirectoryServer extends Thread{
@@ -121,6 +57,8 @@ public class DirectoryServer extends Thread{
 	public static final String ADDR_SEP = ",";
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
+	private static final boolean VERIFY_SIGNATURES = false;
+	private static final long REMOTE_DATE_THRESHOLD_MILLIS = 60*60*1000; // 1 hour
 	public DatagramSocket udp_socket;
 	DirectoryServerUDP dsu;
 	public DBInterface db = null;
@@ -183,21 +121,112 @@ public class DirectoryServer extends Thread{
 		//db.close();
 		out.println("Turning DS off");
 	}
-	public static byte[] handleAnnouncement(DirectoryAnnouncement da, String detected_sa, DBInterface db, boolean storeNAT) throws P2PDDSQLException{
+	static Object monitor_handleAnnouncement = new Object();
+	public static ArrayList<byte[]> recently_sent_challenges = new ArrayList<byte[]>();
+	public static byte[] handleAnnouncement(
+			DirectoryAnnouncement da, 
+			Address detected_sa, 
+			DBInterface db, 
+			boolean storeNAT,
+			boolean TCP) throws P2PDDSQLException{
+		if(DirectoryServer.VERIFY_SIGNATURES) {
+			da.globalID = getGlobalPeerID(da);
+			if(da.globalID == null) return null; // packet telling I need globalID
+			if(unknownChallenge(da.challenge)&&remoteDate(da.date)) return null; // packet offering challenge
+			if(!da.verifySignature()) return null; // packet for signature failure
+		}
+		synchronized(monitor_handleAnnouncement){
+			return _monitored_handleAnnouncement(da, detected_sa, db, storeNAT, TCP);
+		}
+	}
+	/**
+	 * Check that date is less than 1 hour apart from now
+	 * @param date
+	 * @return
+	 */
+	private static boolean remoteDate(Calendar date) {
+		return Math.abs(date.getTimeInMillis()-Util.CalendargetInstance().getTimeInMillis()) > REMOTE_DATE_THRESHOLD_MILLIS;
+	}
+	/**
+	 * Compare with recently sent challenge
+	 *  (store last 2 challenges and do not generate more than 1 challenge/hour)
+	 * @param challenge
+	 * @return
+	 */
+	private static boolean unknownChallenge(byte[] challenge) {
+		for (byte[] ch : recently_sent_challenges){
+			if(Util.equalBytes_null_or_not(challenge, ch)) return true;
+		}
+		return false;
+	}
+	/**
+	 * get it from cache
+	 * @param da
+	 * @return
+	 */
+	private static String getGlobalPeerID(DirectoryAnnouncement da) {
+		if(da.globalID !=null) return da.globalID;
+		D_DirectoryEntry e = DirectoryServerCache.getEntry(da.globalID, da.globalIDhash);
+		return e.globalID;
+	}
+	/**
+	 * Called with a parameter "da" already verified and validated as new and possibly signed 
+	 * @param da
+	 * @param detected_sa
+	 * @param db
+	 * @param storeNAT
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	private static byte[] _monitored_handleAnnouncement(
+			DirectoryAnnouncement da,
+			Address detected_sa,
+			DBInterface db,
+			boolean storeNAT, boolean TCP) throws P2PDDSQLException{
+		if(DEBUG)System.out.println("DirectoryServer:Got announcement: "+da);
+		if(detected_sa!=null) da.address._addresses = prependAddress(da.address._addresses, detected_sa);
+
+		DirectoryServerCache.loadAndSetEntry(da, TCP);
+		
+		byte[] answer = new DirectoryAnnouncement_Answer(detected_sa.toString()).encode();
+		if(DEBUG) out.println("sending answer: "+Util.byteToHexDump(answer));
+		return answer;
+	}
+	private static Address[] prependAddress(Address[] i, Address h){
+		ArrayList<Address> ad = new ArrayList<Address>();
+		for(Address a : i) ad.add(a);
+		ad.add(0, h);
+		return ad.toArray(new Address[0]);
+		
+	}
+	private static byte[] _monitor_handleAnnouncement(DirectoryAnnouncement da, String detected_sa, DBInterface db, boolean storeNAT) throws P2PDDSQLException{
 		if(DEBUG)System.out.println("Got announcement: "+da);
-		db.delete("registered", new String[]{"global_peer_ID"}, new String[]{da.globalID});
-		String adr = da.address.addresses;
+		if(da.globalID!=null)
+			db.deleteNoSyncNULL(table.registered.TNAME,
+					new String[]{table.registered.global_peer_ID,table.registered.instance},
+					new String[]{da.globalID, da.instance},DEBUG);
+		else
+			db.deleteNoSyncNULL(table.registered.TNAME,
+					new String[]{table.registered.global_peer_ID_hash,table.registered.instance},
+					new String[]{da.globalIDhash, da.instance},DEBUG);
+		String adr = da.address.addresses();
 						//da.address.domain+":"+da.address.port+ADDR_SEP+detected_sa,
 		if(storeNAT) adr = Address.joinAddresses(detected_sa, adr);
 			
-		long id=db.insert("registered", new String[]{"global_peer_ID","certificate","addresses","signature","timestamp"},
-				new String[]{da.globalID,
-				(da.certificate.length==0)?null:Util.stringSignatureFromByte(da.certificate),
-						adr,
-						(da.signature.length==0)?null:Util.stringSignatureFromByte(da.signature),
-								(Util.CalendargetInstance().getTimeInMillis()/1000)+""}); // strftime('%s', 'now'));
-		if(DEBUG)out.println("inserted with ID="+id);
-		byte[] answer = new D_DAAnswer(detected_sa).encode();
+		String params[] = new String[table.registered.fields_noID_list.length];
+		params[table.registered.REG_GID] = da.globalID;
+		params[table.registered.REG_GID_HASH] = da.globalIDhash;
+		params[table.registered.REG_INSTANCE] = da.instance;
+		params[table.registered.REG_CERT] = (da.certificate.length==0)?null:Util.stringSignatureFromByte(da.certificate);
+		params[table.registered.REG_ADDR] = adr;
+		params[table.registered.REG_SIGN] = (da.signature.length==0)?null:Util.stringSignatureFromByte(da.signature);
+		params[table.registered.REG_TIME] = (Util.CalendargetInstance().getTimeInMillis()/1000)+"";
+		
+		long id=db.insert(table.registered.TNAME, table.registered.fields_noID_list,
+//				new String[]{table.registered.global_peer_ID,table.registered.certificate,table.registered.addresses,table.registered.signature,table.registered.timestamp},
+				params);
+		if(DEBUG)out.println("DirectoryServer: mon_handleAnnoncement:inserted with ID="+id);
+		byte[] answer = new DirectoryAnnouncement_Answer(detected_sa).encode();
 		if(DEBUG) out.println("sending answer: "+Util.byteToHexDump(answer));
 		return answer;
 	}
@@ -221,6 +250,16 @@ public class DirectoryServer extends Thread{
 				Address.joinAddresses(hostName+":-1:"+port,isa.getAddress().getHostAddress()+":-1:"+port);
 		*/
 	}
+	/**
+	 * 
+	 * @param isa
+	 * @param port
+	 * @return
+	 */
+	public static Address detectUDP_Address(InetSocketAddress isa, int port){
+		Address result = new Address(isa.getAddress().getHostAddress(), -1, port);
+		return result;
+	}
 	public void run () {
 		out.println("Enter DS Server Thread");
 		dsu.start();
@@ -243,9 +282,10 @@ public class DirectoryServer extends Thread{
 					InetSocketAddress isa= (InetSocketAddress)client.getRemoteSocketAddress();
 					DirectoryAnnouncement da = new DirectoryAnnouncement(buffer,peek,client.getInputStream());
 					out.println("DirServ: got announcement: "+da+"\n from: "+isa);
-					String detected_sa = detectUDPAddress(isa, da.address.udp_port);
+					Address detected_sa = detectUDP_Address(isa, da.address.udp_port);
+					//Address detected_sa = new Address(_detected_sa);
 					detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
-					byte[] answer = handleAnnouncement(da, detected_sa, db, false);
+					byte[] answer = handleAnnouncement(da, detected_sa, db, false, true);
 					//byte[] answer = new D_DAAnswer(detected_sa).encode();
 					client.getOutputStream().write(answer);
 				}else{
@@ -253,36 +293,13 @@ public class DirectoryServer extends Thread{
 					DirectoryRequest dr = new DirectoryRequest(buffer,peek,client.getInputStream());
 					if(DEBUG)out.println("DirServ: Looking for: "+Util.getGIDhash(dr.globalID)+"\n  by "+
 							Util.getGIDhash(dr.initiator_globalID));//+"\n  with source udp="+dr.UDP_port);
-					String sql = "select addresses, timestamp, strftime('%Y%m%d%H%M%fZ',timestamp,'unixepoch') from registered where global_peer_ID = ?;";
-					ArrayList<ArrayList<Object>> adr = 
-						db.select(sql,
-							new String[]{dr.globalID}, DEBUG);
+
+					String globalID = dr.globalID;
+					String globalIDhash = dr.globalIDhash;
+					D_DirectoryEntry de = DirectoryServerCache.getEntry(globalID, globalIDhash);
+					DirectoryAnswer da = getDA(de, dr.version);
 					
-					if(DEBUG) System.out.println("Query: "+sql+" with ?= "+Util.trimmed(dr.globalID));
-					if(DEBUG) System.out.println("Found addresses #: "+adr.size());
-					DirectoryAnswer da = new DirectoryAnswer();
-					da.version = dr.version;
-					if (adr.size() != 0) {
-						Integer time= Util.Ival(adr.get(0).get(1));
-						if(time==null) {
-							time = new Integer(0);
-							out.println("EMPTY TIME. WHY?");
-						}
-						Date date = new Date();
-						date.setTime(time.longValue());
-						da.date.setTime(date);
 					
-						String addresses = (String)adr.get(0).get(0);
-						if(DEBUG)System.out.println("This address: "+addresses);
-						String a[] = Address.split(addresses);
-						for(int k=0; k<a.length; k++) {
-							if((a[k]==null)||("".equals(a[k]))||("null".equals(a[k]))) continue;
-							if(DEBUG)System.out.println("This address ["+k+"]"+a[k]);
-							da.addresses.add(new Address(a[k]));
-						}
-					}else{
-						if(DEBUG) out.print("Empty ");
-					}
 					byte msg[] = da.encode();
 					//out.println("answer: "+Util.byteToHexDump(msg, " ")+"\n\tI.e.: "+da);
 					if(_DEBUG&&(da.addresses.size()>0)){
@@ -304,6 +321,49 @@ public class DirectoryServer extends Thread{
 		}
 		out.println("Turning off");
 	}
+	private DirectoryAnswer getDA(D_DirectoryEntry de, int version) {
+		DirectoryAnswer da = new DirectoryAnswer();
+		da.version = version;
+		da.date = de.timestamp;
+		
+		if(de.addresses != null)
+			for(int k=0; k<de.addresses.length; k++) {
+				da.addresses.add(de.addresses[k]);
+			}
+		return da;
+	}
+	DirectoryAnswer getDA(DirectoryRequest dr) throws P2PDDSQLException {
+		String sql = "select addresses, timestamp, strftime('%Y%m%d%H%M%fZ',timestamp,'unixepoch') from registered where global_peer_ID = ?;";
+		ArrayList<ArrayList<Object>> adr = 
+			db.select(sql,
+				new String[]{dr.globalID}, DEBUG);
+		if(DEBUG) System.out.println("Query: "+sql+" with ?= "+Util.trimmed(dr.globalID));
+		if(DEBUG) System.out.println("Found addresses #: "+adr.size());
+		DirectoryAnswer da = new DirectoryAnswer();
+		da.version = dr.version;
+		if (adr.size() != 0) {
+			Integer time= Util.Ival(adr.get(0).get(1));
+			if(time==null) {
+				time = new Integer(0);
+				out.println("EMPTY TIME. WHY?");
+			}
+			Date date = new Date();
+			date.setTime(time.longValue());
+			da.date.setTime(date);
+		
+			String addresses = (String)adr.get(0).get(0);
+			if(DEBUG)System.out.println("This address: "+addresses);
+			String a[] = Address.split(addresses);
+			for(int k=0; k<a.length; k++) {
+				if((a[k]==null)||("".equals(a[k]))||("null".equals(a[k]))) continue;
+				if(DEBUG)System.out.println("This address ["+k+"]"+a[k]);
+				da.addresses.add(new Address(a[k]));
+			}
+		}else{
+			if(DEBUG) out.print("Empty ");
+		}
+		return da;
+	}
 	public static void main(String[] args) {
 		try {
 			if(args.length>0) Application.DIRECTORY_FILE = args[0];
@@ -324,13 +384,25 @@ public class DirectoryServer extends Thread{
 	 * @param detected_sa
 	 * @return
 	 */
-	public static String addr_NAT_detection(DirectoryAnnouncement da,
+	public static Address addr_NAT_detection(DirectoryAnnouncement da,
+			Address detected_sa) {
+		if(detected_sa == null) return null;
+		Address[] addr = da.address._addresses;
+		for(int k =0; k<addr.length; k++) {
+			Address a = addr[k];
+			if(a.domain.equals(detected_sa.domain) && a.udp_port==detected_sa.udp_port) return null; // not NAT
+		}
+		detected_sa.protocol = Address.NAT;
+		return detected_sa;
+	}
+	public static String _addr_NAT_detection(DirectoryAnnouncement da,
 			String detected_sa) {
 		if(detected_sa == null) return null;
 		Address det = new Address(detected_sa);
-		String[] addr = Address.split(da.address.addresses);
+		//String[] addr = Address.split(da.address.addresses);
+		Address[] addr = da.address._addresses;
 		for(int k =0; k<addr.length; k++) {
-			Address a = new Address(addr[k]);
+			Address a = addr[k]; //new Address(addr[k]);
 			if(a.domain.equals(det.domain) && a.udp_port==det.udp_port) return null; // not NAT
 		}
 		det.protocol = Address.NAT;

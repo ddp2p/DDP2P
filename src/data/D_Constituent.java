@@ -169,6 +169,7 @@ public class D_Constituent extends ASNObj implements Summary {
 	public boolean broadcasted = D_Organization.DEFAULT_BROADCASTED_ORG;
 	public String constituent_ID;
 	private long _constituent_ID;
+	public int status_references = 0; 
 	
 	/**
 	 * All fields prefixed with alias "c."
@@ -716,6 +717,7 @@ public class D_Constituent extends ASNObj implements Summary {
 		if(s.startsWith("C:")) return s; // it is an external
 		if(s.startsWith("R:")) return s; // it is a GID hash
 		String hash = D_Constituent.getGIDHashFromGID_NonExternalOnly(s);
+		if(hash==null) return null;
 		if(hash.length() != s.length()) return hash;
 		return s;
 	}
@@ -1057,8 +1059,8 @@ public class D_Constituent extends ASNObj implements Summary {
 				dm.constituent = this; // may have to add GIDs
 				String global_sender_ID = DD.getMyPeerGIDFromIdentity();//.getAppText(DD.APP_my_global_peer_ID);
 				dm.sender = new D_PeerAddress();
-				dm.sender.globalID = global_sender_ID;
-				dm.sender.name = DD.getAppText(DD.APP_my_peer_name);
+				dm.sender.component_basic_data.globalID = global_sender_ID;
+				dm.sender.component_basic_data.name = DD.getAppText(DD.APP_my_peer_name);
 				
 				if(pm!=null){
 					pm.raw = dm.encode();

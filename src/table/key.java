@@ -19,6 +19,10 @@
 /* ------------------------------------------------------------------------- */
 package table;
 
+import java.util.regex.Pattern;
+
+import util.Util;
+
 public class key {
 	public static final String TNAME = "key";
 	public static final String key_ID = "key_ID";
@@ -26,5 +30,30 @@ public class key {
 	public static final String secret_key = "secret_key";
 	public static final String type = "type";
 	public static final String name = "name";
+	public static final String hide = "hide";
+	public static final String preference_date = "preference_date";
 	public static final String ID_hash = "ID_hash";
+	public static final int COL_NAME = 0;
+	public static final int COL_TYPE = 1;
+	public static final int COL_IDHASH = 2;
+	public static final int COL_PK = 3;
+	public static final int COL_SK = 4;
+	public static final int COL_HIDE = 5;
+	public static final int COL_DATE = 6;
+	public static String fields_list_noID=
+			name + ","+
+			type+","+
+			ID_hash+","+
+			public_key+","+
+			secret_key+","+
+			hide+","+
+			preference_date;
+	public static String fields_list = fields_list_noID+","+key_ID;
+	public static String[] fields_noID =
+			Util.trimmed(fields_list_noID.split(Pattern.quote(",")));
+	public static String[] fields =
+			Util.trimmed(fields_list.split(Pattern.quote(",")));
+	public static final int FIELDS = fields_list.length();
+	public static final int FIELDS_NOID = fields_list_noID.length();
+	public static final int COL_ID = FIELDS_NOID;
 }

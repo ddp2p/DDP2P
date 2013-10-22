@@ -25,6 +25,7 @@ import handling_wb.BroadcastQueueRequested.Received_Interest_Ad;
 import hds.OrgInfo;
 
 import javax.imageio.ImageIO;
+import javax.swing.ComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -79,6 +80,7 @@ import javax.swing.text.View;
 
 import wireless.Detect_interface;
 
+import updates.ClientUpdates;
 import util.P2PDDSQLException;
 
 import config.Application;
@@ -194,14 +196,25 @@ public class Util {
 		for(int k=1; k<array.length; k++) result = result + sep + array[k];
 		return result;
 	}
-	public static String concat(byte[] array, String sep, String def) {
+	public static String concatUnsigned(byte[] array, String sep, String def) {
 		if ((array == null) ) return def;
 		if ((array.length == 0)) return def;
 		String result=array[0]+"";
 		for(int k=1; k<array.length; k++) result = result + sep + array[k];
 		return result;
 	}
-    public static <T> String nullDiscrimArray(T o[], String sep){
+	public static String concat(byte[] array, String sep, String def) {
+		if ((array == null) ) return def;
+		if ((array.length == 0)) return def;
+		String result=positive(array[0])+"";
+		for(int k=1; k<array.length; k++) result = result + sep + positive(array[k]);
+		return result;
+	}
+    private static int positive(byte b) {
+    	if(b>=0) return b;
+		return b+256;
+	}
+	public static <T> String nullDiscrimArray(T o[], String sep){
     	if(o==null) return "null";
     	return "#["+o.length+"]=\""+Util.concat(o, sep)+"\"";
     }
@@ -2067,6 +2080,11 @@ public class Util {
 		}
 		return result;
 	}
+	/**
+	 * Extract an int from longest prefix of s
+	 * @param s
+	 * @return
+	 */
 	public static int prefixNumber(String s) {
 		if(s == null) return 0;
 		if(s.length() == 0) return 0;
@@ -2203,6 +2221,126 @@ public class Util {
 		int cpy = Math.min(len, list.length);
 		for(int k=0; k<cpy; k++){
 			result[k] = list[k];
+		}
+		return result;
+	}
+	/**
+	 * 
+	 * @param version
+	 * @return
+	 */
+	public static int[] getVersion(String version){
+		String parsed_version[];
+		if(version == null){
+			if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer: start v_server null");
+			return null;
+		}
+		parsed_version = version.split(Pattern.quote("."));
+		if(parsed_version.length<3){
+			if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer: start v_server < 3 : "+parsed_version.length+" "+concat(parsed_version, "--"));
+			return null;
+		}
+		if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer: server["+concat(parsed_version,",")+"]");
+				
+		int int_version[] = new int[3];
+		for(int k=0; k<3; k++){
+			try{
+				int_version[k] = Integer.parseInt(parsed_version[k]);
+			}catch(Exception e){
+				int_version[k] = prefixNumber(parsed_version[k]);
+			}
+		}
+		return int_version;
+	}
+	/**
+		 * 
+		 * @param version_server
+		 * @param version_local
+		 * @return : true if server is newer than local
+		 */
+		public static boolean isVersionNewer(String version_server, String version_local) {
+			if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer: start server="+version_server+" vs local="+version_local);
+			//Util.printCallPath("newer?");
+			boolean result = false;
+			String v_server[];
+			String v_local[];
+			if(version_server==null){
+				if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer: start v_server null");
+				return false;
+			}
+			v_server = version_server.split(Pattern.quote("."));
+			if(v_server.length<3){
+				if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer: start v_server < 3 : "+v_server.length+" "+concat(v_server, "--"));
+				return false;
+			}
+			if(version_local==null){
+				if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer:  local null");
+				return true;
+			}
+			v_local = version_local.split(Pattern.quote("."));
+			if(v_local.length<3){
+				if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer:  v_local < 3");
+				return true;
+			}
+			if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer: server["+concat(v_server,",")+"] ? v_local ["+concat(v_local,",")+"]");
+			
+			result = false;
+			
+			int i_server[] = new int[3];
+			int i_local[] = new int[3];
+			for(int k=0; k<3; k++){
+				try{
+					i_server[k] = Integer.parseInt(v_server[k]);
+					i_local[k] = Integer.parseInt(v_local[k]);
+					if(i_server[k]<i_local[k]) return false;
+					if(i_server[k]>i_local[k]) return true;
+				}catch(Exception e){
+					int s = prefixNumber(v_server[k]);
+					int l = prefixNumber(v_local[k]);
+					if(s<l) return false;
+					if(s>l) return true;
+	
+					if(v_server[k].compareTo(v_local[k]) > 0) return true; 
+					if(v_server[k].compareTo(v_local[k]) < 0) return false; 
+				}
+			}
+			/*
+			if(v_server[0].compareTo(v_local[0]) > 0) {
+				if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[0]+"] > v_local ["+v_local[0]+"]");
+				result = true;
+			}else{
+				if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[0]+"] <= v_local ["+v_local[0]+"]");
+				if(v_server[1].compareTo(v_local[1]) > 0) {
+					if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[1]+"] > v_local ["+v_local[1]+"]");
+					result = true;
+				}else{
+					if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[1]+"] <= v_local ["+v_local[1]+"]");
+					if(v_server[2].compareTo(v_local[2]) > 0) {
+						if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[2]+"] > v_local ["+v_local[2]+"]");
+						result = true;
+					}else{
+						if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[2]+"] <= v_local ["+v_local[2]+"]");
+					}
+				}	
+			}
+	*/		
+			if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer: "+result);
+			return result;
+		}
+	public static int[] getMyVersion() {
+		return DD.VERSION_INTS;
+	}
+	/**
+	 * Get a row in a table (returned by select)
+	 * @param table
+	 * @param i
+	 * @return
+	 */
+	public static ArrayList<Object> getColumn(ArrayList<ArrayList<Object>> table,
+			int i) {
+		ArrayList<Object> result = new ArrayList<Object>();
+		for(ArrayList<Object> r: table){
+			result.add(r.get(i));
 		}
 		return result;
 	}

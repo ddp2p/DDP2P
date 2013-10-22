@@ -75,6 +75,8 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -89,6 +91,7 @@ import streaming.WB_Messages;
 import streaming.WitnessingHandling;
 import table.HashConstituent;
 import util.DBInterface;
+import util.DB_Implementation;
 import util.DD_DirectoryServer;
 import util.DD_IdentityVerification_Answer;
 import util.DD_IdentityVerification_Request;
@@ -104,6 +107,7 @@ import widgets.identities.MyIdentitiesTest;
 import widgets.justifications.JustificationEditor;
 import widgets.justifications.Justifications;
 import widgets.justifications.JustificationsByChoicePanel;
+import widgets.keys.Keys;
 import widgets.motions.MotionEditor;
 import widgets.motions.Motions;
 import widgets.news.NewsEditor;
@@ -132,7 +136,10 @@ import data.D_Witness;
 import ASN1.Encoder;
 
 public class DD {
-	public static final String VERSION = "0.9.49";
+	public static final String BRANCH = "FIT/HDSSL/SILAGHI";
+	public static final String VERSION = "0.9.50";
+	public static final String PK_Developer = "MIIEGgwDUlNBYAEwAgMBAAECggQASKs9x2VEQH1SRxRwO43yt6HXCTnOmPJVUjN8bQQUTVBdFXhQsTpnTP1yLe/qFlA0jnIzheHT4WEcsU874N800iPMWHCjpCowQwwTj9SQLTmfbfhL8z0a7Dw6ZJQ+DnYoPVhx3JHL57CK3YeVYclZCoHetZ5PEIpcAwxaPmnL3GQaOgJiVHb6CLMi+hNHLxsjQZwTYTeoUOXQKgyTcRDE6xCvw8+q0U6/Uan3KCx/KmtdRQMEtGAXSPANv12kle84Dv8AdJxT1CJGsXm0+N6+wbbvkL77kMr+79sCR/8drZmOnrbjveQpab2pSh0vO//XqslrDRbzhniGSpqFW+YNTOixWAsCp35hNPbAx5xqPXg6DEIrysGslDGo4gC3Ew5mN/JkOQA+pd6uIzC4EgbfWqJKMvrtOQN67hJR7Ysxn7cLDXGvmhK1s7oSJcnOmhWljSZ6joviVwAWKgzdm1gMBhn5+VdgwoEE7g5Inw0dH9UmgufloNiBQMM9m2igdQPaLRuVttrAEcs55F/Z5NFtJquTeQFBLAGux3MVxrYCgivRaoAzAkUMhGOA+00KU3oh3Bds0U8GYCMuYYrwSAWTZf0Z9lvUwJv8HtLJvI6p1p53oGzIW9bo20d0PMz7XrzNDOLEME9PaXKLo6vMCAxXIj19nm/bE1HBY7e7HErKMX3M7LC2xZ8PH7wsnl5M3y0ZZ6c9quwhvz/dWcUAQ5963LtDZ6bOenAGVGBjdWLhHK8/2p9Vgu1ZNA1WWHWnafExsT5GxuwZQ/PMk8YtmxqEkgGy2+xVT19oUK+yO1ok+xRUjvSRZ0IbWUEcOfQ5FvLNmMdV/NSebB6vjQwM5DGCE1YDhix+Qghr558KokVz7BPVrGVe1pUxfPo2XPwHReF8es+vr16lvwXrVEmQNG8KrX1tN5Z5I29+ZVcR6ti4t90RXY6H6lmLtU3P/PSmfOrBQraNHVvDm9y1hnSP9+EhJzuWFaS8v4+7OnodIWuZsYd2WYQp4YcDJ+7grV3s1vvacujzxCOwx5/gosLxOau45bvKqhsFrZ+le6IRNAG7T6ZwC9wesqCGBJlIwS50DlAb/KhPyDIvf+7EH1iwckG4fBtixaK9co8FHnuddn/cEIc6fkWDEzr2Cu3HyxeMeDrcGRvjTRr78Wp/ptvRoOYElOLkxrkmanetjOCMqRl1DJvl53SQKePraRx2DpRemK/TMQ3+5TQkFjjEsI2P455Th0z6vF+JzpetZ3j1NUqx+iEZ2ArMhdDk7dE/4qcn2xwLz5nNMvHSnO2N0T9tCLi96CqZm/HTqGa6jTxFhJOP11sFCCQ9jkKhxvxubs0sww75dnqXQeffpxyolcht3KHwfwwHU0hBLTUxMg==";
+	public static final PK _PK_Developer = Cipher.getPK(PK_Developer);
 	public static String _APP_NAME = _("Direct Democracy P2P");
 	//public static String _APP_NAME = _("La Bible A Petits Pas");
 	public static String APP_NAME = _APP_NAME+" "+VERSION;
@@ -528,6 +535,7 @@ public class DD {
 	public static byte[] Random_peer_Number;
 	public static boolean SCRIPTS_ERRORS_WARNING = true;
 	public static boolean WARNED_NO_DIRS = false;
+	public static boolean REJECT_NEW_ARRIVING_PEERS_CONTACTING_ME = false;
 
 
     
@@ -890,6 +898,7 @@ public class DD {
         //organization organizationPane;
         orgsPane = new widgets.org.Orgs();
         Application.orgs = orgsPane;
+        Keys keys = new widgets.keys.Keys();
         constituentsPane = new ConstituentsPanel(Application.db, /*organizationID*/-1, -1, null);
         Application.constituents = constituentsPane;
         //JPanel _constituentsPane = makeConstituentsPanel(constituentsPane);
@@ -907,6 +916,7 @@ public class DD {
     	tabbedPane.setTabLayoutPolicy(JTabbedPane.WRAP_TAB_LAYOUT);
         //identitiesPane.setOpaque(true);
         tabbedPane.addTab(_("Control Panel"), controlPane);
+        tabbedPane.addTab(_("Keys"), keys.getPanel());
         tabbedPane.addTab(_("Identities"), identitiesPane);
         tabbedPane.addTab(_("Constituents"), constituentsPane);
         if(SONG)tabbedPane.addTab(_("Census"), _censusPane);
@@ -1191,19 +1201,23 @@ public class DD {
 	static public boolean setAppText(String field, String value) throws P2PDDSQLException{
 		return setAppText(field,value,false);
 	}
-	private static boolean setAppText(String field, String value,
+	public static boolean setAppText(String field, String value,
+			boolean debug) throws P2PDDSQLException {
+		return setAppText(Application.db, field, value, debug);
+	}
+	public static boolean setAppText(DBInterface db, String field, String value,
 			boolean debug) throws P2PDDSQLException {
 		boolean DEBUG = DD.DEBUG || debug;
 		if(DEBUG) System.err.println("DD:setAppText: field="+field+" new="+value);
-		String _value = getExactAppText(field);
+		String _value = getExactAppText(db.getImplementation(), field);
 		if(DEBUG) System.err.println("DD:setAppText: field="+field+" old="+_value);
-    	Application.db.update(table.application.TNAME, new String[]{table.application.value}, new String[]{table.application.field},
+    	db.update(table.application.TNAME, new String[]{table.application.value}, new String[]{table.application.field},
     			new String[]{value, field}, DEBUG);
     	if (value!=null){
-    		String old_val = getExactAppText(field);
+    		String old_val = getExactAppText(db.getImplementation(), field);
     		if(DEBUG) System.err.println("DD:setAppText: field="+field+" old="+old_val);
     		if (!value.equals(old_val)) {
-    			Application.db.insert(
+    			db.insert(
     					table.application.TNAME,
     					new String[]{table.application.field, table.application.value},
     					new String[]{field, value},
@@ -1253,8 +1267,18 @@ public class DD {
 	 * @throws P2PDDSQLException
 	 */
 	static public String getExactAppText(String field) throws P2PDDSQLException{
+		return getExactAppText(Application.db.getImplementation(), field);
+	}
+	/**
+	 * 
+	 * @param db
+	 * @param field
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	static public String getExactAppText(DB_Implementation db, String field) throws P2PDDSQLException{
     	ArrayList<ArrayList<Object>> id;
-    	id=Application.db.select("SELECT "+table.application.value +
+    	id=db.select("SELECT "+table.application.value +
     			" FROM "+table.application.TNAME+" AS a " +
     			" WHERE "+table.application.field+"=? LIMIT 1;",
     			new String[]{field}, DEBUG);
@@ -1656,6 +1680,9 @@ public class DD {
 		}	
 	}
 
+	public static final int[] VERSION_INTS = Util.getVersion(VERSION);
+	public static final boolean SIGN_DIRECTORY_ANNOUNCEMENTS = false;
+
 	/**
 	 * Is the data for me as constituent fully input?
 	 * @param organization_ID
@@ -1886,6 +1913,23 @@ public class DD {
 		return true;
 	}
 	static public void main(String arg[]) throws util.P2PDDSQLException {
+	    try {
+            // Set cross-platform Java L&F (also called "Metal")
+	    	UIManager.setLookAndFeel( UIManager.getCrossPlatformLookAndFeelClassName());
+	    }
+	    catch (UnsupportedLookAndFeelException e) {
+	    	// handle exception
+	    }
+	    catch (ClassNotFoundException e) {
+	       // handle exception
+	    }
+	    catch (InstantiationException e) {
+	       // handle exception
+	    }
+	    catch (IllegalAccessException e) {
+	       // handle exception
+	    }
+
 		set_DEBUG();
 		toolkit = Toolkit.getDefaultToolkit();
 		int screen_width = (int)toolkit.getScreenSize().getWidth();
