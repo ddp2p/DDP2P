@@ -21,6 +21,11 @@ package table;
 
 public class neighborhood {
 	 public static final String neighborhood_ID = "neighborhood_ID";
+	 /**
+	  * Probably best GID=HASH(parentGID,name)
+	  * With each subscriber/vote-on-neighborhood
+	  *   generate a vote on the other parameters, like for translations (use the most voted one)
+	  */
 	 public static final String global_neighborhood_ID = "global_neighborhood_ID";
 	 public static final String address = "address";
 	 public static final String description = "description";

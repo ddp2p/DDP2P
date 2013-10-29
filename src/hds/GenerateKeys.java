@@ -38,6 +38,7 @@ public class GenerateKeys extends Thread {
 	public String gIDhash;
 	public String type;
 	long id;
+	String date;
 	ArrayList<WorkerListener> listeners = new ArrayList<WorkerListener>();
 	/**
 	 * 
@@ -61,9 +62,10 @@ public class GenerateKeys extends Thread {
 		gIDhash = Util.getGIDhash(gID);
 		type = Util.getKeyedIDType(keys);
 		try {
+			date = Util.getGeneralizedTime();
 			id = Application.db.insert(table.key.TNAME, 
-					new String[]{table.key.ID_hash,table.key.public_key,table.key.secret_key,table.key.type},
-					new String[]{gIDhash, gID, sID, type});
+					new String[]{table.key.ID_hash,table.key.public_key,table.key.secret_key,table.key.type,table.key.creation_date},
+					new String[]{gIDhash, gID, sID, type, date});
 			for (WorkerListener l : listeners) {
 				try{l.Done(this);}catch(Exception e){e.printStackTrace();}
 			}

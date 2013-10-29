@@ -50,6 +50,7 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
@@ -77,6 +78,8 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -136,8 +139,8 @@ import data.D_Witness;
 import ASN1.Encoder;
 
 public class DD {
-	public static final String BRANCH = "FIT/HDSSL/SILAGHI";
-	public static final String VERSION = "0.9.50";
+	public static final String BRANCH = "FIT_HDSSL_SILAGHI";
+	public static final String VERSION = "0.9.51";
 	public static final String PK_Developer = "MIIEGgwDUlNBYAEwAgMBAAECggQASKs9x2VEQH1SRxRwO43yt6HXCTnOmPJVUjN8bQQUTVBdFXhQsTpnTP1yLe/qFlA0jnIzheHT4WEcsU874N800iPMWHCjpCowQwwTj9SQLTmfbfhL8z0a7Dw6ZJQ+DnYoPVhx3JHL57CK3YeVYclZCoHetZ5PEIpcAwxaPmnL3GQaOgJiVHb6CLMi+hNHLxsjQZwTYTeoUOXQKgyTcRDE6xCvw8+q0U6/Uan3KCx/KmtdRQMEtGAXSPANv12kle84Dv8AdJxT1CJGsXm0+N6+wbbvkL77kMr+79sCR/8drZmOnrbjveQpab2pSh0vO//XqslrDRbzhniGSpqFW+YNTOixWAsCp35hNPbAx5xqPXg6DEIrysGslDGo4gC3Ew5mN/JkOQA+pd6uIzC4EgbfWqJKMvrtOQN67hJR7Ysxn7cLDXGvmhK1s7oSJcnOmhWljSZ6joviVwAWKgzdm1gMBhn5+VdgwoEE7g5Inw0dH9UmgufloNiBQMM9m2igdQPaLRuVttrAEcs55F/Z5NFtJquTeQFBLAGux3MVxrYCgivRaoAzAkUMhGOA+00KU3oh3Bds0U8GYCMuYYrwSAWTZf0Z9lvUwJv8HtLJvI6p1p53oGzIW9bo20d0PMz7XrzNDOLEME9PaXKLo6vMCAxXIj19nm/bE1HBY7e7HErKMX3M7LC2xZ8PH7wsnl5M3y0ZZ6c9quwhvz/dWcUAQ5963LtDZ6bOenAGVGBjdWLhHK8/2p9Vgu1ZNA1WWHWnafExsT5GxuwZQ/PMk8YtmxqEkgGy2+xVT19oUK+yO1ok+xRUjvSRZ0IbWUEcOfQ5FvLNmMdV/NSebB6vjQwM5DGCE1YDhix+Qghr558KokVz7BPVrGVe1pUxfPo2XPwHReF8es+vr16lvwXrVEmQNG8KrX1tN5Z5I29+ZVcR6ti4t90RXY6H6lmLtU3P/PSmfOrBQraNHVvDm9y1hnSP9+EhJzuWFaS8v4+7OnodIWuZsYd2WYQp4YcDJ+7grV3s1vvacujzxCOwx5/gosLxOau45bvKqhsFrZ+le6IRNAG7T6ZwC9wesqCGBJlIwS50DlAb/KhPyDIvf+7EH1iwckG4fBtixaK9co8FHnuddn/cEIc6fkWDEzr2Cu3HyxeMeDrcGRvjTRr78Wp/ptvRoOYElOLkxrkmanetjOCMqRl1DJvl53SQKePraRx2DpRemK/TMQ3+5TQkFjjEsI2P455Th0z6vF+JzpetZ3j1NUqx+iEZ2ArMhdDk7dE/4qcn2xwLz5nNMvHSnO2N0T9tCLi96CqZm/HTqGa6jTxFhJOP11sFCCQ9jkKhxvxubs0sww75dnqXQeffpxyolcht3KHwfwwHU0hBLTUxMg==";
 	public static final PK _PK_Developer = Cipher.getPK(PK_Developer);
 	public static String _APP_NAME = _("Direct Democracy P2P");
@@ -161,7 +164,7 @@ public class DD {
     public static String scripts_prefix = null; //Application.linux_scripts_prefix+Application.scripts_path
 
     // May want to let users edit the next value, as part of making the LIST_OF_VALUES
-    // in fields_extra deletable easier
+    // in fields_extra delete-able easier
 	public static boolean DELETE_COMBOBOX_WITHOUT_CTRL = true;
 	//public static final byte TAG_SyncReq_push = DD.asn1Type(Encoder.CLASS_UNIVERSAL, Encoder.PC_CONSTRUCTED, Encoder.TAG_SEQUENCE);
 	public static final byte TAG_AP0 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)0);
@@ -884,7 +887,69 @@ public class DD {
 		_frame.setBounds(r.x, r.y, r.width, r.height);
 		return _frame;
 	}
+	static
+	class tabOnFocus_changeListener implements ChangeListener {
+		static boolean _keys = false;
+		static final boolean _keys_reload = true;
+		//static int _prev_index = -1;
+	    public void stateChanged(ChangeEvent e) {
+	    	int index = tabbedPane.getSelectedIndex();
+	    	if(TAB_KEYS_ == index) {
+	    		if(!_keys) {
+	    			Keys keys = new widgets.keys.Keys();
+	    			tabbedPane.setComponentAt(index, keys.getPanel());
+	    			_keys = true;
+	    		}
+	    	}else{
+	    		if(_keys && _keys_reload){
+	    			tabbedPane.setComponentAt(TAB_KEYS_, JunkPanelKeys);
+	    			_keys = false;
+	    		}
+	    	}
+	    }
+	    public void _stateChanged(ChangeEvent e) {
+	    	int index = tabbedPane.getSelectedIndex();
+	    	String tabtitle = tabbedPane.getTitleAt(index);
+	    	//if(TAB_KEYS == index)
+	    	if(TAB_KEYS.equals(tabtitle)) {
+	    		if(!_keys) {
+	    			Keys keys = new widgets.keys.Keys();
+	    			tabbedPane.setComponentAt(index, keys.getPanel());
+	    			_keys = true;
+	    		}
+	    	}else{
+	    		if(_keys && _keys_reload){
+	    			//tabbedPane.setComponentAt(TAB_KEYS_, JunkPanelKeys);
+	    			int tabs = tabbedPane.getTabCount();
+	    			for(int k=0; k<tabs; k++) {
+	    		    	String _tabtitle = tabbedPane.getTitleAt(k);
+	    		    	if(TAB_KEYS.equals(_tabtitle)){
+	    		    		tabbedPane.setComponentAt(k, JunkPanelKeys);
+	    		    		_keys = false;
+	    		    		break;
+	    		    	}
+	    			}
+	    		}
+	    	}
+	    }
+	}
+	static String TAB_SETTINGS = _("Settings");
+	static int TAB_SETTINGS_ = 0;
+	static String TAB_KEYS = _("Keys");
+	static int TAB_KEYS_ = 1;
+	static final JPanel JunkPanelKeys = new JPanel();
+	static String TAB_ID = _("Identities");
+	static int TAB_ID_ = 2;
+	static String TAB_CONS = _("Constituents");
+	static int TAB_CONS_ = 3;
+	static String TAB_DIRS = _("Directories");
+	static int TAB_DIRS_ = 5;
+	static String TAB_PEERS = _("Peers");
+	static int TAB_PEERS_ = 6;
+	static String TAB_ORGS = _("Organizations");
+	static int TAB_ORGS_ = 7;
 	private static void createAndShowGUI() throws P2PDDSQLException{
+		tabbedPane.addChangeListener(new tabOnFocus_changeListener());
 		Application.appObject = new AppListener(); // will listen for buttons such as createOrg
         
         clientConsole = new Console();
@@ -898,7 +963,7 @@ public class DD {
         //organization organizationPane;
         orgsPane = new widgets.org.Orgs();
         Application.orgs = orgsPane;
-        Keys keys = new widgets.keys.Keys();
+        //Keys keys = new widgets.keys.Keys();
         constituentsPane = new ConstituentsPanel(Application.db, /*organizationID*/-1, -1, null);
         Application.constituents = constituentsPane;
         //JPanel _constituentsPane = makeConstituentsPanel(constituentsPane);
@@ -915,18 +980,26 @@ public class DD {
         Application.controlPane=controlPane = new ControlPane();
     	tabbedPane.setTabLayoutPolicy(JTabbedPane.WRAP_TAB_LAYOUT);
         //identitiesPane.setOpaque(true);
-        tabbedPane.addTab(_("Control Panel"), controlPane);
-        tabbedPane.addTab(_("Keys"), keys.getPanel());
-        tabbedPane.addTab(_("Identities"), identitiesPane);
-        tabbedPane.addTab(_("Constituents"), constituentsPane);
+        tabbedPane.addTab(TAB_SETTINGS, controlPane);
+        tabbedPane.setMnemonicAt(TAB_SETTINGS_, KeyEvent.VK_S);
+        //tabbedPane.addTab(_("Keys"), keys.getPanel());
+        tabbedPane.addTab(TAB_KEYS, JunkPanelKeys);
+        tabbedPane.setMnemonicAt(TAB_KEYS_, KeyEvent.VK_K);
+        tabbedPane.addTab(TAB_ID, identitiesPane);
+        tabbedPane.setMnemonicAt(TAB_ID_, KeyEvent.VK_I);
+        tabbedPane.addTab(TAB_CONS, constituentsPane);
+        tabbedPane.setMnemonicAt(TAB_CONS_, KeyEvent.VK_C);
         if(SONG)tabbedPane.addTab(_("Census"), _censusPane);
-        tabbedPane.addTab(_("Directories"), listing_dicts.getPanel());
-    	tabbedPane.addTab("Peers", peersPluginsPane.getPanel());//peersPluginsPane.getScrollPane());
+        tabbedPane.addTab(TAB_DIRS, listing_dicts.getPanel());
+        tabbedPane.setMnemonicAt(TAB_DIRS_, KeyEvent.VK_D);
+    	tabbedPane.addTab(TAB_PEERS, peersPluginsPane.getPanel());//peersPluginsPane.getScrollPane());
+        tabbedPane.setMnemonicAt(TAB_PEERS_, KeyEvent.VK_P);
         Application.peers.privateOrgPanel.addOrgListener(); // has to be called after peersPluginsPane.getPanel()
     	
     	JPanel orgs = makeOrgsPanel(orgEPane, orgsPane); //new JPanel();
     	//jsco = new javax.swing.JScrollPane(orgs);
-    	tabbedPane.addTab("Orgs", DD.tab_organization=orgs);
+    	tabbedPane.addTab(TAB_ORGS, DD.tab_organization=orgs);
+        tabbedPane.setMnemonicAt(TAB_ORGS_, KeyEvent.VK_O);
     	
     	// Initialize widgets
     	motions = new widgets.motions.Motions();
@@ -1637,21 +1710,34 @@ public class DD {
 			return;
 		}		
 	}
+	/**
+	 * Called from simulator generating data
+	 * @param keys
+	 * @param name
+	 * @throws P2PDDSQLException
+	 */
 	public static void storeSK(Cipher keys, String name) throws P2PDDSQLException{
 		storeSK(keys, name+Util.getGeneralizedTime(), null, null, null);
 	}
+	public static void storeSK(Cipher keys, String name, String date) throws P2PDDSQLException{
+		storeSK(keys, name, null, null, null, date);
+	}
 	public static void storeSK(Cipher keys, String pGIDname, String public_key_ID, String secret_key, String pGIDhash) throws P2PDDSQLException{
+		storeSK(keys, pGIDname, public_key_ID, secret_key, pGIDhash, Util.getGeneralizedTime());
+	}
+	public static void storeSK(Cipher keys, String pGIDname, String public_key_ID, String secret_key, String pGIDhash, String date) throws P2PDDSQLException{
 		if(public_key_ID==null){
 			byte[] pIDb = Util.getKeyedIDPKBytes(keys);
 			public_key_ID = Util.getKeyedIDPK(pIDb);
 		}
 		if(secret_key==null) secret_key = Util.getKeyedIDSK(keys);
 		if(pGIDhash==null) pGIDhash = Util.getGIDhash(public_key_ID);
-		if(pGIDname==null) pGIDname = "KEY:"+Util.getGeneralizedTime();
+		//String date = Util.getGeneralizedTime();
+		if(pGIDname==null) pGIDname = "KEY:"+date;
 		Application.db.insert(table.key.TNAME,
-				new String[]{table.key.public_key,table.key.secret_key,table.key.ID_hash,
+				new String[]{table.key.public_key,table.key.secret_key,table.key.ID_hash,table.key.creation_date,
 				table.key.name,table.key.type},
-				new String[]{public_key_ID, secret_key, pGIDhash,
+				new String[]{public_key_ID, secret_key, pGIDhash,date,
 				/*Util.getKeyedIDPKhash(pIDb)*/
 				pGIDname,
 				Util.getKeyedIDType(keys)}, DEBUG);

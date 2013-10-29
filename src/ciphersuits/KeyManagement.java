@@ -54,7 +54,7 @@ public class KeyManagement {
  */
 	public static boolean saveSecretKey(String gid, String sk_file) throws P2PDDSQLException, IOException {
 		String sql =
-			"SELECT "+table.key.secret_key+","+table.key.name+","+table.key.type+
+			"SELECT "+table.key.secret_key+","+table.key.name+","+table.key.type+","+table.key.creation_date+
 			" FROM "+table.key.TNAME+
 			" WHERE "+table.key.public_key+"=?;";
 		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{gid});
@@ -62,6 +62,7 @@ public class KeyManagement {
 		String sk = Util.getString(a.get(0).get(0));
 		String name = Util.getString(a.get(0).get(1));
 		String type = Util.getString(a.get(0).get(2));
+		String date = Util.getString(a.get(0).get(3));
 		BufferedWriter bw = new BufferedWriter(new FileWriter(sk_file));
 		bw.write(sk);
 		bw.newLine();
@@ -71,6 +72,8 @@ public class KeyManagement {
 		bw.newLine();
 		bw.write(name);
 		bw.newLine();
+		bw.write(date);
+		bw.newLine();
 		bw.close();
 		return true;
 	}
@@ -78,7 +81,7 @@ public class KeyManagement {
 	public static SK loadSecretKey(String sk_file, String[] __pk) throws IOException, P2PDDSQLException{
 		if(DEBUG) System.out.println("KeyManagement:loadSecretKey: start "+sk_file);
 		BufferedReader br = new BufferedReader(new FileReader(sk_file));
-		String sk, pk, type=null, name=null;
+		String sk, pk, type=null, name=null, date=null;
 		boolean eof = false;
 		do{
 			sk = br.readLine();
@@ -127,6 +130,13 @@ public class KeyManagement {
 				if(name==null){ eof=true; break;}
 				name = name.trim();
 			}while(name.length() == 0);
+		
+		if(!eof)
+			do{
+				date = br.readLine();
+				if(date==null){ eof=true; break;}
+				date = date.trim();
+			}while(date.length() == 0);
 		ArrayList<ArrayList<Object>> p = Application.db.select(
 				"SELECT "+table.key.public_key+" FROM "+table.key.TNAME+" WHERE "+table.key.public_key+"=?;",
 				new String[]{pk}, DEBUG);
@@ -136,9 +146,11 @@ public class KeyManagement {
 			return _sk;
 		}
 		String hash = Util.getKeyedIDPKhash(Cipher.getCipher(_sk,_pk));
+		if((date==null)||(date.length()==0)) date = Util.getGeneralizedTime();
 		Application.db.insert(table.key.TNAME,
-				new String[]{table.key.secret_key,table.key.public_key,table.key.type,table.key.name, table.key.ID_hash},
-				new String[]{sk,pk,type,name,hash},
+				new String[]{table.key.secret_key,table.key.public_key,
+				table.key.type,table.key.name, table.key.ID_hash,table.key.creation_date},
+				new String[]{sk,pk,type,name,hash,date},
 				DEBUG);
 		if(__pk!=null) __pk[0] = pk;
 		

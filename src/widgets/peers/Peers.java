@@ -1412,7 +1412,8 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	public static final int TABLE_COL_CATEGORY = 11;//idx++;
 	public static final int TABLE_COL_SLOGAN = 12;//idx++;
 	public static final int TABLE_COL_PROVIDER = 13;//idx++;
-	public static final int TABLE_COL_PLUGINS = 14;//idx++;
+	public static final int TABLE_COL_LAST = 14;//idx++;
+	public static final int TABLE_COL_PLUGINS = 15;//idx++;
 
 	static final int SELECT_COL_ID = 0;
 	static final int SELECT_COL_NAME = 1;
@@ -1438,6 +1439,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	static final int SELECT_COL_EMAIL = 26;
 	static final int SELECT_COL_SIGN = 27;
 	static final int SELECT_COL_PROVIDER = 28;
+	static final int SELECT_COL_LAST = 29;
 
 	static final String select_fields =
 		" p."+table.peer.peer_ID+
@@ -1468,7 +1470,8 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		", p."+table.peer.category+
 		", p."+table.peer.emails+
 		", p."+table.peer.signature+
-		", p."+table.peer.first_provider_peer
+		", p."+table.peer.first_provider_peer+
+		", p."+table.peer.last_sync_date
 		;
 
 	private static final boolean DEBUG = false;
@@ -1485,7 +1488,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	//String _ld[];  //-
 	ArrayList<ArrayList<Object>> __peers;
 	
-	String columnNames[]={"Peer Data","V","Serving","Connection","B","H","S","T","R","Email","V","Categ","Slogan","Provider","Pluggins"};
+	String columnNames[]={"Peer Data","V","Serving","Connection","B","H","S","T","R","Email","V","Categ","Slogan","Provider","LastSync","Pluggins"};
 	Hashtable<Integer,String> columnNamesHash=new Hashtable<Integer,String>();
 	int plugin_applets = 0;
 	int columns = columnNames.length-1 + plugin_applets;
@@ -1718,6 +1721,9 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		}
 		//if((col==0)&&(row==0))  Util.printCallPath("No");
 		switch(col){
+		case TABLE_COL_LAST:
+			peerID = Util.getString(ao.get(0));
+			return Util.getString(ao.get(this.SELECT_COL_LAST));
 		case TABLE_COL_NAME:
 			if((ao.size() > SELECT_COL_M_NAME) &&
 					(ao.get(SELECT_COL_M_NAME)!=null) &&
@@ -2000,7 +2006,7 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		try{
 			this.fireTableDataChanged();
 		}catch(Exception e){if(DEBUG)e.printStackTrace();}
-		new TableUpdater(this, null);
+		new TableUpdater(this, p_table, null);
 		//this.fireTableDataChanged();
 		if(DEBUG) System.out.println("Peers:update:peers done");
 	}

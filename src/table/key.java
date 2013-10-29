@@ -32,6 +32,7 @@ public class key {
 	public static final String name = "name";
 	public static final String hide = "hide";
 	public static final String preference_date = "preference_date";
+	public static final String creation_date = "creation_date";
 	public static final String ID_hash = "ID_hash";
 	public static final int COL_NAME = 0;
 	public static final int COL_TYPE = 1;
@@ -39,7 +40,8 @@ public class key {
 	public static final int COL_PK = 3;
 	public static final int COL_SK = 4;
 	public static final int COL_HIDE = 5;
-	public static final int COL_DATE = 6;
+	public static final int COL_PREF_DATE = 6;
+	public static final int COL_CREATION_DATE = 7;
 	public static String fields_list_noID=
 			name + ","+
 			type+","+
@@ -47,7 +49,8 @@ public class key {
 			public_key+","+
 			secret_key+","+
 			hide+","+
-			preference_date;
+			preference_date+","+
+			creation_date;
 	public static String fields_list = fields_list_noID+","+key_ID;
 	public static String[] fields_noID =
 			Util.trimmed(fields_list_noID.split(Pattern.quote(",")));

@@ -1233,8 +1233,9 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				if(DEBUG) out.println("OrgEditor:handleFieldEvent: genKey for AUTHORITARIAN");
 				Cipher keys = Util.getKeyedGlobalID(AUTHORITARIAN, ""+name+creation_date);
 				keys.genKey(1024);
+				String date = Util.getGeneralizedTime();
 				try {
-					DD.storeSK(keys, "ORG:"+name+":");
+					DD.storeSK(keys, "ORG:"+name+":", date);
 				} catch (P2PDDSQLException e2) {
 					e2.printStackTrace();
 				}
@@ -1244,7 +1245,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				String gIDhash = Util.getGIDhash(gID); // for the key table
 				String gIDhashAuth = D_Organization.getOrgGIDHashAuthoritarian(gID);
 				String type = Util.getKeyedIDType(keys);
-				OrgGIDItem gid = new OrgGIDItem(gID, gIDhash, Util.getGeneralizedTime());
+				OrgGIDItem gid = new OrgGIDItem(gID, gIDhash, date);
 				//String hashorg = Util.getHash(hash_org.encode(), DD.APP_ID_HASH);
 				byte[] _signature=null;
 				String signature=null;
@@ -1276,9 +1277,10 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				//String hash_alg = table.organization.hash_org_alg_crt;
 				//String sign = "";//sign hash with secret key
 				try {
+					//String _date = Util.getGeneralizedTime();
 					Application.db.insert(table.key.TNAME, 
-							new String[]{table.key.ID_hash,table.key.public_key,table.key.secret_key,table.key.type},
-							new String[]{gIDhash, gID, sID, type});
+							new String[]{table.key.ID_hash,table.key.public_key,table.key.secret_key,table.key.type,table.key.creation_date},
+							new String[]{gIDhash, gID, sID, type, date});
 					Application.db.update(table.organization.TNAME,
 							new String[]{table.organization.global_organization_ID,
 							table.organization.global_organization_ID_hash,

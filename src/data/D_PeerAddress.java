@@ -2240,7 +2240,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		String pID=Util.getKeyedIDPK(pIDb);
 		if(DEBUG) out.println("DD:createMyPeerID: public_key="+pID);
 		String pGIDhash = Util.getGIDhash(pID);
-		String pGIDname = "PEER:"+Util.getGeneralizedTime();
+		String pGIDname = "PEER:"+name+":"+Util.getGeneralizedTime();
 		
 		DD.storeSK(keys, pGIDname, pID, secret_key, pGIDhash);
 				

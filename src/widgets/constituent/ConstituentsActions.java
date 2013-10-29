@@ -1101,7 +1101,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	if(keys==null) {
     		keys = Util.getKeyedGlobalID("Constituent", dialog.emailEditor+now);
     		keys.genKey(1024);
-    		DD.storeSK(keys, "ORG");
+    		DD.storeSK(keys, "CST:"+dialog.snEditor+"_"+dialog.gnEditor, now);
     		sk = keys.getSK();
     		
     	}

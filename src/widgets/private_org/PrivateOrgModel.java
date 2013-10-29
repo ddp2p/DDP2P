@@ -152,7 +152,7 @@ public class PrivateOrgModel extends AbstractTableModel implements TableModel, D
 			return;
 		}
 		data = D_OrgDistribution.get_Org_Distribution_byOrgID(curOrg+"");
-		new TableUpdater(this, mytable);
+		new TableUpdater(this, mytable, null);
 		if(DEBUG) System.out.println("PrivateOrgModel: update: done");
 	}
 

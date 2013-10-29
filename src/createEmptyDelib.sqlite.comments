@@ -4,13 +4,19 @@ CREATE TABLE "application" (
 );
 CREATE TABLE "key" ( # keys -> key
     "key_ID" INTEGER PRIMARY KEY,
-    "public_key" TEXT,
-    "secret_key" TEXT,
-    "ID_hash" TEXT,
+    "public_key" TEXT  UNIQUE ON CONFLICT FAIL,
+    "secret_key" TEXT  UNIQUE ON CONFLICT FAIL,
+    "ID_hash" TEXT  UNIQUE ON CONFLICT FAIL,
     "name" TEXT, # date
     "preference_date" TEXT,
+    "creation_date" TEXT,
     "type" TEXT,
     "hide" TEXT
+);
+CREATE TABLE "public_keys" (
+	pk_ID INTEGER PRIMARY KEY,
+	"public_key" TEXT UNIQUE ON CONFLICT FAIL,
+	"pk_hash" TEXT UNIQUE ON CONFLICT FAIL
 );
 CREATE TABLE "constituent_verification" (
 	"constituent_ID" INTEGER NOT NULL,
@@ -72,6 +78,7 @@ CREATE TABLE peer (
     "peer_ID" INTEGER PRIMARY KEY NOT NULL,
     "global_peer_ID" TEXT UNIQUE ON CONFLICT FAIL,
     "global_peer_ID_hash" TEXT UNIQUE ON CONFLICT FAIL,
+    "GID_key" INTEGER DEFAULT NULL UNIQUE ON CONFLICT FAIL,
     "name" TEXT,
     "broadcastable" INTEGER DEFAULT (0), ## may be sent to others
     "slogan" TEXT,
@@ -102,7 +109,8 @@ CREATE TABLE peer (
     "arrival_date" TIMESTAMP, # date -> arrival_date,
     "first_provider_peer" INTEGER DEFAULT NULL,
     "preferences_date" TEXT,
-    FOREIGN KEY (first_provider_peer) REFERENCES peer(peer_ID)
+    FOREIGN KEY (first_provider_peer) REFERENCES peer(peer_ID),
+    FOREIGN KEY (GID_key) REFERENCES public_keys(pk_ID)
 );
 #CREATE TABLE peer_instance (
 #   "peer_instance_ID" INTEGER PRIMARY KEY
@@ -255,8 +263,9 @@ CREATE TABLE "translation" ( # translations -> translation
 );
 CREATE TABLE constituent ( # constituents -> constituent
     "constituent_ID" INTEGER PRIMARY KEY, # constituentID -> constituent_ID
-    "global_constituent_ID" TEXT UNIQUE ON CONFLICT FAIL, # global_constituentID -> global_constituent_ID
-    "global_constituent_ID_hash" TEXT UNIQUE ON CONFLICT FAIL,
+    "global_constituent_ID" TEXT, # global_constituentID -> global_constituent_ID
+    "global_constituent_ID_hash" TEXT,
+    "GID_key" INTEGER DEFAULT NULL UNIQUE ON CONFLICT FAIL,
     "neighborhood_ID" INTEGER, # neighborhoodID -> neighborhood_ID
     "organization_ID" INTEGER, # organizationID -> organization_ID
     "submitter_ID" INTEGER, # signer for external
@@ -285,6 +294,9 @@ CREATE TABLE constituent ( # constituents -> constituent
 	requested INTEGER DEFAULT (0),
 	broadcasted INTEGER DEFAULT (1),
 	blocked INTEGER DEFAULT (0),
+	UNIQUE (global_constituent_ID,organization_ID) ON CONFLICT FAIL,
+	UNIQUE (global_constituent_ID_hash,organization_ID) ON CONFLICT FAIL,
+	UNIQUE (GID_key,organization_ID) ON CONFLICT FAIL,
 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
 	FOREIGN KEY(neighborhood_ID) REFERENCES neighborhood(neighborhood_ID),
 	FOREIGN KEY(submitter_ID) REFERENCES constituent(constituent_ID),
