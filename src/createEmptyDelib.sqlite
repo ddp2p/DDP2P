@@ -4,13 +4,19 @@ CREATE TABLE "application" (
 );
 CREATE TABLE "key" ( 
     "key_ID" INTEGER PRIMARY KEY,
-    "public_key" TEXT,
-    "secret_key" TEXT,
-    "ID_hash" TEXT,
+    "public_key" TEXT  UNIQUE ON CONFLICT FAIL,
+    "secret_key" TEXT  UNIQUE ON CONFLICT FAIL,
+    "ID_hash" TEXT  UNIQUE ON CONFLICT FAIL,
     "name" TEXT, 
     "preference_date" TEXT,
+    "creation_date" TEXT,
     "type" TEXT,
     "hide" TEXT
+);
+CREATE TABLE "public_keys" (
+	pk_ID INTEGER PRIMARY KEY,
+	"public_key" TEXT UNIQUE ON CONFLICT FAIL,
+	"pk_hash" TEXT UNIQUE ON CONFLICT FAIL
 );
 CREATE TABLE "constituent_verification" (
 	"constituent_ID" INTEGER NOT NULL,
@@ -34,7 +40,27 @@ CREATE TABLE directory_forwarding_terms (
     	"priority_type" TEXT,
     	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 );
-CREATE TABLE updates (
+CREATE TABLE mirror (
+	"mirror_ID" INTEGER PRIMARY KEY,
+	"public_key" TEXT,
+	"original_mirror_name"	TEXT,
+	"my_name_for_mirror" TEXT,
+	"url"	TEXT,
+	"used" INTEGER,
+	"last_contact_date" TEXT,
+	"activity" TEXT,
+      	"location" TEXT,  
+	"protocol" TEXT,
+	"last_version" TEXT,
+	"last_version_branch" TEXT,
+	"last_version_testers_info" TEXT,
+	"last_version_releaseQD" TEXT,
+	"last_version_info" TEXT,
+	"data_version" TEXT,
+	"creation_date" TEXT,
+	"preference_date" TEXT 
+);
+CREATE TABLE updates ( 
 	"updates_ID" INTEGER PRIMARY KEY,
 	"original_mirror_name"	TEXT,
 	"my_name_for_mirror" TEXT,
@@ -46,7 +72,7 @@ CREATE TABLE updates (
 	"activity" TEXT,
 	"last_releaseQD" TEXT 
 );
-CREATE TABLE updates_keys (
+CREATE TABLE updates_keys ( 
 	"updates_keys_ID" INTEGER PRIMARY KEY,
 	"original_tester_name"	TEXT,
 	"my_name_for_tester" TEXT,
@@ -60,18 +86,34 @@ CREATE TABLE updates_keys (
 );
 CREATE TABLE tester (
 	"tester_ID" INTEGER PRIMARY KEY,
-	"name"	TEXT,
+	"original_tester_name"	TEXT,
+	"my_name_for_tester" TEXT,
 	"public_key" TEXT, 
+ 	"public_key_hash" TEXT, 
 	"email"	TEXT,
 	"url"	TEXT,
 	"revoked" INTEGER, 
-	"description" TEXT
+     	"revoked_info" TEXT,
+     	"revoked_GID_hash" TEXT,
+	"description" TEXT,
+	"trusted_as_mirror" INTEGER,
+	"trusted_as_tester" INTEGER,
+	"trust_weight" TEXT,
+	"reference_tester" INTEGER,
+	"expected_test_thresholds" TEXT,
+	
+	"data_version" TEXT,
+	"creation_date" TEXT,
+	"preference_date" TEXT,
+
+	"name"	TEXT
 );
 
 CREATE TABLE peer (
     "peer_ID" INTEGER PRIMARY KEY NOT NULL,
     "global_peer_ID" TEXT UNIQUE ON CONFLICT FAIL,
     "global_peer_ID_hash" TEXT UNIQUE ON CONFLICT FAIL,
+    "GID_key" INTEGER DEFAULT NULL UNIQUE ON CONFLICT FAIL,
     "name" TEXT,
     "broadcastable" INTEGER DEFAULT (0), 
     "slogan" TEXT,
@@ -102,7 +144,8 @@ CREATE TABLE peer (
     "arrival_date" TIMESTAMP, 
     "first_provider_peer" INTEGER DEFAULT NULL,
     "preferences_date" TEXT,
-    FOREIGN KEY (first_provider_peer) REFERENCES peer(peer_ID)
+    FOREIGN KEY (first_provider_peer) REFERENCES peer(peer_ID),
+    FOREIGN KEY (GID_key) REFERENCES public_keys(pk_ID)
 );
 
 
@@ -255,8 +298,9 @@ CREATE TABLE "translation" (
 );
 CREATE TABLE constituent ( 
     "constituent_ID" INTEGER PRIMARY KEY, 
-    "global_constituent_ID" TEXT UNIQUE ON CONFLICT FAIL, 
-    "global_constituent_ID_hash" TEXT UNIQUE ON CONFLICT FAIL,
+    "global_constituent_ID" TEXT, 
+    "global_constituent_ID_hash" TEXT,
+    "GID_key" INTEGER DEFAULT NULL UNIQUE ON CONFLICT FAIL,
     "neighborhood_ID" INTEGER, 
     "organization_ID" INTEGER, 
     "submitter_ID" INTEGER, 
@@ -285,6 +329,9 @@ CREATE TABLE constituent (
 	requested INTEGER DEFAULT (0),
 	broadcasted INTEGER DEFAULT (1),
 	blocked INTEGER DEFAULT (0),
+	UNIQUE (global_constituent_ID,organization_ID) ON CONFLICT FAIL,
+	UNIQUE (global_constituent_ID_hash,organization_ID) ON CONFLICT FAIL,
+	UNIQUE (GID_key,organization_ID) ON CONFLICT FAIL,
 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
 	FOREIGN KEY(neighborhood_ID) REFERENCES neighborhood(neighborhood_ID),
 	FOREIGN KEY(submitter_ID) REFERENCES constituent(constituent_ID),

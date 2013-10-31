@@ -530,6 +530,9 @@ class NeighborhoodData{
 	NeighborhoodData(String value, long parent_nID, long organizationID) {
 		read(value, parent_nID, organizationID);
 	}
+	NeighborhoodData(long nID, long parent_nID, long organizationID) {
+		read(nID, parent_nID, organizationID);
+	}
 	public NeighborhoodData() {
 		this.neighborhoodID = -2;
 	}
@@ -543,7 +546,7 @@ class NeighborhoodData{
 		}
 		ArrayList<ArrayList<Object>> sel;
 		try{
-			if(parent_nID<0)
+			if(parent_nID<=0)
 				sel=DDTranslation.db.select("select  "+neighborhoods_fields+
 						" from "+table.neighborhood.TNAME+
 						" where "+table.neighborhood.organization_ID+" = ? and ( "+table.neighborhood.parent_nID+" ISNULL OR "+table.neighborhood.parent_nID+" < 0 ) and "+table.neighborhood.name+" = ?;",
@@ -551,6 +554,32 @@ class NeighborhoodData{
 			else sel=DDTranslation.db.select("select "+neighborhoods_fields+
 					" from "+table.neighborhood.TNAME+" where "+table.neighborhood.organization_ID+" = ? and "+table.neighborhood.parent_nID+" = ? and "+table.neighborhood.name+" = ?;",
 					new String[]{organizationID+"", parent_nID+"", value});
+				this.organizationID = organizationID;
+				getFrom(sel);
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	void read(long nID, long parent_nID, long organizationID) {
+		
+		if(parent_nID==-2){
+			this.name = ""+nID;
+			this.organizationID = organizationID;
+			this.neighborhoodID = -2;
+			this.parent_nID = parent_nID;
+			return;
+		}
+		
+		ArrayList<ArrayList<Object>> sel;
+		try{
+			if(parent_nID<=0)
+				sel=DDTranslation.db.select("select  "+neighborhoods_fields+
+						" from "+table.neighborhood.TNAME+
+						" where "+table.neighborhood.organization_ID+" = ? and ( "+table.neighborhood.parent_nID+" ISNULL OR "+table.neighborhood.parent_nID+" < 0 ) and "+table.neighborhood.neighborhood_ID+" = ?;",
+						new String[]{organizationID+"", Util.getStringID(nID)});
+			else sel=DDTranslation.db.select("select "+neighborhoods_fields+
+					" from "+table.neighborhood.TNAME+" where "+table.neighborhood.organization_ID+" = ? and "+table.neighborhood.parent_nID+" = ? and "+table.neighborhood.neighborhood_ID+" = ?;",
+					new String[]{organizationID+"", parent_nID+"", Util.getStringID(nID)});
 				this.organizationID = organizationID;
 				getFrom(sel);
 		}catch(Exception e) {
@@ -615,7 +644,12 @@ class ConstituentsAddressNode extends ConstituentsBranch {
 			if((level+1>=0)&&(level+1<fieldIDs.length))
 				location.fieldID_default_next = fieldIDs[level+1];
 			else location.fieldID_default_next = 0;
-			location.tip=DDTranslation.translate(nd.name_division,nd.name_division_lang);
+			//((nd.description==null)?"":nd.description)+" "+
+			String tr = DDTranslation.translate(nd.name_division,nd.name_division_lang);
+			location.tip = ((tr==null)?"":tr)
+					+" sd="+
+					((nd.names_subdivisions==null)?"":nd.names_subdivisions)+
+					" ("+nd.name_lang+")";
 			location.neighborhood = nd.neighborhoodID;
 		}
 		n_data = nd;
@@ -656,7 +690,8 @@ class ConstituentsAddressNode extends ConstituentsBranch {
 		if(_data!=null){
 			n_data = _n_data;
 			if(n_data == null)
-				n_data = new NeighborhoodData(_data.value, parent_nID, _model.getOrganizationID());
+				n_data = new NeighborhoodData(_data.organizationID, parent_nID, _model.getOrganizationID());
+				//n_data = new NeighborhoodData(_data.value, parent_nID, _model.getOrganizationID());
 		}else{
 			
 		   	if(DEBUG) System.err.println("ConstituentsModel:ConstituentsAddressNode: null location for: "+_n_data);
@@ -814,7 +849,7 @@ class ConstituentsAddressNode extends ConstituentsBranch {
     public String getTip() {
 		if ((location == null)||(location.tip == null)) return null;
     	//String tip=DDTranslation.translate(location.label,n_data.name_division_lang);
-    	return location.label;//location.tip;
+    	return location.label+" ("+location.tip+")";
     }
     /**
      * The display is based on ConstituentTree:getTreeCellRendererComponentCIN
@@ -1177,7 +1212,8 @@ class ConstituentsAddressNode extends ConstituentsBranch {
 		    		if(cmp<0) {
 		    			long nID = Util.lval(nei.get(n).get(1), -1);
 		    			if(DEBUG) System.err.println("...nID = "+n_data.neighborhoodID);
-		    			NeighborhoodData nd=new NeighborhoodData(n_name, n_data.neighborhoodID, model.getOrganizationID());
+		    			//NeighborhoodData nd=new NeighborhoodData(n_name, n_data.neighborhoodID, model.getOrganizationID());
+		    			NeighborhoodData nd=new NeighborhoodData(nID, n_data.neighborhoodID, model.getOrganizationID());
 		    			addChild(
 		    					new ConstituentsAddressNode(model, this, nd, next_ancestors),
 		    					0);
@@ -1211,7 +1247,8 @@ class ConstituentsAddressNode extends ConstituentsBranch {
 	    	String n_name = Util.sval(nei.get(n).get(0), "");
 	    	long nID = Util.lval(nei.get(n).get(1), -1);
 	    	if(DEBUG) System.err.println("nID = "+n_data.neighborhoodID);
-	    	NeighborhoodData nd=new NeighborhoodData(n_name, n_data.neighborhoodID, model.getOrganizationID());
+	    	NeighborhoodData nd=new NeighborhoodData(nID, n_data.neighborhoodID, model.getOrganizationID());
+	    	//NeighborhoodData nd=new NeighborhoodData(n_name, n_data.neighborhoodID, model.getOrganizationID());
 	    	addChild(new ConstituentsAddressNode(model, this, nd, next_ancestors), 0);
 	    	_nchildren++;
 	    }
@@ -1692,7 +1729,8 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		    		if (cmp>0) break; 
 		    		if(cmp<0) {
 		    			long nID = Util.lval(neighborhood_branch_objects.get(n).get(1), -1);
-		    			NeighborhoodData nd=new NeighborhoodData(n_name, -1, organizationID);
+		    			//NeighborhoodData nd=new NeighborhoodData(n_name, -1, organizationID);
+		    			NeighborhoodData nd=new NeighborhoodData(nID, -1, organizationID);
 		    			nd.neighborhoodID = nID;
 		    			root.addChild(new ConstituentsAddressNode(this, root, nd, new AddressAncestors[0]),0);
 		    		}
@@ -1723,7 +1761,8 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 	    for (; n<neighborhood_branch_objects.size(); n++) {
 	    	String n_name = Util.sval(neighborhood_branch_objects.get(n).get(0), "");
 	    	long nID = Util.lval(neighborhood_branch_objects.get(n).get(1), -1);
-	    	NeighborhoodData nd=new NeighborhoodData(n_name, -1, organizationID);
+	    	NeighborhoodData nd=new NeighborhoodData(nID, -1, organizationID);
+	    	//NeighborhoodData nd=new NeighborhoodData(n_name, -1, organizationID);
 	    	nd.neighborhoodID = nID;
 	    	root.addChild(new ConstituentsAddressNode(this, root, nd, new AddressAncestors[0]), 0);
 	    }

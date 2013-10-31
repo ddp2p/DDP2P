@@ -49,10 +49,13 @@ public class D_UpdatesInfo extends ASN1.ASNObj implements Summary{
 	public static final String action_insert = "insert";
 	public static  boolean DEBUG = false;
 	public D_TesterDefinition[] testerDef;     // dragged (optional) it should be read from a mirror 
+	public String public_key;			  // dragged as part of the url (need to be parsed from the url)
 	public String url;                    // dragged
 	public String original_mirror_name;   // dragged
 	public String my_mirror_name;
 	public String last_version;
+	public String last_version_branch;
+	public byte[] last_version_info;  // serializable versionInfo object, obtained form mirror
 	public D_TesterInfo[] testerInfo;     // data type can be ArrayList<TesterInfo>
 	public boolean used;
 	public D_ReleaseQuality[] releaseQoT; // empty when dragged
@@ -60,6 +63,12 @@ public class D_UpdatesInfo extends ASN1.ASNObj implements Summary{
 	public Calendar last_contact_date;
 	public String activity;
 	public int version = 0;
+	public String location ;// new field good for faster downloading! 
+	public String protocol ; // new field "http" or "ftp"
+	public String data_version ; // new field, signed fields
+	public Calendar creation_date ; // new field, ??
+	public Calendar preference_date ; // new field, ??
+	
 	public D_UpdatesInfo() {
 		
 	}
@@ -99,10 +108,12 @@ public class D_UpdatesInfo extends ASN1.ASNObj implements Summary{
 	public void init(ArrayList<Object> _u){
 		if(DEBUG) System.out.println("D_UpdatesInfo: <init>: start");
 		updates_ID = Util.lval(_u.get(table.updates.F_ID),-1);
+		public_key = Util.getString(_u.get(table.updates.F_PUBLIC_KEY));
 		original_mirror_name = Util.getString(_u.get(table.updates.F_ORIGINAL_MIRROR_NAME));
 		my_mirror_name = Util.getString(_u.get(table.updates.F_MY_MIRROR_NAME));
 		url = Util.getString(_u.get(table.updates.F_URL));
 		last_version = Util.getString(_u.get(table.updates.F_LAST_VERSION));
+		last_version_branch = Util.getString(_u.get(table.updates.F_LAST_VERSION_BRANCH));
 		used = Util.stringInt2bool(_u.get(table.updates.F_USED), false);
 		try {
 			if(DEBUG) System.out.println("D_UpdatesInfo: <init>: testerInfo reconstr");
@@ -122,6 +133,11 @@ public class D_UpdatesInfo extends ASN1.ASNObj implements Summary{
 		}
 		last_contact_date = Util.getCalendar(Util.getString(_u.get(table.updates.F_LAST_CONTACT)));
 		activity = Util.getString(_u.get(table.updates.F_ACTIVITY));
+		location = Util.getString(_u.get(table.updates.F_LOCATION));// new field good for faster downloading! 
+	    protocol = Util.getString(_u.get(table.updates.F_PROTOCOL)); // new field "http" or "ftp"
+	    data_version = Util.getString(_u.get(table.updates.F_DATA_VERSION)); // how to insert it?
+		creation_date = Util.getCalendar(Util.getString(_u.get(table.updates.F_CREATION_DATE))); // how to insert it?
+		preference_date = Util.getCalendar(Util.getString(_u.get(table.updates.F_PREFERENCE_DATE))); // how to insert it?
 		if(DEBUG) System.out.println("D_UpdatesInfo: <init>: done");
 		/*
 	    releaseQoT = new D_ReleaseQuality[3];
@@ -229,11 +245,13 @@ public class D_UpdatesInfo extends ASN1.ASNObj implements Summary{
 		params[table.updates.F_MY_MIRROR_NAME] = this.my_mirror_name;
 		params[table.updates.F_URL] = this.url;
 		params[table.updates.F_LAST_VERSION] = this.last_version;
+		params[table.updates.F_LAST_VERSION_BRANCH] = this.last_version_branch;
 		if(this.used)params[table.updates.F_USED] = "1"; else params[table.updates.F_USED] = "0";
 		params[table.updates.F_RELEASE_QOT] = D_ReleaseQuality.encodeArray(this.releaseQoT);
 		params[table.updates.F_TESTER_INFO] = D_TesterInfo.encodeArray(this.testerInfo);
 		params[table.updates.F_LAST_CONTACT] = Encoder.getGeneralizedTime(this.last_contact_date);
 		params[table.updates.F_ACTIVITY] = this.activity;
+		if(this.last_version_info!=null)params[table.updates.F_LAST_VERSION_INFO] = new String(util.Base64Coder.encode(this.last_version_info));
 		params[table.updates.F_ID] = Util.getStringID(this.updates_ID);
 	    if(cmd.equals(action_update))
 		Application.db.updateNoSync(table.updates.TNAME, table.updates._fields_updates_no_ID,
@@ -259,6 +277,7 @@ public class D_UpdatesInfo extends ASN1.ASNObj implements Summary{
 		}
 		return a.size()>0;
 	}
+	// check testers preferances (weight+ number+ Required)
 	public static Hashtable<VersionInfo, Hashtable<String, VersionInfo>> validateVersionInfo(
 			Hashtable<VersionInfo, Hashtable<String, VersionInfo>> versions) {
 		Hashtable<VersionInfo, Hashtable<String, VersionInfo>> result = new Hashtable<VersionInfo, Hashtable<String, VersionInfo>>();
@@ -440,11 +459,13 @@ public class D_UpdatesInfo extends ASN1.ASNObj implements Summary{
 			for(String url:available.keySet()) {
 				try{	
 					VersionInfo vi = available.get(url);
-					D_UpdatesInfo ui = getUpdateInfo(url);
+					D_UpdatesInfo ui = getUpdateInfo(url); // url here used as primary key to find a mirror
 					ui.last_version = vi.version;
+					ui.last_version_branch = vi.branch;
 					ui.last_contact_date = new GregorianCalendar();
 					ui.releaseQoT = vi.releaseQD;
 					ui.testerInfo = vi.testers_data;
+					ui.last_version_info = vi.encode(); // I need to change it to ASN1 encoding
 					ui.store(D_UpdatesInfo.action_update);
 					if(DEBUG)System.out.println("store_QoTs_and_RoTs()ui.last_version= "+ui.last_version);
 				}catch (P2PDDSQLException e) {

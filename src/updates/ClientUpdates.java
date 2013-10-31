@@ -162,7 +162,7 @@ public class ClientUpdates extends Thread{
 		}
 		EventQueue.invokeLater(new Runnable() {
 			public void run(){
-				DD.controlPane.startClientUpdates.setText(ControlPane.STOP_CLIENT_UPDATES);
+				if(DD.controlPane!=null) DD.controlPane.startClientUpdates.setText(ControlPane.STOP_CLIENT_UPDATES);
 			}
 		});
 		if(DEBUG)System.out.println("ClientUpdates run: set stop");
@@ -177,7 +177,7 @@ public class ClientUpdates extends Thread{
 			if(ClientUpdates.cnt_clients == 0){
 				EventQueue.invokeLater(new Runnable() {
 					public void run(){
-						DD.controlPane.startClientUpdates.setText(ControlPane.START_CLIENT_UPDATES);
+						if(DD.controlPane!=null) DD.controlPane.startClientUpdates.setText(ControlPane.START_CLIENT_UPDATES);
 					}
 				});
 				if(DEBUG)System.out.println("ClientUpdates run: set start");
@@ -264,7 +264,7 @@ public class ClientUpdates extends Thread{
 			boolean has_trusted_testers = D_UpdatesInfo.hasTrustedTesters();
 			if(!has_trusted_testers) {
 				Application.warning(Util._("No trusted updates provider key. Please install an update/tester key."), Util._("No trusted updates provider key!"));
-				DD.controlPane.setClientUpdatesStatus(false);
+				if(DD.controlPane!=null) DD.controlPane.setClientUpdatesStatus(false);
 				return;
 			}
 			
@@ -277,15 +277,17 @@ public class ClientUpdates extends Thread{
 			
 			if(!DD.UPDATES_AUTOMATIC_VALIDATION_AND_INSTALL) continue;
 			
+			// check testers preferances (weight+ number+ Required)
 			Hashtable<VersionInfo, Hashtable<String, VersionInfo>> valid_versions = D_UpdatesInfo.validateVersionInfo(versions);
 			if(valid_versions.size() == 0) continue;
 			
+			// Here you can select best branch and newest
 			VersionInfo[] _newest_version_obtained = new VersionInfo[1];
 			String newest = selectNewest(valid_versions, _newest_version_obtained);
 			
 			if(newest == null) {
 				if(DEBUG)System.out.println("ClientUpdates run: newest ="+newest);
-				DD.controlPane.setClientUpdatesStatus(false);
+				if(DD.controlPane!=null) DD.controlPane.setClientUpdatesStatus(false);
 				return;
 			}
 			
@@ -458,7 +460,7 @@ public class ClientUpdates extends Thread{
 										null
 										);
 						if((c==2)||(c==JOptionPane.CLOSED_OPTION)) {
-							DD.controlPane.setClientUpdatesStatus(false);
+							if(DD.controlPane!=null) DD.controlPane.setClientUpdatesStatus(false);
 							return null;
 						}
 						if(c==0){

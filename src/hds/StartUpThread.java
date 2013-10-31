@@ -51,6 +51,7 @@ import java.util.regex.Pattern;
 
 import plugin_data.PluginObject;
 
+import updates.ClientUpdates;
 import util.P2PDDSQLException;
 
 import simulator.WirelessLog;
@@ -159,14 +160,14 @@ public class StartUpThread extends Thread {
 
 		}
 		
-		DD.frame.setIconImage(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico")));
+		if(DD.frame!=null )DD.frame.setIconImage(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico")));
 		List<Image> icons = new ArrayList<Image>();
 		//icons.add(Toolkit.getDefaultToolkit().getImage("p2pdd_resources/folder_images_256.png"));
 		icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"folder_images_256.png")));
 		icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"folder_32x32.png")));
 		icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico")));
 		icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"happy.smiley19.gif")));
-		DD.frame.setIconImages(icons);
+		if(DD.frame!=null )DD.frame.setIconImages(icons);
 	}
 	
 	/**
@@ -175,38 +176,39 @@ public class StartUpThread extends Thread {
 	public void initQueuesStatus(){
 		if(DEBUG) System.out.println("StartUpThread:initQueuesStatus: start");
 		if(_DEBUG) if(!EventQueue.isDispatchThread()) Util.printCallPath("Not dispatcher");
-			DD.controlPane.q_MD.removeItemListener(DD.controlPane);
-			DD.controlPane.q_C.removeItemListener(DD.controlPane);
-			DD.controlPane.q_RA.removeItemListener(DD.controlPane);
-			DD.controlPane.q_RE.removeItemListener(DD.controlPane);
-			DD.controlPane.q_BH.removeItemListener(DD.controlPane);
-			DD.controlPane.q_BR.removeItemListener(DD.controlPane);
-			DD.controlPane.q_MD.setSelected(Broadcasting_Probabilities._broadcast_queue_md);
-			DD.controlPane.q_C.setSelected(Broadcasting_Probabilities._broadcast_queue_c);
-			DD.controlPane.q_RA.setSelected(Broadcasting_Probabilities._broadcast_queue_ra);
-			DD.controlPane.q_RE.setSelected(Broadcasting_Probabilities._broadcast_queue_re);
-			DD.controlPane.q_BH.setSelected(Broadcasting_Probabilities._broadcast_queue_bh);
-			DD.controlPane.q_BR.setSelected(Broadcasting_Probabilities._broadcast_queue_br);
-			DD.controlPane.q_MD.addItemListener(DD.controlPane);
-			DD.controlPane.q_C.addItemListener(DD.controlPane);
-			DD.controlPane.q_RA.addItemListener(DD.controlPane);
-			DD.controlPane.q_RE.addItemListener(DD.controlPane);
-			DD.controlPane.q_BH.addItemListener(DD.controlPane);
-			DD.controlPane.q_BR.addItemListener(DD.controlPane);
+		
+		DD.controlPane.q_MD.removeItemListener(DD.controlPane);
+		DD.controlPane.q_C.removeItemListener(DD.controlPane);
+		DD.controlPane.q_RA.removeItemListener(DD.controlPane);
+		DD.controlPane.q_RE.removeItemListener(DD.controlPane);
+		DD.controlPane.q_BH.removeItemListener(DD.controlPane);
+		DD.controlPane.q_BR.removeItemListener(DD.controlPane);
+		DD.controlPane.q_MD.setSelected(Broadcasting_Probabilities._broadcast_queue_md);
+		DD.controlPane.q_C.setSelected(Broadcasting_Probabilities._broadcast_queue_c);
+		DD.controlPane.q_RA.setSelected(Broadcasting_Probabilities._broadcast_queue_ra);
+		DD.controlPane.q_RE.setSelected(Broadcasting_Probabilities._broadcast_queue_re);
+		DD.controlPane.q_BH.setSelected(Broadcasting_Probabilities._broadcast_queue_bh);
+		DD.controlPane.q_BR.setSelected(Broadcasting_Probabilities._broadcast_queue_br);
+		DD.controlPane.q_MD.addItemListener(DD.controlPane);
+		DD.controlPane.q_C.addItemListener(DD.controlPane);
+		DD.controlPane.q_RA.addItemListener(DD.controlPane);
+		DD.controlPane.q_RE.addItemListener(DD.controlPane);
+		DD.controlPane.q_BH.addItemListener(DD.controlPane);
+		DD.controlPane.q_BR.addItemListener(DD.controlPane);
 			
-			DD.controlPane.tcpButton.removeItemListener(DD.controlPane);
-			DD.controlPane.udpButton.removeItemListener(DD.controlPane);
-			DD.controlPane.tcpButton.setSelected(DD.ClientTCP);
-			DD.controlPane.udpButton.setSelected(DD.ClientUDP);
-			DD.controlPane.tcpButton.addItemListener(DD.controlPane);
-			DD.controlPane.udpButton.addItemListener(DD.controlPane);
+		DD.controlPane.tcpButton.removeItemListener(DD.controlPane);
+		DD.controlPane.udpButton.removeItemListener(DD.controlPane);
+		DD.controlPane.tcpButton.setSelected(DD.ClientTCP);
+		DD.controlPane.udpButton.setSelected(DD.ClientUDP);
+		DD.controlPane.tcpButton.addItemListener(DD.controlPane);
+		DD.controlPane.udpButton.addItemListener(DD.controlPane);
 			
 			
-			DD.controlPane.serveDirectly.removeItemListener(DD.controlPane);
-			DD.controlPane.serveDirectly.setSelected(OrgHandling.SERVE_DIRECTLY_DATA);
-			DD.controlPane.serveDirectly.addItemListener(DD.controlPane);
+		DD.controlPane.serveDirectly.removeItemListener(DD.controlPane);
+		DD.controlPane.serveDirectly.setSelected(OrgHandling.SERVE_DIRECTLY_DATA);
+		DD.controlPane.serveDirectly.addItemListener(DD.controlPane);
 			
-			if(DEBUG) System.out.println("StartUpThread:initQueuesStatus: start");
+		if(DEBUG) System.out.println("StartUpThread:initQueuesStatus: start");
 	}
 	public void run(){
 		//boolean DEBUG = true;
@@ -217,11 +219,12 @@ public class StartUpThread extends Thread {
 
 			DD.serveDataDirectly(DD.getAppBoolean(DD.SERVE_DIRECTLY));
 
-			
-			Runnable initQS = new Runnable(){
-				public void run(){initQueuesStatus();}
-			};
-			EventQueue.invokeLater(initQS);
+			if(DD.GUI) {
+				Runnable initQS = new Runnable(){
+					public void run(){initQueuesStatus();}
+				};
+				EventQueue.invokeLater(initQS);
+			}
 			
 			boolean directory_server_on_start = DD.getAppBoolean(DD.DD_DIRECTORY_SERVER_ON_START);
 			boolean data_userver_on_start = DD.DD_DATA_USERVER_ON_START_DEFAULT^DD.getAppBoolean(DD.DD_DATA_USERVER_INACTIVE_ON_START);
@@ -244,10 +247,16 @@ public class StartUpThread extends Thread {
 			DD.createMyPeerIDIfEmpty();
 			if(DEBUG) System.out.println("StartUpThread:run: created peer");
 			
-			if (directory_server_on_start) DD.controlPane.setDirectoryStatus(true);//startDirectoryServer(true, -1);
+			if (directory_server_on_start){
+				if(DD.controlPane!=null) DD.controlPane.setDirectoryStatus(true);//startDirectoryServer(true, -1);
+				else DD.startDirectoryServer(true, -1);
+			}
 
 			if(DEBUG) System.out.println("StartUpThread:run: stat dir");
-			if (data_userver_on_start)DD.controlPane.setUServerStatus(true);
+			if (data_userver_on_start){
+				if(DD.controlPane!=null) DD.controlPane.setUServerStatus(true);
+				else DD.startUServer(true, Identity.current_peer_ID);
+			}
 			/*{
 				new Thread(){
 					public void run(){
@@ -263,7 +272,10 @@ public class StartUpThread extends Thread {
 			}*/
 			
 			if(DEBUG) System.out.println("StartUpThread:run: stat userver");
-			if (data_server_on_start)DD.controlPane.setServerStatus(true);
+			if (data_server_on_start){
+				if(DD.controlPane!=null) DD.controlPane.setServerStatus(true);
+				else DD.startServer(true, Identity.current_peer_ID);
+			}
 			/*{
 				new Thread(){
 					public void run(){
@@ -277,10 +289,15 @@ public class StartUpThread extends Thread {
 			}*/
 
 			if(DEBUG) System.out.println("StartUpThread:run: stat tcpserver");
-			if (data_client_on_start) DD.controlPane.setClientStatus(true);//startClient(true);
+			if (data_client_on_start){
+				if(DD.controlPane!=null) DD.controlPane.setClientStatus(true);//startClient(true);
+				else DD.startClient(true);
+			}
 			if(DEBUG) System.out.println("StartUpThread:run: stat client");
-			if (data_client_updates_on_start)
-				DD.controlPane.setClientUpdatesStatus(true);//startClient(true);
+			if (data_client_updates_on_start) {
+				if(DD.controlPane!=null) DD.controlPane.setClientUpdatesStatus(true);//startClient(true);
+				else ClientUpdates.startClient(true);
+			}
 			if(DEBUG) System.out.println("StartUpThread:run: stat updates");
 			if (wireless_server_on_start) DD.setBroadcastServerStatus(true);
 			/*{
@@ -311,6 +328,7 @@ public class StartUpThread extends Thread {
 			DD.DD_SSID = DD.getExactAppText("DD_SSID");
 			if(DD.DD_SSID==null) DD.DD_SSID = DD.DEFAULT_DD_SSID;
 			
+			if(DD.GUI)
 			EventQueue.invokeLater(new Runnable(){
 				public void run(){
 					if(Application.controlPane.m_area_ADHOC_BIP==null) return;
@@ -367,7 +385,7 @@ public class StartUpThread extends Thread {
 			}
 			*/
 
-			plugin_data.PluginRegistration.loadPlugins(DD.getMyPeerGIDFromIdentity(), DD.getMyPeerName());
+			if(DD.GUI) plugin_data.PluginRegistration.loadPlugins(DD.getMyPeerGIDFromIdentity(), DD.getMyPeerName());
 			if(DEBUG) System.out.println("StartUpThread:run: plugins loaded, go wireless");
 
 			//System.err.println("OS_SEP="+Application.OS_PATH_SEPARATOR);

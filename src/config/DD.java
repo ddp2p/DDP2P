@@ -100,6 +100,7 @@ import util.DD_IdentityVerification_Answer;
 import util.DD_IdentityVerification_Request;
 import util.DD_Mirrors;
 import util.DD_Testers;
+import util.GetOpt;
 import util.P2PDDSQLException;
 import util.Util;
 import widgets.components.DDTranslation;
@@ -859,7 +860,11 @@ public class DD {
 		p1.setResizeWeight(1.0);
 		return wpanel;
 	}
-	public static JFrame initMainFrame(){
+	/**
+	 * Starts the spash with dimensions in DD.FRAME_XXX
+	 * @return
+	 */
+	public static JFrame initMainFrameSplash(){
 		JFrame _frame = new JFrameDropCatch(DD.APP_NAME);
 		_frame.getRootPane().addComponentListener(new ComponentAdapter() {
             public void componentResized(ComponentEvent e) {
@@ -1624,11 +1629,11 @@ public class DD {
 				return;
 			}
 			Application.g_BroadcastServer.start();
-			if(EventQueue.isDispatchThread()) DD.controlPane.m_startBroadcastServer.setText(DD.controlPane.STOP_BROADCAST_SERVER);
-			else
+			if(EventQueue.isDispatchThread()){if(DD.controlPane!=null)  DD.controlPane.m_startBroadcastServer.setText(DD.controlPane.STOP_BROADCAST_SERVER);
+			}else
 				EventQueue.invokeLater(new Runnable() {
 					public void run(){
-						DD.controlPane.m_startBroadcastServer.setText(DD.controlPane.STOP_BROADCAST_SERVER);
+						if(DD.controlPane!=null) DD.controlPane.m_startBroadcastServer.setText(DD.controlPane.STOP_BROADCAST_SERVER);
 					}
 				});
 			return;
@@ -1636,11 +1641,11 @@ public class DD {
 			if(Application.g_BroadcastServer == null) return;
 			Application.g_BroadcastServer.stopServer();
 			Application.g_BroadcastServer=null;
-			if(EventQueue.isDispatchThread()) DD.controlPane.m_startBroadcastServer.setText(DD.controlPane.START_BROADCAST_SERVER);
-			else
+			if(EventQueue.isDispatchThread()){if(DD.controlPane!=null)  DD.controlPane.m_startBroadcastServer.setText(DD.controlPane.START_BROADCAST_SERVER);
+			}else
 				EventQueue.invokeLater(new Runnable() {
 					public void run(){
-						DD.controlPane.m_startBroadcastServer.setText(DD.controlPane.START_BROADCAST_SERVER);
+						if(DD.controlPane!=null) DD.controlPane.m_startBroadcastServer.setText(DD.controlPane.START_BROADCAST_SERVER);
 					}
 				});
 			return;
@@ -1660,11 +1665,11 @@ public class DD {
 				return;
 			}
 			Application.g_BroadcastClient.start();
-			if(EventQueue.isDispatchThread()) DD.controlPane.m_startBroadcastClient.setText(DD.controlPane.STOP_BROADCAST_CLIENT);
-			else
+			if(EventQueue.isDispatchThread()){ if(DD.controlPane!=null) DD.controlPane.m_startBroadcastClient.setText(DD.controlPane.STOP_BROADCAST_CLIENT);
+			}else
 				EventQueue.invokeLater(new Runnable() {
 					public void run(){
-						DD.controlPane.m_startBroadcastClient.setText(DD.controlPane.STOP_BROADCAST_CLIENT);
+						if(DD.controlPane!=null) DD.controlPane.m_startBroadcastClient.setText(DD.controlPane.STOP_BROADCAST_CLIENT);
 					}
 				});
 			return;
@@ -1672,11 +1677,11 @@ public class DD {
 			if(Application.g_BroadcastClient == null) return;
 			Application.g_BroadcastClient.stopClient();
 			Application.g_BroadcastClient=null;
-			if(EventQueue.isDispatchThread()) DD.controlPane.m_startBroadcastClient.setText(DD.controlPane.START_BROADCAST_CLIENT);
-			else
+			if(EventQueue.isDispatchThread()){ if(DD.controlPane!=null) DD.controlPane.m_startBroadcastClient.setText(DD.controlPane.START_BROADCAST_CLIENT);
+			}else
 				EventQueue.invokeLater(new Runnable() {
 					public void run(){
-						DD.controlPane.m_startBroadcastClient.setText(DD.controlPane.START_BROADCAST_CLIENT);
+						if(DD.controlPane!=null) DD.controlPane.m_startBroadcastClient.setText(DD.controlPane.START_BROADCAST_CLIENT);
 					}
 				});
 			return;
@@ -1688,11 +1693,11 @@ public class DD {
 			if(Application.g_Simulator != null) return;
 			Application.g_Simulator = new Fill_database();
 			Application.g_Simulator.start();
-			if(EventQueue.isDispatchThread()) DD.controlPane.m_startSimulator.setText(DD.controlPane.STOP_SIMULATOR);
-			else
+			if(EventQueue.isDispatchThread()){if(DD.controlPane!=null)  DD.controlPane.m_startSimulator.setText(DD.controlPane.STOP_SIMULATOR);
+			}else
 				EventQueue.invokeLater(new Runnable() {
 					public void run(){
-						DD.controlPane.m_startSimulator.setText(DD.controlPane.STOP_SIMULATOR);
+						if(DD.controlPane!=null) DD.controlPane.m_startSimulator.setText(DD.controlPane.STOP_SIMULATOR);
 					}
 				});
 			return;
@@ -1998,7 +2003,7 @@ public class DD {
 		// TODO Auto-generated method stub
 		return true;
 	}
-	static public void main(String arg[]) throws util.P2PDDSQLException {
+	static void initGUILookAndFeel(){
 	    try {
             // Set cross-platform Java L&F (also called "Metal")
 	    	UIManager.setLookAndFeel( UIManager.getCrossPlatformLookAndFeelClassName());
@@ -2015,42 +2020,85 @@ public class DD {
 	    catch (IllegalAccessException e) {
 	       // handle exception
 	    }
-
-		set_DEBUG();
-		toolkit = Toolkit.getDefaultToolkit();
-		int screen_width = (int)toolkit.getScreenSize().getWidth();
-		int screen_height = (int)toolkit.getScreenSize().getHeight();
-		if(screen_width > 680){
-			DD.FRAME_OFFSET = (screen_width-600)/3;
-			DD.FRAME_WIDTH = 600;
-			DD.FRAME_HSTART = (screen_height-600)/3;
-			DD.FRAME_HEIGHT = 450;
-		}else{
-			DD.FRAME_OFFSET = 0;
-			DD.FRAME_WIDTH = screen_width;
-			DD.FRAME_HSTART = 0;
-			DD.FRAME_HEIGHT = screen_height;
-		}
+	}
+	public static boolean GUI = true;
+	//static final String CONSOLE="CONSOLE";
+	// parameters: 
+	// last parameter is the database (if different from CONSOLE)
+	// the parameter 1 is the GID of the peer
+	//
+	// Should be: -d database, -p peerGID, -c [for colsole]
+	static public void main(String args[]) throws util.P2PDDSQLException {
+		ArrayList<String> potentialDatabases = new ArrayList<String>();
+		String dfname = Application.DELIBERATION_FILE;
+		String guID ="";
 		
-		frame = initMainFrame();
+		char c;
+		while((c=GetOpt.getopt(args, "d:p:c"))!=GetOpt.END){
+			switch(c){
+			case 'c':
+				System.out.println("CONSOLE");
+				GUI = false;
+				break;
+			case 'p':
+				System.out.println("peer= "+GetOpt.optarg);
+				guID = GetOpt.optarg;
+				break;
+			case 'd':
+				System.out.println("db+="+GetOpt.optarg);
+				potentialDatabases.add(GetOpt.optarg);
+				break;
+			case GetOpt.END:
+				System.out.println("REACHED END OD OPTIONS");
+				break;
+			case '?':
+				System.out.println("Options ?:"+GetOpt.optopt);
+				return;
+			default:
+				System.out.println("Error: "+c);
+				return;
+			}
+		}
+		if(GetOpt.optind<args.length)
+			System.out.println("OPTS:"+args[GetOpt.optind]);
+
+//		// take database as last parameter, or as default
+//		if(args.length>0) {
+//			dfname = args[args.length-1];
+//			if(!CONSOLE.equals(dfname))
+//				potentialDatabases.add(dfname);
+//		}
+		if(!Application.DELIBERATION_FILE.equals(dfname)) potentialDatabases.add(Application.DELIBERATION_FILE);
+		
+		//if((args.length>0) && CONSOLE.equals(args[0])) GUI=false;
+		set_DEBUG();
+		if(GUI){
+			initGUILookAndFeel();
+			toolkit = Toolkit.getDefaultToolkit();
+			int screen_width = (int)toolkit.getScreenSize().getWidth();
+			int screen_height = (int)toolkit.getScreenSize().getHeight();
+			if(screen_width > 680){
+				DD.FRAME_OFFSET = (screen_width-600)/3;
+				DD.FRAME_WIDTH = 600;
+				DD.FRAME_HSTART = (screen_height-600)/3;
+				DD.FRAME_HEIGHT = 450;
+			}else{
+				DD.FRAME_OFFSET = 0;
+				DD.FRAME_WIDTH = screen_width;
+				DD.FRAME_HSTART = 0;
+				DD.FRAME_HEIGHT = screen_height;
+			}
+			frame = initMainFrameSplash();
+		}
 		startTime = Util.CalendargetInstance();
 		//boolean DEBUG = true;
 		System.setProperty("java.net.preferIPv4Stack", "true");
 		//DD.USERDIR = System.getProperty("user.dir");
 		if(DEBUG)System.out.println("User="+Application.USERNAME);
-		if(DEBUG)System.out.println("Params: ["+arg.length+"]="+Util.concat(arg, " ; "));
+		if(DEBUG)System.out.println("Params: ["+args.length+"]="+Util.concat(args, " ; "));
 		//System.out.println(Util.byteToHex((new BigInteger("1025")).toByteArray(), ":"));
 		//System.out.println(Util.byteToHex((new BigInteger("257")).toByteArray(), ":"));
 		
-		// take database as last parameter, or as default
-		ArrayList<String> potentialDatabases = new ArrayList<String>();
-		String dfname = Application.DELIBERATION_FILE;
-		String guID ="";
-		if(arg.length>0) {
-			dfname = arg[arg.length-1];
-			potentialDatabases.add(dfname);
-		}
-		if(!Application.DELIBERATION_FILE.equals(dfname)) potentialDatabases.add(Application.DELIBERATION_FILE);
 		if(DEBUG) System.out.println("DD:run: try databases");
 		
 		Hashtable<String, String> errors_db = new Hashtable<String, String>();
@@ -2062,7 +2110,7 @@ public class DD {
 				break;
 			}
 			errors_db.put(attempt, error);
-			if(arg.length>1) System.err.println(_("Failed attempt to open first choice file:")+" \""+attempt+"\": "+error);
+			if(args.length>1) System.err.println(_("Failed attempt to open first choice file:")+" \""+attempt+"\": "+error);
 		}
 		if(Application.db == null) {
 			JFileChooser chooser = new JFileChooser();
@@ -2134,9 +2182,11 @@ public class DD {
 		Identity peer_ID = Identity.current_peer_ID;//getDefaultIdentity();
     	if(DEBUG) System.err.println("DD:main: identity");
 		Identity id = Identity.getCurrentIdentity();
-		if(id!=null) guID = id.globalID;
-		if(arg.length>1) {
-			Identity.setCurrentIdentity(guID = arg[1]); // current_identity.globalID = ;
+		if(guID!=null) {
+			//guID = args[1];
+			Identity.setCurrentIdentity(guID); // current_identity.globalID = ;
+		}else{
+			if(id!=null) guID = id.globalID;
 		}
 		if(DEBUG) System.out.println("My ID: "+guID);
 
@@ -2155,11 +2205,12 @@ public class DD {
 			e.printStackTrace();
 		}
 
-		if(DEBUG) System.out.println("DD:run: start GUI");		
-
-		createAndShowGUI();
-
-		if(DEBUG) System.out.println("DD:run: start threads");		
+		if(GUI) {
+			if(DEBUG) System.out.println("DD:run: start GUI");		
+	
+			createAndShowGUI();
+		}
+		if(DEBUG) System.out.println("DD:run: start threads");
 		
 		BroadcastConsummerBuffer.queue = new BroadcastConsummerBuffer();
 		new StartUpThread().start();

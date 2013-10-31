@@ -40,7 +40,27 @@ CREATE TABLE directory_forwarding_terms (
     	"priority_type" TEXT,
     	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 );
-CREATE TABLE updates (
+CREATE TABLE mirror (
+	"mirror_ID" INTEGER PRIMARY KEY,
+	"public_key" TEXT,
+	"original_mirror_name"	TEXT,
+	"my_name_for_mirror" TEXT,
+	"url"	TEXT,
+	"used" INTEGER,
+	"last_contact_date" TEXT,
+	"activity" TEXT,
+      	"location" TEXT,  
+	"protocol" TEXT,
+	"last_version" TEXT,
+	"last_version_branch" TEXT,
+	"last_version_testers_info" TEXT,
+	"last_version_releaseQD" TEXT,
+	"last_version_info" TEXT,
+	"data_version" TEXT,
+	"creation_date" TEXT,
+	"preference_date" TEXT 
+);
+CREATE TABLE updates ( #deprecated (replaced by mirror)
 	"updates_ID" INTEGER PRIMARY KEY,
 	"original_mirror_name"	TEXT,
 	"my_name_for_mirror" TEXT,
@@ -52,7 +72,7 @@ CREATE TABLE updates (
 	"activity" TEXT,
 	"last_releaseQD" TEXT # last releaseQoT 
 );
-CREATE TABLE updates_keys (
+CREATE TABLE updates_keys ( #deprecated (merged into tester)
 	"updates_keys_ID" INTEGER PRIMARY KEY,
 	"original_tester_name"	TEXT,
 	"my_name_for_tester" TEXT,
@@ -66,12 +86,27 @@ CREATE TABLE updates_keys (
 );
 CREATE TABLE tester (
 	"tester_ID" INTEGER PRIMARY KEY,
-	"name"	TEXT,
+	"original_tester_name"	TEXT,
+	"my_name_for_tester" TEXT,
 	"public_key" TEXT, # used only if pk available at "url" in <current>
+ 	"public_key_hash" TEXT, 
 	"email"	TEXT,
 	"url"	TEXT,
 	"revoked" INTEGER, # set if the pk is available at "url" in <revoked>
-	"description" TEXT
+     	"revoked_info" TEXT,
+     	"revoked_GID_hash" TEXT,
+	"description" TEXT,
+	"trusted_as_mirror" INTEGER,
+	"trusted_as_tester" INTEGER,
+	"trust_weight" TEXT,
+	"reference_tester" INTEGER,
+	"expected_test_thresholds" TEXT,
+	
+	"data_version" TEXT,
+	"creation_date" TEXT,
+	"preference_date" TEXT,
+# deprecated attributes
+	"name"	TEXT
 );
 
 CREATE TABLE peer (
@@ -186,6 +221,7 @@ CREATE TABLE organization ( # organizations -> organization
 	signature TEXT,      # signature with orgGID, or grassroot orgGID
 	signature_initiator TEXT,
 	broadcast_rule TEXT DEFAULT (1), # set to 1 if by default this org should not be broadcasted
+	neighborhoods_rule TEXT DEFAULT(1), # set to 1 to allow users to change neighborhood hierarchy structures, 0 for fix structures, 2 for dynamic neighborhoods but no language specs
 	crl BLOB, 
 	crl_date DATE, 
 	default_scoring_options TEXT, 

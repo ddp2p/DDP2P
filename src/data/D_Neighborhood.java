@@ -330,6 +330,11 @@ class D_Neighborhood extends ASNObj implements Summary{
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC13));
 		return enc;
 	}
+	/**
+	 * H(name,name_lang,description,boundary,name_divisions,names_subdivisions,parent_global_ID,picture)
+	 * @param orgGID
+	 * @return
+	 */
 	public Encoder getHashEncoder(String orgGID) {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(orgGID,Encoder.TAG_PrintableString));
@@ -362,7 +367,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 		if(DEBUG) System.out.println("WB_Neighborhood:sign: sk="+sk);
 		if(DEBUG) System.out.println("WB_Neighborhood:sign: orgGID=\""+orgGID+"\"");
 		this.creation_date = Util.CalendargetInstance();
-		if(this.global_neighborhood_ID==null) make_ID(orgGID);
+		if(this.global_neighborhood_ID == null) this.global_neighborhood_ID = make_ID(orgGID);
 		this.global_organization_ID = orgGID;
 		if(DEBUG) System.out.println("WB_Neighborhood:sign: this="+this+"\norgGID="+orgGID);
 		signature = Util.sign(this.getSignableEncoder(orgGID).getBytes(), sk);
@@ -374,6 +379,14 @@ class D_Neighborhood extends ASNObj implements Summary{
 	public String make_ID(){
 		return make_ID(this.global_organization_ID);
 	}
+	/**
+	 * Sets global_neigh_ID = null
+	 * Does not consider submitter,
+	 *  creation_date,
+	 *  submitter_global_ID
+	 * @param orgGID
+	 * @return
+	 */
 	public String make_ID(String orgGID){
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("WB_Neighborhood:make_ID: orgGID=\""+orgGID+"\"");
@@ -383,20 +396,22 @@ class D_Neighborhood extends ASNObj implements Summary{
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
-		this.global_neighborhood_ID  = null; // this will be created as result
 		
-		if ((this.parent_ID != null) && (this.parent_global_ID == null))
+		if ((this.parent_ID != null) && (this.parent_global_ID == null)){
 			try {
 				this.parent_global_ID = D_Neighborhood.getGlobalID(this.parent_ID);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
+		}
 		
 		Calendar _creation_date=this.creation_date; // date should not differentiate between neighborhoods
-		this.creation_date = null;
 		
 		String _submitter_global_ID = submitter_global_ID; // submitter should not differentiate between neighborhoods
 		D_Constituent _submitter = submitter;
+		String GID = this.global_neighborhood_ID;
+		this.global_neighborhood_ID  = null; // this will be created as result
+		this.creation_date = null;
 		submitter_global_ID=null;
 		submitter=null;
 		
@@ -405,9 +420,10 @@ class D_Neighborhood extends ASNObj implements Summary{
 		this.creation_date = _creation_date;
 		this.submitter_global_ID = _submitter_global_ID;
 		this.submitter = _submitter;
+		this.global_neighborhood_ID = GID;
 		
 		if(DEBUG) System.out.println("WB_Neighborhood:make_ID: data="+Util.byteToHex(data));
-		String gid= this.global_neighborhood_ID =  "N:"+Util.getGID_as_Hash(data);
+		String gid = "N:"+Util.getGID_as_Hash(data);
 		if(DEBUG) System.out.println("WB_Neighborhood:make_ID: gid="+gid);
 		return gid;
 	}

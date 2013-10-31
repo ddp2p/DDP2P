@@ -41,6 +41,7 @@ import ASN1.Encoder;
 
 public class VersionInfo extends ASN1.ASNObj{
 	public String version;
+	public String branch; // Do we need signature + pkey of the main repository?? or testers did that verfication!
 	public Calendar date;
 	public String script;
 	public Downloadable[] data;

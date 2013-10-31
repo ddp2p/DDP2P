@@ -25,8 +25,8 @@ import util.Util;
 
 public class updatesKeys {
 
-	public static final String TNAME = "updates_keys";
-	public static final String updates_keys_ID = "updates_keys_ID";
+	public static final String TNAME = "tester";
+	public static final String updates_keys_ID = "tester_ID";
 	public static final String original_tester_name = "original_tester_name";
 	public static final String my_name_for_tester = "my_name_for_tester";
 	public static final String public_key = "public_key";

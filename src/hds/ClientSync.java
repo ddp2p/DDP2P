@@ -130,6 +130,7 @@ public class ClientSync{
 	 * @param err
 	 */
 	public static void reportDa(String dir_address, String global_peer_ID, String peer_name, DirectoryAnswer da, String err){
+		if(!DD.GUI) return;
 		String key = "DIR:"+dir_address;
 		Hashtable<String,DirectoryAnswer> old_bag = DirectoriesData.dir_data.get(key);
 		if(da==null) {

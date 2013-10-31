@@ -216,4 +216,21 @@ public class D_TesterDefinition extends ASNObj implements Summary{
 		}
 		return new D_TesterDefinition(result.get(0));
 	}
+	
+	public static D_TesterDefinition retrieveTesterDefinition(String pubKey){
+		String[] params = new String[]{pubKey};
+		String sql = "SELECT "+table.tester.fields_tester+
+				" FROM  " + table.tester.TNAME +
+				" WHERE "+table.tester.public_key + " = ?";
+		ArrayList<ArrayList<Object>> result=null;
+		try{
+			result = Application.db.select(sql, params, DEBUG);
+		}catch(util.P2PDDSQLException e){
+			System.out.println(e);
+		}
+		if(result == null ){
+			return null;
+		}
+		return new D_TesterDefinition(result.get(0));
+	}
 }

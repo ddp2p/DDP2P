@@ -1051,25 +1051,26 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public void setServerStatus(boolean run) throws NumberFormatException, P2PDDSQLException  {
 		if(DEBUG)System.out.println("Setting server running status to: "+run);
 		
-		if(EventQueue.isDispatchThread()) {
-			if(run)startServer.setText(STARTING_SERVER);
-			else startServer.setText(STOPPING_SERVER);
+		if(DD.GUI){
+			if(EventQueue.isDispatchThread()) {
+				if(run)startServer.setText(STARTING_SERVER);
+				else startServer.setText(STOPPING_SERVER);
+			}
+			else{
+				if(run)
+					EventQueue.invokeLater(new Runnable() {
+						public void run(){
+							startServer.setText(STARTING_SERVER);
+						}
+					});
+				else
+					EventQueue.invokeLater(new Runnable() {
+						public void run(){
+							startServer.setText(STOPPING_SERVER);
+						}
+					});
+			}
 		}
-		else{
-			if(run)
-				EventQueue.invokeLater(new Runnable() {
-					public void run(){
-						startServer.setText(STARTING_SERVER);
-					}
-				});
-			else
-				EventQueue.invokeLater(new Runnable() {
-					public void run(){
-						startServer.setText(STOPPING_SERVER);
-					}
-				});
-		}
-		
 		if(run){
 			if(DEBUG)System.err.println("Setting id: "+Identity.current_peer_ID);
 			DD.startServer(true, Identity.current_peer_ID);
@@ -1078,41 +1079,44 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		}
 		if(DEBUG)System.err.println("Done Setting: "+run);
 
-		if(EventQueue.isDispatchThread()) {
-			if(Application.as!=null) startServer.setText(STOP_SERVER);
-			else startServer.setText(START_SERVER);		
-		}else{
-			if(run)
-				EventQueue.invokeLater(new Runnable() {
-					public void run(){
-						if(Application.as!=null) startServer.setText(STOP_SERVER);
-						else startServer.setText(START_SERVER);		
-					}
-				});
+		if(DD.GUI){
+			if(EventQueue.isDispatchThread()) {
+				if(Application.as!=null) startServer.setText(STOP_SERVER);
+				else startServer.setText(START_SERVER);		
+			}else{
+				if(run)
+					EventQueue.invokeLater(new Runnable() {
+						public void run(){
+							if(Application.as!=null) startServer.setText(STOP_SERVER);
+							else startServer.setText(START_SERVER);		
+						}
+					});
+			}
 		}
 		if(DEBUG)System.err.println("Save Setting: "+Application.as);
-
 
 		DD.setAppText(DD.DD_DATA_SERVER_ON_START, (Application.as==null)?"0":"1");
 	}
 	public void setUServerStatus(boolean _run) throws NumberFormatException, P2PDDSQLException  {
 		if(DEBUG)System.out.println("ControlPane:Setting userver running status to: "+_run);
-		if(EventQueue.isDispatchThread()) {
-			if(_run)startUServer.setText(STARTING_USERVER);
-			else startUServer.setText(STOPPING_USERVER);	
-		}else{
-			if(_run)
-				EventQueue.invokeLater(new Runnable() {
-					public void run(){
-						startUServer.setText(STARTING_USERVER);
-					}
-				});
-			else
-				EventQueue.invokeLater(new Runnable() {
-					public void run(){
-						startUServer.setText(STOPPING_USERVER);	
-					}
-				});
+		if(DD.GUI){
+			if(EventQueue.isDispatchThread()) {
+				if(_run)startUServer.setText(STARTING_USERVER);
+				else startUServer.setText(STOPPING_USERVER);	
+			}else{
+				if(_run)
+					EventQueue.invokeLater(new Runnable() {
+						public void run(){
+							startUServer.setText(STARTING_USERVER);
+						}
+					});
+				else
+					EventQueue.invokeLater(new Runnable() {
+						public void run(){
+							startUServer.setText(STOPPING_USERVER);	
+						}
+					});
+			}
 		}
 		if(DEBUG)System.out.println("ControlPanel: userver started");
 
@@ -1123,21 +1127,21 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			DD.startUServer(false, null);
 		}
 		if(DEBUG)System.err.println("Done Setting: "+_run);
-		
-		if(EventQueue.isDispatchThread()) {
-			if(Application.aus!=null) startUServer.setText(STOP_USERVER);
-			else startUServer.setText(START_USERVER);		
+		if(DD.GUI) {
+			if(EventQueue.isDispatchThread()) {
+				if(Application.aus!=null) startUServer.setText(STOP_USERVER);
+				else startUServer.setText(START_USERVER);		
+			}
+			else
+				EventQueue.invokeLater(new Runnable(){
+					public void run(){
+						if(Application.aus!=null) startUServer.setText(STOP_USERVER);
+						else startUServer.setText(START_USERVER);		
+					}
+				});
 		}
-		else
-			EventQueue.invokeLater(new Runnable(){
-				public void run(){
-					if(Application.aus!=null) startUServer.setText(STOP_USERVER);
-					else startUServer.setText(START_USERVER);		
-				}
-			});
 		
 		if(DEBUG)System.err.println("Save Setting: "+Application.aus);
-
 		
 		DD.setAppBoolean(DD.DD_DATA_USERVER_INACTIVE_ON_START, DD.DD_DATA_USERVER_ON_START_DEFAULT^(Application.aus!=null));
 
@@ -1146,31 +1150,32 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	}
 	public void setClientUpdatesStatus(boolean _run) {
 		if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: got servers status: updates="+_run);
-		if(EventQueue.isDispatchThread()) {		
-			if(_DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: in dispatch: updates="+_run);
-			if(_run)startClientUpdates.setText(STARTING_CLIENT_UPDATES);
-			else startClientUpdates.setText(STOPPING_CLIENT_UPDATES);
-		}
-		else{
-			if(_run) {
-				EventQueue.invokeLater(new Runnable() {
-					public void run(){
-						if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: in dispatch: updates starting");
-						startClientUpdates.setText(STARTING_CLIENT_UPDATES);
-					}
-				});
+		if(DD.GUI) {
+			if(EventQueue.isDispatchThread()) {		
+				if(_DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: in dispatch: updates="+_run);
+				if(_run)startClientUpdates.setText(STARTING_CLIENT_UPDATES);
+				else startClientUpdates.setText(STOPPING_CLIENT_UPDATES);
 			}
 			else{
-				EventQueue.invokeLater(new Runnable(){
-					public void run(){
-						if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: in dispatch: updates stopping");
-						startClientUpdates.setText(STOPPING_CLIENT_UPDATES);
-					}
-
-				});
+				if(_run) {
+					EventQueue.invokeLater(new Runnable() {
+						public void run(){
+							if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: in dispatch: updates starting");
+							startClientUpdates.setText(STARTING_CLIENT_UPDATES);
+						}
+					});
+				}
+				else{
+					EventQueue.invokeLater(new Runnable(){
+						public void run(){
+							if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: in dispatch: updates stopping");
+							startClientUpdates.setText(STOPPING_CLIENT_UPDATES);
+						}
+	
+					});
+				}
 			}
 		}
-		
 		if(_run){
 			if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: here: updates stopping");
 			ClientUpdates.startClient(true);
@@ -1186,42 +1191,45 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	}
 
 	public void setClientStatus(boolean _run) throws NumberFormatException, P2PDDSQLException {
-		if(EventQueue.isDispatchThread()) {		
-			if(_run) startClient.setText(STARTING_CLIENT);
-			else startClient.setText(STOPPING_CLIENT);
-		}
-		else{
-			if(_run) {
-				EventQueue.invokeLater(new Runnable() {
-					public void run(){
-						startClient.setText(STARTING_CLIENT);
-					}
-				});
+		if(DD.GUI){
+			if(EventQueue.isDispatchThread()) {		
+				if(_run) startClient.setText(STARTING_CLIENT);
+				else startClient.setText(STOPPING_CLIENT);
 			}
 			else{
 				if(_run) {
-					EventQueue.invokeLater(new Runnable(){
+					EventQueue.invokeLater(new Runnable() {
 						public void run(){
-							startClient.setText(STOPPING_CLIENT);
+							startClient.setText(STARTING_CLIENT);
 						}
 					});
 				}
+				else{
+					if(_run) {
+						EventQueue.invokeLater(new Runnable(){
+							public void run(){
+								startClient.setText(STOPPING_CLIENT);
+							}
+						});
+					}
+				}
 			}
 		}
-
 		if(_run)DD.startClient(true);
 		else DD.startClient(false);
 
-		if(EventQueue.isDispatchThread()) {
-			if(Application.ac!=null) startClient.setText(STOP_CLIENT);
-			else startClient.setText(START_CLIENT);
-		}else{
-			EventQueue.invokeLater(new Runnable() {
-				public void run(){
-					if(Application.ac!=null) startClient.setText(STOP_CLIENT);
-					else startClient.setText(START_CLIENT);
-				}
-			});
+		if(DD.GUI){
+			if(EventQueue.isDispatchThread()) {
+				if(Application.ac!=null) startClient.setText(STOP_CLIENT);
+				else startClient.setText(START_CLIENT);
+			}else{
+				EventQueue.invokeLater(new Runnable() {
+					public void run(){
+						if(Application.ac!=null) startClient.setText(STOP_CLIENT);
+						else startClient.setText(START_CLIENT);
+					}
+				});
+			}
 		}
 		DD.setAppBoolean(DD.DD_DATA_CLIENT_INACTIVE_ON_START, DD.DD_DATA_CLIENT_ON_START_DEFAULT^(Application.ac!=null));	
 	}
@@ -1230,19 +1238,20 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				else DD.startDirectoryServer(false, -1);
 				
 				if(DEBUG) System.out.println("ControlPanel:setDirStatus:Will run="+run);
-				
-				if(EventQueue.isDispatchThread()) {
-					if(Application.ds!=null) startDirectoryServer.setText(STOP_DIR);
-					else startDirectoryServer.setText(START_DIR);
+
+				if(DD.GUI){
+					if(EventQueue.isDispatchThread()) {
+						if(Application.ds!=null) startDirectoryServer.setText(STOP_DIR);
+						else startDirectoryServer.setText(START_DIR);
+					}
+					else
+						EventQueue.invokeLater(new Runnable() {
+							public void run(){
+								if(Application.ds!=null) startDirectoryServer.setText(STOP_DIR);
+								else startDirectoryServer.setText(START_DIR);
+							}
+						});
 				}
-				else
-					EventQueue.invokeLater(new Runnable() {
-						public void run(){
-							if(Application.ds!=null) startDirectoryServer.setText(STOP_DIR);
-							else startDirectoryServer.setText(START_DIR);
-						}
-					});
-				
 				DD.setAppText(DD.DD_DIRECTORY_SERVER_ON_START, (Application.ds==null)?"0":"1");		
 				if(DEBUG) System.out.println("ControlPanel:setDirStatus:DS running="+Application.ds);
 	}

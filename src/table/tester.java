@@ -27,7 +27,7 @@ public class tester {
 
 	public static final String TNAME = "tester";
 	public static final String tester_ID = "tester_ID";
-	public static final String name = "name";
+	public static final String name = "original_tester_name";
 	public static final String public_key = "public_key";
 	public static final String email = "email";
 	public static final String url = "url";
