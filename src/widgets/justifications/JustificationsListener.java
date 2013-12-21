@@ -19,8 +19,10 @@
 /* ------------------------------------------------------------------------- */
 package widgets.justifications;
 
-public interface JustificationsListener {
-	public void justUpdate(String justID, int col, boolean db_sync);
+import data.D_Justification;
 
-	public void forceEdit(String justID);
+public interface JustificationsListener {
+	public void justUpdate(String justID, int col, boolean db_sync, D_Justification just);
+
+	public void forceJustificationEdit(String justID);
 }

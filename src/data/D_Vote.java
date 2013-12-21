@@ -286,7 +286,11 @@ class D_Vote extends ASNObj{
 		if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
 		if(global_vote_ID!=null)enc.addToSequence(new Encoder(global_vote_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
 		if(global_constituent_ID!=null)enc.addToSequence(new Encoder(global_constituent_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
-		if(global_motion_ID!=null)enc.addToSequence(new Encoder(global_motion_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
+		if(global_motion_ID!=null){
+			enc.addToSequence(new Encoder(global_motion_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
+		}else{
+			Util.printCallPath("Null motionGID: "+this);
+		}
 		if(global_justification_ID!=null)enc.addToSequence(new Encoder(global_justification_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
 		if(choice!=null)enc.addToSequence(new Encoder(choice,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC5));
 		if(format!=null)enc.addToSequence(new Encoder(format,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC6));
@@ -519,16 +523,16 @@ class D_Vote extends ASNObj{
 	public boolean fillLocals(RequestData new_rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion, boolean tempJust) throws P2PDDSQLException {
 	
 		if((global_organization_ID==null)&&(organization_ID == null)){
-			Util.printCallPath("cannot store witness with not orgGID");
+			Util.printCallPath("cannot store vote with not orgGID");
 			return false;
 		}
 		
 		if((this.global_constituent_ID==null)&&(constituent_ID == null)){
-			Util.printCallPath("cannot store witness with not submitterGID");
+			Util.printCallPath("cannot store vote with not submitterGID");
 			return false;
 		}
 		if((this.global_motion_ID==null)&&(motion_ID == null)){
-			Util.printCallPath("cannot store just with no motionGID");
+			Util.printCallPath("cannot store vote with no motionGID");
 			return false;
 		}
 		
@@ -951,6 +955,13 @@ class D_Vote extends ASNObj{
 		catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	public boolean readyToSend() {
+		if(this.global_motion_ID==null) return false;
+		if(this.global_vote_ID==null) return false;
+		if(this.global_constituent_ID==null) return false;
+		if((this.signature==null)||(this.signature.length==0)) return false;
+		return true;
 	}
 
 }

@@ -1094,7 +1094,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 	public void mouseExited(MouseEvent arg0) {
 	}
 	@Override
-	public void news_forceEdit(String justID) {
+	public void motion_forceEdit(String justID) {
 		// TODO Auto-generated method stub
 		
 	}

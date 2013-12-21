@@ -20,15 +20,15 @@
 package widgets.components;
 
 import java.awt.Component;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-
-import javax.swing.JComponent;
+//import java.io.BufferedReader;
+//import java.io.File;
+//import java.io.FileInputStream;
+//import java.io.FileNotFoundException;
+//import java.io.FileReader;
+//import java.io.IOException;
+//import java.io.InputStream;
+//
+//import javax.swing.JComponent;
 import javax.swing.JTextArea;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -75,6 +75,7 @@ public class DocumentEditor implements DocumentListener{
 	public String name;
 	
 	public DocumentEditor(){
+		//System.out.println("**************************");
 		controller.setIsEmbeddedComponent(true);
 		viewController = controller.getDocumentViewController();
 		rtEditor = new MetaphaseEditor();

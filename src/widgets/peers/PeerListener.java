@@ -22,5 +22,5 @@ package widgets.peers;
 import data.D_PeerAddress;
 
 public interface PeerListener {
-	void update(D_PeerAddress peer, String my_peer_name);
+	void update_peer(D_PeerAddress peer, String my_peer_name, boolean me, boolean selected);
 }

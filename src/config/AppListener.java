@@ -27,6 +27,7 @@ import util.P2PDDSQLException;
 
 import util.P2PDDSQLException;
 import util.Util;
+import widgets.org.Orgs;
 
 public class AppListener implements ActionListener {
 
@@ -49,9 +50,10 @@ public class AppListener implements ActionListener {
 					new String[]{table.organization.creation_date, table.organization.creation_date, table.organization.hash_org_alg},
 					new String[]{currentTime, currentTime, table.organization.hash_org_alg_crt});
 			if(DEBUG) System.out.println("AppListener:createNewOrganization: inserted org_id="+org_id);
-			if(Application.orgs!=null){
+			Orgs ao = Application.orgs;
+			if(ao!=null){
 				if(DEBUG) System.out.println("AppListener:createNewOrganization: org_id="+org_id);
-				Application.orgs.setCurrent(org_id);
+				ao.setCurrent(org_id);
 				//Application.orgs.revalidate();
 			}
 		} catch (P2PDDSQLException e) {

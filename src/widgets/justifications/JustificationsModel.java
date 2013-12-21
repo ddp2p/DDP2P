@@ -51,16 +51,21 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 	public  int TABLE_COL_VOTERS_NB = -2;
 	//public static final int TABLE_COL_VOTES = 0;
 	public  int TABLE_COL_CREATION_DATE = -2; // any activity in the last x days?
+	public  int TABLE_COL_ARRIVAL_DATE = -2; // any activity in the last x days?
+	public  int TABLE_COL_PREFERENCES_DATE = -2; // any activity in the last x days?
 	public  int TABLE_COL_ACTIVITY = -4; // number of votes + news
 	public  int TABLE_COL_RECENT = -5; // any activity in the last x days?
 	public  int TABLE_COL_NEWS = -6; // unread news?
 	public  int TABLE_COL_CATEGORY = -7; // certified by trusted?
 	//public static final int TABLE_COL_PLUGINS = -8;
+	int RECENT_DAYS_OLD = 10;
 	
 	public boolean show_name = true;
 	public boolean show_creator = true;
 	public boolean show_voters = true;
 	public boolean show_creation_date = true;
+	public boolean show_arrival_date = true;
+	public boolean show_preferences_date = false;
 	public boolean show_activity = false;
 	public boolean show_recent = false;
 	public boolean show_news = false;
@@ -74,26 +79,48 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 	Object _hash[]=new Object[0];
 	Object _crea[]=new Object[0];
 	Object _crea_date[]=new Object[0];
+	Object _arrival_date[]=new Object[0];
+	Object _preferences_date[]=new Object[0];
 	Object _votes[]=new Object[0];
 	boolean[] _gid=new boolean[0];
 	boolean[] _blo=new boolean[0]; // block
 	boolean[] _req=new boolean[0]; // request
 	boolean[] _bro=new boolean[0]; // broadcast
 	String columnNames[] = getCrtColumns();
+	Hashtable<String, Integer> rowByID =  new Hashtable<String, Integer>();
 	
 	D_Motion crt_motion;
 	private String[] getCrtColumns() {
 		int crt = 0;
 		ArrayList<String> cols = new ArrayList<String>();
-		if(show_name){ cols.add(_("Name")); TABLE_COL_NAME = crt++;}
+		if(show_name){ cols.add(_("Title")); TABLE_COL_NAME = crt++;}
 		if(show_creator){ cols.add(_("Initiator")); TABLE_COL_CREATOR = crt++;}
 		if(show_voters){ cols.add(_("Voters")); TABLE_COL_VOTERS_NB = crt++;}
 		if(show_creation_date){ cols.add(_("Date")); TABLE_COL_CREATION_DATE = crt++;}
+		if(show_arrival_date){ cols.add(_("Arrival")); TABLE_COL_ARRIVAL_DATE = crt++;}
+		if(show_preferences_date){ cols.add(_("Preference")); TABLE_COL_PREFERENCES_DATE = crt++;}
 		if(show_activity){ cols.add(_("Activity")); TABLE_COL_ACTIVITY = crt++;}
 		if(show_recent){ cols.add(_("Hot")); TABLE_COL_RECENT = crt++;}
 		if(show_news){ cols.add(_("News")); TABLE_COL_NEWS = crt++;}
 		if(show_category){ cols.add(_("Category")); TABLE_COL_CATEGORY = crt++;}
 		return cols.toArray(new String[0]);
+	}
+	//String[] columnToolTips = {null,null,_("A name you provide")};
+	public int columnToolTipsCount() {
+		return this.getColumnCount();
+	}
+	public String columnToolTipsEntry(int realIndex) {
+		if(realIndex == TABLE_COL_NAME) return _("Short title of the justification!");
+		if(realIndex == TABLE_COL_CREATOR) return _("Initiator of this version of the justification!");
+		if(realIndex == TABLE_COL_VOTERS_NB) return _("Number of constituents refering this justification with the first choice!");
+		if(realIndex == TABLE_COL_CREATION_DATE) return _("Creation Date!");
+		if(realIndex == TABLE_COL_ARRIVAL_DATE) return _("Arrival Date!");
+		if(realIndex == TABLE_COL_PREFERENCES_DATE) return _("Preferences Date!");
+		if(realIndex == TABLE_COL_NEWS) return _("Number of News related to this justification");
+		if(realIndex == TABLE_COL_RECENT) return _("This justification is newer than a number of days:")+" "+RECENT_DAYS_OLD;
+		if(realIndex == TABLE_COL_CATEGORY) return _("A category name for classifying the justification!");
+		if(realIndex == TABLE_COL_ACTIVITY) return _("Total number of constituents plus news related to this justification!");
+		return null;
 	}
 	
 	ArrayList<Justifications> tables= new ArrayList<Justifications>();
@@ -103,8 +130,14 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 
 	public JustificationsModel(DBInterface _db) {
 		db = _db;
-		db.addListener(this, new ArrayList<String>(Arrays.asList(table.justification.TNAME,table.my_justification_data.TNAME,table.signature.TNAME)), null);
+		connectWidget();
 		update(null, null);
+	}
+	public void connectWidget() {
+		db.addListener(this, new ArrayList<String>(Arrays.asList(table.justification.TNAME,table.my_justification_data.TNAME,table.signature.TNAME)), null);
+	}
+	public void disconnectWidget() {
+		db.delListener(this);
 	}
 	public void setCrtChoice(String choice){
 		if(DEBUG) System.out.println("\n************\nJustificationsModel:setCrtChoice: choice="+choice);
@@ -200,6 +233,16 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		if (col == TABLE_COL_CREATION_DATE) {
 			//if(!this.show_creation_date) break;
 			if((row>=0) && (row<this._crea_date.length))result = this._crea_date[row];
+			if(DEBUG) System.out.println("JustifModel:getValueAt:date="+result+" row="+row);
+		}
+		if (col == TABLE_COL_ARRIVAL_DATE) {
+			//if(!this.show_arrival_date) break;
+			if((row>=0) && (row<this._arrival_date.length))result = this._arrival_date[row];
+			if(DEBUG) System.out.println("JustifModel:getValueAt:date="+result+" row="+row);
+		}
+		if (col == TABLE_COL_PREFERENCES_DATE) {
+			//if(!this.show_preferences_date) break;
+			if((row>=0) && (row<this._preferences_date.length))result = this._preferences_date[row];
 			if(DEBUG) System.out.println("JustifModel:getValueAt:date="+result+" row="+row);
 		}
 		if (col == TABLE_COL_NAME) {
@@ -315,11 +358,10 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		}
 			
 		if (col == TABLE_COL_RECENT) { // any activity in the last x days?
-			int DAYS_OLD2 = 10;
 			String sql_ac2 = "SELECT count(*) FROM "+table.signature.TNAME+" AS s "+
 			" WHERE s."+table.signature.justification_ID+" = ? AND s."+table.signature.arrival_date+">?;";
 			try {
-				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac2, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD2)});
+				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac2, new String[]{motID,Util.getGeneralizedDate(RECENT_DAYS_OLD)});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 				else result = new Integer("0");
 			} catch (P2PDDSQLException e) {
@@ -330,7 +372,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			String sql_new2 = "SELECT count(*) FROM "+table.news.TNAME+" AS n "+
 			" WHERE n."+table.news.justification_ID+" = ? AND n."+table.news.arrival_date+">?;";
 			try {
-				ArrayList<ArrayList<Object>> orgs = db.select(sql_new2, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD2)});
+				ArrayList<ArrayList<Object>> orgs = db.select(sql_new2, new String[]{motID,Util.getGeneralizedDate(RECENT_DAYS_OLD)});
 				if(orgs.size()>0){
 					int result_int = new Integer(""+Util.lval(result,0)+Util.lval(orgs.get(0).get(0),0));
 					if(result_int>0) result = new Boolean(true); else result = new Boolean(false);
@@ -426,6 +468,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		",j."+table.justification.broadcasted+
 		",j."+table.justification.requested+
 		", count(*) AS cnt "+
+		",j."+table.justification.arrival_date+",j."+table.justification.preferences_date+
 		", max(s."+table.signature.justification_ID+") AS maxsignID "
 		+" FROM "+table.justification.TNAME+" AS j "
 		+" LEFT JOIN "+table.signature.TNAME+" AS s ON(s."+table.signature.justification_ID+"=j."+table.justification.justification_ID+")"+
@@ -440,6 +483,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		",j."+table.justification.broadcasted+
 		",j."+table.justification.requested+
 		", count(*) AS cnt "
+		+",j."+table.justification.arrival_date+",j."+table.justification.preferences_date
 		+" FROM "+table.justification.TNAME+" AS j "
 		+" JOIN "+table.signature.TNAME+" AS s ON(s."+table.signature.justification_ID+"=j."+table.justification.justification_ID+")"+
 		" WHERE s."+table.signature.choice+"=? AND j."+table.justification.motion_ID + "=?"+
@@ -453,6 +497,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		",j."+table.justification.broadcasted+
 		",j."+table.justification.requested+
 		", count(*) AS cnt "
+		+",j."+table.justification.arrival_date+",j."+table.justification.preferences_date
 		+" FROM "+table.justification.TNAME+" AS j "
 		+" LEFT JOIN "+table.signature.TNAME+" AS s ON(s."+table.signature.justification_ID+"=j."+table.justification.justification_ID+")"+
 		" WHERE j."+table.justification.motion_ID + "=? AND j."+table.justification.answerTo_ID+"=? "+
@@ -466,6 +511,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		",j."+table.justification.broadcasted+
 		",j."+table.justification.requested+
 		", count(*) AS cnt "
+		+",j."+table.justification.arrival_date+",j."+table.justification.preferences_date
 		+" FROM "+table.justification.TNAME+" AS j "
 		+" JOIN "+table.signature.TNAME+" AS s ON(s."+table.signature.justification_ID+"=j."+table.justification.justification_ID+")"+
 		" WHERE s."+table.signature.choice+"=? AND j."+table.justification.motion_ID + "=? AND j."+table.justification.answerTo_ID+"=? "+
@@ -478,6 +524,17 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 	}
 	@Override
 	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
+		final int SELECT_ID = 0;
+		final int SELECT_CREATION_DATE = 1;
+		final int SELECT_GID = 2;
+		final int SELECT_CONST_ID = 3;
+		final int SELECT_BLOCKED = 4;
+		final int SELECT_BROADCAST = 5;
+		final int SELECT_REQUESTED = 6;
+		final int SELECT_CNT = 7;
+		final int SELECT_ARRIVAL_DATE = 8;
+		final int SELECT_PREFERENCES_DATE = 9;
+		final int SELECT_MAX_JUST_ID_FOR_SIGN = 10;// only for: sql_no_choice_no_answer
 		//boolean DEBUG=true;
 		if(DEBUG) System.out.println("\nwidgets.justifications.JustificationsModel: update table= "+_table+": info= "+info);
 		if(crt_motionID==null){
@@ -500,23 +557,31 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			_hash = new Object[justi.size()];
 			_crea = new Object[justi.size()];
 			_crea_date = new Object[justi.size()];
+			_arrival_date = new Object[justi.size()];
+			_preferences_date = new Object[justi.size()];
 			_votes = new Object[justi.size()];
 			_gid = new boolean[justi.size()];
 			_blo = new boolean[justi.size()];
 			_bro = new boolean[justi.size()];
 			_req = new boolean[justi.size()];
+			rowByID = new Hashtable<String, Integer>();
 			for(int k=0; k<_justifications.length; k++) {
-				_justifications[k] = justi.get(k).get(0);
-				//_meth[k] = orgs.get(k).get(1);
-				_hash[k] = justi.get(k).get(2);
-				_crea[k] = justi.get(k).get(3);
-				_gid[k] = (justi.get(k).get(3) != null);
-				_blo[k] = "1".equals(justi.get(k).get(4));
-				_bro[k] = "1".equals(justi.get(k).get(5));
-				_req[k] = "1".equals(justi.get(k).get(6));
-				_votes[k] = justi.get(k).get(7);
-				if("1".equals(Util.getString(_votes[k]))) if((justi.get(k).size()>=9)&&(justi.get(k).get(8)==null)) _votes[k]="0"; 
-				_crea_date[k] = justi.get(k).get(1);
+				ArrayList<Object> j = justi.get(k);
+				_justifications[k] = j.get(SELECT_ID);
+				rowByID.put(Util.getString(_justifications[k]), new Integer(k));
+				//_meth[k] = orgs.get(k).get(SELECT_CREATION_DATE);
+				_hash[k] = j.get(SELECT_GID);
+				_crea[k] = j.get(SELECT_CONST_ID);
+				_gid[k] = (j.get(SELECT_CONST_ID) != null);
+				_blo[k] = Util.stringInt2bool(j.get(SELECT_BLOCKED), false);
+				_bro[k] = Util.stringInt2bool(j.get(SELECT_BROADCAST), false);
+				_req[k] = Util.stringInt2bool(j.get(SELECT_REQUESTED), false);
+				_votes[k] = j.get(SELECT_CNT);
+				if(Util.stringInt2bool(_votes[k], false))
+					if((j.size()>SELECT_MAX_JUST_ID_FOR_SIGN)&&(j.get(SELECT_MAX_JUST_ID_FOR_SIGN)==null)) _votes[k]="0"; 
+				_crea_date[k] = j.get(SELECT_CREATION_DATE);
+				_arrival_date[k] = j.get(SELECT_ARRIVAL_DATE);
+				_preferences_date[k] = j.get(SELECT_PREFERENCES_DATE);
 			}
 			if(DEBUG) System.out.println("widgets.org.Justifications: A total of: "+_justifications.length);
 		} catch (P2PDDSQLException e) {
@@ -530,7 +595,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			//i.revalidate();
 			this.fireTableDataChanged();
 			if((row >= 0)&&(row<_justifications.length)) i.setRowSelectionInterval(row, row);
-			i.fireListener(row, Justifications.A_NON_FORCE_COL, true); // no need to tell listenes of an update (except if telling the cause)
+			i.fireListener(row, Justifications.A_NON_FORCE_COL, true); // no need to tell listeners of an update (except if telling the cause)
 			//TODO the next is probably slowing down the system. May be run only on request
 			i.initColumnSizes();
 		}		
@@ -663,7 +728,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		}
 	}
 	@Override
-	public void news_forceEdit(String motionID) {
+	public void motion_forceEdit(String motionID) {
 		return;
 	}
 	@Override
@@ -690,5 +755,10 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 	}
 	public String getMotionID() {
 		return this.crt_motionID;
+	}
+	public int getRow(String justID) {
+		Integer row = rowByID.get(justID);
+		if(row==null) return -1;
+		return row.intValue();
 	}
 }

@@ -259,6 +259,7 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
 	private JMenuItem m_verify_const;
     void preparePopup() {
     	if(DEBUG) System.out.println("ConstituentsTree:preparePopup: start");
+		ImageIcon icon_register = config.DDIcons.getRegistrationImageIcon("Register");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
     	ImageIcon addicon = DDIcons.getAddImageIcon(_("add an item")); 
     	ImageIcon delicon = DDIcons.getDelImageIcon(_("delete an item")); 
     	ImageIcon witnessicon = DDIcons.getWitImageIcon(_("witness an item")); 
@@ -319,7 +320,7 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
     	}
 
     	// add
-    	addMeAction = new ConstituentsAddMyselfAction(this, _("Add Myself"),addicon,_("Add myself at top level."),_("You may detail your identity."),KeyEvent.VK_Y);
+    	addMeAction = new ConstituentsAddMyselfAction(this, _("Add Myself"),icon_register,_("Add myself at top level."),_("You may detail your identity."),KeyEvent.VK_Y);
     	m_menu_add_myself = new JMenuItem(addMeAction);//_("Add")
     	popup_add.add(m_menu_add_myself);
     	m_menu_add_myself = new JMenuItem(addMeAction);//_("Add")

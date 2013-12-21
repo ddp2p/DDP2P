@@ -397,13 +397,17 @@ public class BroadcastServer extends Thread {
 	}
 	public static String[][] parseInterfaceDescription(String desc){
 		String[][] result = new String[0][];
-		if(desc==null) return null;
+		if(desc==null){
+			if(DEBUG) System.out.println("BroadcastServer:parseInterfaceDesc: null");
+			return null;
+		}
 		String []_ld = desc.split(Pattern.quote(","));
 		int rows = _ld.length;
 		int cols = 0;
 		result = new String[rows][];
 		for(int k = 0; k<rows; k++) {
 			result[k] = _ld[k].split(Pattern.quote(":"));
+			if(DEBUG) System.out.println("BroadcastServer:parseInterfaceDesc: row["+k+"]="+_ld[k]);
 		}
 		return result;
 	}

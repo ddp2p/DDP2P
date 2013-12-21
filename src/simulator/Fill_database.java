@@ -483,6 +483,7 @@ public class Fill_database<org_id_for> extends Thread  {
 		if(DEBUG)System.out.println("add_motion : orgData : "+mot.organization);
 		mot.creation_date = creation_date;
 		mot.arrival_date = creation_date;
+		mot.preferences_date = creation_date;
 		mot.constituent_ID = ""+Cons_ID;
 		if(DEBUG)System.out.println("add_motion : cons id"+mot.constituent_ID);
 		mot.global_constituent_ID = D_Constituent.getConstituentGlobalID(mot.constituent_ID);

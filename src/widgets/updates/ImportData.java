@@ -35,7 +35,7 @@ import config.Application;
 import config.Identity;
 import config.DDIcons;
 import hds.DebateDecideAction;
-import data.D_UpdatesInfo;
+import data.D_MirrorInfo;
 import data.D_TesterDefinition;
 import data.D_UpdatesKeysInfo;
 
@@ -58,7 +58,7 @@ public class ImportData {
 		BufferedReader in =null;
 		try{in = new BufferedReader(new FileReader(f));} catch(IOException e){}
 		ArrayList<D_TesterDefinition> testerDef = new ArrayList<D_TesterDefinition>();
-		D_UpdatesInfo result = new D_UpdatesInfo();
+		D_MirrorInfo result = new D_MirrorInfo();
 	//	ArrayList<Downloadable> datas = new ArrayList<Downloadable>();
 		//String inputLine = "";
 		String tmp_inputLine = null;
@@ -90,24 +90,27 @@ public class ImportData {
 			    case 10: if(tmp_inputLine.equals(TESTERINFO_STOP)){
 			    	     if(DEBUG) System.out.println("Tester_STOP");
 			    			try{	
-				    			t.store();
+				    			//t.store();
 				    			testerDef.add(t);
 				    			D_UpdatesKeysInfo ukeys = new D_UpdatesKeysInfo();
 				    			ukeys.original_tester_name = t.name;
 				    			ukeys.public_key = t.public_key;
 				    			ukeys.public_key_hash = Util.getGIDhashFromGID(t.public_key, false);
+				    			ukeys.email=t.email;
+				    			ukeys.url=t.url;
+				    			ukeys.description = t.description;
 				    			if(ukeys.existsInDB()) ukeys.store("update"); 
 				    			else ukeys.store("insert");
 				    			line=3;
-				    			Application.db.sync(new ArrayList<String>(Arrays.asList(table.updatesKeys.TNAME)));
+				    			Application.db.sync(new ArrayList<String>(Arrays.asList(table.tester.TNAME)));
 			    			}catch(P2PDDSQLException e){}
 			             }
 				}//switch
 			}// loop
 			if(testerDef.size()!=0)result.testerDef = testerDef.toArray(new D_TesterDefinition[0]);
 			
-			if(result.existsInDB()) result.store(D_UpdatesInfo.action_update); 
-			else result.store(D_UpdatesInfo.action_insert);
+			if(result.existsInDB(Application.db)) result.store(D_MirrorInfo.action_update); 
+			else result.store(D_MirrorInfo.action_insert);
 			
 			
 		} catch (IOException e) {
@@ -129,7 +132,7 @@ public class ImportData {
 		BufferedReader in =null;
 		try{in = new BufferedReader(new FileReader(f));} catch(IOException e){}
 		String tmp_inputLine = null;
-		D_TesterDefinition t=new D_TesterDefinition();
+		D_UpdatesKeysInfo t=new D_UpdatesKeysInfo();
 		int line = 0;
 		try {
 			while ((tmp_inputLine = in.readLine()) != null ) {
@@ -140,7 +143,7 @@ public class ImportData {
 				switch(line)
 				{
 				case 0: line++; break; //TESTERINFO_START
-				case 1: t.name = tmp_inputLine; line++; break;
+				case 1: t.original_tester_name = tmp_inputLine; line++; break;
 				case 2: t.public_key = tmp_inputLine; line++; break;
 				case 3: t.email = tmp_inputLine; line++; break;
 				case 4: t.url = tmp_inputLine; line++; break;
@@ -150,12 +153,13 @@ public class ImportData {
 			    case 7: if(tmp_inputLine.equals(TESTERINFO_STOP)){
 			    	     if(DEBUG) System.out.println("Tester_STOP");
 			    			try{	
-				    			t.store();
-				    			D_UpdatesKeysInfo ukeys = new D_UpdatesKeysInfo();
-				    			ukeys.original_tester_name = t.name;
-				    			ukeys.public_key = t.public_key;
-				    			ukeys.public_key_hash = Util.getGIDhashFromGID(t.public_key, false);
-				    			ukeys.store("insert");
+				    			//t.store();
+				    			//D_UpdatesKeysInfo ukeys = new D_UpdatesKeysInfo();
+				    			//ukeys.original_tester_name = t.name;
+				    			//ukeys.public_key = t.public_key;
+				    			t.public_key_hash = Util.getGIDhashFromGID(t.public_key, false);
+				    			if(t.existsInDB()) t.store("update"); 
+				    			else t.store("insert");
 				    			line=0;
 			    			}catch(P2PDDSQLException e){}
 			             }

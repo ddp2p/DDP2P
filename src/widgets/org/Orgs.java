@@ -39,6 +39,7 @@ import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -57,6 +58,7 @@ import util.DBListener;
 import util.DBSelector;
 import util.Util;
 import widgets.components.BulletRenderer;
+import widgets.components.XTableColumnModel;
 import wireless.BroadcastClient;
 
 import javax.swing.table.TableCellEditor;
@@ -108,7 +110,7 @@ class PluginMenus{
 }
 
 @SuppressWarnings("serial")
-public class Orgs extends JTable implements MouseListener {
+public class Orgs extends JTable implements MouseListener, OrgListener {
 	// Different icons should be displayed for each state... for now just on/off
 	public static final int STATE_CONNECTION_FAIL =0;
 	public static final int STATE_CONNECTION_TCP = 1;
@@ -129,6 +131,7 @@ public class Orgs extends JTable implements MouseListener {
 	Hashtable<String,PluginData> plugin_applets = new Hashtable<String, PluginData>();
 	Hashtable<Integer,Hashtable<String,PluginMenus>> plugin_menus = new Hashtable<Integer,Hashtable<String,PluginMenus>>();
 	ArrayList<String> plugins= new ArrayList<String>();
+	private XTableColumnModel yourColumnModel;
 	
 	public Orgs() {
 		super(new OrgsModel(Application.db));
@@ -145,6 +148,25 @@ public class Orgs extends JTable implements MouseListener {
 		if(DEBUG) System.out.println("Orgs: constr from model");
 		init();
 	}
+	
+	/**
+	 * Call this to remove a current column
+	 * @param crt_col
+	 */
+	public void removeColumn(int crt_col){
+		//TableColumn column  = this.yourColumnModel.getColumnByModelIndex(crt_col);
+		TableColumn column  = this.yourColumnModel.getColumn(crt_col);
+		yourColumnModel.setColumnVisible(column, false);
+//		_ColumnNames.remove(crt_col);
+//		this.fireTableStructureChanged();
+	}
+	public void addColumn(int crt_col){
+		TableColumn column  = this.yourColumnModel.getColumnByModelIndex(crt_col);
+		yourColumnModel.setColumnVisible(column, true);
+	}
+	/**
+	 * Adds status as listener
+	 */
 	void init(){
 		getModel().setTable(this);
 		addMouseListener(this);
@@ -152,6 +174,11 @@ public class Orgs extends JTable implements MouseListener {
 		colorRenderer = new ColorRenderer(getModel());
 		centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment( JLabel.CENTER );
+		
+		yourColumnModel = new widgets.components.XTableColumnModel();
+		setColumnModel(yourColumnModel); 
+		createDefaultColumnsFromModel(); 
+		
 		initColumnSizes();
 		this.getTableHeader().setToolTipText(
         _("Click to sort; Shift-Click to sort in reverse order"));
@@ -171,6 +198,7 @@ public class Orgs extends JTable implements MouseListener {
    	   			if(DEBUG) System.out.println("Orgs:init: crt orgID= NONE :(");   				
    			}
     	}catch(Exception e){e.printStackTrace();}
+   		if(DD.status!=null) this.addOrgListener(DD.status);
 	}
 	public JScrollPane getScrollPane(){
         JScrollPane scrollPane = new JScrollPane(this);
@@ -188,7 +216,8 @@ public class Orgs extends JTable implements MouseListener {
 		return jp;
     }
 
-	public TableCellRenderer getCellRenderer(int row, int column) {
+	public TableCellRenderer getCellRenderer(int row, int _column) {
+		int column = this.convertColumnIndexToModel(_column);
 		if ((column == OrgsModel.TABLE_COL_NAME)) return colorRenderer;
 		if ((column == OrgsModel.TABLE_COL_CONNECTION)) return bulletRenderer;
 		if ((column == getModel().TABLE_COL_CONSTITUENTS_NB)) return centerRenderer;
@@ -201,7 +230,7 @@ public class Orgs extends JTable implements MouseListener {
 				return plugin_applets.get(pluginID).renderer;
 			}
 		}
-		return super.getCellRenderer(row, column);
+		return super.getCellRenderer(row, _column);
 	}
 	protected String[] columnToolTips = {null,null,_("A name you provide")};
     @SuppressWarnings("serial")
@@ -234,7 +263,7 @@ public class Orgs extends JTable implements MouseListener {
 	public OrgsModel getModel(){
 		return (OrgsModel) super.getModel();
 	}
-	private void initColumnSizes() {
+	void initColumnSizes() {
         OrgsModel model = (OrgsModel)this.getModel();
         TableColumn column = null;
         Component comp = null;
@@ -242,7 +271,9 @@ public class Orgs extends JTable implements MouseListener {
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
  
-        for (int i = 0; i < model.getColumnCount(); i++) {
+//        for (int i = 0; i < model.getColumnCount(); i++)
+        for (int i = 0; i < this.getColumnCount(); i++)
+        {
         	int headerWidth = 0;
         	int cellWidth = 0;
         	column = this.getColumnModel().getColumn(i);
@@ -253,7 +284,7 @@ public class Orgs extends JTable implements MouseListener {
             headerWidth = comp.getPreferredSize().width;
  
             for(int r=0; r<model.getRowCount(); r++) {
-            	comp = this.getDefaultRenderer(model.getColumnClass(i)).
+            	comp = this.getDefaultRenderer(model.getColumnClass(this.convertColumnIndexToModel(i))).
                              getTableCellRendererComponent(
                                  this, getValueAt(r, i),
                                  false, false, 0, i);
@@ -307,6 +338,7 @@ public class Orgs extends JTable implements MouseListener {
 	}
 	long _org_crt = -1;
 	Object old_org_signature = null; //to catch editing events
+	private static OrgEditor orgEPane;
 	public void fireListener(int row, int col) {
 		if(DEBUG) System.out.println("Orgs:fireListener: row="+row);
 		String orgID = null;
@@ -335,21 +367,24 @@ public class Orgs extends JTable implements MouseListener {
 				orgID = "-1";
 				old_org_signature = null;
 			}
+		fireListener((row<0)?null:orgID, col, organization_crt);
+	}
+	void fireListener(String orgID, int col, D_Organization organization_crt) {
 		for(OrgListener l: listeners){
 			if(DEBUG) System.out.println("Orgs:fireListener: l="+l);
 			try{
-				if(row<0) l.orgUpdate(null, col, organization_crt);
-				else l.orgUpdate(orgID, col, organization_crt);
+				l.orgUpdate(orgID, col, organization_crt);
 			}catch(Exception e){e.printStackTrace();}
 		}
 	}
-	public void addListener(OrgListener l){
+	public void addOrgListener(OrgListener l){
+		if( listeners.contains(l) ) return;
 		listeners.add(l);
-		int row =this.getSelectedRow();
+		int row = this.getSelectedRow();
 		if(row>=0)
 			l.orgUpdate(Util.getString(this.getModel()._orgs[this.convertRowIndexToModel(row)]),A_NON_FORCE_COL, organization_crt);
 	}
-	public void removeListener(OrgListener l){
+	public void removeOrgListener(OrgListener l){
 		listeners.remove(l);
 	}
 	@Override
@@ -414,7 +449,15 @@ public class Orgs extends JTable implements MouseListener {
     	cAction = new OrgsCustomAction(this, _("Add to WLAN Interest!"), delicon,_("Add to WLAN Interests."), _("WLAN Request"),KeyEvent.VK_R, OrgsCustomAction.M_WLAN_REQUEST);
     	cAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(cAction));
-      	
+    	
+    	cAction = new OrgsCustomAction(this, _("Add Column!"), delicon,_("Add Column."), _("Column"),KeyEvent.VK_C, OrgsCustomAction.C_ACOLUMN);
+    	cAction.putValue("row", new Integer(col));
+    	popup.add(new JMenuItem(cAction));
+    	
+    	cAction = new OrgsCustomAction(this, _("Remove Column!"), delicon,_("Remove Column."), _("Column"),KeyEvent.VK_R, OrgsCustomAction.C_RCOLUMN);
+    	cAction.putValue("row", new Integer(col));
+    	popup.add(new JMenuItem(cAction));
+    	
     	eAction = new OrgsForceEditAction(this, _("Force Edit!"), delicon,_("Force editing rights."), _("Edit"),KeyEvent.VK_E);
     	eAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(eAction));
@@ -453,6 +496,44 @@ public class Orgs extends JTable implements MouseListener {
 			e.printStackTrace();
 			return null;
 		}
+	}
+	/**
+	 * Panel with Editor
+	 * @return
+	 */
+	public JPanel getComboPanel(){
+        //DD.orgsPane = new widgets.org.Orgs();
+        //Application.orgs = DD.orgsPane;
+        orgEPane = new widgets.org.OrgEditor();
+        //DD.orgsPane
+        this.addOrgListener(orgEPane); // this remains connected to Orgs rather than status to enable force edit
+    	JPanel orgs = DD.makeOrgsPanel(orgEPane, this); //DD.orgsPane); //new JPanel();
+    	return orgs;
+	}
+	public void connectWidget() {
+		getModel().connectWidget();
+		Application.orgs = this;
+		DD.status.addOrgStatusListener(this);
+	}
+	public void disconnectWidget() {
+		getModel().disconnectWidget();
+		DD.status.removeOrgListener(this);
+		Application.orgs = null;
+	}
+	@Override
+	public void orgUpdate(String orgID, int col, D_Organization org) {
+		if(orgID==null) return;
+		int model_row = getModel().getRow(orgID);
+		if(model_row<0) return;
+		int view_row = this.convertRowIndexToView(model_row);
+		this.setRowSelectionInterval(view_row, view_row);
+		
+		this.fireListener(orgID, col, org);
+	}
+	@Override
+	public void org_forceEdit(String orgID, D_Organization org) {
+		// TODO Auto-generated method stub
+		
 	}
 }
 
@@ -634,6 +715,8 @@ class OrgsToggleServingAction extends DebateDecideAction {
 @SuppressWarnings("serial")
 class OrgsCustomAction extends DebateDecideAction {
     public static final int M_WLAN_REQUEST = 1;
+	public static final int C_RCOLUMN = 2;
+	public static final int C_ACOLUMN = 3;
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
 	Orgs tree; ImageIcon icon;
@@ -664,6 +747,16 @@ class OrgsCustomAction extends DebateDecideAction {
     		//System.err.println("Row selected: " + row);
     	}
     	OrgsModel model = (OrgsModel)tree.getModel();
+    	if(command == C_RCOLUMN) {
+        	tree.removeColumn(row);
+    		tree.initColumnSizes();
+        }else	if(command == C_ACOLUMN) {
+        	int col = Application.ask(_("Add"), _("Columns"), Arrays.copyOf(model.columnNames, model.columnNames.length, new Object[]{}.getClass()), null, null);
+        	if(col == JOptionPane.CLOSED_OPTION) return;
+        	if(col < 0) return;
+       		tree.addColumn(col);
+    		tree.initColumnSizes();
+        }else
     	if(command == M_WLAN_REQUEST) {
     		boolean DEBUG = true;
     		if(DEBUG) System.out.println("Orgs:OrgsCustomAction:WLANRequest: start");
@@ -729,11 +822,23 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	boolean[] _bro=new boolean[0]; // broadcast
 	String columnNames[]={_("Name"),_("Initiator"),_("Category"),_("Constituents"),_("Activity"),_("Hot"),_("News"),_("Plugins")};
 	ArrayList<Orgs> tables= new ArrayList<Orgs>();
+	Hashtable<String, Integer> rowByID =  new Hashtable<String, Integer>();
 	public OrgsModel(DBInterface _db) {
 		db = _db;
+		connectWidget();
+		update(null, null);
+	}
+	public int getRow(String orgID) {
+		Integer row = rowByID.get(orgID);
+		if(row==null) return -1;
+		return row.intValue();
+	}
+	public void disconnectWidget() {
+		db.delListener(this);
+	}
+	public void connectWidget() {
 		db.addListener(this, new ArrayList<String>(Arrays.asList(table.organization.TNAME)), null);
 		// DBSelector.getHashTable(table.organization.TNAME, table.organization.organization_ID, ));
-		update(null, null);
 	}
 	public String getOrgGID(int row) {
 		if((row<0) || (row>_hash.length)) return null;
@@ -940,14 +1045,21 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	public void setTable(Orgs orgs) {
 		tables.add(orgs);
 	}
-
-	@Override
-	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
-		if(DEBUG) System.out.println("\nwidgets.org.Orgs: update table= "+_table+": info= "+info);
-		String sql = "SELECT "+table.organization.organization_ID+","+table.organization.certification_methods+","
+	final static String sql_orgs = "SELECT "+table.organization.organization_ID+","+table.organization.certification_methods+","
 		+table.organization.global_organization_ID_hash+","+table.organization.creator_ID+
 		  ","+table.organization.blocked+","+table.organization.broadcasted+","+table.organization.requested
 		+" FROM "+table.organization.TNAME+";";
+
+	@Override
+	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
+		final int SELECT_ORG_ID = 0;
+		final int SELECT_METHODS = 1;
+		final int SELECT_ORG_GIDH = 2;
+		final int SELECT_ORG_CREAT_ID = 3;
+		final int SELECT_BLOCKED = 4;
+		final int SELECT_BROADCASTED = 5;
+		final int SELECT_REQUESTED = 6;
+		if(DEBUG) System.out.println("\nwidgets.org.Orgs: update table= "+_table+": info= "+info);
 		Object old_sel[] = new Object[tables.size()];
 		for(int i=0; i<old_sel.length; i++){
 			int sel = tables.get(i).getSelectedRow();
@@ -955,7 +1067,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			if((sel >= 0) && (sel < _orgs.length)) old_sel[i] = _orgs[sel];
 		}
 		try {
-			ArrayList<ArrayList<Object>> orgs = db.select(sql, new String[]{},DEBUG);
+			ArrayList<ArrayList<Object>> orgs = db.select(sql_orgs, new String[]{},DEBUG);
 			_orgs = new Object[orgs.size()];
 			_meth = new Object[orgs.size()];
 			_hash = new Object[orgs.size()];
@@ -964,15 +1076,18 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			_blo = new boolean[orgs.size()];
 			_bro = new boolean[orgs.size()];
 			_req = new boolean[orgs.size()];
+			rowByID = new Hashtable<String, Integer>();
 			for(int k=0; k<_orgs.length; k++) {
-				_orgs[k] = orgs.get(k).get(0);
-				_meth[k] = orgs.get(k).get(1);
-				_hash[k] = orgs.get(k).get(2);
-				_crea[k] = orgs.get(k).get(3);
-				_gid[k] = (orgs.get(k).get(3) != null);
-				_blo[k] = "1".equals(orgs.get(k).get(4));
-				_bro[k] = "1".equals(orgs.get(k).get(5));
-				_req[k] = "1".equals(orgs.get(k).get(6));
+				ArrayList<Object> o = orgs.get(k);
+				_orgs[k] = o.get(SELECT_ORG_ID);
+				rowByID.put(Util.getString(_orgs[k]), new Integer(k));
+				_meth[k] = o.get(SELECT_METHODS);
+				_hash[k] = o.get(SELECT_ORG_GIDH);
+				_crea[k] = o.get(SELECT_ORG_CREAT_ID);
+				_gid[k] = (o.get(SELECT_ORG_CREAT_ID) != null);
+				_blo[k] = Util.stringInt2bool(o.get(SELECT_BLOCKED), false);
+				_bro[k] = Util.stringInt2bool(o.get(SELECT_BROADCASTED), false);
+				_req[k] = Util.stringInt2bool(o.get(SELECT_REQUESTED), false);
 			}
 			if(DEBUG) System.out.println("widgets.org.Orgs: A total of: "+_orgs.length);
 		} catch (P2PDDSQLException e) {

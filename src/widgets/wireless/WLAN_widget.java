@@ -101,6 +101,15 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
 		super(new WlanModel(db));
 		init();	
 	}
+	public void connectWidget() {
+		getModel().connectWidget();
+	}
+	public void disconnectWidget() {
+		getModel().disconnectWidget();
+	}
+	public Component getComboPanel() {
+		return DD.makeWLanPanel(this);
+	}    
 	
 	void init(){
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
@@ -267,7 +276,7 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
     	popup.add(menuItem);
 
     	return popup;
-	}    
+	}
 }
 @SuppressWarnings("serial")
 class WirelessCustomAction extends DebateDecideAction {
@@ -341,9 +350,15 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 	private String[][] _table = new String[0][];
 	WlanModel(DBInterface _db) {
 		db = _db;
+		connectWidget();
+		update(null, null);
+	}
+	public void connectWidget() {
 		db.addListener(this, new ArrayList<String>(Arrays.asList(table.application.TNAME)),
 				DBSelector.getHashTable(table.application.TNAME, table.application.field, DD.APP_NET_INTERFACES));
-		update(null, null);
+	}
+	public void disconnectWidget() {
+		db.delListener(this);
 	}
 	public static boolean refresh() {
 		new Thread() {

@@ -30,6 +30,7 @@ import hds.ControlPane;
 import hds.DDAddress;
 import hds.DirectoryServer;
 import hds.EventDispatcher;
+import hds.GUIStatusHistory;
 import hds.IClient;
 import hds.JFrameDropCatch;
 import hds.Server;
@@ -37,12 +38,14 @@ import hds.StartUpThread;
 import hds.StegoStructure;
 import hds.UDPServer;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Rectangle;
+import java.awt.ScrollPane;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -114,29 +117,27 @@ import widgets.justifications.JustificationsByChoicePanel;
 import widgets.keys.Keys;
 import widgets.motions.MotionEditor;
 import widgets.motions.Motions;
+import widgets.motions.MotionsListener;
 import widgets.news.NewsEditor;
 import widgets.news.NewsTable;
+import widgets.org.Orgs;
 import widgets.peers.PeerAddresses;
+import widgets.peers.Peers;
 import widgets.wireless.WLAN_widget;
 import wireless.BroadcastClient;
 import wireless.BroadcastConsummerBuffer;
 import wireless.BroadcastServer;
 import wireless.Broadcasting_Probabilities;
 import wireless.Refresh;
-
 import census.CensusPanel;
 import ciphersuits.Cipher;
 import ciphersuits.PK;
 import ciphersuits.SK;
-
-
 import data.D_Constituent;
 import data.D_Neighborhood;
 import data.D_Organization;
 import data.D_PeerAddress;
 import data.D_Witness;
-
-
 import ASN1.Encoder;
 
 public class DD {
@@ -152,14 +153,14 @@ public class DD {
 	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	
-    public static widgets.org.Orgs orgsPane;
+    //public static widgets.org.Orgs orgsPane;// referred only from Orgs
     public static ConstituentsPanel constituentsPane;
     public static MyIdentitiesTest identitiesPane;
-    public static WLAN_widget wirelessInterfacesPane;
+    //public static WLAN_widget wirelessInterfacesPane;
     public static widgets.peers.Peers peersPluginsPane;
     public static Console clientConsole;
     public static Console serverConsole;
-    public static widgets.org.OrgEditor orgEPane;
+    //public static widgets.org.OrgEditor orgEPane; // referred only from Orgs
     
     public static final String WIRELESS_THANKS = "wireless_thanks.wav"; // in scripts
     public static String scripts_prefix = null; //Application.linux_scripts_prefix+Application.scripts_path
@@ -483,15 +484,15 @@ public class DD {
     
 	public static JFrame frame;
 	public static JLabel splash_label;
-	public static Motions motions;
-	public static MotionEditor _medit;
-	public static Justifications justifications;
-	public static JustificationEditor _jedit;
+	//public static Motions motions;
+	//public static MotionEditor _medit;
+	//public static Justifications justifications;
+	//public static JustificationEditor _jedit;
 	
 	public static JustificationsByChoicePanel _jbc;
-	public static Component jscj;	// justifications tab
-	public static Component tab_organization;	// org tab
-	public static Component jscm;   // motions tab
+	//public static Component jscj;	// justifications tab
+	public static Component tab_organization;	// org tab, no longer used to preselect org,->indexes
+	//public static Component jscm;   // motions tab
 	public static JTextArea wireless_hints;
 	
 	public static  boolean TEST_SIGNATURES = false;
@@ -588,7 +589,7 @@ public class DD {
     	//orgs.setMinimumSize(orgs.getPreferredSize());
     	//newOrgButton.setMaximumSize(newOrgButton.getPreferredSize());
     	//newOrgButton.setMinimumSize(newOrgButton.getPreferredSize());
-	private static JPanel makeOrgsPanel(widgets.org.OrgEditor orgEPane, widgets.org.Orgs orgsPane) {
+	public static JPanel makeOrgsPanel(widgets.org.OrgEditor orgEPane, widgets.org.Orgs orgsPane) {
 		JPanel orgs = new JPanel();
     	java.awt.GridBagLayout gbl = new java.awt.GridBagLayout();
     	orgs.setLayout(gbl);
@@ -608,16 +609,46 @@ public class DD {
        	//tabbedPane.addTab("OrgE", orgEPane);
     	//jsco.setPreferredSize(new Dimension(800,0));
 	}
-	public static JSplitPane makeMotionPanel( MotionEditor _medit, Motions motions) {
-		int y = 0;
-		JScrollPane motion = motions.getScrollPane();
-		JScrollPane edit = new JScrollPane(_medit);
-		JSplitPane result = new JSplitPane(JSplitPane.VERTICAL_SPLIT, motion, edit);
-		result.setResizeWeight(0.5);
-		Dimension minimumSize = new Dimension(0, 100);
-		motion.setMinimumSize(minimumSize);
-		minimumSize = new Dimension(0, 300);
-		edit.setMinimumSize(minimumSize);
+	/**
+	 * 
+	 * @param _medit this should be a MotionsListener only if it is a MotionEditor!
+	 * @param motions
+	 * @return
+	 */
+	public static Component makeMotionPanel( Component _medit, Component motions) {
+		JScrollPane motion_scroll;
+		if(motions instanceof Motions){
+			motion_scroll = ((Motions)motions).getScrollPane();
+		}else{
+			if(motions instanceof JScrollPane)
+				motion_scroll = (JScrollPane)motions;
+			else{
+				motion_scroll = new JScrollPane(motions);
+				if(_DEBUG) System.out.println("DD.makeMotionPanel: unexpected motion type");
+			}
+		}
+		if(_medit instanceof MotionsListener) {
+			JScrollPane edit_scroll;
+			JSplitPane result;
+			Dimension minimumSize;
+			edit_scroll = new JScrollPane(_medit);
+			result = new JSplitPane(JSplitPane.VERTICAL_SPLIT, motion_scroll, edit_scroll);
+			result.setResizeWeight(0.5);
+			
+			minimumSize = new Dimension(0, 100);
+			motion_scroll.setMinimumSize(minimumSize);
+
+			Dimension _minimumSize = new Dimension(0, MotionEditor.DIMY);
+			edit_scroll.setMinimumSize(_minimumSize);
+			
+			if(_DEBUG) System.out.println("DD.makeMotionPanel: return splitter");
+			return  result;
+		}else{
+			if(_DEBUG) System.out.println("DD.makeMotionPanel: return motion_scroll");
+			return motion_scroll;
+			//Dimension dim = new Dimension(0, 0);
+			//edit.setMaximumSize(dim);
+		}
 		//minimumSize = new Dimension(0, 600);
 		//edit.setPreferredSize(minimumSize);
 		/*
@@ -640,7 +671,6 @@ public class DD {
     	//tabbedPane.addTab("Motions", mot);
 		//tabbedPane.addTab("Motion", _medit.getScrollPane());//new JEditorPane("text/html","<html><b>nope</b>pop</html>"));
 		*/
-		return  result;
 	}
 	public static JScrollPane makeCensusPanel(census.CensusPanel census){
 		return census.getScrollPane();
@@ -658,7 +688,8 @@ public class DD {
     	motion_panel.add(_nedit/*.getScrollPane()*/,c);
 		return motion_panel;
 	}
-	public static JPanel makeJustificationPanel( JustificationEditor _jedit, Justifications justifications) {
+	public static Component makeJustificationPanel( JustificationEditor _jedit, Justifications justifications) {
+		/*
 		int y = 0;
 		JPanel motion_panel = new JPanel();
     	//JScrollPane _just = justifications.getScrollPane();
@@ -666,9 +697,13 @@ public class DD {
     	motion_panel.setLayout(gbl);
     	java.awt.GridBagConstraints c = new java.awt.GridBagConstraints();
     	c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=5.0;c.weightx=10;c.anchor=GridBagConstraints.CENTER;
-    	motion_panel.add(justifications,c);
+    	motion_panel.add(justifications.getScrollPane(),c);
     	c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=5.0;c.weightx=10;c.anchor=GridBagConstraints.CENTER;c.insets=new java.awt.Insets(0,0,0,0);
     	motion_panel.add(_jedit,c);
+    	*/
+		JSplitPane motion_panel = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+				justifications.getScrollPane(),
+				new JScrollPane(_jedit));
 		return motion_panel;
 	}
 	public static JSplitPane makeWLanPanel(WLAN_widget wlan_widget) {
@@ -894,11 +929,72 @@ public class DD {
 	}
 	static
 	class tabOnFocus_changeListener implements ChangeListener {
+		static boolean _settings = false;
+		static final boolean _settings_reload = true;
+
 		static boolean _keys = false;
 		static final boolean _keys_reload = true;
+		
+		static boolean _peers = false; // tells if currently selected
+		static final boolean _peers_reload = false; // tells if to garbage collect
+		static final boolean _peers_disconnect = true; // tells if to disconnect
+		static Peers _saved_peers = null; // saves disconnected peers that do not garbage collect
+
+		static boolean _orgs = false;
+		static final boolean _orgs_reload = false;
+		static final boolean _orgs_disconnect = true; // tells if to disconnect
+		static Orgs _saved_orgs = null; // saves disconnected orgs that do not garbage collect
+
+		static boolean _mots = false;
+		static final boolean _mots_reload = false;
+		static final boolean _mots_disconnect = true; // tells if to disconnect
+		static Motions _saved_mots = null; // saves disconnected mots that do not garbage collect
+
+		static boolean _justs = false;
+		static final boolean _justs_reload = false;
+		static final boolean _justs_disconnect = true; // tells if to disconnect
+		static Justifications _saved_justs = null; // saves disconnected justs that do not garbage collect
+
+		static boolean _debate = false;
+		static final boolean _debate_reload = false;
+		static final boolean _debate_disconnect = true; // tells if to disconnect
+		static JustificationsByChoicePanel _saved_debate = null; // saves disconnected debate that do not garbage collect
+
+		static boolean _news = false;
+		static final boolean _news_reload = false;
+		static final boolean _news_disconnect = true; // tells if to disconnect
+		static NewsTable _saved_news = null; // saves disconnected news that do not garbage collect
+
+		static boolean _broadcast = false;
+		static final boolean _broadcast_reload = false;
+		static final boolean _broadcast_disconnect = true; // tells if to disconnect
+		static WLAN_widget _saved_broadcast = null; // saves disconnected broadcast that do not garbage collect
+
 		//static int _prev_index = -1;
 	    public void stateChanged(ChangeEvent e) {
 	    	int index = tabbedPane.getSelectedIndex();
+	    	DD.status.setTab(index);
+	    	if (!preloadedControl) {
+		    	if(TAB_SETTINGS_ == index) {
+		    		if(!_settings) {
+		    			ControlPane settings = null;
+						try {
+							Application.controlPane = settings = new hds.ControlPane();
+						} catch (util.P2PDDSQLException e1) {
+							e1.printStackTrace();
+						}
+		    			tabbedPane.setComponentAt(index, settings);
+		    			_settings = true;
+		    		}
+		    	}else{
+		    		if(_settings && _settings_reload){
+		    			tabbedPane.setComponentAt(TAB_SETTINGS_, JunkControlPane);
+		    			Application.controlPane = null;
+		    			_settings = false;
+		    		}
+		    	}
+	    	}
+	    	
 	    	if(TAB_KEYS_ == index) {
 	    		if(!_keys) {
 	    			Keys keys = new widgets.keys.Keys();
@@ -911,6 +1007,185 @@ public class DD {
 	    			_keys = false;
 	    		}
 	    	}
+	    	
+	    	/* the peer tab has a problem with the plugins initialization when dynamically loaded
+	    	 * ideally the plugin loader should build its menus structures outside this class (an independent class)
+	    	 * Then they can be used from peers on any reload
+	    	 * 
+	    	if(TAB_PEERS_ == index) {
+	    		if(!_peers) {
+	    			if(_saved_peers==null) {
+		    			_saved_peers = new widgets.peers.Peers();
+		    			tabbedPane.setComponentAt(index, _saved_peers.getPanel());
+	    			}
+		    		if(_peers_reload || _peers_disconnect) {
+		    			_saved_peers.connectWidget(); // after getPanel()
+		    		}
+	    			_peers = true;
+	    		}
+	    	}else{
+	    		if(_peers){
+		    		_peers = false;
+		    		if(_peers_reload || _peers_disconnect) {
+		    			_saved_peers.disconnectWidget();
+		    		}
+	    			if(_peers_reload){
+		    			tabbedPane.setComponentAt(TAB_PEERS_, JunkPanelPeers);
+		    			_saved_peers = null;
+	    			}
+	    		}
+	    	}
+	    	*/
+	    	
+	    	if(TAB_ORGS_ == index) {
+	    		if(!_orgs) {
+	    			if(_saved_orgs==null) {
+		    			_saved_orgs = new widgets.org.Orgs();
+		    			tabbedPane.setComponentAt(index, _saved_orgs.getComboPanel());
+	    			}
+		    		if(_orgs_reload || _orgs_disconnect) {
+		    			_saved_orgs.connectWidget(); // after getPanel()
+		    		}
+	    			_orgs = true;
+	    		}
+	    	}else{
+	    		if(_orgs){
+	    			_orgs = false;
+		    		if(_orgs_reload || _orgs_disconnect) {
+		    			_saved_orgs.disconnectWidget();
+		    		}
+	    			if(_orgs_reload) {
+	    				tabbedPane.setComponentAt(TAB_ORGS_, JunkPanelOrgs);
+	    				_saved_orgs = null;
+	    			}
+	    		}
+	    	}
+	    	
+	    	if(TAB_MOTS_ == index) {
+				if(DEBUG) System.out.println("DD.tabsChanged: motions index");
+	    		if(!_mots) {
+	    			if(_saved_mots==null) {
+		    			_saved_mots = new widgets.motions.Motions();
+		    			tabbedPane.setComponentAt(index, _saved_mots.getComboPanel());
+						if(DEBUG) System.out.println("DD.tabsChanged: motions idx component set");
+	    			}
+		    		if(_mots_reload || _mots_disconnect) {
+						if(DEBUG) System.out.println("DD.tabsChanged: motions idx will connect");
+		    			_saved_mots.connectWidget(); // after getPanel()
+						if(DEBUG) System.out.println("DD.tabsChanged: motions idx connected");
+		    		}
+	    			_mots = true;
+	    		}
+	    	}else{
+	    		if(_mots){
+	    			_mots = false;
+		    		if(_mots_reload || _mots_disconnect) {
+		    			_saved_mots.disconnectWidget();
+		    		}
+	    			if(_mots_reload) {
+	    				tabbedPane.setComponentAt(TAB_MOTS_, JunkPanelMots);
+	    				_saved_mots = null;
+	    			}
+	    		}
+				if(DEBUG) System.out.println("DD.tabsChanged: motions index done");
+	    	}
+	    	
+	    	if(TAB_JUSTS_ == index) {
+	    		if(!_justs) {
+	    			if(_saved_justs==null) {
+		    			_saved_justs = new widgets.justifications.Justifications();
+		    			tabbedPane.setComponentAt(index, _saved_justs.getComboPanel());
+	    			}
+		    		if(_justs_reload || _justs_disconnect) {
+		    			_saved_justs.connectWidget(); // after getPanel()
+		    		}
+	    			_justs = true;
+	    		}
+	    	}else{
+	    		if(_justs){
+	    			_justs = false;
+		    		if(_justs_reload || _justs_disconnect) {
+		    			_saved_justs.disconnectWidget();
+		    		}
+	    			if(_justs_reload) {
+	    				tabbedPane.setComponentAt(TAB_JUSTS_, JunkPanelJusts);
+	    				_saved_justs = null;
+	    			}
+	    		}
+	    	}
+	    	
+	    	if(TAB_JBC_ == index) {
+	    		if(!_debate) {
+	    			if(_saved_debate==null) {
+		    			_saved_debate = new widgets.justifications.JustificationsByChoicePanel();
+		    			tabbedPane.setComponentAt(index, _saved_debate.getComboPanel());
+	    			}
+		    		if(_debate_reload || _debate_disconnect) {
+		    			_saved_debate.connectWidget(); // after getPanel()
+		    		}
+	    			_debate = true;
+	    		}
+	    	}else{
+	    		if(_debate){
+	    			_debate = false;
+		    		if(_debate_reload || _debate_disconnect) {
+		    			_saved_debate.disconnectWidget();
+		    		}
+	    			if(_debate_reload) {
+	    				tabbedPane.setComponentAt(TAB_JBC_, JunkPanelJBC);
+	    				_saved_debate = null;
+	    			}
+	    		}
+	    	}
+	    	
+	    	if(TAB_NEWS_ == index) {
+	    		if(!_news) {
+	    			if(_saved_news==null) {
+		    			_saved_news = new widgets.news.NewsTable();
+		    			tabbedPane.setComponentAt(index, _saved_news.getComboPanel());
+	    			}
+		    		if(_news_reload || _news_disconnect) {
+		    			_saved_news.connectWidget(); // after getPanel()
+		    		}
+	    			_news = true;
+	    		}
+	    	}else{
+	    		if(_news){
+	    			_news = false;
+		    		if(_news_reload || _news_disconnect) {
+		    			_saved_news.disconnectWidget();
+		    		}
+	    			if(_news_reload) {
+	    				tabbedPane.setComponentAt(TAB_NEWS_, JunkPanelNews);
+	    				_saved_news = null;
+	    			}
+	    		}
+	    	}
+	    	
+	    	if(TAB_MAN_ == index) {
+	    		if(!_broadcast) {
+	    			if(_saved_broadcast==null) {
+		    			_saved_broadcast = new widgets.wireless.WLAN_widget(Application.db);
+		    			tabbedPane.setComponentAt(index, _saved_broadcast.getComboPanel());
+	    			}
+		    		if(_broadcast_reload || _broadcast_disconnect) {
+		    			_saved_broadcast.connectWidget(); // after getPanel()
+		    		}
+	    			_broadcast = true;
+	    		}
+	    	}else{
+	    		if(_broadcast){
+	    			_broadcast = false;
+		    		if(_broadcast_reload || _broadcast_disconnect) {
+		    			_saved_broadcast.disconnectWidget();
+		    		}
+	    			if(_broadcast_reload) {
+	    				tabbedPane.setComponentAt(TAB_MAN_, JunkPanelMAN);
+	    				_saved_broadcast = null;
+	    			}
+	    		}
+	    	}
+	    	
 	    }
 	    public void _stateChanged(ChangeEvent e) {
 	    	int index = tabbedPane.getSelectedIndex();
@@ -936,10 +1211,64 @@ public class DD {
 	    			}
 	    		}
 	    	}
+	    	
+	    	if(TAB_PEERS.equals(tabtitle)) {
+	    		if(!_peers) {
+	    			if(_saved_peers==null) {
+		    			_saved_peers = new widgets.peers.Peers();
+		    			tabbedPane.setComponentAt(index, _saved_peers.getPanel());
+	    			}
+		    		if(_peers_reload || _peers_disconnect) {
+		    			_saved_peers.connectWidget(); // after getPanel()
+		    		}
+	    			_peers = true;
+	    		}
+	    	}else{
+	    		if(_peers){
+		    		_peers = false;
+		    		if(_peers_reload || _peers_disconnect) {
+		    			Application.peers.disconnectWidget();
+		    		}
+	    			if(_peers_reload){
+		    			int tabs = tabbedPane.getTabCount();
+		    			for(int k=0; k<tabs; k++) {
+		    		    	String _tabtitle = tabbedPane.getTitleAt(k);
+		    		    	if(TAB_PEERS.equals(_tabtitle)){
+		    		    		tabbedPane.setComponentAt(k, JunkPanelPeers);
+		    		    	}
+		    		    	break;
+		    			}
+		    			_saved_peers = null;
+	    			}
+	    		}
+	    	}
+	    	/*
+	    	if(TAB_ORGS.equals(tabtitle)) {
+	    		if(!_orgs) {
+	    			Orgs orgs = new widgets.org.Orgs();
+	    			tabbedPane.setComponentAt(index, orgs.getPanel());
+	    			_orgs = true;
+	    		}
+	    	}else{
+	    		if(_orgs && _orgs_reload){
+	    			//tabbedPane.setComponentAt(TAB_ORGS_, JunkPanelOrgs);
+	    			int tabs = tabbedPane.getTabCount();
+	    			for(int k=0; k<tabs; k++) {
+	    		    	String _tabtitle = tabbedPane.getTitleAt(k);
+	    		    	if(TAB_ORGS.equals(_tabtitle)){
+	    		    		tabbedPane.setComponentAt(k, JunkPanelOrgs);
+	    		    		_orgs = false;
+	    		    		break;
+	    		    	}
+	    			}
+	    		}
+	    	}
+	    	*/
 	    }
 	}
 	static String TAB_SETTINGS = _("Settings");
 	static int TAB_SETTINGS_ = 0;
+	static final JPanel JunkControlPane = new JPanel();
 	static String TAB_KEYS = _("Keys");
 	static int TAB_KEYS_ = 1;
 	static final JPanel JunkPanelKeys = new JPanel();
@@ -949,11 +1278,55 @@ public class DD {
 	static int TAB_CONS_ = 3;
 	static String TAB_DIRS = _("Directories");
 	static int TAB_DIRS_ = 5;
+	
 	static String TAB_PEERS = _("Peers");
 	static int TAB_PEERS_ = 6;
+	static final JPanel JunkPanelPeers = new JPanel();
+	
 	static String TAB_ORGS = _("Organizations");
 	static int TAB_ORGS_ = 7;
+	static final JPanel JunkPanelOrgs = new JPanel();
+	
+	public static String TAB_MOTS = _("Motions");
+	public static int TAB_MOTS_ = 8;
+	public static final JPanel JunkPanelMots = new JPanel();
+	
+	static String TAB_JUSTS = _("Justifications");
+	public static int TAB_JUSTS_ = 9;
+	static final JPanel JunkPanelJusts = new JPanel();
+	
+	static String TAB_JBC = _("Debate");
+	public static int TAB_JBC_ = 10;
+	static final JPanel JunkPanelJBC = new JPanel();
+	
+	static String TAB_NEWS = _("News");
+	static int TAB_NEWS_ = 11;
+	static final JPanel JunkPanelNews = new JPanel();
+	
+	static String TAB_MAN = _("Adhoc");
+	static int TAB_MAN_ = 12;
+	static final JPanel JunkPanelMAN = new JPanel();
+
+	public static GUIStatusHistory status = null;
+	public final static boolean  preloadedControl = true;
 	private static void createAndShowGUI() throws P2PDDSQLException{
+		if(DEBUG) System.out.println("createAndShowGUI: start");
+		ImageIcon icon_conf = config.DDIcons.getConfigImageIcon("Config");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_peer = config.DDIcons.getPeerSelImageIcon("General Peer");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_org = config.DDIcons.getOrgImageIcon("General Organization");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_con = config.DDIcons.getConImageIcon("General Constituent");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_mot = config.DDIcons.getMotImageIcon("General Motion");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		//ImageIcon icon_sig = config.DDIcons.getSigImageIcon("General Signature");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_bal = config.DDIcons.getBalanceImageIcon("Justifications");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_jus = config.DDIcons.getJusImageIcon("General Justification");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_key = config.DDIcons.getKeyImageIcon("Keys");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_news = config.DDIcons.getNewsImageIcon("General News");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_dir = config.DDIcons.getDirImageIcon("Dir");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_wireless = config.DDIcons.getWirelessImageIcon("Wireless");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_census = config.DDIcons.getCensusImageIcon("Census");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_mail = config.DDIcons.getMailPostImageIcon("Addresses");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_identity = config.DDIcons.getIdentitiesImageIcon("Identities");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		status = new GUIStatusHistory();
 		tabbedPane.addChangeListener(new tabOnFocus_changeListener());
 		Application.appObject = new AppListener(); // will listen for buttons such as createOrg
         
@@ -961,108 +1334,200 @@ public class DD {
         serverConsole = new Console();
         DD.ed.addClientListener(clientConsole);
         DD.ed.addServerListener(serverConsole);
-
-        Application.peers = peersPluginsPane = new widgets.peers.Peers(Application.db);
+        
         Directories listing_dicts = Application.ld = new Directories(); //now
         identitiesPane = new MyIdentitiesTest(Application.db);
-        //organization organizationPane;
-        orgsPane = new widgets.org.Orgs();
-        Application.orgs = orgsPane;
+
+        if(DEBUG) System.out.println("createAndShowGUI: identities started");
+       
         //Keys keys = new widgets.keys.Keys();
         constituentsPane = new ConstituentsPanel(Application.db, /*organizationID*/-1, -1, null);
         Application.constituents = constituentsPane;
         //JPanel _constituentsPane = makeConstituentsPanel(constituentsPane);
-        orgEPane = new widgets.org.OrgEditor();
-        orgsPane.addListener(orgEPane);
-        Application.wlan = wirelessInterfacesPane = new widgets.wireless.WLAN_widget(Application.db);
+
+		if(DEBUG) System.out.println("createAndShowGUI: WLAN started");
+
         
         CensusPanel _censusPane;
         if(SONG){
         	_censusPane = new CensusPanel();
         	JScrollPane censusPane = makeCensusPanel(_censusPane);
         }
+		if(DEBUG) System.out.println("createAndShowGUI: census added");
         
-        Application.controlPane=controlPane = new ControlPane();
     	tabbedPane.setTabLayoutPolicy(JTabbedPane.WRAP_TAB_LAYOUT);
         //identitiesPane.setOpaque(true);
-        tabbedPane.addTab(TAB_SETTINGS, controlPane);
+    	if(preloadedControl) {
+    		Application.controlPane=controlPane = new ControlPane();
+    		tabbedPane.addTab(TAB_SETTINGS, icon_conf, controlPane, _("Configuration"));
+    	}else
+    		tabbedPane.addTab(TAB_SETTINGS, icon_conf, JunkControlPane, _("Configuration"));
+        
         tabbedPane.setMnemonicAt(TAB_SETTINGS_, KeyEvent.VK_S);
         //tabbedPane.addTab(_("Keys"), keys.getPanel());
-        tabbedPane.addTab(TAB_KEYS, JunkPanelKeys);
+        tabbedPane.addTab(TAB_KEYS, icon_key, JunkPanelKeys, _("Keys"));
         tabbedPane.setMnemonicAt(TAB_KEYS_, KeyEvent.VK_K);
-        tabbedPane.addTab(TAB_ID, identitiesPane);
+        tabbedPane.addTab(TAB_ID, icon_identity, identitiesPane, _("Identities"));
         tabbedPane.setMnemonicAt(TAB_ID_, KeyEvent.VK_I);
-        tabbedPane.addTab(TAB_CONS, constituentsPane);
+        tabbedPane.addTab(TAB_CONS, icon_con, constituentsPane, _("Constituents"));
         tabbedPane.setMnemonicAt(TAB_CONS_, KeyEvent.VK_C);
-        if(SONG)tabbedPane.addTab(_("Census"), _censusPane);
-        tabbedPane.addTab(TAB_DIRS, listing_dicts.getPanel());
+        if(SONG)tabbedPane.addTab(_("Census"), icon_census, _censusPane, _("Census"));
+        tabbedPane.addTab(TAB_DIRS, icon_dir, listing_dicts.getPanel(), _("Directory"));
         tabbedPane.setMnemonicAt(TAB_DIRS_, KeyEvent.VK_D);
-    	tabbedPane.addTab(TAB_PEERS, peersPluginsPane.getPanel());//peersPluginsPane.getScrollPane());
+
+        if(DEBUG) System.out.println("createAndShowGUI: added tab census");
+
+        
+        //problems with pluging initialization
+        Application.peers = peersPluginsPane = new widgets.peers.Peers(Application.db);
+		if(DEBUG) System.out.println("createAndShowGUI: created peers");
+		tabbedPane.addTab(TAB_PEERS, icon_peer, peersPluginsPane.getPanel(), _("Peers"));//peersPluginsPane.getScrollPane());
+		if(DEBUG) System.out.println("createAndShowGUI: got peer panel");
+        status.addOrgStatusListener(Application.peers.privateOrgPanel);
+		if(DEBUG) System.out.println("createAndShowGUI: created added peer listener");
+ 
+		//tabbedPane.addTab(TAB_PEERS, JunkPanelPeers);//peersPluginsPane.getPanel());//peersPluginsPane.getScrollPane());
         tabbedPane.setMnemonicAt(TAB_PEERS_, KeyEvent.VK_P);
-        Application.peers.privateOrgPanel.addOrgListener(); // has to be called after peersPluginsPane.getPanel()
-    	
-    	JPanel orgs = makeOrgsPanel(orgEPane, orgsPane); //new JPanel();
+
+		if(DEBUG) System.out.println("createAndShowGUI: added peers");
+        
+        //Application.peers.privateOrgPanel.addOrgListener(); // has to be called after peersPluginsPane.getPanel()
     	//jsco = new javax.swing.JScrollPane(orgs);
-    	tabbedPane.addTab(TAB_ORGS, DD.tab_organization=orgs);
-        tabbedPane.setMnemonicAt(TAB_ORGS_, KeyEvent.VK_O);
     	
-    	// Initialize widgets
-    	motions = new widgets.motions.Motions();
-    	_medit = new MotionEditor();
+/*        
+        //organization organizationPane;
+        orgsPane = new widgets.org.Orgs();
+        Application.orgs = orgsPane;
+        orgEPane = new widgets.org.OrgEditor();
+        orgsPane.addOrgListener(orgEPane); // this remains connected to Orgs rather than status to enable force edit
+    	JPanel orgs = makeOrgsPanel(orgEPane, orgsPane); //new JPanel();
+    	tabbedPane.addTab(TAB_ORGS, DD.tab_organization=orgs); // tab_organization no longer used
+*/
+    	tabbedPane.addTab(TAB_ORGS, icon_org, JunkPanelOrgs, _("Organizations")); // tab_organization no longer used
+    	tabbedPane.setMnemonicAt(TAB_ORGS_, KeyEvent.VK_O);
+		if(DEBUG) System.out.println("createAndShowGUI: added orgs");
+    	
+    	tabbedPane.addTab(TAB_MOTS, icon_mot, JunkPanelMots, _("Motions"));
+    	tabbedPane.setMnemonicAt(TAB_MOTS_, KeyEvent.VK_M);
+		if(DEBUG) System.out.println("createAndShowGUI: added mots");
+    	
+    	tabbedPane.addTab(TAB_JUSTS, icon_bal, JunkPanelJusts, _("Justifications"));
+    	tabbedPane.setMnemonicAt(TAB_JUSTS_, KeyEvent.VK_J);
+		if(DEBUG) System.out.println("createAndShowGUI: added justs");
+    	
+    	tabbedPane.addTab(TAB_JBC, icon_jus, JunkPanelJBC, _("Debate"));
+    	tabbedPane.setMnemonicAt(TAB_JBC_, KeyEvent.VK_D);
+		if(DEBUG) System.out.println("createAndShowGUI: added debate");
+    	
+    	tabbedPane.addTab(TAB_NEWS, icon_news, JunkPanelNews, _("News"));
+    	tabbedPane.setMnemonicAt(TAB_NEWS_, KeyEvent.VK_N);
+		if(DEBUG) System.out.println("createAndShowGUI: added news");
+    	
+    	tabbedPane.addTab(TAB_MAN, icon_wireless, JunkPanelMAN, _("Mobile Adhoc Networks"));
+    	tabbedPane.setMnemonicAt(TAB_MAN_, KeyEvent.VK_A);
+		if(DEBUG) System.out.println("createAndShowGUI: added MAN");
+
+		/*
     	justifications = new Justifications();
+		if(DEBUG) System.out.println("createAndShowGUI: added justif");
     	_jedit = new JustificationEditor();
-    	_jbc = new JustificationsByChoicePanel();
-    	
-    	// Link widgets
-    	orgsPane.addListener(motions.getModel());
-        //if (SONG)orgsPane.addListener(_censusPane.getModel());
-        if (SONG)orgsPane.addListener(_censusPane);
-    	motions.addListener(justifications.getModel());
-    	motions.addListener(_jbc);
-    	motions.addListener(_medit);
+		if(DEBUG) System.out.println("createAndShowGUI: added justif editor");
     	justifications.addListener(_jedit);
-    	_jbc.addListener(_jedit);
+		*/
+		
+		/*
+    	_jbc = new JustificationsByChoicePanel();
+    	//_jbc.addListener(_jedit);
+    	_jbc.addListener(status);
+ 		status.addMotionStatusListener(_jbc);
+     	//javax.swing.JScrollPane jbc = new javax.swing.JScrollPane(_jbc);
+		tabbedPane.addTab("JBC", _jbc);
+		if(DEBUG) System.out.println("createAndShowGUI: added jbc");
+		*/
+
+    	// Link widgets
+    	if(Application.orgs!=null) Application.orgs.addOrgListener(status);
+        //if (SONG)orgsPane.addListener(_censusPane.getModel());
+        //if (SONG) orgsPane.addOrgListener(_censusPane);
+        if (SONG) status.addOrgStatusListener(_censusPane);
+		
+
+    	// Initialize widgets
+		/*
+    	motions = new widgets.motions.Motions();
+		if(DEBUG) System.out.println("createAndShowGUI: added motions");
+		
+    	//orgsPane.addOrgListener(motions.getModel());
+    	status.addOrgStatusListener(motions.getModel());
+    	_medit = new MotionEditor();
+		if(DEBUG) System.out.println("createAndShowGUI: added mot editor");
+    	//motions.addListener(justifications.getModel());
+    	//motions.addListener(_jbc);
+    	motions.addListener(status);
+    	motions.addListener(_medit);
+    	
     	   	
     	JSplitPane motion_panel = makeMotionPanel(_medit, motions);
     	jscm = motion_panel; //new javax.swing.JScrollPane(motion_panel);
-    	tabbedPane.addTab("Motions", jscm);
+    	//tabbedPane.addTab("Motions", jscm);
+		if(DEBUG) System.out.println("createAndShowGUI: added motions");
     	
-    	
-     	//javax.swing.JScrollPane jbc = new javax.swing.JScrollPane(_jbc);
-		tabbedPane.addTab("JBC", _jbc);
-    	
+		*/
+        
+/*      
+		status.addMotionStatusListener(justifications.getModel());    	
     	JPanel just_panel = makeJustificationPanel(_jedit, justifications);
     	jscj = new javax.swing.JScrollPane(just_panel);
 		tabbedPane.addTab("Justifications", jscj);
     	//JScrollPane just = justifications.getScrollPane();
 		//tabbedPane.addTab("Justifications", just);
 		//tabbedPane.addTab("Justification", _jedit.getScrollPane());
-
+		if(DEBUG) System.out.println("createAndShowGUI: justif pane");
+*/
+		
+/*
     	widgets.news.NewsTable news = new widgets.news.NewsTable();
 	    NewsEditor _nedit = new NewsEditor();
-    	orgsPane.addListener(news.getModel());
-    	motions.addListener(news.getModel());
+    	//orgsPane.addOrgListener(news.getModel());
+    	status.addOrgStatusListener(news.getModel());
+    	status.addMotionStatusListener(news.getModel());
 	    news.addListener(_nedit);
-    	orgsPane.addListener(_nedit);
-    	motions.addListener(_nedit);
-    	
-    	
+    	//orgsPane.addOrgListener(_nedit);
+    	status.addOrgStatusListener(_nedit);
+    	status.addMotionStatusListener(_nedit);
+		if(DEBUG) System.out.println("createAndShowGUI: some news");
     	JPanel news_panel = makeNewsPanel(_nedit, news);
     	javax.swing.JScrollPane jscn = new javax.swing.JScrollPane(news_panel);
 		tabbedPane.addTab("News", jscn);
     	//JScrollPane _news_scroll = news.getScrollPane();
 		//tabbedPane.addTab("News", _news_scroll);
 		//tabbedPane.addTab("New", _nedit.getScrollPane());
+*/
+        
 		 
-    	tabbedPane.addTab("WLAN", makeWLanPanel(wirelessInterfacesPane));
+        // Application.wlan =
+        //WLAN_widget wirelessInterfacesPane = new widgets.wireless.WLAN_widget(Application.db);
+        //tabbedPane.addTab("WLAN", makeWLanPanel(wirelessInterfacesPane));
+   
+    	tabbedPane.addTab("Addr", icon_mail, new JScrollPane(new PeerAddresses()), _("Addresses"));
     	
-    	tabbedPane.addTab("Addr", new JScrollPane(new PeerAddresses()));
+		if(DEBUG) System.out.println("createAndShowGUI: done tabs");
+
     	
         //frame.setVisible(false);
         frame.remove(splash_label);
-        frame.setContentPane(tabbedPane);
+        JPanel main = new JPanel(new BorderLayout());
+        main.add(tabbedPane, BorderLayout.CENTER);
+        StatusBar statusBar = new StatusBar(status);
+        JScrollPane status_bar = new JScrollPane(statusBar);
+        status_bar.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        main.add(status_bar, BorderLayout.SOUTH);
+        frame.setContentPane(main);
+      
         //frame.pack();
         frame.setVisible(true);		
+
+		if(DEBUG) System.out.println("createAndShowGUI: done frame");
 
         
         /*
@@ -1088,14 +1553,17 @@ public class DD {
 		long _organizationID=Identity.getDefaultOrgID();
 		if(_organizationID<=0){
 			if(_DEBUG) System.out.println("DD:createAndShowGUI:No default organization!");
-			DD.tabbedPane.setSelectedComponent(DD.tab_organization);
+			//DD.tabbedPane.setSelectedComponent(DD.tab_organization);
+			DD.tabbedPane.setSelectedIndex(TAB_ORGS_);
 			return;
 		}
 		if(data.D_Organization.isIDavailable(_organizationID, DEBUG) != 1) {
 			if(_DEBUG) System.out.println("DD:createAndShowGUI: Temporary organization!");
-			DD.tabbedPane.setSelectedComponent(DD.tab_organization);
+			//DD.tabbedPane.setSelectedComponent(DD.tab_organization);
+			DD.tabbedPane.setSelectedIndex(TAB_ORGS_);
 			return;
 		}
+		status.setSelectedOrg(new D_Organization(_organizationID));
 		
 		// if no constituent on constituent
 		long _constID=-1;
@@ -1106,7 +1574,9 @@ public class DD {
 		}
 		// else on motions or news
 		if(_DEBUG) System.out.println("DD:createAndShowGUI:Default org="+_organizationID+" const="+_constID+" selected!");
-		DD.tabbedPane.setSelectedComponent(DD.jscm);
+		DD.status.setMeConstituent(new D_Constituent(_constID));
+		//DD.tabbedPane.setSelectedComponent(DD.jscm);
+		DD.tabbedPane.setSelectedIndex(TAB_MOTS_);
         //frame.pack();
 	}
 	/**
@@ -2157,12 +2627,19 @@ public class DD {
 			//StartUpThread.fill_OS_install_path();
 			//StartUpThread.fill_OS_scripts_path();
 			boolean imported = util.DB_Import.import_db(db_to_import, Application.DELIBERATION_FILE);
+
 			if(_DEBUG) System.out.println("DD:run: done database, importing database from: "+db_to_import+" result="+imported);
+
 			int q=0;
 			if(!imported){
 				q = Application.ask(_("Do you want to attempt import on the next startups?"),
 						_("Want to be asked to import in the future?"),
 						JOptionPane.YES_NO_OPTION);
+			}else{
+				boolean r=tools.MigrateMirrors.migrateIfNeeded(db_to_import, Application.DELIBERATION_FILE);
+				if(!r){
+					Application.warning(_("A failure happened while trying to migrate your mirrors and testers!\nInstall new mirrors."), _("Mirrors Failure"));
+				}
 			}
 			if(imported || (q!=0)){
 				if(_DEBUG) System.out.println("DD:run: done database, will clean "+DD.APP_DB_TO_IMPORT);

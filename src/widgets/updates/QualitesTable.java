@@ -26,7 +26,7 @@ import util.DBInterface;
 import widgets.components.BulletRenderer;
 import config.Application;
 import config.Identity;
-import data.D_UpdatesInfo;
+import data.D_MirrorInfo;
 
 public class  QualitesTable extends JTable{
 	
@@ -38,7 +38,7 @@ public class  QualitesTable extends JTable{
 	private DefaultTableCellRenderer centerRenderer;
 
 
-	public QualitesTable(D_UpdatesInfo updateInfo) {
+	public QualitesTable(D_MirrorInfo updateInfo) {
 		super(new QualitiesModel(updateInfo));
 		init();
 	}

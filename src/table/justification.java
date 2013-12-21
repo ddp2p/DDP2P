@@ -35,6 +35,7 @@ public class justification {
 	 public static final String last_reference_date = "last_reference_date";
 	 public static final String creation_date = "creation_date";
 	 public static final String arrival_date = "arrival_date";
+	 public static final String preferences_date = "preferences_date";
 	public static final String blocked = "blocked";
 	public static final String requested = "requested";
 	public static final String broadcasted = "broadcasted";
@@ -58,7 +59,8 @@ public class justification {
 		arrival_date+","+
 		requested+","+
 		blocked+","+
-		broadcasted
+		broadcasted+","+
+		preferences_date
 		// +","+organization_ID
 		;
 	public static String fields = fields_noID + "," + justification_ID;
@@ -83,7 +85,8 @@ public class justification {
 	public static final int J_REQUESTED = 14;
 	public static final int J_BLOCKED = 15;
 	public static final int J_BROADCASTED = 16;
+	public static final int J_PREFERENCES_DATE = 17;
 	//public static final int J_ORG_ID = 14;
-	public static final int J_ID = 17;
+	public static final int J_ID = 18;
 	public static final int J_FIELDS = fields_array.length;
 }

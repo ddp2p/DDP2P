@@ -34,7 +34,7 @@ import util.DBInfo;
 import util.DBInterface;
 import util.DBListener;
 import util.Util;
-import table.updatesKeys;
+import table.tester;
 import widgets.updates.TableJButton;
 import widgets.updates.PanelRenderer;
 
@@ -56,7 +56,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 	
 	public UpdatesKeysModel(DBInterface _db) { // constructor get dataSource -> DBInterface _db
 		db = _db;
-		db.addListener(this, new ArrayList<String>(Arrays.asList(table.updatesKeys.TNAME, table.tester.TNAME, table.updates.TNAME)), null);
+		db.addListener(this, new ArrayList<String>(Arrays.asList(table.tester.TNAME, table.tester.TNAME, table.mirror.TNAME)), null);
 		// DBSelector.getHashTable(table.organization.TNAME, table.organization.organization_ID, ));
 		update(null, null);
 	}
@@ -203,7 +203,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 	@Override
 	public void update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
 		if(DEBUG) System.out.println("UpdatesKeysModel:update: start: "+table);
-		String sql = "SELECT "+updatesKeys.fields_updates_keys+" FROM "+updatesKeys.TNAME+";";
+		String sql = "SELECT "+tester.fields_tester+" FROM "+tester.TNAME+";";
 		String[]params = new String[]{};// where clause?
 		ArrayList<ArrayList<Object>> u;
 		try {
@@ -215,7 +215,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 		data = new ArrayList<D_UpdatesKeysInfo>();
 		for(ArrayList<Object> _u :u){
 			D_UpdatesKeysInfo ui = new D_UpdatesKeysInfo(_u);
-			if(DEBUG)System.out.println("UpdatesKeysModel:update: adding : id= "+ui.updates_keys_ID);
+			if(DEBUG)System.out.println("UpdatesKeysModel:update: adding : id= "+ui.tester_ID);
 			data.add(ui); // add a new item to data list (rows)
 		}
 		this.fireTableDataChanged();
@@ -277,7 +277,8 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 
 	public long get_UpdatesKeysID(int row) {
 		try{
-			return data.get(row).updates_keys_ID;
+			if(row<0) return -1;
+			return data.get(row).tester_ID;
 		}catch(Exception e){
 			e.printStackTrace();
 			return -1;

@@ -1,7 +1,5 @@
 package hds;
 
-import hds.DirectoryServerCache.D_DirectoryEntry;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -284,6 +282,11 @@ class DirectoryServerCache{
 			return null;
 		}
 	}
+	/**
+	 * Linked List node of firectory entries
+	 * @author msilaghi
+	 *
+	 */
 	public static class D_Directory_Node {
 		
 		private static final int MAX_LOADED_PEERS = 0;

@@ -21,6 +21,8 @@ package census;
 import static util.Util._;
 import java.awt.BorderLayout;
 import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -42,19 +44,22 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+
+import MCMC.RandomNetworkSimulation;
 import util.DBInterface;
 import util.P2PDDSQLException;
 import widgets.org.OrgListener;
 import util.P2PDDSQLException;
 import config.Application;
 import data.D_Organization;
-public class CensusPanel extends JPanel implements OrgListener {
+public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 	private static final long serialVersionUID = 1L;
 	public CensusFuzzy fuzzy_table;//The table widget
 	JLabel fuzzyMetric1ThresholdLabel,c3,c10,c11;
 	static JSlider naiveMetricThresholdSlider,fuzzyMetric1Panel1thresholdSlider,fuzzyMetric1Panel2thresholdSlider,fuzzyMetric1Panel3thresholdSlider;
 	JButton c5;
 	private JLabel pcoLabel;
+	private JButton simulate;
 	private JLabel ncoLabel;
 	private JLabel naiveMetrciThresholdLabel;
 	private JSlider pcoSlider;
@@ -460,7 +465,13 @@ public class CensusPanel extends JPanel implements OrgListener {
 		JSplitPane SplitPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT,fuzzy_table.getScrollPane(), buildTabbedControlPanel());
 		SplitPanel.setOneTouchExpandable(true);
 		SplitPanel.setDividerLocation(150);
-		pane.add(org_label, BorderLayout.PAGE_START);//Indicate the current used/selected organization
+		JPanel top = new JPanel();
+		top.add(org_label);
+		simulate = new JButton("Simulate");
+	
+		top.add(simulate);
+		simulate.addActionListener(this);
+		pane.add(top, BorderLayout.PAGE_START);//Indicate the current used/selected organization
 		pane.add(SplitPanel, BorderLayout.CENTER);//Control panel for selecting metrics
 		return this;
 	}
@@ -485,5 +496,25 @@ public class CensusPanel extends JPanel implements OrgListener {
     }
 	@Override
 	public void org_forceEdit(String orgID, D_Organization org) {
+	}
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if(e.getSource() == simulate) {
+			if(organization==null){
+				Application.warning(_("No organization selected"), _("Failure to simulate"));
+				return;
+			}
+			String global_organization_id = organization.global_organization_ID;
+			int sizeActiveHonestConsts = 100;
+			int nbAttackersIneligibleIDs_1 = 10;
+			int nbAttackersWitnessForIneligible_2 = 20;
+			int nbAttackersWitnessAgainstEligible_3 = 10;
+			int nbIneligible = 0;
+			new RandomNetworkSimulation(global_organization_id,
+					sizeActiveHonestConsts,
+					nbAttackersIneligibleIDs_1, nbAttackersWitnessForIneligible_2,
+					nbAttackersWitnessAgainstEligible_3,
+					nbIneligible);
+		}
 	}
 }

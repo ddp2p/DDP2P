@@ -201,8 +201,12 @@ public class Address extends ASNObj{
 		else domain = protos[0];
 		String[] ports = domain.split(Pattern.quote(ADDR_PART_SEP));
 		if(ports.length<2) return -1; 
-		if(ports.length==2) return Integer.parseInt(ports[1]); 
-		return Integer.parseInt(ports[2]);
+		try{
+			if(ports.length==2) return Integer.parseInt(ports[1]); 
+			return Integer.parseInt(ports[2]);
+		}catch(Exception e){
+			return -1; // happens with name of directory in application table
+		}
 	}
 	public static String joinAddresses(String addresses1, String addrSep,
 			String addresses2) {

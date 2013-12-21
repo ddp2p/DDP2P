@@ -61,7 +61,7 @@ import config.DD;
 import data.D_ReleaseQuality;
 import data.D_TesterInfo;
 import data.D_TesterSignedData;
-import data.D_UpdatesInfo;
+import data.D_MirrorInfo;
 import data.D_UpdatesKeysInfo;
 //http://debatedecide.org/DD_Updates;http://distributedcensus.com/DD_Updates;wsdl:http://andrew.cs.fit.edu/~kalhamed2011/webservices/ddWS_doc3.php?wsdl&123331c847ba3a5d6a52e817a4d0109fe65ffbc2038f68c8db1c3f9793b50c0d
 public class ClientUpdates extends Thread{
@@ -93,7 +93,7 @@ public class ClientUpdates extends Thread{
 	// To also call on each change to the testers/mirrors database ask how?
 	public boolean initializeServers(){
 		try {
-		urls = D_UpdatesInfo.getUpdateURLs();
+		urls = D_MirrorInfo.getUpdateURLs();
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
@@ -261,7 +261,7 @@ public class ClientUpdates extends Thread{
 			//Hashtable<String, PK> trusted_hash = getTrustedKeysHash();
 			//if(trusted_hash.size() == 0){
 			
-			boolean has_trusted_testers = D_UpdatesInfo.hasTrustedTesters();
+			boolean has_trusted_testers = D_MirrorInfo.hasTrustedTesters();
 			if(!has_trusted_testers) {
 				Application.warning(Util._("No trusted updates provider key. Please install an update/tester key."), Util._("No trusted updates provider key!"));
 				if(DD.controlPane!=null) DD.controlPane.setClientUpdatesStatus(false);
@@ -273,12 +273,12 @@ public class ClientUpdates extends Thread{
 			Hashtable<VersionInfo, Hashtable<String, VersionInfo>> versions = classifyVersionInfo(is);
 			
 			// Should update database with QoTS and RoTs
-			D_UpdatesInfo.store_QoTs_and_RoTs(versions);
+			D_MirrorInfo.store_QoTs_and_RoTs(versions);
 			
 			if(!DD.UPDATES_AUTOMATIC_VALIDATION_AND_INSTALL) continue;
 			
 			// check testers preferances (weight+ number+ Required)
-			Hashtable<VersionInfo, Hashtable<String, VersionInfo>> valid_versions = D_UpdatesInfo.validateVersionInfo(versions);
+			Hashtable<VersionInfo, Hashtable<String, VersionInfo>> valid_versions = D_MirrorInfo.validateVersionInfo(versions);
 			if(valid_versions.size() == 0) continue;
 			
 			// Here you can select best branch and newest

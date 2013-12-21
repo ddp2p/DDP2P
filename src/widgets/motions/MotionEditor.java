@@ -131,6 +131,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	private static final boolean VISIBILITY_MOTION = false; // hiding them messes up the body at switch between enabled and disabled
 	private static final boolean DISABLE_LABELS = true;
 	private static final boolean DISABLING_MOTION_TITLE_LABEL = false;
+	public static final int DIMY = 300;
 	public JTextField motion_title_field;
 	public JComboBox motion_answer_field;
 	public DocumentEditor motion_body_field;
@@ -348,12 +349,25 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		SUBMIT = _SUBMIT;
 		init();
 	}
+	void _init() {
+		new Thread(){
+			public void run(){
+				init();
+			}
+		}.start();
+	}
 	void init() {
+		if(DEBUG) System.out.println("MotionEditor: start");
 		//this.setLayout(new GridBagLayout());
 		tabbedPane.setTabPlacement(JTabbedPane.TOP);
-		ImageIcon icon = config.DDIcons.getOrgImageIcon("General Org");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon = config.DDIcons.getMotImageIcon("General Motion");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_sig = config.DDIcons.getSigImageIcon("General Signature");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_jus = config.DDIcons.getJusImageIcon("General Justification");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_conf = config.DDIcons.getConfigImageIcon("Config");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
 		int y[] = new int[]{0};
 		JPanel enc;
+		
+		if(DEBUG) System.out.println("MotionEditor: icons");
 		
 		JComponent generalPane = makeGeneralPanel(y);
 		enc = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -361,33 +375,48 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		tabbedPane.addTab(_("Motion Body"), icon, enc, _("Generic fields"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_G);
 		
+		if(DEBUG) System.out.println("MotionEditor: body");
+		
 		jEditor = new JustificationEditor(JustificationEditor.ONLY);
+		
+		if(DEBUG) System.out.println("MotionEditor: justif");
 		
 		vEditor = new VoteEditor(this, jEditor, VoteEditor.CHOICE);
 		jEditor.setVoteEditor(vEditor);
 
+		if(DEBUG) System.out.println("MotionEditor: vote");
+		
 		enc = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		enc.add(vEditor);
-		tabbedPane.addTab(_("Choice"), icon,  enc, _("My Choice"));
+		tabbedPane.addTab(_("Choice"), icon_sig,  enc, _("My Choice"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_C);
+		
+		if(DEBUG) System.out.println("MotionEditor: choice");
+
 		
 		enc = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		enc.add(jEditor);
-		tabbedPane.addTab(_("Justification"), icon, enc, _("Explain Motion"));
+		tabbedPane.addTab(_("Justification"), icon_jus, enc, _("Explain Motion"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_C);
+
+		if(DEBUG) System.out.println("MotionEditor: motions");
 
 		JPanel hp = new JPanel();
 		hp.setLayout(new GridBagLayout()); y[0] = 0;
 		JComponent handlingPane = makeHandlingPanel(hp, y);
 		enc = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		enc.add(handlingPane);
-		tabbedPane.addTab(_("Handling"), icon, enc, _("Handling fields"));
+		tabbedPane.addTab(_("Handling"), icon_conf, enc, _("Handling fields"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_H);
 
+		if(DEBUG) System.out.println("MotionEditor: handling");
+		
 		this.setLayout(new BorderLayout());
 		this.add(tabbedPane);
 		disable_it();
 		this.disable_handling();
+
+		if(DEBUG) System.out.println("MotionEditor: done");
 		
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
@@ -1133,7 +1162,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		this.setMotion(motID, false);
 	}
 	@Override
-	public void news_forceEdit(String motID) {
+	public void motion_forceEdit(String motID) {
 		if(DEBUG)System.out.println("MotionEditor: forceEdit motID="+motID);
 		this.setMotion(motID, true);
 	}

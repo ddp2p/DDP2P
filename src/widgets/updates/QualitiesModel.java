@@ -26,7 +26,7 @@ import util.P2PDDSQLException;
 
 import config.Application;
 
-import data.D_UpdatesInfo;
+import data.D_MirrorInfo;
 import data.D_TesterInfo;
 import data.D_ReleaseQuality;
 
@@ -34,7 +34,7 @@ import util.DBInfo;
 import util.DBInterface;
 import util.DBListener;
 import util.Util;
-import table.updates;
+import table.mirror;
 
 
 public class QualitiesModel extends AbstractTableModel implements TableModel{
@@ -46,15 +46,15 @@ public class QualitiesModel extends AbstractTableModel implements TableModel{
 	private static final boolean DEBUG = false;
 	String columnNames[];//={_("   "),_("Security"),_("Platform"),_("Useability"), _("Total")};
 	
-	D_ReleaseQuality[] releaseQoT ; // It should be part of D_UpdatesInfo
+	D_ReleaseQuality[] releaseQoT ; // It should be part of D_MirrorInfo
 
 	D_TesterInfo[] data;
 	JPanel cellContent;
 	
-	public QualitiesModel(D_UpdatesInfo u) { // constructor with dataSource -> DBInterface _db
+	public QualitiesModel(D_MirrorInfo u) { // constructor with dataSource -> DBInterface _db
         data = u.testerInfo;
         this.releaseQoT = u.releaseQoT;
-        if(DEBUG) System.out.println("QualitiesModel(D_UpdatesInfo u):   u.releaseQoT = "+ u.releaseQoT);
+        if(DEBUG) System.out.println("QualitiesModel(D_MirrorInfo u):   u.releaseQoT = "+ u.releaseQoT);
         columnNames = new String[releaseQoT.length+2]; //first+last
         columnNames[0]= _("Tester name");
         System.out.println("length = "+ columnNames.length);

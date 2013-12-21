@@ -103,8 +103,14 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 
 	public NewsModel(DBInterface _db) {
 		db = _db;
-		db.addListener(this, new ArrayList<String>(Arrays.asList(table.news.TNAME)), null);
+		connectWidget();
 		update(null, null);
+	}
+	public void connectWidget() {
+		db.addListener(this, new ArrayList<String>(Arrays.asList(table.news.TNAME)), null);
+	}
+	public void disconnectWidget() {
+		db.delListener(this);
 	}
 	public void setCrtChoice(String choice){
 		if(DEBUG) System.out.println("\n************\nNewsModel:setCrtChoice: choice="+choice);
@@ -601,7 +607,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 		}
 	}
 	@Override
-	public void news_forceEdit(String motionID) {
+	public void motion_forceEdit(String motionID) {
 		return;
 	}
 	@Override

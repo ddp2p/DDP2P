@@ -168,7 +168,9 @@ public class WB_Messages extends ASNObj{
 				
 				if((sa!=null)&&sa.hasOrg(gid)) continue;
 				try {
-					result.orgs.add(new D_Organization(gid,gid));
+					D_Organization o = new D_Organization(gid,gid);
+					if(!o.readyToSend()) continue;
+					result.orgs.add(o);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got org");
 				} catch (Exception e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested org: "+gid);
@@ -181,6 +183,7 @@ public class WB_Messages extends ASNObj{
 				if((sa!=null)&&sa.hasConstituent(gid, r.cons.get(gid))) continue;
 				try{
 					D_Constituent c = new D_Constituent(gid, gid, D_Constituent.EXPAND_NONE);
+					if(!c.readyToSend()) continue;
 					if(!OrgHandling.serving(asr, c.organization_ID)) continue;
 					result.cons.add(c);
 				}catch(Exception e){
@@ -229,6 +232,7 @@ public class WB_Messages extends ASNObj{
 				if((sa!=null)&&sa.hasMotion(gid)) continue;
 				try {
 					D_Motion m = new D_Motion(gid);
+					if(!m.readyToSend()) continue;
 					if(!OrgHandling.serving(asr, m.organization_ID)) continue;
 					result.moti.add(m);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got moti");
@@ -246,6 +250,7 @@ public class WB_Messages extends ASNObj{
 				if((sa!=null)&&sa.hasJustification(gid)) continue;
 				try{
 					D_Justification j = new D_Justification(gid);
+					if(!j.readyToSend()) continue;
 					if(!OrgHandling.serving(asr, j.organization_ID)) continue;
 					result.just.add(j);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got just");
@@ -263,6 +268,7 @@ public class WB_Messages extends ASNObj{
 				if((sa!=null)&&sa.hasSignature(gid, r.sign.get(gid))) continue;
 				try{
 					D_Vote v = new D_Vote(gid);
+					if(!v.readyToSend()) continue;
 					if(!OrgHandling.serving(asr, v.organization_ID)) continue;
 					result.sign.add(v);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got vote");

@@ -57,22 +57,23 @@ public class UpdateKeysCustomAction extends DebateDecideAction {
 			//System.err.println("Row selected: " + row);
 		}
 		UpdatesKeysModel model = tree.getModel();
-		String updates_keys_ID = Util.getStringID(model.get_UpdatesKeysID(row));
-		data.D_UpdatesKeysInfo uki = model.get_UpdatesKeysInfo(row);
+		String tester_ID = Util.getStringID(model.get_UpdatesKeysID(row));
+//		data.D_UpdatesKeysInfo uki = model.get_UpdatesKeysInfo(row);
 
 		if(_DEBUG) System.out.println("UpdatesKeysCustomAction: row = "+row);
 		if(cmd == M_DELETE) {
 			if(row>=0)
 				try {
-					Application.db.deleteNoSync(table.updatesKeys.TNAME,
-							new String[]{table.updatesKeys.updates_keys_ID},
-							new String[]{updates_keys_ID}, _DEBUG);
-					
 					Application.db.deleteNoSync(table.tester.TNAME,
-							new String[]{table.tester.public_key},
-							new String[]{uki.public_key}, _DEBUG);
-					Application.db.sync(new ArrayList<String>(Arrays.asList(table.tester.TNAME, table.updatesKeys.TNAME)));
+							new String[]{table.tester.tester_ID},
+							new String[]{tester_ID}, _DEBUG);
 					
+//					Application.db.deleteNoSync(table.tester.TNAME,
+//							new String[]{table.tester.public_key},
+//							new String[]{uki.public_key}, _DEBUG);
+			    Application.db.sync(new ArrayList<String>(Arrays.asList(table.tester.TNAME)));
+				model.update(null,null);
+				((UpdatesKeysTable)tree).repaint();	
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				}

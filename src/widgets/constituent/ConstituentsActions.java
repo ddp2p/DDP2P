@@ -305,6 +305,11 @@ class ConstituentsSetMyselfAction extends DebateDecideAction {
     	}
     	ConstituentsIDNode can = (ConstituentsIDNode) target;
     	can.setMySelf(tree);
+		try {
+			DD.status.setMeConstituent(new D_Constituent(can.get_constituentID()));
+		} catch (P2PDDSQLException e1) {
+			e1.printStackTrace();
+		}
     	//tree.preparePopup();
     }
 }
@@ -1046,7 +1051,11 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	long id;
 		try {
 			id = storeMyConstituentData(tree, dialog, false, true);
-			if (id>=0) D_Constituent.readSignSave(id, model.getConstituentIDMyself());
+			if (id>=0){
+				D_Constituent.readSignSave(id, model.getConstituentIDMyself());
+				DD.status.setMeConstituent(new D_Constituent(id));
+			}else
+				DD.status.setMeConstituent(null);
 			//long id = model.getConstituentIDMyself();
 			//if(id>0)
 			model.expandConstituentID(tree, ""+id, true);

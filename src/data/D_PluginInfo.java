@@ -115,7 +115,7 @@ class D_PluginInfo{
 			if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nD_PluginInfo: recordPluginInfo: no plugin remote peer info received");
 			return;
 		}
-		Application.peers.setPluginsInfo(plugins, _global_peer_ID, _peer_ID);
+		if(Application.peers!=null)Application.peers.setPluginsInfo(plugins, _global_peer_ID, _peer_ID);
 		String info = Util.stringSignatureFromByte(Encoder.getEncoder(plugins).getBytes());
 		Application.db.update(
 				table.peer.TNAME,

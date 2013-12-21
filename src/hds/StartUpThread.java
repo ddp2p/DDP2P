@@ -176,6 +176,10 @@ public class StartUpThread extends Thread {
 	public void initQueuesStatus(){
 		if(DEBUG) System.out.println("StartUpThread:initQueuesStatus: start");
 		if(_DEBUG) if(!EventQueue.isDispatchThread()) Util.printCallPath("Not dispatcher");
+		if(DD.controlPane == null){
+			if(_DEBUG) System.out.println("StartUpThread:initQueuesStatus: no control pane");
+			return;
+		}
 		
 		DD.controlPane.q_MD.removeItemListener(DD.controlPane);
 		DD.controlPane.q_C.removeItemListener(DD.controlPane);
@@ -331,6 +335,10 @@ public class StartUpThread extends Thread {
 			if(DD.GUI)
 			EventQueue.invokeLater(new Runnable(){
 				public void run(){
+					if(Application.controlPane == null){
+						if(DEBUG) System.out.println("StartUpThread:run: No control pane");
+						return;
+					}
 					if(Application.controlPane.m_area_ADHOC_BIP==null) return;
 					Application.controlPane.m_area_ADHOC_BIP.setText(DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP);
 					Application.controlPane.m_area_ADHOC_IP.setText(DD.WIRELESS_ADHOC_DD_NET_IP_BASE);

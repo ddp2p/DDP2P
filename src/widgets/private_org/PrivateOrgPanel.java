@@ -57,13 +57,50 @@ public class PrivateOrgPanel extends JPanel implements  OrgListener{
 	public JScrollPane privateOrgTableScroll;
 	private D_Organization organization = null;
 
+	/**
+	 * Listener to changes in widget.org.Orgs
+	 */
+	public void removeOrgListener(){
+    	if(DEBUG)System.out.println("PrivateOrgPanel:removeOrgListener: start");    	
+		if(DD.status==null){
+			Util.printCallPath("Error: call before initialization of orgs");
+			return;
+		}
+    	DD.status.removeOrgListener(this);
+    	if(DEBUG)System.out.println("PrivateOrgPanel:removeOrgListener: done");    	
+	}
+	/**
+	 * Listener to changes in widget.org.Orgs
+	 */
 	public void addOrgListener(){
+    	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: start");    	
+		if(DD.status==null){
+			Util.printCallPath("Error: call before initialization of orgs");
+			return;
+		}
+    	DD.status.addOrgStatusListener(this);
+    	if(organization==null)
+        	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: null org");    	
+    	//organization = Application.orgs.getCurrentOrg();
+    	if(organization==null)
+        	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: null org");    	
+     	//org_label.setText(getLabelText());
+    	new LabelUpdater();
+    	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: done");    	
+	}
+
+	/**
+	 * This uses the org object rather than status
+	 * Listener to changes in widget.org.Orgs
+	 */
+	@Deprecated
+	public void _addOrgListener(){
     	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: start");    	
 		if(Application.orgs==null){
 			Util.printCallPath("Error: call before initialization of orgs");
 			return;
 		}
-    	Application.orgs.addListener(this);
+    	Application.orgs.addOrgListener(this);
     	if(organization==null)
         	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: null org");    	
     	//organization = Application.orgs.getCurrentOrg();

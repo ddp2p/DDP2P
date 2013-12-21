@@ -314,10 +314,10 @@ public class UDPServerThread extends Thread {
 				if(aup.senderIsInitiator==true){
 					aup.senderIsInitiator=false;
 					next_dest = (InetSocketAddress) pak.getSocketAddress();
-					Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_UDP_NAT);
+					if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_UDP_NAT);
 				}else{
 					next_dest = new InetSocketAddress(aup.initiator_domain,aup.initiator_port);
-					Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_UDP);
+					if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, Peers.STATE_CONNECTION_UDP);
 				}
 				byte[] buf = aup.encode();
 				DatagramPacket reqDP = new DatagramPacket(buf, buf.length);

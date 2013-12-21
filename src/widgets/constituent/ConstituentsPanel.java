@@ -30,6 +30,7 @@ import javax.swing.JTree;
 import util.P2PDDSQLException;
 
 import config.Application;
+import config.DD;
 
 import data.D_Constituent;
 import data.D_Organization;
@@ -69,7 +70,8 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 
     public ConstituentsPanel(DBInterface db, int _organizationID, int _constituentID, String _global_constituentID) {
     	super(new BorderLayout());
-    	Application.orgs.addListener(this);
+    	DD.status.addOrgStatusListener(this);
+    	//Application.orgs.addListener(this);
     	if(_organizationID<0) return;
      	org_label.setText(getLabelText());
      	refresh_button.addActionListener(this);
@@ -114,8 +116,13 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
     	}
     	organizationID = _orgID;
     	constituentID = config.Identity.getDefaultConstituentIDForOrg(organizationID);
-    	global_constituentID = D_Constituent.getConstituentGlobalID(constituentID+"");
-    	if(global_constituentID==null) constituentID=-1;
+    	global_constituentID = D_Constituent.getConstituentGlobalID(Util.getStringID(constituentID));
+    	if(global_constituentID==null){
+    		constituentID=-1;
+    		DD.status.setMeConstituent(null);
+    	}else{
+    		DD.status.setMeConstituent(new D_Constituent(constituentID));
+    	}
     	ConstituentsModel cm = new ConstituentsModel(Application.db, organizationID, constituentID, global_constituentID, org, this);
      	tree = new ConstituentsTree(cm);
     	long cID = cm.getConstituentIDMyself();

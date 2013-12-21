@@ -24,14 +24,14 @@ import util.P2PDDSQLException;
 
 import config.Application;
 
-import data.D_UpdatesInfo;
+import data.D_MirrorInfo;
 
 
 import util.DBInfo;
 import util.DBInterface;
 import util.DBListener;
 import util.Util;
-import table.updates;
+import table.mirror;
 
 public class UpdatesModel extends AbstractTableModel implements TableModel, DBListener , ActionListener{
 	public static final int TABLE_COL_NAME = 0; // orginal or preferred name
@@ -49,11 +49,11 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 	HashSet<Object> tables = new HashSet<Object>();
 	String columnNames[]={_("Name"),_("URL"),_("Last Version"),_("Use"),_("Tester QoT & RoT"), _("Last Contact"),_("Activity")};
 
-	ArrayList<D_UpdatesInfo> data = new ArrayList<D_UpdatesInfo>(); // rows of type D_UpdateInfo -> Bean
+	ArrayList<D_MirrorInfo> data = new ArrayList<D_MirrorInfo>(); // rows of type D_UpdateInfo -> Bean
 	
 	public UpdatesModel(DBInterface _db) { // constructor with dataSource -> DBInterface _db
 		db = _db;
-		db.addListener(this, new ArrayList<String>(Arrays.asList(table.updates.TNAME)), null);
+		db.addListener(this, new ArrayList<String>(Arrays.asList(table.mirror.TNAME)), null);
 		// DBSelector.getHashTable(table.organization.TNAME, table.organization.organization_ID, ));
 	//	update(null, null);
 	}
@@ -99,7 +99,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 	public Object getValueAt(int rowIndex, int columnIndex) {// a cell
 		if((rowIndex<0) || (rowIndex>=data.size())) return null;
 		if((columnIndex<0) || (columnIndex>this.getColumnCount())) return null;
-		D_UpdatesInfo crt = data.get(rowIndex);
+		D_MirrorInfo crt = data.get(rowIndex);
 		if(crt==null) return null;
 		switch(columnIndex){
 		case TABLE_COL_NAME:
@@ -151,14 +151,14 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 		if(DEBUG) System.out.println("setVlaueAt"+row +", "+col);
 		if((row<0) || (row>=data.size())) return;
 		if((col<0) || (col>this.getColumnCount())) return;
-		D_UpdatesInfo crt = data.get(row);
+		D_MirrorInfo crt = data.get(row);
 		switch(col) {
 		case TABLE_COL_NAME:
 			crt.my_mirror_name = Util.getString(aValue);
 			if(crt.my_mirror_name!=null) crt.my_mirror_name = crt.my_mirror_name.trim();
 			if("".equals(crt.my_mirror_name)) crt.my_mirror_name = null;
 			try {
-				data.get(row).store(D_UpdatesInfo.action_update);
+				data.get(row).store(D_MirrorInfo.action_update);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
@@ -166,7 +166,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 		case TABLE_COL_URL:
 			data.get(row).url = Util.getString(aValue);
 			try {
-				data.get(row).store(D_UpdatesInfo.action_update);
+				data.get(row).store(D_MirrorInfo.action_update);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
@@ -174,7 +174,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 		case TABLE_COL_USED:
 			data.get(row).used = ((Boolean) aValue).booleanValue();
 			try {
-				data.get(row).store(D_UpdatesInfo.action_update);
+				data.get(row).store(D_MirrorInfo.action_update);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
@@ -198,7 +198,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 	@Override
 	public void update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
 		if(DEBUG) System.out.println("UpdatesModel: update: start:"+table);
-		String sql = "SELECT "+updates.fields_updates+" FROM "+updates.TNAME+";";
+		String sql = "SELECT "+mirror.fields_updates+" FROM "+mirror.TNAME+";";
 		String[]params = new String[]{};// where clause?
 		ArrayList<ArrayList<Object>> u;
 		try {
@@ -207,9 +207,9 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 			e.printStackTrace();
 			return;
 		}
-		data = new ArrayList<D_UpdatesInfo>();
+		data = new ArrayList<D_MirrorInfo>();
 		for(ArrayList<Object> _u :u){
-			D_UpdatesInfo ui = new D_UpdatesInfo(_u);
+			D_MirrorInfo ui = new D_MirrorInfo(_u);
 			if(DEBUG) System.out.println("UpdatesModel: update: add: "+ui);
 			data.add(ui); // add a new item to data list (rows)
 		}
@@ -282,7 +282,7 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 	public long get_UpdatesID(int row) {
 		if(row<0) return -1;
 		try{
-			return data.get(row).updates_ID;
+			return data.get(row).mirror_ID;
 		}catch(Exception e){
 			e.printStackTrace();
 			return -1;

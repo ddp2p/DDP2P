@@ -762,7 +762,20 @@ public class OrgHandling {
 		return !dorg.broadcast_rule;
 	}
 	static boolean serving_org_to_peer(String org_id, D_PeerAddress address) {
+		D_Organization dorg;
 		ArrayList<D_OrgDistribution> b = D_OrgDistribution.get_Org_Distribution_byPeerID(address.peer_ID);
+
+		if((address.component_basic_data.emails!=null)&&(address.component_preferences.email_verified)){
+			try {
+				dorg = new D_Organization(Util.lval(org_id, -1));
+			} catch (Exception e) {
+				e.printStackTrace();
+				return true;
+			}
+			HashSet<String> emails = D_Organization.getEmailsSet(address.component_basic_data.emails);
+			for(String email : emails)
+				if(dorg.preapproved.contains(email)) return true;
+		}
 		return D_OrgDistribution.contains_org(b, Util.lval(org_id, -1));
 	}
 	void test(int of, long l_org_id, String org_gid, D_Organization[] orgData){

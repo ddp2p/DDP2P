@@ -29,7 +29,7 @@ import util.P2PDDSQLException;
 
 import config.Application;
 
-import table.updatesKeys;
+import table.tester;
 import updates.VersionInfo;
 import util.Util;
 
@@ -42,14 +42,14 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 	public static boolean DEBUG = false;
 	public String original_tester_name;
 	public String my_tester_name;
-	//public String url;
-	//public String last_version;
-	//public boolean used;
+	public String email;
+	public String url; // just for ads
+	public String description;
 	public float weight;
 	public boolean reference;
 	public boolean trusted_as_tester;
 	public boolean trusted_as_mirror;
-	public long updates_keys_ID = -1;
+	public long tester_ID = -1;
 	public String public_key;
 	public String public_key_hash;
 	public String expected_test_thresholds;
@@ -60,24 +60,26 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 		init(_u);
 	}
 	public void init(ArrayList<Object> _u) {
-		updates_keys_ID = Util.lval(_u.get(table.updatesKeys.F_ID),-1);
-		original_tester_name = Util.getString(_u.get(table.updatesKeys.F_ORIGINAL_TESTER_NAME));
-		my_tester_name = Util.getString(_u.get(table.updatesKeys.F_MY_TESTER_NAME));
-		//url = Util.getString(_u.get(table.updatesKeys.F_URL));
-		public_key = Util.getString(_u.get(table.updatesKeys.F_PUBLIC_KEY));
-		public_key_hash = Util.getString(_u.get(table.updatesKeys.F_PUBLIC_KEY_HASH));
-		//last_version = Util.getString(_u.get(table.updatesKeys.F_LAST_VERSION));
-		//used = Util.stringInt2bool(_u.get(table.updatesKeys.F_USED), false);
-		trusted_as_tester = Util.stringInt2bool(_u.get(table.updatesKeys.F_USED_TESTER), false);
-		trusted_as_mirror = Util.stringInt2bool(_u.get(table.updatesKeys.F_USED_MIRROR), false);
-		weight = Util.fval(_u.get(table.updatesKeys.F_WEIGHT),1);
-		reference = Util.stringInt2bool(_u.get(table.updatesKeys.F_REFERENCE), false);
-		expected_test_thresholds = Util.getString(_u.get(table.updatesKeys.F_EXPECTED_TEST_THRESHOLDS));
-		//last_contact_date = Util.getCalendar(Util.getString(_u.get(table.updatesKeys.F_LAST_CONTACT)));
-		//activity = Util.getString(_u.get(table.updatesKeys.F_ACTIVITY));
+		tester_ID = Util.lval(_u.get(table.tester.F_ID),-1);
+		original_tester_name = Util.getString(_u.get(table.tester.F_ORIGINAL_TESTER_NAME));
+		my_tester_name = Util.getString(_u.get(table.tester.F_MY_TESTER_NAME));
+		email = Util.getString(_u.get(table.tester.F_EMAIL));
+		url = Util.getString(_u.get(table.tester.F_URL));
+		description = Util.getString(_u.get(table.tester.F_DESCRIPTION));
+		public_key = Util.getString(_u.get(table.tester.F_PUBLIC_KEY));
+		public_key_hash = Util.getString(_u.get(table.tester.F_PUBLIC_KEY_HASH));
+		//last_version = Util.getString(_u.get(table.tester.F_LAST_VERSION));
+		//used = Util.stringInt2bool(_u.get(table.tester.F_USED), false);
+		trusted_as_tester = Util.stringInt2bool(_u.get(table.tester.F_USED_TESTER), false);
+		trusted_as_mirror = Util.stringInt2bool(_u.get(table.tester.F_USED_MIRROR), false);
+		weight = Util.fval(_u.get(table.tester.F_WEIGHT),1);
+		reference = Util.stringInt2bool(_u.get(table.tester.F_REFERENCE), false);
+		expected_test_thresholds = Util.getString(_u.get(table.tester.F_EXPECTED_TEST_THRESHOLDS));
+		//last_contact_date = Util.getCalendar(Util.getString(_u.get(table.tester.F_LAST_CONTACT)));
+		//activity = Util.getString(_u.get(table.tester.F_ACTIVITY));
 	}
 	public D_UpdatesKeysInfo(String public_key2) {
-		String sql = "SELECT "+updatesKeys.fields_updates_keys+" FROM "+updatesKeys.TNAME+" WHERE "+table.updatesKeys.public_key+"=?;";
+		String sql = "SELECT "+tester.fields_tester+" FROM "+tester.TNAME+" WHERE "+table.tester.public_key+"=?;";
 		String[]params = new String[]{public_key2};// where clause?
 		ArrayList<ArrayList<Object>> u;
 		try {
@@ -95,7 +97,7 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 	}
 	public boolean existsInDB() {
 		D_UpdatesKeysInfo old = new D_UpdatesKeysInfo(public_key);
-		return old.updates_keys_ID >=0 ;
+		return old.tester_ID >=0 ;
 	}
 	@Override
 	public Encoder getEncoder() {
@@ -109,35 +111,38 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 	}
 	public void store(String cmd) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("in UpdateKeysInfo.store()");
-		String params[] = new String[table.updatesKeys.F_FIELDS];
-		params[table.updatesKeys.F_ORIGINAL_TESTER_NAME] = this.original_tester_name;
-		params[table.updatesKeys.F_MY_TESTER_NAME] = this.my_tester_name;
-		//params[table.updatesKeys.F_URL] = this.url;
-		params[table.updatesKeys.F_PUBLIC_KEY] = this.public_key;
-		params[table.updatesKeys.F_PUBLIC_KEY_HASH] = this.public_key_hash;
-		//params[table.updatesKeys.F_LAST_VERSION] = this.last_version;
-		//if(this.used)params[table.updatesKeys.F_USED] = "1"; else params[table.updatesKeys.F_USED] = "0";
-		params[table.updatesKeys.F_USED_MIRROR] = Util.bool2StringInt(trusted_as_mirror);
-		params[table.updatesKeys.F_USED_TESTER] = Util.bool2StringInt(trusted_as_tester);
-		params[table.updatesKeys.F_WEIGHT] = ""+this.weight;
-		params[table.updatesKeys.F_EXPECTED_TEST_THRESHOLDS] = this.expected_test_thresholds;
-		if(this.reference)params[table.updatesKeys.F_REFERENCE] = "1"; else params[table.updatesKeys.F_REFERENCE]="0";
-		//params[table.updatesKeys.F_LAST_CONTACT] = Encoder.getGeneralizedTime(this.last_contact_date);
-		//params[table.updatesKeys.F_ACTIVITY] = this.activity;
-		params[table.updatesKeys.F_ID] = Util.getStringID(this.updates_keys_ID);
+		String params[] = new String[table.tester.F_FIELDS];
+		params[table.tester.F_ORIGINAL_TESTER_NAME] = this.original_tester_name;
+		params[table.tester.F_MY_TESTER_NAME] = this.my_tester_name;
+		params[table.tester.F_EMAIL] = this.email;
+		params[table.tester.F_URL] = this.url;
+		params[table.tester.F_DESCRIPTION] = this.description;
+		//params[table.tester.F_URL] = this.url;
+		params[table.tester.F_PUBLIC_KEY] = this.public_key;
+		params[table.tester.F_PUBLIC_KEY_HASH] = this.public_key_hash;
+		//params[table.tester.F_LAST_VERSION] = this.last_version;
+		//if(this.used)params[table.tester.F_USED] = "1"; else params[table.tester.F_USED] = "0";
+		params[table.tester.F_USED_MIRROR] = Util.bool2StringInt(trusted_as_mirror);
+		params[table.tester.F_USED_TESTER] = Util.bool2StringInt(trusted_as_tester);
+		params[table.tester.F_WEIGHT] = ""+this.weight;
+		params[table.tester.F_EXPECTED_TEST_THRESHOLDS] = this.expected_test_thresholds;
+		if(this.reference)params[table.tester.F_REFERENCE] = "1"; else params[table.tester.F_REFERENCE]="0";
+		//params[table.tester.F_LAST_CONTACT] = Encoder.getGeneralizedTime(this.last_contact_date);
+		//params[table.tester.F_ACTIVITY] = this.activity;
+		params[table.tester.F_ID] = Util.getStringID(this.tester_ID);
 	    if(cmd.equals("update"))
-			Application.db.updateNoSync(table.updatesKeys.TNAME, table.updatesKeys._fields_updates_keys_no_ID,
-										new String[]{table.updatesKeys.updates_keys_ID},
+			Application.db.updateNoSync(table.tester.TNAME, table.tester._fields_tester_no_ID,
+										new String[]{table.tester.tester_ID},
 										params,DEBUG);
 				
 		if(cmd.equals("insert")){
 			if(DEBUG)System.out.println("in UpdateKeysInfo.store()/ insert");
 			// check the existance based on PK or url?
-			String params2[]=new String[table.updatesKeys.F_FIELDS_NOID];
+			String params2[]=new String[table.tester.F_FIELDS_NOID];
 			System.arraycopy(params,0,params2,0,params2.length);
 			if(DEBUG)for(int i=0; i<params2.length;i++)
 						System.out.println("params2["+i+"]: "+ params2[i]);
-			this.updates_keys_ID = Application.db.insertNoSync(table.updatesKeys.TNAME, table.updatesKeys._fields_updates_keys_no_ID,params2, true);
+			this.tester_ID = Application.db.insertNoSync(table.tester.TNAME, table.tester._fields_tester_no_ID,params2, true);
 		}
 	}
 	// TODO Auto-generated method stub
@@ -194,9 +199,9 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 		ArrayList<ArrayList<Object>> a;
 		try {
 			a = Application.db.select(
-					"SELECT "+table.updatesKeys.public_key+
-					" FROM "+table.updatesKeys.TNAME+
-					" WHERE "+table.updatesKeys.public_key_hash+"=?;",
+					"SELECT "+table.tester.public_key+
+					" FROM "+table.tester.TNAME+
+					" WHERE "+table.tester.public_key_hash+"=?;",
 					new String[]{public_key_hash}, _DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();

@@ -33,6 +33,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 
 import javax.swing.Action;
 import javax.swing.ImageIcon;
@@ -46,6 +47,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableRowSorter;
 
 import util.P2PDDSQLException;
 
@@ -61,12 +63,13 @@ import config.DD;
 import config.DDIcons;
 //import config.DDIcons;
 import config.Identity;
+import data.D_Document_Title;
 import data.D_Justification;
 import data.D_Motion;
 
 
 @SuppressWarnings("serial")
-public class Justifications extends JTable implements MouseListener  {
+public class Justifications extends JTable implements MouseListener, JustificationsListener  {
 	private int DIM_X = 1000;
 	private static final int DIM_Y = 50;
 	public static final int A_NON_FORCE_COL = 4;
@@ -91,6 +94,39 @@ public class Justifications extends JTable implements MouseListener  {
 		super(dm);
 		init();
 	}
+	public void connectWidget() {
+		getModel().connectWidget();
+		
+		DD.status.addMotionStatusListener(this.getModel());
+    	if(_jedit != null) DD.status.addJustificationStatusListener(_jedit);
+    	DD.status.addJustificationStatusListener(this);
+	}
+	public void disconnectWidget() {
+		getModel().disconnectWidget();
+
+		DD.status.removeMotListener(this.getModel());
+    	if(_jedit != null) DD.status.removeJustificationListener(_jedit);
+    	DD.status.removeJustificationListener(this);
+	}
+	JustificationEditor _jedit = null;
+	//JPanel
+	Component just_panel = null;
+	public Component getComboPanel() {
+		if(just_panel != null) return just_panel;
+		if(DEBUG) System.out.println("createAndShowGUI: added justif");
+    	if(_jedit == null) _jedit = new JustificationEditor();
+		if(DEBUG) System.out.println("createAndShowGUI: added justif editor");
+    	just_panel = DD.makeJustificationPanel(_jedit, this);
+    	//javax.swing.JScrollPane jscj = new javax.swing.JScrollPane(just_panel);
+		//tabbedPane.addTab("Justifications", jscj);
+    	//JScrollPane just = justifications.getScrollPane();
+		//tabbedPane.addTab("Justifications", just);
+		//tabbedPane.addTab("Justification", _jedit.getScrollPane());
+		if(DEBUG) System.out.println("createAndShowGUI: justif pane");
+		this.addListener(DD.status);
+		DD.status.addJustificationStatusListener(_jedit);
+    	return just_panel;//jscj;
+	}
 	void init(){
 		getModel().setTable(this);
 		addMouseListener(this);
@@ -104,6 +140,32 @@ public class Justifications extends JTable implements MouseListener  {
         _("Click to sort; Shift-Click to sort in reverse order"));
 		this.setAutoCreateRowSorter(true);
 		//this.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
+		
+
+		Comparator<D_Document_Title> documentTitleComparator = new java.util.Comparator<D_Document_Title>() {
+
+			//@Override
+			public int _compare(Object o1, Object o2) {
+				if(o1==null) return 1;
+				if(o2==null) return -1;
+				String s1 = Util.getString(o1), s2 = Util.getString(o2);
+				if(o1 instanceof data.D_Document_Title) s1 = ((data.D_Document_Title)o1).title_document.getDocumentUTFString();
+				if(o2 instanceof data.D_Document_Title) s2 = ((data.D_Document_Title)o2).title_document.getDocumentUTFString();
+				return s1.compareTo(s2);
+			}
+
+			@Override
+			public int compare(D_Document_Title arg0, D_Document_Title arg1) {
+				return _compare(arg0, arg1);
+			}
+		};
+		TableRowSorter<JustificationsModel> sorter = new TableRowSorter<JustificationsModel>();
+		this.setRowSorter(sorter);
+		sorter.setModel(getModel());
+		sorter.setComparator(getModel().TABLE_COL_NAME, documentTitleComparator);
+		this.getRowSorter().toggleSortOrder(getModel().TABLE_COL_ARRIVAL_DATE);
+		this.getRowSorter().toggleSortOrder(getModel().TABLE_COL_ARRIVAL_DATE);
+
 		
     	try{
     		if (Identity.getCurrentIdentity().identity_id!=null) {
@@ -142,7 +204,6 @@ public class Justifications extends JTable implements MouseListener  {
 //		}
 		return super.getCellRenderer(row, column);
 	}
-	protected String[] columnToolTips = {null,null,_("A name you provide")};
     @SuppressWarnings("serial")
 	protected JTableHeader createDefaultTableHeader() {
         return new JTableHeader(columnModel) {
@@ -151,8 +212,8 @@ public class Justifications extends JTable implements MouseListener  {
                 int index = columnModel.getColumnIndexAtX(p.x);
                 int realIndex = 
                         columnModel.getColumn(index).getModelIndex();
-                if(realIndex >= columnToolTips.length) return null;
-				return columnToolTips[realIndex];
+                if(realIndex >= getModel().columnToolTipsCount()) return null;
+				return getModel().columnToolTipsEntry(realIndex);
             }
         };
     }
@@ -202,7 +263,7 @@ public class Justifications extends JTable implements MouseListener  {
 			if(DEBUG) System.out.println("Justifications:fireForceEdit: l="+l);
 			try{
 				if(orgID==null) ;//l.forceEdit(orgID);
-				else l.forceEdit(orgID);
+				else l.forceJustificationEdit(orgID);
 			}catch(Exception e){e.printStackTrace();}
 		}
 	}
@@ -215,10 +276,18 @@ public class Justifications extends JTable implements MouseListener  {
 		if(DEBUG) System.out.println("Justifications:fireListener:choice="+getModel().crt_choice+"  id="+id);
 	}
 	void fireListener(String id, int col, boolean db_sync) {
+   	   	if(_DEBUG) System.out.println("Justifications: fire justID="+id);
+   	   	D_Justification just = null;
+   	   	if(id != null)
+			try {
+				just = new D_Justification(Util.lval(id));
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
 		for(JustificationsListener l: listeners){
 			if(DEBUG) System.out.println("Justifications:fireListener: l="+l);
 			try{
-				l.justUpdate(id, col, db_sync);
+				l.justUpdate(id, col, db_sync, just);
 			}catch(Exception e){e.printStackTrace();}
 		}
 	}
@@ -226,7 +295,7 @@ public class Justifications extends JTable implements MouseListener  {
 		listeners.add(l);
 		int row =this.getSelectedRow();
 		if(row>=0)
-			l.justUpdate(Util.getString(this.getModel()._justifications[this.convertRowIndexToModel(row)]),A_NON_FORCE_COL, false);
+			l.justUpdate(Util.getString(this.getModel()._justifications[this.convertRowIndexToModel(row)]),A_NON_FORCE_COL, false, null);
 	}
 	public void removeListener(JustificationsListener l){
 		listeners.remove(l);
@@ -266,6 +335,7 @@ public class Justifications extends JTable implements MouseListener  {
    	   		}catch(Exception e){};
    	   	}
         
+   	   	if(_DEBUG) System.out.println("Justifications: mouse click row="+row);
         fireListener(row,col, false);
 	}
 	@Override
@@ -336,6 +406,25 @@ public class Justifications extends JTable implements MouseListener  {
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
+    /**
+     * called from DD.status backward/forward
+     */
+	@Override
+	public void justUpdate(String justID, int col, boolean db_sync,
+			D_Justification just) {
+		if(justID==null) return;
+		int model_row = getModel().getRow(justID); //getRowByID(Util.lval(justID));
+		if(model_row<0) return;
+		int view_row = this.convertRowIndexToView(model_row);
+		this.setRowSelectionInterval(view_row, view_row);
+		
+		this.fireListener(justID, col, db_sync);
+	}
+	@Override
+	public void forceJustificationEdit(String justID) {
+		// TODO Auto-generated method stub
+		
+	}
 }
 @SuppressWarnings("serial")
 class JustificationsCustomAction extends DebateDecideAction {
@@ -433,7 +522,8 @@ class JustificationsCustomAction extends DebateDecideAction {
         		if(model.crt_choice==null)tree.setCurrentJust(nID); // will be visible only if everything is visible
         		if(DEBUG) System.out.println("JustificationsCAction: fire="+nID);
         		tree.fireListener(Util.getStringID(nID), 0, false);
-        		DD.tabbedPane.setSelectedComponent(DD.jscj);
+        		//DD.tabbedPane.setSelectedComponent(DD.jscj);
+        		DD.tabbedPane.setSelectedIndex(DD.TAB_JUSTS_);
 			} catch (P2PDDSQLException e2) {
 				e2.printStackTrace();
 			}

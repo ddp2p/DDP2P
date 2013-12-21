@@ -24,5 +24,5 @@ import data.D_Motion;
 public interface MotionsListener {
 	public void motion_update(String motID, int col, D_Motion d_motion);
 
-	public void news_forceEdit(String motID);
+	public void motion_forceEdit(String motID);
 }

@@ -24,6 +24,7 @@ import java.awt.CheckboxGroup;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Event;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -46,6 +47,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -104,6 +106,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 	private static final boolean _DEBUG = true;
 	/* JTextArea */ 
 	MultiformatDocumentEditor instructionsMotionsPane, instructionsRegistrationsPane, descriptionPane;
+	JPanel preapprovedPane;
 	
 	JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP,JTabbedPane.WRAP_TAB_LAYOUT);
 	String orgID;
@@ -130,6 +133,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 	private JTextField name_forum_field;
 	private JTextField name_motion_field;
 	private JTextField name_justification_field;
+	private JTextArea preapproved;
 	private LVComboBox languages_field;
 	private boolean enabled;
 	JCheckBox requested;
@@ -143,6 +147,9 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 	//	tabbedPane.setLayout(new BorderLayout());
 	    tabbedPane.setAutoscrolls(true);
 		ImageIcon icon = config.DDIcons.getOrgImageIcon("General Org"); //Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_conf = config.DDIcons.getConfigImageIcon("Config");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_register = config.DDIcons.getRegistrationImageIcon("Register");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_preapproved = config.DDIcons.getConImageIcon("Preapproved Constituents");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
 
 		JComponent generalPane = makeGeneralPanel();
 		tabbedPane.addTab(_("General Org"), icon, generalPane, _("Generic fields"));
@@ -161,7 +168,11 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		tabbedPane.setMnemonicAt(2, KeyEvent.VK_M);
 		
 		instructionsRegistrationsPane = makeInstructionsRegistrationsPanel();
-		tabbedPane.addTab(_("Instructions Registrations"), icon, new JScrollPane(instructionsRegistrationsPane), _("Instructions Registrations"));
+		tabbedPane.addTab(_("Instructions Registrations"), icon_register, new JScrollPane(instructionsRegistrationsPane), _("Instructions Registrations"));
+		tabbedPane.setMnemonicAt(3, KeyEvent.VK_R);
+		
+		preapprovedPane = makePreapprovedPanel();
+		tabbedPane.addTab(_("Pre-Approved"), icon_preapproved, new JScrollPane(preapprovedPane), _("Emails of Pre-Approved Receivers"));
 		tabbedPane.setMnemonicAt(3, KeyEvent.VK_R);
 		
 		extraFields = new OrgExtra();
@@ -169,7 +180,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		tabbedPane.addTab(_("Extra Fields"), icon, extraFieldsPane, _("Extra Fields"));
 
 		JComponent handlingPane = makeHandlingPanel();
-		tabbedPane.addTab(_("Handling"), icon, handlingPane, _("Handling fields"));
+		tabbedPane.addTab(_("Handling"), icon_conf, handlingPane, _("Handling fields"));
 		tabbedPane.setMnemonicAt(5, KeyEvent.VK_H);
         this.setLayout(new BorderLayout());
 		this.add(tabbedPane);
@@ -370,6 +381,11 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		this.instructionsRegistrationsPane.setDBDoc(Util.getString(org.get(table.organization.ORG_COL_INSTRUC_REGIS)));
 		this.instructionsRegistrationsPane.getMFDocument().addDocumentListener(this);
 		
+		preapproved.getDocument().removeDocumentListener(this);
+		preapproved.setText(Util.getString(org.get(table.organization.ORG_COL_PREAPPROVED)));
+		preapproved.getDocument().addDocumentListener(this);
+		
+		
 		name_field.getDocument().removeDocumentListener(this);
 		name_field.setText(Util.getString(org.get(table.organization.ORG_COL_NAME)));
 		name_field.getDocument().addDocumentListener(this);
@@ -518,6 +534,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		if(this.date_field!=null) this.date_field.setEnabled(false);
 		if(this.default_scoring_options_field!=null) this.default_scoring_options_field.setEnabled(false);
 		if(this.descriptionPane!=null) this.descriptionPane.setEnabled(false);
+		if(this.preapproved!=null) this.preapproved.setEnabled(false);
 		if(this.instructionsMotionsPane!=null) this.instructionsMotionsPane.setEnabled(false);
 		if(this.instructionsRegistrationsPane!=null) this.instructionsRegistrationsPane.setEnabled(false);
 		if(this.extraFields!=null) this.extraFields.setEnabled(false);
@@ -545,6 +562,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		if(this.date_field!=null) this.date_field.setEnabled(true);
 		if(this.default_scoring_options_field!=null) this.default_scoring_options_field.setEnabled(true);
 		if(this.descriptionPane!=null) this.descriptionPane.setEnabled(true);
+		if(this.preapproved!=null) this.preapproved.setEnabled(true);
 		if(this.instructionsMotionsPane!=null) this.instructionsMotionsPane.setEnabled(true);
 		if(this.instructionsRegistrationsPane!=null) this.instructionsRegistrationsPane.setEnabled(true);
 		if(this.extraFields!=null) this.extraFields.setEnabled(true);
@@ -578,6 +596,18 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		result.getDocument().addDocumentListener(this);
 		return result;
 		*/
+	}
+	private JPanel makePreapprovedPanel(){
+		JPanel p = new JPanel(new BorderLayout());
+		JTextArea Instruct;
+		p.add(
+				Instruct = new JTextArea(_("For controlled broadcasting, add email addresses, separated by any spaces and the separator:")+" \""+table.organization.SEP_PREAPPROVED+"\""),
+				BorderLayout.NORTH
+				);
+		Instruct.setEditable(false);
+		p.add(preapproved=new JTextArea(), BorderLayout.CENTER);
+		preapproved.getDocument().addDocumentListener(this); //.addKeyListener(this);
+		return p;
 	}
 	private MultiformatDocumentEditor makeInstructionsRegistrationsPanel() {
 		MultiformatDocumentEditor ed =
@@ -842,7 +872,8 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 			return;
 		}
 		if(!enabled) return;
-		String currentTime = Util.getGeneralizedTime();
+		Calendar _currentTime = Util.CalendargetInstance();
+		String currentTime = Encoder.getGeneralizedTime(_currentTime);
 		String creationTime = date_field.getText();
 
 		
@@ -996,6 +1027,26 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				e.printStackTrace();
 			}
 			return;			
+		}
+		if((this.preapproved==source)||(this.preapproved.getDocument()==source)) {
+			String _preapproved = this.preapproved.getText();
+			this.organization._preapproved = _preapproved;
+			this.organization.updatePreapproved();
+			this.organization.setPreferencesDate(_currentTime, currentTime);
+			try {
+				this.organization.storeLocalFlags();
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
+//			try {
+//				Application.db.update(table.organization.TNAME,
+//						new String[]{table.organization.preapproved, table.organization.arrival_date},
+//						new String[]{table.organization.organization_ID},
+//						new String[]{_preapproved, currentTime, this.orgID});
+//			} catch (P2PDDSQLException e) {
+//				e.printStackTrace();
+//			}
+			return;
 		}
 		if((name_field==source)||(name_field.getDocument()==source)) {
 			if(DEBUG) out.println("OrgEditor:handleFieldEvent: name");

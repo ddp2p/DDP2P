@@ -33,7 +33,7 @@ import config.Application;
 import config.Identity;
 import config.DDIcons;
 import hds.DebateDecideAction;
-import data.D_UpdatesInfo;
+import data.D_MirrorInfo;
 import data.D_TesterDefinition;
 import data.D_UpdatesKeysInfo;
 

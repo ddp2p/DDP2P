@@ -1561,4 +1561,11 @@ public class D_Constituent extends ASNObj implements Summary {
 	public boolean LocallyAvailable() {
 		return this.constituent_ID != null;
 	}
+	public boolean readyToSend() {
+		if(this.global_constituent_id == null) return false;
+		if(this.global_organization_ID == null) return false;
+		if(!this.external)
+			if((this.signature == null)||(this.signature.length==0)) return false;
+		return true;
+	}
 }

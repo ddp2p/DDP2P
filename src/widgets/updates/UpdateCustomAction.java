@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import java.awt.Component;
 import java.awt.Dimension;
@@ -15,6 +16,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.ActionEvent;
 import java.awt.Point;
 
+import javax.swing.JOptionPane;
 import javax.swing.Action;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
@@ -34,10 +36,13 @@ import widgets.components.BulletRenderer;
 import config.Application;
 import config.Identity;
 import config.DDIcons;
+import config.DD;
 import hds.DebateDecideAction;
-import data.D_UpdatesInfo;
+import data.D_MirrorInfo;
 import data.D_TesterDefinition;
 import data.D_UpdatesKeysInfo;
+
+import table.mirror;
 import updates.ClientUpdates;
 import updates.VersionInfo;
 
@@ -90,34 +95,38 @@ public class UpdateCustomAction extends DebateDecideAction {
     		//System.err.println("Row selected: " + row);
     	}
     	UpdatesModel model = tree.getModel();
-    	String updates_ID = Util.getStringID(model.get_UpdatesID(row));
+    	String mirror_ID = Util.getStringID(model.get_UpdatesID(row));
     	
     	if(DEBUG) System.out.println("ImportAction: row = "+row);
     	//do_cmd(row, cmd);
         if(cmd == M_DELETE) {
-        	if((row>=0)&&(updates_ID!=null))
+        	if((row>=0)&&(mirror_ID!=null))
 				try {
-					Application.db.delete(table.updates.TNAME,
-							new String[]{table.updates.updates_ID},
-							new String[]{updates_ID}, _DEBUG);
+					Application.db.delete(table.mirror.TNAME,
+							new String[]{table.mirror.mirror_ID},
+							new String[]{mirror_ID}, _DEBUG);
+					Application.db.sync(new ArrayList<String>(Arrays.asList(table.mirror.TNAME)));
+					model.update(null,null);
+					
     	    	    ((UpdatesTable)tree).repaint();
     	    	    if(subTable!= null) subTable.repaint();
 				} catch (P2PDDSQLException e1) {
 					e1.printStackTrace();
 				}
     	}
+
     	if(cmd == USE_UPDATE) {
-        	if((row>=0)&&(updates_ID!=null)){
-        		String updates_URL = model.get_UpdatesURL(row);
+        	if((row>=0)&&(mirror_ID!=null)){
+        		String mirror_URL = model.get_UpdatesURL(row);
         		String updates_LastVer = model.get_UpdatesLastVer(row);
         		if(updates_LastVer == null){
-        			Application.warning(Util._("No update available from url: "+updates_URL), Util._("No update available"));
+        			Application.warning(Util._("No update available from url: "+mirror_URL), Util._("No update available"));
         			//System.out.println("No update from url: "+updates_URL);
         		}
         		else
         		{   
         			ClientUpdates cu = new ClientUpdates();
-        			VersionInfo newest_version_obtained=cu.getNewerVersionInfos(updates_URL, updates_LastVer);
+        			VersionInfo newest_version_obtained=cu.getNewerVersionInfos(mirror_URL, updates_LastVer);
         			if(newest_version_obtained!=null) {
 						try {
 							if(cu.downloadNewer(newest_version_obtained))
@@ -127,18 +136,73 @@ public class UpdateCustomAction extends DebateDecideAction {
 						}
         			}
         		}
-        			System.out.println("url: "+updates_URL+" ver: "+updates_LastVer);
+        			System.out.println("url: "+mirror_URL+" ver: "+updates_LastVer);
         	}
-//				try {
-//					Application.db.delete(table.updates.TNAME,
-//							new String[]{table.updates.updates_ID},
-//							new String[]{updates_ID}, _DEBUG);
-//    	    	    ((UpdatesTable)tree).repaint();
-//    	    	    if(subTable!= null) subTable.repaint();
-//				} catch (P2PDDSQLException e1) {
-//					e1.printStackTrace();
-//				}
+
     	}
+
+//    	if(cmd == USE_UPDATE) {
+//        	if((row>=0)&&(mirror_ID!=null)){
+//        		String mirror_URL = model.get_UpdatesURL(row);
+//        		String updates_LastVer = model.get_UpdatesLastVer(row);
+//        		long mirrorID =model.get_UpdatesID(row);
+//        		if(updates_LastVer == null){
+//        			Application.warning(Util._("No update available from url: "+mirror_URL), Util._("No update available"));
+//        			//System.out.println("No update from url: "+mirror_URL);
+//        		}
+//        		else
+//        		{   
+//        			ClientUpdates cu = new ClientUpdates();
+//        			String sql = "SELECT "+mirror.last_version_info+" FROM "+mirror.TNAME+
+//        				         " WHERE "+ mirror.mirror_ID+" =? ;";
+//					String[]params = new String[]{mirrorID+""};// where clause?
+//					ArrayList<ArrayList<Object>> u;
+//					try {
+//						u = Application.db.select(sql, params, DEBUG);
+//					} catch (P2PDDSQLException ex) {
+//						ex.printStackTrace();
+//						return;
+//					}
+//					if((u==null || u.get(0)==null) || u.get(0).get(0)==null)
+//					{System.out.println("No version in the database!!");
+//					 return;
+//					}
+//					
+//				    byte[] bytes=util.Base64Coder.decode((String)  u.get(0).get(0) );
+//        			// use ASN1 instead of using Serializable
+//        			VersionInfo newest_version_obtained= null;//VersionInfo.getVersionInfoFromSerializableBytes(bytes);//cu.getNewerVersionInfos(updates_URL, updates_LastVer);
+//        			if(newest_version_obtained!=null) {
+//        				if(Util.isVersionNewer(DD.VERSION, newest_version_obtained.version ))
+//        				{
+//        					String def = _("Keep current version");
+//							Object[] options = new Object[]{def, _("Download old version")};
+//        					int c = Application.ask(
+//							             Util._("Old version:"), "Version: "+newest_version_obtained.version+
+//								         ": is an old version comparing with the current version: "+DD.VERSION,
+//							//JOptionPane.OK_CANCEL_OPTION,
+//							options,
+//							def,
+//							null
+//							);
+//							if(c==JOptionPane.CLOSED_OPTION || c==0) {
+//								return;
+//							}
+//        				}
+//        					
+//        					
+//						try {
+//							if(ClientUpdates.downloadNewer(newest_version_obtained))
+//								return;
+//						} catch (Exception ee) {
+//							ee.printStackTrace();
+//						}
+//        			}
+//        		}
+//        		//	System.out.println("url: "+updates_URL+" ver: "+updates_LastVer);
+//        	}
+//
+//    	}
+
     	if(cmd == M_IMPORT) {
     		JFileChooser chooser = new JFileChooser();
 //			chooser.setCurrentDirectory(new java.io.File("."));

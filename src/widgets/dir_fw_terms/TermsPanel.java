@@ -489,7 +489,7 @@ public class TermsPanel extends JPanel implements  ActionListener, PeerListener{
 		this.cascadePtm.setSelected(true);
 	}
 	@Override
-	public void update(D_PeerAddress peer, String my_peer_name) {
+	public void update_peer(D_PeerAddress peer, String my_peer_name, boolean me, boolean selected) {
 		if(DEBUG) System.out.println("TermsPanel:update:set my="+my_peer_name);
 		if(peer!=null){
 			if(DEBUG) System.out.println("TermsPanel:update:set="+peer.component_basic_data.name);

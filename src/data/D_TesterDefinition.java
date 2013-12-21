@@ -103,7 +103,7 @@ public class D_TesterDefinition extends ASNObj implements Summary{
 	public void init(ArrayList<Object> _u){
 		if(DEBUG)System.out.println("D_TesterDefinition: <init>: start");
 		tester_ID = Util.lval(_u.get(table.tester.F_ID),-1);
-		name = Util.getString(_u.get(table.tester.F_NAME));
+		name = Util.getString(_u.get(table.tester.F_ORIGINAL_TESTER_NAME));
 		public_key = Util.getString(_u.get(table.tester.F_PUBLIC_KEY));
 		email = Util.getString(_u.get(table.tester.F_EMAIL));
 		url = Util.getString(_u.get(table.tester.F_URL));
@@ -150,7 +150,7 @@ public class D_TesterDefinition extends ASNObj implements Summary{
 		String params[] = new String[table.tester.F_FIELDS];
 
 		if(update) {
-			params[table.tester.F_NAME] = this.name;
+			params[table.tester.F_ORIGINAL_TESTER_NAME] = this.name;
 			params[table.tester.F_PUBLIC_KEY] = this.public_key;
 			params[table.tester.F_EMAIL] = this.email;
 			params[table.tester.F_URL] = this.url;
@@ -166,7 +166,7 @@ public class D_TesterDefinition extends ASNObj implements Summary{
 					new String[]{table.tester.tester_ID},
 					params,DEBUG);
 		}else{
-			params[table.tester.F_NAME] = this.name;
+			params[table.tester.F_ORIGINAL_TESTER_NAME] = this.name;
 			params[table.tester.F_PUBLIC_KEY] = this.public_key;
 			params[table.tester.F_EMAIL] = this.email;
 			params[table.tester.F_URL] = this.url;
@@ -204,7 +204,7 @@ public class D_TesterDefinition extends ASNObj implements Summary{
 		String[] params = new String[]{name, pubKey};
 		String sql = "SELECT "+table.tester.fields_tester+
 				" FROM  " + table.tester.TNAME +
-				" WHERE "+table.tester.name + " = ? AND "+table.tester.public_key+"= ?";
+				" WHERE "+table.tester.F_ORIGINAL_TESTER_NAME + " = ? AND "+table.tester.public_key+"= ?";
 		ArrayList<ArrayList<Object>> result=null;
 		try{
 			result = Application.db.select(sql, params, DEBUG);
@@ -216,6 +216,7 @@ public class D_TesterDefinition extends ASNObj implements Summary{
 		}
 		return new D_TesterDefinition(result.get(0));
 	}
+	
 	
 	public static D_TesterDefinition retrieveTesterDefinition(String pubKey){
 		String[] params = new String[]{pubKey};

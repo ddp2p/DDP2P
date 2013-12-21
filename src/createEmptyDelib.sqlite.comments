@@ -227,6 +227,7 @@ CREATE TABLE organization ( # organizations -> organization
 	default_scoring_options TEXT, 
 	instructions_new_motions TEXT, 
 	instructions_registration TEXT, 
+	preapproved TEXT,
 	languages TEXT, 
 	name_forum TEXT, 
 	name_justification TEXT, 
@@ -330,6 +331,8 @@ CREATE TABLE constituent ( # constituents -> constituent
 	requested INTEGER DEFAULT (0),
 	broadcasted INTEGER DEFAULT (1),
 	blocked INTEGER DEFAULT (0),
+	census_trustworthiness REAL DEFAULT (0),
+	census_eligibility REAL DEFAULT (0),
 	UNIQUE (global_constituent_ID,organization_ID) ON CONFLICT FAIL,
 	UNIQUE (global_constituent_ID_hash,organization_ID) ON CONFLICT FAIL,
 	UNIQUE (GID_key,organization_ID) ON CONFLICT FAIL,
@@ -361,6 +364,7 @@ CREATE TABLE motion (
 	temporary INTEGER DEFAULT (0),
 	creation_date TEXT, 
 	arrival_date TIMESTAMP, 
+	preferences_date TEXT,
 	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
 	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID)
@@ -392,6 +396,7 @@ CREATE TABLE justification ( # justifications -> justification
 	blocked INTEGER DEFAULT (0),
 	requested INTEGER DEFAULT (0),
 	broadcasted INTEGER DEFAULT (1),
+	preferences_date TEXT,
 	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
 	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID),
 	FOREIGN KEY(answerTo_ID) REFERENCES justification(justification_ID)

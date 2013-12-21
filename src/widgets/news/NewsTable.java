@@ -20,7 +20,6 @@
 package widgets.news;
 
 import static util.Util._;
-
 import hds.DebateDecideAction;
 
 import java.awt.BorderLayout;
@@ -45,7 +44,6 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
 import util.P2PDDSQLException;
-
 import util.DBInterface;
 import util.Util;
 import widgets.components.DocumentTitleRenderer;
@@ -54,6 +52,7 @@ import widgets.motions.MotionsModel;
 import widgets.news.NewsListener;
 import widgets.news.NewsModel;
 import config.Application;
+import config.DD;
 import config.DDIcons;
 import config.Identity;
 import data.D_Motion;
@@ -198,7 +197,7 @@ public class NewsTable extends JTable implements MouseListener {
 			if(DEBUG) System.out.println("NewsTable:fireForceEdit: l="+l);
 			try{
 				if(orgID==null) ;//l.forceEdit(orgID);
-				else l.news_forceEdit(orgID);
+				else l.motion_forceEdit(orgID);
 			}catch(Exception e){e.printStackTrace();}
 		}
 	}
@@ -303,6 +302,41 @@ public class NewsTable extends JTable implements MouseListener {
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
+	public void connectWidget() {
+		getModel().connectWidget();
+		
+    	DD.status.addOrgStatusListener(getModel());
+    	DD.status.addMotionStatusListener(getModel());
+    	if(_nedit != null) {
+    		DD.status.addOrgStatusListener(_nedit);
+    		DD.status.addMotionStatusListener(_nedit);
+    	}
+	}
+	public void disconnectWidget() {
+		getModel().disconnectWidget();
+		
+		DD.status.removeOrgListener(getModel());
+		DD.status.removeMotListener(getModel());
+		if(_nedit != null) {
+			DD.status.removeOrgListener(_nedit);
+			DD.status.removeMotListener(_nedit);
+		}
+	}
+	NewsEditor _nedit = null;
+	JPanel news_panel = null;
+	public Component getComboPanel() {
+		if(news_panel != null) return news_panel;
+	   	widgets.news.NewsTable news = this; //new widgets.news.NewsTable();
+	    if(_nedit == null) _nedit = new NewsEditor();
+    	//orgsPane.addOrgListener(news.getModel());
+	    news.addListener(_nedit);
+    	//orgsPane.addOrgListener(_nedit);
+		if(DEBUG) System.out.println("createAndShowGUI: some news");
+    	news_panel = DD.makeNewsPanel(_nedit, news);
+    	javax.swing.JScrollPane jscn = new javax.swing.JScrollPane(news_panel);
+		//tabbedPane.addTab("News", jscn);
+		return jscn;
+	}
 }
 
 @SuppressWarnings("serial")

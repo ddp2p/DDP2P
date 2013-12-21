@@ -38,7 +38,12 @@ public class DirectoryServerUDP extends Thread {
 	private static final boolean _DEBUG = true;
 	DirectoryServer ds;
 	boolean turnOff=false;
-
+//
+//	Hashtable<String, ArrayList<Message>> noping_storage;
+//	Hashtable<String, ArrayList<Message>> ping_storage;
+//	Hashtable<String, ArrayList<Message>> announcement_storage;
+//	Hashtable<String, Terms> last_terms;
+//	
 	public DirectoryServerUDP(DirectoryServer _ds) {
 		ds = _ds;
 	}

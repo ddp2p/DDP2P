@@ -98,6 +98,11 @@ class DNode implements TreeNode{
 	}
 	
 }
+/**
+ * 
+ * @author msilaghi
+ * Used to implement the storage of data comming from directories
+ */
 @SuppressWarnings("serial")
 public class DirectoriesData extends JPanel implements MouseListener  {
 	public static final boolean _DEBUG = true;
@@ -141,7 +146,7 @@ public class DirectoriesData extends JPanel implements MouseListener  {
 				if(old_jt!=null)Application.directoriesData.remove(old_jt);
 				old_jt = jt;
 				Application.directoriesData.add(jt,BorderLayout.CENTER);
-				Application.peer_contacts.revalidate();
+				if(Application.peer_contacts!=null) Application.peer_contacts.revalidate();
 			}}
 		);
 	}

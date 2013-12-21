@@ -39,7 +39,7 @@ import config.Application;
 import config.DD;
 import config.Identity;
 import data.D_TesterDefinition;
-import data.D_UpdatesInfo;
+import data.D_MirrorInfo;
 class MirrorsSaverThread extends Thread {
 	DD_Mirrors ds;
 	MirrorsSaverThread(DD_Mirrors ds){
@@ -53,7 +53,7 @@ class MirrorsSaverThread extends Thread {
 		}
 	}
 	public void _run() throws P2PDDSQLException{
-    	for(D_UpdatesInfo d : ds.mirrors) {
+    	for(D_MirrorInfo d : ds.mirrors) {
     		d.store();
     	}
 	}
@@ -63,7 +63,7 @@ public class DD_Mirrors extends ASNObj implements StegoStructure {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	int version = 0;
-	ArrayList<D_UpdatesInfo> mirrors = new ArrayList<D_UpdatesInfo>();
+	ArrayList<D_MirrorInfo> mirrors = new ArrayList<D_MirrorInfo>();
 	
 	@Override
 	public void save() {
@@ -98,13 +98,13 @@ public class DD_Mirrors extends ASNObj implements StegoStructure {
 	}
 
 	public void add(String name, String url){
-		D_UpdatesInfo d = new D_UpdatesInfo();
+		D_MirrorInfo d = new D_MirrorInfo();
 		d.original_mirror_name = name;
 		d.url = url;
 		mirrors.add(d);
 		if(DEBUG) System.out.println("DD_Mirrors:added:"+d);
 	}
-	public void add(D_UpdatesInfo t){
+	public void add(D_MirrorInfo t){
 		mirrors.add(t);
 	}
 	/**
@@ -147,7 +147,7 @@ public class DD_Mirrors extends ASNObj implements StegoStructure {
 	public DD_Mirrors decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();
 		version = d.getFirstObject(true).getInteger().intValue();
-		mirrors = d.getFirstObject(true).getSequenceOfAL(D_UpdatesInfo.getASNType(), new D_UpdatesInfo());
+		mirrors = d.getFirstObject(true).getSequenceOfAL(D_MirrorInfo.getASNType(), new D_MirrorInfo());
 		return this;
 	}
 	/**
@@ -162,16 +162,16 @@ public class DD_Mirrors extends ASNObj implements StegoStructure {
 		try {
 			Application.db = new DBInterface(args[0]);
 			DD_Mirrors mirrors = new DD_Mirrors();
-			ArrayList<D_UpdatesInfo> tds;
+			ArrayList<D_MirrorInfo> tds;
 			if(args.length == 2) {
-				tds = D_UpdatesInfo.retrieveMirrorDefinitions();
+				tds = D_MirrorInfo.retrieveMirrorDefinitions();
 			}else{
 				long id = Long.parseLong(args[2]);
-				tds = new ArrayList<D_UpdatesInfo>();
-				D_UpdatesInfo t = new D_UpdatesInfo(id);
+				tds = new ArrayList<D_MirrorInfo>();
+				D_MirrorInfo t = new D_MirrorInfo(id);
 				tds.add(t);
 			}
-			for (D_UpdatesInfo t : tds) {
+			for (D_MirrorInfo t : tds) {
 				mirrors.add(t);
 				System.out.println("Saving: "+t);
 			}

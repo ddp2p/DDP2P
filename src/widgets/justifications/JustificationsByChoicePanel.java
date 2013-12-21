@@ -67,6 +67,24 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 	JLabel jl[] = new JLabel[0];
 	
 	public JustificationsByChoicePanel(){
+		connectWidget();
+	}
+	public void connectWidget() {
+		DD.status.addMotionStatusListener(this); //this also rehister to the db, as needed
+	}
+	public void disconnectWidget() {
+		DD.status.removeMotListener(this);
+		Application.db.delListener(this);
+	}
+	public Component getComboPanel() {
+		JustificationsByChoicePanel _jbc = this; //new JustificationsByChoicePanel();
+    	//_jbc.addListener(_jedit);
+    	_jbc.addListener(DD.status);
+ 		//DD.status.addMotionStatusListener(_jbc);
+     	//javax.swing.JScrollPane jbc = new javax.swing.JScrollPane(_jbc);
+		//tabbedPane.addTab("JBC", _jbc);
+		if(DEBUG) System.out.println("createAndShowGUI: added jbc");
+		return _jbc;
 	}
 	private void enrollDB(){
 		Hashtable<String,DBSelector[]> h = new Hashtable<String,DBSelector[]>();
@@ -268,7 +286,7 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 	}
 
 	@Override
-	public void news_forceEdit(String motID) {}
+	public void motion_forceEdit(String motID) {}
 
 	public void adjustSize() {
 		int DIV = 5;

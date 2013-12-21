@@ -145,7 +145,7 @@ public class ClientSync{
 		if(Application.directoriesData!=null){
 			Application.directoriesData.setData(DirectoriesData.dir_data);
 		}else{
-			if(ClientSync._DEBUG) out.println("Client:reportDa: cannot report to anybody");				
+			if(ClientSync.DEBUG) out.println("Client:reportDa: cannot report to anybody");				
 		}		
 	}
 

@@ -72,6 +72,7 @@ public class Detect_interface {
 	 */
 	static public String detect_wlan() throws P2PDDSQLException {
 		try{
+			if(DEBUG) System.out.println("Detect_interface: detect_wlan()");
 			return detect_os_and_load_wireless_data();
 		}catch(IOException e){e.printStackTrace();}
 		return null;
@@ -91,6 +92,7 @@ public class Detect_interface {
 		os_Names.add("Windows");
 		os_Names.add("Linux");
 		String osName= System.getProperty("os.name");
+		if(DEBUG) System.out.println("Detect_interface: detect_os_and_load_wireless_data: property osName="+osName);
 		
 		int ch=0;
 		if(osName.contains(os_Names.get(0))) ch=Windows;
@@ -98,16 +100,19 @@ public class Detect_interface {
 		else if(osName.contains("Mac OS X")) ch=Mac;
 		switch(ch){
 		case 1:{
+			if(DEBUG) System.out.println("Detect_interface: detect_os_and_load_wireless_data: "+"Windows");
 			Application.switchToWindowsPaths();
 			DD.OS = DD.WINDOWS;
 			result = win_detect_interf();
 			break;}
 		case 2: {
+			if(DEBUG) System.out.println("Detect_interface: detect_os_and_load_wireless_data: "+"Linux");
 			Application.switchToLinuxPaths();
 			DD.OS = DD.LINUX;
 			result = lin_detect_interf();
 			break;}
 		case 3: {
+			if(DEBUG) System.out.println("Detect_interface: detect_os_and_load_wireless_data: Mac");
 			Application.switchToMacOSPaths();
 			DD.OS = DD.MAC;
 			result = mac_detect_interf();
@@ -116,6 +121,7 @@ public class Detect_interface {
 			default: { if(DEBUG)System.out.println("Unable to detect OS: \""+osName+"\""); break;}
 		}
 
+		if(DEBUG) System.out.println("Detect_interface: detect_os_and_load_wireless_data: result="+result);
 		return result;
 	}
 	/**
@@ -239,9 +245,11 @@ public class Detect_interface {
 		Mac_wlan=p1.process();
 		 
 		 //System.out.println(Lin_wlan);
-		 String bcast1=new String();
+		String bcast1=new String();
                  
-		 for(int i=0;i<Mac_wlan.size();i++){
+		if(DEBUG)System.out.println("Detect_interface:mac_detect_interf: size="+Mac_wlan.size());
+
+		for(int i=0;i<Mac_wlan.size();i++){
 			 bcast1=bcast1+Mac_wlan.get(i)+":"+"false";
 			 if(i+1<Mac_wlan.size()){ bcast1=bcast1+",";  }
 		 }

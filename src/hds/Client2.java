@@ -490,11 +490,11 @@ public class Client2 extends Thread  implements IClient{
 	private void try_UDP_connection_socket(Peer_Connection pc, Peer_Socket ps, byte[] msg) {
 		if(ClientSync.DEBUG) System.out.println("Client2: try_UDP_connection_socket");
 		if((ps==null)||(ps.addr==null)||(ps.addr.isa_udp==null)){
-			if(ClientSync._DEBUG) System.out.println("Client2: try_UDP_connection_socket: done empty: pc="+pc+"\nps="+ps);
+			if(ClientSync.DEBUG) System.out.println("Client2: try_UDP_connection_socket: done empty: pc="+pc+"\nps="+ps);
 			return;
 		}
 		if(ps.addr.isa_udp.isUnresolved()) {
-			if(ClientSync._DEBUG) out.println("Client2: try_UDP_connection_socket: UPeer "+pc.name+" is unresolved! "+ps.addr.isa_tcp);
+			if(ClientSync.DEBUG) out.println("Client2: try_UDP_connection_socket: UPeer "+pc.name+" is unresolved! "+ps.addr.isa_tcp);
 			return;
 		}
 		DatagramPacket dp = new DatagramPacket(msg, msg.length);

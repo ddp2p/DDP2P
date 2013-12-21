@@ -21,7 +21,7 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
     private static final boolean DEBUG = false;
 	//SQLiteConnection db;
     File file;
-	private boolean conn_open;
+	private boolean conn_open = true;
 	Connection conn;
 	private String filename;
 	
@@ -232,18 +232,22 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
     	}
     }
 	private void tmp_dispose() throws P2PDDSQLException {
-		try {
-			conn.close();
-		} catch (SQLException e) {
-			throw new P2PDDSQLException(e);
+		if(!conn_open) {
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				throw new P2PDDSQLException(e);
+			}
 		}
 	}
 
 	private void tmp_open(boolean b) throws P2PDDSQLException {
-		try {
-			conn = DriverManager.getConnection("jdbc:sqlite:"+filename);
-		} catch (SQLException e) {
-			throw new P2PDDSQLException(e);
+		if(!conn_open) {
+			try {
+				conn = DriverManager.getConnection("jdbc:sqlite:"+filename);
+			} catch (SQLException e) {
+				throw new P2PDDSQLException(e);
+			}
 		}
 	}
 	public void open_and_keep(boolean b) throws P2PDDSQLException {
@@ -269,7 +273,8 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 //			db.open(true);
 //			db.dispose();
 			conn = DriverManager.getConnection("jdbc:sqlite:"+filename);
-			conn.close();
+			if(!conn_open)
+				conn.close();
 		} catch (SQLException e) {
 			throw new P2PDDSQLException(e);
 		}

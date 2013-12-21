@@ -57,7 +57,9 @@ public class PluginRegistration {
 		if(pm==null) pm = new PluginMenus(plugin_GID, plugin_name);
 		ms.put(plugin_GID, pm);
 		pm.add(column, plugin_menuItem);
-		return Application.peers.registerPluginMenu(plugin_GID, plugin_name, column, plugin_menuItem);
+		if(Application.peers!=null)
+			return Application.peers.registerPluginMenu(plugin_GID, plugin_name, column, plugin_menuItem);
+		return false;
 	}
 	
 	public static boolean registerPluginMenu(String plugin_ID, String plugin_name, int column, JMenuItem plugin_menu_item) {
@@ -69,14 +71,18 @@ public class PluginRegistration {
 		if(pm==null) pm = new PluginMenus(plugin_ID, plugin_name);
 		ms.put(plugin_ID, pm);
 		pm.add(column, plugin_menu_item);
-		return Application.peers.registerPluginMenu(plugin_ID, plugin_name, column, plugin_menu_item);
+		if(Application.peers!=null) 
+			return Application.peers.registerPluginMenu(plugin_ID, plugin_name, column, plugin_menu_item);
+		return false;
 	}
 	public static boolean unRegisterPluginMenu(String plugin_ID, int column){
 		Integer id = new Integer(column);
 		Hashtable<String,PluginMenus> ms = plugin_menus.get(id);
 		if(ms == null) return false;
 		ms.remove(plugin_ID);
-		return Application.peers.deregisterPluginMenu(plugin_ID, column);
+		if(Application.peers!=null) 
+			return Application.peers.deregisterPluginMenu(plugin_ID, column);
+		return false;
 	}
 	/** 
 	 * puts plugin data into:
@@ -136,7 +142,8 @@ public class PluginRegistration {
 			this.editor = editor;
 		}
 		public void run(){
-			Application.peers.registerPlugin(plugin_GID, plugin_name, plugin_info, plugin_url, renderer, editor);
+			if(Application.peers!=null) 
+				Application.peers.registerPlugin(plugin_GID, plugin_name, plugin_info, plugin_url, renderer, editor);
 		}
 	}
 	public static boolean unRegisterPlugin(String plugin_GID) {
@@ -144,7 +151,9 @@ public class PluginRegistration {
 		D_PluginInfo.plugins.remove(plugin_GID);
 		plugin_applets.remove(plugin_GID);
 		D_PluginInfo.plugin_data.remove(plugin_GID);
-		return Application.peers.deregisterPlugin(plugin_GID);
+		if(Application.peers!=null) 
+			return Application.peers.deregisterPlugin(plugin_GID);
+		return false;
 	}
 
 	public static void loadNewPlugins() {
@@ -177,7 +186,7 @@ public class PluginRegistration {
 		if(DEBUG) System.out.println("PluginRegistration:loadPlugins: Plugins main Got ="+D_PluginInfo.plugin_data.size());
 	}
 	public static boolean loadPlugin(URL url, String peer_GID, String peer_name) throws MalformedURLException {
-		if(DEBUG) System.out.println("PluginRegistration:loadPlugins: try: "+url);
+		if(_DEBUG) System.out.println("PluginRegistration:loadPlugins: try: "+url);
 		boolean result = false;
 		URL dd = new File(Application.CURRENT_DD_JAR_BASE_DIR()/*+Application.OS_PATH_SEPARATOR*/+Application.DD_JAR).toURI().toURL();
 		if(DEBUG) System.out.println("PluginRegistration:loadPlugins: try: ddjar "+dd);
@@ -275,7 +284,8 @@ public class PluginRegistration {
 				@SuppressWarnings("unchecked")
 				Hashtable<String,Object> data = (Hashtable<String,Object>) method_getPluginDataHashtable.invoke(null);
 				D_PluginInfo i = new D_PluginInfo().setHashtable(data);
-				if(s_methods.get(i.plugin_GID) != null){
+				if(_DEBUG) System.out.println("PluginRegistration:loadPlugins: pluginGID="+i.plugin_GID);
+				if((i.plugin_GID==null)||(s_methods.get(i.plugin_GID) != null)) {
 					//if(_DEBUG)
 						System.out.println("PluginRegistration:loadPlugins: pluginGID in s_methods should be null: LOOKS LIKE A GID CONFLICT: this GID is: "+i.plugin_GID);
 					return false;

@@ -194,7 +194,9 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	}
 	public JustificationEditor(){
 		tabbedPane.setTabPlacement(JTabbedPane.TOP);
-		ImageIcon icon = config.DDIcons.getOrgImageIcon("General Org");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon = config.DDIcons.getJusImageIcon("General Justification");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_sig = config.DDIcons.getSigImageIcon("General Signature");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		ImageIcon icon_conf = config.DDIcons.getConfigImageIcon("Config");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
 		int y[] = new int[]{0};
 
 		JPanel cp = new JPanel();
@@ -208,13 +210,13 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		tabbedPane.addTab(_("Justification Body"), icon, generalPane, _("Generic fields"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_G);
 		
-		tabbedPane.addTab(_("Choice"), icon, vEditor, _("Voting choice"));
+		tabbedPane.addTab(_("Choice"), icon_sig, vEditor, _("Voting choice"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_C);
 
 		JPanel hp = new JPanel();
 		hp.setLayout(new GridBagLayout()); y[0] = 0;
 		JComponent handlingPane = makeHandlingPanel(hp, y);
-		tabbedPane.addTab(_("Handling"), icon, handlingPane, _("Handling fields"));
+		tabbedPane.addTab(_("Handling"), icon_conf, handlingPane, _("Handling fields"));
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_H);
         this.setLayout(new BorderLayout());
 		this.add(tabbedPane);
@@ -738,13 +740,13 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	}
 
 	@Override
-	public void justUpdate(String justID, int col, boolean db_sync) {
-		if(DEBUG)System.out.println("JustEditor: justUpdate: id="+justID+" col: "+col);
+	public void justUpdate(String justID, int col, boolean db_sync, D_Justification just) {
+		if(_DEBUG) System.out.println("JustEditor: justUpdate: id="+justID+" col: "+col+" set_sync="+db_sync);
 		if(db_sync) return;
 		this.setJust(justID, false);
 	}
 	@Override
-	public void forceEdit(String justID) {
+	public void forceJustificationEdit(String justID) {
 		if(DEBUG)System.out.println("JustEditor: forceEdit");
 		this.setJust(justID, true);
 	}

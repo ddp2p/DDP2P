@@ -20,7 +20,6 @@
 package widgets.motions;
 
 import static util.Util._;
-
 import hds.DebateDecideAction;
 
 import java.awt.BorderLayout;
@@ -33,22 +32,26 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 
 import javax.swing.Action;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.UIManager;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableRowSorter;
 
 import util.P2PDDSQLException;
-
 import streaming.RequestData;
 import util.DBInterface;
 import util.Util;
@@ -62,22 +65,18 @@ import config.DD;
 import config.DDIcons;
 //import config.DDIcons;
 import config.Identity;
+import data.D_Document_Title;
 import data.D_Justification;
 import data.D_Motion;
-
 @SuppressWarnings("serial")
-public class Motions extends JTable implements MouseListener  {
+public class Motions extends JTable implements MouseListener, MotionsListener  {
 	private static final int DIM_X = 1000;
 	private static final int DIM_Y = 50;
 	public static final int A_NON_FORCE_COL = 4;
-	private static final boolean DEBUG = false;
+	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private DocumentTitleRenderer titleRenderer;
 	DefaultTableCellRenderer centerRenderer;
-	public Motions() {
-		super(new MotionsModel(Application.db));
-		init();
-	}
 	public Motions(DBInterface _db) {
 		super(new MotionsModel(_db));
 		init();
@@ -95,6 +94,10 @@ public class Motions extends JTable implements MouseListener  {
 	public String getOrganizationID() {
 		return  getModel().getOrganizationID();
 	}
+	public Motions() {
+		super(new MotionsModel(Application.db));
+		init();
+	}
 	void init(){
 		if(DEBUG) System.out.println("Motions: init: start");
 		getModel().setTable(this);
@@ -109,6 +112,50 @@ public class Motions extends JTable implements MouseListener  {
         _("Click to sort; Shift-Click to sort in reverse order"));
 		this.setAutoCreateRowSorter(true);
 		this.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
+
+		Comparator<D_Document_Title> documentTitleComparator = new java.util.Comparator<D_Document_Title>() {
+
+			//@Override
+			public int _compare(Object o1, Object o2) {
+				if(o1==null) return 1;
+				if(o2==null) return -1;
+				String s1 = Util.getString(o1), s2 = Util.getString(o2);
+				if(o1 instanceof data.D_Document_Title) s1 = ((data.D_Document_Title)o1).title_document.getDocumentUTFString();
+				if(o2 instanceof data.D_Document_Title) s2 = ((data.D_Document_Title)o2).title_document.getDocumentUTFString();
+				return s1.compareTo(s2);
+			}
+
+			@Override
+			public int compare(D_Document_Title arg0, D_Document_Title arg1) {
+				return _compare(arg0, arg1);
+			}
+		};
+		TableRowSorter<MotionsModel> sorter = new TableRowSorter<MotionsModel>();
+		this.setRowSorter(sorter);
+		sorter.setModel(getModel());
+		sorter.setComparator(MotionsModel.TABLE_COL_NAME, documentTitleComparator);
+		this.getRowSorter().toggleSortOrder(MotionsModel.TABLE_COL_ARRIVAL_DATE);
+		this.getRowSorter().toggleSortOrder(MotionsModel.TABLE_COL_ARRIVAL_DATE);
+		
+		DefaultTableCellRenderer rend = new DefaultTableCellRenderer() {
+			public Component getTableCellRendererComponent(JTable table,
+			Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+				JLabel headerLabel = (JLabel)
+						super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+				Icon icon = Motions.this.getModel().getIcon(column);
+				if(icon != null)  headerLabel.setText(null);
+				headerLabel.setIcon(icon);
+			    setBorder(UIManager.getBorder("TableHeader.cellBorder"));
+			    setHorizontalAlignment(JLabel.CENTER);
+			    return headerLabel;
+			}
+		};
+		
+		//getTableHeader().setDefaultRenderer(rend);
+		for(int col_index = 0; col_index < getModel().getColumnCount(); col_index++) {
+			if(getModel().getIcon(col_index) != null)
+				getTableHeader().getColumnModel().getColumn(col_index).setHeaderRenderer(rend);
+		}
 		
     	try{
     		if (Identity.getCurrentIdentity().identity_id!=null) {
@@ -134,13 +181,46 @@ public class Motions extends JTable implements MouseListener  {
         jp.add(scrollPane, BorderLayout.CENTER);
 		return jp;
     }
-
+    DefaultTableCellRenderer defaultTableCellRenderer = new DefaultTableCellRenderer();
 	public TableCellRenderer getCellRenderer(int row, int column) {
-		if ((column == MotionsModel.TABLE_COL_NAME)) return titleRenderer;
-		if ((column == getModel().TABLE_COL_VOTERS_NB)) return centerRenderer;
-		if ((column == getModel().TABLE_COL_ACTIVITY)) return centerRenderer;
-		if ((column == getModel().TABLE_COL_NEWS)) return centerRenderer;
+		//boolean DEBUG=true;
+        if(DEBUG) System.out.println("Motions:getCellRenderer row="+row+" col="+column);
 
+		switch(column){
+		case MotionsModel.TABLE_COL_NAME: //))
+			{
+				//if(DEBUG) System.out.println("Motions:getCellRenderer ="+titleRenderer);
+				return titleRenderer;
+			}
+		
+		// Integers
+		case MotionsModel.TABLE_COL_VOTERS_NB: // )) return centerRenderer;
+		case MotionsModel.TABLE_COL_ACTIVITY: // )) return centerRenderer;
+		case MotionsModel.TABLE_COL_NEWS: // )) return centerRenderer;
+			return centerRenderer;
+			
+		// BOOLEANS
+		//case MotionsModel.TABLE_COL_VOTERS_NB: // return Integer.class;
+		//case MotionsModel.TABLE_COL_ACTIVITY: // return Integer.class;
+		case MotionsModel.TABLE_COL_RECENT: // return Boolean.class;
+		//case MotionsModel.TABLE_COL_NEWS: // return Integer.class;
+		case MotionsModel.TABLE_COL_BROADCASTED: // ) return Boolean.class;
+		case MotionsModel.TABLE_COL_BLOCKED: // ) return Boolean.class;
+		case MotionsModel.TABLE_COL_TMP: // ) return Boolean.class;
+		case MotionsModel.TABLE_COL_GID_VALID: // ) return Boolean.class;
+		case MotionsModel.TABLE_COL_SIGN_VALID: // ) return Boolean.class;
+		case MotionsModel.TABLE_COL_HIDDEN: //) return Boolean.class;
+			return super.getCellRenderer(row, column);
+			
+		case MotionsModel.TABLE_COL_CREATOR: // )) return defaultTableCellRenderer;
+		case MotionsModel.TABLE_COL_CATEGORY: // )) return defaultTableCellRenderer;
+		case MotionsModel.TABLE_COL_CREATION_DATE: // )) return defaultTableCellRenderer;
+		default:
+			TableCellRenderer result = defaultTableCellRenderer;//super.getCellRenderer(row, column);
+	        if(DEBUG) System.out.println("Motions:getCellRenderer default="+result);
+			return result;
+		}
+		
 		//if ((column == MotionsModel.TABLE_COL_CONNECTION)) return bulletRenderer;
 //		if (column >= MotionsModel.TABLE_COL_PLUGINS) {
 //			int plug = column-MotionsModel.TABLE_COL_PLUGINS;
@@ -148,10 +228,8 @@ public class Motions extends JTable implements MouseListener  {
 //				String pluginID= plugins.get(plug);
 //				return plugin_applets.get(pluginID).renderer;
 //			}
-//		}
-		return super.getCellRenderer(row, column);
+//		}		
 	}
-	protected String[] columnToolTips = {null,null,_("A name you provide")};
     @SuppressWarnings("serial")
 	protected JTableHeader createDefaultTableHeader() {
         return new JTableHeader(columnModel) {
@@ -160,8 +238,8 @@ public class Motions extends JTable implements MouseListener  {
                 int index = columnModel.getColumnIndexAtX(p.x);
                 int realIndex = 
                         columnModel.getColumn(index).getModelIndex();
-                if(realIndex >= columnToolTips.length) return null;
-				return columnToolTips[realIndex];
+                if(realIndex >= MotionsModel.columnToolTips.length) return null;
+				return MotionsModel.columnToolTips[realIndex];
             }
         };
     }
@@ -169,6 +247,8 @@ public class Motions extends JTable implements MouseListener  {
 		return (MotionsModel) super.getModel();
 	}
 	public void initColumnSizes() {
+		//boolean DEBUG = true;
+		if(DEBUG) System.out.println("Motions:initColumnSizes started");
         MotionsModel model = (MotionsModel)this.getModel();
         TableColumn column = null;
         Component comp = null;
@@ -178,7 +258,10 @@ public class Motions extends JTable implements MouseListener  {
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
  
-        for (int i = 0; i < model.getColumnCount(); i++) {
+        int columns = model.getColumnCount();
+        //if(DEBUG) System.out.println("Motions:initColumnSizes cnt="+columns);
+        for (int i = 0; i < columns; i++) {
+            //if(DEBUG) System.out.println("Motions:initColumnSizes i="+i);
         	headerWidth = 0;
         	cellWidth = 0;
             column = this.getColumnModel().getColumn(i);
@@ -188,13 +271,21 @@ public class Motions extends JTable implements MouseListener  {
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
  
-            for(int r=0; r<model.getRowCount(); r++) {
+            int rows = model.getRowCount();
+            for(int r=0; r<rows; r++) {
+                //if(DEBUG) System.out.println("Motions:initColumnSizes r="+r);
             	Object val = getValueAt(r, i);
-            	comp = this.getDefaultRenderer(model.getColumnClass(i)).
-                             getTableCellRendererComponent(
+                //if(DEBUG) System.out.println("Motions:initColumnSizes val="+val);
+                Class<?> o = model.getColumnClass(i);
+                //if(DEBUG) System.out.println("Motions:initColumnSizes class="+o);
+                TableCellRenderer rend = this.getDefaultRenderer(o);
+                //if(DEBUG) System.out.println("Motions:initColumnSizes rend="+rend);
+            	comp = rend.getTableCellRendererComponent(
                                  this, val,
                                  false, false, 0, i);
+                //if(DEBUG) System.out.println("Motions:initColumnSizes comp="+comp);
             	int this_width = comp.getPreferredSize().width;
+                //if(DEBUG) System.out.println("Motions:initColumnSizes w="+this_width);
             	cellWidth = Math.max(this_width, cellWidth);
         		if(DEBUG) System.out.println("Motions:iniColSz:"+i+" row="+cellWidth+" this="+cellWidth+" val="+val);
             }
@@ -212,18 +303,19 @@ public class Motions extends JTable implements MouseListener  {
 
 	ArrayList<MotionsListener> listeners=new ArrayList<MotionsListener>();
 	public void fireForceEdit(String orgID) {		
+		ArrayList<MotionsListener> _listeners = listeners;
 		if(DEBUG) System.out.println("Motions:fireForceEdit: row="+orgID);
-		for(MotionsListener l: listeners){
+		for(MotionsListener l: _listeners){
 			if(DEBUG) System.out.println("Motions:fireForceEdit: l="+l);
 			try{
 				if(orgID==null) ;//l.forceEdit(orgID);
-				else l.news_forceEdit(orgID);
+				else l.motion_forceEdit(orgID);
 			}catch(Exception e){e.printStackTrace();}
 		}
 	}
 	void fireListener(D_Motion crt_mot, String motion_ID, int col) {
-		
-		for(MotionsListener l: listeners){
+		ArrayList<MotionsListener> _listeners = listeners;
+		for(MotionsListener l: _listeners){
 			if(DEBUG) System.out.println("Motions:fireListener: l="+l);
 			try{
 				l.motion_update(motion_ID, col, crt_mot);
@@ -254,6 +346,8 @@ public class Motions extends JTable implements MouseListener  {
 	}
 	public void addListener(MotionsListener l){
 		if(DEBUG) System.out.println("\n************\nMotions:addListener: start");
+		if(listeners.contains(l)) return;
+		listeners = new ArrayList<MotionsListener>(listeners);
 		listeners.add(l);
 		int row =this.getSelectedRow();
 		if(row>=0) {
@@ -263,6 +357,8 @@ public class Motions extends JTable implements MouseListener  {
 		if(DEBUG) System.out.println("\n************\nMotions:addListener: Done");
 	}
 	public void removeListener(MotionsListener l){
+		if(!listeners.contains(l)) return;
+		listeners = new ArrayList<MotionsListener>(listeners);
 		listeners.remove(l);
 	}
 
@@ -367,6 +463,11 @@ public class Motions extends JTable implements MouseListener  {
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);    	
     	
+    	aAction = new MotionCustomAction(this, _("Adjust Column Size!"), delicon,_("Adjust Column Size."), _("Adjust Column Size"),KeyEvent.VK_C, MotionCustomAction.M_REDRAW);
+    	aAction.putValue("row", new Integer(model_row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);    	
+    	
     	return popup;
 	}
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
@@ -383,6 +484,72 @@ public class Motions extends JTable implements MouseListener  {
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
+    Component _medit = null;
+    Component motion_panel = null;
+    TemporaryMotionsEditor tmpeditor = null;
+	public void connectWidget() {
+		getModel().connectWidget();
+	    DD.status.addOrgStatusListener(getModel());
+	    DD.status.addMotionStatusListener(this);
+	}
+	public void disconnectWidget() {
+		getModel().disconnectWidget();
+		DD.status.removeOrgListener(this.getModel());
+		DD.status.removeMotListener(this);
+	}
+	public Component getComboPanel() {
+		Component editor = _medit;
+		if(motion_panel != null) return motion_panel;
+	   	// Initialize widgets
+			
+		Motions motions = this; //new widgets.motions.Motions();
+		if(DEBUG) System.out.println("Motions.getComboPanel: motions located");
+			
+	    //orgsPane.addOrgListener(motions.getModel());
+	    if(_medit == null) {
+			if(DEBUG) System.out.println("Motions.getComboPanel: created Editor");
+	    	//editor = _medit = new MotionEditor();
+	    	//motions.addListener((MotionsListener)_medit);
+	    	
+	    	editor = new JPanel();
+	    	
+	    	if(tmpeditor == null) tmpeditor = new TemporaryMotionsEditor(motions);
+	    	motions.addListener(tmpeditor);
+			if(_DEBUG) System.out.println("createAndShowGUI: added mot tmpeditor");
+			
+			
+	    }else{
+	    	motions.addListener((MotionsListener)_medit);
+			if(DEBUG) System.out.println("Motions.getComboPanel: motion editor listens to me");
+	    }
+	    //motions.addListener(justifications.getModel());
+	    //motions.addListener(_jbc);
+	    motions.addListener(DD.status);
+		if(DEBUG) System.out.println("Motions.getComboPanel: status listens to me");
+	    	
+	    	   	
+	    motion_panel = DD.makeMotionPanel(editor, motions);
+	    //DD.jscm = motion_panel; //new javax.swing.JScrollPane(motion_panel);
+	    	//tabbedPane.addTab("Motions", jscm);
+		if(DEBUG) System.out.println("Motions.getComboPanel: added motions panel");
+		
+		return motion_panel; //DD.jscm;
+	}
+	@Override
+	public void motion_update(String motID, int col, D_Motion d_motion) {
+		if(motID==null) return;
+		int model_row = getModel().getRow(motID);
+		if(model_row<0) return;
+		int view_row = this.convertRowIndexToView(model_row);
+		this.setRowSelectionInterval(view_row, view_row);
+		
+		this.fireListener(d_motion, motID, col);
+	}
+	@Override
+	public void motion_forceEdit(String motID) {
+		// TODO Auto-generated method stub
+		
+	}
 }
 @SuppressWarnings("serial")
 class MotionCustomAction extends DebateDecideAction {
@@ -395,6 +562,7 @@ class MotionCustomAction extends DebateDecideAction {
 	public static final int M_ADVERTISE = 7;
 	public static final int M_WLAN_REQUEST = 8;
 	public static final int M_TOGGLE_HIDE = 9;
+	public static final int M_REDRAW = 10;
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
 	Motions tree; ImageIcon icon; int cmd;
@@ -462,6 +630,9 @@ class MotionCustomAction extends DebateDecideAction {
 				e1.printStackTrace();
 			}
 			if(DEBUG) System.out.println("Motions:MotionCustomAction:WLANRequest: done ");
+    	}
+    	if(cmd == M_REDRAW){
+    		tree.initColumnSizes();
     	}
         if(cmd == M_DEL) {
     		String _m_ID = model.getMotionID(row);

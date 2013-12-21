@@ -281,6 +281,8 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 			if(gid == null) return _myself;
 			if((_myself!=null) && (gid.equals(_myself.component_basic_data.globalID))) return _myself;
 			_myself = new D_PeerAddress(gid);
+			if ((_myself!=null)&&(_myself.component_basic_data!=null))
+				if(DD.status != null) DD.status.setMePeer(_myself);
 			return _myself;
 		}		
 	}

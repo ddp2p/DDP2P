@@ -131,7 +131,7 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 		this.add(old_l, BorderLayout.NORTH);
 		this.addMouseListener(this);
 		Application.peer_contacts = this;
-		if(Application.peers!=null)Application.peers.addListener(this);
+		if(Application.peers!=null) Application.peers.addListener(this);
 		//l.setHorizontalAlignment(JLabel.LEFT);
 	}
 
@@ -162,7 +162,7 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 				//Application.peer.remo.removeAll();
 				if(old_jt!=null) Application.peer_contacts.remove(old_jt);
 				old_jt = jt;
-				if(jt!=null)Application.peer_contacts.add(jt,BorderLayout.CENTER);
+				if(jt!=null) Application.peer_contacts.add(jt,BorderLayout.CENTER);
 				if(old_l!=null) Application.peer_contacts.remove(old_l);
 				l = new JLabel(_("Latest Contacts for this Peer:")+" "+now);
 				l.setHorizontalTextPosition(SwingConstants.LEFT);
@@ -294,7 +294,7 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 	}
 
 	@Override
-	public void update(D_PeerAddress peer, String my_peer_name) {
+	public void update_peer(D_PeerAddress peer, String my_peer_name, boolean me, boolean selected) {
 		this.dpa = peer;
 		this.my_peer_name = my_peer_name;
 		this.update(PeerContacts.peer_contacts);

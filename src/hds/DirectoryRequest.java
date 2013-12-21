@@ -231,8 +231,10 @@ public class DirectoryRequest extends ASNObj{
 	 * @param ini_ID
 	 * @param udp
 	 * @param peer_ID
+	 * @param dir_address
 	 */
-	public DirectoryRequest(String global_peer_ID, String ini_ID, int udp, String peer_ID, String dir_address) {
+	public DirectoryRequest(String global_peer_ID, String ini_ID, int udp, String peer_ID, 
+			String dir_address) {
 		globalID = global_peer_ID;
 		this.initiator_globalID = ini_ID;
 		this.UDP_port = udp;
@@ -340,7 +342,7 @@ public class DirectoryRequest extends ASNObj{
 		}
 		return dir_terms;
 	}
-	DIR_Terms_Preaccepted[] updateTerms(
+	public DIR_Terms_Preaccepted[] updateTerms(
 			DIR_Terms_Requested[] terms, String peer_ID, String global_peer_ID,
 			String dir_address, DIR_Terms_Preaccepted[] terms2) {
 		String sql;

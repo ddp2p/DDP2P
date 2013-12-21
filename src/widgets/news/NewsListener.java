@@ -21,5 +21,5 @@ package widgets.news;
 
 public interface NewsListener {
 	public void newsUpdate(String justID, int col);
-	public void news_forceEdit(String justID);
+	public void motion_forceEdit(String justID);
 }

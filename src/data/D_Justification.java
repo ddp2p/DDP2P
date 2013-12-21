@@ -842,4 +842,9 @@ public class D_Justification extends ASNObj{
 			e.printStackTrace();
 		}
 	}
+	public boolean readyToSend() {
+		if(this.global_justificationID==null) return false;
+		if(this.global_motionID==null) return false;
+		return true;
+	}
 }

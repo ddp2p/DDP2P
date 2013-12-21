@@ -28,6 +28,8 @@ import hds.ASNSyncRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashSet;
+import java.util.regex.Pattern;
 
 import ciphersuits.Cipher;
 import ciphersuits.PK;
@@ -90,11 +92,20 @@ class D_Organization extends ASNObj implements Summary {
 	public boolean requested = false;
 	public boolean broadcasted = DEFAULT_BROADCASTED_ORG_ITSELF;
 	public boolean broadcast_rule = true;
+	public HashSet<String> preapproved = new HashSet<String>();
+	public String _preapproved = null; // ordered (for saving)
 	public Calendar arrival_date;
 	public long _organization_ID;
 	public byte[] signature_initiator;
-	public int status_references = 0; 
+	public int status_references = 0;
+	public Calendar preferences_date; 
+	public String _preferences_date; 
 
+	public void setPreferencesDate(Calendar c, String _c){
+		if((c==null)&&(_c==null)) return;
+		preferences_date = ((c==null)?Util.getCalendar(_c):c);
+		_preferences_date = ((_c==null)?Encoder.getGeneralizedTime(c):_c);
+	}
 	@Override
 	public String toSummaryString() {
 		String result = "\n OrgData: [\n";
@@ -224,6 +235,38 @@ class D_Organization extends ASNObj implements Summary {
 				"; param.GID="+this.params.creator_global_ID+"; peer_creat="+this.creator);
 	}
 	/**
+	 * Init the hashset from the string
+	 */
+	public void updatePreapproved() {
+		if(_preapproved!=null){
+			preapproved = getEmailsSet(_preapproved);
+		}else preapproved = new HashSet<String>();
+	}
+	/**
+	 * Splits email list by any separator
+	 *  (table.organization.SEP_PREAPPROVED ; : , space) and trims spaces.
+	 * Intended for simple emails, without names
+	 * @param emails
+	 * @return
+	 */
+	public static HashSet<String> getEmailsSet(String emails) {
+		HashSet<String> emailsSet = new HashSet<String>();
+		String[] _p;
+		_p = Util.trimmed(emails.split(Pattern.quote(table.organization.SEP_PREAPPROVED)));
+		if(_p.length == 1)
+			_p = Util.trimmed(emails.split(Pattern.quote(";")));
+		if(_p.length == 1)
+			_p = Util.trimmed(emails.split(Pattern.quote(":")));
+		if(_p.length == 1)
+			_p = Util.trimmed(emails.split(Pattern.quote(",")));
+		if(_p.length == 1)
+			_p = Util.trimmed(emails.split(Pattern.quote(" ")));
+		for(String p: _p) {
+			emailsSet.add(p);
+		}
+		return emailsSet;
+	}
+	/**
 	 * 
 	 * @param row
 	 * @param extra_fields
@@ -255,6 +298,10 @@ class D_Organization extends ASNObj implements Summary {
 		this.requested = Util.stringInt2bool(row.get(table.organization.ORG_COL_REQUEST),false);
 		this.broadcasted = Util.stringInt2bool(row.get(table.organization.ORG_COL_BROADCASTED), D_Organization.DEFAULT_BROADCASTED_ORG_ITSELF);
 		this.broadcast_rule = Util.stringInt2bool(row.get(table.organization.ORG_COL_BROADCAST_RULE), true);
+
+		_preapproved = Util.getString(row.get(table.organization.ORG_COL_PREAPPROVED));
+		updatePreapproved();
+		setPreferencesDate(null, Util.getString(row.get(table.organization.ORG_COL_PREFERENCES_DATE)));
 		
 		this.concepts = new D_OrgConcepts();
 		this.concepts.name_organization = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(table.organization.ORG_COL_NAME_ORG),null));
@@ -948,6 +995,8 @@ class D_Organization extends ASNObj implements Summary {
 			p[table.organization.ORG_COL_REQUEST] = Util.bool2StringInt(requested);
 			p[table.organization.ORG_COL_BROADCASTED] = Util.bool2StringInt(broadcasted);
 			p[table.organization.ORG_COL_BROADCAST_RULE] = Util.bool2StringInt(broadcast_rule);
+			p[table.organization.ORG_COL_PREAPPROVED] = _preapproved;
+			p[table.organization.ORG_COL_PREFERENCES_DATE] = this._preferences_date;
 			if(this.specific_request != null) p[table.organization.ORG_COL_SPECIFIC] = Util.stringSignatureFromByte(this.specific_request.encode());
 			
 			//String orgID;
@@ -1218,11 +1267,14 @@ class D_Organization extends ASNObj implements Summary {
 	}
 	public void storeLocalFlags() throws P2PDDSQLException {
 		Application.db.update(table.organization.TNAME,
-				new String[]{table.organization.broadcasted,table.organization.blocked,table.organization.requested},
+				new String[]{table.organization.broadcasted,table.organization.blocked,
+				table.organization.requested, table.organization.preapproved,
+				table.organization.preferences_date},
 				new String[]{table.organization.organization_ID},
 				new String[]{Util.bool2StringInt(broadcasted),
 				Util.bool2StringInt(blocked), 
-				Util.bool2StringInt(requested),
+				Util.bool2StringInt(requested), _preapproved,
+				Encoder.getGeneralizedTime(preferences_date),
 				this.organization_ID}, _DEBUG);
 	}	
 	public static void setRequested(String orgID, boolean val) {
@@ -1431,5 +1483,11 @@ class D_Organization extends ASNObj implements Summary {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
+	}
+	public boolean readyToSend() {
+		if(this.global_organization_ID==null) return false;
+		if(this.params.certifMethods == table.organization._AUTHORITARIAN)
+			if((this.signature == null)||(this.signature.length==0)) return false;
+		return true;
 	}
 }

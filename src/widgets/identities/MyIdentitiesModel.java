@@ -38,6 +38,7 @@ import java.util.*;
 import util.DBInterface;
 import util.TreeModelSupport;
 import util.Util;
+import widgets.org.Orgs;
 import static util.Util._;
 
 class IdentityNode{
@@ -155,10 +156,11 @@ public class MyIdentitiesModel extends TreeModelSupport implements TreeModel {
     		model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{model.root.getIndexOfChild(oib)},new Object[]{oib}));
     	}
     	Identity.current_id_branch = ib;
-    	if ((newID.identity_id!=null)&&(Application.orgs!=null)) {
+    	Orgs ao = Application.orgs;
+    	if ((newID.identity_id!=null)&&(ao != null)) {
     		try{
     			long id = new Integer(newID.identity_id).longValue();
-    			Application.orgs.setCurrent(id);
+    			ao.setCurrent(id);
     		}catch(Exception e){e.printStackTrace();}
     	}
     	Identity.setCurrentIdentity(newID);

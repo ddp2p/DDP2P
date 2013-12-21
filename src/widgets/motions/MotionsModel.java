@@ -20,21 +20,21 @@
 package widgets.motions;
 
 import static util.Util._;
-
 import hds.ClientSync;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 
+import javax.swing.Icon;
 import javax.swing.JOptionPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
 import util.P2PDDSQLException;
-
 import config.Application;
+import config.DDIcons;
 import config.Identity;
 import data.D_Constituent;
 import data.D_Document;
@@ -43,7 +43,6 @@ import data.D_Justification;
 import data.D_Motion;
 import data.D_Organization;
 import data.D_Vote;
-
 import streaming.RequestData;
 import streaming.WB_Messages;
 import util.DBInfo;
@@ -69,7 +68,10 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	public static final int TABLE_COL_GID_VALID = 11; // GID matches data
 	public static final int TABLE_COL_SIGN_VALID = 12; // motion signed
 	public static final int TABLE_COL_HIDDEN = 13; // hidden
+	public static final int TABLE_COL_ARRIVAL_DATE = 14; // unread news?
+	public static final int TABLE_COL_PREFERENCES_DATE = 15; // unread news?
 	//public static final int TABLE_COL_PLUGINS = 7;
+	public static int RECENT_DAYS_OLD = 10;
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	public static boolean hide = true;
@@ -79,6 +81,8 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	Object _hash[]=new Object[0];
 	Object _crea[]=new Object[0];
 	Object _crea_date[]=new Object[0];
+	Object _arriv_date[]=new Object[0];
+	Object _pref_date[]=new Object[0];
 	Object _votes[]=new Object[0];
 	boolean[] _gid=new boolean[0];
 	boolean[] _blo=new boolean[0]; // block
@@ -87,16 +91,55 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	
 	String crt_enhanced=null;
 	
+	public final static String[] columnToolTips = {
+		_("Short title of the item!"),_("Name of the initiator of the item, if not anonymous!"),
+		_("A category for classification!"),
+		_("How many constituents select the first choice?"),
+		_("How many constituents submit any choice?"),
+		_("Recently created, within a number of days, here")+" "+RECENT_DAYS_OLD,
+		_("Number of news items linked to this motion"),
+		_("Creation date of the item by its initiator"),
+		_("Should this be disseminated to others?"),
+		_("Should votes and justifications about this be stored when received?"),
+		_("Is this a temporary item under editing (not yet finalized?"),
+		_("Does this item have a Global Identifier (without which cannot be disseminated)?"),
+		_("Is this item signed by an initiator?"),
+		_("Hide this item from the view of this user?"),
+		_("Date when the last version of this item was received!"),
+		_("Date when the local preferences about this item were last modified!"),
+		};
 	String columnNames[]={
-			_("Name"),_("Initiator"),_("Category"),
+			_("Title"),_("Initiator"),_("Category"),
 			_("Support"),_("Voters"),
 			_("Hot"),_("News"),_("Date"), _("^"), _("X"),
-			_("T"), _("G"), _("S"), _("H")
+			_("T"), _("G"), _("S"), _("H"), _("Arrival"), _("Preferences")
 			};
 	ArrayList<Motions> tables= new ArrayList<Motions>();
+	Hashtable<String, Integer> rowByID =  new Hashtable<String, Integer>();
 	private String crt_orgID;
 	private D_Constituent constituent;
 	private D_Organization organization;
+	public Icon getIcon(int column) {
+		if(column == TABLE_COL_HIDDEN){ 
+			return DDIcons.getHideImageIcon("Hidden");
+		}
+		if(column == TABLE_COL_TMP){ 
+			return DDIcons.getTmpImageIcon("TMP");
+		}
+		if(column == MotionsModel.TABLE_COL_GID_VALID){ 
+			return DDIcons.getGIDImageIcon("GID");
+		}
+		if(column == MotionsModel.TABLE_COL_BLOCKED){ 
+			return DDIcons.getBlockImageIcon("Block");
+		}
+		if(column == MotionsModel.TABLE_COL_BROADCASTED){ 
+			return DDIcons.getBroadcastImageIcon("Broadcast");
+		}
+		if(column == MotionsModel.TABLE_COL_SIGN_VALID){ 
+			return DDIcons.getSignedImageIcon("Signed");
+		}
+		return null;
+	}
 	public void setCrtEnhanced(String enhanced) {
 		crt_enhanced = enhanced;
 		this.update(null, null);
@@ -104,9 +147,19 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 
 	public MotionsModel(DBInterface _db) {
 		db = _db;
-		db.addListener(this, new ArrayList<String>(Arrays.asList(table.motion.TNAME,table.signature.TNAME,table.my_motion_data.TNAME,table.constituent.TNAME)), null);
+		connectWidget();
 		update(null, null);
 	}
+	
+
+	public void connectWidget() {
+		db.addListener(this, new ArrayList<String>(Arrays.asList(table.motion.TNAME,table.signature.TNAME,table.my_motion_data.TNAME,table.constituent.TNAME)), null);
+	}
+
+	public void disconnectWidget() {
+		db.delListener(this);
+	}
+	
 	public void setCrtOrg(String orgID){
 		crt_orgID=orgID;
 		update(null, null);
@@ -160,18 +213,22 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	}
 	@Override
 	public Class<?> getColumnClass(int col) {
-		if(col == this.TABLE_COL_RECENT) return Boolean.class;
-		if(col == this.TABLE_COL_ACTIVITY) return Integer.class;
-		if(col == this.TABLE_COL_VOTERS_NB) return Integer.class;
-		if(col == this.TABLE_COL_NEWS) return Integer.class;
-		if(col == this.TABLE_COL_BROADCASTED) return Boolean.class;
-		if(col == this.TABLE_COL_BLOCKED) return Boolean.class;
-		if(col == this.TABLE_COL_HIDDEN) return Boolean.class;
-		if(col == this.TABLE_COL_TMP) return Boolean.class;
-		if(col == this.TABLE_COL_GID_VALID) return Boolean.class;
-		if(col == this.TABLE_COL_SIGN_VALID) return Boolean.class;
+		if(col == MotionsModel.TABLE_COL_VOTERS_NB) return Integer.class;
+		if(col == MotionsModel.TABLE_COL_ACTIVITY) return Integer.class;
+		if(col == MotionsModel.TABLE_COL_RECENT) return Boolean.class;
+		if(col == MotionsModel.TABLE_COL_NEWS) return Integer.class;
+		if(col == MotionsModel.TABLE_COL_BROADCASTED) return Boolean.class;
+		if(col == MotionsModel.TABLE_COL_BLOCKED) return Boolean.class;
+		if(col == MotionsModel.TABLE_COL_TMP) return Boolean.class;
+		if(col == MotionsModel.TABLE_COL_GID_VALID) return Boolean.class;
+		if(col == MotionsModel.TABLE_COL_SIGN_VALID) return Boolean.class;
+		if(col == MotionsModel.TABLE_COL_HIDDEN) return Boolean.class;
 		
-		return String.class;
+		if ((col == MotionsModel.TABLE_COL_NAME)) return String.class;
+		if ((col == MotionsModel.TABLE_COL_CREATOR)) return String.class;
+		if ((col == MotionsModel.TABLE_COL_CATEGORY)) return String.class;
+		if ((col == MotionsModel.TABLE_COL_CREATION_DATE)) return String.class;
+		return super.getColumnClass(col);//String.class;
 	}
 	@Override
 	public int getRowCount() {
@@ -224,10 +281,16 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			if((row>=0) && (row<this._crea_date.length))result = new Boolean(this._bro[row]);
 			break;
 		case TABLE_COL_BLOCKED:
-			if((row>=0) && (row<this._crea_date.length))result = new Boolean(this._blo[row]);
+			if((row>=0) && (row<this._blo.length))result = new Boolean(this._blo[row]);
 			break;
 		case TABLE_COL_CREATION_DATE:
 			if((row>=0) && (row<this._crea_date.length))result = this._crea_date[row];
+			break;
+		case TABLE_COL_ARRIVAL_DATE:
+			if((row>=0) && (row<this._arriv_date.length))result = this._arriv_date[row];
+			break;
+		case TABLE_COL_PREFERENCES_DATE:
+			if((row>=0) && (row<this._pref_date.length))result = this._pref_date[row];
 			break;
 		case TABLE_COL_NAME:
 			String sql = "SELECT o."+table.motion.motion_title + ", m."+table.my_motion_data.name+", o."+table.motion.format_title_type+
@@ -341,11 +404,10 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			}
 			break;
 		case TABLE_COL_RECENT: // any activity in the last x days?
-			int DAYS_OLD2 = 10;
 			String sql_ac2 = "SELECT count(*) FROM "+table.signature.TNAME+" AS s "+
 			" WHERE s."+table.signature.motion_ID+" = ? AND s."+table.signature.arrival_date+">?;";
 			try {
-				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac2, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD2)});
+				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac2, new String[]{motID,Util.getGeneralizedDate(RECENT_DAYS_OLD)});
 				if(orgs.size()>0) result = orgs.get(0).get(0);
 				else result = new Integer("0");
 			} catch (P2PDDSQLException e) {
@@ -356,7 +418,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			String sql_new2 = "SELECT count(*) FROM "+table.news.TNAME+" AS n "+
 			" WHERE n."+table.news.motion_ID+" = ? AND n."+table.news.arrival_date+">?;";
 			try {
-				ArrayList<ArrayList<Object>> orgs = db.select(sql_new2, new String[]{motID,Util.getGeneralizedDate(DAYS_OLD2)});
+				ArrayList<ArrayList<Object>> orgs = db.select(sql_new2, new String[]{motID,Util.getGeneralizedDate(RECENT_DAYS_OLD)});
 				if(orgs.size()>0){
 					int result_int = new Integer(""+((Util.get_long(result))+(Util.get_long(orgs.get(0).get(0)))));
 					if(result_int>0) result = new Boolean(true); else result = new Boolean(false);
@@ -452,11 +514,22 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			"SELECT "+table.motion.motion_ID+","+table.motion.creation_date+","
 			+table.motion.global_motion_ID+","+table.motion.constituent_ID+
 			","+table.motion.blocked+","+table.motion.broadcasted+","+table.motion.requested+
-			","+table.motion.creation_date
+			","+table.motion.creation_date+","+table.motion.arrival_date+","+table.motion.preferences_date
 			+" FROM "+table.motion.TNAME+
 			" WHERE "+table.motion.organization_ID + "=? ";
 	@Override
 	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
+		final int SELECT_ID = 0;
+		//final int SELECT_CREAT_DATE = 1;
+		final int SELECT_GID = 2;
+		final int SELECT_CONST_ID = 3;
+		final int SELECT_BLOCKED = 4;
+		final int SELECT_BROADCASTED = 5;
+		final int SELECT_REQUESTED = 6;
+		final int SELECT_CREATE_DATE = 7;
+		final int SELECT_ARRIVAL_DATE = 8;
+		final int SELECT_PREFERENCES_DATE = 9;
+		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update table= "+_table+": info= "+info);
 		if(crt_orgID==null) return;
 		Object old_sel[] = new Object[tables.size()];
@@ -464,7 +537,9 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			int sel = tables.get(i).getSelectedRow();
 			if((sel >= 0) && (sel < _motions.length)) old_sel[i] = _motions[sel];
 		}
+		if(DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update oldsel passed");
 		try {
+			if(DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update pselect");
 			ArrayList<ArrayList<Object>> moti;
 			String sql = sql_motions;
 			if(hide)	sql	 +=	" AND "+table.motion.hidden+" != '1' ";
@@ -480,36 +555,51 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			_hash = new Object[moti.size()];
 			_crea = new Object[moti.size()];
 			_crea_date = new Object[moti.size()];
+			_arriv_date = new Object[moti.size()];
+			_pref_date = new Object[moti.size()];
 			_gid = new boolean[moti.size()];
 			_blo = new boolean[moti.size()];
 			_bro = new boolean[moti.size()];
 			_req = new boolean[moti.size()];
+			rowByID = new Hashtable<String, Integer>();
+			if(DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update part1");
 			for(int k=0; k<_motions.length; k++) {
-				_motions[k] = moti.get(k).get(0);
+				ArrayList<Object> m = moti.get(k);
+				_motions[k] = m.get(SELECT_ID);
+				rowByID.put(Util.getString(_motions[k]), new Integer(k));
 				//_meth[k] = orgs.get(k).get(1);
-				_hash[k] = moti.get(k).get(2);
-				_crea[k] = moti.get(k).get(3);
-				_gid[k] = (moti.get(k).get(3) != null);
-				_blo[k] = Util.stringInt2bool(moti.get(k).get(4), false);
-				_bro[k] = Util.stringInt2bool(moti.get(k).get(5), false);
-				_req[k] = Util.stringInt2bool(moti.get(k).get(6), false);
-				_crea_date[k] = moti.get(k).get(7);
+				_hash[k] = m.get(SELECT_GID);
+				_crea[k] = m.get(SELECT_CONST_ID);
+				_gid[k] = (m.get(SELECT_CONST_ID) != null);
+				_blo[k] = Util.stringInt2bool(m.get(SELECT_BLOCKED), false);
+				_bro[k] = Util.stringInt2bool(m.get(SELECT_BROADCASTED), false);
+				_req[k] = Util.stringInt2bool(m.get(SELECT_REQUESTED), false);
+				_crea_date[k] = m.get(SELECT_CREATE_DATE);
+				_arriv_date[k] = m.get(SELECT_ARRIVAL_DATE);
+				_pref_date[k] = m.get(SELECT_PREFERENCES_DATE);
 			}
 			if(DEBUG) System.out.println("widgets.org.Motions: A total of: "+_motions.length);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
+		if(DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update part");
 		for(int k=0; k<old_sel.length; k++){
+			if(DEBUG) System.out.println("widgets.org.Motions: update k="+k);
 			Motions i = tables.get(k);
 			//int row = i.getSelectedRow();
 			int row = findTableRow(i,old_sel[k]);
-			if(DEBUG) System.out.println("widgets.org.Motions: selected row: "+row);
+			if(DEBUG) System.out.println("widgets.org.Motions: update selected row: "+row);
 			//i.revalidate();
 			this.fireTableDataChanged();
+			if(DEBUG) System.out.println("widgets.org.Motions: update data changed: mot");
 			if((row >= 0)&&(row<_motions.length)) i.setRowSelectionInterval(row, row);
+			if(DEBUG) System.out.println("widgets.org.Motions: update selected");
 			i.fireListener(row, Motions.A_NON_FORCE_COL);
+			if(DEBUG) System.out.println("widgets.org.Motions: update fired Listener (motion)");
 			i.initColumnSizes();
+			if(DEBUG) System.out.println("widgets.org.Motions: update inited cols");
 		}		
+		if(DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update done");
 	}
 	private int findTableRow(Motions i, Object id) {
 		int modelRow = findModelRow(id);
@@ -728,11 +818,14 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	}
 	@Override
 	public void orgUpdate(String orgID, int col, D_Organization org) {
+		if(DEBUG) System.out.println("MotionsModel:orgUpdate start");
 		if ((crt_orgID==null) || (!crt_orgID.equals(orgID))){
 			this._motions= new Object[0]; // do not remember current selections
+			if(DEBUG) System.out.println("MotionsModel:orgUpdate setOrg");
 			this.setCrtOrg(orgID);
 		}
 		this.organization = org;
+		if(DEBUG) System.out.println("MotionsModel:orgUpdate done");
 	}
 	@Override
 	public void org_forceEdit(String orgID, D_Organization org) {
@@ -778,12 +871,12 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			D_Motion m = new D_Motion(hash);
 			if(ClientSync.USE_PAYLOAD_REQUESTED) ClientSync.payload.requested.moti.add(m);
 			D_Vote vote = D_Vote.getMyVoteForMotion(m.motionID);
-			if(vote != null) {
+			if((vote != null)&&(vote.readyToSend())) {
 				ClientSync.addToPayloadFix(RequestData.SIGN, vote.global_vote_ID, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 				if(ClientSync.USE_PAYLOAD_REQUESTED) ClientSync.payload.requested.sign.add(vote);
 				if(vote.justification_ID!=null){
 					D_Justification just = new D_Justification(vote.justification_ID);
-					if(just!=null){
+					if((just!=null)&&(just.readyToSend())){
 						ClientSync.addToPayloadFix(RequestData.JUST, just.global_justificationID, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 						if(ClientSync.USE_PAYLOAD_REQUESTED) ClientSync.payload.requested.just.add(just);
 					}
@@ -792,5 +885,11 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public int getRow(String motID) {
+		Integer row = rowByID.get(motID);
+		if(row==null) return -1;
+		return row.intValue();
 	}
 }

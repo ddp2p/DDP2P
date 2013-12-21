@@ -317,7 +317,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    	widgets.updates.UpdatesTable.DEBUG = val;
 	    	data.D_TesterInfo.DEBUG = val;
 	    	data.D_UpdatesKeysInfo.DEBUG = val;
-	    	data.D_UpdatesInfo.DEBUG = val;
+	    	data.D_MirrorInfo.DEBUG = val;
 	    	data.D_TesterDefinition.DEBUG = val;
 	    } else if (source == this.m_dbgUpdates) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);

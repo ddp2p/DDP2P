@@ -19,11 +19,21 @@
 /* ------------------------------------------------------------------------- */
 package widgets.directories;
 
+import hds.Address;
+import hds.ClientSync;
+import hds.DirectoryAnswer;
+import hds.DirectoryRequest;
+import hds.Server;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.MouseEvent;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +48,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -48,6 +59,8 @@ import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
 import config.DDIcons;
+import config.Identity;
+import data.D_PeerAddress;
 
 import util.DBInfo;
 import util.DBInterface;
@@ -55,20 +68,39 @@ import util.DBListener;
 import util.DBSelector;
 import util.Util;
 import widgets.components.BulletRenderer;
+import static java.lang.System.out;
 import static util.Util._;
+@SuppressWarnings("serial")
+class PathCellRenderer extends DefaultTableCellRenderer {
+    public Component getTableCellRendererComponent(
+                        JTable table, Object value,
+                        boolean isSelected, boolean hasFocus,
+                        int row, int column) {
+        JLabel c = (JLabel)super.getTableCellRendererComponent( table, value,
+                isSelected, hasFocus, row, column );
+        String pathValue = Util.getString(value);
+        c.setToolTipText(pathValue);
+        // ...OR this probably works in your case:
+        //c.setToolTipText(c.getText());
+        return c;
+    }
+}
 
 @SuppressWarnings("serial")
 public class Directories extends JTable {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 
+	PathCellRenderer pathRenderer = new PathCellRenderer();
 	BulletRenderer bulletRenderer = new BulletRenderer();
 	public Directories() {
 		super(new DirectoriesModel(Application.db));
+		getModel().setTable(this);
 		init();
 	}
 	public Directories(DBInterface _db) {
 		super(new DirectoriesModel(_db));
+		getModel().setTable(this);
 		init();
 	}
 	public Directories(DirectoriesModel dm) {
@@ -101,10 +133,15 @@ public class Directories extends JTable {
 	public TableCellRenderer getCellRenderer(int row, int column) {
 		if ((column == DirectoriesModel.COL_UDP_ON)) return bulletRenderer;
 		if ((column == DirectoriesModel.COL_TCP_ON)) return bulletRenderer;
+		if ((column == DirectoriesModel.COL_ADDRESS)) return pathRenderer;
+		if ((column == DirectoriesModel.COL_DATE)) return pathRenderer;
 		//if ((column == DirectoriesModel.COL_NAT)) return bulletRenderer;
 		return super.getCellRenderer(row, column);
 	}
-	protected String[] columnToolTips = {null,null,_("A name you provide")};
+	protected String[] columnToolTips = {null,null,_("A name you provide"),
+			_("Is it behind a NAT?"), _("Does it offer relay service"),
+			_("UDP answered"), _("TCP answered"), _("UDP answered"),
+			_("Served address"), _("Date last answer")};
     @SuppressWarnings("serial")
 	protected JTableHeader createDefaultTableHeader() {
         return new JTableHeader(columnModel) {
@@ -130,7 +167,7 @@ public class Directories extends JTable {
 	public DirectoriesModel getModel(){
 		return (DirectoriesModel) super.getModel();
 	}
-	private void initColumnSizes() {
+	void initColumnSizes() {
         DirectoriesModel model = (DirectoriesModel)this.getModel();
         TableColumn column = null;
         Component comp = null;
@@ -182,6 +219,130 @@ public class Directories extends JTable {
 
 }
 
+class DirectoryPing extends Thread{
+	private static final long WAIT_TIME_MS = 10000;
+	private static final boolean DEBUG = false;
+	private DirectoriesModel m;
+	private Directories t;
+	boolean stop = false;
+	String GID;
+	DirectoryPing(DirectoriesModel m, Directories t){
+		this.m = m;
+		this.t = t;
+		this.setDaemon(true); 
+		start();
+	}
+	public void run(){
+		try{
+			_run();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	void _run() {
+		Hashtable<String, InetSocketAddress> addr = new Hashtable<String, InetSocketAddress>();
+		while(!stop){
+			GID = Identity.getMyPeerGID();
+			String id = null;
+			try {
+				id = D_PeerAddress.get_myself(GID).peer_ID;
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
+			String[] ld = m._ld;
+			for (int k = 0; k<ld.length; k++){
+				String iport = m.ipPort(ld, k);
+				String ip = m.getIP(ld, k);
+				int port = m.getPort(ld,k);
+				//if(DEBUG)System.out.println("Dirs: k="+k+" ip="+iport+" ld0="+ip+" ld1="+port);
+				InetSocketAddress s = addr.get(iport);
+				if(s == null) {
+					InetAddress ia = Util.getHostIA(ip);
+					if(ia==null){
+						m.addressByIPport.put(iport, _("Unreachable"));
+						m.dateByIPport.put(iport, Util.getGeneralizedTime());
+						m.fireTableRowsUpdated(k, k);
+						continue;
+					}
+					s = new InetSocketAddress(ia, port);
+					addr.put(iport, s);
+				}
+				ArrayList<Address> a = askAddress(s, GID, id, iport);
+				String _a = Util.concat(a, ";", null);
+				if(_a!=null) m.addressByIPport.put(iport, _a);
+				else m.addressByIPport.remove(iport);
+				m.dateByIPport.put(iport, Util.getGeneralizedTime());
+				//if(t!=null) t.initColumnSizes();
+				
+				m.fireTableRowsUpdated(k, k);
+			}
+			try {
+				synchronized(this){
+					this.wait(WAIT_TIME_MS);
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	ArrayList<Address> askAddress(InetSocketAddress sock_addr, String global_peer_ID, 
+			String peer_ID, String dir_address){
+		final boolean DEBUG = false;
+		final boolean _DEBUG = false;
+		Socket socket = new Socket();
+		try {
+			socket.connect(sock_addr, Server.TIMEOUT_Client_wait_Dir);
+			//if(DEBUG) out.println("Directories: askAddress:  Sending to Directory Server: connected:"+sock_addr);
+			DirectoryRequest dr = new DirectoryRequest(global_peer_ID,
+					Identity.getMyPeerGID(),
+					Identity.udp_server_port, 
+					peer_ID,
+					dir_address);
+			byte[] msg = dr.encode();
+			socket.setSoTimeout(Server.TIMEOUT_Client_wait_Dir);
+			socket.getOutputStream().write(msg);
+			if(DEBUG) out.println("Directories: askAddress:  Sending to Directory Server: "+Util.byteToHexDump(msg, " ")+dr);
+			DirectoryAnswer da = new DirectoryAnswer(socket.getInputStream());
+			//ClientSync.reportDa(dir_address, global_peer_ID, peer_name, da, null);
+
+			if((da.terms != null) && (da.terms.length != 0)) {
+				dr.terms = dr.updateTerms(da.terms, peer_ID, global_peer_ID, dir_address, dr.terms);
+				if(dr!=null){
+					msg = dr.encode();
+					socket.setSoTimeout(Server.TIMEOUT_Client_wait_Dir);
+					socket.getOutputStream().write(msg);
+					if(DEBUG) out.println("Directories: askAddress:  Sending to Directory Server: "+Util.byteToHexDump(msg, " ")+dr);
+					da = new DirectoryAnswer(socket.getInputStream());
+				}
+			}
+			
+			if(da.addresses.size()==0){
+				//if(DEBUG) out.println("Directories: askAddress:  Got no addresses! da="+da+" for:"+_pc.name);
+				socket.close();
+				return null;
+			}
+			if(DEBUG) out.println("Directories: askAddress: Dir Answer: "+da);
+			socket.close();
+			if(da.addresses==null){
+				if(_DEBUG) out.println("Directories: askAddress:  Got empty addresses!");
+				return null;
+			}
+			return da.addresses;
+			//InetSocketAddress s= da.address.get(0);
+			//return s.getHostName()+":"+s.getPort();
+		}catch (IOException e) {
+			//if(DEBUG) out.println("Connections: getDirAddress:  fail: "+e+" peer: "+peer_name+" DIR addr="+dir_address);
+			//ClientSync.reportDa(dir_address, global_peer_ID, peer_name, null, e.getLocalizedMessage());
+			//e.printStackTrace();
+			//Directories.setUDPOn(dir_address, new Boolean(false));
+		} catch (Exception e) {
+			//if(DEBUG) out.println("Connections: getDirAddress:  fail: "+e+" peer: "+peer_name+" DIR addr="+dir_address);
+			//ClientSync.reportDa(dir_address, global_peer_ID, peer_name, null, e.getLocalizedMessage());
+			e.printStackTrace();
+		}
+		return null;
+	}
+}
 /**
  * 
  */
@@ -191,22 +352,63 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 	static final int COL_NAT = 3;
 	static final int COL_UDP_ON = 5;
 	static final int COL_TCP_ON = 6;
+	static final int COL_ADDRESS = 7;
+	static final int COL_DATE = 8;
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	Hashtable<String,Boolean> natByIPport = new Hashtable<String,Boolean>();
+	Hashtable<String,String> natAddrByIPport = new Hashtable<String,String>();
 	Hashtable<String,Boolean> onUDPByIPport = new Hashtable<String,Boolean>();
 	Hashtable<String,Boolean> onTCPByIPport = new Hashtable<String,Boolean>();
+	Hashtable<String,String> addressByIPport = new Hashtable<String,String>();
+	Hashtable<String,String> dateByIPport = new Hashtable<String,String>();
 	Hashtable<String,Integer> rowByIPport = new Hashtable<String,Integer>();
 	DBInterface db;
 	String ld;
 	String _ld[];
-	String columnNames[]={"IP","Port","Name","NAT Piercing","Relay","UDP","TCP"};
-	int columns = columnNames.length-2;
+	String columnNames[]={_("IP"),_("Port"),_("Name"),
+			_("NAT Piercing"),_("Relay"),
+			_("UDP"),_("TCP"),
+			_("My address"), _("Date")};
+	 /**
+	  *  only store the number of columns already stored, anyhow (storage is in application table)
+	  */
+	int columns_storable = columnNames.length-4;
+	private DirectoryPing dp;
+	private Directories _table;
 	DirectoriesModel(DBInterface _db) {
 		db = _db;
 		db.addListener(this, new ArrayList<String>(Arrays.asList(table.application.TNAME)),
 				DBSelector.getHashTable(table.application.TNAME, table.application.field, DD.APP_LISTING_DIRECTORIES));
 		update(null, null);
+		dp = new DirectoryPing(this, getTable());
+	}
+	public void setTable(Directories _table) {
+		this._table = _table;
+	}
+	private Directories getTable() {
+		return _table;
+	}
+	public int getPort(String[] ld2, int k) {
+		if(ld2 == null) return -1;
+		if(k<0) return -1;
+		if(k>=ld2.length) return -1;
+		String[] l = ld2[k].split(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
+		if(l.length<2) return -1;
+		try{
+			return Integer.parseInt(l[1]);
+		}catch(Exception e){
+			e.printStackTrace();
+			return -1;
+		}
+	}
+	public String getIP(String[] ld2, int k) {
+		if(ld2 == null) return null;
+		if(k<0) return null;
+		if(k>=ld2.length) return null;
+		String[] l = ld2[k].split(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
+		if(l.length<1) return null;
+		return l[0];
 	}
 	@Override
 	public int getColumnCount() {
@@ -224,6 +426,12 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 			if(col == COL_UDP_ON)return this.onUDPByIPport.get(this.ipPort(row));
 			if(col == COL_TCP_ON)return this.onTCPByIPport.get(this.ipPort(row));
 			if(col == COL_NAT) return this.natByIPport.get(this.ipPort(row));
+			if(col == COL_ADDRESS) return this.addressByIPport.get(this.ipPort(row));
+			if(col == COL_DATE){
+				String o = this.dateByIPport.get(this.ipPort(row));
+				if(o==null) return Util.getGeneralizedTime();
+				return o;
+			}
 		
 			String[] el = _ld[row].split(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
 			if(el.length<=col) return null;
@@ -246,7 +454,7 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 		if((value+"").indexOf(DD.APP_LISTING_DIRECTORIES_SEP) >= 0) return; 
 		String el[] = _ld[row].split(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
 		String result="";
-		for(int k=0; k<columns; k++) {
+		for(int k=0; k<columns_storable; k++) {
 			if(k > 0) result = result + DD.APP_LISTING_DIRECTORIES_ELEM_SEP;
 			if(k==col) result = result + value;
 			else if(k<el.length) result = result + el[k];
@@ -263,6 +471,9 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 		fireTableCellUpdated(row, col);
 	}
 	String ipPort(int k) {
+		return ipPort(_ld, k);
+	}
+	String ipPort(String[]_ld, int k) {
 		if((_ld==null)||(_ld.length<=k)) return null;
 		int id1 = _ld[k].indexOf(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
 		if(id1<0) return null;

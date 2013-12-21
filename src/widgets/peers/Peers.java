@@ -40,6 +40,7 @@ import java.util.Hashtable;
 
 import javax.swing.Action;
 import javax.swing.DefaultCellEditor;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -54,6 +55,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
@@ -97,6 +99,8 @@ import util.Util;
 import widgets.components.BulletRenderer;
 import widgets.components.TableUpdater;
 import widgets.dir_fw_terms.TermsPanel;
+import widgets.motions.Motions;
+import widgets.motions.MotionsModel;
 import widgets.private_org.PrivateOrgPanel;
 import widgets.private_org.PrivateOrgTable;
 import static util.Util._;
@@ -166,7 +170,7 @@ public Component getTableCellRendererComponent(JTable table, Object value, boole
 }
 
 @SuppressWarnings("serial")
-public class Peers extends JTable implements MouseListener {
+public class Peers extends JTable implements MouseListener, PeerListener {
 	// Different icons should be displayed for each state... for now just on/off
 	public static final int STATE_CONNECTION_FAIL =0;
 	public static final int STATE_CONNECTION_TCP = 1;
@@ -194,36 +198,41 @@ public class Peers extends JTable implements MouseListener {
 	MyComboBoxRenderer myComboBoxRenderer;
 	ColorRenderer colorRenderer;
 	NoPluginRenderer noPluginRenderer = new NoPluginRenderer();
-	protected String[] columnToolTips = {null,null,_("A name you provide")};
 	ArrayList<PeerListener> listeners = new ArrayList<PeerListener>();
 	public TermsPanel termsPanel;
+	public PeerContacts peer_contacts;
 	public PrivateOrgPanel privateOrgPanel; // to listen to Orgs
-	private JMenuItem refresh = new JMenuItem();
-	private JMenuItem myself_new = refresh;
-	private JMenuItem use_stop = refresh;
-	private JMenuItem use_start = refresh;
-	private JMenuItem block_stop = refresh;
-	private JMenuItem block_start = refresh;
-	private JMenuItem filter_stop = refresh;
-	private JMenuItem filter_start = refresh;
-	private JMenuItem serving_stop = refresh;
-	private JMenuItem serving_start = refresh;
-	private JMenuItem serve_default = refresh;
-	private JMenuItem share_org = refresh;
-	private JMenuItem myself_set = refresh;
-	private JMenuItem name_set = refresh;
-	private JMenuItem slogan_set = refresh;
-	private JMenuItem emails_set = refresh;
-	private JMenuItem terms_set = refresh;
-	private JMenuItem export_SK = refresh;
-	private JMenuItem import_SK = refresh;
-	private JMenuItem reset_peer = refresh;
-	private JMenuItem delete_row = refresh;
-	private JMenuItem wake_up = refresh;
-	private JMenuItem refresh_plugins = refresh;
-	private JMenuItem refresh_model = refresh;
+	private ImageIcon icon_register;
+	private ImageIcon icon_org;
+	static private JMenuItem refresh = new JMenuItem();
+	static private JMenuItem myself_new = refresh;
+	static private JMenuItem use_stop = refresh;
+	static private JMenuItem use_start = refresh;
+	static private JMenuItem block_stop = refresh;
+	static private JMenuItem block_start = refresh;
+	static private JMenuItem filter_stop = refresh;
+	static private JMenuItem filter_start = refresh;
+	static private JMenuItem serving_stop = refresh;
+	static private JMenuItem serving_start = refresh;
+	static private JMenuItem serve_default = refresh;
+	static private JMenuItem share_org = refresh;
+	static private JMenuItem myself_set = refresh;
+	static private JMenuItem name_set = refresh;
+	static private JMenuItem slogan_set = refresh;
+	static private JMenuItem emails_set = refresh;
+	static private JMenuItem terms_set = refresh;
+	static private JMenuItem export_SK = refresh;
+	static private JMenuItem import_SK = refresh;
+	static private JMenuItem reset_peer = refresh;
+	static private JMenuItem delete_row = refresh;
+	static private JMenuItem wake_up = refresh;
+	static private JMenuItem refresh_plugins = refresh;
+	static private JMenuItem refresh_model = refresh;
+	private static boolean popup_inited;
 	
-	
+	/**
+	 * Uses Application.db
+	 */
 	public Peers() {
 		super(new PeersModel(Application.db));
 		this.initPopupItems();
@@ -231,14 +240,40 @@ public class Peers extends JTable implements MouseListener {
 	}
 	public Peers(DBInterface _db) {
 		super(new PeersModel(_db));
+		if(DEBUG) System.out.println("PeersModel:did model");
 		this.initPopupItems();
+		if(DEBUG) System.out.println("PeersModel:did popup");
 		init();
+		if(DEBUG) System.out.println("PeersModel:did init");
 	}
 	public Peers(PeersModel dm) {
 		super(dm);
 		this.initPopupItems();
 		init();
 	}
+	//area between 4x-x^2   and x-2
+   	public void connectWidget(){
+		getModel().connectWidget();
+		Application.peers = this;
+		Application.peer_contacts = this.peer_contacts;
+		this.privateOrgPanel.addOrgListener();
+		if(DD.status!=null){
+			addListener(DD.status);
+			if(_DEBUG) System.out.println("Peers: connectWidget status");
+		}else{
+			if(_DEBUG) System.out.println("Peers: connectWidget: status was null");
+		}
+		DD.status.addPeerSelectedStatusListener(this);
+	}
+	public void disconnectWidget(){
+		getModel().disconnectWidget();
+		Application.peers = null;
+		Application.peer_contacts = null;
+		this.privateOrgPanel.removeOrgListener();
+		// not needed: if(DD.status!=null) removeListener(DD.status);
+		DD.status.removePeerSelectedListener(this);
+	}
+
 	/**
 	 * 
 	 * @param plugin_ID : unique string
@@ -353,12 +388,40 @@ public class Peers extends JTable implements MouseListener {
 		this.getTableHeader().setToolTipText(
         _("Click to sort; Shift-Click to sort in reverse order"));
 		this.setAutoCreateRowSorter(true);
+		icon_register = config.DDIcons.getRegistrationImageIcon("Register");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+		icon_org = config.DDIcons.getOrgImageIcon("Org");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
+
+		
+		DefaultTableCellRenderer rend = new DefaultTableCellRenderer() {
+			public Component getTableCellRendererComponent(JTable table,
+			Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+				JLabel headerLabel = (JLabel)
+						super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+				Icon icon = Peers.this.getModel().getIcon(column);
+				if(icon != null)  headerLabel.setText(null);
+				headerLabel.setIcon(icon);
+			    setBorder(UIManager.getBorder("TableHeader.cellBorder"));
+			    setHorizontalAlignment(JLabel.CENTER);
+			    return headerLabel;
+			}
+		};
+		
+		//getTableHeader().setDefaultRenderer(rend);
+		for(int col_index = 0; col_index < getModel().getColumnCount(); col_index++) {
+			if(getModel().getIcon(col_index) != null)
+				getTableHeader().getColumnModel().getColumn(col_index).setHeaderRenderer(rend);
+		}
+
 	}
 	public JScrollPane getScrollPane(){
         JScrollPane scrollPane = new JScrollPane(this);
 		this.setFillsViewportHeight(true);
 		return scrollPane;
 	}
+	/**
+	 * Creates a panel and sets peer_contacts
+	 * @return
+	 */
     public JPanel getPanel() {
     	if(DEBUG) System.out.println("Peers:getPanel: start");
     	JPanel jp = new JPanel(new BorderLayout());
@@ -367,7 +430,8 @@ public class Peers extends JTable implements MouseListener {
         scrollPane.setMinimumSize(new Dimension(100,50));
         
         //jp.add(scrollPane, BorderLayout.CENTER);
-        Application.peer_contacts = new PeerContacts();
+        //Application.peer_contacts = 
+        peer_contacts = new PeerContacts();
         //jp.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, new JScrollPane(Application.peer)), BorderLayout.CENTER);
         JPanel p = new JPanel(new BorderLayout());
 	//	p.add(new TermsPanel(1, "khalid"));
@@ -382,6 +446,7 @@ public class Peers extends JTable implements MouseListener {
        // p.add(new JScrollPane(new JScrollPane(Application.peer)) );
 
         privateOrgPanel = new PrivateOrgPanel();
+        //if(DD.status != null) DD.status.addOrgStatusListener(privateOrgPanel);
         JScrollPane scrollPane3 = new JScrollPane(privateOrgPanel);
         scrollPane3.setMinimumSize(new Dimension(100,100));
         p.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT,
@@ -389,6 +454,7 @@ public class Peers extends JTable implements MouseListener {
         		new JScrollPane(Application.peer_contacts)));
         
         jp.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, p ), BorderLayout.CENTER);
+        connectWidget();
 		return jp;
     }
 
@@ -469,8 +535,8 @@ public class Peers extends JTable implements MouseListener {
                 int index = columnModel.getColumnIndexAtX(p.x);
                 int realIndex = 
                         columnModel.getColumn(index).getModelIndex();
-                if(realIndex >= columnToolTips.length) return null;
-				return columnToolTips[realIndex];
+                if(realIndex >= getModel().columnToolTips.length) return null;
+				return getModel().columnToolTips[realIndex];
             }
         };
     }
@@ -499,11 +565,20 @@ public class Peers extends JTable implements MouseListener {
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
  
+        if(model.getColumnCount() == this.getColumnModel().getColumnCount()){
+        	System.out.println("Peers: initColumnSizes: conflict "+model.getColumnCount() +" vs "+ this.getColumnModel().getColumnCount());
+        }
         for (int i = 0; i < model.getColumnCount(); i++) {
         	int headerWidth = 0;
         	int cellWidth = 0;
-            column = this.getColumnModel().getColumn(i);
- 
+        	try{
+        		if(i < this.getColumnModel().getColumnCount())
+        			column = this.getColumnModel().getColumn(i);
+        		else break;
+        	}catch(Exception e){
+        		e.printStackTrace();
+        		break;
+        	}
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
@@ -556,74 +631,87 @@ public class Peers extends JTable implements MouseListener {
 	public void mouseReleased(MouseEvent arg0) {
     	jtableMouseReleased(arg0, true);
 	}
-
+	static Object popup_monitor;
 	void initPopupItems(){
+		popup_monitor = this;
+		new Thread(){
+			public void run(){
+				_initPopupItems();
+			}
+		}.start();
+	}
+	static void _initPopupItems(){
+		Peers _this = (Peers)Peers.popup_monitor;
     	ImageIcon addicon = DDIcons.getAddImageIcon(_("add an item")); 
     	ImageIcon delicon = DDIcons.getDelImageIcon(_("delete an item")); 
     	ImageIcon reseticon = DDIcons.getResImageIcon(_("reset item"));
     	//
-    	refresh = new JMenuItem(new PeersRowAction(this, _("Refresh!"), reseticon,_("Refresh."),
+    	refresh = new JMenuItem(new PeersRowAction(_this, _("Refresh!"), reseticon,_("Refresh."),
     			_("Refresh!"),KeyEvent.VK_R, Peers.COMMAND_MENU_REFRESH));
        	
         	//
-//    	myself_new = new JMenuItem(new PeersRowAction(this, _("New Myself!"), reseticon,_("Create new myself peer."),
+//    	myself_new = new JMenuItem(new PeersRowAction(_this, _("New Myself!"), reseticon,_("Create new myself peer."),
 //        			_("New Myself!"),KeyEvent.VK_N, Peers.COMMAND_MENU_NEW_MYSELF));
-       	use_stop = new JMenuItem(new PeersUseAction(this, _("No pull from it!"),addicon,_("Stop pulling from it."),_("Will not be used to synchronize."),KeyEvent.VK_A));
-       	use_start = new JMenuItem(new PeersUseAction(this, _("Pull from it!"),addicon,_("Pull from it."),_("Will be used to synchronize."),KeyEvent.VK_A));
+       	use_stop = new JMenuItem(new PeersUseAction(_this, _("No pull from it!"),addicon,_("Stop pulling from it."),_("Will not be used to synchronize."),KeyEvent.VK_A));
+       	use_start = new JMenuItem(new PeersUseAction(_this, _("Pull from it!"),addicon,_("Pull from it."),_("Will be used to synchronize."),KeyEvent.VK_A));
     	//
-       	block_stop = new JMenuItem(new PeersRowAction(this, _("Unblock!"),addicon,_("Stop blocking it."),_("Will not be blocked to synchronize."),KeyEvent.VK_A,  Peers.COMMAND_MENU_BLOCK));
-       	block_start = new JMenuItem(new PeersRowAction(this, _("Block!"),addicon,_("Block it."),_("Will be blocked to synchronize."),KeyEvent.VK_A,  Peers.COMMAND_MENU_BLOCK));
+       	block_stop = new JMenuItem(new PeersRowAction(_this, _("Unblock!"),addicon,_("Stop blocking it."),_("Will not be blocked to synchronize."),KeyEvent.VK_A,  Peers.COMMAND_MENU_BLOCK));
+       	block_start = new JMenuItem(new PeersRowAction(_this, _("Block!"),addicon,_("Block it."),_("Will be blocked to synchronize."),KeyEvent.VK_A,  Peers.COMMAND_MENU_BLOCK));
     	//
-    	filter_stop = new JMenuItem(new PeersFilterAction(this, _("UnFilter!"),addicon,_("Get anything."),_("Will ask for anything new."),KeyEvent.VK_F));
-    	filter_start = new JMenuItem(new PeersFilterAction(this, _("Filter!"),addicon,_("Request only specified orgs."),_("Will only ask for organizations marked as requested."),KeyEvent.VK_F));
+    	filter_stop = new JMenuItem(new PeersFilterAction(_this, _("UnFilter!"),addicon,_("Get anything."),_("Will ask for anything new."),KeyEvent.VK_F));
+    	filter_start = new JMenuItem(new PeersFilterAction(_this, _("Filter!"),addicon,_("Request only specified orgs."),_("Will only ask for organizations marked as requested."),KeyEvent.VK_F));
     	//
-    	serving_stop  = new JMenuItem(new PeersBroadcastAction(this, _("Stop Serving!"),addicon,_("Stop serving."),_("Will not be sent at synchronization."),KeyEvent.VK_B, false));
-    	serving_start = new JMenuItem(new PeersBroadcastAction(this, _("Serve!"),addicon,_("Serve it."),_("Will be sent at synchronize."),KeyEvent.VK_B, false));
+    	serving_stop  = new JMenuItem(new PeersBroadcastAction(_this, _("Stop Serving!"),addicon,_("Stop serving."),_("Will not be sent at synchronization."),KeyEvent.VK_B, false));
+    	serving_start = new JMenuItem(new PeersBroadcastAction(_this, _("Serve!"),addicon,_("Serve it."),_("Will be sent at synchronize."),KeyEvent.VK_B, false));
     	//
-    	serve_default = new JMenuItem(new PeersBroadcastAction(this, _("Peer-Defined Serve!"),addicon,_("Default serving."),_("Will let peer decide serving."),KeyEvent.VK_D, true));
+    	serve_default = new JMenuItem(new PeersBroadcastAction(_this, _("Peer-Defined Serve!"),addicon,_("Default serving."),_("Will let peer decide serving."),KeyEvent.VK_D, true));
     	//
-    	share_org = new JMenuItem(new PeersRowAction(this, _("Share Org!"), reseticon,_("Share Organization."),
+    	share_org = new JMenuItem(new PeersRowAction(_this, _("Share Org!"), reseticon,_("Share Organization."),
     			_("Share Organization!"),KeyEvent.VK_H, Peers.COMMAND_MENU_SHARE_ORG));
     	//
-    	myself_set = new JMenuItem(new PeersRowAction(this, _("Set as Myself!"), reseticon,_("Set this as myself peer."),
+    	myself_set = new JMenuItem(new PeersRowAction(_this, _("Set as Myself!"), reseticon,_("Set this as myself peer."),
     			_("Set as Myself!"),KeyEvent.VK_M, Peers.COMMAND_MENU_SET_MYSELF));
     	//
-    	name_set = new JMenuItem(new PeersRowAction(this, _("Set New Name!"), reseticon,_("Set New Name."),
+    	name_set = new JMenuItem(new PeersRowAction(_this, _("Set New Name!"), reseticon,_("Set New Name."),
     			_("Set New Name!"),KeyEvent.VK_N, Peers.COMMAND_MENU_SET_NAME));
     	//
-    	slogan_set = new JMenuItem(new PeersRowAction(this, _("Set Slogan!"), reseticon,_("Set New Slogan."),
+    	slogan_set = new JMenuItem(new PeersRowAction(_this, _("Set Slogan!"), reseticon,_("Set New Slogan."),
     			_("Set Slogan!"),KeyEvent.VK_M, Peers.COMMAND_MENU_SET_SLOGAN));
     	//
-    	emails_set = new JMenuItem(new PeersRowAction(this, _("Set Emails!"), reseticon,_("Set New Emails."),
+    	emails_set = new JMenuItem(new PeersRowAction(_this, _("Set Emails!"), reseticon,_("Set New Emails."),
     			_("Set Emails!"),KeyEvent.VK_E, Peers.COMMAND_MENU_SET_EMAILS));
     	//
-    	terms_set = new JMenuItem(new PeersRowAction(this, _("Set Terms"), reseticon,_("Set New Terms."),
+    	terms_set = new JMenuItem(new PeersRowAction(_this, _("Set Terms"), reseticon,_("Set New Terms."),
     			_("Set Terms"),KeyEvent.VK_M, Peers.COMMAND_MENU_SET_TERMS));
     	//
-    	export_SK = new JMenuItem(new PeersRowAction(this, _("Export Secret keys!"), reseticon,_("Export Secret keys."),
+    	export_SK = new JMenuItem(new PeersRowAction(_this, _("Export Secret keys!"), reseticon,_("Export Secret keys."),
     			_("Export Secret Keys!"),KeyEvent.VK_E, Peers.COMMAND_MENU_SAVE_SK));
     	//
-    	import_SK = new JMenuItem(new PeersRowAction(this, _("Import Secret keys!"), reseticon,_("Import Secret keys."),
+    	import_SK = new JMenuItem(new PeersRowAction(_this, _("Import Secret keys!"), reseticon,_("Import Secret keys."),
     			_("Import Secret Keys!"),KeyEvent.VK_E, Peers.COMMAND_MENU_LOAD_SK));
     	//
-    	reset_peer = new JMenuItem(new PeersResetAction(this, _("Reset!"), reseticon,_("Bring again all data from this."), _("Go restart!"),KeyEvent.VK_R));
+    	reset_peer = new JMenuItem(new PeersResetAction(_this, _("Reset!"), reseticon,_("Bring again all data from this."), _("Go restart!"),KeyEvent.VK_R));
     	//
-    	delete_row = new JMenuItem(new PeersDeleteAction(this, _("Delete!"), delicon,_("Delete all data about this."), _("Reget"),KeyEvent.VK_D));
+    	delete_row = new JMenuItem(new PeersDeleteAction(_this, _("Delete!"), delicon,_("Delete all data about this."), _("Reget"),KeyEvent.VK_D));
     	//
-    	wake_up = new JMenuItem(new PeersRowAction(this, _("Wake Up Communication!"), delicon,_("Wake Up Communication."),
+    	wake_up = new JMenuItem(new PeersRowAction(_this, _("Wake Up Communication!"), delicon,_("Wake Up Communication."),
     			_("Wake Up"),KeyEvent.VK_W, Peers.COMMAND_TOUCH_CLIENT));
     	//
     	// General actions
-    	myself_new = new JMenuItem(new PeersRowAction(this, _("New Myself!"), reseticon,_("Create new myself peer."),
+    	myself_new = new JMenuItem(new PeersRowAction(_this, _("New Myself!"), reseticon,_("Create new myself peer."),
     			_("New Myself!"),KeyEvent.VK_N, Peers.COMMAND_MENU_NEW_MYSELF));
        	
     	// General refresh plugins
-    	refresh_plugins = new JMenuItem(new PeersRowAction(this, _("RefreshPlugins!"), reseticon,_("Refresh installed Plugins."),
+    	refresh_plugins = new JMenuItem(new PeersRowAction(_this, _("RefreshPlugins!"), reseticon,_("Refresh installed Plugins."),
     			_("Refresh Plugins!"),KeyEvent.VK_P, Peers.COMMAND_MENU_NEW_PLUGINS));
        	
     	// General refresh plugins
-    	refresh_model = new JMenuItem(new PeersRowAction(this, _("RefreshModel!"), reseticon,_("Refresh Model."),
+    	refresh_model = new JMenuItem(new PeersRowAction(_this, _("RefreshModel!"), reseticon,_("Refresh Model."),
     			_("Refresh Model!"),KeyEvent.VK_R, Peers.COMMAND_REFRESH_VIEWS));
+    	Peers.popup_inited = true;
+		synchronized(Peers.popup_monitor){
+			Peers.popup_monitor.notifyAll();
+		}
 	}
 
 	JMenuItem setRow(JMenuItem item, Integer row){
@@ -633,15 +721,27 @@ public class Peers extends JTable implements MouseListener {
 	
 	JPopupMenu getPopup(int model_row, int col){
     	
+		synchronized(Peers.popup_monitor){
+			while(!Peers.popup_inited){
+				try {
+					Peers.popup_monitor.wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
     	JPopupMenu popup = new JPopupMenu();
     	Integer _model_row = new Integer(model_row);
+    	JMenuItem i;
 
     	//
     	popup.add(setRow(this.refresh,_model_row));
        	
        	if(model_row<0) {
         	//
-        	popup.add(setRow(this.myself_new,_model_row));      		
+        	popup.add(i = setRow(this.myself_new,_model_row));
+        	i.setIcon(icon_register);
        		return popup;
        	}
        	
@@ -676,7 +776,8 @@ public class Peers extends JTable implements MouseListener {
     	//
     	popup.addSeparator();
     	//
-    	popup.add(setRow(this.share_org,_model_row));
+    	popup.add(i=setRow(this.share_org,_model_row));
+    	i.setIcon(icon_org);
     	//
     	popup.add(setRow(this.terms_set,_model_row));
     	//
@@ -705,7 +806,8 @@ public class Peers extends JTable implements MouseListener {
     	//
     	//
     	popup.add(setRow(this.name_set,_model_row));
-    	popup.add(setRow(this.myself_new,_model_row));
+    	popup.add(i=setRow(this.myself_new,_model_row));
+    	i.setIcon(icon_register);
 
     	// General actions
     	// General refresh plugins
@@ -804,37 +906,58 @@ public class Peers extends JTable implements MouseListener {
 	class DispatchPeer extends Thread{
 		Peers peers;
 		int model_row;
-		public DispatchPeer(Peers peers, int model_row) {
+		private boolean me;
+		private boolean selected;
+		private D_PeerAddress peer;
+		public DispatchPeer(Peers peers, int model_row, boolean me, boolean selected) {
 			this.peers = peers;
 			this.model_row = model_row;
+			this.me = me;
+			this.selected = selected;
+			this.peer = null;
+		}
+		public DispatchPeer(D_PeerAddress peer, boolean me, boolean selected) {
+			this.peer = peer;
+			this.me = me;
+			this.selected = selected;
 		}
 
 		public void run(){
-			if(DEBUG) System.out.println("DispatchPeer:run:start");
-			PeersModel model = peers.getModel();
-			long id =-1;
-			D_PeerAddress peer = null;
 			String my_peer_name = null;
-			if(model_row>=0){
-				id = Util.lval(model.getID(model_row), -1);
-			
-				try {
-					peer = new D_PeerAddress(id, false, true, true);
-				} catch (P2PDDSQLException e1) {
-					e1.printStackTrace();
-					return;
+			if(DEBUG) System.out.println("DispatchPeer:run:start");
+			if(peer == null){
+				PeersModel model = peers.getModel();
+				long id =-1;
+				if(model_row>=0){
+					id = Util.lval(model.getID(model_row), -1);
+				
+					try {
+						peer = new D_PeerAddress(id, false, true, true);
+					} catch (P2PDDSQLException e1) {
+						e1.printStackTrace();
+						return;
+					}
+					my_peer_name = Util.getString(model.getValueAt(model_row, PeersModel.TABLE_COL_NAME));
+					if(_DEBUG) System.out.println("DispatchPeer:run: dispatch="+my_peer_name);
 				}
-				my_peer_name = Util.getString(model.getValueAt(model_row, PeersModel.TABLE_COL_NAME));
+			}else{
+				my_peer_name = peer.component_basic_data.name;
 			}
-			if(DEBUG) System.out.println("DispatchPeer:run:listeners=#"+listeners.size());
+			if(_DEBUG) System.out.println("DispatchPeer:run:listeners=#"+listeners.size());
 			for(PeerListener l : listeners) {
-				try{l.update(peer, my_peer_name);}catch(Exception e){e.printStackTrace();}
+				if(_DEBUG) System.out.println("DispatchPeer:run:listener="+l);
+				try{l.update_peer(peer, my_peer_name, me, selected);}catch(Exception e){e.printStackTrace();}
 			}
 		}
 		
 	}
-	void dispatchToListeners(int model_row){
-		new DispatchPeer(this, model_row).start();
+	public void fireListener(D_PeerAddress peer, boolean me, boolean selected){
+		for(PeerListener l : listeners) {
+			try{l.update_peer(peer, peer.component_basic_data.name, me, selected);}catch(Exception _e){_e.printStackTrace();}
+		}
+	}
+	void dispatchToListeners(int model_row, boolean me, boolean selected){
+		new DispatchPeer(this, model_row, me, selected).start();
 	}
 //	void updateTerms(int model_row){
 //		if(model_row!=-1){
@@ -865,14 +988,14 @@ public class Peers extends JTable implements MouseListener {
     			return;
     		}else{
     			if(DEBUG) System.out.println("Peer:jtableMouseRelease: press");
-    	        dispatchToListeners(model_row);
+    	        dispatchToListeners(model_row, false, true);
     			return;
     		}
     	}
     	JPopupMenu popup = getPopup(model_row,col);
     	if(popup != null)
     		popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
-        dispatchToListeners(model_row);
+        dispatchToListeners(model_row, false, true);
 		if(DEBUG) System.out.println("Peer:jtabkeMouseRelease: end");
    }
 	public static String getPeerID(String global_peer_ID) throws P2PDDSQLException {
@@ -899,10 +1022,14 @@ public class Peers extends JTable implements MouseListener {
 			return;
 		}
 		pinfo.put(_global_peer_ID, plugins);
-		int row;
-		row = this.getModel().getRowForPeerID(_peer_ID);
-		for (int col = PeersModel.TABLE_COL_PLUGINS; col < this.getModel().getColumnCount(); col++) {
-			this.tableChanged(new TableModelEvent(this.getModel(), row, row, col, col));
+		this.getModel().updates_requested = true;
+		if(this.getModel().automatic_refresh) {
+			int row;
+			row = this.getModel().getRowForPeerID(_peer_ID);
+			for (int col = PeersModel.TABLE_COL_PLUGINS; col < this.getModel().getColumnCount(); col++) {
+				this.tableChanged(new TableModelEvent(this.getModel(), row, row, col, col));
+			}
+			this.initColumnSizes();
 		}
 	}
 	static Hashtable<String,ASNPluginInfo[]> pinfo = new Hashtable<String,ASNPluginInfo[]>();
@@ -913,6 +1040,18 @@ public class Peers extends JTable implements MouseListener {
 	}
 	public void removeListener(PeerListener l) {
 		listeners.remove(l);
+	}
+	@Override
+	public void update_peer(D_PeerAddress peer, String my_peer_name,
+			boolean me, boolean selected) {
+		if(!selected) return;
+		if(peer==null) return;
+		int model_row = getModel().getRowForPeerID(peer.peer_ID);
+		if(model_row<0) return;
+		int view_row = this.convertRowIndexToView(model_row);
+		this.setRowSelectionInterval(view_row, view_row);
+		
+		this.fireListener(peer, false, selected);
 	}
 }
 @SuppressWarnings("serial")
@@ -1137,7 +1276,9 @@ class PeersRowAction extends DebateDecideAction {
 			break;
 		case Peers.COMMAND_MENU_SHARE_ORG:
 			String peer_ID = model.getID(row);
-			String org_ID = Application.peers.privateOrgPanel.get_organizationID();
+			String org_ID = null;
+			if((Application.peers!=null)&&(Application.peers.privateOrgPanel!=null))
+				org_ID = Application.peers.privateOrgPanel.get_organizationID();
 			if(org_ID == null){
 				Application.warning(_("No Organization selected"), _("Failure Adding Peer"));
 				break;
@@ -1261,6 +1402,12 @@ class PeersRowAction extends DebateDecideAction {
     		//
     		try {
 				D_PeerAddress.createMyPeerID();
+				D_PeerAddress peer = D_PeerAddress.get_myself(null);
+				if((peer!=null)&&(peer.component_basic_data!=null))
+					tree.fireListener(peer, true, false);
+//					for(PeerListener l : tree.listeners) {
+//						try{l.update_peer(peer, peer.component_basic_data.name, true, false);}catch(Exception _e){_e.printStackTrace();}
+//					}
 			} catch (P2PDDSQLException e2) {
 				e2.printStackTrace();
 			}
@@ -1281,6 +1428,12 @@ class PeersRowAction extends DebateDecideAction {
     		peerID = Util.getString(model.getPeers().get(row).get(0));
     		try {
 				D_PeerAddress.setMyself(peerID);
+				D_PeerAddress peer = new D_PeerAddress(Util.lval(peerID));
+				if((peer!=null)&&(peer.component_basic_data!=null))
+					tree.fireListener(peer, true, false);
+//					for(PeerListener l : tree.listeners) {
+//						try{l.update_peer(peer, peer.component_basic_data.name, true, false);}catch(Exception _e){_e.printStackTrace();}
+//					}
 			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 				Application.warning(_("Failure to set new ID:")+"\n"+e1.getLocalizedMessage(), _("Failure in message!"));
@@ -1393,6 +1546,7 @@ class ColorRenderer extends JLabel implements TableCellRenderer {
  */
 @SuppressWarnings("serial")
 class PeersModel extends AbstractTableModel implements TableModel, DBListener {
+	public boolean automatic_refresh = false;
 	static final int COL_NAT = 3;
 	static final int COL_UDP_ON = 5;
 	static final int COL_TCP_ON = 6;
@@ -1488,7 +1642,31 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	//String _ld[];  //-
 	ArrayList<ArrayList<Object>> __peers;
 	
-	String columnNames[]={"Peer Data","V","Serving","Connection","B","H","S","T","R","Email","V","Categ","Slogan","Provider","LastSync","Pluggins"};
+	String columnNames[]={_("Peer Name"),"V","Serving",
+			"Connection","B","H","S","T","R","Email","V","Categ","Slogan","Provider","LastSync","Pluggins"};
+	protected String[] columnToolTips = {
+			_("The name declared by the peer!")
+			,_("Have you verified personally this peer name?")
+			,_("The set of organizations advertised by this peer!")
+			,_("Turn on (green) if the last connection attempt was successfull!")
+			,_("Is this peer blocked?")
+			,_("Hide this peer in this widget?")
+			,_("Is this peer information signed (validly)?")
+			,_("Is this peer data temporary (under editing)?")
+			,_("Is the key of this peer revoked?")
+			,_("List of email addresses declared by this peer, separated by comma!")
+			,_("Have you verified that these email addresses correspond to the user (in my_name)?")
+			,_("Category for classification!")
+			,_("A slogan provided by this peer!")
+			,_("The peer from which you received the data leading to the creation of this item!")
+			,_("The date in his database up to which you are synchronized with this peer!")
+			,_("Pluggins installed on your system!")
+			// Key Certified by a trusted authority (X509 certificate present)
+			// preferences date
+			// arrival date
+			// date of the last connection/answer from this peer
+			// number of instances recently connected
+			};
 	Hashtable<Integer,String> columnNamesHash=new Hashtable<Integer,String>();
 	int plugin_applets = 0;
 	int columns = columnNames.length-1 + plugin_applets;
@@ -1644,10 +1822,18 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	}
 	PeersModel(DBInterface _db) {
 		db = _db;
-		
+		if(DEBUG) System.out.println("PeersModel:will connectWidget");
+		connectWidget();
+		if(DEBUG) System.out.println("PeersModel:did connectWidget");
+		__update(null, null);
+		if(DEBUG) System.out.println("PeersModel:did update");
+	}
+	public void connectWidget(){
 		db.addListener(this, new ArrayList<String>(Arrays.asList(table.peer.TNAME, table.peer_address.TNAME, table.peer_my_data.TNAME, table.peer_org.TNAME)),
 				DBSelector.getHashTable(table.peer.TNAME, table.peer.used, "0"));
-		__update(null, null);
+	}
+	public void disconnectWidget(){
+		db.delListener(this);
 	}
 	@Override
 	public int getColumnCount() {
@@ -1673,6 +1859,42 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		}
 		if(DEBUG) System.out.println("PeersModel:getColumnName: col Header["+col+"]="+result);
 		return result;
+	}
+	public Icon getIcon(int column) {
+		if(column == TABLE_COL_HIDDEN){ 
+			return DDIcons.getHideImageIcon("Hidden");
+		}
+		if(column == TABLE_COL_TEMP){ 
+			return DDIcons.getTmpImageIcon("TMP");
+		}
+//		if(column == PeersModel.GID){ 
+//			return DDIcons.getGIDImageIcon("GID");
+//		}
+		if(column == PeersModel.TABLE_COL_CONNECTION){ 
+			return DDIcons.getConnectedImageIcon("Connected");
+		}
+		if(column == PeersModel.TABLE_COL_BLOCKED){ 
+			return DDIcons.getBlockImageIcon("Block");
+		}
+		if(column == PeersModel.TABLE_COL_SERVING){ 
+			return DDIcons.getOrgImageIcon("Serving");
+		}
+		if(column == PeersModel.TABLE_COL_SLOGAN){ 
+			return DDIcons.getNewsImageIcon("Serving");
+		}
+		if(column == PeersModel.TABLE_COL_VALID){ 
+			return DDIcons.getSignedImageIcon("Signed");
+		}
+		if(column == PeersModel.TABLE_COL_VERIF_EMAIL){ 
+			return DDIcons.getVerifImageIcon("Signed");
+		}
+		if(column == PeersModel.TABLE_COL_VERIF_NAME){ 
+			return DDIcons.getVerifImageIcon("Signed");
+		}
+		if(column == PeersModel.TABLE_COL_REVOKED){ 
+			return DDIcons.getRevokedImageIcon("Revoked");
+		}
+		return null;
 	}
 	private String getPluginGIDcol(int col) {
 		int plugin_col = col - columnNames.length+1;
@@ -1965,6 +2187,9 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	public void update(ArrayList<String> a_table, Hashtable<String,DBInfo> info) {
 		if(DEBUG) System.out.println("Peers:update:peers start");
 		updates_requested = true;
+		if(automatic_refresh){
+			__update(a_table, info);
+		}
 	}
 	public void __update(ArrayList<String> a_table, Hashtable<String,DBInfo> info) {
 		if(DEBUG) System.out.println("Peers:update:peers start");
@@ -1975,7 +2200,9 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 					" LEFT JOIN "+table.peer_my_data.TNAME+" AS m ON(p."+table.peer.peer_ID+"=m."+table.peer_my_data.peer_ID+") "+ 
 					" ORDER BY "+ table.peer.used+" DESC, "+table.peer.last_sync_date+" DESC; ";
 			String[] params = new String[0];
+			if(DEBUG) System.out.println("PeersModel:update: will select");
 			_peers = Application.db.select(sql, params, DEBUG);
+			if(DEBUG) System.out.println("PeersModel:update: did select");
 /*			
 			if(ld!=null) {
 				_ld=ld.split(DD.APP_LISTING_DIRECTORIES_SEP);

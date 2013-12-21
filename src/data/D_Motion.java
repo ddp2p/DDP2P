@@ -87,6 +87,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 	public String enhanced_motionID;
 	public String organization_ID;
 	public Calendar arrival_date;
+	public Calendar preferences_date;
 	public boolean requested = false;
 	public boolean blocked = false;
 	public boolean broadcasted = D_Organization.DEFAULT_BROADCASTED_ORG;
@@ -186,6 +187,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 		status = Util.ival(Util.getString(o.get(table.motion.M_STATUS)), DEFAULT_STATUS);
 		creation_date = Util.getCalendar(Util.getString(o.get(table.motion.M_CREATION)));
 		arrival_date = Util.getCalendar(Util.getString(o.get(table.motion.M_ARRIVAL)));
+		preferences_date = Util.getCalendar(Util.getString(o.get(table.motion.M_PREFERENCES_DATE)));
 		signature = Util.byteSignatureFromString(Util.getString(o.get(table.motion.M_SIGNATURE)));
 		motionID = Util.getString(o.get(table.motion.M_MOTION_ID));
 		constituent_ID = Util.getString(o.get(table.motion.M_CONSTITUENT_ID));
@@ -564,7 +566,8 @@ public class D_Motion extends ASNObj implements util.Summary{
 		params[table.motion.M_CHOICES] = D_OrgConcepts.stringFromStringArray(D_MotionChoice.getNames(this.choices));
 		params[table.motion.M_SIGNATURE] = Util.stringSignatureFromByte(signature);
 		params[table.motion.M_CREATION] = Encoder.getGeneralizedTime(this.creation_date);
-		params[table.motion.M_ARRIVAL] = Encoder.getGeneralizedTime(arrival_date);
+		params[table.motion.M_ARRIVAL] = Encoder.getGeneralizedTime(this.arrival_date = arrival_date);
+		params[table.motion.M_PREFERENCES_DATE] = Encoder.getGeneralizedTime(this.preferences_date);
 		params[table.motion.M_CATEGORY] = this.category;
 		params[table.motion.M_BLOCKED] = Util.bool2StringInt(blocked);
 		params[table.motion.M_HIDDEN] = Util.bool2StringInt(hidden);
@@ -729,7 +732,7 @@ public class D_Motion extends ASNObj implements util.Summary{
 		this.global_constituent_ID = null;
 		this.motion_title.title_document.setDocumentString(_("Enhancement Of:")+" "+this.motion_title.title_document.getDocumentUTFString());
 		this.motion_text.setDocumentString(_("Enhancement Of:")+" \n"+this.motion_text.getDocumentUTFString());
-		this.creation_date = this.arrival_date = Util.CalendargetInstance();
+		this.creation_date = this.preferences_date = this.arrival_date = Util.CalendargetInstance();
 		this.requested = this.blocked = false;
 		this.broadcasted = true;		
 	}
@@ -830,6 +833,11 @@ public class D_Motion extends ASNObj implements util.Summary{
 		catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	public boolean readyToSend() {
+		if(this.global_motionID == null) return false;
+		if(this.global_organization_ID == null) return false;
+		return true;
 	}
 
 }

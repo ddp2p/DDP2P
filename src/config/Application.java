@@ -28,10 +28,9 @@ import java.util.regex.Pattern;
 import javax.swing.Icon;
 import javax.swing.JOptionPane;
 
+
 //import registration.RegistrationServer;
 import simulator.Fill_database;
-
-
 import util.DBInterface;
 import util.Util;
 import widgets.constituent.ConstituentsPanel;
@@ -65,6 +64,20 @@ public class Application{
 	//public static String my_global_peer_ID;
 	//public static String my_peer_name;
 	//public static String my_peer_slogan;
+
+
+	//public static WLAN_widget wlan=null;
+	public static ActionListener appObject;
+	public static Orgs orgs;
+	public static Fill_database g_Simulator;
+	public static ConstituentsPanel constituents;
+	//public static RegistrationServer rs; // Song's server
+	public static ControlPane controlPane;
+	public static DirectoriesData directoriesData;
+	public static PeerContacts peer_contacts;
+	public static UpdatesPanel panelUpdates;
+	public static String DB_PATH = null;
+
 	
 	public static final String SCRIPTS_RELATIVE_PATH="scripts";
 	public static final String SCRIPT_LINUX_SUID_DISCONNECT_ADHOC = "script_linux_suid_disconnect_adhoc";
@@ -172,16 +185,20 @@ public class Application{
 		}
 		CURRENT_SCRIPTS_BASE_DIR = dir;
 	}
+	static boolean CURRENT_SCRIPTS_BASE_DIR_WARNING = true;
 	/**
 	 * This returns the path with an added separator at the end
 	 * @return
 	 */
 	public static String CURRENT_SCRIPTS_BASE_DIR(){
 		if(CURRENT_SCRIPTS_BASE_DIR==null) Util.printCallPath("No path");
-		if(CURRENT_SCRIPTS_BASE_DIR==null) Application.warning(_("No path set for scripts"), _("No path set!"));
-		if(CURRENT_SCRIPTS_BASE_DIR==null) return "";
+		if(CURRENT_SCRIPTS_BASE_DIR_WARNING && (CURRENT_SCRIPTS_BASE_DIR==null)){
+			CURRENT_SCRIPTS_BASE_DIR_WARNING = false;
+			Application.warning(_("No path set for scripts, using \"scripts\""), _("No path set!"));
+		}
+		if(CURRENT_SCRIPTS_BASE_DIR==null) return SCRIPTS_RELATIVE_PATH + Application.OS_PATH_SEPARATOR;
 		File crt = new File(CURRENT_SCRIPTS_BASE_DIR);
-		if(!crt.exists() || !crt.isDirectory()) return "";
+		if(!crt.exists() || !crt.isDirectory()) return ""+SCRIPTS_RELATIVE_PATH + Application.OS_PATH_SEPARATOR;
 		if(!CURRENT_SCRIPTS_BASE_DIR.endsWith(Application.OS_PATH_SEPARATOR))
 			CURRENT_SCRIPTS_BASE_DIR = CURRENT_SCRIPTS_BASE_DIR + Application.OS_PATH_SEPARATOR;
 		return CURRENT_SCRIPTS_BASE_DIR;//+Application.OS_PATH_SEPARATOR;
@@ -202,6 +219,9 @@ public class Application{
 	//public static final String SCRIPT_LINUX_DETECT_WIRELESS_ESSID = "SCRIPT_LINUX_DETECT_WIRELESS_ESSID.sh";
 	public static final String SCRIPT_LINUX_DETECT_WIRELESS_IP = "SCRIPT_LINUX_DETECT_WIRELESS_IP.sh";
 	public static final String SCRIPT_MACOS_WLAN_GETINFO = "SCRIPT_MACOS_WLAN_GETINFO.sh";
+	public static final String SCRIPT_MACOS_WLAN_GET_WIFI_INTERFACES = "SCRIPT_MACOS_WLAN_GET_WIFI_INTERFACES.sh";
+	public static final String SCRIPT_MACOS_WLAN_GET_WIFI_INTERFACE = "SCRIPT_MACOS_WLAN_GET_WIFI_INTERFACE.sh";
+
 	public static final String UPDATES_UNIX_SCRIPT_EXTENSION = ".sh";
 	public static final String UPDATES_WIN_SCRIPT_EXTENSION = ".bat";
 	public static final String LATEST = "LATEST";
@@ -214,18 +234,6 @@ public class Application{
 	public static final String LINUX_PATH_SEPARATOR = "/";
 	public static final String WINDOWS_PATH_SEPARATOR = "\\";
 	public static final String MISSING_ICON = "missing_icon_22.png";
-
-	public static WLAN_widget wlan=null;
-	public static ActionListener appObject;
-	public static Orgs orgs;
-	public static Fill_database g_Simulator;
-	public static ConstituentsPanel constituents;
-	//public static RegistrationServer rs; // Song's server
-	public static ControlPane controlPane;
-	public static DirectoriesData directoriesData;
-	public static PeerContacts peer_contacts;
-	public static UpdatesPanel panelUpdates;
-	public static String DB_PATH = null;
 	
 	public static void warning(String war, String title){
 		JOptionPane.showMessageDialog(JFrameDropCatch.mframe,

@@ -27,6 +27,7 @@ public class organization {
      public static final String name = "name"; //name of this organization
      public static final String creator_ID = "creator_ID"; //peer
 	 public static final String certification_methods = "certification_methods";
+	 public static final String preapproved = "preapproved";
 	 public static final String hash_org_alg = "hash_org_alg";
 	 //public static final String hash_org = "hash_org";
 	 public static final String category = "category";
@@ -55,20 +56,22 @@ public class organization {
 	 public static final String broadcasted = "broadcasted";  // send data for this
 	 public static final String specific_requests = "specific_requests";
 	 public static final String broadcast_rule = "broadcast_rule";  // send data for this
-	 public static final String TNAME = "organization";
-	public static final String org_list = " "+util.Util.trimInterFieldSpaces(
+	 public static final String preferences_date = "preferences_date";
+	 public static final String TNAME = "organization";	
+	 public static final String org_list = " "+util.Util.trimInterFieldSpaces(
 			global_organization_ID+","+name+","+              organization_ID+","+name_organization+","+        name_forum+"," +
 			name_motion+","+           name_justification+","+languages+","+      instructions_registration+","+instructions_new_motions+"," +
 			default_scoring_options+","+category+","+         certification_methods+","+hash_org_alg+","+       creation_date+","+  
 			certificate+","+      crl+","+                  crl_date+","+           arrival_date+"," +        motions_excluding+","+      
 			plugins_excluding+","+description+","+ 			creator_ID+","+ 	    global_organization_ID_hash+"," +signature+","+				
 			requested+","+		  blocked+","+		  		broadcasted+","+			specific_requests+","	+reset_date+","+
-			signature_initiator+","+broadcast_rule)+" ";
+			signature_initiator+","+broadcast_rule+","+     preapproved+","+            preferences_date)+" ";
 	//hash_org+"," +
 	public static final int _GRASSROOT = 0;
 	public static final int _AUTHORITARIAN = 1;
 	public static final int _EXPRESSION = 2;
 
+	public static final String SEP_PREAPPROVED = ",";
 	public static final String ORG_HASH_BYTE_SEP = " ";
 	//public static final String ORG_SCORE_SEP = ";";
 	public static final String ORG_LANG_SEP = ";";
@@ -108,5 +111,7 @@ public class organization {
 	public static final int ORG_COL_RESET_DATE = 29;
 	public static final int ORG_COL_SIGN_INITIATOR = 30;
 	public static final int ORG_COL_BROADCAST_RULE = 31;
+	public static final int ORG_COL_PREAPPROVED = 32;
+	public static final int ORG_COL_PREFERENCES_DATE = 13;
 	public static final int ORG_COL_FIELDS = org_list.split(",").length;
 }
