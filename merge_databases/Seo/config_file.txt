@@ -1,0 +1,159 @@
+
+#table name
+application:
+;#pseudo
+;#key
+;#date
+;#globs
+;#date
+;#pref
+field,value;#instance_data.
+
+key:
+key_ID;
+public_key;
+;  # no date
+public_key, secret_key, ID_hash, type;
+preferences_date, type;
+preferences_date,type.
+
+constituent_verification:
+;
+constituent_ID->global_constituent_ID_hash;
+;
+constituent_ID(constituent.constituent_ID);
+date;
+date,challenge.
+
+directory_forwarding_terms:
+term_ID;
+dir_addr;
+;
+;
+preference_date;
+preference_date,priority,topic,ad,plaintext,payment,payment_amount,peer_ID(peer.peer_ID),dir_addr,service,priority_type.
+
+
+plugin:
+plugin_ID;
+global_plugin_ID;
+creation_date;
+global_plugin_ID, plugin_info;
+;
+;
+arrival_date.
+
+peer(peer_address.peer_ID, peer_org.peer_ID,peer_plugin.peer_ID): # on update delete dependants from peer_address, joind by peer_ID on this pseudokey
+peer_ID; # pseudokey
+global_peer_ID_hash; #GID_key_fields
+creation_date, signature;  # GID_date_fields
+global_peer_ID_hash, creation_date,signature, global_peer_ID, name, broadcastable, slogan, hash_alg, version, picture, emails, phones, urls, plugin_info, revoked, revokation_instructions, revokation_replacement_GIDhash;  # GID_fields
+preferences_date, creation_date; # local_date
+used, blocked, hidden, exp_avg, experience, filtered, email_verified, name_verified, category; # peer preferences
+last_sync_date, last_reset, plugins_msg, arrival_date, first_provider_peer. # instance preferences
+
+peer_instance:
+peer_instance_ID;
+peer_instance, peer_ID->global_peer_ID_hash;
+signature_date, signature;
+peer_instance, peer_ID(peer.peer_ID), plugin_info, signature_date, signature;
+;#no local fields date
+;#no local fields
+last_sync_date, last_reset, last_contact_date.
+
+peer_address:
+peer_address_ID;
+address,type,peer_ID->global_peer_ID_hash;
+peer_ID->creation_date;
+peer_ID(peer.peer_ID),address,type,certified,priority;
+;
+my_last_connection,arrival_date.
+
+peer_my_data:
+;#no pseudokey->ROW
+peer_ID->global_peer_ID_hash;
+; # no GID_date
+;# peer_ID(peer.peer_ID); # no GID_fields
+peer_ID->preferences_date, peer_ID->type ;#preferences date
+peer_ID(peer.peer_ID), name, slogan, broadcastable,picture,my_topic; #local fields
+;#agent fields.
+
+peer_plugin:
+peer_plugin_ID;
+peer_ID->global_peer_ID_hash, peer_instance_ID->peer_instance;
+peer_ID->creation_date;
+peer_ID(peer.peer_ID), peer_instance_ID(peer_instance.peer_instance_ID),plugin_ID(plugin.plugin_ID);
+; ; .
+
+plugin_local_storage:
+; ; ; ; ; ;
+plugin_ID,data,plugin_key.
+
+organization:
+organization_ID;
+global_organization_ID_hash;
+creation_date;
+name,creation_date,creator_ID(peer.peer_ID),global_organization_ID_hash,global_organization_ID,
+description,certification_methods,category,certificate,signature,signature_initiator,broadcast_rule,
+default_scoring_options,instructions_new_motions,instructions_registration,languages,name_forum,
+name_justification,name_motion,name_organization,revoked;
+preferences_date, creation_date;
+preferences_date,blocked,requested,broadcasted,hidden,reset_date;
+crl,crl_date,hash_org_alg,hash_org,hash_orgID,specific_requests,peer_source_ID,arrival_date,motions_excluding,plugins_excluding.
+
+my_organization_data:
+;
+organization_ID->global_organization_ID_hash;
+;
+;
+organization_ID->preference_date;
+organization_ID(organization.organization_ID),name,creator,category;
+data_to_request.
+
+org_distribution:
+peer_distribution_ID;
+peer_ID->global_peer_ID_hash,organization_ID->global_organization_ID_hash;
+;
+;
+arrival_date;
+peer_ID(peer.peer_ID),organization(organization.organization_ID),distribute,arrival_date;
+reset_date.
+
+peer_org:
+peer_org_ID;
+peer_ID->global_peer_ID_hash;
+peer_ID->creation_date;
+peer_ID(peer.peer_ID), organization_ID(organization.organization_ID), served;
+;
+;
+last_sync_date.
+
+
+updates:
+updates_ID; # pseudokey
+mirror_key;
+creation_date;
+creation_date, mirror_key, original_mirror_name, url, signature; #global fields
+preferences_date, creation_date;
+preferences_date, used, my_name_for_mirror; # preferences
+last_contact_date, last_version, last_releaseQD,  activity, tester_info.
+ 
+updates_keys(tester.public_key):
+updates_keys_ID; # pseudokey
+public_key;
+creation_date;
+original_tester_name, public_key, public_key_hash;
+preferences_date, creation_date;
+my_name_for_tester, trusted_as_mirror, trusted_as_tester, trust_weight, reference_tester;
+.
+#,expected_test_thresholds; #local fields
+ 
+tester(updates_keys.public_key):
+tester_ID; # pseudokey
+public_key;
+creation_date;
+name, public_key, email, url, revoked, description, creation_date,signature; #local fields
+;
+;
+;
+.
