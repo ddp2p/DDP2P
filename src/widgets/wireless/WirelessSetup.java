@@ -428,9 +428,9 @@ public class WirelessSetup {
 			DD.setAppText(DD.APP_WINDOWS_INSTALLATION_ROOT_PATH, _win_parent);
 			System.out.println("Saved in application field="+DD.APP_WINDOWS_INSTALLATION_PATH+" value=\""+args[1]+"\"\nparent: \""+_win_parent+"\"");
 
-			StartUpThread.detect_OS_fill_var();
-			StartUpThread.fill_OS_install_path(); // to be done before importing!!!
-			StartUpThread.fill_OS_scripts_path();		
+			StartUpThread.detect_OS_and_store_in_DD_OS_var();
+			StartUpThread.fill_install_paths_all_OSs_from_DB(); // to be done before importing!!!
+			StartUpThread.switch_install_paths_to_ones_for_current_OS();		
 		
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();

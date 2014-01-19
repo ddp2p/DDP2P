@@ -48,6 +48,7 @@ import widgets.components.TableUpdater;
 import widgets.instance.KeysCustomAction;
 import widgets.instance.KeysModel;
 
+@Deprecated
 @SuppressWarnings("serial")
 public class Instance extends JTable implements MouseListener {
 	private static final boolean DEBUG = false;
@@ -60,7 +61,7 @@ public class Instance extends JTable implements MouseListener {
 		if(DEBUG) System.out.println("Orgs: constr from db");
 		init();
 	}
-	public JScrollPane getScrollPane(){
+	public JScrollPane getScrollPane() {
         JScrollPane scrollPane = new JScrollPane(this);
 		this.setFillsViewportHeight(true);
 		//this.setMinimumSize(new Dimension(400,200));
@@ -76,7 +77,7 @@ public class Instance extends JTable implements MouseListener {
 			return jp;
 	}
 
-	void init(){
+	void init() {
 		getModel().setTable(this);
 		addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
@@ -137,12 +138,12 @@ public class Instance extends JTable implements MouseListener {
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
 	JPopupMenu getPopup(int row, int col){
-		JMenuItem menuItem;
+		//JMenuItem menuItem;
     	ImageIcon addicon = DDIcons.getAddImageIcon(_("add an item")); 
     	ImageIcon delicon = DDIcons.getDelImageIcon(_("delete an item")); 
-    	ImageIcon reseticon = DDIcons.getResImageIcon(_("reset item"));
+    	//ImageIcon reseticon = DDIcons.getResImageIcon(_("reset item"));
     	JPopupMenu popup = new JPopupMenu();
-    	KeysModel model = getModel();
+    	//KeysModel model = getModel();
     	KeysCustomAction cAction;
     	
     	cAction = new KeysCustomAction(this, _("Refresh!"), addicon,_("Refresh."), _("Refresh"),KeyEvent.VK_R, KeysCustomAction.C_REFRESH);
@@ -157,7 +158,7 @@ public class Instance extends JTable implements MouseListener {
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
     	
-    	if(row>=0){
+    	if (row>=0) {
 	    	popup.addSeparator();
 
 	    	
@@ -167,7 +168,7 @@ public class Instance extends JTable implements MouseListener {
     	}
     	return popup;
 	}
-	public KeysModel getModel(){
+	public KeysModel getModel() {
 		return (KeysModel) super.getModel();
 	}
 	void initColumnSizes() {

@@ -53,6 +53,7 @@ import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
 import config.Identity;
+import config.ThreadsAccounting;
 import data.D_PeerAddress;
 import data.D_PluginInfo;
 
@@ -76,7 +77,17 @@ class ServerThread extends Thread {
 		//this.peer_ID = _peer_ID;
 		name=cnt+""; cnt++;
 	}
-	public void run(){
+	public void run() {
+		this.setName("TCP Server Thread: "+name);
+		ThreadsAccounting.registerThread();
+		try {
+			_run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		ThreadsAccounting.unregisterThread();
+	}
+	public void _run(){
 		DD.ed.fireServerUpdate(new CommEvent(this, null, s.getRemoteSocketAddress(), "LOCAL", "Server Thread starting"));
 		byte sr[] = new byte[MAX_SR];
 		if(DEBUG) out.println("server thread: Started");
@@ -186,6 +197,8 @@ class ThreadAskPull extends Thread{
 		this.caller = caller;
 	}
 	public void run() {
+		this.setName("TCP Server ASK-Pull /new peer");
+		ThreadsAccounting.registerThread();
 		try {
 			_run();
 			if(pa.component_preferences.blocked) return;
@@ -197,6 +210,7 @@ class ThreadAskPull extends Thread{
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
+		ThreadsAccounting.unregisterThread();
 	}
 	public void _run() throws P2PDDSQLException{
 		int i = 2;
@@ -403,6 +417,7 @@ public class Server extends Thread {
 		try_connect(PORT);
 		Identity peer_ID = new Identity();
 		peer_ID.globalID = Identity.current_peer_ID.globalID;
+		peer_ID.instance = Identity.current_peer_ID.instance;
 		peer_ID.name = Identity.current_peer_ID.name;
 		peer_ID.slogan = Identity.current_peer_ID.slogan;
 		set_my_peer_ID_TCP(peer_ID);
@@ -412,6 +427,7 @@ public class Server extends Thread {
 		try_connect(port);
 		Identity peer_ID = new Identity();
 		peer_ID.globalID = Identity.current_peer_ID.globalID;
+		peer_ID.instance = Identity.current_peer_ID.instance;
 		peer_ID.name = Identity.current_peer_ID.name;
 		peer_ID.slogan = Identity.current_peer_ID.slogan;
 		set_my_peer_ID_TCP(peer_ID);
@@ -506,6 +522,20 @@ public class Server extends Thread {
 		D_PeerAddress._set_my_peer_ID(id);
 		if(DEBUG) out.println("Server: set_my_peer_ID_TCP: exit");
 	}
+	/**
+	 * Announces to directories and stores current socket addresses/directories in me/table
+	 * @param me
+	 * @throws P2PDDSQLException
+	 */
+	public static void set_my_peer_ID_TCP (D_PeerAddress me) throws P2PDDSQLException {
+		if (DEBUG) out.println("Server: set_my_peer_ID_TCP: enter");
+		if (me==null) return;
+		if (me.getGID() == null) return;
+		
+		UDPServer.announceMyselfToDirectoriesTCP();
+		D_PeerAddress._set_my_peer_ID(me);
+		if (DEBUG) out.println("Server: set_my_peer_ID_TCP: exit");
+	}
 	/*
 	public void setNameSlogan (Identity id, String name, String slogan) throws P2PDDSQLException{
 		ArrayList<ArrayList<Object>> op;
@@ -588,6 +618,16 @@ public class Server extends Thread {
 		this.interrupt();
 	}
 	public void run() {
+		this.setName("TCP Server");
+		ThreadsAccounting.registerThread();
+		try {
+			_run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		ThreadsAccounting.unregisterThread();
+	}
+	public void _run() {
 		DD.ed.fireServerUpdate(new CommEvent(this, null, null, "LOCAL", "Server starting"));
 		for(;;) {
 			if (turnOff) break;
@@ -653,7 +693,8 @@ public class Server extends Thread {
 		if (data_server_on_start) {
 			//Identity id = new Identity();
 			//id.globalID = guID;
-			Application.as = new Server(id);
+			Identity id2 = Identity.initMyCurrentPeerIdentity();
+			Application.as = new Server(id2);
 			Application.as.start();
 			//server.setID(id);
 		}

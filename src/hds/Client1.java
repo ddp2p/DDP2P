@@ -50,6 +50,7 @@ import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
 import config.Identity;
+import config.ThreadsAccounting;
 import data.D_PeerAddress;
 
 public
@@ -428,10 +429,17 @@ class Client1 extends Thread implements IClient{
 		this.interrupt();
 	}
 	synchronized public void run() {
+		this.setName("Client 1");
+		ThreadsAccounting.registerThread();
 		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Start"));
-		_run();
+		try {
+			_run();
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
 		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Stop"));
 		if(ClientSync.DEBUG) out.println("Client: turned Off");
+		ThreadsAccounting.unregisterThread();
 	}
 	synchronized public void _run() {
 		String peers_scan_sql = "SELECT "+table.peer.peer_ID+", "+table.peer.name+", "+table.peer.global_peer_ID+", "+table.peer.last_sync_date+", "+table.peer.filtered+
@@ -452,6 +460,7 @@ class Client1 extends Thread implements IClient{
 		Client1.peersAvailable = peers.size();
 		if(ClientSync.DEBUG) out.println("Client: Found used peer adresses: "+peers.size());
 		for(int p=0;;p++) {
+			ThreadsAccounting.ping("Cycle peer "+p);
 			if(turnOff) break;
 			// Avoid asking in parallel too many synchronizations (wait for answers)
 			if((Application.aus!=null)&&(Application.aus.getThreads() > UDPServer.MAX_THREADS/2))

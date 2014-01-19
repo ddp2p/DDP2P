@@ -153,13 +153,13 @@ public class D_FieldValue extends ASNObj{
 	static D_FieldValue[] getFieldValues(long c_ID) throws P2PDDSQLException {
 		return getFieldValues(Util.getStringID(c_ID));
 	}
-	public static void store(D_FieldValue[] address, String constituent_ID, long org_ID, boolean accept_new_fields) throws P2PDDSQLException, ExtraFieldException {
+	public static void store(boolean sync, D_FieldValue[] address, String constituent_ID, long org_ID, boolean accept_new_fields) throws P2PDDSQLException, ExtraFieldException {
 		if(address == null) return;
-		Application.db.delete(table.field_value.TNAME, new String[]{table.field_value.constituent_ID}, new String[]{constituent_ID}, DEBUG);
+		Application.db.delete(sync, table.field_value.TNAME, new String[]{table.field_value.constituent_ID}, new String[]{constituent_ID}, DEBUG);
 		for(int k=0; k< address.length; k++)
-			store(address[k], constituent_ID, org_ID, accept_new_fields);
+			store(sync, address[k], constituent_ID, org_ID, accept_new_fields);
 	}
-	private static long store(D_FieldValue wf, String constituent_ID, long org_ID, boolean accept_new_fields) throws P2PDDSQLException, ExtraFieldException {
+	private static long store(boolean sync, D_FieldValue wf, String constituent_ID, long org_ID, boolean accept_new_fields) throws P2PDDSQLException, ExtraFieldException {
 		if(DEBUG) System.out.println("D_FieldValue:store: start wf="+wf+ " constID="+constituent_ID);
 		String[] fields = table.field_value.fields_list.split(",");
 		String[] params = new String[fields.length];

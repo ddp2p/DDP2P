@@ -59,6 +59,7 @@ public class Identity {
 	private String preferred_charset;
 	private String secret_credential;
 	public int status_references = 0;
+	public String instance;
 	/* Default user Identity from the identities table */
 	private static Identity current_identity = null;
 	/* Peer Identity from the DD database registry */
@@ -284,8 +285,8 @@ public class Identity {
     	Identity result;
     	try {
     		result = _getDefaultIdentity();
-    		if(result != null) return result;
-    	}catch(Exception e){
+    		if (result != null) return result;
+    	} catch(Exception e) {
     		e.printStackTrace();
     	}
 		if(DEBUG) System.out.println("Identity:initCurrentIdentity: return empty");
@@ -300,7 +301,8 @@ public class Identity {
     	try {
     		result.globalID = DD.getMyPeerGIDFromIdentity();
     		result.name = DD.getAppText(DD.APP_my_peer_name);
-    		result.slogan = DD.getAppText(DD.APP_my_peer_slogan);
+       		result.slogan = DD.getAppText(DD.APP_my_peer_slogan);
+       		result.instance = DD.getAppText(DD.APP_my_peer_instance);
     		if(result.globalID != null)
     			Identity.current_identity_creation_date = getCreationDate(result.globalID);
     	}catch(Exception e){

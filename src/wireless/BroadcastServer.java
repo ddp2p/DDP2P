@@ -50,6 +50,7 @@ import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
+import config.ThreadsAccounting;
 
 //import data.BroadcastableMessages;
 class BroadcastClientRecord {
@@ -245,6 +246,16 @@ public class BroadcastServer extends Thread {
 		if(DEBUG) System.out.println("BroadcastServer:stopServer done");
 	}
 	public void run() {
+		this.setName("Broadcast Server");
+		ThreadsAccounting.registerThread();
+		try {
+			_run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		ThreadsAccounting.unregisterThread();
+	}
+	public void _run() {
 		if(DEBUG) System.out.println("BroadcastServer:running");
 		int keys = 0;
 		ArrayList<DatagramChannel> server_channels;

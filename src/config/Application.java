@@ -23,15 +23,21 @@ import static util.Util._;
 import java.awt.Component;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
 import java.util.regex.Pattern;
 
 import javax.swing.Icon;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+
+
+
 
 
 //import registration.RegistrationServer;
 import simulator.Fill_database;
 import util.DBInterface;
+import util.P2PDDSQLException;
 import util.Util;
 import widgets.constituent.ConstituentsPanel;
 import widgets.directories.Directories;
@@ -145,6 +151,9 @@ public class Application{
 		//Application.CURRENT_LOG_BASE_DIR (Application.LINUX_INSTALLATION_VERSION_BASE_DIR);
 		//Application.CURRENT_SCRIPTS_BASE_DIR (Application.LINUX_INSTALLATION_VERSION_BASE_DIR+Application.OS_PATH_SEPARATOR+Application.SCRIPTS_RELATIVE_PATH+Application.OS_PATH_SEPARATOR);
 	}
+	/**
+	 * Calls setter functions for this OS
+	 */
 	public static void switchToMacOSPaths() {
 		Application.CURRENT_INSTALLATION_ROOT_BASE_DIR (Application.LINUX_INSTALLATION_ROOT_BASE_DIR);
 		Application.CURRENT_INSTALLATION_VERSION_BASE_DIR (Application.LINUX_INSTALLATION_VERSION_BASE_DIR);
@@ -173,15 +182,78 @@ public class Application{
 	static public String CURRENT_DD_JAR_BASE_DIR(){return CURRENT_DD_JAR_BASE_DIR;}
 	static public void CURRENT_DD_JAR_BASE_DIR(String _CURRENT_DD_JAR_BASE_DIR){CURRENT_DD_JAR_BASE_DIR=_CURRENT_DD_JAR_BASE_DIR;}
 	
-	public static void CURRENT_SCRIPTS_BASE_DIR(String dir){
+	public static void fixScriptsBaseDir(String dir) {
+		Object options[] = new Object[]{_("Browse Scripts Folder")
+				,_("Browse Base Folder")
+				,_("Leave me alone!")
+				,_("Exit Program")
+				};
+		int q = Application.ask(_("Wrong scripts path!"), 
+				_("Setting wrong path for scripts:")+"\""+dir+"\n"+ 
+				_("You can change the path from the control panel of the app, or may move scripts there.")+
+						"\n"+_("Do you want to change now the scripts path?"),
+				options, options[0], null);
+		switch (q) {
+		case 0:
+		{
+			final JFileChooser fc = new JFileChooser();
+			fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			int returnVal = fc.showOpenDialog(DD.frame);
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+	            File file = fc.getSelectedFile();
+	            try {
+					dir = file.getCanonicalPath();
+					switch (DD.OS) {
+					case DD.LINUX:
+					case DD.MAC:
+						DD.setAppText(DD.APP_LINUX_SCRIPTS_PATH, dir);
+						break;
+					case DD.WINDOWS:
+						DD.setAppText(DD.APP_WINDOWS_SCRIPTS_PATH, dir);
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (P2PDDSQLException e) {
+					e.printStackTrace();
+				}
+	        } else {
+	        }
+		}
+		break;
+		case 1:
+		{
+			String version = null;
+			final JFileChooser fc = new JFileChooser();
+			fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			int returnVal = fc.showOpenDialog(DD.frame);
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+	            File file = fc.getSelectedFile();
+	            try {
+					version = file.getCanonicalPath();
+					tools.Directories.setCrtPathsInDB(version);
+					
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+	        } else {
+	        }
+		}
+		break;
+		case 2:	break;
+		case 3:  System.exit(-1); break;
+		}
+	}
+	public static void CURRENT_SCRIPTS_BASE_DIR(String dir) {
 		File crt = new File(dir);
-		if(!crt.exists() || !crt.isDirectory()){
-			
-			Application.warning(_("Setting wrong path for scripts:")+"\""+dir+"\n"+ _("You can change path from the control panel of the app, or may move scripts there."), _("Wrong path!"));
+		if (((!crt.exists() || !crt.isDirectory())) &&
+				!Util.equalStrings_null_or_not(DD.WARN_OF_INVALID_SCRIPTS_BASE_DIR, dir)) {
 			Util.printCallPath("Wrong path: "+dir);
 			System.err.println("Script existence: "+ crt.exists());
 			System.err.println("Script dir: "+ crt.isDirectory());
 			System.err.println("Current folder: "+crt.getAbsolutePath());
+			DD.WARN_OF_INVALID_SCRIPTS_BASE_DIR = dir;
+		}else{
+			DD.WARN_OF_INVALID_SCRIPTS_BASE_DIR = null;
 		}
 		CURRENT_SCRIPTS_BASE_DIR = dir;
 	}
@@ -190,16 +262,16 @@ public class Application{
 	 * This returns the path with an added separator at the end
 	 * @return
 	 */
-	public static String CURRENT_SCRIPTS_BASE_DIR(){
-		if(CURRENT_SCRIPTS_BASE_DIR==null) Util.printCallPath("No path");
-		if(CURRENT_SCRIPTS_BASE_DIR_WARNING && (CURRENT_SCRIPTS_BASE_DIR==null)){
+	public static String CURRENT_SCRIPTS_BASE_DIR() {
+		if (CURRENT_SCRIPTS_BASE_DIR==null) Util.printCallPath("No path");
+		if (CURRENT_SCRIPTS_BASE_DIR_WARNING && (CURRENT_SCRIPTS_BASE_DIR==null)){
 			CURRENT_SCRIPTS_BASE_DIR_WARNING = false;
-			Application.warning(_("No path set for scripts, using \"scripts\""), _("No path set!"));
+			Application.warning(_("No path set for scripts. Will be using \"scripts\""), _("No path set!"));
 		}
-		if(CURRENT_SCRIPTS_BASE_DIR==null) return SCRIPTS_RELATIVE_PATH + Application.OS_PATH_SEPARATOR;
+		if (CURRENT_SCRIPTS_BASE_DIR==null) return SCRIPTS_RELATIVE_PATH + Application.OS_PATH_SEPARATOR;
 		File crt = new File(CURRENT_SCRIPTS_BASE_DIR);
-		if(!crt.exists() || !crt.isDirectory()) return ""+SCRIPTS_RELATIVE_PATH + Application.OS_PATH_SEPARATOR;
-		if(!CURRENT_SCRIPTS_BASE_DIR.endsWith(Application.OS_PATH_SEPARATOR))
+		if (!crt.exists() || !crt.isDirectory()) return ""+SCRIPTS_RELATIVE_PATH + Application.OS_PATH_SEPARATOR;
+		if (!CURRENT_SCRIPTS_BASE_DIR.endsWith(Application.OS_PATH_SEPARATOR))
 			CURRENT_SCRIPTS_BASE_DIR = CURRENT_SCRIPTS_BASE_DIR + Application.OS_PATH_SEPARATOR;
 		return CURRENT_SCRIPTS_BASE_DIR;//+Application.OS_PATH_SEPARATOR;
 	}
@@ -284,6 +356,13 @@ public class Application{
 		        JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, //JOptionPane.PLAIN_MESSAGE,
 		        icon, options, options[0]);
 	}
+	/**
+	 * Parses a string with the Windows directories qualified (separated by ",").
+	 * V(base)=...||R(root)=...||S(scripts)=...||P(plugin)=...D(db)=...||L(log)=...||J(jar)=...
+	 * 
+	 * Fills unknown paths (ones with ":") with paths derived from version
+	 * @param val
+	 */
 	public static void parseWindowsPaths(String val) {
 		//boolean DEBUG=true;
 		if(DEBUG)System.out.println("Application:setting windows paths: "+val);
@@ -354,7 +433,13 @@ public class Application{
 			DD.setAppText(DD.APP_WINDOWS_DD_JAR_PATH, Application.WINDOWS_DD_JAR_BASE_DIR);
 		}catch(Exception e){e.printStackTrace();}
 	}
-	
+	/**
+	 * Parses a string with the Linux directories qualified (separated by ",").
+	 * V(base)=...||R(root)=...||S(scripts)=...||P(plugin)=...D(db)=...||L(log)=...||J(jar)=...
+	 * 
+	 * Fills unknown paths (ones with ":") with paths derived from version
+	 * @param val
+	 */
 	public static void parseLinuxPaths(String val) {
 		//boolean DEBUG=true;
 		if(DEBUG)System.out.println("Application:setting paths: "+val);
@@ -427,10 +512,21 @@ public class Application{
 			DD.setAppText(DD.APP_LINUX_DD_JAR_PATH, Application.LINUX_DD_JAR_BASE_DIR);
 		}catch(Exception e){e.printStackTrace();}
 	}
+	/**
+	 * Builds a string with the Linux directories qualified (separated by ",").
+	 * V(base)=...||R(root)=...||S(scripts)=...||P(plugin)=...D(db)=...||L(log)=...||J(jar)=...
+	 * @return
+	 */
 	public static String getCurrentLinuxPathsString(){
 		String SEP=",";
 		return getCurrentLinuxPathsString(SEP);
 	}
+	/**
+	 * Builds a string with the Linux directories qualified (separated by separators).
+	 * V(base)=...||R(root)=...||S(scripts)=...||P(plugin)=...D(db)=...||L(log)=...||J(jar)=...
+	 * @param SEP
+	 * @return
+	 */
 	public static String getCurrentLinuxPathsString(String SEP){
 		return
 		"V="+Application.LINUX_INSTALLATION_VERSION_BASE_DIR+
@@ -441,10 +537,21 @@ public class Application{
 		SEP+"L="+Application.LINUX_LOGS_BASE_DIR+
 		SEP+"J="+Application.LINUX_DD_JAR_BASE_DIR;
 	}
+	/**
+	 * Builds a string with the Windows directories qualified (separated by ",").
+	 * V(base)=...||R(root)=...||S(scripts)=...||P(plugin)=...D(db)=...||L(log)=...||J(jar)=...
+	 * @return
+	 */
 	public static String getCurrentWindowsPathsString(){
 		String SEP = ",";
 		return getCurrentWindowsPathsString(SEP);
 	}
+	/**
+	 * Builds a string with the Windows directories qualified (separated by separators).
+	 * V(base)=...||R(root)=...||S(scripts)=...||P(plugin)=...D(db)=...||L(log)=...||J(jar)=...
+	 * @param SEP
+	 * @return
+	 */
 	public static String getCurrentWindowsPathsString(String SEP){
 		return 
 		"V="+Application.WINDOWS_INSTALLATION_VERSION_BASE_DIR+

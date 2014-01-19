@@ -20,7 +20,6 @@
 package widgets.org;
 
 import static util.Util._;
-
 import hds.DebateDecideAction;
 
 import java.awt.BorderLayout;
@@ -36,6 +35,7 @@ import java.util.Arrays;
 import java.util.Hashtable;
 
 import javax.swing.Action;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -45,6 +45,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.UIManager;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
@@ -59,6 +60,7 @@ import util.DBSelector;
 import util.Util;
 import widgets.components.BulletRenderer;
 import widgets.components.XTableColumnModel;
+import widgets.instance.Instances;
 import wireless.BroadcastClient;
 
 import javax.swing.table.TableCellEditor;
@@ -66,8 +68,10 @@ import javax.swing.table.TableCellRenderer;
 
 //import apple.laf.CoreUIUtils.Tree;
 
-import util.P2PDDSQLException;
 
+
+
+import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
 import config.DDIcons;
@@ -124,6 +128,7 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 	public static final int FORCE_THREASHOLD_COL = 3; // first non-force row
 
 	BulletRenderer bulletRenderer = new BulletRenderer();
+	BulletRenderer hotRenderer;
 	ColorRenderer colorRenderer;
 	DefaultTableCellRenderer centerRenderer;
 	
@@ -170,10 +175,14 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 	void init(){
 		getModel().setTable(this);
 		addMouseListener(this);
+		this.getTableHeader().addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
 		colorRenderer = new ColorRenderer(getModel());
 		centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment( JLabel.CENTER );
+		hotRenderer = new BulletRenderer(
+				DDIcons.getHotImageIcon("Hot"), DDIcons.getHotGImageIcon("Hot"),
+				null, _("Recently Contacted"),  _("Not Recently Contacted"), null);
 		
 		yourColumnModel = new widgets.components.XTableColumnModel();
 		setColumnModel(yourColumnModel); 
@@ -199,6 +208,27 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
    			}
     	}catch(Exception e){e.printStackTrace();}
    		if(DD.status!=null) this.addOrgListener(DD.status);
+   		
+		DefaultTableCellRenderer rend = new DefaultTableCellRenderer() {
+			public Component getTableCellRendererComponent(JTable table,
+			Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+				JLabel headerLabel = (JLabel)
+						super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+				Icon icon = Orgs.this.getModel().getIcon(column);
+				if(icon != null)  headerLabel.setText(null);
+				headerLabel.setIcon(icon);
+			    setBorder(UIManager.getBorder("TableHeader.cellBorder"));
+			    setHorizontalAlignment(JLabel.CENTER);
+			    return headerLabel;
+			}
+		};
+		
+		//getTableHeader().setDefaultRenderer(rend);
+		for(int col_index = 0; col_index < getModel().getColumnCount(); col_index++) {
+			if(getModel().getIcon(col_index) != null)
+				getTableHeader().getColumnModel().getColumn(col_index).setHeaderRenderer(rend);
+		}
+
 	}
 	public JScrollPane getScrollPane(){
         JScrollPane scrollPane = new JScrollPane(this);
@@ -219,7 +249,7 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 	public TableCellRenderer getCellRenderer(int row, int _column) {
 		int column = this.convertColumnIndexToModel(_column);
 		if ((column == OrgsModel.TABLE_COL_NAME)) return colorRenderer;
-		if ((column == OrgsModel.TABLE_COL_CONNECTION)) return bulletRenderer;
+		if ((column == OrgsModel.TABLE_COL_CONNECTION)) return hotRenderer;
 		if ((column == getModel().TABLE_COL_CONSTITUENTS_NB)) return centerRenderer;
 		if ((column == getModel().TABLE_COL_ACTIVITY)) return centerRenderer;
 		if ((column == getModel().TABLE_COL_NEWS)) return centerRenderer;
@@ -232,7 +262,7 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 		}
 		return super.getCellRenderer(row, _column);
 	}
-	protected String[] columnToolTips = {null,null,_("A name you provide")};
+	//protected String[] columnToolTips = {null,null,_("A name you provide")};
     @SuppressWarnings("serial")
 	protected JTableHeader createDefaultTableHeader() {
         return new JTableHeader(columnModel) {
@@ -241,8 +271,8 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
                 int index = columnModel.getColumnIndexAtX(p.x);
                 int realIndex = 
                         columnModel.getColumn(index).getModelIndex();
-                if(realIndex >= columnToolTips.length) return null;
-				return columnToolTips[realIndex];
+                if(realIndex >= OrgsModel.columnToolTips.length) return null;
+				return OrgsModel.columnToolTips[realIndex];
             }
         };
     }
@@ -501,13 +531,13 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 	 * Panel with Editor
 	 * @return
 	 */
-	public JPanel getComboPanel(){
+	public Component getComboPanel(){
         //DD.orgsPane = new widgets.org.Orgs();
         //Application.orgs = DD.orgsPane;
         orgEPane = new widgets.org.OrgEditor();
         //DD.orgsPane
         this.addOrgListener(orgEPane); // this remains connected to Orgs rather than status to enable force edit
-    	JPanel orgs = DD.makeOrgsPanel(orgEPane, this); //DD.orgsPane); //new JPanel();
+    	Component orgs = DD.makeOrgsPanel(orgEPane, this); //DD.orgsPane); //new JPanel();
     	return orgs;
 	}
 	public void connectWidget() {
@@ -811,6 +841,9 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	public static final int TABLE_COL_PLUGINS = 7;
 	public static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
+	static int HOT_DAYS = 10;
+	static int HOT_SEC = HOT_DAYS*24*3600;
+	static long HOT_MSEC = HOT_SEC*1000;
 	DBInterface db;
 	Object _orgs[]=new Object[0];
 	Object _meth[]=new Object[0];
@@ -820,7 +853,32 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	boolean[] _blo=new boolean[0]; // block
 	boolean[] _req=new boolean[0]; // request
 	boolean[] _bro=new boolean[0]; // broadcast
-	String columnNames[]={_("Name"),_("Initiator"),_("Category"),_("Constituents"),_("Activity"),_("Hot"),_("News"),_("Plugins")};
+	String columnNames[]={_("Name"),_("Initiator"),_("Category"),_("Constituents"),_("Activity"),_("Hot"),_("News")
+			//,_("Plugins")
+			};
+	protected static String[] columnToolTips = {
+		_("A name for the organization"),
+		_("A name for the initiator"),
+		_("A category for sorting organizations (locally)"),
+		_("Number of constituents"),
+		_("Number of reactions (signatures pro or against) and news"),
+		_("Activity in less days than:")+""+HOT_DAYS,
+		_("Number of news"),
+		_("Plugins")
+		};
+	public Icon getIcon(int column) {
+		switch(column) { 
+		case TABLE_COL_CONNECTION: 
+			return DDIcons.getHotImageIcon("Fire");
+		case TABLE_COL_NEWS: 
+			return DDIcons.getNewsImageIcon("News");
+		case TABLE_COL_CONSTITUENTS_NB: 
+			return DDIcons.getConImageIcon("Const");
+		case TABLE_COL_ACTIVITY: 
+			return DDIcons.getSigImageIcon("Votes");
+		}
+		return null;
+	}
 	ArrayList<Orgs> tables= new ArrayList<Orgs>();
 	Hashtable<String, Integer> rowByID =  new Hashtable<String, Integer>();
 	public OrgsModel(DBInterface _db) {

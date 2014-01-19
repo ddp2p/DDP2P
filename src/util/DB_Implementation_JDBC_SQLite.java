@@ -130,6 +130,11 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 			result = _insert(sql, params, DEBUG);
 			tmp_dispose();
 		} catch (Exception e) {
+			System.out.println("DB_Impl:insert:"+sql);
+   			for (int k=0; k<params.length; k++) {
+				System.out.println("sqlite:insert:bind: "+Util.nullDiscrim(params[k]));
+			}
+			e.printStackTrace();
 			throw new P2PDDSQLException(e);
 		}
     	return result;
@@ -137,7 +142,7 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
     public synchronized long _insert(String sql, String[] params, boolean DEBUG) throws P2PDDSQLException{
     	return _nosyncinsert(sql, params, DEBUG, true);
     }
-    public long _nosyncinsert(String sql, String[] params, boolean DEBUG, boolean return_result) throws P2PDDSQLException{
+    public synchronized long _nosyncinsert(String sql, String[] params, boolean DEBUG, boolean return_result) throws P2PDDSQLException{
     	long result = -1;
     	PreparedStatement st;
     	try {
@@ -187,6 +192,7 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 			_update(sql, params, dbg);    	
 			tmp_dispose();
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw new P2PDDSQLException(e);
 		}
 	}	
@@ -231,6 +237,18 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 			throw new P2PDDSQLException(e);
     	}
     }
+
+	@Override
+	public void close() throws P2PDDSQLException {
+		if(conn_open) {
+			try {
+				conn.close();
+				conn = null;
+			} catch (SQLException e) {
+				throw new P2PDDSQLException(e);
+			}
+		}
+	}
 	private void tmp_dispose() throws P2PDDSQLException {
 		if(!conn_open) {
 			try {

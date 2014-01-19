@@ -19,7 +19,6 @@
 /* ------------------------------------------------------------------------- */
  package util;
 import static java.lang.System.out;
-
 import handling_wb.BroadcastQueueRequested;
 import handling_wb.BroadcastQueueRequested.Received_Interest_Ad;
 import hds.OrgInfo;
@@ -63,6 +62,8 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -79,13 +80,10 @@ import javax.swing.JOptionPane;
 import javax.swing.text.View;
 
 import wireless.Detect_interface;
-
 import updates.ClientUpdates;
 import util.P2PDDSQLException;
-
 import config.Application;
 import config.DD;
-
 import ciphersuits.Cipher;
 import ciphersuits.PK;
 import ciphersuits.SK;
@@ -94,6 +92,7 @@ import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -203,16 +202,19 @@ public class Util {
 		for(int k=1; k<array.length; k++) result = result + sep + array[k];
 		return result;
 	}
+	/**
+	 * Prints unsigned values of the byte (converted with positive)
+	 * @param array
+	 * @param sep
+	 * @param def
+	 * @return
+	 */
 	public static String concat(byte[] array, String sep, String def) {
 		if ((array == null) ) return def;
 		if ((array.length == 0)) return def;
 		String result=positive(array[0])+"";
 		for(int k=1; k<array.length; k++) result = result + sep + positive(array[k]);
 		return result;
-	}
-    private static int positive(byte b) {
-    	if(b>=0) return b;
-		return b+256;
 	}
 	public static <T> String nullDiscrimArray(T o[], String sep){
     	if(o==null) return "null";
@@ -697,13 +699,14 @@ public class Util {
      * @param body the comment is set in the SK part
      * @return type+"://"+body+"+RSA+"+N.toString(16)+"="+p.toString(16)+"*"+q.toString(16);
      */
+	@Deprecated
     public static Cipher getKeyedGlobalID (String type, String body) {
     	Cipher suit = ciphersuits.Cipher.getCipher(usedCipherGenkey, usedMDGenkey,type+"://"+body);
     	return suit;
     }
 	/**
-	 * Returns Public Key for key (N,e of RSA)
-	 * Used to be 
+	 * 
+	 * Returns stringSignatureFromByte of input
 	 * @param keys
 	 * @return
 	 */
@@ -711,7 +714,7 @@ public class Util {
 		return Util.stringSignatureFromByte(pk); //.byteToHex(pk);
 	}
 	/**
-	 * Returns Public Key for key (N,e of RSA)
+	 * Returns Public Key for key
 	 * Used to be 
 	 * @param keys
 	 * @return
@@ -743,7 +746,9 @@ public class Util {
 			System.err.println("BEGIN Util.getKeyedIDPK: keys has no PK");
 			return null;
 		}
+		if(DEBUG) System.out.println("Util:getKeyedIDPKBytes "+_pk);
 		byte[] pk = _pk.encode();
+		if(DEBUG) System.out.println("Util:getKeyedIDPKBytes #"+pk.length);
 		return pk;
 	}
 	/**
@@ -753,13 +758,15 @@ public class Util {
 	 */
 	//@Deprecated
 	public static String getKeyedIDPKhash(Cipher keys) {
-		if(DEBUG) System.err.println("BEGIN Util.getKeyedIDPK: keys="+keys);
+		if(DEBUG) System.err.println("BEGIN Util.getKeyedIDPKhash: keys="+keys);
 		PK _pk = keys.getPK();
 		if(_pk==null){
-			System.err.println("BEGIN Util.getKeyedIDPK: keys has no PK");
+			System.err.println("BEGIN Util.getKeyedIDPKhash: keys has no PK");
 			return null;
 		}
-		return Util.getGIDhash(Util.getKeyedIDPK(keys));
+		String pk = Util.getKeyedIDPK(keys);
+		if(DEBUG) System.out.println("Util:getKeyedIDPKhash "+_pk);
+		return Util.getGIDhash(pk);
 	}
 	/**
 	 * Returns Secret Key for key 
@@ -767,7 +774,10 @@ public class Util {
 	 * @return
 	 */
 	public static String getKeyedIDSK(Cipher keys) {
-		byte[] sk = keys.getSK().encode();
+		SK _sk = keys.getSK();
+		if(DEBUG) System.out.println("Util:getKeyedIDSK #"+_sk);
+		byte[] sk = _sk.encode();
+		if(DEBUG) System.out.println("Util:getKeyedIDSK #"+sk.length);
 		return Util.stringSignatureFromByte(sk); //.byteToHex(sk);
 	}
 	/**
@@ -1907,6 +1917,7 @@ public class Util {
 	public static final JLabel crtProcessLabel = new JLabel("",SwingConstants.LEFT);
 	public static Process crtScriptProcess = null;
 	public static final int INTERRUPTED = 325;
+	private static final boolean _OLD_CODE = false;
 	public static void stopCrtScript(){
 		try{
 			if(crtScriptProcess!=null) crtScriptProcess.destroy();
@@ -2343,6 +2354,114 @@ public class Util {
 			result.add(r.get(i));
 		}
 		return result;
+	}
+	public static byte[] cpu_to_16le(int i) {
+		byte r[] = new byte[2];
+		r[0] = (byte) (i & 0xFF);
+		r[1] = (byte) ((i>>8) & 0xFF);
+		return r;
+	}
+	public static byte[] cpu_to_16be(int i, byte[] r, int off) {
+		r[off+1] = (byte) (i & 0xFF);
+		r[off] = (byte) ((i>>8) & 0xFF);
+		return r;
+	}
+	/**
+	 * Returns true on success
+	 * @param buf
+	 * @param file
+	 * @return
+	 */
+	public static boolean writeFile(byte[] buf, File file) {
+		try {
+			FileOutputStream o = new FileOutputStream(file);
+			o.write(buf);
+			o.close();
+			return true;
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+	public static int bytePack(byte[] _uncompressed, int initial_code_size,
+			byte[] bs) {
+		int M = 0;
+		for(int i=0; i<bs.length; i++) {
+			M = 8/initial_code_size;
+			if(i==bs.length-1) M = _uncompressed.length % M;
+			bs[i] = 0;
+			for(int k=0; k<M; k++){
+				bs[i] |= _uncompressed[i]<<(k*initial_code_size);
+			}
+		}
+		return M*initial_code_size;
+	}
+	/**
+	 * Array of characters is converted to a string
+	 * @param data
+	 * @return
+	 */
+	public static String byteToString(byte[] data) {
+		if(data==null) return null;
+		String result = "";
+		for (int k=0; k<data.length; k++) {
+			result += Character.toString((char)(data[k]));
+		}
+		return result;
+	}
+	public static int le16_to_cpu(byte[] b) {
+		return le16_to_cpu(b, 0);
+	}
+	public static int le16_to_cpu(byte[] b, int off) {
+		int r;
+		//if(GIF.DEBUG) System.out.println("Util.le16_to_cpu "+Util.byteToHex(b));
+		r = (byte_to_uint(b[off+1])<<8) + byte_to_uint(b[off]);
+		return r;
+	}
+	public static int be16_to_cpu(byte[] b, int off) {
+		int r;
+		//if(GIF.DEBUG) System.out.println("Util.le16_to_cpu "+Util.byteToHex(b));
+		r = (byte_to_uint(b[off])<<8) + byte_to_uint(b[off+1]);
+		return r;
+	}
+	/**
+	 * same as byte_to_uint
+	 * @param b
+	 * @return
+	 */
+    public static int positive(byte b) {
+    	if(b>=0) return b;
+		return b+256;
+	}
+    /**
+     * same as (positive)
+     * @param b
+     * @return
+     */
+	public static int byte_to_uint(byte b) {
+		return (b+256)%256;
+	}
+	public static String byteToHex(byte b) {
+		return ""+byteToHex(new byte[]{b});
+	}
+	/**
+	 * Compute int from hash-sized array of bytes (not hashed here)
+	 * @param hash
+	 * @return
+	 */
+	public static BigInteger bigIntegerFromUnsignedBytes(byte[] hash) {
+		byte[] _val = new byte[hash.length+1];
+		copyBytes(_val, 1, hash, hash.length, 0);
+		return new BigInteger(_val);
+	}
+	public static String cleanInnerSpaces(String s) {
+		return Util.concat(s.split(" "), "");
+	}
+	public static String toString16(BigInteger i){
+		if(i==null) return null;
+		return i.toString(16);
 	}
 }
 class GetHostName extends Thread{

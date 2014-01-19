@@ -264,6 +264,14 @@ public class EmbedInMedia {
 		return fail;
 	}
 
+	/**
+	 * Called by user (e.g. ControlPane button)
+	 * @param fc
+	 * @param parent : for dialogs
+	 * @param adr : obtained with StegoStructure d[] = DD.getAvailableStegoStructureInstances();
+	 * @param selected : new int[1] (to tell the result)
+	 * @throws P2PDDSQLException
+	 */
 	static void actionImport(JFileChooser fc, Component parent, StegoStructure[] adr, int[] selected) throws P2PDDSQLException{
 		if(ControlPane.DEBUG)System.err.println("ControlPane:actionImport: import file");
 		int returnVal = ControlPane.file_chooser_address_container.showOpenDialog(parent);
@@ -729,6 +737,16 @@ public class EmbedInMedia {
 		sign=extractSteganoBytes(stg, 0, 1, STEGO_BITS, length_val);
 		return sign;
 	}
+	/**
+	 * 
+	 * @param in
+	 * @param d
+	 * @param selected
+	 * @return
+	 * @throws IOException
+	 * @throws ASN1DecoderFail
+	 * @throws P2PDDSQLException
+	 */
 	public static boolean fromBMPStreamSave(InputStream in, StegoStructure[] d, int[] selected)
 			throws IOException, ASN1DecoderFail, P2PDDSQLException {
 		short[] types = new short[d.length];
@@ -736,7 +754,7 @@ public class EmbedInMedia {
 		short[] type = new short[1];
 		byte []sign = _fromBMPStreamSave(in, types, type);
 		int k = Util.contains(types, type[0]);
-		if((selected!=null)&&(selected.length>0)) selected[0] = k;
+		if((selected != null) && (selected.length > 0)) selected[0] = k;
 		if(k == -1) return false;
 		d[k].setBytes(sign);
 		if(DEBUG) System.out.println("fromBMPStreamSave: Got data: "+d);
@@ -753,6 +771,7 @@ public class EmbedInMedia {
 	 * @throws ASN1DecoderFail
 	 * @throws P2PDDSQLException
 	 */
+	
 	@Deprecated
 	public static boolean fromBMPStreamSave(InputStream in, StegoStructure d) throws IOException, ASN1DecoderFail, P2PDDSQLException {
 		byte []sign = _fromBMPStreamSave(in);
@@ -768,6 +787,7 @@ public class EmbedInMedia {
 		
 		return true;
 	}
+	
 	public static boolean fromBMPFileSave(File file, StegoStructure d[], int[]selected) throws IOException, P2PDDSQLException{
 		String explain="";
 		boolean fail= false;

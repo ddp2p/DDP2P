@@ -51,6 +51,7 @@ import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
+import config.ThreadsAccounting;
 
 
 public class BroadcastClient extends Thread {
@@ -167,6 +168,16 @@ public class BroadcastClient extends Thread {
 		DD.START_REFRESH.START_REFRESH = false;
 	}
 	public void run() {
+		this.setName("Broadcast Client");
+		ThreadsAccounting.registerThread();
+		try {
+			_run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		ThreadsAccounting.unregisterThread();
+	}
+	public void _run() {
 		boolean DEBUG=false;
 		// start time to measure the broadcast time.
 		if(DEBUG)System.out.println("Start time is : "+System.currentTimeMillis());

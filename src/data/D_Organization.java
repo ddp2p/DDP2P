@@ -22,7 +22,6 @@ package data;
 
 import static java.lang.System.out;
 import static util.Util._;
-
 import hds.ASNSyncRequest;
 
 import java.util.ArrayList;
@@ -34,12 +33,10 @@ import java.util.regex.Pattern;
 import ciphersuits.Cipher;
 import ciphersuits.PK;
 import ciphersuits.SK;
-
 import table.key;
 import table.organization;
 import table.peer;
 import util.P2PDDSQLException;
-
 import streaming.OrgHandling;
 import streaming.OrgPeerDataHashes;
 import streaming.RequestData;
@@ -1489,5 +1486,22 @@ class D_Organization extends ASNObj implements Summary {
 		if(this.params.certifMethods == table.organization._AUTHORITARIAN)
 			if((this.signature == null)||(this.signature.length==0)) return false;
 		return true;
+	}
+	/**
+	 * Have to implement this
+	 * @return
+	 */
+	public boolean hasWeights() {
+		return true;
+	}
+	/**
+	 *  Have to implement this
+	 * Returns null for no limit
+	 * @return
+	 */
+	public Comparable getMaxVotingWeight() {
+		// 
+		//return null;
+		return 1;
 	}
 }

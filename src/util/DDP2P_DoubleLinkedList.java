@@ -21,23 +21,73 @@ package util;
 
 /**
  * Initialized with an empty node in head
+ * T has to implement DDP2P_DoubleLinkedList_Node_Payload (to access its node)
+ * 
  * @author msilaghi
  *
  * @param <T>
  */
 public class DDP2P_DoubleLinkedList<T> {
 	DDP2P_DoubleLinkedList_Node<T> head = new DDP2P_DoubleLinkedList_Node<T>();
-	int count=0;
-	public DDP2P_DoubleLinkedList(){
+	/**
+	 * Number of elements
+	 */
+	int count = 0;
+	public String toStringHead() {
+		String s = "";
+		DDP2P_DoubleLinkedList_Node<T> crt = head;
+		do {
+			s += "["+crt.payload+"]";
+			crt = crt.next;
+		} while (crt != head);
+		return s;
 	}
-	
+	public String toString() {
+		String s = "";
+		DDP2P_DoubleLinkedList_Node<T> crt = head;
+		if (head.payload != null) {
+			s += "[H["+head.payload+"]]";
+		}
+		crt = crt.next;
+		while (crt != head) {
+			s += "["+crt.payload+"]";
+			crt = crt.next;
+		};
+		return s;
+	}
+	/**
+	 * Just the head
+	 */
+	public DDP2P_DoubleLinkedList() {
+	}
+	/**
+	 * Insert crt in head :)
+	 *  "crt" should not have been in any DDP2P_DoubleLinkedList list
+	 * 
+	 * @param crt
+	 * @return : returns true on success, false on failure
+	 */
 	synchronized public boolean offerFirst(T crt) {
-		if(crt == null) return false;
-		if(!(crt instanceof DDP2P_DoubleLinkedList_Node_Payload<?>)) return false;
+		if (crt == null) return false;
+		if (!(crt instanceof DDP2P_DoubleLinkedList_Node_Payload<?>)) {
+			System.out.println("DDP2P_DoubleLinkedList:offerFirst: Wrong payload for DDP2P_DoubleLinkedList");
+			Util.printCallPath("here");
+			return false;
+		}
 		@SuppressWarnings("unchecked")
 		DDP2P_DoubleLinkedList_Node_Payload<T> p = (DDP2P_DoubleLinkedList_Node_Payload<T>) crt;
-		if(p.get_DDP2P_DoubleLinkedList_Node()!=null) return false;
-
+		
+		/**
+		 * If in some list, return false
+		 */
+		if (p.get_DDP2P_DoubleLinkedList_Node() != null) {
+			System.out.println("DDP2P_DoubleLinkedList:offerFirst: Already in some list!!!!!!");
+			Util.printCallPath("here");
+			return false;
+		}
+		/**
+		 * 
+		 */
 		DDP2P_DoubleLinkedList_Node<T> ins = new DDP2P_DoubleLinkedList_Node<T>(head, head.next, crt);
 		head.next.previous = ins;
 		head.next = ins;
@@ -45,13 +95,16 @@ public class DDP2P_DoubleLinkedList<T> {
 		p.set_DDP2P_DoubleLinkedList_Node(ins);
 		return true;
 	}
-
+	/**
+	 * Return the count
+	 * @return
+	 */
 	public int size() {
 		return count;
 	}
 
 	synchronized public T removeTail() {
-		if(count<=0) return null;
+		if(count <=0 ) return null;
 		count--;
 		DDP2P_DoubleLinkedList_Node<T> last = head.previous;
 		DDP2P_DoubleLinkedList_Node<T> new_last = last.previous;
@@ -66,15 +119,25 @@ public class DDP2P_DoubleLinkedList<T> {
 		return crt;
 	}
 	/**
+	 * Makes crt the first element in the List.
+	 * Throws runtimeException if not yet in the list.
+	 * 
 	 * 
 	 * @param crt
+	 * @return true if already first or added, false if not a legitimate payload
 	 */
-	synchronized public void moveToFront(T crt) {
+	synchronized public boolean moveToFront(T crt) {
+		if (!(crt instanceof DDP2P_DoubleLinkedList_Node_Payload<?>)) {
+			System.out.println("DDP2P_DoubleLinkedList:offerFirst: Wrong payload for DDP2P_DoubleLinkedList");
+			return false;
+		}
 		@SuppressWarnings("unchecked")
 		DDP2P_DoubleLinkedList_Node_Payload<T> p = (DDP2P_DoubleLinkedList_Node_Payload<T>) crt;
 		DDP2P_DoubleLinkedList_Node<T> ins = p.get_DDP2P_DoubleLinkedList_Node();
-		if(ins==null) throw new RuntimeException("Node was not in List");
-		if(ins == head.next) return; //already first
+		if(ins == null){
+			throw new RuntimeException("Node was not in List");
+		}
+		if(ins == head.next) return true; //already first
 		
 		DDP2P_DoubleLinkedList_Node<T> prev = ins.previous;
 		DDP2P_DoubleLinkedList_Node<T> next = ins.next;
@@ -86,6 +149,7 @@ public class DDP2P_DoubleLinkedList<T> {
 		ins.previous = head;
 		head.next = ins;
 		old_first.previous = ins;
+		return true;
 	}
 
 	public T getTail() {

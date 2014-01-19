@@ -330,10 +330,10 @@ public class ClientSync{
 		// version, globalID, name, slogan, creation_date, address*, broadcastable, signature_alg, served_orgs, signature*
 		if(//(Application.as!=null)&&
 				(Identity.getAmIBroadcastableToMyPeers())) {
-			String global_peer_ID = Identity.current_peer_ID.globalID;
-			if(DEBUG) System.out.println("Client: buildRequests: myself=: "+global_peer_ID);
+			//String global_peer_ID = Identity.current_peer_ID.globalID;
+			//if(DEBUG) System.out.println("Client: buildRequests: myself=: "+global_peer_ID);
 			try {
-				sr.address = D_PeerAddress.get_myself(global_peer_ID);//new D_PeerAddress(global_peer_ID, 0, true, false, true);
+				sr.address = D_PeerAddress.get_myself_from_Identity();//new D_PeerAddress(global_peer_ID, 0, true, false, true);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

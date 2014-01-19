@@ -49,6 +49,7 @@ import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
 import config.Identity;
+import config.ThreadsAccounting;
 import data.D_PeerAddress;
 import data.D_PluginInfo;
 import streaming.OrgHandling;
@@ -674,6 +675,7 @@ public class UDPServer extends Thread {
 
 			Identity peer_ID = new Identity();
 			peer_ID.globalID = Identity.current_peer_ID.globalID;
+			peer_ID.instance = Identity.current_peer_ID.instance;
 			peer_ID.name = Identity.current_peer_ID.name;
 			peer_ID.slogan = Identity.current_peer_ID.slogan;
 			Server.set_my_peer_ID_UDP(peer_ID, ds);
@@ -729,6 +731,7 @@ public class UDPServer extends Thread {
 			if(UDPServer.directoryAnnouncement == null) {
 				da = new DirectoryAnnouncement();
 				da.globalID = Identity.current_peer_ID.globalID;
+				da.instance = Identity.current_peer_ID.instance;
 				//da.address.domain=Identity.domain.toString().split("/")[1];
 				da.address.setAddresses(Identity.current_server_addresses());
 				da.address.udp_port=Identity.udp_server_port;
@@ -845,6 +848,8 @@ public class UDPServer extends Thread {
 		ds.send(dp);
 	}
 	public void run() {
+		this.setName("UDP Server");
+		ThreadsAccounting.registerThread();
 		synchronized(lock ){
 			try {
 				lock.wait(DD.PAUSE_BEFORE_UDP_SERVER_START);
@@ -860,6 +865,7 @@ public class UDPServer extends Thread {
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
+		ThreadsAccounting.unregisterThread();
 	}
 	public static int name = 0;
 	public int _name;
@@ -868,6 +874,7 @@ public class UDPServer extends Thread {
 		//this.announceMyselfToDirectories();
 		int cnt = 0;
 		for(;;) {
+			ThreadsAccounting.ping("Cycle");
 			if (DEBUG||DD.DEBUG_LIVE_THREADS) out.print("(UDP*)");
 			if (turnOff) break;
 			if (DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: UDPServer reclaim!");
@@ -875,6 +882,7 @@ public class UDPServer extends Thread {
 				this.sendFragmentReclaim();
 				if(this.isInterrupted()) continue;
 				if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: ************* wait!");
+				ThreadsAccounting.ping("Waiting");
 				wait_if_needed();
 				if(this.isInterrupted()) continue;
 				if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: UDPServer will accept!*************");
@@ -882,6 +890,7 @@ public class UDPServer extends Thread {
 				DatagramPacket pak = new DatagramPacket(buffer, UDP_BUFFER_LENGTH);
 				// calling the DatagramPacket receive call
 				ds.setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER); // might have changed
+				ThreadsAccounting.ping("Accepting");
 				ds.receive(pak);
 				
 				if(DEBUG) out.println("userver: ************ UDPServer accepted from "+pak.getSocketAddress()+", will launch!");
@@ -939,7 +948,7 @@ public class UDPServer extends Thread {
 			Application.db = new DBInterface(target);
 			Identity.init_Identity();
 			System.out.println("UDPServThread: main: inited IDs");
-			D_PeerAddress.get_myself(Identity.current_peer_ID.globalID);
+			D_PeerAddress.get_myself_from_Identity();
 			System.out.println("UDPServThread: main: got myself");
 			//String last_sync_date = Encoder.getGeneralizedTime(Util.getCalendar("00000000000000.000Z"));
 			//String[] _maxDate  = new String[]{Util.getGeneralizedTime()};
@@ -956,7 +965,7 @@ public class UDPServer extends Thread {
 			asr.lastSnapshot = Util.getCalendar("00000000000000.000Z");
 			String peerID="1";
 			asr.tableNames=new String[]{table.peer.G_TNAME};
-			asr.address = D_PeerAddress.get_myself(null);
+			asr.address = D_PeerAddress.get_myself();
 			
 			
 			//if(filtered) asr.orgFilter=UpdateMessages.getOrgFilter(peerID);
@@ -1065,7 +1074,17 @@ class AnnouncingThread extends Thread{
 	AnnouncingThread(DirectoryAnnouncement Da){
 		this.Da = Da;
 	}
-	public void run(){
+	public void run() {
+		this.setName("UDP Announcing to Directory");
+		ThreadsAccounting.registerThread();
+		try {
+			_run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		ThreadsAccounting.unregisterThread();
+	}
+	public void _run(){
 		Server.announceMyselfToDirectories(Da);
 	}
 }

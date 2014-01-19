@@ -846,11 +846,22 @@ public class D_Constituent extends ASNObj implements Summary {
 	public void storeVerified() throws P2PDDSQLException {
 		this.storeVerified(this.global_organization_ID, this.organization_ID, Util.getGeneralizedTime());
 	}
+	public void storeVerified(boolean sync) throws P2PDDSQLException {
+		this.storeVerified(sync, this.global_organization_ID, this.organization_ID, Util.getGeneralizedTime());
+	}
+	public long storeVerified(boolean sync, String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
+		return storeVerified(sync, null, orgGID, org_local_ID, arrival_time, null, null);
+	}
 	public long storeVerified(String orgGID, String org_local_ID, String arrival_time) throws P2PDDSQLException {
 		return storeVerified(null, orgGID, org_local_ID, arrival_time, null, null);
 	}
-	static Object monitor = new Object();
 	public long storeVerified(PreparedMessage pm, String orgGID, String org_local_ID, String arrival_time,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
+		return storeVerified(true, pm, orgGID, org_local_ID, arrival_time,
+				sol_rq, new_rq);
+	}
+	static Object monitor = new Object();
+	public long storeVerified(boolean sync, PreparedMessage pm, String orgGID, String org_local_ID, String arrival_time,
 			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("ConstituentHandling:storeVerified: start");
 
@@ -1000,7 +1011,7 @@ public class D_Constituent extends ASNObj implements Summary {
 			if(this.constituent_ID==null){
 				if(DEBUG) System.out.println("ConstituentHandling:storeVerified: insert!");
 				try{
-					_constituent_ID=Application.db.insert(table.constituent.TNAME,
+					_constituent_ID=Application.db.insert(sync, table.constituent.TNAME,
 							table.constituent.fields_constituents_no_ID_list, params, DEBUG);
 				}catch(Exception e){
 					if(_DEBUG) System.out.println("D_Constituent:storeVerified: failed hash="+global_constituent_id_hash);
@@ -1019,7 +1030,7 @@ public class D_Constituent extends ASNObj implements Summary {
 				//params[table.constituent.CONST_COL_ID] = constituent_ID;
 				if((date[0]==null)||(date[0].compareTo(params[table.constituent.CONST_COL_DATE])<0)) {
 					params[params.length-1] = constituent_ID;
-					Application.db.update(table.constituent.TNAME,
+					Application.db.update(sync, table.constituent.TNAME,
 							table.constituent.fields_constituents_no_ID_list, new String[]{table.constituent.constituent_ID}, params, DEBUG);
 				}else{
 					if(DEBUG) System.out.println("ConstituentHandling:storeVerified: not new data vs="+date[0]);				
@@ -1030,15 +1041,15 @@ public class D_Constituent extends ASNObj implements Summary {
 		
 			if((neighborhood!=null)&&(neighborhood.length>0)){
 				for(int k=0; k<neighborhood.length; k++) {
-					neighborhood[k].store(orgGID, org_local_ID, arrival_time, sol_rq, new_rq);
+					neighborhood[k].store(sync, orgGID, org_local_ID, arrival_time, sol_rq, new_rq);
 				}
 			}
 			if(DEBUG) System.out.println("ConstituentHandling:storeVerified: store address!");
 			long _organization_ID = Util.lval(org_local_ID, -1);
 			try {
-				D_FieldValue.store(address, constituent_ID, _organization_ID, DD.ACCEPT_TEMPORARY_AND_NEW_CONSTITUENT_FIELDS);
+				D_FieldValue.store(sync, address, constituent_ID, _organization_ID, DD.ACCEPT_TEMPORARY_AND_NEW_CONSTITUENT_FIELDS);
 			} catch (ExtraFieldException e) {
-				Application.db.update(table.constituent.TNAME, new String[]{table.constituent.sign},
+				Application.db.update(sync, table.constituent.TNAME, new String[]{table.constituent.sign},
 						new String[]{table.constituent.constituent_ID},
 						new String[]{null, constituent_ID}, DEBUG);
 				e.printStackTrace();

@@ -20,6 +20,7 @@ import ASN1.Encoder;
 import config.Application;
 import config.DD;
 import config.Identity;
+import config.ThreadsAccounting;
 import data.D_PeerAddress;
 
 import util.CommEvent;
@@ -554,11 +555,14 @@ public class Connections extends Thread implements DBListener{
 		if(DEBUG) System.out.println("Connections: updates: ^^^^^^^^");
 	}
 	
-	public void run(){
+	public void run() {
+		this.setName("Connections Manager");
+		ThreadsAccounting.registerThread();
 		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Start"));
 		try{_run();}catch(Exception e){}
 		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Stop"));
 		if(DEBUG) out.println("Connections: run: turned Off");
+		ThreadsAccounting.unregisterThread();
 	}
 	/**
 	 * Continuously tries to update, each time something changes
@@ -570,9 +574,12 @@ public class Connections extends Thread implements DBListener{
 			try{
 				synchronized(wait_obj){
 					if(DEBUG) System.out.println("Connections: _run: got wait_obj");
-					if(!updates_available())
+					if(!updates_available()) {
+						ThreadsAccounting.ping("No updates available");
 						wait_obj.wait(60*1000);
+					}
 				}
+				ThreadsAccounting.ping("Updates");
 				updates();
 			}catch(InterruptedException e){
 				if(_DEBUG) System.out.println("Connections: _run: interrupted");

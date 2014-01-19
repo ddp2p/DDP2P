@@ -583,7 +583,10 @@ class D_Neighborhood extends ASNObj implements Summary{
 	}
 
 	public String store(String orgGID, String org_local_ID, String arrival_time, RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
-		return integrateNewNeighborhoodData(this, orgGID, org_local_ID, arrival_time, null, sol_rq, new_rq);
+		return integrateNewNeighborhoodData(true, this, orgGID, org_local_ID, arrival_time, null, sol_rq, new_rq);
+	}
+	public String store(boolean sync, String orgGID, String org_local_ID, String arrival_time, RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
+		return integrateNewNeighborhoodData(sync, this, orgGID, org_local_ID, arrival_time, null, sol_rq, new_rq);
 	}
 	
 	public static Object localForNeighborhoodGID(String gID) throws P2PDDSQLException {
@@ -666,7 +669,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 	 * @throws P2PDDSQLException
 	 */
 	public static String integrateNewNeighborhoodData(
-			D_Neighborhood wn, String orgGID,
+			boolean sync, D_Neighborhood wn, String orgGID,
 			String org_local_ID, String arrival_time, D_Organization orgData,
 			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("D_Neighborhood: integrateNewNeighborhoodData: exit start");
@@ -681,12 +684,24 @@ class D_Neighborhood extends ASNObj implements Summary{
 				return null;
 			}
 		}
-		return integrateNewVerifiedNeighborhoodData(wn, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
+		return integrateNewVerifiedNeighborhoodData(sync, wn, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
 	}
 	public void storeVerified() throws P2PDDSQLException{
 		integrateNewVerifiedNeighborhoodData(this, this.global_organization_ID, Util.getStringID(this.organization_ID), Util.getGeneralizedTime(), null, null, null);
 	}
+	public void storeVerified(boolean sync) throws P2PDDSQLException{
+		integrateNewVerifiedNeighborhoodData(sync, this, this.global_organization_ID, Util.getStringID(this.organization_ID), Util.getGeneralizedTime(), null, null, null);
+	}
 	public static String integrateNewVerifiedNeighborhoodData(
+			D_Neighborhood wn, String orgGID,
+			String org_local_ID, String arrival_time, D_Organization orgData,
+			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
+		return integrateNewVerifiedNeighborhoodData( true,
+				wn, orgGID,
+				org_local_ID, arrival_time, orgData,
+				sol_rq, new_rq);
+	}
+	public static String integrateNewVerifiedNeighborhoodData( boolean sync,
 			D_Neighborhood wn, String orgGID,
 			String org_local_ID, String arrival_time, D_Organization orgData,
 			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
@@ -699,7 +714,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 			return null;
 		}
 		String pID, cID;
-		if(wn.parent!=null) pID=integrateNewNeighborhoodData(wn.parent, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
+		if(wn.parent!=null) pID=integrateNewNeighborhoodData(sync, wn.parent, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
 		if(wn.submitter!=null) cID=ConstituentHandling.integrateNewConstituentData(wn.submitter, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
 
 		if((org_local_ID==null)&&(orgGID!=null)) {
@@ -764,7 +779,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 			if(DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: insert");
 			long _neig_local_ID = -1;
 			try{
-				_neig_local_ID = Application.db.insert(table.neighborhood.TNAME, fields, params, DEBUG);
+				_neig_local_ID = Application.db.insert(sync, table.neighborhood.TNAME, fields, params, DEBUG);
 			}catch(Exception e){
 				if(_DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: insert fail: "+wn.global_neighborhood_ID);
 				id = D_Neighborhood.getLocalID(wn.global_neighborhood_ID);
@@ -777,7 +792,7 @@ class D_Neighborhood extends ASNObj implements Summary{
 			if((date[0]==null)||(date[0].compareTo(params[table.neighborhood.IDX_CREATION_DATE])<0)){
 				params[table.neighborhood.IDX_ID] = id;
 				//params[table.neighborhood.IDX_FIELDs] = id;
-				Application.db.update(table.neighborhood.TNAME, fields, new String[]{table.neighborhood.neighborhood_ID}, params, DEBUG);
+				Application.db.update(sync, table.neighborhood.TNAME, fields, new String[]{table.neighborhood.neighborhood_ID}, params, DEBUG);
 			}
 			result = id;
 		}

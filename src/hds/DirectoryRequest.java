@@ -170,14 +170,18 @@ public class DirectoryRequest extends ASNObj{
 	public Encoder getEncoder_2() {
 		Encoder enc = new Encoder().initSequence();
 		if(version != 0) enc.addToSequence(new Encoder(version));
-		if(globalID!=null)enc.addToSequence(new Encoder(globalID, false));
+		if(globalID!=null) enc.addToSequence(new Encoder(globalID, false));
 		else{
 			System.out.println("DirectoryRequest: This version expects a globalID. v="+version);
+			System.out.println("DirectoryRequest: "+this);
+			Util.printCallPath("call");
 		}
 		if((version!=0)&&(terms!=null)) enc.addToSequence(Encoder.getEncoder(terms).setASN1Type(DD.TAG_AC5));
 		if(this.initiator_globalID!=null)enc.addToSequence(new Encoder(this.initiator_globalID, false));
 		else{
 			System.out.println("DirectoryRequest: This version expects an initiator_globalID. v="+version);
+			System.out.println("DirectoryRequest: "+this);
+			Util.printCallPath("call");
 		}
 		enc.addToSequence(new Encoder(this.UDP_port));
 		if(version!=0) enc.addToSequence(new Encoder(signature));
@@ -227,18 +231,19 @@ public class DirectoryRequest extends ASNObj{
 	 * The terms are read from the "directory_forwarding_terms" table.
 	 * 
 	 * Typically not signed. (Signatures may be requested on DoS detection/payments)
-	 * @param global_peer_ID
-	 * @param ini_ID
-	 * @param udp
-	 * @param peer_ID
-	 * @param dir_address
+	 * @param target_GID
+	 * @param initiator_GID
+	 * @param initiator_udp
+	 * @param target_peer_ID : needed to retrieve/maintain current terms
+	 * @param dir_address : needed to filter/maintain terms
 	 */
-	public DirectoryRequest(String global_peer_ID, String ini_ID, int udp, String peer_ID, 
+	public DirectoryRequest(String target_GID, String initiator_GID, int initiator_udp, String target_peer_ID, 
 			String dir_address) {
-		globalID = global_peer_ID;
-		this.initiator_globalID = ini_ID;
-		this.UDP_port = udp;
-		this.peer_ID = peer_ID;
+		if (DEBUG) System.out.println("DirectoryRequest<init>: GPID="+target_GID+" iniID="+initiator_GID+" udp="+initiator_udp+" pID="+target_peer_ID+" adr="+dir_address);
+		globalID = target_GID;
+		this.initiator_globalID = initiator_GID;
+		this.UDP_port = initiator_udp;
+		this.peer_ID = target_peer_ID;
 		this.dir_address= dir_address;
 		this.terms = getTerms();
 		this.signature=null; // optional ?
@@ -255,7 +260,7 @@ public class DirectoryRequest extends ASNObj{
 			" OR  "+directory_forwarding_terms.dir_addr+" is NULL )"+
 			" AND " + directory_forwarding_terms.priority_type+" = 1 ;";
 		params = new String[]{this.peer_ID, this.dir_address};
-		if(DEBUG) System.out.println("DirectoryRequest:getTerms: select directory this.dir_address: "+ this.dir_address);
+		if (DEBUG) System.out.println("DirectoryRequest:getTerms: select directory this.dir_address: "+ this.dir_address);
 		
 		ArrayList<ArrayList<Object>> u;
 		try {
@@ -264,8 +269,8 @@ public class DirectoryRequest extends ASNObj{
 			e.printStackTrace();
 			return null;
 		}
-		if(u==null || u.size()==0){ // Global directory
-		    if(DEBUG) System.out.println("DirectoryRequest:getTerms: select for Global directory");
+		if (u == null || u.size() == 0) { // Global directory
+		    if (DEBUG) System.out.println("DirectoryRequest:getTerms: select for Global directory");
 			sql = "SELECT "+directory_forwarding_terms.fields_terms+
 			" FROM  "+directory_forwarding_terms.TNAME+
 		    " WHERE "+directory_forwarding_terms.peer_ID+" =? " +

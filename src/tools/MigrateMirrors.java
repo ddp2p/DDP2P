@@ -37,9 +37,13 @@ public class MigrateMirrors {
 		
 //		System.out.println("Try: hash="+hash);
 //		if(hash == null) return;
-		if(args.length>1) 
-			migrateIfNeeded(args[0], args[1]);
-		else{
+		if(args.length>1) {
+			String oldDB = args[0];
+			String newDB = args[1];
+			DBInterface dbSrc = new DBInterface(oldDB);
+			DBInterface dbDes = new DBInterface(newDB);
+			migrateIfNeeded(args[0], args[1], dbSrc, dbDes);
+		} else{
 			String dbase = Application.DELIBERATION_FILE;
 			if(args.length>0) dbase = args[0];
 			DBInterface db = new DBInterface(dbase);// this is just a default DB
@@ -49,17 +53,17 @@ public class MigrateMirrors {
 		}
 	}
 	static boolean DEBUG = false; 
-	public static boolean migrateIfNeeded(String oldDB, String newDB){
+	public static boolean migrateIfNeeded(String oldDB, String newDB, DBInterface _oldDB, DBInterface _newDB){
 		try{
-			_migrateIfNeeded(oldDB, newDB);
+			_migrateIfNeeded(oldDB, newDB, _oldDB, _newDB);
 			return true;
 		}catch(Exception e){
 			return false;
 		}
 	}
-	public static void _migrateIfNeeded(String oldDB, String newDB)throws Exception{
-		DBInterface dbSrc = new DBInterface(oldDB);
-		DBInterface dbDes = new DBInterface(newDB);
+	public static void _migrateIfNeeded(String oldDB, String newDB,
+			DBInterface dbSrc, DBInterface dbDes
+			)throws Exception{
 		
 		String sql = " SELECT "+application.value+
 			         " FROM "+application.TNAME+

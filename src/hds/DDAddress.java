@@ -230,7 +230,8 @@ public class DDAddress implements StegoStructure{
 	}
 	
 	public void save() throws P2PDDSQLException {
-		// boolean DEBUG = true;
+		//boolean DEBUG = true;
+		long peer_ID = -1;
 		if(address == null){
 			if(DEBUG) System.out.println("DDAddress:save: nothing to save ");
 			Application.warning(_("No address to save!"), _("Saving failed!"));
@@ -247,7 +248,8 @@ public class DDAddress implements StegoStructure{
 			}else Application.warning(_("Address Saved Anyhow!"), _("Saved Anyhow!"));
 		}
 		if(DEBUG) System.out.println("DDAddress:save: will save");
-		String date = Util.getGeneralizedTime();
+		Calendar _date = Util.CalendargetInstance();
+		String date = Encoder.getGeneralizedTime(_date);
 		//UpdatePeersTable.integratePeerOrgs(pa.served_orgs, peer_ID, crt_date);
 		String adr[] = address.split(Pattern.quote(DirectoryServer.ADDR_SEP));
 		if(DEBUG) System.out.println("DDAddress:save: will save address: ["+adr.length+"] "+address);
@@ -289,8 +291,23 @@ public class DDAddress implements StegoStructure{
 		else //V0+(!existing[0]))
 			pa = new D_PeerAddress(this,true); // false
 		D_PeerAddress old = new D_PeerAddress(pa.component_basic_data.globalID, 0, false);
-		long peer_ID;
+
+		String description=null;
+		description = getNiceDescription();
+		/*
+		JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
+           			_("Obtained Data:")+"\n"+description,
+           			_("Saved Data"), JOptionPane.INFORMATION_MESSAGE);
+		*/
+		int ok = Application.ask(
+				_("Obtained Data:")+"\n"+description+"\n"+_("Save"),
+				_("Save Obtained Address?"),
+				JOptionPane.OK_CANCEL_OPTION);
+		if (ok != 0) return;
+
 		if(old._peer_ID > 0) {
+			if(DEBUG) System.out.println("DDAddress: save old:"+old);
+			/*
 			old.component_preferences.used = true;
 			old.component_basic_data.name = pa.component_basic_data.name;
 			old.component_basic_data.emails = pa.component_basic_data.emails;
@@ -306,8 +323,14 @@ public class DDAddress implements StegoStructure{
 			old.component_basic_data.picture = pa.component_basic_data.picture;
 			old.component_basic_data.hash_alg = pa.component_basic_data.hash_alg;
 			old.component_basic_data.globalIDhash = pa.component_basic_data.globalIDhash;
+			if(DEBUG) System.out.println("DDAddress: save old modified:"+old);
 			old.storeVerified();
-		}else{
+			if(DEBUG) System.out.println("DDAddress: saved old modified:"+old);
+			*/
+			peer_ID = pa._storeVerified(_date, date, true);
+			if(DEBUG) System.out.println("DDAddress: saved received:"+pa);
+		} else {
+			if(DEBUG) System.out.println("DDAddress: save new");
 			pa.component_preferences.used = true;
 			peer_ID = pa._storeVerified();
 		}
@@ -317,13 +340,6 @@ public class DDAddress implements StegoStructure{
 //				long org_ID = UpdateMessages.get_organizationID(served_orgs[k].global_organization_ID, served_orgs[k].org_name, date, served_orgs[k].global_organization_IDhash);
 //				D_PeerAddress.get_peers_orgs_ID(peer_ID,org_ID, date);
 //			}
-
-		String description=null;
-		description = getNiceDescription();
-		JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
-           			_("Obtained Data:")+"\n"+description,
-           			_("Saved Data"), JOptionPane.INFORMATION_MESSAGE);
-
 		
 		if(DEBUG) Application.warning(_("Address Saved as #")+peer_ID+"! ", _("Saved!"));
 	}

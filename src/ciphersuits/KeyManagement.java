@@ -35,14 +35,14 @@ import java.util.ArrayList;
 import util.DBInterface;
 import util.P2PDDSQLException;
 import util.Util;
-
-
+import widgets.peers.PeerInput;
 import config.Application;
 import config.DD;
 import data.D_PeerAddress;
 
 public class KeyManagement {
-	private static boolean DEBUG = false;
+	private static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
 	private static final boolean EXIT_ON_NONMATCHING_PK = false;
 /**
  *  Returns false if the key is absent!
@@ -58,7 +58,7 @@ public class KeyManagement {
 			" FROM "+table.key.TNAME+
 			" WHERE "+table.key.public_key+"=?;";
 		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{gid});
-		if(a.size() == 0) return false;
+		if (a.size() == 0) return false;
 		String sk = Util.getString(a.get(0).get(0));
 		String name = Util.getString(a.get(0).get(1));
 		String type = Util.getString(a.get(0).get(2));
@@ -70,15 +70,30 @@ public class KeyManagement {
 		bw.newLine();
 		bw.write(type);
 		bw.newLine();
-		bw.write(name);
+		if (name != null) bw.write(name);
+		else bw.write("Anonymous");
 		bw.newLine();
-		bw.write(date);
+		if (date != null) bw.write(date);
+		else bw.write("");
 		bw.newLine();
 		bw.close();
 		return true;
 	}
-	
-	public static SK loadSecretKey(String sk_file, String[] __pk) throws IOException, P2PDDSQLException{
+	public static SK loadSecretKey(String sk_file, String[] __pk) throws IOException, P2PDDSQLException {
+		
+		return loadSecretKey(sk_file, __pk, null, null);
+	}
+	/**
+	 * Loads and stores key in database
+	 * @param sk_file
+	 * @param __pk
+	 * @param is_new 
+	 * @return
+	 * @throws IOException
+	 * @throws P2PDDSQLException
+	 */
+	public static SK loadSecretKey(String sk_file, String[] __pk,
+			PeerInput[] file_data, boolean[] is_new) throws IOException, P2PDDSQLException{
 		if(DEBUG) System.out.println("KeyManagement:loadSecretKey: start "+sk_file);
 		BufferedReader br = new BufferedReader(new FileReader(sk_file));
 		String sk, pk, type=null, name=null, date=null;
@@ -91,23 +106,24 @@ public class KeyManagement {
 			}
 			sk = sk.trim();
 		}while(sk.length() == 0);
+		if(DEBUG) System.out.println("KeyManagement:loadSecretKey: started");
 		
 		do{
 			pk = br.readLine();
 			if(pk==null){ eof = true; break;}
 			pk = pk.trim();
-		}while(pk.length() == 0);
+		} while (pk.length() == 0);
 		SK _sk = Cipher.getSK(sk);
-		if(_sk==null){
+		if (_sk==null) {
 			System.err.println("KeyManagement: Secret key null from:."+sk);
 		}
 		PK _pk = _sk.getPK();
 		String i_pk = Util.stringSignatureFromByte(_pk.getEncoder().getBytes());
-		if(pk != null) {
+		if (pk != null) {
 			PK f_pk = Cipher.getPK(pk);
-			if(!((RSA_PK)_pk).equals(f_pk)){
+			if (!((RSA_PK)_pk).equals(f_pk)) {
 				System.err.println("KeyManagement: Public key does not match: loaded="+f_pk+"\n computed from sk = "+_pk);
-				if(EXIT_ON_NONMATCHING_PK){
+				if (EXIT_ON_NONMATCHING_PK){
 					if(DEBUG) System.out.println("KeyManagement:loadSecretKey: quit nonmatching "+sk_file);
 					if(__pk!=null) __pk[0] = pk;
 					return null;
@@ -117,42 +133,58 @@ public class KeyManagement {
 			}
 		}
 
-		if(!eof)
-			do{
+		if (!eof)
+			do {
 				type = br.readLine();
-				if(type==null){ eof= true; break;}
+				if (type==null) { eof= true; break;}
 				type = type.trim();
 			}while(type.length() == 0);
 
-		if(!eof)
-			do{
+		if (!eof)
+			do {
 				name = br.readLine();
 				if(name==null){ eof=true; break;}
 				name = name.trim();
-			}while(name.length() == 0);
+			} while(name.length() == 0);
 		
-		if(!eof)
-			do{
+		if (!eof)
+			do {
 				date = br.readLine();
 				if(date==null){ eof=true; break;}
 				date = date.trim();
-			}while(date.length() == 0);
+			} while(date.length() == 0);
+		
+		if(DEBUG) System.out.println("KeyManagement:loadSecretKey: check existance");
 		ArrayList<ArrayList<Object>> p = Application.db.select(
 				"SELECT "+table.key.public_key+" FROM "+table.key.TNAME+" WHERE "+table.key.public_key+"=?;",
 				new String[]{pk}, DEBUG);
-		if(p.size()>0){
-			if(DEBUG) System.out.println("KeyManagement:loadSecretKey: quit known "+sk_file);
-			if(__pk!=null) __pk[0] = pk;
+		if (is_new != null)
+			is_new[0] = (p.size() == 0);
+		if (p.size() > 0) {
+			if (DEBUG) System.out.println("KeyManagement:loadSecretKey: quit known "+sk_file);
+			if (__pk!=null) __pk[0] = pk;
 			return _sk;
 		}
+		if (DEBUG) System.out.println("KeyManagement:loadSecretKey: read");
 		String hash = Util.getKeyedIDPKhash(Cipher.getCipher(_sk,_pk));
-		if((date==null)||(date.length()==0)) date = Util.getGeneralizedTime();
-		Application.db.insert(table.key.TNAME,
-				new String[]{table.key.secret_key,table.key.public_key,
-				table.key.type,table.key.name, table.key.ID_hash,table.key.creation_date},
-				new String[]{sk,pk,type,name,hash,date},
-				DEBUG);
-		if(__pk!=null) __pk[0] = pk;
+		if ((date==null) || (date.length()==0)) date = Util.getGeneralizedTime();
+//		String sql_selkey = "SELECT "+table.key.key_ID+" FROM "+table.key.TNAME+
+//				" WHERE "+table.key.public_key+"=?;";
+//		if (_DEBUG) System.out.println("KeyManagement:loadSecretKey: select");
+//		ArrayList<ArrayList<Object>> ok = Application.db.select(sql_selkey, new String[]{pk}, _DEBUG);
+//		if (_DEBUG) System.out.println("KeyManagement:loadSecretKey: select #"+ok.size());
+//		if (ok.size() == 0)
+			Application.db.insert (table.key.TNAME,
+					new String[]{table.key.secret_key,table.key.public_key,
+					table.key.type,table.key.name, table.key.ID_hash,table.key.creation_date},
+					new String[]{sk,pk,type,name,hash,date},
+					DEBUG);
+		
+		if (__pk != null) __pk[0] = pk;
+		if (file_data != null) {
+			if (file_data[0] == null) file_data[0] = new PeerInput();
+			file_data[0].name = name;
+		}
 		
 		return _sk;
 	}
@@ -198,7 +230,7 @@ public class KeyManagement {
 			String peerID = peer.storeVerified();
 
 			if((args.length>2)&&(Util.stringInt2bool(args[2], false)))
-				D_PeerAddress.setMyself(peerID);
+				D_PeerAddress.setMyself(peer);
 
 		}catch(Exception e2){e2.printStackTrace();}
 	}

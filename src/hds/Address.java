@@ -31,11 +31,19 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
-public class Address extends ASNObj{
-	public static final String ADDR_TYPE_SEP = "^";//DirectoryServer.ADDR_SEP;
-	public static final String ADDR_PART_SEP = ":";
+public class Address extends ASNObj {
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
+	//DirectoryServer.ADDR_SEP=',';
+	/**
+	 * Used in sending addresses over the network
+	 */
+	public static final String ADDR_PROT_NET_SEP = "^";
+	/**
+	 * Used for internal storage in database
+	 */
+	public static final String ADDR_PROT_INTERN_SEP = "://";
+	public static final String ADDR_PART_SEP = ":";
 	public static final String SOCKET = "Socket";
 	public static final String DIR = "DIR";
 	public static final String NAT = "NAT";
@@ -43,8 +51,35 @@ public class Address extends ASNObj{
 	public String protocol;
 	public int tcp_port;
 	public int udp_port;
-	public String toString(){
-		return ((protocol!=null)?(protocol+"://"):"")+domain+ADDR_PART_SEP+tcp_port+((udp_port>0)?(ADDR_PART_SEP+udp_port):"");
+	public String name;
+	public String toString() {
+		String result = "";
+		result += ((protocol!=null)?(protocol+ADDR_PROT_INTERN_SEP):"");
+		result += domain + ADDR_PART_SEP+tcp_port;
+		if ((udp_port != tcp_port) || (name != null)) {
+			if (udp_port <= 0)
+				result += ADDR_PART_SEP + tcp_port;
+			else
+				result += ADDR_PART_SEP + udp_port;
+			if (name != null)
+				result += ADDR_PART_SEP + name;
+		}
+		return result;
+	}
+	/**
+	 * Like toString(), but does not include eventual name in result.
+	 * Also a udp_port of -1 is considered equal with the tcp_port
+	 * Used to extract an address from a directory description in application
+	 * @return
+	 */
+	public String getStringAddress() {
+		String result = "";
+		result += ((protocol!=null)?(protocol+ADDR_PROT_INTERN_SEP):"");
+		result += domain + ADDR_PART_SEP+tcp_port;
+		if ((udp_port != tcp_port) && (udp_port > 0)) {
+			result += ADDR_PART_SEP + udp_port;
+		}
+		return result;
 	}
 	public Address instance() throws CloneNotSupportedException{return new Address();}
 	public Address(){} // For arrays
@@ -54,11 +89,12 @@ public class Address extends ASNObj{
 		domain = getDomain(domain_port);
 		tcp_port = getTCP(domain_port);
 		udp_port = getUDP(domain_port);
+		name = getName(domain_port);
 		/*
 		String dp[] = domain_port.split(":");
 		if(dp.length<2) return;
 		domain = dp[0];
-		String[]proto = domain.split("://");
+		String[]proto = domain.split(Pattern.quote(ADDR_PROT_SEP));
 		if(proto.length>1){
 			protocol = proto[0];
 			domain = proto[1];
@@ -165,28 +201,44 @@ public class Address extends ASNObj{
 			protocol = content.getFirstObject(true).getString();
 		return this;
 	}
+	/**
+	 * Returns a string made with this
+	 * @param _domain
+	 * @param _tcp_port
+	 * @param _udp_port
+	 * @param _protocol
+	 * @return
+	 */
 	public static String getAddress(String _domain, int _tcp_port, int _udp_port, String _protocol) {
+		Address a = new Address();
+		a.domain = _domain;
+		a.tcp_port = _tcp_port;
+		a.udp_port = _udp_port;
+		a.protocol = _protocol;
+		return a.toString();
+		/*
 		String port;
 		if(_udp_port>=0) port = _tcp_port+ADDR_PART_SEP+_udp_port;
 		else port = _tcp_port+"";
 		if(_protocol == null) return _domain+ADDR_PART_SEP+port;
-		return _protocol+"://"+_domain+ADDR_PART_SEP+port;
+		return _protocol+ADDR_PROT_SEP+_domain+ADDR_PART_SEP+port;
+		*/
 	}
 	public static String getProtocol(String address){
-		String[] protos = address.split("://");
+		String[] protos = address.split(Pattern.quote(ADDR_PROT_INTERN_SEP));
 		if(protos.length > 1) return protos[0].trim();
 		return null;
 	}
 	public static String getDomain(String address){
 		String domain;
-		String[] protos = address.split("://");
+		String[] protos = address.split(Pattern.quote(ADDR_PROT_INTERN_SEP));
 		if(protos.length > 1) domain = protos[1];
 		else domain = protos[0];
 		return domain.split(Pattern.quote(ADDR_PART_SEP))[0].trim();
 	}
 	public static int getTCP(String address){
 		String domain;
-		String[] protos = address.split("://");
+		String[] protos = address.split(Pattern.quote(ADDR_PROT_INTERN_SEP));
 		if(protos.length > 1) domain = protos[1];
 		else domain = protos[0];
 		String[] ports = domain.split(Pattern.quote(ADDR_PART_SEP));
@@ -194,19 +246,34 @@ public class Address extends ASNObj{
 		if((ports[1]==null) || (ports[1].length()==0)) return 0;
 		return Integer.parseInt(ports[1]);
 	}
+	/**
+	 * Returns tcp address if no udp specified
+	 * @param address
+	 * @return
+	 */
 	public static int getUDP(String address){
 		String domain;
-		String[] protos = address.split("://");
+		String[] protos = address.split(Pattern.quote(ADDR_PROT_INTERN_SEP));
 		if(protos.length > 1) domain = protos[1];
 		else domain = protos[0];
 		String[] ports = domain.split(Pattern.quote(ADDR_PART_SEP));
 		if(ports.length<2) return -1; 
 		try{
-			if(ports.length==2) return Integer.parseInt(ports[1]); 
+			if (ports.length == 2) return Integer.parseInt(ports[1]); 
 			return Integer.parseInt(ports[2]);
-		}catch(Exception e){
+		} catch(Exception e) {
+			System.out.println("Error parsing:"+address);
 			return -1; // happens with name of directory in application table
 		}
+	}
+	public static String getName(String address){
+		String domain;
+		String[] protos = address.split(Pattern.quote(ADDR_PROT_INTERN_SEP));
+		if(protos.length > 1) domain = protos[1];
+		else domain = protos[0];
+		String[] ports = domain.split(Pattern.quote(ADDR_PART_SEP));
+		if(ports.length < 4) return null; 
+		return ports[3]; 
 	}
 	public static String joinAddresses(String addresses1, String addrSep,
 			String addresses2) {
@@ -214,6 +281,12 @@ public class Address extends ASNObj{
 		if(addresses2==null) return addresses1;
 		return addresses1+addrSep+addresses2;
 	}
+	/**
+	 * Uses DirectoryServer.ADDR_SEP="," as separator
+	 * @param addresses1
+	 * @param addresses2
+	 * @return
+	 */
 	public static String joinAddresses(String addresses1,
 			String addresses2) {
 		if(addresses1==null) return addresses2;
@@ -242,12 +315,14 @@ public class Address extends ASNObj{
 		return Util.concat(addresses, DirectoryServer.ADDR_SEP, null);
 	}
 	/**
-	 * Assumes that the string is well formed
+	 * Assumes that the string is well formed:
+	 * IP:tcp[:udp[:name[:...]]],IP:tcp[:udp[:name[:...]]], 
+	 * Where "," is DirectoryServer.ADDR_SEP
 	 * @param a
 	 * @return
 	 */
 	public static Address[] getAddresses(String a) {
-		if(a == null) return null;
+		if (a == null) return null;
 		String[] s = split(a);
 		Address[] A = new Address[s.length];
 		for(int k=0; k<A.length; k++) {

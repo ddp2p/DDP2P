@@ -30,6 +30,7 @@ import widgets.peers.Peers;
 import config.Application;
 import config.DD;
 import config.Identity;
+import config.ThreadsAccounting;
 import data.D_PeerAddress;
 
 public class Client2 extends Thread  implements IClient{
@@ -85,6 +86,8 @@ public class Client2 extends Thread  implements IClient{
 		}
 	}
 	public void run(){
+		this.setName("Client 2");
+		ThreadsAccounting.registerThread();
 		synchronized(wait_lock ){
 			try {
 				wait_lock.wait(DD.PAUSE_BEFORE_CONNECTIONS_START);
@@ -101,10 +104,12 @@ public class Client2 extends Thread  implements IClient{
 		if(ClientSync.DEBUG) System.out.println("Client2: run: start");
 		try{_run();}catch(Exception e){e.printStackTrace();}
 		if(ClientSync.DEBUG) System.out.println("Client2: run: done");
+		ThreadsAccounting.unregisterThread();
 	}
 	public void _run(){
 		int cnt = 0;
 		for(;;){
+			ThreadsAccounting.ping("Cycle: "+peersToGo);
 			if(ClientSync.DEBUG) System.out.println("Client2: _run: next="+peersToGo);
 			
 			

@@ -64,6 +64,7 @@ import config.Application;
 import config.DD;
 import config.DDIcons;
 import config.Identity;
+import config.ThreadsAccounting;
 import data.D_PluginInfo;
 
 /**
@@ -88,7 +89,7 @@ public class StartUpThread extends Thread {
 
 		    SystemTray tray = SystemTray.getSystemTray();
 		    //Image image = Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico"));
-		    Image image = Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"angry16.png"));
+		    Image image = config.DDIcons.getImageFromResource(DDIcons.I_DDP2P40, DD.frame); //Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"angry16.png"));
 		    if(image==null) System.err.println("TrayIcon image failed.");
 		    //Image image = Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico"));
 		    //Image image = DDIcons.getImageIconFromResource("favicon.ico", "P2P Direct Democracy");//Toolkit.getDefaultToolkit().getImage("tray.gif");
@@ -160,14 +161,7 @@ public class StartUpThread extends Thread {
 
 		}
 		
-		if(DD.frame!=null )DD.frame.setIconImage(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico")));
-		List<Image> icons = new ArrayList<Image>();
-		//icons.add(Toolkit.getDefaultToolkit().getImage("p2pdd_resources/folder_images_256.png"));
-		icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"folder_images_256.png")));
-		icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"folder_32x32.png")));
-		icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico")));
-		icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"happy.smiley19.gif")));
-		if(DD.frame!=null )DD.frame.setIconImages(icons);
+		DD.loadAppIcons(true, DD.frame);
 	}
 	
 	/**
@@ -214,7 +208,18 @@ public class StartUpThread extends Thread {
 			
 		if(DEBUG) System.out.println("StartUpThread:initQueuesStatus: start");
 	}
-	public void run(){
+	public void run() {
+		this.setName("StartUpThread");
+		try {
+			ThreadsAccounting.registerThread();
+			_run();
+		}catch(Exception e){
+			e.printStackTrace();
+		}finally{
+			ThreadsAccounting.unregisterThread();
+		}
+	}
+	public void _run(){
 		//boolean DEBUG = true;
 		try{
 			DD.ClientTCP=DD.getAppBoolean(DD.APP_ClientTCP);
@@ -416,10 +421,15 @@ public class StartUpThread extends Thread {
 		}
 		catch(Exception e){e.printStackTrace();}
 	}
-	public static void fill_OS_install_path() throws P2PDDSQLException{
+	/**
+	 * Fill the path variables for all operating systems from value in database
+	 * 
+	 * @throws P2PDDSQLException
+	 */
+	public static void fill_install_paths_all_OSs_from_DB() throws P2PDDSQLException{
 		if(DEBUG) System.out.println("StartUpThread:fill_OS_install_path: start");
 		Application.LINUX_INSTALLATION_VERSION_BASE_DIR = DD.getAppText(DD.APP_LINUX_INSTALLATION_PATH);
-		if(Application.LINUX_INSTALLATION_VERSION_BASE_DIR==null){
+		if (Application.LINUX_INSTALLATION_VERSION_BASE_DIR==null) {
 			Application.LINUX_INSTALLATION_VERSION_BASE_DIR = "./";
 			DD.setAppText(DD.APP_LINUX_INSTALLATION_PATH,Application.LINUX_INSTALLATION_VERSION_BASE_DIR);
 		}
@@ -507,9 +517,13 @@ public class StartUpThread extends Thread {
 		return result;
 	}
 	*/
-	public static void fill_OS_scripts_path(){
+	/**
+	 * Assumes that the current OS was already set in DD.OS by prior call to StartUpThread.detect_OS..., 
+	 * Here switch paths to DD.OS.
+	 */
+	public static void switch_install_paths_to_ones_for_current_OS(){
 
-		switch(DD.OS){
+		switch (DD.OS) {
 		case DD.WINDOWS:{
 			Application.switchToWindowsPaths();
 			break;}
@@ -524,18 +538,47 @@ public class StartUpThread extends Thread {
 			if(_DEBUG)System.out.println("Unable to detect OS: \""+DD.OS+"\""); break;}
 		}
 	}
-
-	public static void detect_OS_fill_var(){
+	
+	public static int getCrtOS() {
 		ArrayList<String> os_Names=new ArrayList<String>();
 		os_Names.add("Windows");
 		os_Names.add("Linux");
 		String osName= System.getProperty("os.name");
 
 		int ch=0;
-		if(osName.contains(os_Names.get(0))) ch=1;
-		else if(osName.contains(os_Names.get(1))) ch=2;
-		else if(osName.contains("Mac OS X")) ch=3;
-		switch(ch){
+		if (osName.contains(os_Names.get(0))) ch=1;
+		else if (osName.contains(os_Names.get(1))) ch=2;
+		else if (osName.contains("Mac OS X")) ch=3;
+		switch (ch) {
+		case 1:{
+			return DD.WINDOWS;
+			}
+		case 2: {
+			return DD.LINUX;
+			}
+		case 3: {
+			return DD.MAC;
+		}
+		default: {
+			if(_DEBUG)System.out.println("Unable to detect OS: \""+osName+"\"");
+			return -1;
+			}
+		}
+	}
+	/**
+	 * Fills the DS.OS variable with the current os
+	 */
+	public static void detect_OS_and_store_in_DD_OS_var() {
+		ArrayList<String> os_Names=new ArrayList<String>();
+		os_Names.add("Windows");
+		os_Names.add("Linux");
+		String osName= System.getProperty("os.name");
+
+		int ch=0;
+		if (osName.contains(os_Names.get(0))) ch=1;
+		else if (osName.contains(os_Names.get(1))) ch=2;
+		else if (osName.contains("Mac OS X")) ch=3;
+		switch (ch) {
 		case 1:{
 			DD.OS = DD.WINDOWS;
 			break;}

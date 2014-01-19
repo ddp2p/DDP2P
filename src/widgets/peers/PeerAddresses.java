@@ -1,7 +1,6 @@
 package widgets.peers;
 
 import static util.Util._;
-
 import hds.Address;
 import hds.DebateDecideAction;
 
@@ -12,6 +11,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Hashtable;
 
 import javax.swing.Action;
@@ -27,11 +27,11 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
+import ASN1.Encoder;
 import util.DBInfo;
 import util.DBListener;
 import util.P2PDDSQLException;
 import util.Util;
-
 import config.Application;
 import config.DD;
 import config.DDIcons;
@@ -66,6 +66,14 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 			e.printStackTrace();
 		}
 	}
+	PeerAddressesModel(String peerGID) {
+		this.global_peer_ID = peerGID;
+		try {
+			init();
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	public void __update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
 		try {
@@ -91,9 +99,9 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 			}else{
 				me = false;
 			}
-			if((peer != null) && (global_peer_ID.equals(peer.component_basic_data.globalID))) return;
+			if((peer != null) && (global_peer_ID.equals(peer.getGID()))) return;
 			if(me){
-				peer = D_PeerAddress.get_myself(global_peer_ID);
+				peer = D_PeerAddress.get_myself_from_Identity();
 			}else{
 				peer = new D_PeerAddress(global_peer_ID,0,false);
 			}
@@ -310,7 +318,8 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 	}
 
 	private boolean store_Socks(int row) {
-		String arrival_date = Util.getGeneralizedTime();
+		Calendar _arrival_date = Util.CalendargetInstance();
+		String arrival_date = Encoder.getGeneralizedTime(_arrival_date);
 		String type = Address.SOCKET;
 		Address crt = new Address(
 				(String)getValueAt_Socks(row,TABLE_COL_DOMAIN),
@@ -318,7 +327,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 				((Integer)getValueAt_Socks(row,TABLE_COL_UDP)).intValue());
 		String _address = crt.toString();
 		try {
-			peer.addAddress(_address, type, arrival_date, true, peer.getMaxCertifiedAddressPriority()+1, true);
+			peer.addAddress(_address, type, _arrival_date, arrival_date, true, peer.getMaxCertifiedAddressPriority()+1, true);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
@@ -328,7 +337,8 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 	}
 
 	private boolean store_Loopback(int row) {
-		String arrival_date = Util.getGeneralizedTime();
+		Calendar _arrival_date = Util.CalendargetInstance();
+		String arrival_date = Encoder.getGeneralizedTime(_arrival_date);
 		String type = Address.SOCKET;
 		Address crt = new Address(
 				(String)getValueAt_Loopback(row,TABLE_COL_DOMAIN),
@@ -336,7 +346,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 				((Integer)getValueAt_Loopback(row,TABLE_COL_UDP)).intValue());
 		String _address = crt.toString();
 		try {
-			peer.addAddress(_address, type, arrival_date, true, peer.getMaxCertifiedAddressPriority()+1, true);
+			peer.addAddress(_address, type, _arrival_date, arrival_date, true, peer.getMaxCertifiedAddressPriority()+1, true);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
@@ -397,6 +407,15 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 			return false;
 		}
 		return true;
+	}
+	public void setPeer(D_PeerAddress peer2) {
+		if (peer2 != null)
+			this.global_peer_ID = peer2.getGID();
+		try {
+			this.init();
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
 	}	
 }
 
@@ -465,7 +484,7 @@ class PeerAddressesUpdateThread extends Thread {
 		model.__update(null, null);
 	}
 }
-public class PeerAddresses extends JTable implements MouseListener{
+public class PeerAddresses extends JTable implements MouseListener, PeerListener{
 
 	public static final int COMMAND_MENU_REFRESH = 0;
 	private static final boolean DEBUG = false;
@@ -627,5 +646,12 @@ public class PeerAddresses extends JTable implements MouseListener{
     		popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
        // dispatchToListeners(model_row);
     }
+
+	@Override
+	public void update_peer(D_PeerAddress peer, String my_peer_name,
+			boolean me, boolean selected) {
+		if (!selected) return;
+		this.getModel().setPeer(peer);
+	}
 	
 }

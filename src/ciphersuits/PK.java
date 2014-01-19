@@ -47,4 +47,5 @@ abstract public class PK extends ASNObj{
 	 * Will hash the message and compare to the unpadded decrypted signature 
 	 */
 	public abstract boolean verify_unpad_hash(byte[] signature, byte[]message);
+	public abstract CipherSuit getCipherSuite();
 }

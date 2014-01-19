@@ -80,6 +80,7 @@ import util.Util;
 import util.GIF_Convert;
 import widgets.dir_management.DirPanel;
 import widgets.components.TranslatedLabel;
+import widgets.threads.ThreadsView;
 import widgets.updates.UpdatesTable;
 import wireless.Broadcasting_Probabilities;
 import static util.Util._;
@@ -542,6 +543,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	private TranslatedLabel label_SMTPHost;
 	private JTextField textfield_EmailUsername;
 	private TranslatedLabel label_EmailUsername;
+	private ThreadsView threadsView;
 	
 	public boolean itemStateChangedCOMM(ItemEvent e, Object source) {
 	    if (source == this.m_comm_Block_New_Orgs) {
@@ -931,6 +933,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		tabs.addTab("DBG", makeDEBUGPanel(new JPanel(gl)));
         tabs.addTab("Client", DD.clientConsole);
         tabs.addTab("Server", DD.serverConsole);
+        threadsView = new ThreadsView();
+        tabs.addTab("Threads", threadsView.getScrollPane());
 
 		
 		/*
@@ -1432,6 +1436,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 					if(Application.as!=null) {
 						Identity peer_ID = new Identity();
 						peer_ID.globalID = Identity.current_peer_ID.globalID;
+						peer_ID.instance = Identity.current_peer_ID.instance;
 						peer_ID.name = Identity.current_peer_ID.name;
 						peer_ID.slogan = Identity.current_peer_ID.slogan;
 						Server.set_my_peer_ID_TCP(peer_ID);

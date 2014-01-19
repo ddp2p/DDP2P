@@ -19,7 +19,10 @@
 /* ------------------------------------------------------------------------- */
 package widgets.components;
 import static util.Util._;
+
 import java.awt.Component;
+
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JTable;
@@ -32,8 +35,32 @@ import util.Util;
 public
 class BulletRenderer extends JLabel
 implements TableCellRenderer {
-	static ImageIcon iconOn, iconOff, icon_;
-	static JLabel lIconOn, lIconOff, lIcon_;
+	 Icon iconOn, iconOff, icon_;
+	 JLabel lIconOn, lIconOff, lIcon_;
+	/*
+	public BulletRenderer(ImageIcon _iconOn, ImageIcon _iconOff, ImageIcon unknown,
+			String on, String off, String unk) {
+		iconOn = _iconOn;
+		iconOff = _iconOff;
+		icon_ = unknown;
+		lIcon_ = new JLabel(icon_);
+		lIconOn = new JLabel(iconOn); lIconOff = new JLabel(iconOff);
+		lIcon_.setToolTipText(on);
+		lIconOn.setToolTipText(off);
+		lIconOff.setToolTipText(unk);
+	}
+	*/
+	public BulletRenderer(Icon _iconOn, Icon _iconOff, Icon unknown,
+			String on, String off, String unk) {
+		iconOn = _iconOn;
+		iconOff = _iconOff;
+		icon_ = unknown;
+		lIcon_ = new JLabel(icon_);
+		lIconOn = new JLabel(iconOn); lIconOff = new JLabel(iconOff);
+		lIcon_.setToolTipText(on);
+		lIconOn.setToolTipText(off);
+		lIconOff.setToolTipText(unk);
+	}
 	public BulletRenderer() {
 		try{
 			icon_ = DDIcons.getGreyBallImageIcon("UNKNOWN"); // Util.createImageIcon(BULLET_UNKNOWN, "ON");

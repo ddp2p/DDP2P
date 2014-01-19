@@ -616,7 +616,15 @@ class D_Witness extends ASNObj implements Summary {
 			return _monitored_storeVerified(arrival_date);
 		}
 	}
+	public long storeVerified(boolean sync, Calendar arrival_date) throws P2PDDSQLException {
+		synchronized(monitored_storeVerified){
+			return _monitored_storeVerified(sync, arrival_date);
+		}
+	}
 	private long _monitored_storeVerified(Calendar arrival_date) throws P2PDDSQLException {
+		return _monitored_storeVerified(true, arrival_date);
+	}
+	private long _monitored_storeVerified(boolean sync, Calendar arrival_date) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("D_Witness:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		
@@ -673,7 +681,7 @@ class D_Witness extends ASNObj implements Summary {
 		if(witnessID<=0) { //||(e.size()==0)) {
 			if(DEBUG) System.out.println("D_Witness:storeVerified:inserting");
 			try{
-				result = witnessID =Application.db.insert(table.witness.TNAME, 
+				result = witnessID =Application.db.insert(sync, table.witness.TNAME, 
 					new String[]{
 					table.witness.global_witness_ID,
 					table.witness.hash_witness_alg,
@@ -724,7 +732,7 @@ class D_Witness extends ASNObj implements Summary {
 			String _creation_date=Encoder.getGeneralizedTime(creation_date);
 			if((old_date==null)||_creation_date.compareTo(old_date)>0) {
 				if(DEBUG) System.out.println("D_Witness:storeVerified:updating");
-				Application.db.update(table.witness.TNAME, 
+				Application.db.update(sync, table.witness.TNAME, 
 					new String[]{
 					table.witness.global_witness_ID,
 					table.witness.hash_witness_alg,

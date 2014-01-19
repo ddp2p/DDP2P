@@ -163,6 +163,7 @@ CREATE TABLE peer_instance (
    "last_contact_date" TEXT,
    "signature_date" TEXT,
    "signature" TEXT,
+   "created_locally" TEXT,
     UNIQUE ("peer_ID", "peer_instance") ON CONFLICT FAIL,
     FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
 );

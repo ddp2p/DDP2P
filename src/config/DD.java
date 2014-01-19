@@ -44,6 +44,8 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.List;
 import java.awt.Rectangle;
 import java.awt.ScrollPane;
 import java.awt.Toolkit;
@@ -111,6 +113,7 @@ import widgets.components.Language;
 import widgets.constituent.ConstituentsPanel;
 import widgets.directories.Directories;
 import widgets.identities.MyIdentitiesTest;
+import widgets.instance.Instances;
 import widgets.justifications.JustificationEditor;
 import widgets.justifications.Justifications;
 import widgets.justifications.JustificationsByChoicePanel;
@@ -121,7 +124,9 @@ import widgets.motions.MotionsListener;
 import widgets.news.NewsEditor;
 import widgets.news.NewsTable;
 import widgets.org.Orgs;
+import widgets.peers.CreatePeer;
 import widgets.peers.PeerAddresses;
+import widgets.peers.PeerInput;
 import widgets.peers.Peers;
 import widgets.wireless.WLAN_widget;
 import wireless.BroadcastClient;
@@ -142,13 +147,14 @@ import ASN1.Encoder;
 
 public class DD {
 	public static final String BRANCH = "FIT_HDSSL_SILAGHI";
-	public static final String VERSION = "0.9.51";
+	public static final String VERSION = "0.9.54";
 	public static final String PK_Developer = "MIIEGgwDUlNBYAEwAgMBAAECggQASKs9x2VEQH1SRxRwO43yt6HXCTnOmPJVUjN8bQQUTVBdFXhQsTpnTP1yLe/qFlA0jnIzheHT4WEcsU874N800iPMWHCjpCowQwwTj9SQLTmfbfhL8z0a7Dw6ZJQ+DnYoPVhx3JHL57CK3YeVYclZCoHetZ5PEIpcAwxaPmnL3GQaOgJiVHb6CLMi+hNHLxsjQZwTYTeoUOXQKgyTcRDE6xCvw8+q0U6/Uan3KCx/KmtdRQMEtGAXSPANv12kle84Dv8AdJxT1CJGsXm0+N6+wbbvkL77kMr+79sCR/8drZmOnrbjveQpab2pSh0vO//XqslrDRbzhniGSpqFW+YNTOixWAsCp35hNPbAx5xqPXg6DEIrysGslDGo4gC3Ew5mN/JkOQA+pd6uIzC4EgbfWqJKMvrtOQN67hJR7Ysxn7cLDXGvmhK1s7oSJcnOmhWljSZ6joviVwAWKgzdm1gMBhn5+VdgwoEE7g5Inw0dH9UmgufloNiBQMM9m2igdQPaLRuVttrAEcs55F/Z5NFtJquTeQFBLAGux3MVxrYCgivRaoAzAkUMhGOA+00KU3oh3Bds0U8GYCMuYYrwSAWTZf0Z9lvUwJv8HtLJvI6p1p53oGzIW9bo20d0PMz7XrzNDOLEME9PaXKLo6vMCAxXIj19nm/bE1HBY7e7HErKMX3M7LC2xZ8PH7wsnl5M3y0ZZ6c9quwhvz/dWcUAQ5963LtDZ6bOenAGVGBjdWLhHK8/2p9Vgu1ZNA1WWHWnafExsT5GxuwZQ/PMk8YtmxqEkgGy2+xVT19oUK+yO1ok+xRUjvSRZ0IbWUEcOfQ5FvLNmMdV/NSebB6vjQwM5DGCE1YDhix+Qghr558KokVz7BPVrGVe1pUxfPo2XPwHReF8es+vr16lvwXrVEmQNG8KrX1tN5Z5I29+ZVcR6ti4t90RXY6H6lmLtU3P/PSmfOrBQraNHVvDm9y1hnSP9+EhJzuWFaS8v4+7OnodIWuZsYd2WYQp4YcDJ+7grV3s1vvacujzxCOwx5/gosLxOau45bvKqhsFrZ+le6IRNAG7T6ZwC9wesqCGBJlIwS50DlAb/KhPyDIvf+7EH1iwckG4fBtixaK9co8FHnuddn/cEIc6fkWDEzr2Cu3HyxeMeDrcGRvjTRr78Wp/ptvRoOYElOLkxrkmanetjOCMqRl1DJvl53SQKePraRx2DpRemK/TMQ3+5TQkFjjEsI2P455Th0z6vF+JzpetZ3j1NUqx+iEZ2ArMhdDk7dE/4qcn2xwLz5nNMvHSnO2N0T9tCLi96CqZm/HTqGa6jTxFhJOP11sFCCQ9jkKhxvxubs0sww75dnqXQeffpxyolcht3KHwfwwHU0hBLTUxMg==";
 	public static final PK _PK_Developer = Cipher.getPK(PK_Developer);
 	public static String _APP_NAME = _("Direct Democracy P2P");
 	//public static String _APP_NAME = _("La Bible A Petits Pas");
 	public static String APP_NAME = _APP_NAME+" "+VERSION;
-	public static JTabbedPane tabbedPane = new JTabbedPane();
+	public static final String DEFAULT_EMAIL_PROVIDER = "my.fit.edu";
+	public static JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);//JTabbedPane.LEFT);
 
 	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -303,6 +309,7 @@ public class DD {
 	public static final String APP_stop_automatic_creation_of_default_identity = "stop_automatic_creation_of_default_identity";
 	public static final String APP_hidden_from_my_peers = "hidden_from_my_peers";
 	public static final String APP_my_global_peer_ID = "my_global_peer_ID";
+	public static final String APP_my_peer_instance = "my_peer_instance";
 	public static final String APP_my_peer_name = "my_peer_name";
 	public static final String APP_my_peer_slogan = "my_peer_slogan";
 	public static final String APP_my_global_peer_ID_hash = "my_global_peer_ID_hash";
@@ -589,8 +596,9 @@ public class DD {
     	//orgs.setMinimumSize(orgs.getPreferredSize());
     	//newOrgButton.setMaximumSize(newOrgButton.getPreferredSize());
     	//newOrgButton.setMinimumSize(newOrgButton.getPreferredSize());
-	public static JPanel makeOrgsPanel(widgets.org.OrgEditor orgEPane, widgets.org.Orgs orgsPane) {
+	public static Component makeOrgsPanel(widgets.org.OrgEditor orgEPane, widgets.org.Orgs orgsPane) {
 		JPanel orgs = new JPanel();
+		int y = 0;
     	java.awt.GridBagLayout gbl = new java.awt.GridBagLayout();
     	orgs.setLayout(gbl);
     	java.awt.GridBagConstraints c = new java.awt.GridBagConstraints();
@@ -598,13 +606,17 @@ public class DD {
     	newOrgButton = new JButton(_("New Organization"));
     	newOrgButton.setActionCommand(DD.COMMAND_NEW_ORG);
     	newOrgButton.addActionListener(Application.appObject);
-    	c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=0;c.weighty=5.0; c.weightx=10.0;c.anchor=GridBagConstraints.CENTER;
-    	orgs.add(orgsPane.getScrollPane(),c);
-    	c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=1;c.weighty=0.0;c.weightx=10.0;c.anchor=GridBagConstraints.WEST;//c.insets=new java.awt.Insets(1,1,1,1);
+    	//c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=5.0; c.weightx=10.0;c.anchor=GridBagConstraints.CENTER;
+    	//orgs.add(orgsPane.getScrollPane(),c);
+    	c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=0.0;c.weightx=10.0;c.anchor=GridBagConstraints.WEST;//c.insets=new java.awt.Insets(1,1,1,1);
     	orgs.add(newOrgButton,c);
-    	c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=2;c.weighty=5.0;c.weightx=10.0;c.anchor=GridBagConstraints.CENTER;//c.insets=new java.awt.Insets(0,0,0,0);
+    	c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=5.0;c.weightx=10.0;c.anchor=GridBagConstraints.CENTER;//c.insets=new java.awt.Insets(0,0,0,0);
     	orgs.add(orgEPane,c);
-		return orgs;
+    	
+		JSplitPane splitPanel = new JSplitPane( JSplitPane.VERTICAL_SPLIT, orgsPane.getScrollPane(),
+				//new JScrollPane
+				(orgs));
+		return splitPanel;
        	//tabbedPane.addTab("Org", orgsPane.getScrollPane());
        	//tabbedPane.addTab("OrgE", orgEPane);
     	//jsco.setPreferredSize(new Dimension(800,0));
@@ -641,10 +653,10 @@ public class DD {
 			Dimension _minimumSize = new Dimension(0, MotionEditor.DIMY);
 			edit_scroll.setMinimumSize(_minimumSize);
 			
-			if(_DEBUG) System.out.println("DD.makeMotionPanel: return splitter");
+			if(DEBUG) System.out.println("DD.makeMotionPanel: return splitter");
 			return  result;
 		}else{
-			if(_DEBUG) System.out.println("DD.makeMotionPanel: return motion_scroll");
+			if(DEBUG) System.out.println("DD.makeMotionPanel: return motion_scroll");
 			return motion_scroll;
 			//Dimension dim = new Dimension(0, 0);
 			//edit.setMaximumSize(dim);
@@ -675,18 +687,43 @@ public class DD {
 	public static JScrollPane makeCensusPanel(census.CensusPanel census){
 		return census.getScrollPane();
 	}
-	public static JPanel makeNewsPanel( NewsEditor _nedit, NewsTable news) {
+	/**
+	 * Version with fixed Panel
+	 * @param _nedit
+	 * @param news
+	 * @return
+	 */
+	public static JPanel _makeNewsPanel( NewsEditor _nedit, NewsTable news) {
 		int y = 0;
 		JPanel motion_panel = new JPanel();
-    	JScrollPane _new = news.getScrollPane();
+    	JScrollPane _news = news.getScrollPane();
     	java.awt.GridBagLayout gbl = new java.awt.GridBagLayout();
     	motion_panel.setLayout(gbl);
     	java.awt.GridBagConstraints c = new java.awt.GridBagConstraints();
     	c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=5.0;c.weightx=10.0;c.anchor=GridBagConstraints.CENTER;
-    	motion_panel.add(news,c);
+    	motion_panel.add(_news,c);
     	c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=5.0;c.weightx=10.0;c.anchor=GridBagConstraints.CENTER;c.insets=new java.awt.Insets(0,0,0,0);
     	motion_panel.add(_nedit/*.getScrollPane()*/,c);
 		return motion_panel;
+	}
+	/**
+	 * Version with splitter
+	 * @param _nedit
+	 * @param news
+	 * @return
+	 */
+	public static Component makeNewsPanel( NewsEditor _nedit, NewsTable news) {
+		//int y = 0;
+		//JSplitPane motion_panel = new JSplitPane();
+    	JScrollPane _news = news.getScrollPane();
+    	//java.awt.GridBagLayout gbl = new java.awt.GridBagLayout();
+    	//motion_panel.setLayout(gbl);
+    	//java.awt.GridBagConstraints c = new java.awt.GridBagConstraints();
+    	//c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=5.0;c.weightx=10.0;c.anchor=GridBagConstraints.CENTER;
+    	//motion_panel.add(_news,c);
+    	//c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=5.0;c.weightx=10.0;c.anchor=GridBagConstraints.CENTER;c.insets=new java.awt.Insets(0,0,0,0);
+    	//motion_panel.add(_nedit/*.getScrollPane()*/,c);
+		return new JSplitPane(JSplitPane.VERTICAL_SPLIT, _news, _nedit);
 	}
 	public static Component makeJustificationPanel( JustificationEditor _jedit, Justifications justifications) {
 		/*
@@ -896,19 +933,59 @@ public class DD {
 		return wpanel;
 	}
 	/**
+	 * No high quality icons available yet (would need some larger castles for that)
+	 * @param quality
+	 * @param _frame
+	 */
+	public static void loadAppIcons(boolean quality, JFrame _frame) {
+		if(quality) {
+			if (_frame != null) {
+			java.awt.Image icon_conf = config.DDIcons.getImageFromResource(DDIcons.I_DDP2P40, _frame);
+			_frame.setIconImage(icon_conf);// new ImageIcon(getClass().getResource("Icon.png")).getImage());
+			java.util.List<Image> icons = new ArrayList<Image>();
+			icons.add(icon_conf);
+			java.awt.Image icon_conf32 = config.DDIcons.getImageFromResource(DDIcons.I_DDP2P32, _frame);
+			icons.add(icon_conf32);
+			DD.frame.setIconImages(icons);
+		}
+		/*
+		if(DD.frame!=null) {
+			DD.frame.setIconImage(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico")));
+			List<Image> icons = new ArrayList<Image>();
+			//icons.add(Toolkit.getDefaultToolkit().getImage("p2pdd_resources/folder_images_256.png"));
+			icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"folder_images_256.png")));
+			icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"folder_32x32.png")));
+			icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico")));
+			icons.add(Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"happy.smiley19.gif")));
+			DD.frame.setIconImages(icons);
+		}
+		*/
+		} else {
+			java.awt.Image icon_conf = config.DDIcons.getImageFromResource(DDIcons.I_DDP2P40, _frame);
+			_frame.setIconImage(icon_conf);// new ImageIcon(getClass().getResource("Icon.png")).getImage());
+		}
+	}
+	/**
 	 * Starts the spash with dimensions in DD.FRAME_XXX
 	 * @return
 	 */
 	public static JFrame initMainFrameSplash(){
 		JFrame _frame = new JFrameDropCatch(DD.APP_NAME);
 		_frame.getRootPane().addComponentListener(new ComponentAdapter() {
-            public void componentResized(ComponentEvent e) {
+			public void componentResized(ComponentEvent e) {
             	if(_jbc!=null)_jbc.adjustSize();
                 //System.out.println("componentResized:"+frame.getHeight());
             }
-        });
-        _frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        //frame.pack();
+		});
+		_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		loadAppIcons(false, _frame);
+
+		/*
+		com.apple.eawt.Application application = com.apple.eawt.Application.getApplication();
+		application.setDockIconImage(icon_conf);
+		*/
+		
+		//frame.pack();
         //frame.setVisible(true);
         String splash;
         //splash = "icons/800px-Landsgemeinde_Glarus_2006.jpg";
@@ -1308,9 +1385,11 @@ public class DD {
 	static final JPanel JunkPanelMAN = new JPanel();
 
 	public static GUIStatusHistory status = null;
+	private static PeerAddresses peer_addresses;
+	private static Instances peer_instances;
 	public final static boolean  preloadedControl = true;
 	private static void createAndShowGUI() throws P2PDDSQLException{
-		if(DEBUG) System.out.println("createAndShowGUI: start");
+		if (DEBUG) System.out.println("createAndShowGUI: start");
 		ImageIcon icon_conf = config.DDIcons.getConfigImageIcon("Config");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
 		ImageIcon icon_peer = config.DDIcons.getPeerSelImageIcon("General Peer");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
 		ImageIcon icon_org = config.DDIcons.getOrgImageIcon("General Organization");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
@@ -1327,6 +1406,7 @@ public class DD {
 		ImageIcon icon_mail = config.DDIcons.getMailPostImageIcon("Addresses");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
 		ImageIcon icon_identity = config.DDIcons.getIdentitiesImageIcon("Identities");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
 		status = new GUIStatusHistory();
+		tabbedPane.setTabLayoutPolicy(JTabbedPane.WRAP_TAB_LAYOUT);//.SCROLL_TAB_LAYOUT); //.WRAP_TAB_LAYOUT);
 		tabbedPane.addChangeListener(new tabOnFocus_changeListener());
 		Application.appObject = new AppListener(); // will listen for buttons such as createOrg
         
@@ -1355,7 +1435,7 @@ public class DD {
         }
 		if(DEBUG) System.out.println("createAndShowGUI: census added");
         
-    	tabbedPane.setTabLayoutPolicy(JTabbedPane.WRAP_TAB_LAYOUT);
+    	//tabbedPane.setTabLayoutPolicy(JTabbedPane.WRAP_TAB_LAYOUT);
         //identitiesPane.setOpaque(true);
     	if(preloadedControl) {
     		Application.controlPane=controlPane = new ControlPane();
@@ -1509,7 +1589,15 @@ public class DD {
         //WLAN_widget wirelessInterfacesPane = new widgets.wireless.WLAN_widget(Application.db);
         //tabbedPane.addTab("WLAN", makeWLanPanel(wirelessInterfacesPane));
    
-    	tabbedPane.addTab("Addr", icon_mail, new JScrollPane(new PeerAddresses()), _("Addresses"));
+    	tabbedPane.addTab("Addr", icon_mail, new JScrollPane(new PeerAddresses()), _("My Addresses"));
+
+    	peer_addresses = new PeerAddresses();    	
+    	tabbedPane.addTab("IPs", icon_mail, new JScrollPane(peer_addresses), _("Addresses Selected Peer"));
+    	status.addPeerSelectedStatusListener(peer_addresses);
+    	
+    	peer_instances = new Instances();
+    	tabbedPane.addTab("Instance", icon_identity, new JScrollPane(peer_instances), _("Instances"));
+    	status.addPeerSelectedStatusListener(peer_instances.getModel());
     	
 		if(DEBUG) System.out.println("createAndShowGUI: done tabs");
 
@@ -2005,9 +2093,10 @@ public class DD {
 	 */
 	public static String getMyPeerGIDFromDB() {
 		try {
-			String result = DD.getAppText(DD.APP_my_global_peer_ID);
-			D_PeerAddress.init_myself(result);
-			return result;
+			String GID = DD.getAppText(DD.APP_my_global_peer_ID);
+			String instance = DD.getAppText(DD.APP_my_peer_instance);
+			D_PeerAddress.init_myself(GID, instance);
+			return GID;
 		} catch (P2PDDSQLException e) {}
 		return null;
 	}
@@ -2021,7 +2110,11 @@ public class DD {
 				return Identity.current_peer_ID.globalID;
 
 			String result = getMyPeerGIDFromDB();
-			if(Identity.current_peer_ID!=null) Identity.current_peer_ID.globalID = result;
+			if(Identity.current_peer_ID!=null) {
+				Identity.current_peer_ID.globalID = result;
+				Identity.current_peer_ID.instance = D_PeerAddress.get_myself().getInstance();
+				Identity.current_peer_ID.name = D_PeerAddress.get_myself().getName();
+			}
 			return result;
 		}
 	}
@@ -2194,21 +2287,55 @@ public class DD {
 	public static void storeSK(Cipher keys, String name) throws P2PDDSQLException{
 		storeSK(keys, name+Util.getGeneralizedTime(), null, null, null);
 	}
+	/**
+	 * 
+	 * @param keys
+	 * @param name
+	 * @param date
+	 * @throws P2PDDSQLException
+	 */
 	public static void storeSK(Cipher keys, String name, String date) throws P2PDDSQLException{
 		storeSK(keys, name, null, null, null, date);
 	}
-	public static void storeSK(Cipher keys, String pGIDname, String public_key_ID, String secret_key, String pGIDhash) throws P2PDDSQLException{
+	/**
+	 * 
+	 * @param keys
+	 * @param pGIDname
+	 * @param public_key_ID
+	 * @param secret_key
+	 * @param pGIDhash
+	 * @throws P2PDDSQLException
+	 */
+	public static void storeSK(Cipher keys, String pGIDname, 
+			String public_key_ID, String secret_key, String pGIDhash) throws P2PDDSQLException{
 		storeSK(keys, pGIDname, public_key_ID, secret_key, pGIDhash, Util.getGeneralizedTime());
 	}
+	/**
+	 * s
+	 * @param keys
+	 * @param pGIDname
+	 * @param public_key_ID
+	 * @param secret_key
+	 * @param pGIDhash
+	 * @param date
+	 * @throws P2PDDSQLException
+	 */
 	public static void storeSK(Cipher keys, String pGIDname, String public_key_ID, String secret_key, String pGIDhash, String date) throws P2PDDSQLException{
-		if(public_key_ID==null){
+		if (public_key_ID ==  null) {
 			byte[] pIDb = Util.getKeyedIDPKBytes(keys);
 			public_key_ID = Util.getKeyedIDPK(pIDb);
+			if(DEBUG) System.out.println("DD:storeSK public key: "+public_key_ID);
 		}
-		if(secret_key==null) secret_key = Util.getKeyedIDSK(keys);
-		if(pGIDhash==null) pGIDhash = Util.getGIDhash(public_key_ID);
+		if (secret_key == null) {
+			secret_key = Util.getKeyedIDSK(keys);
+			if(DEBUG) System.out.println("DD:storeSK secret key: "+secret_key);
+		}
+		if (pGIDhash == null) {
+			pGIDhash = Util.getGIDhash(public_key_ID);
+			if(DEBUG) System.out.println("DD:storeSK public key hash: "+pGIDhash);
+		}
 		//String date = Util.getGeneralizedTime();
-		if(pGIDname==null) pGIDname = "KEY:"+date;
+		if(pGIDname == null) pGIDname = "KEY:"+date;
 		Application.db.insert(table.key.TNAME,
 				new String[]{table.key.public_key,table.key.secret_key,table.key.ID_hash,table.key.creation_date,
 				table.key.name,table.key.type},
@@ -2227,14 +2354,26 @@ public class DD {
 			
 			if((Identity.current_peer_ID.globalID==null)){ //&&(Identity.create_missing_ID())) {
 				if(DEBUG) out.println("DD:createMyPeerIDIfEmpty: will generate keys");
-				String name = D_PeerAddress.queryName(DD.frame);
-				Identity.emails = D_PeerAddress.queryNewEmails(DD.frame);
-				if(name==null) name = System.getProperty("user.name", _("MySelf"));
-				if(Identity.emails==null) name = System.getProperty("user.name", _("MySelf"))+"@localhost";
-				if(Identity.current_peer_ID.name==null)
-					Identity.current_peer_ID.name=name;
 				
-				D_PeerAddress.createMyPeerID();
+				String name = System.getProperty("user.name", _("MySelf"));
+				String email = System.getProperty("user.name", _("MySelf"))+"@"+DD.DEFAULT_EMAIL_PROVIDER;
+				PeerInput pi = new PeerInput(name, null, email);
+				CreatePeer dialog = new CreatePeer(DD.frame, pi);
+				PeerInput data = dialog.getData();
+				if(!data.valid) {
+					System.exit(-1);
+				}
+				if (DEBUG) System.out.println("DD:createMyPeerIDIfE New Peer"+data);
+				
+				//String name = D_PeerAddress.queryName(DD.frame);
+				//Identity.emails = D_PeerAddress.queryNewEmails(DD.frame);
+				//if(name==null) name = System.getProperty("user.name", _("MySelf"));
+				//if(Identity.emails==null) name = System.getProperty("user.name", _("MySelf"))+"@localhost";
+				Identity.emails = data.email;
+				if(Identity.current_peer_ID.name==null)
+					Identity.current_peer_ID.name = data.name;
+				
+				D_PeerAddress.createMyPeerID(data);
 			}
 		} catch (P2PDDSQLException e) {
 			Application.warning(_("Error accessing database!"), _("Database troubles"));
@@ -2243,6 +2382,8 @@ public class DD {
 
 	public static final int[] VERSION_INTS = Util.getVersion(VERSION);
 	public static final boolean SIGN_DIRECTORY_ANNOUNCEMENTS = false;
+	public static final boolean KEEP_UNCERTIFIED_SOCKET_ADDRESSES = false;
+	public static String WARN_OF_INVALID_SCRIPTS_BASE_DIR = null;
 
 	/**
 	 * Is the data for me as constituent fully input?
@@ -2409,6 +2550,11 @@ public class DD {
 //					new String[]{}, DEBUG);
 			if(v.size()>0)DD.TESTED_VERSION=Util.getString(v.get(0).get(0));
 		}catch(Exception e){
+			try {
+				Application.db.close();
+			} catch (util.P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
 			Application.db = null;
 			e.printStackTrace();
 			return e.getLocalizedMessage();
@@ -2440,7 +2586,8 @@ public class DD {
 			String[]params = new String[]{};
 			String dbase = Application.DIRECTORY_FILE;
 			if(dB_PATH!=null) dbase = dB_PATH+Application.OS_PATH_SEPARATOR+dbase;
-			dbdir = new DBInterface(dbase);
+			dbdir = DirectoryServer.getDirDB(dbase);
+			//dbdir = new DBInterface(dbase);
 			dbdir.select(sql, params, DEBUG);
 		} catch (util.P2PDDSQLException e) {
 			System.out.print(sql);
@@ -2474,22 +2621,17 @@ public class DD {
 		return true;
 	}
 	static void initGUILookAndFeel(){
-	    try {
+	    //try {
+		    System.setProperty("Quaqua.tabLayoutPolicy", "wrap");
+
             // Set cross-platform Java L&F (also called "Metal")
-	    	UIManager.setLookAndFeel( UIManager.getCrossPlatformLookAndFeelClassName());
-	    }
-	    catch (UnsupportedLookAndFeelException e) {
-	    	// handle exception
-	    }
-	    catch (ClassNotFoundException e) {
-	       // handle exception
-	    }
-	    catch (InstantiationException e) {
-	       // handle exception
-	    }
-	    catch (IllegalAccessException e) {
-	       // handle exception
-	    }
+	    	//UIManager.setLookAndFeel( UIManager.getCrossPlatformLookAndFeelClassName());
+		    //System.setProperty("Quaqua.tabLayoutPolicy", "wrap");
+	    //}
+	    //catch (UnsupportedLookAndFeelException e) {}
+	    //catch (ClassNotFoundException e) {}
+	    //catch (InstantiationException e) {}
+	    //catch (IllegalAccessException e) {}
 	}
 	public static boolean GUI = true;
 	//static final String CONSOLE="CONSOLE";
@@ -2530,7 +2672,7 @@ public class DD {
 			}
 		}
 		if(GetOpt.optind<args.length)
-			System.out.println("OPTS:"+args[GetOpt.optind]);
+			System.out.println("OPTS: \""+args[GetOpt.optind]+"\"");
 
 //		// take database as last parameter, or as default
 //		if(args.length>0) {
@@ -2542,7 +2684,7 @@ public class DD {
 		
 		//if((args.length>0) && CONSOLE.equals(args[0])) GUI=false;
 		set_DEBUG();
-		if(GUI){
+		if(GUI) {
 			initGUILookAndFeel();
 			toolkit = Toolkit.getDefaultToolkit();
 			int screen_width = (int)toolkit.getScreenSize().getWidth();
@@ -2610,9 +2752,14 @@ public class DD {
 		}
 		Identity.init_Identity();
 
-		StartUpThread.detect_OS_fill_var();
-		StartUpThread.fill_OS_install_path(); // to be done before importing!!!
-		StartUpThread.fill_OS_scripts_path();
+		StartUpThread.detect_OS_and_store_in_DD_OS_var();
+		StartUpThread.fill_install_paths_all_OSs_from_DB(); // to be done before importing!!!
+		StartUpThread.switch_install_paths_to_ones_for_current_OS();
+		if(DD.WARN_OF_INVALID_SCRIPTS_BASE_DIR != null) {
+			Application.fixScriptsBaseDir(Application.CURRENT_SCRIPTS_BASE_DIR());
+			StartUpThread.fill_install_paths_all_OSs_from_DB(); // to be done before importing!!!
+			StartUpThread.switch_install_paths_to_ones_for_current_OS();
+		}
 		
 		if(DEBUG) System.out.println("DD:run: done database, try import databases");
 		DBInterface selected_db = Application.db; //save it as the import code may change the globals
@@ -2636,7 +2783,13 @@ public class DD {
 						_("Want to be asked to import in the future?"),
 						JOptionPane.YES_NO_OPTION);
 			}else{
-				boolean r=tools.MigrateMirrors.migrateIfNeeded(db_to_import, Application.DELIBERATION_FILE);
+				String oldDB = db_to_import;
+				String newDB = Application.DELIBERATION_FILE;
+				DBInterface dbSrc = new DBInterface(oldDB);
+				DBInterface dbDes = new DBInterface(newDB);
+				boolean r=tools.MigrateMirrors.migrateIfNeeded(db_to_import, Application.DELIBERATION_FILE, dbSrc, dbDes);
+				dbSrc.close();
+				dbDes.close();
 				if(!r){
 					Application.warning(_("A failure happened while trying to migrate your mirrors and testers!\nInstall new mirrors."), _("Mirrors Failure"));
 				}

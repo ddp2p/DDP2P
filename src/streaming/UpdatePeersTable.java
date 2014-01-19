@@ -260,7 +260,7 @@ public class UpdatePeersTable {
 					((maxDate!=null)?(new String[]{peer_ID, minDate, maxDate}):new String[]{peer_ID, minDate}),
 					DEBUG);
 		for(ArrayList<Object> a: p_data) {
-			String addr = Util.getString(a.get(Q_TYPE)) + Address.ADDR_TYPE_SEP + Util.getString(a.get(Q_ADDR));
+			String addr = Util.getString(a.get(Q_TYPE)) + Address.ADDR_PROT_NET_SEP + Util.getString(a.get(Q_ADDR));
 			if(Util.stringInt2bool(a.get(Q_CERT), false))
 				addr += TypedAddress.PRI_SEP + Util.getString(a.get(Q_PRI));
 			if("".equals(result)) result = addr;
@@ -278,9 +278,9 @@ public class UpdatePeersTable {
 			" ORDER BY a."+table.peer_address.arrival_date+" LIMIT 1000;";
 		ArrayList<ArrayList<Object>>p_data = Application.db.select(queryAddresses, new String[]{peer_ID});
 		for(ArrayList<Object> a: p_data) {
-			String addr = Util.getString(a.get(1)) + Address.ADDR_TYPE_SEP + Util.getString(a.get(0));
+			String addr = Util.getString(a.get(1)) + Address.ADDR_PROT_NET_SEP + Util.getString(a.get(0));
 			if(Util.stringInt2bool(a.get(3), false))
-				addr += Address.ADDR_TYPE_SEP + Util.getString(a.get(4));
+				addr += Address.ADDR_PROT_NET_SEP + Util.getString(a.get(4));
 			if("".equals(result)) result = addr;
 			else result = Address.joinAddresses(result, addr);
 		}
@@ -362,7 +362,7 @@ public class UpdatePeersTable {
 			String phones = Util.getString(p.get(11));
 			
 			if(global_peer_ID.equals(Identity.getMyPeerGID())) {
-				D_PeerAddress me = D_PeerAddress.get_myself(global_peer_ID);
+				D_PeerAddress me = D_PeerAddress.get_myself_from_Identity();
 				if(!me.verifySignature()){
 					me.component_basic_data.creation_date = Util.CalendargetInstance();
 					me.signMe();
@@ -626,7 +626,7 @@ public class UpdatePeersTable {
 		for(int j=0; j<addresses_l.length; j++) {
 			String adding_date = Encoder.getGeneralizedTime(Util.incCalendar(adding__date, 1));
 			if(DEBUG)out.println("got addr: "+addresses_l[j]);
-			String[] t_address = addresses_l[j].split(Pattern.quote(Address.ADDR_TYPE_SEP));
+			String[] t_address = addresses_l[j].split(Pattern.quote(Address.ADDR_PROT_NET_SEP));
 			//out.println("got addr: "+addresses_l[j]);
 			String type = t_address[0];
 			String address = null;

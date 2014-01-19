@@ -20,9 +20,13 @@
 
 package ciphersuits;
 
+import javax.swing.ComboBoxModel;
+
+import config.DD;
 import ASN1.ASN1DecoderFail;
 import ASN1.Decoder;
 import ASN1.Encoder;
+import util.P2PDDSQLException;
 import util.Util;
 
 /**
@@ -38,16 +42,18 @@ abstract public class Cipher{
 	public String comment;
 	String hash_alg;
 	public static final String RSA = "RSA";
-	public static final String EC_EG = "ECElGamal";
+	public static final String ECDSA = "ECDSA";
+//	public static final String EC_EG = "ECElGamal";
 	public static final String MD5 = "MD5";
 	public static final String MD2 = "MD2";
 	public static final String SHA1 = "SHA-1";
 	public static final String SHA256 = "SHA-256";
 	public static final String SHA384 = "SHA-384";
 	public static final String SHA512 = "SHA-512";
+	public static final String HNULL = "HNULL";
 	final public static String cipherTypeSeparator="::";
 	private static final boolean _DEBUG = true;
-	private static final boolean DEBUG = false;
+	protected static final boolean DEBUG = false;
 	/**
 	 * Generate keys with "size" primes and DD_PRIME_CERTAINTY and saves them in this object
 	 * @param size
@@ -80,6 +86,7 @@ abstract public class Cipher{
 	/**
 	 * @param cipher "RSA"
 	 * @param _hash_alg: MD2, MD5, SHA-1, SHA-256, SHA-384, SHA-512
+	 * @param comments : comments to be stored in the cipher
 	 * @return
 	 */
 	public static Cipher getCipher(String cipher, String _hash_alg, String _comments){
@@ -88,8 +95,15 @@ abstract public class Cipher{
 			result = new RSA();
 			result.hash_alg = _hash_alg;
 			result.comment = _comments;
-		}else
-			if(DEBUG) System.err.println("Cipher:getCipher: unknown cipher:"+cipher);
+			return result;
+		}
+		if(ECDSA.equals(cipher)){
+			result = new ECDSA();
+			result.hash_alg = _hash_alg;
+			result.comment = _comments;
+			return result;
+		}
+		if(DEBUG) System.err.println("Cipher:getCipher: unknown cipher:"+cipher);
 		return result;
 	}
 	public byte[] encrypt(byte[] m){
@@ -133,19 +147,32 @@ abstract public class Cipher{
 			e1.printStackTrace();
 			return null;
 		}
-		if(dec == null) return null;
+		if (dec == null) return null;
 		Decoder dec_type = dec.getFirstObject(true);
-		if(dec_type==null) return null;
+		if (dec_type==null) return null;
 		String type = dec_type.getString();
-		if(RSA.equals(type)){
-			if(DEBUG) System.err.println("Cipher:getPK: found RSA");
+		if (RSA.equals(type)){
+			if (DEBUG) System.err.println("Cipher:getPK: found RSA");
 			RSA_PK pk = new RSA_PK();
 			try {
-				if(DEBUG) System.err.println("Cipher:getPK: decoding");
+				if (DEBUG) System.err.println("Cipher:getPK: decoding");
 				pk.decode(decoder);
-				if(DEBUG) System.err.println("Cipher:getPK: decoded");
+				if (DEBUG) System.err.println("Cipher:getPK: decoded");
 			} catch (ASN1DecoderFail e) {
-				if(DEBUG) System.err.println("Cipher:getPK: failed decoding");
+				if (DEBUG) System.err.println("Cipher:getPK: failed decoding");
+				return null;
+			}
+			return pk;
+		}
+		if (ECDSA.equals(type)) {
+			if (DEBUG) System.err.println("Cipher:getPK: found ECDSA");
+			ECDSA_PK pk = null;
+			try {
+				if (DEBUG) System.err.println("Cipher:getPK: decoding");
+				pk = new ECDSA_PK(decoder);
+				if (DEBUG) System.err.println("Cipher:getPK: decoded");
+			} catch (ASN1DecoderFail e) {
+				if (_DEBUG) System.err.println("Cipher:getPK: failed decoding");
 				return null;
 			}
 			return pk;
@@ -184,6 +211,16 @@ abstract public class Cipher{
 			}
 			return sk;
 		}
+		if(ECDSA.equals(type)){
+			ECDSA_SK sk = null; //new RSA_SK();
+			try {
+				sk = new ECDSA_SK(decoder);
+			} catch (ASN1DecoderFail e) {
+				e.printStackTrace();
+				return null;
+			}
+			return sk;
+		}
     	if(_DEBUG)System.err.println("SK:getSK: Unsupported Cipher type: "+type);
 		return null;
 	}
@@ -208,5 +245,97 @@ abstract public class Cipher{
 		RSA_PK r1 = (RSA_PK)p1;
 		RSA_PK r2 = (RSA_PK)p2;
 		return r1.equals(r2);
+	}
+	public static String[] getAvailableCiphers() {
+		return new String[]{Cipher.RSA, Cipher.ECDSA};
+	}
+	public static Cipher_Sizes getAvailableSizes(String cipher) {
+		if(cipher == null) {
+			System.out.println("Cipher:getAvailableSizes null");
+			return null;
+		}
+		
+		if(Cipher.RSA.equals(cipher)) {
+			if (DEBUG) System.out.println("Cipher:getAvailableSizes RSA");
+			return new Cipher_Sizes(2048, Cipher_Sizes.INT_RANGE, new int[]{230,20000});
+		}
+		if (Cipher.ECDSA.equals(cipher)) {
+			if (DEBUG) System.out.println("Cipher:getAvailableSizes ECDSA");
+			return new Cipher_Sizes(
+					3,
+					Cipher_Sizes.LIST,
+					new String[]{
+					"P-119"  //+ciphersuits.ECDSA.P_119
+					,"P-256" //+ciphersuits.ECDSA.P_256
+					,"P-384" //+ciphersuits.ECDSA.P_384
+					,"P-521" //+ciphersuits.ECDSA.P_521
+					});
+		}
+		System.out.println("Cipher:getAvailableSizes: "+cipher);
+
+		return null;//new String[]{Cipher.RSA, Cipher.ECDSA};
+	}
+	public static String[] getHashAlgos(String cipher, int size) {
+		if(cipher == null) return null;
+		switch(cipher) {
+		case Cipher.RSA:
+			if(size > 256+30) return new String[]{Cipher.SHA256, Cipher.SHA1, Cipher.MD5, Cipher.HNULL};
+			else if(size > 160+30) return new String[]{Cipher.SHA1, Cipher.MD5, Cipher.HNULL};
+			else if(size > 128+30) return new String[]{Cipher.MD5, Cipher.HNULL};
+			return null;
+		case Cipher.ECDSA:
+			size = ECC.getCurveID(size);
+			switch(size) {
+			case 119:
+			case ciphersuits.ECDSA.P_119: return new String[]{Cipher.MD5, Cipher.HNULL};
+			case 256:
+			case ciphersuits.ECDSA.P_256: return new String[]{Cipher.SHA1, Cipher.MD5, Cipher.HNULL};
+			case 384:
+			case ciphersuits.ECDSA.P_384: return new String[]{Cipher.SHA256, Cipher.SHA1, Cipher.MD5, Cipher.HNULL};
+			case 521:
+			case ciphersuits.ECDSA.P_521: return new String[]{Cipher.SHA384, Cipher.SHA256, Cipher.SHA1, Cipher.MD5, Cipher.HNULL};
+			}
+			return null;
+		}
+		return null;
+	}
+	public static String getDefaultCipher() {
+		return Cipher.ECDSA;
+	}
+	public static String buildCiphersuitID(String ciphersuit, String hash) {
+		return ciphersuit+":"+hash;
+	}
+	/**
+	 * Key comment based on:  key_comment+"://"+seed+now
+	 * @param ciphersuit
+	 * @param _hash_alg
+	 * @param ciphersize
+	 * @param storage_comment
+	 * @param key_comment
+	 * @param seed
+	 * @param now
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public static Cipher mGetStoreCipher(String ciphersuit, String _hash_alg,
+			int ciphersize, String storage_comment, String key_comment, String seed,
+			String now) throws P2PDDSQLException {
+		Cipher keys;
+		//keys = Util.getKeyedGlobalID(key_comment, seed+now);
+		String body = seed+now;
+    	keys = ciphersuits.Cipher.getCipher(ciphersuit, _hash_alg, key_comment+"://"+body);
+		keys.genKey(ciphersize);
+		DD.storeSK(keys, storage_comment, now);
+		return keys;
+	}
+	public static CipherSuit getCipherSuite(PK pk) {
+		return pk.getCipherSuite();
+	}
+	public static Cipher getNewCipher(CipherSuit cipherSuite, String comments) {
+		ciphersuits.Cipher keys;
+		keys = Cipher.getCipher(cipherSuite.cipher, cipherSuite.hash_alg,
+				comments);
+		keys.genKey(cipherSuite.ciphersize);
+		return keys;
 	}
 }

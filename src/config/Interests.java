@@ -12,8 +12,14 @@ public class Interests {
 	public static void main(String[] args){
 		try {
 			String cmd = args[0];
-			if("DISPLAY".equals(cmd)) display(args);
-			if("FREE".equals(cmd)) free(args);
+			if("DISPLAY".equals(cmd)){
+				Application.db = new DBInterface(args[1]);
+				display(args);
+			}
+			if("FREE".equals(cmd)){
+				Application.db = new DBInterface(args[1]);
+				free(args);
+			}
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -22,14 +28,10 @@ public class Interests {
 	}
 
 	private static void free(String[] args) throws Exception {
-		Application.db = new DBInterface(args[1]);
-		
 		DD.setAppText(DD.WLAN_INTERESTS, null);
 		
 	}
-	private static void display(String[] args) throws Exception {
-			Application.db = new DBInterface(args[1]);
-			
+	private static void display(String[] args) throws Exception {			
 			RequestData rq = getCurrentInterests();
 			
 			System.out.println("Interests: have = "+rq);

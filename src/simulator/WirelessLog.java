@@ -218,11 +218,18 @@ public static String inc_c_counter(){
 	}
 	
 	public static void init() throws IOException {
-		if(DEBUG)System.out.println("WirelessLog:init");
+		if (DEBUG) System.out.println("WirelessLog:init");
 		String t = Util.getGeneralizedTime();
         File dir = new File(Application.CURRENT_LOGS_BASE_DIR()); //+Application.OS_PATH_SEPARATOR+Application.RELATIVE_DIR_LOGS);
-        dir.mkdirs();
+        if (!dir.mkdirs() && (!dir.exists() || !dir.isDirectory())) {
+        	System.err.println("WirelessLog: init: failure to create folder: "+dir);
+        	return;
+        }
         WirelessLog.f1 = new File(Application.CURRENT_LOGS_BASE_DIR()/*+Application.OS_PATH_SEPARATOR+Application.RELATIVE_DIR_LOGS+Application.OS_PATH_SEPARATOR*/+t+".log");
+        if((!f1.exists() && !dir.canWrite()) || (f1.exists() && !f1.canWrite())) {
+        	System.err.println("WirelessLog: init: cannot create/modify: "+f1);
+        	return;
+        }
         WirelessLog.fw1 = new FileWriter(f1);
         WirelessLog.pw1 = new PrintWriter(WirelessLog.fw1);
         WirelessLog.Print_to_log(WirelessLog.Log_Info);

@@ -3,6 +3,7 @@ package MCMC;
 import java.util.Random;
 
 import config.Application;
+import config.DD;
 
 import util.P2PDDSQLException;
 import util.Util;
@@ -72,10 +73,10 @@ class GraphNeighborhood{
 	}
 }
 
-public class RandomNetworkSimulation {
-	private static final int SIZE_NEIGHBORHOOD = 1000;
-	private static final int DENSITY_NEIGHBORHOOD = 25;
-	private static final int NB_NEIGHBORHOODS = 1000;
+public class RandomNetworkSimulation extends Thread{
+	private static final int SIZE_NEIGHBORHOOD = 100;
+	private static final int DENSITY_NEIGHBORHOOD = 20;
+	private static final int NB_NEIGHBORHOODS = 100;
 	private static final int NB_EXTERNAL_NEIGHBORS = 10;
 	MCMC mcmc;
 	//D_Constituent[] Nodes;
@@ -86,6 +87,7 @@ public class RandomNetworkSimulation {
 	int SizeofAttackerType2;// Type 2: Witness for (+) ineligible identities
 	int SizeofAttackerType3;// Type 3: Witness against (-) eligible identities
 	int ObserverID = 0;
+	String orgGID;
 	Random r = new Random();
 	private int SizeofIneligible;
 	
@@ -126,15 +128,16 @@ public class RandomNetworkSimulation {
 			int nbAttackersIneligibleIDs_1, int nbAttackersWitnessForIneligible_2,
 			int nbAttackersWitnessAgainstEligible_3,
 			int nbIneligible){
+		orgGID = global_organization_id;
 		this.SizeofActiveHonestConstituents=sizeActiveHonestConsts;
 		this.SizeofInactiveConstituents=sizeInactiveConsts;
 		this.SizeofAttackerType1=nbAttackersIneligibleIDs_1;
 		this.SizeofAttackerType2=nbAttackersWitnessForIneligible_2;
 		this.SizeofAttackerType3=nbAttackersWitnessAgainstEligible_3;
 		this.SizeofIneligible=nbIneligible;
-		
-		generate_Data(global_organization_id);
-		
+	}
+	public void run(){
+		generate_Data(orgGID);
 	}
 	void generate_Data( String global_organization_id){
 		SizeofNetwork=SizeofActiveHonestConstituents+
@@ -144,6 +147,7 @@ public class RandomNetworkSimulation {
 		SK sk[][] = new SK[NB_NEIGHBORHOODS][];
 		
 		for(int n=0; n<NB_NEIGHBORHOODS; n++) {
+			System.out.print("N"+n+":");
 			_gn[n] = new GraphNeighborhood(SIZE_NEIGHBORHOOD, DENSITY_NEIGHBORHOOD);
 			GraphNeighborhood gn = _gn[n];
 			//gn.createAttackers(1, this.SizeofAttackerType1);
@@ -154,15 +158,31 @@ public class RandomNetworkSimulation {
 			sk[n] = new SK[gn.IDs.length]; 
 			D_Neighborhood d_n = null;
 			for(int c = 0; c < gn.IDs.length; c++) {
+				System.out.print("C"+c+",");
 				D_Constituent _c = new D_Constituent();
 				_c.surname = "Neighborhood_"+n;
 				_c.forename = "Constituent_"+c+" "+gn.type[c];
 				_c.global_organization_ID = global_organization_id;
 				_c.creation_date = Util.CalendargetInstance();
-				Cipher cipher = Cipher.getCipher("RSA", "SHA1", "C"+c);
+				
+			   	Cipher keys = null;
+		    	if(keys==null) {
+		    		String now = Util.getGeneralizedTime();
+		    		keys = Util.getKeyedGlobalID("Constituent", _c.forename+" "+now);
+		    		keys.genKey(256);
+		    		//DD.storeSK(keys, "CST:"+_c.getName(), now);
+		    		sk[n][c] = keys.getSK();
+		    		
+		    	}
+		    	
+				String gcd = Util.getKeyedIDPK(keys);
+				String sID = Util.getKeyedIDSK(keys);
+
+				
+				//Cipher cipher = Cipher.getCipher("RSA", "SHA1", "C"+c);
 				//PK pk = cipher.getPK();
-				sk[n][c] = cipher.getSK();
-				_c.global_constituent_id = Util.getKeyedIDPK(cipher);
+				//sk[n][c] = cipher.getSK();
+				_c.global_constituent_id = gcd; //Util.getKeyedIDPK(cipher);
 				if(_c.global_constituent_id != null){
 					_c.global_constituent_id_hash = D_Constituent.getGIDHashFromGID(_c.global_constituent_id);
 				}else{
@@ -180,13 +200,18 @@ public class RandomNetworkSimulation {
 					d_n.submitter = _c;
 					d_n.global_neighborhood_ID = d_n.make_ID(global_organization_id);
 					d_n.sign(sk[n][c], global_organization_id);
+					try {
+						d_n.storeVerified(false);
+					} catch (P2PDDSQLException e) {
+						e.printStackTrace();
+					}
 				}
 				if(d_n!=null)
 					_c.global_neighborhood_ID = d_n.global_neighborhood_ID;
 				
-				_c.sign(cipher.getSK(), global_organization_id);
+				_c.sign(sk[n][c], global_organization_id);
 				try {
-					_c.storeVerified();
+					_c.storeVerified(false);
 				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 				}
@@ -194,7 +219,8 @@ public class RandomNetworkSimulation {
 			}
 			
 			for(int c = 0; c < gn.IDs.length; c++) {
-				for(int w = 0; w < gn.neighbors.length; w++) {
+				for(int w = 0; w < gn.neighbors[c].length; w++) {
+					System.out.print("W"+w+",");
 					int t = gn.neighbors[c][w];
 					D_Witness _w = new D_Witness();
 					_w.sense_y_n = getVote(_gn[n].type[c], _gn[n].e[t]); // change here for against
@@ -205,7 +231,7 @@ public class RandomNetworkSimulation {
 					_w.sign(sk[n][c]);
 					_w.global_witness_ID = _w.make_ID();
 					try {
-						_w.storeVerified();
+						_w.storeVerified(false, _w.creation_date);
 					} catch (P2PDDSQLException e) {
 						e.printStackTrace();
 					}
@@ -213,7 +239,9 @@ public class RandomNetworkSimulation {
 			}
 		}
 		for(int n=0; n<RandomNetworkSimulation.NB_NEIGHBORHOODS; n++){
+			System.out.print("n"+n+":");
 			for(int c = 0; c<_gn[n].neighbors[c].length; c++){
+				System.out.print("c"+c+",");
 				for(int v = 0; v <= NB_EXTERNAL_NEIGHBORS; v++) {
 					int k;
 					while((k = r.nextInt(NB_EXTERNAL_NEIGHBORS)) == n);
@@ -228,7 +256,7 @@ public class RandomNetworkSimulation {
 					_w.sign(sk[n][c]);
 					_w.global_witness_ID = _w.make_ID();
 					try {
-						_w.storeVerified();
+						_w.storeVerified(false, _w.creation_date);
 					} catch (P2PDDSQLException e) {
 						e.printStackTrace();
 					}

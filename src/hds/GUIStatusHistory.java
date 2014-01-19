@@ -53,6 +53,17 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	ArrayList<MotionsListener> mot_listeners = new ArrayList<MotionsListener>();
 	ArrayList<JustificationsListener> just_listeners = new ArrayList<JustificationsListener>();
 
+
+	/**
+	 * Add one empty entry
+	 */
+	public GUIStatusHistory() {
+		//GUIStatus original = new GUIStatus(null);
+		//history.add(original);
+		D_PeerAddress peer = D_PeerAddress.get_myself();
+		this.setMePeer(peer);
+			//original.setMePeer(peer);
+	}
 	public void firePeerSelectedListeners() {
 		if(DEBUG) System.out.println("GUIStatus: peer_selected fireListener #"+peer_selected_listeners.size());
 		D_PeerAddress peer = getSelectedPeer();
@@ -243,49 +254,37 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		if(DEBUG) System.out.println("GUIStatus: removeJusts Listener "+l);
 		just_listeners.remove(l);
 	}
-
-	/**
-	 * Add one empty entry
-	 */
-	public GUIStatusHistory() {
-		GUIStatus original = new GUIStatus(null);
-		try {
-			original.setMePeer(D_PeerAddress.get_myself(null));
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
-		history.add(original);
-	}
 	/**
 	 * Adds a new GUIStatus at the top of the stack (duplicating existing one)
 	 * and discarding the bottom if the stack is too high
 	 */
 	static private void pushStack() {
 		GUIStatus n = null;
-		if(history.size()>0) n = new GUIStatus(history.get(0));
+		if (history.size() > 0) n = new GUIStatus(history.get(0));
+		else n = new GUIStatus(null);
 		history.add(0, n);
 		if(history.size()>MAX_HISTORY) history.remove(history.size()-1);
 		if(DEBUG) System.out.println("GUIS: pushStack n="+n.toString(1));
 //		Util.printCallPath("stack");
 	}
 	void printCrt(String context){
-		if(_DEBUG) System.out.println("GUIS: printCrt ctx="+context+" /"+history.size()+"\n "+history.get(crt).toString(1));
+		if(DEBUG) System.out.println("GUIS: printCrt ctx="+context+" /"+history.size()+"\n "+history.get(crt).toString(1));
 	}
 	void cleanForward(){
 		while (crt > 0) {
 			crt --;
 			history.remove(0);
-			if(_DEBUG) System.out.println("GUIS: cleanForward: crt="+crt);
+			if(DEBUG) System.out.println("GUIS: cleanForward: crt="+crt);
 		}
 	}
 	synchronized
 	public void setTab(int tab){
-		if(_DEBUG) System.out.println("GUIStatus: setTab "+tab);
+		if(DEBUG) System.out.println("GUIStatus: setTab "+tab);
 		if(tab == getTab()){
 			if(DEBUG) System.out.println("GUIStatusHistory: setTab same old selected tab");
 			return;
 		}else{
-			if(_DEBUG) System.out.println("GUIStatusHistory: setTab new selected tab="+tab+" vs "+getTab());
+			if(DEBUG) System.out.println("GUIStatusHistory: setTab new selected tab="+tab+" vs "+getTab());
 		}
 		cleanForward();
 		pushStack();
@@ -295,7 +294,7 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	}
 	synchronized
 	void setSelectedPeer(D_PeerAddress peer){
-		if(_DEBUG) System.out.println("GUIStatus: setSelectedPeer "+((peer==null)?"null":peer.component_basic_data.name));
+		if(DEBUG) System.out.println("GUIStatus: setSelectedPeer "+((peer==null)?"null":peer.component_basic_data.name));
 		if(samePeer(peer, getSelectedPeer())) {
 			if(DEBUG) System.out.println("GUIStatusHistory: setSelectedPeer same old selected peer");
 			return;
@@ -308,11 +307,13 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	}
 	synchronized
 	public void setMePeer(D_PeerAddress peer) {
-		if(_DEBUG) System.out.println("GUIStatus: setMePeer "+((peer==null)?"null":peer.component_basic_data.name));
+		if(DEBUG) System.out.println("GUIStatus: setMePeer "+((peer==null)?"null":peer.component_basic_data.name));
 		if(samePeer(peer, getMePeer())){
 			if(DEBUG) System.out.println("GUIStatusHistory: setMePeer same old me_peer");
 			return;
 		}
+		if(DEBUG) Util.printCallPath("call");
+		if(DEBUG) System.out.println("GUIStatus: setMePeer "+peer);
 		cleanForward();
 		pushStack();
 		history.get(crt).setMePeer(peer);
@@ -321,12 +322,12 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	}
 	synchronized
 	void setSelectedConstituent(D_Constituent c){
-		if(_DEBUG) System.out.println("GUIStatus: setSelectedConst "+((c==null)?"null":c.getName()));
+		if(DEBUG) System.out.println("GUIStatus: setSelectedConst "+((c==null)?"null":c.getName()));
 		if(sameConstituent(c, getSelectedConstituent())) {
 			if(DEBUG) System.out.println("GUIStatusHistory: setSelectedConst same old selected cons");
 			return;
 		}else
-			if(_DEBUG) System.out.println("GUIStatusHistory: setSelCons new SelCons");
+			if(DEBUG) System.out.println("GUIStatusHistory: setSelCons new SelCons");
 		cleanForward();
 		pushStack();
 		history.get(crt).setSelectedConstituent(c);
@@ -335,20 +336,20 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	}
 	synchronized
 	public void setMeConstituent(D_Constituent c) {
-		if(_DEBUG) System.out.println("GUIStatus: setMeConstituent "+((c==null)?"null":c.getName()));
+		if(DEBUG) System.out.println("GUIStatus: setMeConstituent "+((c==null)?"null":c.getName()));
 		if(sameConstituent(c, getMeConstituent())){
-			if(_DEBUG) System.out.println("GUIStatusHistory: setMeConstituent same old me_const");
+			if(DEBUG) System.out.println("GUIStatusHistory: setMeConstituent same old me_const");
 			return;
 		}else{
-			if(_DEBUG) System.out.println("GUIStatusHistory: setCons new MeCons");
+			if(DEBUG) System.out.println("GUIStatusHistory: setCons new MeCons");
 		}
 		if(crt>0){
 			if(sameConstituent(c, getMeConstituent(crt-1))){
-				if(_DEBUG) System.out.println("GUIStatusHistory: setMeConstituent same old me_const");
+				if(DEBUG) System.out.println("GUIStatusHistory: setMeConstituent same old me_const");
 				crt--;
 				return;
 			}else{
-				if(_DEBUG) System.out.println("GUIStatusHistory: setCons new prev MeCons");
+				if(DEBUG) System.out.println("GUIStatusHistory: setCons new prev MeCons");
 			}
 		}
 		cleanForward();
@@ -356,11 +357,11 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		history.get(crt).setMeConstituent(c);
 		printCrt("MeConst");
 		this.fireConstituentMeListeners();
-		if(_DEBUG) System.out.println("GUIStatusHistory: setCons done");
+		if(DEBUG) System.out.println("GUIStatusHistory: setCons done");
 	}
 	public synchronized
 	void setSelectedOrg(D_Organization org){
-		if(_DEBUG) System.out.println("GUIStatusHistory: setOrgs "+((org==null)?null:org.name));
+		if(DEBUG) System.out.println("GUIStatusHistory: setOrgs "+((org==null)?null:org.name));
 		if(sameOrganization(org, getSelectedOrg())){
 			if(DEBUG) System.out.println("GUIStatusHistory: setOrgs same old org");
 			return;
@@ -372,27 +373,27 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		history.get(crt).setSelectedOrg(org);
 		printCrt("Org");
 		this.fireOrgListeners();
-		if(_DEBUG) System.out.println("GUIStatusHistory: setOrgs done");
+		if(DEBUG) System.out.println("GUIStatusHistory: setOrgs done");
 	}
 	public synchronized
 	void setSelectedMot(D_Motion mot){
-		if(_DEBUG) System.out.println("GUIStatusHistory: setMots "+((mot==null)?null:mot.motion_title));
+		if(DEBUG) System.out.println("GUIStatusHistory: setMots "+((mot==null)?null:mot.motion_title));
 		if(sameMotion(mot, getSelectedMot())){
 			if(DEBUG) System.out.println("GUIStatusHistory: setMots same old mot");
 			return;
 		}else
-			if(_DEBUG) System.out.println("GUIStatusHistory: setMots new mot");
+			if(DEBUG) System.out.println("GUIStatusHistory: setMots new mot");
 		cleanForward();
 		pushStack();
 		if(DEBUG) System.out.println("GUIStatusHistory: setMots set to="+((mot==null)?null:mot.motion_title));
 		history.get(crt).setSelectedMot(mot);
 		printCrt("Mot");
 		this.fireMotListeners();
-		if(_DEBUG) System.out.println("GUIStatusHistory: setMots done");
+		if(DEBUG) System.out.println("GUIStatusHistory: setMots done");
 	}
 	public synchronized
 	void setSelectedJust(D_Justification just, boolean sync){
-		if(_DEBUG) System.out.println("GUIStatusHistory: setJusts "+((just==null)?null:just.justification_title));
+		if(DEBUG) System.out.println("GUIStatusHistory: setJusts "+((just==null)?null:just.justification_title));
 		if(sameJust(just, getSelectedJust())) {
 			if(DEBUG) System.out.println("GUIStatusHistory: setJusts same old just");
 			return;
@@ -447,77 +448,77 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	}
 	synchronized
 	public boolean back(){
-		printHistory();
+		if (DEBUG) printHistory();
 		if(crt == history.size()-1){
-			if(_DEBUG) System.out.println("GUISH: back: at the bottom: crt="+crt);
+			if (DEBUG) System.out.println("GUISH: back: at the bottom: crt="+crt);
 			return false; // cannot go further back
 		}
 		crt++;
 		tellListeners(crt, crt-1);
-		if(_DEBUG) System.out.println("GUISH: back: from "+(crt-1)+" to "+crt);
+		if (DEBUG) System.out.println("GUISH: back: from "+(crt-1)+" to "+crt);
 		return true;
 	}
 	synchronized
 	public boolean forward(){
-		printHistory();
+		if (DEBUG) printHistory();
 		if(crt == 0) return false; // cannot go further forward
 		crt--;
 		tellListeners(crt, crt+1);
-		if(_DEBUG) System.out.println("GUISH: back: from "+(crt+1)+" to "+crt);
+		if (DEBUG) System.out.println("GUISH: back: from "+(crt+1)+" to "+crt);
 		return true;
 	}
 	private void tellListeners(int crt, int previous) {
 		D_Organization org = getSelectedOrg();
 		D_Organization o_prev = getSelectedOrg(previous);
 		if(org!=o_prev){
-			if(_DEBUG) System.out.println("GUISH: tellListeners: new org "+((org==null)?"null":org.name));
+			if (DEBUG) System.out.println("GUISH: tellListeners: new org "+((org==null)?"null":org.name));
 			fireOrgListeners();
 		}
 
 		D_Motion mot = getSelectedMot();
 		D_Motion m_prev = getSelectedMot(previous);
 		if(mot!=m_prev){
-			if(_DEBUG) System.out.println("GUISH: tellListeners: new mot "+((mot==null)?"null":mot.motion_title.title_document.getDocumentUTFString()));
+			if (DEBUG) System.out.println("GUISH: tellListeners: new mot "+((mot==null)?"null":mot.motion_title.title_document.getDocumentUTFString()));
 			fireMotListeners();
 		}
 		
 		D_Constituent selcon = getSelectedConstituent();
 		D_Constituent sc_prev = getSelectedConstituent(previous);
 		if(selcon!=sc_prev){
-			if(_DEBUG) System.out.println("GUISH: tellListeners: new selcon "+((selcon==null)?"null":selcon.getName()));
+			if (DEBUG) System.out.println("GUISH: tellListeners: new selcon "+((selcon==null)?"null":selcon.getName()));
 			fireConstituentSelectedListeners();
 		}
 		
 		D_Constituent mecon = getMeConstituent();
 		D_Constituent mc_prev = getMeConstituent(previous);
 		if(mecon!=mc_prev){
-			if(_DEBUG) System.out.println("GUISH: tellListeners: new mecon "+((mecon==null)?"null":mecon.getName()));
+			if (DEBUG) System.out.println("GUISH: tellListeners: new mecon "+((mecon==null)?"null":mecon.getName()));
 			fireConstituentMeListeners();
 		}
 		
 		D_PeerAddress selpeer = getSelectedPeer();
 		D_PeerAddress sp_prev = getSelectedPeer(previous);
 		if(selpeer!=sp_prev){
-			if(_DEBUG) System.out.println("GUISH: tellListeners: new selpeer "+((selpeer==null)?"null":selpeer.component_basic_data.name));
+			if (DEBUG) System.out.println("GUISH: tellListeners: new selpeer "+((selpeer==null)?"null":selpeer.component_basic_data.name));
 			firePeerSelectedListeners();
 		}
 		
 		D_PeerAddress mepeer = getMePeer();
 		D_PeerAddress mp_prev = getMePeer(previous);
 		if(mepeer!=mp_prev){
-			if(_DEBUG) System.out.println("GUISH: tellListeners: new mepeer "+((mepeer==null)?"null":mepeer.component_basic_data.name));
+			if (DEBUG) System.out.println("GUISH: tellListeners: new mepeer "+((mepeer==null)?"null":mepeer.component_basic_data.name));
 			firePeerMeListeners();
 		}
 		
 		int crtTab = getTab();
 		int prevTab = getTab(previous);
 		if((crtTab != prevTab)&&(crtTab > 0)) {
-			if(_DEBUG) System.out.println("GUISH: tellListeners: new tab "+crtTab);
+			if (DEBUG) System.out.println("GUISH: tellListeners: new tab "+crtTab);
 		}
 	}
 
 	boolean checkIdx(int i){
-		System.out.println("GUISH: checkIdx: "+i+" < "+history.size());
+		if (DEBUG) System.out.println("GUISH: checkIdx: "+i+" < "+history.size());
 		return (0<=i)&&(i<history.size());
 	}
 	public synchronized
@@ -530,25 +531,26 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	}
 	synchronized
 	D_PeerAddress getMePeer() {
+		if (crt >= history.size()) return null;
 		return history.get(crt).getMePeer();
 	}
-	synchronized
+	public synchronized
 	D_Constituent getSelectedConstituent() {
 		return history.get(crt).getSelectedConstituent();
 	}
-	synchronized
+	public synchronized
 	D_Constituent getMeConstituent() {
 		return history.get(crt).getMeConstituent();
 	}
-	synchronized
+	public synchronized
 	D_Organization getSelectedOrg() {
 		return getSelectedOrg(crt);
 	}
-	synchronized
+	public synchronized
 	D_Motion getSelectedMot() {
 		return getSelectedMot(crt);
 	}
-	synchronized
+	public synchronized
 	D_Justification getSelectedJust() {
 		return getSelectedJust(crt);
 	}
@@ -689,6 +691,7 @@ class GUIStatus {
 	private static final int B_MOTION = 3;
 	private static final int B_ORGANIZATION = 2;
 	private static final int B_IDENTITY = 1;
+	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	Identity selected_identity;
 	//Identity.current_id_branch;
@@ -814,18 +817,18 @@ class GUIStatus {
 	private void backtrack(int level){
 		switch(level) {
 		case B_IDENTITY:
-			if(_DEBUG) System.out.println("GUIStatus: backtrack: Identity");
+			if(DEBUG) System.out.println("GUIStatus: backtrack: Identity");
 			selected_identity = null;
 			myself_peer = null;
 			selected_peer = null;
 		case B_ORGANIZATION:
-			if(_DEBUG) System.out.println("GUIStatus: backtrack: ORG");
+			if(DEBUG) System.out.println("GUIStatus: backtrack: ORG");
 			selected_organization = null;
 			selected_neighborhood = null;
 			selected_constituent = null;
 			myself_constituent = null;
 		case B_MOTION:
-			if(_DEBUG) System.out.println("GUIStatus: backtrack: MOTION");
+			if(DEBUG) System.out.println("GUIStatus: backtrack: MOTION");
 			//selected_news = null;
 			selected_justification = null;
 			selected_motion = null;

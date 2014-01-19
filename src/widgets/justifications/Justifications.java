@@ -276,7 +276,7 @@ public class Justifications extends JTable implements MouseListener, Justificati
 		if(DEBUG) System.out.println("Justifications:fireListener:choice="+getModel().crt_choice+"  id="+id);
 	}
 	void fireListener(String id, int col, boolean db_sync) {
-   	   	if(_DEBUG) System.out.println("Justifications: fire justID="+id);
+   	   	if(DEBUG) System.out.println("Justifications: fire justID="+id);
    	   	D_Justification just = null;
    	   	if(id != null)
 			try {
@@ -335,7 +335,7 @@ public class Justifications extends JTable implements MouseListener, Justificati
    	   		}catch(Exception e){};
    	   	}
         
-   	   	if(_DEBUG) System.out.println("Justifications: mouse click row="+row);
+   	   	if (DEBUG) System.out.println("Justifications: mouse click row="+row);
         fireListener(row,col, false);
 	}
 	@Override

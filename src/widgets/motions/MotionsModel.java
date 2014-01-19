@@ -120,23 +120,27 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	private D_Constituent constituent;
 	private D_Organization organization;
 	public Icon getIcon(int column) {
-		if(column == TABLE_COL_HIDDEN){ 
-			return DDIcons.getHideImageIcon("Hidden");
-		}
-		if(column == TABLE_COL_TMP){ 
-			return DDIcons.getTmpImageIcon("TMP");
-		}
-		if(column == MotionsModel.TABLE_COL_GID_VALID){ 
-			return DDIcons.getGIDImageIcon("GID");
-		}
-		if(column == MotionsModel.TABLE_COL_BLOCKED){ 
-			return DDIcons.getBlockImageIcon("Block");
-		}
-		if(column == MotionsModel.TABLE_COL_BROADCASTED){ 
-			return DDIcons.getBroadcastImageIcon("Broadcast");
-		}
-		if(column == MotionsModel.TABLE_COL_SIGN_VALID){ 
-			return DDIcons.getSignedImageIcon("Signed");
+		switch(column) {
+			case TABLE_COL_HIDDEN: 
+				return DDIcons.getHideImageIcon("Hidden");
+			case TABLE_COL_TMP: 
+				return DDIcons.getTmpImageIcon("TMP");
+			case MotionsModel.TABLE_COL_GID_VALID: 
+				return DDIcons.getGIDImageIcon("GID");
+			case MotionsModel.TABLE_COL_BLOCKED: 
+				return DDIcons.getBlockImageIcon("Block");
+			case MotionsModel.TABLE_COL_BROADCASTED: 
+				return DDIcons.getBroadcastImageIcon("Broadcast");
+			case MotionsModel.TABLE_COL_SIGN_VALID: 
+				return DDIcons.getSignedImageIcon("Signed");
+			case MotionsModel.TABLE_COL_RECENT: 
+				return DDIcons.getHotImageIcon("Hot");
+			case TABLE_COL_NEWS:
+				return DDIcons.getNewsImageIcon("News");
+			case TABLE_COL_VOTERS_NB:
+				return DDIcons.getSigImageIcon("Support");
+			case TABLE_COL_ACTIVITY:
+				return DDIcons.getConImageIcon("Voters");	
 		}
 		return null;
 	}

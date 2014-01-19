@@ -17,6 +17,8 @@ import ASN1.Encoder;
 import config.Application;
 import config.DD;
 import config.Identity;
+import config.ThreadsAccounting;
+import data.D_PeerAddress;
 class Dir extends ASNObj{
 	String version = "0";
 	String domain;
@@ -52,11 +54,14 @@ class SaverThread extends Thread {
 		this.ds = ds;
 	}
 	public void run(){
+		this.setName("DD_DirectoryServer SaverThread");
+		ThreadsAccounting.registerThread();
 		try {
 			_run();
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
+		ThreadsAccounting.unregisterThread();
 	}
 	public void _run() throws P2PDDSQLException{
     	String ld = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
@@ -83,11 +88,15 @@ class SaverThread extends Thread {
 //			e.printStackTrace();
 //		}
 		if(Application.as!=null) {
+			/*
 			Identity peer_ID = new Identity();
 			peer_ID.globalID = Identity.current_peer_ID.globalID;
 			peer_ID.name = Identity.current_peer_ID.name;
 			peer_ID.slogan = Identity.current_peer_ID.slogan;
+			peer_ID.instance = Identity.current_peer_ID.instance;
 			Server.set_my_peer_ID_TCP(peer_ID);
+			*/
+			Server.set_my_peer_ID_TCP(D_PeerAddress.get_myself());
 		}
 	}
 }

@@ -244,7 +244,7 @@ public class NeighborhoodHandling {
 		D_Neighborhood wn = neighborhood.neighborhood;
 		wn.global_organization_ID = orgGID;
 		wn.organization_ID = Util.lval(org_local_ID,-1);
-		result = null!= D_Neighborhood.integrateNewNeighborhoodData(wn, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
+		result = null!= D_Neighborhood.integrateNewNeighborhoodData(true, wn, orgGID, org_local_ID, arrival_time, orgData, sol_rq, new_rq);
 		if(DEBUG) System.out.println("NeighborhoodHandling:integrateNewNeighborhoodData: exit");
 		return result;
 	}

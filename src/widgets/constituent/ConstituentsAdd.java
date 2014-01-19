@@ -30,21 +30,23 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.io.File;
+
 import javax.swing.*;
 import javax.swing.tree.*;
 import javax.swing.event.*;
 
+import ciphersuits.Cipher;
+import ciphersuits.CipherSuit;
+import ciphersuits.Cipher_Sizes;
 import config.DD;
-
 import ASN1.ASN1DecoderFail;
 import ASN1.Decoder;
-
 import data.D_Document;
 import data.D_Neighborhood;
 import data.D_Organization;
 import data.D_Witness;
-
 import util.Util;
+import widgets.components.CipherSelection;
 import widgets.components.DocumentEditor;
 import widgets.components.Language;
 import widgets.components.TranslatedLabel;
@@ -69,6 +71,10 @@ class ConstituentAddData{
 	TreePath tp;
 	public boolean sign;
 	public String witness_category_trustworthiness;
+	public String ciphersuit;
+	public int ciphersize;
+	public String hash_alg;
+	public Object weight;
 	
 	String subdivisions(){
 		String result=":";
@@ -184,8 +190,60 @@ public class ConstituentsAdd extends JDialog {
 		if(signEditor !=null) cad.sign = signEditor.isSelected();
 		else cad.sign = true;
 		cad.subdivisions();
+		CipherSuit cs = this.cipherSuite.getSelectedCipherSuite();
+		cad.ciphersuit = cs.cipher;
+		cad.ciphersize = cs.ciphersize;
+		cad.hash_alg = cs.hash_alg;
+		/*
+		cad.ciphersuit = (String) this.crt_cipher.getSelectedItem();
+		if(cad.ciphersuit != null) {
+			if (this.crt_sizes_int.isVisible()) {
+				cad.ciphersize = getCrtCipherSize();
+			}
+			else if (this.crt_sizes_list.isVisible()) {
+				Object val = this.crt_sizes_list.getSelectedItem();
+				if (val != null) {
+					cad.ciphersize = getCrtCipherSize((String)val);
+				}
+			}
+			
+			Object hash = this.crt_hash_algos.getSelectedItem();
+			cad.hash_alg = (String) hash;
+//			if (hash != null) {
+//				cad.ciphersuit = Cipher.buildCiphersuitID(cad.ciphersuit, (String)hash);
+//			}
+			
+		}
+		*/
+		cad.weight = Util.ival(weight.getValue(), 0);
 		return cad;
 	}
+	
+	private int getCrtCipherSize(String val) {
+		int result = 0;
+		String txt = val;
+		try{
+			result = Integer.parseInt(txt);
+			return result;
+		}catch(Exception e) {
+		}
+		try{
+			int idx = txt.indexOf("-");
+			result = Integer.parseInt(txt.substring(idx+1));
+			return result;
+		}catch(Exception e) {
+		}
+		return 0;
+	}
+	/*
+	private int getCrtCipherSize() {
+		try{
+			return Integer.parseInt(this.crt_sizes_int.getText());
+		}catch(Exception e) {
+			return 0;
+		}
+	}
+	*/
 	ConstituentsModel model;
 	ConstituentsTree tree;
 	ConstituentsAdd dialog=this;
@@ -214,6 +272,14 @@ public class ConstituentsAdd extends JDialog {
 	TranslatedLabel tl[];
 	public boolean accepted = false;
 	private DocumentEditor instr_reg;
+	/*
+	private JComboBox<String> crt_cipher;
+	private JComboBox<String> crt_sizes_list;
+	private JTextField crt_sizes_int;
+	private JComboBox<String> crt_hash_algos;
+	*/
+	CipherSelection cipherSuite;
+	private JSpinner weight;
 	
 	long ival(Object obj, long _default){
 		if(obj == null) return _default;
@@ -227,11 +293,59 @@ public class ConstituentsAdd extends JDialog {
 		for (int i=0; i<items.length; i++) if(items[i].equals(val)) return i;
 		return -1;
 	}
+	/*
+	void setSelectedCipher(String cipher) {
+		crt_hash_algos.removeAllItems();
+		crt_sizes_list.removeAllItems();
+		Cipher_Sizes cs = ciphersuits.Cipher.getAvailableSizes(cipher);
+		if (cs == null) {
+			System.out.println("ConstituentsAdd:setSelectedCipher No sizes for: "+cipher+" cs="+cs);
+			crt_sizes_list.setVisible (false);
+			crt_sizes_int.setVisible (false);
+		}
+		else if (cs.type == Cipher_Sizes.INT_RANGE) {
+			System.out.println("ConstituentsAdd:setSelectedCipher int range for: "+cipher+" cs="+cs);
+			crt_sizes_list.setVisible (false);
+			crt_sizes_int.setVisible (true);
+			crt_sizes_int.setText(cs._default+"");
+		}
+		else if (cs.type == Cipher_Sizes.LIST) {
+			System.out.println("ConstituentsAdd:setSelectedCipher list range for: "+cipher+" cs="+cs);
+			crt_sizes_int.setVisible (false);
+			crt_sizes_list.setVisible (true);
+			crt_sizes_list.removeAllItems();
+			if (cs.range instanceof String[]) {
+				String[] l = (String[]) cs.range;
+				for (String k : l) {
+					crt_sizes_list.addItem(k);
+				}
+				if ((cs != null) && (cs._default < l.length))
+					crt_sizes_list.setSelectedIndex(cs._default);
+			}
+		}
+	}
+	void setSelectedSizes(String cipher, int sizes) {
+		if(cipher == null) return;
+		String[] ha = Cipher.getHashAlgos(cipher, sizes);
+		if(ha == null) {
+			System.out.println("ConstituentsAdd: No hashes for cipher: "+cipher+" sz="+sizes);
+			return;
+		}
+		System.out.println("ConstituentsAdd:setSelectedSizes for cipher: "+cipher+" sz="+sizes+" got:"+ha.length);
+		crt_hash_algos.removeAllItems();
+		for(String h : ha) 
+			crt_hash_algos.addItem(h);
+		
+		if((ha != null) && (ha.length > 0))
+			crt_hash_algos.setSelectedIndex(0);
+	}
+	*/
 	/**
-	 * This creates the part of the add dialog that handles the static components of the constituent data
+	 * This creates the part of the add dialog that handles the static components of the constituent data:
+	 *  - name, email, picture, (should sign?), cipher
 	 * @return 
 	 */
-	int initStaticFields(){
+	int initStaticFields() {
 		JButton bp;
 		int y = 0;
 		c.ipadx=10; c.gridx=0; c.gridy=y;c.anchor = GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
@@ -242,8 +356,57 @@ public class ConstituentsAdd extends JDialog {
 			c.gridx = 1;
 			panel.add(signEditor=new JCheckBox("("+_("Current Identity:")+" "+model.getConstituentMyselfNames()+")"),c);
 			signEditor.setHorizontalTextPosition(SwingConstants.LEADING);
-			y++;y++;
+			y++; y++;
+		} else {
+			panel.add(new TranslatedLabel("Cipher-Suit"),c);
+			c.gridx = 1;/*
+			JPanel p_cipher = new JPanel();
+			p_cipher.add(crt_cipher = new JComboBox<String>(ciphersuits.Cipher.getAvailableCiphers()));
+			p_cipher.add(crt_sizes_list = new JComboBox<String>());
+			p_cipher.add(crt_sizes_int = new JTextField());
+			p_cipher.add(crt_hash_algos = new JComboBox<String>());
+			
+			crt_sizes_list.setVisible(false);
+			crt_sizes_int.setVisible(false);
+			
+			crt_cipher.setSelectedItem(Cipher.getDefaultCipher());
+			this.setSelectedCipher(Cipher.getDefaultCipher());
+			if (crt_sizes_int.isVisible()) {
+				this.setSelectedSizes(Cipher.getDefaultCipher(),
+					Cipher.getAvailableSizes(Cipher.getDefaultCipher())._default);
+			}
+			else if (crt_sizes_list.isVisible()) {
+				this.setSelectedSizes(Cipher.getDefaultCipher(),
+						this.getCrtCipherSize((String)crt_sizes_list.getSelectedItem()));				
+			}
+			
+			crt_cipher.addActionListener(this);
+			crt_sizes_list.addActionListener(this);
+			crt_sizes_int.getDocument().addDocumentListener(this);
+			panel.add(p_cipher, c);
+			*/
+			panel.add(this.cipherSuite = new CipherSelection(), c);
+			y++; y++;
 		}
+		
+		D_Organization org = DD.status.getSelectedOrg(); 
+		if (org.hasWeights()) {
+			SpinnerModel weight_model =
+			        new SpinnerNumberModel(1, //initial value
+			                               0, //min
+			                               org.getMaxVotingWeight(), //max
+			                               1); // step
+			weight = new JSpinner(weight_model);
+			
+			c.ipadx=10; c.gridx=0; 
+			c.gridy=y;c.anchor = GridBagConstraints.WEST;
+			c.fill = GridBagConstraints.HORIZONTAL;		
+			panel.add(new TranslatedLabel("Voting Shares"),c);
+			c.gridx = 1;
+			panel.add(weight,c);
+			y++;
+		}
+		
 		c.ipadx=10; c.gridx=0; 
 		c.gridy=y;c.anchor = GridBagConstraints.WEST;
 		c.fill = GridBagConstraints.HORIZONTAL;		
@@ -568,7 +731,12 @@ public class ConstituentsAdd extends JDialog {
 			cnt_subdivisions = 0;
 		}
 		if(can.location!=null) lastPN = can.location.partNeigh;//can.location.fieldID;
+		/**
+		 * Here we create and initialize the static fields in the panel, like:
+		 *  - name, weight, crypto-system, cipher-sizes
+		 */
 		static_rows = initStaticFields();
+		
 		// If current neighborhood has explicit subdivisions, disregard neighborhood extra-fields
 		if((sub_divisions==null)||(can.parent==null)) { // non-explicit subdivisions
 			if(DEBUG)System.out.println("ConstituentAdd: neigh+non-neigh: null sub="+sub_divisions);
@@ -607,11 +775,16 @@ public class ConstituentsAdd extends JDialog {
 			}
 			initDynamicProperties(static_rows,cnt_subdivisions,fe);
 		}
+		
 		c.gridx=0; c.gridy=0;
 		add(panel,c);
 		
-		c.gridx=0; c.gridy=1;c.anchor=GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
+		//c.gridx=0; c.gridy=1;c.anchor=GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
+		//add(ok=new JButton(_("Ok")),c);
+		
+		c.gridx=0; c.gridy=2;c.anchor=GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
 		add(ok=new JButton(_("Ok")),c);
+
 		if(myself)setWitnessCategoryMyself();
 		
 		pack();
@@ -632,6 +805,38 @@ public class ConstituentsAdd extends JDialog {
 		witness_category.setSelectedIndex(INDEX_WITNESS_MYSELF);
 		witness_category_trustworthiness.setSelectedIndex(INDEX_WITNESS_TRUSTWORTHINESS_MYSELF);
 	}
+	/*
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == this.crt_cipher) {
+			this.setSelectedCipher((String) this.crt_cipher.getSelectedItem());
+		}
+		if (e.getSource() == this.crt_sizes_list) {
+			Object sel = this.crt_sizes_list.getSelectedItem();
+			if(sel == null)
+				return;
+			this.setSelectedSizes((String) this.crt_cipher.getSelectedItem(),
+					//this.crt_sizes_list.getSelectedIndex());
+					this.getCrtCipherSize((String)sel));
+		}
+	}
+	private void cipherSizeChanged () {
+		int size = this.getCrtCipherSize(); //Integer.parseInt(this.crt_sizes_int.getText());
+		this.setSelectedSizes((String) this.crt_cipher.getSelectedItem(), size);		
+	}
+	@Override
+	public void insertUpdate(DocumentEvent e) {
+		cipherSizeChanged();
+	}
+	@Override
+	public void removeUpdate(DocumentEvent e) {
+		cipherSizeChanged();
+	}
+	@Override
+	public void changedUpdate(DocumentEvent e) {
+		cipherSizeChanged();
+	}
+	*/
 }
 
 /*

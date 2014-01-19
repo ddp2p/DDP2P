@@ -323,7 +323,7 @@ public class NewsTable extends JTable implements MouseListener {
 		}
 	}
 	NewsEditor _nedit = null;
-	JPanel news_panel = null;
+	Component news_panel = null;
 	public Component getComboPanel() {
 		if(news_panel != null) return news_panel;
 	   	widgets.news.NewsTable news = this; //new widgets.news.NewsTable();

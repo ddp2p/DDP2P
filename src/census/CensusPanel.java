@@ -51,6 +51,7 @@ import util.P2PDDSQLException;
 import widgets.org.OrgListener;
 import util.P2PDDSQLException;
 import config.Application;
+import config.DD;
 import data.D_Organization;
 public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 	private static final long serialVersionUID = 1L;
@@ -504,17 +505,22 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 				Application.warning(_("No organization selected"), _("Failure to simulate"));
 				return;
 			}
-			String global_organization_id = organization.global_organization_ID;
+			D_Organization org = DD.status.getSelectedOrg();
+			if(org == null){
+						Application.warning(_("Select organization!"), _("Generating data"));
+						return;
+			}
+			String global_organization_id = org.global_organization_ID;
 			int sizeActiveHonestConsts = 100;
 			int nbAttackersIneligibleIDs_1 = 10;
 			int nbAttackersWitnessForIneligible_2 = 20;
 			int nbAttackersWitnessAgainstEligible_3 = 10;
 			int nbIneligible = 0;
 			new RandomNetworkSimulation(global_organization_id,
-					sizeActiveHonestConsts,
-					nbAttackersIneligibleIDs_1, nbAttackersWitnessForIneligible_2,
-					nbAttackersWitnessAgainstEligible_3,
-					nbIneligible);
+							sizeActiveHonestConsts,
+							nbAttackersIneligibleIDs_1, nbAttackersWitnessForIneligible_2,
+							nbAttackersWitnessAgainstEligible_3,
+							nbIneligible).start();
 		}
 	}
 }

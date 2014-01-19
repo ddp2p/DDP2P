@@ -55,6 +55,7 @@ import util.P2PDDSQLException;
 import streaming.RequestData;
 import util.DBInterface;
 import util.Util;
+import widgets.components.BulletRenderer;
 //import widgets.org.ColorRenderer;
 import widgets.components.DocumentTitleRenderer;
 import widgets.motions.MotionsModel;
@@ -76,6 +77,7 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private DocumentTitleRenderer titleRenderer;
+	BulletRenderer hotRenderer;
 	DefaultTableCellRenderer centerRenderer;
 	public Motions(DBInterface _db) {
 		super(new MotionsModel(_db));
@@ -107,6 +109,10 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 		titleRenderer = new DocumentTitleRenderer();
 		centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment( JLabel.CENTER );
+		hotRenderer = new BulletRenderer(
+				DDIcons.getHotImageIcon("Hot"), DDIcons.getHotGImageIcon("Hot"),
+				null, _("Recently Contacted"),  _("Not Recently Contacted"), null);
+		if(DEBUG) System.out.println("ThreadsView: constr from model");
 		initColumnSizes();
 		this.getTableHeader().setToolTipText(
         _("Click to sort; Shift-Click to sort in reverse order"));
@@ -198,11 +204,12 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 		case MotionsModel.TABLE_COL_ACTIVITY: // )) return centerRenderer;
 		case MotionsModel.TABLE_COL_NEWS: // )) return centerRenderer;
 			return centerRenderer;
-			
+		case MotionsModel.TABLE_COL_RECENT: // return Boolean.class;
+			return hotRenderer;
 		// BOOLEANS
 		//case MotionsModel.TABLE_COL_VOTERS_NB: // return Integer.class;
 		//case MotionsModel.TABLE_COL_ACTIVITY: // return Integer.class;
-		case MotionsModel.TABLE_COL_RECENT: // return Boolean.class;
+		//case MotionsModel.TABLE_COL_RECENT: // return Boolean.class;
 		//case MotionsModel.TABLE_COL_NEWS: // return Integer.class;
 		case MotionsModel.TABLE_COL_BROADCASTED: // ) return Boolean.class;
 		case MotionsModel.TABLE_COL_BLOCKED: // ) return Boolean.class;
@@ -515,7 +522,7 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 	    	
 	    	if(tmpeditor == null) tmpeditor = new TemporaryMotionsEditor(motions);
 	    	motions.addListener(tmpeditor);
-			if(_DEBUG) System.out.println("createAndShowGUI: added mot tmpeditor");
+			if(DEBUG) System.out.println("Motions:getComboPanel: added mot tmpeditor");
 			
 			
 	    }else{

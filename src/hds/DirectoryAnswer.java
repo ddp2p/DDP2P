@@ -81,15 +81,30 @@ public class DirectoryAnswer extends ASNObj {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	int version = 2;
+	boolean known = false;
 	int[] agent_version;
 	String remote_GIDhash;
 	String instance;
-	public Calendar date = Util.CalendargetInstance();
+	public Calendar date;
 	//ArrayList<Address> address=new ArrayList<InetSocketAddress>();
-	public ArrayList<Address> addresses=new ArrayList<Address>();
+	public ArrayList<Address> addresses;
 	public DIR_Terms_Requested[] terms;
 	byte[] signature_peer = new byte[0];
-	byte[] signature_directory = new byte[0];
+	byte[] signature_directory;
+	
+	void init() {
+		date = Util.CalendargetInstance();
+		addresses=new ArrayList<Address>();
+		signature_peer = new byte[0];
+		signature_directory = new byte[0];
+	}
+	void init_is() {
+		known = true;
+		// date = Util.CalendargetInstance(); //encoders always initialize this
+		addresses=new ArrayList<Address>();
+		signature_peer = new byte[0];
+		signature_directory = new byte[0];
+	}
 	
 	@Override
 	public Encoder getEncoder() {
@@ -193,7 +208,12 @@ public class DirectoryAnswer extends ASNObj {
 	}
 	private DirectoryAnswer decode_2(Decoder d) throws ASN1DecoderFail {
 		date = d.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
-		addresses = d.getFirstObject(true).getSequenceOfAL(Address.getASN1Type(), new Address());
+		Decoder d_addr = d.getFirstObject(true);
+		if(d_addr == null) {
+			addresses = new ArrayList<Address>();
+			return this;
+		}
+		addresses = d_addr.getSequenceOfAL(Address.getASN1Type(), new Address());
 		if(d.isFirstObjectTagByte(DD.TAG_AC4))
 			terms = d.getFirstObject(true).getSequenceOf(DIR_Terms_Requested.getASN1Type(), new DIR_Terms_Requested[]{}, new DIR_Terms_Requested());
 		if(d.isFirstObjectTagByte(DD.TAG_AC5))
@@ -248,15 +268,16 @@ public class DirectoryAnswer extends ASNObj {
 		}
 		return this;
 	}
-	public DirectoryAnswer() {}
+	public DirectoryAnswer() {init();}
 	public String toString() {
-		String result = Encoder.getGeneralizedTime(date)+" @#"+addresses.size()+" [";
+		String result = "[date="+Encoder.getGeneralizedTime(date)+" @#"+addresses.size()+" [";
 		for(int k=0; k<addresses.size(); k++) {
 			result += addresses.get(k)+",";
 		}
-		return result+"]";
+		return result+"]]";
 	}
 	public DirectoryAnswer(InputStream is) throws Exception {
+		init_is();
 		byte[] buffer = new byte[MAX_DA];
 		int len=is.read(buffer);
 		Decoder dec_da = new Decoder(buffer);

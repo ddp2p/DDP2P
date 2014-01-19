@@ -5,6 +5,7 @@ package util;
  */
 @SuppressWarnings("serial")
 public class P2PDDSQLException extends Exception{
+	Object _e;
 	String msg;
 	public P2PDDSQLException(String _msg) {
 		super();
@@ -13,8 +14,9 @@ public class P2PDDSQLException extends Exception{
 	public P2PDDSQLException(Exception e) {
 		super();
 		msg = e.getLocalizedMessage();
+		_e = e;
 	}
 	public String toString(){
-		return msg;
+		return (msg==null)?Util.getString(_e):msg;
 	}
 }

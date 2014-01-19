@@ -76,19 +76,18 @@ import plugin_data.PeerPluginRenderer;
 import plugin_data.PluginMenus;
 import plugin_data.PluginRegistration;
 import plugin_data.PluginRequest;
-
 import ciphersuits.KeyManagement;
 import ciphersuits.PK;
 import ciphersuits.SK;
-
 import util.P2PDDSQLException;
-
 import config.Application;
 import config.DD;
 import config.DDIcons;
 import config.Identity;
+import config.ThreadsAccounting;
 import data.D_OrgDistribution;
 import data.D_PeerAddress;
+import data.D_PeerInstance;
 import data.D_PluginInfo;
 import data.D_PluginData;
 import util.DBInfo;
@@ -183,7 +182,7 @@ public class Peers extends JTable implements MouseListener, PeerListener {
 	static final int COMMAND_MENU_NEW_PLUGINS = 2;
 	public static final int COMMAND_REFRESH_VIEWS = 3;
 	public static final int COMMAND_MENU_SAVE_SK = 4;
-	public static final int COMMAND_MENU_LOAD_SK = 5;
+	//public static final int COMMAND_MENU_LOAD_SK = 5;
 	public static final int COMMAND_MENU_SET_NAME = 6;
 	public static final int COMMAND_MENU_SET_SLOGAN = 7;
 	public static final int COMMAND_TOUCH_CLIENT = 8;
@@ -192,6 +191,7 @@ public class Peers extends JTable implements MouseListener, PeerListener {
 	static final int COMMAND_MENU_SET_EMAILS = 11;
 	public static final int COMMAND_MENU_REFRESH = 12;
 	public static final int COMMAND_MENU_BLOCK = 13;
+	public static final int COMMAND_MENU_LOAD_PEER = 14;
 
 	
 	BulletRenderer bulletRenderer = new BulletRenderer();
@@ -223,6 +223,7 @@ public class Peers extends JTable implements MouseListener, PeerListener {
 	static private JMenuItem terms_set = refresh;
 	static private JMenuItem export_SK = refresh;
 	static private JMenuItem import_SK = refresh;
+	static private JMenuItem import_PEER = refresh;
 	static private JMenuItem reset_peer = refresh;
 	static private JMenuItem delete_row = refresh;
 	static private JMenuItem wake_up = refresh;
@@ -259,9 +260,9 @@ public class Peers extends JTable implements MouseListener, PeerListener {
 		this.privateOrgPanel.addOrgListener();
 		if(DD.status!=null){
 			addListener(DD.status);
-			if(_DEBUG) System.out.println("Peers: connectWidget status");
-		}else{
-			if(_DEBUG) System.out.println("Peers: connectWidget: status was null");
+			if (DEBUG) System.out.println("Peers: connectWidget status");
+		} else {
+			if (DEBUG) System.out.println("Peers: connectWidget: status was null");
 		}
 		DD.status.addPeerSelectedStatusListener(this);
 	}
@@ -565,7 +566,7 @@ public class Peers extends JTable implements MouseListener, PeerListener {
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
  
-        if(model.getColumnCount() == this.getColumnModel().getColumnCount()){
+        if (model.getColumnCount() != this.getColumnModel().getColumnCount()){
         	System.out.println("Peers: initColumnSizes: conflict "+model.getColumnCount() +" vs "+ this.getColumnModel().getColumnCount());
         }
         for (int i = 0; i < model.getColumnCount(); i++) {
@@ -687,8 +688,13 @@ public class Peers extends JTable implements MouseListener, PeerListener {
     	export_SK = new JMenuItem(new PeersRowAction(_this, _("Export Secret keys!"), reseticon,_("Export Secret keys."),
     			_("Export Secret Keys!"),KeyEvent.VK_E, Peers.COMMAND_MENU_SAVE_SK));
     	//
+    	/*
     	import_SK = new JMenuItem(new PeersRowAction(_this, _("Import Secret keys!"), reseticon,_("Import Secret keys."),
     			_("Import Secret Keys!"),KeyEvent.VK_E, Peers.COMMAND_MENU_LOAD_SK));
+    	*/
+    	//
+    	import_PEER = new JMenuItem(new PeersRowAction(_this, _("Import New Peer!"), reseticon,_("Import New Peer."),
+    			_("Import Secret Keys!"),KeyEvent.VK_E, Peers.COMMAND_MENU_LOAD_PEER));
     	//
     	reset_peer = new JMenuItem(new PeersResetAction(_this, _("Reset!"), reseticon,_("Bring again all data from this."), _("Go restart!"),KeyEvent.VK_R));
     	//
@@ -783,7 +789,9 @@ public class Peers extends JTable implements MouseListener, PeerListener {
     	//
     	popup.add(setRow(this.export_SK,_model_row));
     	//
-    	popup.add(setRow(this.import_SK,_model_row));
+    	//popup.add(setRow(this.import_SK,_model_row));
+    	//
+    	popup.add(setRow(this.import_PEER,_model_row));
     	//
     	popup.add(setRow(this.reset_peer,_model_row));
     	//
@@ -921,8 +929,17 @@ public class Peers extends JTable implements MouseListener, PeerListener {
 			this.me = me;
 			this.selected = selected;
 		}
-
-		public void run(){
+		public void run() {
+			this.setName("DispatchPeer");
+			ThreadsAccounting.registerThread();
+			try {
+				_run();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			ThreadsAccounting.unregisterThread();
+		}
+		public void _run() {
 			String my_peer_name = null;
 			if(DEBUG) System.out.println("DispatchPeer:run:start");
 			if(peer == null){
@@ -938,14 +955,14 @@ public class Peers extends JTable implements MouseListener, PeerListener {
 						return;
 					}
 					my_peer_name = Util.getString(model.getValueAt(model_row, PeersModel.TABLE_COL_NAME));
-					if(_DEBUG) System.out.println("DispatchPeer:run: dispatch="+my_peer_name);
+					if(DEBUG) System.out.println("DispatchPeer:run: dispatch="+my_peer_name);
 				}
 			}else{
 				my_peer_name = peer.component_basic_data.name;
 			}
-			if(_DEBUG) System.out.println("DispatchPeer:run:listeners=#"+listeners.size());
+			if(DEBUG) System.out.println("DispatchPeer:run:listeners=#"+listeners.size());
 			for(PeerListener l : listeners) {
-				if(_DEBUG) System.out.println("DispatchPeer:run:listener="+l);
+				if(DEBUG) System.out.println("DispatchPeer:run:listener="+l);
 				try{l.update_peer(peer, my_peer_name, me, selected);}catch(Exception e){e.printStackTrace();}
 			}
 		}
@@ -1365,6 +1382,10 @@ class PeersRowAction extends DebateDecideAction {
 				Application.warning(_("Failed to save key: "+e3.getMessage()), _("Failed to save key"));
 				e3.printStackTrace();
 				break;
+			} catch (Exception e4) {
+				Application.warning(_("Failed to save key: "+e4.getMessage()), _("Failed to save key"));
+				e4.printStackTrace();
+				break;
 			}
 			Application.warning(_("Failed to save key: absent"), _("Failed to save key"));
 //			String file_dest=JOptionPane.showInputDialog(tree,
@@ -1372,6 +1393,69 @@ class PeersRowAction extends DebateDecideAction {
 //					_("File to save secret key"),
 //					JOptionPane.QUESTION_MESSAGE);
 			break;
+		case Peers.COMMAND_MENU_LOAD_PEER:
+			if (DEBUG) System.out.println("PeersRowAction:LoadPeer: start");
+			filterUpdates.setFileFilter(new hds.UpdatesFilterKey());
+			filterUpdates.setName(_("Select Secret Trusted Key"));
+			//filterUpdates.setSelectedFile(null);
+			Util.cleanFileSelector(filterUpdates);
+			int loadNewPeerVal = filterUpdates.showDialog(tree,_("Specify Trusted Secret Key File"));
+			if (loadNewPeerVal != JFileChooser.APPROVE_OPTION){
+				if (_DEBUG) System.out.println("PeersRowAction:LoadPeer: cancelled");
+				return;
+			}
+			File fileLoadPEER = filterUpdates.getSelectedFile();
+			if (!fileLoadPEER.exists()) {
+				if (_DEBUG) System.out.println("PeersRowAction:LoadPeer: inexistant file: "+fileLoadPEER);
+				Application.warning(_("Inexisting file: "+fileLoadPEER.getPath()), _("Inexisting file!"));
+				break;
+			}
+			if (DEBUG) System.out.println("PeersRowAction:LoadPeer: choice="+fileLoadPEER);
+			try{
+				String []__pk = new String[1];
+				PeerInput file_data[] = new PeerInput[]{new PeerInput()};
+				boolean is_new[] = new boolean[1];
+				if (DEBUG) System.out.println("PeersRowAction:LoadPeer: will load pk");
+				SK new_sk = KeyManagement.loadSecretKey(fileLoadPEER.getCanonicalPath(), __pk, file_data, is_new);
+				if (DEBUG) System.out.println("PeersRowAction:LoadPeer: loaded sk");
+				if (new_sk == null) {
+					Application.warning(_("Failure to load key!"), _("Loading Secret Key"));
+					return;
+				}
+				if (!is_new[0]) {
+					Application.warning(_("Secret key already available!"), _("Loading Secret Key"));
+					return;
+				}
+				
+				PK new_pk = new_sk.getPK();
+				String new_gid = Util.getKeyedIDPK(new_pk);
+				//String _pk=__pk[0];//Util.stringSignatureFromByte(new_sk.getPK().getEncoder().getBytes());
+				if (DEBUG) System.out.println("PeersRowAction:LoadPeer: will load="+new_gid);
+				D_PeerAddress peer = new D_PeerAddress(new_gid);
+				if (DEBUG) System.out.println("PeersRowAction:LoadPeer: loaded peer="+peer);
+				if (peer.get_ID() == null) {
+					if (_DEBUG) System.out.println("PeersRowAction:LoadPeer: loaded ID=null");
+					PeerInput data = new CreatePeer(DD.frame, file_data[1]).getData();
+					if (_DEBUG) System.out.println("PeersRowAction:LoadPeer: loaded ID data set");
+					peer.setPeerInputNoCiphersuit(data);
+				}
+				if (DEBUG) System.out.println("PeersRowAction:LoadPeer: will make instance");
+				peer.makeNewInstance();
+				
+				//if (isMyself(peer)){setInstance} //cannot be since I had no key
+				//peer.component_basic_data.globalID = _pk;
+				//peer.component_basic_data.globalIDhash=null;
+				//peer._peer_ID = -1;
+				//peer.peer_ID = null;
+				if (DEBUG) System.out.println("PeersRowAction:LoadPeer: will sign peer");
+				peer.sign(new_sk);
+				peer.storeAsynchronouslyNoException();
+			}catch(Exception e2){
+				e2.printStackTrace();
+				if (_DEBUG) System.out.println("PeersRowAction:LoadPeer: exception");
+			}
+			break;
+			/*
 		case Peers.COMMAND_MENU_LOAD_SK:
 			filterUpdates.setFileFilter(new hds.UpdatesFilterKey());
 			filterUpdates.setName(_("Select Secret Trusted Key"));
@@ -1389,20 +1473,29 @@ class PeersRowAction extends DebateDecideAction {
 				SK new_sk = KeyManagement.loadSecretKey(fileLoadSK.getCanonicalPath(), __pk);
 				String old_gid = model.getGID(row);
 				String _pk=__pk[0];//Util.stringSignatureFromByte(new_sk.getPK().getEncoder().getBytes());
-				D_PeerAddress peer = new D_PeerAddress(old_gid);
-				peer.component_basic_data.globalID = _pk;
-				peer.component_basic_data.globalIDhash=null;
-				peer._peer_ID = -1;
-				peer.peer_ID = null;
-				peer.sign(new_sk);
-				peer.storeVerified();
-			}catch(Exception e2){}
+				D_PeerAddress old_peer = new D_PeerAddress(old_gid);
+				PeerInput old_data = old_peer.getPeerInput();
+				D_PeerAddress peer = D_PeerAddress.getPeer(new_sk, old_data, _pk);
+				if (peer == null) {
+					Application.warning(_("Failure loading SK"), _("Failure loading SK"));
+				}
+				//peer.component_basic_data.globalID = _pk;
+				//peer.component_basic_data.globalIDhash=null;
+				//peer._peer_ID = -1;
+				//peer.peer_ID = null;
+				//peer.sign(new_sk);
+				//peer.storeVerified();
+			} catch(Exception e2){}
 			break;
+			*/
     	case Peers.COMMAND_MENU_NEW_MYSELF:
     		//
     		try {
-				D_PeerAddress.createMyPeerID();
-				D_PeerAddress peer = D_PeerAddress.get_myself(null);
+				D_PeerAddress peer_old = D_PeerAddress.get_myself();
+				PeerInput pi = peer_old.getPeerInput();
+				pi.name = pi.name+" (2)";
+				D_PeerAddress.createMyPeerID(pi);
+				D_PeerAddress peer = D_PeerAddress.get_myself();
 				if((peer!=null)&&(peer.component_basic_data!=null))
 					tree.fireListener(peer, true, false);
 //					for(PeerListener l : tree.listeners) {
@@ -1418,23 +1511,26 @@ class PeersRowAction extends DebateDecideAction {
     	case Peers.COMMAND_MENU_NEW_PLUGINS:
     		//PluginRegistration.removePlugins();
     		new Thread() {
-    			public void run(){
+    			public void run() {
     				PluginRegistration.loadNewPlugins();
     			}
     		}.start();
     		break;
     	case Peers.COMMAND_MENU_SET_MYSELF:
-    		if(row<0) return;
-    		peerID = Util.getString(model.getPeers().get(row).get(0));
+    		if (row < 0) return;
+    		peerID = Util.getString(model.getPeers().get(row).get(PeersModel.SELECT_COL_ID));
     		try {
-				D_PeerAddress.setMyself(peerID);
-				D_PeerAddress peer = new D_PeerAddress(Util.lval(peerID));
-				if((peer!=null)&&(peer.component_basic_data!=null))
+    			D_PeerAddress peer = D_PeerAddress.getPeerByLID(peerID, false);
+				D_PeerAddress.setMyself(peer);
+				//D_PeerAddress peer = new D_PeerAddress(Util.lval(peerID));
+				
+				if ((peer != null) && (peer.component_basic_data != null))
 					tree.fireListener(peer, true, false);
 //					for(PeerListener l : tree.listeners) {
 //						try{l.update_peer(peer, peer.component_basic_data.name, true, false);}catch(Exception _e){_e.printStackTrace();}
 //					}
-			} catch (P2PDDSQLException e1) {
+				
+    		} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 				Application.warning(_("Failure to set new ID:")+"\n"+e1.getLocalizedMessage(), _("Failure in message!"));
 			}

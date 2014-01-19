@@ -28,6 +28,7 @@ import java.util.Hashtable;
 import com.almworks.sqlite4java.*;
 
 import config.Application;
+import config.ThreadsAccounting;
 
 import java.awt.Event;
 import java.io.File;
@@ -54,7 +55,18 @@ class DBWorkThread extends Thread{
 		this.info=info;
 		start();
 	}
-	public void run(){
+	static int name = 0;
+	public void run() {
+		this.setName("DB_Worker:"+" "+(name++));
+		ThreadsAccounting.registerThread();
+		try {
+			_run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		ThreadsAccounting.unregisterThread();
+	}
+	public void _run(){
 		cnt ++;
 		if(DBInterface.DEBUG) System.out.println("DBInterface:DBWorkThread:start cnt="+cnt+" tables="+Util.concat(tables, ":", "def") +" l="+l);
 		try{
@@ -143,9 +155,13 @@ public class DBInterface implements DB_Implementation {
     public synchronized long insert(String table, String[] fields, String[] params) throws P2PDDSQLException {
     	return insert(table, fields, params, DEBUG);
     }
-    public synchronized long insert(String table, String[] fields, String[] params, boolean dbg) throws P2PDDSQLException {
+    public synchronized long insert(boolean sync, String table, String[] fields, String[] params, boolean dbg) throws P2PDDSQLException {
     	long result = insertNoSync(table, fields, params, dbg);
-    	fireTableUpdate(table);
+    	if(sync) fireTableUpdate(table);
+    	return result;
+    }
+    public synchronized long insert(String table, String[] fields, String[] params, boolean dbg) throws P2PDDSQLException {
+    	long result = insert(true, table, fields, params, dbg);
     	return result;
     }
     public synchronized long insertNoSync(String table, String[] fields, String[] params) throws P2PDDSQLException {
@@ -197,9 +213,12 @@ public class DBInterface implements DB_Implementation {
     public synchronized long insert(String sql, String[] params) throws P2PDDSQLException{
     	return insert(sql, params, DEBUG);
     }
-    public synchronized void update(String table, String[] fields, String[]selector, String[] params, boolean dbg) throws P2PDDSQLException {
+    public synchronized void update(boolean sync, String table, String[] fields, String[]selector, String[] params, boolean dbg) throws P2PDDSQLException {
     	updateNoSync(table, fields, selector, params, dbg);
-     	fireTableUpdate(table);
+     	if(sync) fireTableUpdate(table);
+    }
+    public synchronized void update(String table, String[] fields, String[]selector, String[] params, boolean dbg) throws P2PDDSQLException {
+    	update(true, table, fields, selector, params, dbg);
     }
     public synchronized void update(String table, String[] fields, String[]selector, String[] params) throws P2PDDSQLException {
     	update(table, fields, selector, params, DEBUG);
@@ -293,11 +312,16 @@ public class DBInterface implements DB_Implementation {
 	public void delete(String table, String[] fields, String[] params) throws P2PDDSQLException {
 		delete(table,fields,params, DEBUG);
 	}
-   public synchronized void delete(String table, String[] fields, String[] params,
+	public synchronized void delete(String table, String[] fields, String[] params,
 			boolean dbg) throws P2PDDSQLException{
-    	deleteNoSync(table, fields, params, dbg);
-    	fireTableUpdate(table);
-    }
+		deleteNoSync(table, fields, params, dbg);
+		fireTableUpdate(table);
+	}
+	public synchronized void delete(boolean sync, String table, String[] fields, String[] params,
+			boolean dbg) throws P2PDDSQLException{
+		deleteNoSync(table, fields, params, dbg);
+		if(sync)fireTableUpdate(table);
+	}
    public synchronized void deleteNoSync(String table, String[] fields, String[] params) throws P2PDDSQLException{
 	   deleteNoSync(table, fields, params, DEBUG);
    }
@@ -420,6 +444,9 @@ public class DBInterface implements DB_Implementation {
 //	}
 	public DB_Implementation getImplementation() {
 		return db;
+	}
+	public void close() throws P2PDDSQLException {
+		db.close();
 	}	
 
 }

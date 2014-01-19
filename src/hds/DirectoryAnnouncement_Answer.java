@@ -43,6 +43,8 @@ class DirectoryAnnouncement_Answer extends ASN1.ASNObj{
 			remote_IP = Util.getBytesFromCleanIPString(Util.get_IP_from_SocketAddress(ad.domain));
 		}
 	}
+	public DirectoryAnnouncement_Answer() {
+	}
 	/**
 	 * TAG_AC14
 	 * @return

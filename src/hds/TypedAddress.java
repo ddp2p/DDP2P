@@ -234,28 +234,40 @@ public class TypedAddress extends ASNObj{
 		}
 		return false;
 	}
+	/*
+	 * Unknown what elemSep should be. Probably "://"
+	public static TypedAddress parseStringDirectoryAddress(String addr,
+			String elemSep) {
+		TypedAddress a = new TypedAddress();
+		String taddr[] = addr.split(Pattern.quote(elemSep), COMPONENTS);
+		if (taddr.length < 2) return null;
+		//a.type = taddr[0];
+		a.type = taddr[0];
+		String adr[] = taddr[1].split(Pattern.quote(PRI_SEP), 2);
+		a.address = adr[0];
+		if(adr.length >= 2) {
+			a.certified = true;
+			try{
+				a.priority = Integer.parseInt(adr[1]);
+			}catch(Exception e){e.printStackTrace();}
+		}
+		return a;
+	}
+	*/
+	/*
+	 * Unlnown why the call toparse an elem is not using separator ://
 	public static TypedAddress[] parseStringAddresses(String addr){
-			String[]addresses_l = Address.split(addr);
+			String []addresses_l = Address.split(addr);
 			// may have to control addresses, to defend from DOS based on false addresses
 			TypedAddress[] address = new TypedAddress[addresses_l.length];
-			for(int k=0; k<addresses_l.length; k++) {
-				TypedAddress a = new TypedAddress();
-				String taddr[] = addresses_l[k].split(Pattern.quote(Address.ADDR_PART_SEP),COMPONENTS);
-				if(taddr.length < 2) continue;
-				a.type = taddr[0];
-				a.type = taddr[0];
-				String adr[] = taddr[1].split(Pattern.quote(PRI_SEP), 2);
-				a.address = adr[0];
-				if(adr.length >= 2) {
-					a.certified = true;
-					try{
-						a.priority = Integer.parseInt(adr[1]);
-					}catch(Exception e){e.printStackTrace();}
-				}
+			for (int k = 0; k < addresses_l.length; k ++) {
+				TypedAddress a = parseStringDirectoryAddress(addresses_l[k], Address.ADDR_PART_SEP);
+				if (a == null) continue;
 				address[k] = a;
 			}
 			return address;
 	}
+	*/
 	/*
 	public static TypedAddress[] getPeerAddresses(String peer_ID){
 		TypedAddress[] result = null;
@@ -283,7 +295,7 @@ public class TypedAddress extends ASNObj{
 		for(int k=0; k<addresses_l.length; k++) {
 			if(D_PeerAddress.DEBUG)System.out.println("PeerAddress:getAddress: parsing address "+addresses_l[k]);
 			TypedAddress a = new TypedAddress();
-			String taddr[] = addresses_l[k].split(Pattern.quote(Address.ADDR_TYPE_SEP),COMPONENTS);
+			String taddr[] = addresses_l[k].split(Pattern.quote(Address.ADDR_PROT_NET_SEP),COMPONENTS);
 			if(taddr.length < 2) continue;
 			a.type = taddr[0];
 			String adr = taddr[1];
@@ -310,7 +322,11 @@ public class TypedAddress extends ASNObj{
 					table.peer_address.type+"," +
 					table.peer_address.address+";";
 	/**
-	 * They are already in order
+	 * They are already in order:
+	 *  ORDER BY "+table.peer_address.certified+" DESC," +
+					table.peer_address.priority+"," +
+					table.peer_address.type+"," +
+					table.peer_address.address+";";
 	 * @param peer_ID
 	 * @return
 	 */
@@ -324,12 +340,12 @@ public class TypedAddress extends ASNObj{
 			return null;
 		}
 		int len = a.size();
-		if(len==0){
+		if (len==0) {
 			if(DEBUG) System.out.println("TypedAddress:loadPeerAddresses: empty = "+len);
 			return null;
 		}
 		TypedAddress[] result = new TypedAddress[len];
-		for(int k = 0; k<len; k++){
+		for (int k = 0; k<len; k++) {
 			TypedAddress adr = new TypedAddress(a.get(k));
 			if(DEBUG) System.out.println("TypedAddress:loadPeerAddresses: getting = "+adr);
 			result [k] = adr;
@@ -421,14 +437,23 @@ public class TypedAddress extends ASNObj{
 		TypedAddress[] out = result.toArray(new TypedAddress[0]);// new TypedAddress[in.length];
 		return out;
 	}
-	public static void delete_difference(TypedAddress[] old_with_contact, TypedAddress[] arr){
-		if(DEBUG) System.out.println("TypedAddress:delete_difference: start ");
-		if(old_with_contact==null) return;
-		for(TypedAddress a: old_with_contact){
-			if(DEBUG) System.out.println("delete_difference: old=="+a);
-			TypedAddress b = getLastContact(arr, a);
-			if(b!=null) continue;
-			if(DEBUG) System.out.println("delete_difference: equib new=="+b);
+	/**
+	 * Deletes elements in old that are not part of the new version
+	 * 
+	 * @param old_with_contact
+	 * @param arrival
+	 * @return true if something was deleted
+	 */
+	public static boolean delete_difference(TypedAddress[] old_with_contact, TypedAddress[] arrival) {
+		boolean result = false;
+		if (DEBUG) System.out.println("TypedAddress:delete_difference: start ");
+		if (old_with_contact == null) return false;
+		for (TypedAddress a: old_with_contact) {
+			if (DEBUG) System.out.println("delete_difference: old=="+a);
+			TypedAddress b = getLastContact(arrival, a);
+			if (b != null) continue;
+			result = true;
+			if (DEBUG) System.out.println("delete_difference: equib new=="+b);
 			try {
 				Application.db.delete(table.peer_address.TNAME,
 						new String[]{table.peer_address.peer_address_ID},
@@ -438,21 +463,64 @@ public class TypedAddress extends ASNObj{
 			}
 		}		
 		if(DEBUG) System.out.println("TypedAddress:delete_difference: done ");
+		return result;
 	}
-	public static TypedAddress[] init_intersection(TypedAddress[] old_with_contact, TypedAddress[] arr){
-		if(DEBUG) System.out.println("TypedAddress:init_intersection: start ");
-		if((arr==null) || (old_with_contact==null)) return arr;
-		for(TypedAddress a: arr){
-			if(DEBUG) System.out.println("TypedAddress:init_intersection: new=="+a);
+	/**
+	 * Delete from database and arrival the uncertified, non-directory addresses.
+	 * @param old_addr
+	 * @param arrival
+	 * @return
+	 */
+	public static TypedAddress[] delete_uncertified(TypedAddress[] old_addr,
+			TypedAddress[] arrival) {
+		int certif = countCertifAndDIR(arrival);
+		int crt = 0;
+		TypedAddress[] result = new TypedAddress[certif];
+		for (TypedAddress a : arrival) {
+			if (a.certified || Address.DIR.equals(a.type)) result[crt++] = a;
+			else
+				if (getLastContact(old_addr, a) != null) {
+					try {
+						Application.db.delete(table.peer_address.TNAME,
+								new String[]{table.peer_address.peer_address_ID},
+								new String[]{a.peer_address_ID}, DEBUG);
+					} catch (P2PDDSQLException e) {
+						e.printStackTrace();
+					}
+				}
+		}
+		return result;
+	}
+	private static int countCertifAndDIR(TypedAddress[] arrival) {
+		int certif = 0;
+		for (TypedAddress a : arrival) {
+			if (a.certified || Address.DIR.equals(a.type)) certif ++;
+		}
+		return certif;
+	}
+	/**
+	 * If any input is null returns arriving
+	 * For all entries in arrival, initializes fields (last_contact, arrival_date, and addr_ID)
+	 *  with old versions
+	 * 
+	 * @param old_with_contact
+	 * @param arriving
+	 * @return : returns arriving
+	 */
+	public static TypedAddress[] init_intersection(TypedAddress[] old_with_contact, TypedAddress[] arriving){
+		if (DEBUG) System.out.println("TypedAddress:init_intersection: start ");
+		if ((arriving == null) || (old_with_contact == null)) return arriving;
+		for (TypedAddress a: arriving){
+			if (DEBUG) System.out.println("TypedAddress:init_intersection: new=="+a);
 			TypedAddress b = getLastContact(old_with_contact, a);
-			if(DEBUG) System.out.println("TypedAddress:init_intersection: equiv old="+b);
-			if(b==null) continue;
+			if (DEBUG) System.out.println("TypedAddress:init_intersection: equiv old="+b);
+			if (b == null) continue;
 			a.last_contact = b.last_contact;
 			a.arrival_date = b.arrival_date;
 			a.peer_address_ID = b.peer_address_ID;
 		}
-		if(DEBUG) System.out.println("TypedAddress:init_intersection: done");
-		return arr;
+		if (DEBUG) System.out.println("TypedAddress:init_intersection: done");
+		return arriving;
 	}
 	/**
 	 * Returns from list one that has the same type and address

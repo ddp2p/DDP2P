@@ -32,6 +32,7 @@ import ASN1.Encoder;
 import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
+import config.ThreadsAccounting;
 import util.Util;
 import ciphersuits.Cipher;
 import ciphersuits.SK;
@@ -92,14 +93,24 @@ public class Fill_database<org_id_for> extends Thread  {
 							new String[]{"my_global_peer_ID","INTERFACES","my_peer_name","my_global_peer_ID_hash"});
 
 	}
-
 	public void run() {
-		boolean DEBUG = false;
+		this.setName("Simulator Fill Database");
+		ThreadsAccounting.registerThread();
+		try {
+			_run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		ThreadsAccounting.unregisterThread();
+	}
+	public void _run() {
+		//boolean DEBUG = false;
 		int counter = 0, count =0;
 		try{
 			if(_DEBUG)System.out.println("Simulator runing");
 			for(i=0;i<1;i++)
 			{
+				ThreadsAccounting.ping("Cycle "+i);
 				if(ADDED_BOUNDED&&(counter==MAX_ADDED)) running = false;
 				counter++;
 				if(!running) break;

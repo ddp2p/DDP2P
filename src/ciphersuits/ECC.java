@@ -1,478 +1,79 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2013 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package ciphersuits;
 
 import java.math.BigInteger;
 
-import config.DD;
-
+import util.Util;
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
-class ECC_PK extends PK {
-	final static String type="ECC";
-	final static String V0="0";
-	String version = V0; // version to write out, decoding converts to this version
-	private static final boolean DEBUG = false;
-	BigInteger p;
-	BigInteger a;
-	BigInteger b;
-	BigInteger x1; // base point
-	BigInteger y1;
-	BigInteger xn; // public key
-	BigInteger yn;
-
-	@Override
-	public byte[] encrypt(byte[] m) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public byte[] encrypt_pad(byte[] m) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean verify(byte[] signature, byte[] hashed) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean verify_unpad_hash(byte[] signature, byte[] message) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public Encoder getEncoder() {
-		Encoder r = new Encoder().initSequence();
-		r.addToSequence(new Encoder(type));
-		r.addToSequence(new Encoder(version).setASN1Type(DD.TAG_AC0));
-		r.addToSequence(new Encoder(p));
-		r.addToSequence(new Encoder(a));
-		r.addToSequence(new Encoder(b));
-		r.addToSequence(new Encoder(x1));
-		r.addToSequence(new Encoder(y1));
-		r.addToSequence(new Encoder(xn));
-		r.addToSequence(new Encoder(yn));
-		return r;
-	}
-
-	@Override
-	public Object decode(Decoder dec) throws ASN1DecoderFail {
-		String ver;
-		Decoder d = dec.getContent();
-		if(0!=type.compareTo(d.getFirstObject(true).getString())) throw new ASN1DecoderFail("Not ECC");
-		if(DEBUG)System.out.println("ECC_PK:decode: ECC");
-		if(d.getFirstObject(false).getTypeByte()==DD.TAG_AC0){
-			ver = d.getFirstObject(true).getString();
-		}
-		p = d.getFirstObject(true).getInteger();
-		a = d.getFirstObject(true).getInteger();
-		b = d.getFirstObject(true).getInteger();
-		x1 = d.getFirstObject(true).getInteger();
-		y1 = d.getFirstObject(true).getInteger();
-		xn = d.getFirstObject(true).getInteger();
-		yn = d.getFirstObject(true).getInteger();
-		return this;
-	}
-	
-}
-
-class ESS_SK extends SK{
-	final static String type="ECC";
-	final static String V0="0";
-	String version = V0; // version to write out, decoding converts to this version
-	BigInteger p;
-	BigInteger a;
-	BigInteger b;
-	BigInteger x1; // base point
-	BigInteger y1;
-	BigInteger n; // secret key
-	BigInteger xn; // public key
-	BigInteger yn;
-
-	@Override
-	public byte[] decrypt(byte[] c) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public byte[] decrypt_unpad(byte[] c) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public byte[] sign(byte[] c) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public byte[] sign_pad_hash(byte[] c) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public PK getPK() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean sameAs(SK myPeerSK) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public Object getType() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Encoder getEncoder() {
-		Encoder r = new Encoder().initSequence();
-		r.addToSequence(new Encoder(type));
-		r.addToSequence(new Encoder(version).setASN1Type(DD.TAG_AC0));
-		r.addToSequence(new Encoder(p));
-		r.addToSequence(new Encoder(a));
-		r.addToSequence(new Encoder(b));
-		r.addToSequence(new Encoder(x1));
-		r.addToSequence(new Encoder(y1));
-		r.addToSequence(new Encoder(n));
-		r.addToSequence(new Encoder(xn));
-		r.addToSequence(new Encoder(yn));
-		return r;
-	}
-
-	@Override
-	public ESS_SK decode(Decoder dec) throws ASN1DecoderFail {
-		String ver;
-		Decoder d = dec.getContent();
-		if(0!=type.compareTo(d.getFirstObject(true).getString())) throw new ASN1DecoderFail("Not ECC");
-		if(d.getFirstObject(false).getTypeByte()==DD.TAG_AC0){
-			ver = d.getFirstObject(true).getString();
-		}
-		p = d.getFirstObject(true).getInteger();
-		a = d.getFirstObject(true).getInteger();
-		b = d.getFirstObject(true).getInteger();
-		x1 = d.getFirstObject(true).getInteger();
-		y1 = d.getFirstObject(true).getInteger();
-		n = d.getFirstObject(true).getInteger();
-		xn = d.getFirstObject(true).getInteger();
-		yn = d.getFirstObject(true).getInteger();
-		return this;
-	}
-	
-}
-public class ECC extends ciphersuits.Cipher{
-
-	@Override
-	public SK genKey(int size) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getType() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public PK getPK() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public SK getSK() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public byte[] padding(byte[] toencryption) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public byte[] unpad(byte[] decrypted) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public byte[] hash_salt(byte[] msg) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public byte[] sign(byte[] m) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean verify(byte[] signature, byte[] message) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-	public static void main(String[] args){
-		try{
-			BigInteger alpha= new BigInteger(args[0]);
-			BigInteger beta= new BigInteger(args[1]);
-			BigInteger a[] = new BigInteger[3];
-			BigInteger m[] = new BigInteger[3];
-			a[0] = new BigInteger("11");
-			a[1] = alpha;
-			a[2] = beta;
-			m[0] = new BigInteger("17");
-			m[1] = new BigInteger("13");
-			m[2] = new BigInteger("16");
-			BigInteger A = CryptoUtils.CRT(a,m);
-			System.out.println("1. CRT = "+A);
-			BigInteger a_prim = alpha;
-			if(alpha.equals(BigInteger.ONE) || alpha.equals(BigInteger.ZERO) )
-				a_prim = EC.TWO;
-			BigInteger order =
-					CryptoUtils.order(a_prim, 
-							new BigInteger("53"),
-							CryptoUtils.toBigInts(new long[]{2,13}),
-							CryptoUtils.toBigInts(new long[]{2,1}));
-			System.out.println("2. Order("+a_prim+") = "+order);
-			
-			BigInteger[] DH_A =
-					CryptoUtils.DiffieHellman(
-							new BigInteger("11"),
-							new BigInteger("2"),
-							alpha,
-							null,
-							null);
-			BigInteger[] DH_B =
-					CryptoUtils.DiffieHellman(
-							new BigInteger("11"),
-							new BigInteger("2"),
-							beta,
-							null,
-							DH_A[0]);
-			BigInteger[] DH_A2 =
-					CryptoUtils.DiffieHellman(
-							new BigInteger("11"),
-							new BigInteger("2"),
-							alpha,
-							DH_A[1],
-							DH_B[0]);
-			System.out.println("4. DH exchange: " +
-					" yA="+DH_A[0]+
-					" yB="+DH_B[0]+
-					" K_A="+DH_A2[1]+
-					" K_B="+DH_B[1]
-					);
-			
-			System.out.println("5.");
-			BigInteger p = new BigInteger("11");
-			BigInteger q = new BigInteger("13");
-			BigInteger e = new BigInteger("7");
-			BigInteger n = p.multiply(q);
-			BigInteger msg = CryptoUtils.BlindPrepRSA(n, e, a_prim, beta);
-			BigInteger sgn_blind = CryptoUtils.BlindSignRSA(msg, p, q, n, e);
-			BigInteger sgn = CryptoUtils.BlindFinishRSA(n, sgn_blind, a_prim);
-			
-			System.out.println(" Blinded = "+msg);
-			System.out.println(" Signed_blind = "+sgn_blind);
-			System.out.println(" Signed = "+sgn+" verif="+sgn.modPow(e, n));
-
-			EC ec = new EC(p, alpha, beta);
-			ECP P=null, Q=null;
-			System.out.println("7.a Valid = "+ec.valid());
-			try{
-				P = new ECP(new BigInteger("1"), true, ec);
-				System.out.println("7.b P = "+P+" "+P.minus());
-			}catch(Exception e1){System.out.println("7.b "+ e1);}
-			try{
-				Q = new ECP(new BigInteger("2"), true, ec);
-				System.out.println("7.c Q = "+Q+" "+Q.minus());
-			}catch(Exception e1){System.out.println("7.c "+e1);}
-
-			if((P!=null) && (Q!=null))
-				System.out.println("7.d P+Q = "+(ec.add(P,Q)));
-			
-			if((P!=null)&&(Q==null))
-				System.out.println("7.d P+P = "+(ec.add(P,P)));
-			
-			if((P==null)&&(Q!=null))
-				System.out.println("7.d Q+Q = "+(ec.add(Q,Q)));
-			if((P==null)&&(Q==null)){
-				System.out.println("7.d need to find P ");
-				for(int t=0; t<10; t++){
-					if((t==1)||(t==2)) continue;
-					try{
-						P = new ECP(new BigInteger(""+t), true, ec);
-					}catch(Exception e1){
-						System.out.println("7.d t="+t+" "+ e1);
-						continue;
-					}
-					System.out.println("7.d P = "+P);
-					System.out.println("7.d P+P = "+ec.add(P, P));
-					break;
-				}
-			}
-			/*
-			BigInteger a= new BigInteger(args[0]);
-			BigInteger b= new BigInteger(args[1]);
-			BigInteger p= new BigInteger(args[2]);
-	
-			BigInteger Qx= new BigInteger(args[3]);
-			BigInteger Qy= new BigInteger(args[4]);
-	
-			BigInteger Px= new BigInteger(args[5]);
-			BigInteger Py= new BigInteger(args[6]);
-			
-			EC ec = new EC(p,a,b);
-			ECP r = ec.add(new ECP(Qx, Qy, ec), new ECP(Px, Py, ec));
-			System.out.println("Got: "+r);
-			*/
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-	}
-	
-}
-/**
- * Implements a point on an elliptic curve (with compression).
- * A null is considered to be a point at INFINITY
- * @author msilaghi
- *
- */
-class ECP extends ASNObj{
-	public static final ECP INFINITY = null;
-	private static final boolean DEBUG = false;
-	EC _curve;
-	public static EC default_curve;
-	boolean inf = false; // null is infinity
-	boolean compressed = false;
-	boolean compressed_y;
-	BigInteger x;
-	BigInteger y;
-	public ECP(BigInteger x, BigInteger y, EC curve) {
-		this.x = x;
-		this.y = y;
-		this._curve = curve;
-	}
-	public ECP minus() {
-		EC curve = getCurve();
-		return new ECP(x, curve.minus(y), curve);
-		//return new ECP(x, curve.p.subtract(y).mod(curve.p), curve);
-	}
-	public ECP(BigInteger x, boolean b, EC ec) {
-		this.x = x;
-		compressed=true;
-		compressed_y = b;
-		_curve = ec;
-		decompress();
-	}
-	EC getCurve(){
-		if(_curve==null) return default_curve;
-		return _curve;
-	}
-	public BigInteger getY() {
-		if(inf) throw new RuntimeException("Wrong point at inf");
-		if(y!=null) return y;
-		if(compressed_y){
-			decompress();
-			if(y!=null) return y;
-		}
-		throw new RuntimeException("Wrong point");
-	}
-	public void setEC(EC curve, boolean global){
-		if(global){
-			default_curve = curve;
-		}else
-			this._curve = curve;
-	}
-	public void decompress() {
-		if(getCurve()==null) throw new RuntimeException("Set EC!");
-		y = getCurve().evaluate_y(x);
-		if((compressed_y)&&(!y.testBit(0)))
-				y = getCurve().minus(y);
-	}
-	public void compress() {
-		if(inf || (y==null)) return;
-		compressed_y = y.testBit(0);
-		compressed = true;
-	}
-	public BigInteger getX() {
-		return x;
-	}
-	public boolean equals(ECP a){
-		if(!a.getX().equals(getX())) return false;
-		if(!a.getY().equals(getY())) return false;
-		return true;
-	}
-	public String toString(){
-		if(inf) return "INFINITY";
-		return "("+getX()+","+y+"/"+compressed_y+")";
-	}
-	@Override
-	public Encoder getEncoder() {
-		Encoder e = new Encoder().initSequence();
-		compress();
-		if(inf){
-			e.addToSequence(new Encoder(inf));
-		}else{
-			e.addToSequence(new Encoder(x));
-			e.addToSequence(new Encoder(compressed_y));
-		}
-		return e.setASN1Type(getASN1TAG());
-	}
-	private byte getASN1TAG() {
-		return DD.TAG_AC13;
-	}
-	@Override
-	public ECP decode(Decoder dec) throws ASN1DecoderFail {
-		Decoder d = dec.getContent();
-		if(d.getFirstObject(false).getTypeByte()==Encoder.TAG_BOOLEAN){
-			inf = true;
-			return this;
-		}
-		x = d.getFirstObject(true).getInteger();
-		compressed_y = d.getFirstObject(true).getBoolean();
-		compressed = true;
-		if(getCurve()!=null) decompress();
-		return this;
-	}
-	public boolean nullEnd() {
-		boolean r = BigInteger.ZERO.equals(getY());
-		if(DEBUG) System.out.println("nullEnd: "+r+" due to y="+getY());
-		return r;
-	}
-}
 /**
  * Class to implement an Elliptic Curve
+ * y^2 = x^3 + ax +b
  * @author msilaghi
  *
  */
-class EC{
+public
+class ECC extends ASNObj {
+	public static final int ECC_TYPE_P = 0;
+	public static final int ECC_TYPE_WEIERSTRASS = 0;
+	public static final int ECC_TYPE_GF = 1;
+	public static final int ECC_TYPE_MONTGOMERY = 3;
 	BigInteger p;
 	BigInteger a;
 	BigInteger b;
+	int type = ECC_TYPE_WEIERSTRASS; // e.g. P (WEIERSTRASS), GF, MONTGOMERY
 	static final BigInteger TWO = new BigInteger("2");
 	static final BigInteger THREE = new BigInteger("3");
-	private static final boolean DEBUG = false;
+	static final BigInteger MINUS_THREE = new BigInteger("-3");
+	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	EC(BigInteger p, BigInteger a, BigInteger b) {
+	public String toString() {
+		return "[p="+p+" a="+a+" b="+b+"]";
+	}
+	/**
+	 * 
+	 * @param p
+	 * @param a
+	 * @param b
+	 */
+	ECC(BigInteger p, BigInteger a, BigInteger b) {
 		init(p,a,b);
+	}
+	/**
+	 * 
+	 * @param p
+	 * @param a
+	 * @param b
+	 * @param montgomery
+	 */
+	public ECC(BigInteger p, BigInteger a,
+			BigInteger b, int type) {
+		this.type = type;
+		init(p,a,b);
+	}
+	public ECC(Decoder d) throws ASN1DecoderFail {
+		decode(d);
 	}
 	/**
 	 * (p-y) mod p
@@ -499,15 +100,21 @@ class EC{
 	boolean hasSquare(BigInteger test){
 		return ((BigInteger.ZERO.equals(test)||BigInteger.ONE.equals(test)));
 	}
-	private BigInteger modSquareRoot(BigInteger y2) {
-		BigInteger m = p.shiftRight(2);
-		if(p.testBit(1)){ //3
-			BigInteger r = y2.modPow(m.add(BigInteger.ONE), p);
-			if(DEBUG) System.out.println("sqrt: "+y2+"^("+m+"+1) mod "+p+"="+r);
-			return r;
-		}
-		throw new RuntimeException("p=1 mod 3 not implemented");
-		//return null;
+	/**
+	 * 
+	 * @param a
+	 * @return
+	 */
+	private BigInteger modSquareRoot(BigInteger a) {
+		return CryptoUtils.modSquareRoot(a, p, b_order_evens_4m);
+	}
+	/**
+	 * To save the value b for square roots
+	 */
+	public BigInteger b_order_evens_4m[] = new BigInteger[1];
+	void setP(BigInteger p) {
+		this.p = p;
+		b_order_evens_4m = new BigInteger[1];
 	}
 	boolean valid(){
 		return !(a.pow(3)).shiftLeft(2). //4a^3
@@ -527,25 +134,25 @@ class EC{
 	 * @param b
 	 * @return
 	 */
-	ECP add(ECP a, ECP b){
+	EC_Point add(EC_Point a, EC_Point b){
 		if(DEBUG) System.out.println("add "+a+" + "+b);
-		if((a==ECP.INFINITY)||a.inf){
+		if((a==EC_Point.INFINITY)||a.inf){
 			if(DEBUG) System.out.println("a inf");
 			return b;
 		}
-		if((b==ECP.INFINITY)||b.inf){
+		if((b==EC_Point.INFINITY)||b.inf){
 			if(DEBUG) System.out.println("b inf");
 			return a;
 		}
 		if((a.equals(b))&&(!a.nullEnd())){
 			if(DEBUG) System.out.println("add equals");
-			ECP r = times_2(a);
+			EC_Point r = times_2(a);
 			if(DEBUG) System.out.println("add equals -> "+r);
 			return r;
 		}
 		if(a.getX().equals(b.getX())){
 			if(DEBUG) System.out.println("add inverses");
-			return ECP.INFINITY; //infinity
+			return EC_Point.INFINITY; //infinity
 		}
 		if(DEBUG) System.out.println("add differents");
 		return add2(a,b);
@@ -556,13 +163,13 @@ class EC{
 	 * @param Q
 	 * @return
 	 */
-	private ECP add2(ECP P, ECP Q) {
+	private EC_Point add2(EC_Point P, EC_Point Q) {
 		BigInteger lambda =
 				modDivision(
 						Q.getY().subtract(P.getY()),
 						Q.getX().subtract(P.getX())
 				);
-		if(_DEBUG) System.out.println("add2: l ="+lambda);
+		if(DEBUG) System.out.println("add2: l ="+lambda);
 			
 		BigInteger xR = 
 				(modSquare(lambda)
@@ -570,17 +177,19 @@ class EC{
 						.subtract(Q.getX())
 				).mod(p);
 		if(DEBUG) System.out.println("add2: xR="+xR);
-		BigInteger yR = (lambda
+		BigInteger yxR = (lambda
 						.multiply(
 								(P.getX().subtract(xR))
 								)
 						.subtract(P.getY())
 				).mod(p);
-		BigInteger yxR = (
+		/* minus
+		BigInteger yR = (
 				P.getY().add(lambda.multiply(
 						(xR.subtract(P.getX()))))
 		).mod(p);
-		return new ECP(
+		*/
+		return new EC_Point(
 				xR,
 				yxR,
 				this
@@ -591,25 +200,23 @@ class EC{
 	 * @param P
 	 * @return
 	 */
-	private ECP times_2(ECP P) {
+	private EC_Point times_2(EC_Point P) {
+		if((P==null)||P.inf) return P;
 		BigInteger lambda =
 				modDivision(
 						(modSquare(P.getX()).multiply(THREE)).add(a),
 						P.getY().shiftLeft(1)
 				);
-		if(_DEBUG) System.out.println("x2: l ="+lambda);
+		if(DEBUG) System.out.println("x2: l ="+lambda);
 		BigInteger xR = 
 				(modSquare(lambda)
 						.subtract(P.getX().shiftLeft(1))
 				).mod(p);
 		if(DEBUG) System.out.println("x2: xR="+xR);
 		// yR is the minus of the answer
-		//BigInteger yR=((lambda.multiply((P.getX().subtract(xR)))).subtract(P.getY())).mod(p);
-		BigInteger yxR = (
-						P.getY().add(lambda.multiply(
-								(xR.subtract(P.getX()))))
-				).mod(p);
-		return new ECP(
+		BigInteger yxR=((lambda.multiply((P.getX().subtract(xR)))).subtract(P.getY())).mod(p);
+		//BigInteger yxR = (P.getY().add(lambda.multiply((xR.subtract(P.getX()))))).mod(p);
+		return new EC_Point(
 				xR,
 				yxR,
 				this
@@ -631,129 +238,243 @@ class EC{
 	 * @return
 	 */
 	BigInteger modDivision(BigInteger x, BigInteger y){
-		if (_DEBUG) System.out.println("modDiv: x="+x+"/"+y+" ("+y.modInverse(p)+") mod "+p);
+		if (DEBUG) System.out.println("modDiv: x="+x+"/"+y+" ("+y.modInverse(p)+") mod "+p);
 		return x.multiply(y.modInverse(p)).mod(p);
 	}
-}
-class CryptoUtils{
-	private static final boolean _DEBUG = true;
+	public static EC_Point mul(EC_Point a, BigInteger k) {
+		return ECC.double_add(a, k);
+		// return ECC.double_add_subtract(a, k);
+	}
+	public static EC_Point static_add(EC_Point a1, EC_Point a2) {
+		if ((a1==null) && (a2==null)) return EC_Point.INFINITY;
+		if (a1==null) return a2;
+		if (a2==null) return a1;
+		if (a1._curve != null)
+			return a1._curve.add(a1, a2);
+		return a2._curve.add(a1, a2);
+	}
 	/**
-	 * Chinese Remainder Theorem with remainders a[] modulo moduli m[]
-	 * @param a
-	 * @param m
+	 * Optimized;
+	 * @param elem
+	 * @param k
 	 * @return
 	 */
-	public	static BigInteger CRT(BigInteger[]a, BigInteger[]m){
-		if((m.length<1)||(a.length!=m.length)) return null;
-		BigInteger M = m[0];
-		for(int k = 1; k<m.length; k++) M = M.multiply(m[k]);
-		BigInteger _M[] = new BigInteger[m.length];
-		for(int k = 0; k<m.length; k++) _M[k] = M.divide(m[k]);
-		BigInteger A = BigInteger.ZERO;
-		for(int k = 0; k<m.length; k++){
-			BigInteger val = (a[k].multiply(_M[k])).
-					multiply(_M[k].modInverse(m[k]));
-			A = A.add(val);
+	public static EC_Point double_add_subtract (EC_Point elem, BigInteger k) {
+		if ((elem == null) || elem.inf) return EC_Point.INFINITY;
+		byte[] exp = to_one_minone(k);
+		int i = exp.length - 1;
+		for(; i >= 0; i --) {
+			if (exp[i] != 0) break;
 		}
-		return A.mod(M);
-	}
-	/**
-	 * Remove Blinding factor from a blinded signature mod n
-	 * @param n
-	 * @param sgn_blind
-	 * @param k
-	 * @return
-	 */
-	public static BigInteger BlindFinishRSA(BigInteger n, BigInteger sgn_blind,
-			BigInteger k) {
-		BigInteger r = sgn_blind.multiply(k.modInverse(n)).mod(n);
-		if(_DEBUG) System.out.println("blind finish: "+ sgn_blind+"*"+k+"^(-1) mod "+n+"="+r);
-		return r;
-	}
-	/**
-	 * Sign msg (blindly)
-	 * @param msg
-	 * @param p
-	 * @param q
-	 * @param e
-	 * @return
-	 */
-	public static BigInteger BlindSignRSA(BigInteger msg, BigInteger p,
-			BigInteger q, BigInteger n, BigInteger e) {
-		BigInteger totient =
-				p.subtract(BigInteger.ONE)
-				.multiply(q.subtract(BigInteger.ONE));
-		BigInteger d = e.modInverse(totient);
-		//if(_DEBUG) System.out.println(" d="+d);
-		BigInteger r = msg.modPow(d, n);
-		if(_DEBUG) System.out.println("blind sign: "+msg+"^"+d+" mod "+n+"="+r);
-		return r;
-	}
-	/**
-	 * Prepare a message by blinding m with a factor k
-	 * @param n
-	 * @param e
-	 * @param k
-	 * @param m
-	 * @return
-	 */
-	public static BigInteger BlindPrepRSA(BigInteger n, BigInteger e,
-			BigInteger k, BigInteger m) {
-		BigInteger r = (m.multiply(k.modPow(e, n))).mod(n);
-		if(_DEBUG) System.out.println("blindprep: "+m+"*"+k+"^"+e+" mod "+n+"="+r);
-		return r;
-	}
-	/**
-	 * Find the order of a in Z_p where p-1 has the factors in array f
-	 * each with the corresponding exponent in array e
-	 * @param a
-	 * @param p
-	 * @param f
-	 * @param e
-	 * @return
-	 */
-	public static BigInteger order(BigInteger a, BigInteger p, 
-			BigInteger f[], BigInteger e[]){
-		BigInteger order = p.subtract(BigInteger.ONE);
-		for(int k=0; k<f.length; k++) {
-			int _e = e[k].intValue();
-			// could do binary search on e
-			for(int i=0; i<_e; i++) {
-				BigInteger exponent = order.divide(f[k]);
-				BigInteger test = a.modPow(exponent, p);
-				if(BigInteger.ONE.equals(test)){
-					order = exponent;
-				}else break;
+		EC_Point result = elem;
+		for(i --; i >= 0; i --) {
+			result = elem._curve.add(result,result);
+			switch(exp[i]) {
+			case 0:
+				break;
+			case 1:
+				result = elem._curve.add(result, elem);
+				break;
+			case -1:
+				result = elem._curve.add(result, elem.minus());
+				break;
+			default:
+				throw new RuntimeException("Unknown bit: "+exp[i]);
 			}
 		}
-		return order;
+		return result;
 	}
 	/**
-	 * Create an array of BigIntegers from longs
-	 * @param a
+	 * Optimized;
+	 * @param elem
+	 * @param k
 	 * @return
 	 */
-	public static BigInteger[] toBigInts(long[] a){
-		BigInteger[] r = new BigInteger[a.length];
-		for (int k=0; k<a.length; k++) {
-			r[k] = new BigInteger(""+a[k]);
+	public static EC_Point double_add (EC_Point elem, BigInteger k) {
+		if ((elem == null) || elem.inf) return EC_Point.INFINITY;
+		ECC thiscurve = elem.getCurve();
+		if (thiscurve == null) System.out.println("ECC: missing curve for: "+elem);
+		byte[] exp = to_byte_bits(k, 0);
+		int i = exp.length - 1;
+		for(; i >= 0; i --) {
+			if (exp[i] != 0) break;
 		}
-		return r;
+		EC_Point result = elem;
+		for(i --; i >= 0; i --) {
+			if(result != null)
+				result = thiscurve.times_2(result);
+			switch(exp[i]) {
+			case 0:
+				break;
+			case 1:
+				result = thiscurve.add(result, elem);
+				break;
+			default:
+				throw new RuntimeException("Unknown bit: "+exp[i]);
+			}
+		}
+		return result;
 	}
 	/**
-	 * 
-	 * @param p
-	 * @param g
-	 * @param x
-	 * @param y (can be null if unknown)
-	 * @param y_B (can be null if unknown)
-	 * @return  ([y,k] where k is non-null iff y_B is known)
+	 * General structure.
+	 * @param elem
+	 * @param k
+	 * @return
 	 */
-	public static BigInteger[] DiffieHellman(BigInteger p, BigInteger g,
-			BigInteger x, BigInteger y, BigInteger y_B){
-		if(y==null) y = g.modPow(x, p);
-		BigInteger k = null;
-		if(y_B!=null) k = y_B.modPow(x, p);
-		return new BigInteger[]{y,k};
+	public static EC_Point _double_add_subtract (EC_Point elem, BigInteger k) {
+		if ((elem == null) || elem.inf) return EC_Point.INFINITY;
+		byte[] exp = to_one_minone(k);
+		EC_Point result = EC_Point.INFINITY;
+		
+		for(int i = exp.length - 1; i >= 0; i --) {
+			result = static_add(result,result);
+			switch(exp[i]) {
+			case 0:
+				break;
+			case 1:
+				result = static_add(result, elem);
+				break;
+			case -1:
+				result = static_add(result, elem.minus());
+				break;
+			default:
+				throw new RuntimeException("Unknown bit: "+exp[i]);
+			}
+		}
+		return result;	
+	}
+	/**
+	 * Translates k into an array of bits (one per byte)
+	 * @param k : a non-negative integer
+	 * @param extra : number of 0 bits in from of the first "1"
+	 * @return
+	 */
+	private static byte[] to_byte_bits(BigInteger k, int extra) {
+		if((k==null)||(k.compareTo(BigInteger.ZERO)<0)) return new byte[]{0};
+		int bitcount = k.bitLength();
+		byte[] bits = new byte[bitcount+extra];
+		for(int i = 0; i < bitcount; i ++) {
+			bits[i] = (byte) (k.testBit(i) ? 1 : 0);
+		}
+		return bits;
+	}
+	private static byte[] to_one_minone(BigInteger k) {
+		byte[] bits = to_byte_bits(k, 1);
+		if(DEBUG) System.out.println("to_one_minone: "+k+" -> "+Util.byteToHex(bits, " "));
+		while(to_one_minone(bits));
+		return bits;
+	}
+	/**
+	 * returns true on changes (to repeat until it returns false)
+	 * @param bits
+	 * @return
+	 */
+	private static boolean to_one_minone(byte[] bits) {
+		boolean changes = false;
+		if(DEBUG) System.out.println("to_one_minone: "+Util.byteToHex(bits, " "));
+		int len = bits.length;
+		boolean in_seq = false;
+		int start = -1;
+		for (int k = 0; k < len; k ++) {
+			if (in_seq) {
+				if (bits[k] != 1) {
+					if (k == start + 1) {
+						in_seq = false;
+						continue;
+					}
+
+					changes = true;
+					
+					bits[k] ++;
+					bits[start] = -1;
+					for(int i = start + 1; i < k; i ++) bits[i] = 0;
+					
+					if(bits[k] != 1) in_seq = false;
+					else start = k;
+				}
+			} else {
+				if(bits[k] == 1) {
+					in_seq = true;
+					start = k;
+				}
+			}
+		}
+		if(DEBUG) System.out.println("to_one_minone: got "+Util.byteToHex(bits, " "));
+		return changes;
+	}	
+	public static AdditiveGroup double_add_subtract (AdditiveGroup elem, BigInteger k) {
+		return double_add_subtract((EC_Point)elem, k);
+	}
+	public static AdditiveGroup mul(AdditiveGroup a, BigInteger k) {
+		System.out.println("ECC MUL AdditiveGroup");
+		return ECC.double_add_subtract(a, k);
+	}
+	@Override
+	public Encoder getEncoder() {
+		Encoder enc = new Encoder().initSequence();
+		enc.addToSequence(new Encoder(type));
+		enc.addToSequence(new Encoder(p));
+		enc.addToSequence(new Encoder(b));
+		if(!a.equals(MINUS_THREE))
+			enc.addToSequence(new Encoder(a));
+		return enc;
+	}
+	@Override
+	public ECC decode(Decoder dec) throws ASN1DecoderFail {
+		Decoder d = dec.getContent();
+		type = d.getFirstObject(true).getInteger().intValue();
+		p = d.getFirstObject(true).getInteger();
+		b = d.getFirstObject(true).getInteger();
+		if(d.getTypeByte() == Encoder.TAG_INTEGER)
+			a = d.getFirstObject(true).getInteger();
+		else
+			a = MINUS_THREE;
+		return this;
+	}
+	public static void main(String[] args) {
+		BigInteger alpha= new BigInteger(args[0]);
+		BigInteger beta= new BigInteger(args[1]);
+		BigInteger p = new BigInteger(args[2]);
+		BigInteger k = new BigInteger(args[3]);
+		BigInteger P_x_start = new BigInteger(args[4]);
+		BigInteger P_y = null;
+		BigInteger Q_x = null;
+		BigInteger Q_y = null;
+		if(args.length>5) P_y = new BigInteger(args[5]);
+		if(args.length>6) Q_x = new BigInteger(args[6]);
+		if(args.length>7) Q_y = new BigInteger(args[7]);
+		System.out.println("In: Py="+P_y+" Qx="+Q_x+" Qy="+Q_y);
+		ECC ec = new ECC(p, alpha, beta);
+		EC_Point P=null, Q=null;
+		if(!ec.valid()) System.out.println("Valid EC = "+ec.valid());
+		BigInteger x = new BigInteger(""+P_x_start); //BigInteger.ZERO;
+		do {
+			try{
+				P = new EC_Point(x, true, ec);
+				System.out.println("P = "+P+" "+P.minus());
+				if(P_y!=null)
+					P =  new EC_Point(x,P_y,ec);
+				if(Q_y!=null)
+					Q =  new EC_Point(Q_x,Q_y,ec);
+			}catch(Exception e1){
+				System.out.println("Base selection "+ e1);
+				x = x.add(BigInteger.ONE);
+				if(x.compareTo(p) >= 0) return;
+			}
+		} while (P == null);
+		
+		System.out.println("P*k = "+P+" * "+k+" = "+P.mul(k));
+		if (Q != null) 
+			System.out.println("P+Q = "+P+" + "+Q+" = "+P.add(P,Q));
+	}
+	public static int getCurveID(int curve_ID) {
+		switch(curve_ID) {
+		case 119: return ECDSA.P_119;
+		//case 224: return ECDSA.P_224;
+		case 256: return ECDSA.P_256;
+		case 384: return ECDSA.P_384;
+		case 521: return ECDSA.P_521;
+		}
+		return curve_ID;
 	}
 }

@@ -58,6 +58,7 @@ import util.P2PDDSQLException;
 import static util.Util._;
 import config.Application;
 import config.DD;
+import config.ThreadsAccounting;
 import data.D_ReleaseQuality;
 import data.D_TesterInfo;
 import data.D_TesterSignedData;
@@ -146,6 +147,16 @@ public class ClientUpdates extends Thread{
 
 	static boolean forceStart = false;
 	public void run() {
+		this.setName("Updates Client");
+		ThreadsAccounting.registerThread();
+		try {
+			__run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		ThreadsAccounting.unregisterThread();
+	}
+	public void __run() {
 		if(DEBUG)System.out.println("ClientUpdates run: start");
 
 		Calendar crt = Util.CalendargetInstance();
@@ -248,13 +259,17 @@ public class ClientUpdates extends Thread{
 			synchronized(this){
 				try {
 					if(!run) return;
-					if(!starting)this.wait(DD.UPDATES_WAIT_MILLISECONDS );
+					if(!starting){
+						this.wait(DD.UPDATES_WAIT_MILLISECONDS );
+						ThreadsAccounting.ping("Will wait for in Cycle for: "+DD.UPDATES_WAIT_MILLISECONDS);
+					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 				if(!run) return;
 			}
 			starting = false;
+			ThreadsAccounting.ping("Will work on urls: "+urls.size());
 			
 			if(DEBUG) System.out.println(" ClientUpdates: will work on urls #"+urls.size());
 			//PK[] trusted = getTrustedKeys();

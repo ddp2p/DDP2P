@@ -56,6 +56,7 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 	final static int AVAILABLE = 8;
 	private static final String STATUS_BAR = "STATUS_BAR";
 	private static final boolean _DEBUG = true;
+	private static final boolean DEBUG = false;
 	String[] available_labels;
 	ImageIcon[] available_icons;
 	Component[] components;
@@ -193,7 +194,7 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 	}
 	@Override
 	public void constituentUpdate(D_Constituent c, boolean me, boolean selected) {
-		if(_DEBUG) System.out.println("StatusBar: update_const set const "+ (c==null?"null":c.getName()));
+		if(DEBUG) System.out.println("StatusBar: update_const set const "+ (c==null?"null":c.getName()));
 		String text;
 		if(c != null) text = c.getName();
 		else text = "";
@@ -202,12 +203,16 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 	}
 	@Override
 	public void update_peer(D_PeerAddress peer, String my_peer_name, boolean me, boolean selected) {
-		if(_DEBUG) System.out.println("StatusBar: update_peer set peer "+ my_peer_name);
+		if (DEBUG) System.out.println("StatusBar: update_peer set peer "+ my_peer_name);
+		if (DEBUG) Util.printCallPath("here");
 		String text;
-		if(peer != null) text = Util.trimmed(peer.component_basic_data.name, 50);
+		if(peer != null) text = Util.trimmed(peer.getName(), 50);
 		else text = "";
-		if(selected) peer_selected.setText(text);
-		if(me) peer_me.setText(text);
+		if (selected) peer_selected.setText(text);
+		if (me) {
+			if (peer.getInstance() != null) text += ":"+peer.getInstance();
+			peer_me.setText(text);
+		}
 	}
 	@Override
 	public void mouseClicked(MouseEvent e) {

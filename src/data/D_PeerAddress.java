@@ -44,10 +44,12 @@ import java.util.regex.Pattern;
 
 import javax.swing.JOptionPane;
 
+import ciphersuits.Cipher;
+import ciphersuits.CipherSuit;
+import ciphersuits.KeyManagement;
 import ciphersuits.PK;
-
+import ciphersuits.SK;
 import util.P2PDDSQLException;
-
 import streaming.UpdateMessages;
 import streaming.UpdatePeersTable;
 import table.organization;
@@ -58,6 +60,8 @@ import util.DDP2P_DoubleLinkedList;
 import util.DDP2P_DoubleLinkedList_Node;
 import util.DDP2P_DoubleLinkedList_Node_Payload;
 import util.Util;
+import widgets.peers.CreatePeer;
+import widgets.peers.PeerInput;
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
@@ -102,6 +106,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		// (once may need extension for each org separately (advertised by remote)
 		public Calendar last_reset;
 		public String first_provider_peer;
+		public String arrival_date_str;
 
 		public D_PeerAddress_Local_Agent_State() {
 		}
@@ -176,7 +181,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 						|| (current_space > MAX_PEERS_RAM)) {
 					if(loaded_peers.size() <= MIN_PEERS_RAM) break; // at least _crt_peer and _myself
 					D_PeerAddress candidate = loaded_peers.getTail();
-					if((candidate == D_PeerAddress._crt_peer)||(candidate == D_PeerAddress._myself)){
+					if((candidate == D_PeerAddress._crt_peer)||(candidate == D_PeerAddress.get_myself())){
 						setRecent(candidate);
 						continue;
 					}
@@ -209,6 +214,17 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	boolean loaded_local_preferences = false; //have we loaded other data about this peer (blocked, etc)
 	boolean loaded_local_agent_state = false; //have we loaded other data about this peer (schedules, etc)
 
+	/**
+	 * Flags about things that have to be saved since they were changed.
+	 * Currently not always flagged when needed, and a re-implementation should implement them better...
+	 */
+	public boolean dirty_main = false;
+	public boolean dirty_addresses = false;
+	public boolean dirty_served_orgs = false;
+	public boolean dirty_instances = false;
+	public boolean dirty_my_data = false;
+
+	
 	public static final String SIGN_ALG_SEPARATOR = ":";
 	public static String[] signature_alg = hds.SR.HASH_ALG_V1; // of PrintStr OPT
 	private static final boolean _DEBUG = true;
@@ -221,6 +237,32 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	public static long MAX_PEERS_RAM = 10000000;
 	private static final int MIN_PEERS_RAM = 2;
 
+	public boolean dirty_any() {
+		if (dirty_main) return true;
+		if (dirty_addresses) return true;
+		if (dirty_served_orgs) return true;
+		if (dirty_instances) return true;
+		if (dirty_my_data) return true;
+		return false;
+	}
+	public boolean dirty_all() {
+		if (
+				(dirty_main)
+				&& (dirty_addresses)
+				&& (dirty_served_orgs)
+				&& (dirty_instances)
+				&& (dirty_my_data))
+			return true;
+		return false;
+	}
+	public void set_dirty_all(boolean dirty) {
+		dirty_main = dirty;
+		dirty_addresses = dirty;
+		dirty_served_orgs = dirty;
+		dirty_instances = dirty;
+		dirty_my_data = dirty;
+	}
+	
 	public D_PeerAddress_Basic_Data component_basic_data = new D_PeerAddress_Basic_Data(
 			D_PeerAddress.getStringFromHashAlg(hds.SR.HASH_ALG_V1), new byte[0], null, DDAddress.V2);
 	//locals
@@ -237,9 +279,14 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	
 	//served_orgs
 	public D_PeerOrgs[] served_orgs = null; //OPT
+	/**
+	 * Not yet implemented
+	 */
+	public D_PeerOrgs[] served_orgs_orig = null;
 
 	// instances
 	public Hashtable<String,D_PeerInstance> instances = null;  
+	public Hashtable<String,D_PeerInstance>  instances_orig = null;
 	
 	public D_PeerAddress_Preferences component_preferences = new D_PeerAddress_Preferences(
 			false);
@@ -254,9 +301,29 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	private static final Object monitor_object_factory = new Object();
 	private static D_PeerAddress _crt_peer = null;
 	private static D_PeerAddress _myself = null;
-	public static void init_myself(String gid) throws P2PDDSQLException {
-		synchronized(monitor_init_myself){
+	public static void init_myself(String gid, String instance) throws P2PDDSQLException {
+		synchronized(monitor_init_myself) {
 			_myself = new D_PeerAddress(gid);
+			_myself.setCurrentInstance(instance);
+			
+			if (Identity.current_peer_ID != null) {
+				String global_peer_ID = Identity.current_peer_ID.globalID;
+				String peer_instance = Identity.current_peer_ID.instance;
+				if (global_peer_ID.equals(_myself.getGID())) {
+					_myself.setCurrentInstance(peer_instance);
+					if (DEBUG) System.out.println("D_PeerAddress:init_myself: set instance="+peer_instance);
+				} else {
+					if (DEBUG) System.out.println("D_PeerAddress:init_myself: diff GID="+global_peer_ID);
+				}
+			} else {
+				if (DEBUG) Util.printCallPath("D_PeerAddress:init_myself: starting?");
+			}
+			
+			if (DEBUG) System.out.println("D_PeerAddress:init_myself: got="+_myself);
+			
+			if ((_myself != null) && (_myself.component_basic_data!=null))
+				if (DD.status != null) DD.status.setMePeer(_myself);
+
 		}
 	}
 	/**
@@ -267,8 +334,14 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	public static void re_init_myself() throws P2PDDSQLException {
 		synchronized(monitor_init_myself) {
 			if(_myself==null) return; // Why?
-			init_myself(_myself.component_basic_data.globalID);
+			init_myself(_myself.getGID(), _myself.getInstance());
 		}
+	}
+	public static D_PeerAddress get_myself_from_Identity()  throws P2PDDSQLException{
+		return get_myself(Identity.current_peer_ID.globalID, Identity.current_peer_ID.instance);
+	}
+	public static D_PeerAddress get_myself() {
+		return _myself;
 	}
 	/**
 	 * Returns myself if not null, else tries to load it
@@ -276,13 +349,28 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public static D_PeerAddress get_myself(String gid) throws P2PDDSQLException{
+	public static D_PeerAddress get_myself(String gid, String instance) throws P2PDDSQLException{
 		synchronized(monitor_init_myself) {
-			if(gid == null) return _myself;
-			if((_myself!=null) && (gid.equals(_myself.component_basic_data.globalID))) return _myself;
+			if (gid == null) return _myself;
+			if ((_myself != null) && (gid.equals(_myself.getGID())))
+				return _myself;
+			//init_myself(gid);
 			_myself = new D_PeerAddress(gid);
-			if ((_myself!=null)&&(_myself.component_basic_data!=null))
-				if(DD.status != null) DD.status.setMePeer(_myself);
+			_myself.setCurrentInstance(instance);
+			
+			String global_peer_ID = Identity.current_peer_ID.globalID;
+			String peer_instance = Identity.current_peer_ID.instance;
+			if (global_peer_ID.equals(_myself.getGID())) {
+				_myself.setCurrentInstance(peer_instance);
+				if (DEBUG) System.out.println("D_PeerAddress:get_myself: set instance="+peer_instance);
+			} else {
+				if (DEBUG) System.out.println("D_PeerAddress:get_myself: diff GID="+global_peer_ID);
+			}
+			
+			if (DEBUG) System.out.println("D_PeerAddress:get_myself: got="+_myself);
+			
+			if ((_myself != null) && (_myself.component_basic_data!=null))
+				if (DD.status != null) DD.status.setMePeer(_myself);
 			return _myself;
 		}		
 	}
@@ -342,6 +430,13 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 			}
 			D_PeerAddress_Node.register_loaded(crt);
 			return crt;
+		}
+	}
+	static public D_PeerAddress getPeerByLID(String ID, boolean load_Globals){
+		try{
+			return getPeer(Util.lval(ID), load_Globals);
+		}catch (Exception e) {
+			return null;
 		}
 	}
 	/**
@@ -536,14 +631,14 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	/**
 	 * Used to create myself
 	 * @param id
-	 * @param _creation_date
+	 * @param _creation_date : creationDate used if new
 	 * @param creation_date2
 	 * @return
 	 * @throws P2PDDSQLException 
 	 */
 	public static D_PeerAddress get_or_create_myself(Identity id,
 			Calendar _creation_date, String creation_date2) throws P2PDDSQLException {
-		D_PeerAddress me = get_myself(id.globalID);
+		D_PeerAddress me = get_myself(id.globalID, id.instance); 
 		if(me.peer_ID == null) { // I did not exist (with this globID)
 			if(Server.DEBUG) out.println("Server:update_insert_peer_myself: required new peer");
 			me.component_basic_data.emails = Identity.emails;
@@ -592,8 +687,9 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	}	
 	public String toString() {
 		String result = 
-				"\nD_PeerAddress: v=" +component_basic_data.version+
+				"\nD_PeerAddress:ID=["+this._peer_ID+"] v=" +component_basic_data.version+
 				" [gID="+Util.trimmed(component_basic_data.globalID)+
+				" instance="+instance+
 				" name="+((component_basic_data.name==null)?"null":"\""+component_basic_data.name+"\"")+
 				" slogan="+(component_basic_data.slogan==null?"null":"\""+component_basic_data.slogan+"\"") + 
 				" emails="+((component_basic_data.emails==null)?"null":"\""+component_basic_data.emails+"\"")+
@@ -1061,6 +1157,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		if(!encode_addresses)Util.printCallPath("Here we thought addresses are not needed!");
 		_init(p,true,encode_served_orgs);
 	}
+	@SuppressWarnings("unchecked")
 	private void _init(ArrayList<Object> p, boolean encode_addresses, boolean encode_served_orgs) {
 		this.loaded_basics = true;
 		component_basic_data.version = Util.getString(p.get(table.peer.PEER_COL_VERSION));
@@ -1088,6 +1185,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		if(encode_served_orgs)
 			try {
 				served_orgs = getPeerOrgs(_peer_ID);
+				served_orgs_orig = served_orgs.clone();
 				this.loaded_served_orgs = true;
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
@@ -1101,8 +1199,9 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 
 		try {
 			instances = data.D_PeerInstance.loadInstancesToHash(peer_ID);
+			instances_orig = D_PeerInstance.deep_clone(instances);
 			this.loaded_instances = true;
-		} catch (P2PDDSQLException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		
@@ -1312,7 +1411,23 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		if(content.getTypeByte() == DD.TAG_AC0)component_basic_data.slogan = content.getFirstObject(true).getString();else component_basic_data.slogan = null;
 		if(content.getTypeByte() == DD.TAG_AC1)component_basic_data.emails = content.getFirstObject(true).getString();else component_basic_data.emails = null;
 		if(content.getTypeByte() == DD.TAG_AC2)component_basic_data.phones = content.getFirstObject(true).getString();else component_basic_data.phones = null;
-		if(content.getTypeByte() == DD.TAG_AC3)instance = content.getFirstObject(true).getString();else instance = null;
+		if(content.getTypeByte() == DD.TAG_AC3) {
+			instance = content.getFirstObject(true).getString();
+			if (!instances.containsKey(instance)) {
+				D_PeerInstance inst = new D_PeerInstance(instance);
+				instances.put(instance, inst);
+				this.dirty_instances = true;
+			}
+		} else {
+			instance = null;
+		}
+//		try {
+//			instances = data.D_PeerInstance.loadInstancesToHash(peer_ID);
+//			this.loaded_instances = true;
+//		} catch (P2PDDSQLException e) {
+//			e.printStackTrace();
+//		}
+		
 		if(content.getTypeByte() == Encoder.TAG_GeneralizedTime)
 			component_basic_data.creation_date = content.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
 		else component_basic_data.creation_date = null;
@@ -1374,7 +1489,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 				"\n\t msg["+msg.length+"]="+Util.byteToHex(msg)+
 				"\n\t hash(msg)="+Util.getGID_as_Hash(msg));
 		try{
-		result = Util.verifySign(msg, pk, sgn);
+			result = Util.verifySign(msg, pk, sgn);
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -1661,28 +1776,101 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		Calendar _crt_date = Util.getCalendar(crt_date);
 		return _storeVerified(_crt_date, crt_date);
 	}
+	/**
+	 * No save forcing
+	 * @param _crt_date
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
 	public long _storeVerified(Calendar _crt_date) throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar)");
 		String crt_date = Encoder.getGeneralizedTime(_crt_date);
 		long r = _storeVerified(_crt_date, crt_date);
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar): got="+r);
 		return r;
-	}	
+	}
+	/**
+	 * Set force to true
+	 * @param _crt_date
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
 	public long _storeVerifiedForce(Calendar _crt_date) throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar)");
 		String crt_date = Encoder.getGeneralizedTime(_crt_date);
 		return _storeVerified(_crt_date, crt_date, true);
 	}	
+	/**
+	 * Saving not forced
+	 * @param _crt_date
+	 * @param crt_date
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
 	public long _storeVerified(Calendar _crt_date, String crt_date) throws P2PDDSQLException{
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar, str): start");
 		long r = _storeVerified(_crt_date, crt_date, false);
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(calendar, str): done");
 		return r;
 	}
-	private long _storeVerified(Calendar _crt_date, String crt_date, boolean force) throws P2PDDSQLException{
-		// boolean DEBUG=true;
-		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(_crt_date, crt_date)");
-		this.component_local_agent_state.arrival_date = _crt_date;
+	/**
+	 * @param _crt_date
+	 * @param crt_date
+	 * @param force : save even if it is not newer ... ?
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public long _storeVerified(Calendar _crt_date, String crt_date, boolean force) throws P2PDDSQLException{
+		if (force) this.set_dirty_all(true);
+		setArrivalTime(_crt_date, crt_date);
+		return storeAct();
+	}
+	public void setArrivalTime(Calendar _crt_date, String crt_date) {
+		if (_crt_date != null) {
+			this.component_local_agent_state.arrival_date = _crt_date;
+			if (crt_date == null) {
+				this.component_local_agent_state.arrival_date_str = Encoder.getGeneralizedTime(_crt_date);
+				return;
+			}
+		}
+		if (crt_date != null) {
+			this.component_local_agent_state.arrival_date_str = crt_date;
+			if (_crt_date == null) {
+				this.component_local_agent_state.arrival_date = Util.getCalendar(crt_date);
+				return;
+			}
+		}
+	}
+	public String getArrivalTimeStr() {
+		return this.component_local_agent_state.arrival_date_str;
+	}
+	public Calendar getArrivalTime() {
+		return this.component_local_agent_state.arrival_date;
+	}
+	/**
+	 * This can be delayed saving
+	 * @return
+	 */
+	public void storeAsynchronouslyNoException() {
+		try {
+			storeAct();
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return;
+	}
+	/**
+	 * 
+	 * The actual saving function where everything happens :)
+	 * @return
+	 * @throws P2PDDSQLException 
+	 */
+	public long storeAct() throws P2PDDSQLException {
+		//boolean DEBUG=true;
+		if (DEBUG) System.err.println("D_PeerAddress: _storeVerified(_crt_date="+getArrivalTimeStr()+") force="+this.dirty_all());
+		if (DEBUG) Util.printCallPath("");
+		if (DEBUG) System.err.println("D_PeerAddress: _storeVerified: this="+this);
+		//this.component_local_agent_state.arrival_date = _crt_date;
 		/*
 		long peer_ID=D_PeerAddress.storeVerified(this.globalID, this.name, crt_date, this.slogan, false, 
 				this.broadcastable, Util.concat(this.signature_alg,D_PeerAddress.SIGN_ALG_SEPARATOR), this.signature,
@@ -1691,11 +1879,18 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		
 		D_PeerAddress old = new D_PeerAddress(this.component_basic_data.globalID);
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified: old="+old);
-		if(!force) {
-			if((old._peer_ID>0) && (old.component_basic_data.creation_date!=null) && (old.component_basic_data.signature!=null)) {
-				if(this.component_basic_data.creation_date==null) return -1;
+		/**
+		 * Quit if old is newer or equal
+		 */
+		if (!dirty_any()) {
+			if ( // if old exists and signed
+					(old._peer_ID > 0) 
+					&& (old.component_basic_data.creation_date != null) 
+					&& (old.component_basic_data.signature != null)) {
+				
+				if (this.component_basic_data.creation_date == null) return -1;
 				int cmp_creation_date = old.component_basic_data.creation_date.compareTo(this.component_basic_data.creation_date);
-				if(cmp_creation_date > 0){
+				if(cmp_creation_date > 0) {
 					if(DEBUG) System.err.println("D_PeerAddress: _storeVerified: newer old=: "+old+"\n vs new: "+this);
 					return old._peer_ID;
 				}
@@ -1712,7 +1907,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 						return old._peer_ID;					
 					}
 					*/
-					if(cmp_creation_date==0) { // same date
+					if (cmp_creation_date == 0) { // same date
 						// TODO: can add extra addresses from the old/new one
 						if(DEBUG) System.err.println("D_PeerAddress: _storeVerified: exit with old="+old);
 						return old._peer_ID;
@@ -1725,7 +1920,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 							if(TypedAddress.knownAddress(old.address,this.address[k].address, this.address[k].type)) continue;
 							//long address_ID = 
 							D_PeerAddress.get_peer_addresses_ID(this.address[k].address,
-									this.address[k].type, old._peer_ID, crt_date,
+									this.address[k].type, old._peer_ID, this.getArrivalTimeStr(),
 									this.address[k].certified, this.address[k].priority);
 						}
 						if(DEBUG) System.err.println("D_PeerAddress: __storeVerified: identical: "+ old._peer_ID);
@@ -1733,8 +1928,12 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 					}
 				}
 			}
-		}else{
-			if((old._peer_ID>0) && (old.component_basic_data.creation_date!=null)) {
+		} else {
+			if (
+					(old._peer_ID > 0)
+					&& (old.component_basic_data.creation_date != null)
+				) {
+				
 				this._peer_ID = old._peer_ID;
 				this.peer_ID = old.peer_ID;
 			}
@@ -1742,37 +1941,50 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		long new_peer_ID = doSave_except_Served_and_Addresses();
 		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): done base");
 
-		if(!old_addresses_code){
-			if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code: save addr");
-			if(old.peer_ID!=null){
-				if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code:!old: save addr");
+		if (!old_addresses_code) {
+			if (DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code: save addr");
+			if (old.peer_ID != null) {
+				if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code:oldID!=null: save addr");
 				// TODO: when storage is unified, should use this
 				// TypedAddress[] old_addr = this.address_orig; 
-				if(DD.DEBUG_TODO) System.out.println("TODO: D_PeerAddress:storeVerified: should optimize here when storage unified!");
+				if (DD.DEBUG_TODO) System.out.println("TODO: D_PeerAddress:storeVerified: should optimize here when storage unified!");
 				TypedAddress[] old_addr = TypedAddress.loadPeerAddresses(this.peer_ID);//.getPeerAddresses(this.peer_ID);
+				if (DEBUG) System.out.println("old="+Util.concat(old_addr, "#", "NULL"));
 				TypedAddress.init_intersection(old_addr, this.address);
+				//if (DEBUG) System.out.println("after init_intersection old=="+Util.concat(old_addr, "#", "NULL"));
+				if (DEBUG) System.out.println("after init_intersection adr="+Util.concat(address, "#", "NULL"));
 				TypedAddress.delete_difference(old_addr, this.address);
+				//if (DEBUG) System.out.println("after delete_difference old="+Util.concat(old_addr, "#", "NULL"));
+				if (DEBUG) System.out.println("after delete_difference addr="+Util.concat(address, "#", "NULL"));
+				if (!DD.KEEP_UNCERTIFIED_SOCKET_ADDRESSES)
+					this.address = TypedAddress.delete_uncertified(old_addr, this.address);
+				if (DEBUG) System.out.println("after delete_difference addr="+Util.concat(address, "#", "NULL"));
 			}
-			if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code: store");
+			if (DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): !old_address_code: store");
 			TypedAddress.store_and_update(this.address, Util.getStringID(new_peer_ID));
 			this.address_orig = TypedAddress.deep_clone(address);
-		}else{
-			if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): old_address_code: save addr");
-			if(this.address!=null)
-				if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): old_address_code:addr: save addr");
-				for(int k=0; k<this.address.length; k++) {
-					if((old.peer_ID!=null)&&TypedAddress.knownAddress(old.address,this.address[k].address, this.address[k].type)) continue;
+		} else {
+			if (DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): old_address_code: save addr");
+			if (this.address != null)
+				if (DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): old_address_code:addr: save addr");
+				for (int k = 0; k < this.address.length; k ++) {
+					if (
+							(old.peer_ID != null)
+							&& TypedAddress.knownAddress(old.address,this.address[k].address, this.address[k].type)
+							)
+						continue;
 					//long address_ID = 
 					D_PeerAddress.get_peer_addresses_ID(this.address[k].address,
-							this.address[k].type, new_peer_ID, crt_date,
+							this.address[k].type, new_peer_ID, this.getArrivalTimeStr(),
 							this.address[k].certified, this.address[k].priority);
 				}
 		}
 		//long peers_orgs_ID = get_peers_orgs_ID(peer_ID, global_organizationID);
 		//long organizationID = get_organizationID(global_organizationID, org_name);
-		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): done addresses");
-		if((old.peer_ID==null) || !this.identical_served(old.served_orgs)) D_PeerAddress.integratePeerOrgs(this.served_orgs, new_peer_ID, crt_date);
-		if(DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): got ID ="+new_peer_ID);
+		if (DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): done addresses");
+		if ((old.peer_ID == null) || !this.identical_served(old.served_orgs))
+			D_PeerAddress.integratePeerOrgs(this.served_orgs, new_peer_ID, this.getArrivalTimeStr());
+		if (DEBUG) System.err.println("D_PeerAddress: _storeVerified(...): got ID = "+new_peer_ID);
 		return new_peer_ID;
 		//return UpdateMessages.get_and_verify_peer_ID(pa, crt_date);
 	}
@@ -1883,14 +2095,14 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		params[table.peer.PEER_COL_EXP_AVG]=exp_avg;
 		params[table.peer.PEER_COL_EXPERIENCE]=experience;
 		params[table.peer.PEER_COL_VERSION]=component_basic_data.version;
-		if(peer_ID==null){
+		if(peer_ID==null) {
 			_peer_ID = Application.db.insert(table.peer.TNAME,
 					Util.trimmed(table.peer.list_fields_peers_no_ID),
 					params,
 					DEBUG);
 			peer_ID = Util.getStringID(_peer_ID);
 			if(DEBUG) System.out.println("D_PeerAddress: doSave: inserted "+_peer_ID);
-		}else{
+		} else {
 			params[table.peer.PEER_COL_ID]=peer_ID;
 			if("-1".equals(peer_ID))Util.printCallPath("peer_ID -1: "+this);
 			Application.db.update(table.peer.TNAME,
@@ -1900,8 +2112,8 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 					DEBUG);
 			if(DEBUG) System.out.println("D_PeerAddress: doSave: updated "+peer_ID);
 		}
-		data.D_PeerInstance.store(peer_ID, instances); // checks peer_ID and instances
-		if(DEBUG) System.out.println("D_PeerAddress: doSave: return "+_peer_ID);
+		data.D_PeerInstance.store(peer_ID, _peer_ID, instances); // checks peer_ID and instances
+		if (DEBUG) System.out.println("D_PeerAddress: doSave: return "+_peer_ID);
 		return _peer_ID;
 	}
 	/**
@@ -2222,35 +2434,53 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		}
 	}
 	
+	public static void createMyPeerID() throws P2PDDSQLException{
+		String name = Identity.current_peer_ID.name;
+		String slogan = Identity.current_peer_ID.slogan;
+		createMyPeerID(new PeerInput(name, slogan, Identity.emails, null));
+	}
 	/**
 	 * Create and set a new peerID, and its keys in "key" table and "application" table
 	 * @throws P2PDDSQLException
 	 */
-	public static void createMyPeerID() throws P2PDDSQLException{
+	public static void createMyPeerID(PeerInput peerInput) throws P2PDDSQLException{
 		if(DEBUG) out.println("\n*********\nDD:createMyPeerID: start");
-		String name = Identity.current_peer_ID.name;
-		String slogan = Identity.current_peer_ID.slogan;
 		String addresses = Identity.current_server_addresses();
-		if(name==null) name = System.getProperty("user.name", _("MySelf"));
+
+		if(peerInput.name==null) peerInput.name = System.getProperty("user.name", _("MySelf"));
 		if(addresses==null) addresses = _("LocalMachine");
-		ciphersuits.Cipher keys = Util.getKeyedGlobalID("peer", name+"+"+addresses);
-		keys.genKey(1024);
+		
+		
+		ciphersuits.Cipher keys;
+		//keys = Util.getKeyedGlobalID("peer", peerInput.name+"+"+addresses);
+		//keys.genKey(1024);
+		keys = Cipher.getCipher(
+				peerInput.cipherSuite.cipher,
+				peerInput.cipherSuite.hash_alg,
+				peerInput.name+"+"+addresses);
+		keys.genKey(peerInput.cipherSuite.ciphersize);
 		if(DEBUG) out.println("DD:createMyPeerID: keys generated");
 		String secret_key = Util.getKeyedIDSK(keys);
 		if(DEBUG) out.println("DD:createMyPeerID: secret_key="+secret_key);
 		byte[] pIDb = Util.getKeyedIDPKBytes(keys);
-		String pID=Util.getKeyedIDPK(pIDb);
-		if(DEBUG) out.println("DD:createMyPeerID: public_key="+pID);
-		String pGIDhash = Util.getGIDhash(pID);
-		String pGIDname = "PEER:"+name+":"+Util.getGeneralizedTime();
+		String pGID=Util.getKeyedIDPK(pIDb);
+		if(DEBUG) out.println("DD:createMyPeerID: public_key="+pGID);
+		String pGIDhash = Util.getGIDhash(pGID);
+		String pGIDname = "PEER:"+peerInput.name+":"+Util.getGeneralizedTime();
 		
-		DD.storeSK(keys, pGIDname, pID, secret_key, pGIDhash);
-				
-		doSetMyself(pID, secret_key, name, slogan, pGIDhash); //sets myself
+		DD.storeSK(keys, pGIDname, pGID, secret_key, pGIDhash);
+		
+		D_PeerAddress me = new D_PeerAddress();
+		me.setPeerInputNoCiphersuit(peerInput);
+		me.setGID(pGID, pGIDhash);
+		doSetMyself(me, keys.getSK());
+		//doSetMyself(pGID, secret_key, peerInput.name, peerInput.slogan, pGIDhash); //sets myself
+		
 		
 		if(DEBUG) out.println("DD:createMyPeerID: exit");
 		if(DEBUG) out.println("**************");
 	}
+/*
 	private static void doSetMyself(String gID, String secret_key, String name, String slogan, String gIDhash) throws P2PDDSQLException{
 		if(secret_key == null) {
 			Util.printCallPath("GID="+gID+"\n; peerID="+secret_key+" name="+name+" hash="+gIDhash);
@@ -2270,13 +2500,92 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		//Application.warning(_("Now you are: \""+name+"\"\n with key:"+Util.trimmed(secret_key)), _("Peer Changed!"));
 		Server.set_my_peer_ID_TCP(Identity.current_peer_ID); // tell directories and save crt address, setting myself
 	}
+*/
+	private static void doSetMyself(D_PeerAddress me, SK secret_key) throws P2PDDSQLException{
+		if(secret_key == null) {
+			Util.printCallPath("GID="+me.getGID()+"\n; peerID="+secret_key+" name="+me.getName()+" hash="+me.getGIDH());
+			Application.warning(_("We do not know the secret key of this peer!!"), _("Peer Secret Key not available!"));
+			return;
+		}
+		DD.setMyPeerGID(me.getGID(), me.getGIDH());
+		DD.setAppText(DD.APP_my_peer_name, me.getName());
+		DD.setAppText(DD.APP_my_peer_slogan, me.getSlogan());
+		DD.setAppText(DD.APP_my_peer_instance, me.getInstance());
+		Identity.current_peer_ID.name = me.getName();
+		Identity.current_peer_ID.slogan = me.getSlogan();
+		Identity.current_peer_ID.instance = me.getInstance();
+		if (DD.WARN_ON_IDENTITY_CHANGED_DETECTION) {
+			if (me.getName() != null) Application.warning(_("Now you are:")+" \""+me.getName()+"\"", _("Peer Changed!"));
+			else{ Application.warning(_("Now have an anonymous identity. You have to choose a name!"), _("Peer Changed!"));
+			}
+		}
+		//Application.warning(_("Now you are: \""+name+"\"\n with key:"+Util.trimmed(secret_key)), _("Peer Changed!"));
+		Server.set_my_peer_ID_TCP(me); // tell directories and save crt address, setting myself
+	}
+	public static void setMyself(String peerID) throws P2PDDSQLException {
+		D_PeerAddress me = D_PeerAddress.getPeerByLID(peerID, false);
+		if (me == null) {
+			Util.printCallPath("D_PeerAddress:setMyself: fail peerID="+peerID);
+			Application.warning(_("We do not know this peer!"), _("Peer Secret Key not available!"));
+		}
+		setMyself(me);
+	}
+	/**
+	 * Searches secret _key
+	 * Decides peer_instance to use (first locally created)
+	 * @param me
+	 * @throws P2PDDSQLException
+	 */
+	public static void setMyself(D_PeerAddress me) throws P2PDDSQLException {
+		if (me == null) {
+			Util.printCallPath("D_PeerAddress:setMyself: fail peer="+me);
+		}
+		SK sk = Util.getStoredSK(me.getGID(), me.getGIDH()); 
+		if (sk == null)  {
+			Util.printCallPath("D_PeerAddress:setMyself: fail peerID="+me);
+			Application.warning(_("We do not know the secret key of this peer!"), _("Peer Secret Key not available!"));
+		}
+		
+		//D_PeerAddress.setCurrentInstanceInDB(null);
+		me.loadInstances();
+		if ((me.getInstance() == null) || (!me.instances.containsKey(me.getInstance()))) {
+			for (  D_PeerInstance i : me.instances.values()) {
+				if (i.createdLocally()) {
+					//D_PeerAddress.setCurrentInstanceInDB(i.peer_instance);
+					me.setCurrentInstance(i.peer_instance);
+					break;
+				}
+			}
+		}
+		doSetMyself(me, sk);
+	}
+	/**
+	 * Only loads if the flag loaded_instances is not set (then sets it)
+	 */
+	public void loadInstances() {
+		if(this.loaded_instances) return;
 
+		try {
+			this.instances = D_PeerInstance.loadInstancesToHash(this.peer_ID);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		this.loaded_instances = true;
+	}
+	/**
+	 * Just sets the corresponding member
+	 * @param peer_instance
+	 */
+	public void setCurrentInstance(String peer_instance) {
+		this.instance = peer_instance;
+	}
 	/**
 	 * 
 	 * @param peerID
 	 * @throws P2PDDSQLException 
 	 */
-	public static void setMyself(String peerID) throws P2PDDSQLException {
+	/*
+	public static void _setMyself(String peerID) throws P2PDDSQLException {
 		String sql = "SELECT p."+table.peer.global_peer_ID+", k."+table.key.secret_key+
 		", p."+table.peer.name+", p."+table.peer.slogan+", p."+table.peer.global_peer_ID_hash+
 		" FROM "+table.peer.TNAME+" AS p "+
@@ -2299,7 +2608,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 			Application.warning(_("We do not know the secret key of this peer!"), _("Peer Secret Key not available!"));
 		}
 	}
-	
+	*/
 	public static byte getASN1Type() {
 		return TAG;
 	}
@@ -2356,7 +2665,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 				return;
 			}
 
-			D_PeerAddress me = D_PeerAddress.get_myself(Identity.current_peer_ID.globalID);
+			D_PeerAddress me = D_PeerAddress.get_myself_from_Identity();
 			me.component_basic_data.name = val;
 			me.component_basic_data.creation_date = Util.CalendargetInstance();
 			me.sign(DD.getMyPeerSK());
@@ -2383,7 +2692,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		String peer_Slogan = Identity.current_peer_ID.slogan;
 		String val=JOptionPane.showInputDialog(win, _("Change Peer Slogan.\nPreviously: ")+peer_Slogan, _("Peer Slogan"), JOptionPane.QUESTION_MESSAGE);
 		if((val!=null)&&(!"".equals(val))){
-			D_PeerAddress me = D_PeerAddress.get_myself(Identity.current_peer_ID.globalID);
+			D_PeerAddress me = D_PeerAddress.get_myself_from_Identity();
 			DD.setAppText(DD.APP_my_peer_slogan, val);
 			me.component_basic_data.slogan = val;
 			me.component_basic_data.creation_date = Util.CalendargetInstance();
@@ -2401,7 +2710,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	}
 
 	public static String queryEmails (Component win) throws P2PDDSQLException{
-		String peer_Emails = D_PeerAddress.get_myself(Identity.current_peer_ID.globalID).component_basic_data.emails;
+		String peer_Emails = D_PeerAddress.get_myself_from_Identity().component_basic_data.emails;
 		String val=JOptionPane.showInputDialog(win, _("Change Peer Email.\nPreviously: ")+
 				peer_Emails,
 				_("Peer Emails"), JOptionPane.QUESTION_MESSAGE);
@@ -2424,7 +2733,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		//String peer_Slogan = Identity.current_peer_ID.slogan;
 		String val = queryEmails(win);
 		if((val!=null)&&(!"".equals(val))){
-			D_PeerAddress me = D_PeerAddress.get_myself(Identity.current_peer_ID.globalID);
+			D_PeerAddress me = D_PeerAddress.get_myself_from_Identity();
 			me.component_basic_data.emails = val;
 			me.component_basic_data.creation_date = Util.CalendargetInstance();
 			me.sign(DD.getMyPeerSK());
@@ -2446,7 +2755,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 		}
 		try {
 			String global_peer_ID = Identity.current_peer_ID.globalID;
-			D_PeerAddress peer_data = D_PeerAddress.get_myself(global_peer_ID);
+			D_PeerAddress peer_data = D_PeerAddress.get_myself_from_Identity();
 			
 			// now will update potentially modified fields from globals
 			peer_data.component_basic_data.globalID = global_peer_ID;
@@ -2482,12 +2791,26 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	 * @throws P2PDDSQLException
 	 */
 	public static long _set_my_peer_ID (Identity id) throws P2PDDSQLException {		
+		Calendar _creation_date=Util.CalendargetInstance();
+		String creation_date=Encoder.getGeneralizedTime(_creation_date);
+		//long pID = -1;
+		
+		D_PeerAddress me = D_PeerAddress.get_or_create_myself(id, _creation_date, creation_date);
+		return _set_my_peer_ID(me);
+	}
+	/**
+	 * Called when a server starts, to store local addresses and directories
+	 * announce to status
+	 * 
+	 * @param me
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public static long _set_my_peer_ID (D_PeerAddress me) throws P2PDDSQLException {		
+		if (DEBUG) System.out.println("D_PeerAddress:_set_my_peer_ID: Myself="+me);
 		String addresses = Identity.current_server_addresses();
 		Calendar _creation_date=Util.CalendargetInstance();
 		String creation_date=Encoder.getGeneralizedTime(_creation_date);
-		long pID = -1;
-		
-		D_PeerAddress me = D_PeerAddress.get_or_create_myself(id, _creation_date, creation_date);
 		
 		if(addresses != null) {
 			String address[] = addresses.split(Pattern.quote(DirectoryServer.ADDR_SEP));
@@ -2497,30 +2820,38 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 //					if(pID<=0) throw new RuntimeException("Failure to insert myself");
 //				}
 //				else insert_peer_address_if_new(Util.getStringID(pID), address[k], Address.SOCKET, creation_date, false, 0);
-				me.addAddress(address[k], Address.SOCKET, creation_date, false, 0, true);
+				me.addAddress(address[k], Address.SOCKET, _creation_date, creation_date, false, 0, true);
 			}
 		}
+		if (DEBUG) System.out.println("D_PeerAddress:_set_my_peer_ID: Myself crea 1="+me.getCreationDate());
 		
 		int i=0;
 		for(String dir : Identity.listing_directories_string ) {
 			if(Server.DEBUG) out.println("server: announce to: "+dir);
-			String address_dir=dir;//.getHostName()+":"+dir.getPort();
+			Address d  = new Address(dir);
+			String address_dir = d.getStringAddress(); //dir;//.getHostName()+":"+dir.getPort();
+			if(DEBUG) out.println("D_PeerAddr:_set_my_pID: dir="+dir+" ->"+address_dir+" via d="+d);
 //			if(pID==-1){
 //				pID = update_insert_peer_myself(id, address_dir, Address.DIR, _creation_date, creation_date, true, i);
 //				if(pID<=0) throw new RuntimeException("Failure to insert my directories");
 //			}
 //			else insert_peer_address_if_new(Util.getStringID(pID), address_dir, Address.DIR, creation_date, true, i);
-			me.addAddress(address_dir, Address.DIR, creation_date, true, i, true);
+			me.addAddress(address_dir, Address.DIR, _creation_date, creation_date, true, i, true);
 			i++;
 		}
-		me.component_basic_data.creation_date = Util.CalendargetInstance();
-		me.sign(DD.getMyPeerSK());
-		me.storeVerified();
+		//me.component_basic_data.creation_date = Util.CalendargetInstance();
+		me.signMe(); //.sign(DD.getMyPeerSK());
+		me._storeVerified(_creation_date, creation_date, false);
+		
+		if (DD.status != null) DD.status.setMePeer(me);
 		//re_init_myself();
 		if(Server.DEBUG) out.println("server: setID Done!");
-		return pID;
+		return me._peer_ID;
 	}
-	public void addAddress(String _address, String type,
+	public String getCreationDate() {
+		return Encoder.getGeneralizedTime(this.component_basic_data.creation_date);
+	}
+	public void addAddress(String _address, String type, Calendar _creation_date,
 			String arrival_date, boolean certified, int priority, boolean keep_old_priority_if_exists) throws P2PDDSQLException {
 		TypedAddress ta = new TypedAddress();
 		if(DEBUG) System.out.println("D_PeerAddress: addAddress: adr="+_address+" ty="+type+" cer="+certified+" pri="+priority+" keep="+keep_old_priority_if_exists);
@@ -2542,13 +2873,14 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 				if(DEBUG) System.out.println("D_PeerAddress: no conflict on priority="+priority);
 			}
 			TypedAddress c = TypedAddress.getLastContact(address, ta);
-			if(c==null){
+			if(c == null){
 				if(DEBUG) System.out.println("D_PeerAddress: adding current="+ta);
 				address = TypedAddress.insert(address, ta);
 				if(ta.certified){
-					this.component_basic_data.creation_date = Util.CalendargetInstance();
+					if(DEBUG) System.out.println("D_PeerAddress: date changed adding current="+ta);
+					this.component_basic_data.creation_date = _creation_date;
 					signMe();
-					this.storeVerified(arrival_date);
+					_storeVerified(_creation_date, arrival_date, true);
 				}else{
 					ta.store_or_update(peer_ID, false);
 				}
@@ -2602,7 +2934,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 			Calendar _creation_date, String creation_date, boolean certified, int priority) throws P2PDDSQLException{
 		if(Server.DEBUG) out.println("Server:update_insert_peer_myself: id="+id+" address="+address+" type="+type);
 		long pID;
-		D_PeerAddress peer_data = D_PeerAddress.get_myself(id.globalID);
+		D_PeerAddress peer_data = D_PeerAddress.get_myself(id.globalID, id.instance);
 		//if ((myself==null) || (!id.globalID.equals(myself.globalID)))
 		//	peer_data = new D_PeerAddress(id.globalID, 0, false, false, true);
 		pID = peer_data._peer_ID;
@@ -2689,7 +3021,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 	 */
 	public static DDAddress getMyDDAddress() throws P2PDDSQLException {
 		DDAddress myAddress;
-		D_PeerAddress me = D_PeerAddress.get_myself(Identity.current_peer_ID.globalID);
+		D_PeerAddress me = D_PeerAddress.get_myself_from_Identity();
 		if(DEBUG) System.out.println("D_PeerAddress:getMyDDAddress: D_PeerAddress: "+me);
 		if(!me.verifySignature()) {
 			if(_DEBUG) System.out.println("D_PeerAddress:getMyDDAddress: fail signature: "+me);
@@ -2948,5 +3280,187 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 			e.printStackTrace();
 		}
 		return false;
+	}
+	public String getGID() {
+		if(this.component_basic_data == null) return null;
+		return this.component_basic_data.globalID;
+	}
+
+	public String getGIDH() {
+		if(this.component_basic_data == null) return null;
+		return this.component_basic_data.globalIDhash;
+	}
+	/**
+	 * if GIDH is null, computes it from GID
+	 * @param gID
+	 * @param gIDH
+	 */
+	public void setGID(String gID, String gIDH) {
+		this.component_basic_data.globalID = gID;
+		if ((gID != null) && (gIDH == null))
+			gIDH = D_PeerAddress.getGIDHashFromGID(gIDH);
+		this.component_basic_data.globalIDhash = gIDH;
+	}
+	public PeerInput getPeerInput() {
+		PeerInput result = new PeerInput();
+		result.email = this.getEmail();
+		result.slogan = this.getSlogan();
+		result.name = this.getName();
+		result.cipherSuite = this.getCipherSuite();
+		return result;
+	}
+	public void setPeerInputNoCiphersuit(PeerInput data) {
+		setEmail(data.email);
+		setSlogan(data.slogan);
+		setName(data.name);
+	}
+
+	public CipherSuit getCipherSuite() {
+		PK pk = Cipher.getPK(getGID());
+		return Cipher.getCipherSuite(pk);
+	}
+	public String getName() {
+		return this.component_basic_data.name;
+	}
+	public void setName(String _name) {
+		this.component_basic_data.name = _name;
+	}
+	public String getSlogan() {
+		return this.component_basic_data.slogan;
+	}
+	public void setSlogan(String _slogan) {
+		this.component_basic_data.slogan = _slogan;
+	}
+	public String getEmail() {
+		return this.component_basic_data.emails;
+	}
+	public void setEmail(String _email) {
+		this.component_basic_data.emails = _email;
+	}
+	public String get_ID() {
+		if ((this.peer_ID == null) && (this._peer_ID > 0))
+			this.peer_ID = Util.getStringID(_peer_ID);
+		return this.peer_ID;
+	}
+	public void set_ID(String __peer_ID) {
+		this.peer_ID = __peer_ID;
+		this._peer_ID = Util.lval(__peer_ID, -1);
+	}
+	public void set_ID(long __peer_ID) {
+		this.peer_ID = Util.getStringID(__peer_ID);
+		this._peer_ID = __peer_ID;
+	}
+	/**
+	 * Does not create keys if absent
+	 * @param new_sk
+	 * @param old_data
+	 * @param _pk
+	 * @return
+	 */
+	public static D_PeerAddress getPeer(SK new_sk, PeerInput old_data,
+			String _pk) {
+		if ((new_sk == null) && (_pk==null)) return null;
+		if (_pk == null) {
+			PK new_pk = new_sk.getPK();
+			_pk = Util.getKeyedIDPK(new_pk);
+		}
+		D_PeerAddress peer;
+		try {
+			peer = new D_PeerAddress(_pk);
+			peer.setPeerInputNoCiphersuit(old_data);
+			peer.sign(new_sk);
+			peer.storeVerified();
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return peer;
+	}
+	public static void setCurrentInstanceInDB(String peer_instance) {
+		try {
+			DD.setAppText(DD.APP_my_peer_instance, peer_instance);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
+	public static String getCurrentInstanceInDB() {
+		try {
+			return DD.getAppText(DD.APP_my_peer_instance);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	public static boolean samePeers(D_PeerAddress p1, D_PeerAddress p2) {
+		if (p1 == p2) return true;
+		if ((p1 == null) || (p2 == null)) return false;
+		if (p1.getGIDH() == p2.getGIDH()) return true;
+		if ((p1.getGIDH() == null) || (p2.getGIDH() == null)) return false;
+		if (p1.getGIDH().equals(p2.getGIDH())) return true;
+		return true;
+	}
+	public void deleteInstance(String peer_instance) {
+		this.loadInstances();
+		if (this.instances_orig == null) {
+			this.instances_orig = D_PeerInstance.deep_clone(instances);
+		}
+		this.instances.remove(peer_instance);
+		this.dirty_instances = true;
+		this.storeAsynchronouslyNoException();
+	}
+	/**
+	 * 
+	 * @param instance2 (if null, try current time)
+	 * @param createdLocally
+	 * @return: returns false if it already existed
+	 */
+	public boolean addInstanceElem(String instance2, boolean createdLocally){
+		if (instance2 == null) instance2 = Util.getGeneralizedTime();
+		
+		if (this.instances.containsKey(instance2)) return false;
+
+		D_PeerInstance nou = new D_PeerInstance(instance2);
+		nou.createdLocally = createdLocally;
+		nou.last_sync_date = Util.CalendargetInstance();
+		nou._last_sync_date = Encoder.getGeneralizedTime(nou.last_sync_date);
+
+		if (this.instances_orig == null) {
+			this.instances_orig = D_PeerInstance.deep_clone(instances);
+		}
+		this.instances.put(instance2, nou);
+		this.dirty_instances = true;
+		return true;
+	}
+	/**
+	 * Loads instances if needed,
+	 * @param instance2 : the name should have been provided
+	 * @param createdLocally
+	 * @return : returns false if it already existed
+	 */
+	public boolean addInstance(String instance2, boolean createdLocally) {
+		this.loadInstances();
+		if (!addInstanceElem(instance2, createdLocally)) return false;
+		this.storeAsynchronouslyNoException();
+		return true;
+	}
+	public void makeNewInstance() {
+		//Encoder enc = new Encoder().initSequence();
+		//enc.addToSequence(new Encoder(Util.CalendargetInstance()));
+		Calendar cal;
+		this.loadInstances();
+		do {
+			cal = Util.CalendargetInstance();
+			this.instance = Encoder.getGeneralizedTime(cal);//Util.getHash(enc.getBytes(), Cipher.MD5);
+		} while (instances.containsKey(this.instance));
+		
+		if (!addInstanceElem(this.instance, true)) return;
+		
+		//D_PeerInstance value =  new D_PeerInstance(this.instance, true);
+		//value.createdLocally = true;
+		//this.instances.put(this.instance, value);
+		//this.dirty_instances = true;
+	}
+	public String getInstance() {
+		return instance;
 	}
 }

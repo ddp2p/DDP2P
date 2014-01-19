@@ -28,6 +28,7 @@ import java.net.SocketTimeoutException;
 import util.P2PDDSQLException;
 
 import config.DD;
+import config.ThreadsAccounting;
 import ASN1.ASN1DecoderFail;
 import ASN1.Decoder;
 import ASN1.Encoder;
@@ -54,7 +55,17 @@ public class DirectoryServerUDP extends Thread {
 		out.println("Turning DS UDP off");
 	}
 	
-	public void run () {
+	public void run() {
+		this.setName("Directory Server UDP");
+		ThreadsAccounting.registerThread();
+		try {
+			_run();
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		ThreadsAccounting.unregisterThread();
+	}
+	public void _run () {
 		if(DEBUG) out.println("Enter DS UDP Server Thread");
 		byte buffer[] = new byte[DirectoryServer.MAX_DR];
 		for(;;) {
@@ -64,11 +75,11 @@ public class DirectoryServerUDP extends Thread {
 			}
 			if(DEBUG) out.print("*");
 			DatagramPacket dp = new DatagramPacket(buffer, buffer.length);
-			int peek=0;
-			try{
+			int peek = 0;
+			try {
 				ds.udp_socket.receive(dp);
-				if(DEBUG) out.println("DS UDP Accepted...");
-			}catch(SocketTimeoutException e2){
+				if (DEBUG) out.println("DS UDP Accepted...");
+			} catch (SocketTimeoutException e2) {
 				continue;
 			}catch(IOException e){
 				continue;

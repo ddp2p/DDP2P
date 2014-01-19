@@ -44,6 +44,7 @@ import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
 import config.Identity;
+import config.ThreadsAccounting;
 import data.D_PeerAddress;
 
 public class UDPServerThread extends Thread {
@@ -67,7 +68,10 @@ public class UDPServerThread extends Thread {
 			peer_address = sa.getAddress().getHostAddress()+DD.APP_LISTING_DIRECTORIES_ELEM_SEP+sa.getPort();
 		}catch(Exception e){};
 	}
+	static int k = 0;
 	public void run() {
+		this.setName("UDP Server Thread: "+(k++));
+		ThreadsAccounting.registerThread();
 		try{
 			synchronized(us.lock){
 				us.incThreads();
@@ -85,6 +89,7 @@ public class UDPServerThread extends Thread {
 				System.err.println("UDPServerThread:run:Threads number under 0: "+ us.getThreads()+"/"+UDPServer.MAX_THREADS);
 			}
 		}catch(Exception e){e.printStackTrace();}
+		ThreadsAccounting.unregisterThread();
 	}
 	public void _run() {
 		if(DEBUG)System.out.println("UDPServerThread:run: Running UDPHandler thread:"+us.getThreads()+" from"+pak.getSocketAddress());
@@ -211,10 +216,10 @@ public class UDPServerThread extends Thread {
 				if(asreq!=null){
 					ClientSync.peer_scheduled_requests.remove(g_peerID);
 					asreq.lastSnapshot = Util.getCalendar(_lastSnapshotString);
-					String global_peer_ID = Identity.current_peer_ID.globalID;
-					if(DEBUG) System.out.println("Client: buildRequests: myself=: "+global_peer_ID);
+					//String global_peer_ID = Identity.current_peer_ID.globalID;
+					//if(DEBUG) System.out.println("Client: buildRequests: myself=: "+global_peer_ID);
 					try {
-						asreq.address = D_PeerAddress.get_myself(global_peer_ID);
+						asreq.address = D_PeerAddress.get_myself_from_Identity();
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -270,7 +275,17 @@ public class UDPServerThread extends Thread {
 						System.err.println("UDPServer:run: Unsigned Request old: "+asreq.toString());
 						if(verification_warning ++ < MAX_VERIFICATION_WARNING)
 							new Thread(){
-								public void run(){
+								public void run() {
+									this.setName("UDP Server Warning");
+									ThreadsAccounting.registerThread();
+									try {
+										_run();
+									} catch (Exception e) {
+										e.printStackTrace();
+									}
+									ThreadsAccounting.unregisterThread();
+								}
+								public void _run(){
 									Application.warning(Util._("Abandoned sending message with inconsistent request")+
 									"\n"+
 											Util._("You can disable verification of sent messages!")+

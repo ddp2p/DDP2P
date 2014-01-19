@@ -25,6 +25,7 @@ import java.awt.Toolkit;
 import java.net.URL;
 import java.util.Hashtable;
 
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 
@@ -74,6 +75,8 @@ public class DDIcons{
 	private static final String I_MAILPOST20 = "mail20.gif";	
 	private static final String I_IDENTITIES20 = "identities20.gif";	
 	private static final String I_CENSUS20 = "census20.gif";	
+	private static final String I_FIRE20 = "fire20.gif";	
+	private static final String I_FIREG20 = "fire_grey_20.gif";	
 	private static final String I_WIRELESS20 = "wireless20.gif";	
 	private static final String I_DIRECTORY20 = "directory20.gif";	
 	private static final String I_KEYS20 = "key_20.gif";	
@@ -81,7 +84,7 @@ public class DDIcons{
 	private static final String I_RECONFIGURE20 = "reconfigure20.gif";	
 	private static final String I_PEER20 = "network-node20.gif";	
 	private static final String I_PEERGRAY20 = "network-node_gray20.gif";	
-	private static final String I_ORG20 = "castle20.gif";	
+	private  static final String I_ORG20 = "castle20.gif";	
 	private static final String I_MOTION20 = "laws20.gif";	
 	private static final String I_JUSTIFICATION20 = "justifications20.gif";	
 	private static final String I_BALANCE20 = "balance20.gif";	
@@ -99,6 +102,9 @@ public class DDIcons{
 	private static final String I_VERIF20 = "verif20.gif";
 	private static final String I_REVOKED20 = "revoked20.gif";
 	private static final String I_CONNECTED20 = "connected20.gif";
+
+	public  static final String I_DDP2P40 = "ddp2p40.gif";	
+	public  static final String I_DDP2P32 = "ddp2p32.gif";	
 
 	//LargeSplash.jpg
 
@@ -243,6 +249,18 @@ public class DDIcons{
 		if(_II_CENSUS == null) _II_CENSUS = getImageIconFromResource(I_CENSUS20, descr);
 		if(_II_CENSUS == null) Util.printCallPath("null");
 		return _II_CENSUS;
+	}
+	private static ImageIcon _II_HOT= null;
+	public static Icon getHotImageIcon(String descr) {
+		if(_II_HOT == null) _II_HOT = getImageIconFromResource(I_FIRE20, descr);
+		if(_II_HOT == null) Util.printCallPath("null");
+		return _II_HOT;
+	}
+	private static ImageIcon _II_HOTG= null;
+	public static Icon getHotGImageIcon(String descr) {
+		if(_II_HOTG == null) _II_HOTG = getImageIconFromResource(I_FIREG20, descr);
+		if(_II_HOTG == null) Util.printCallPath("null");
+		return _II_HOTG;
 	}
 	private static ImageIcon _II_WIRELESS = null;
 	public static ImageIcon getWirelessImageIcon(String descr){

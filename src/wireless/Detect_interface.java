@@ -73,9 +73,25 @@ public class Detect_interface {
 	static public String detect_wlan() throws P2PDDSQLException {
 		try{
 			if(DEBUG) System.out.println("Detect_interface: detect_wlan()");
-			return detect_os_and_load_wireless_data();
+			return detect_wireless_interface(); //detect_os_and_load_wireless_data();
 		}catch(IOException e){e.printStackTrace();}
 		return null;
+	}
+	public static String detect_wireless_interface()  throws IOException, P2PDDSQLException{
+		String result = null;
+		switch (DD.OS) {
+		case DD.WINDOWS:
+			result = win_detect_interf();
+			break;
+		case DD.LINUX:
+			result = lin_detect_interf();
+			break;
+		case DD.MAC:
+			result = mac_detect_interf();
+			break;
+		}
+		if(DEBUG) System.out.println("Detect_interface: load_wireless_data: result="+result);
+		return result;
 	}
 	/**
 	 * Compare System property with strings

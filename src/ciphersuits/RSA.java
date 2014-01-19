@@ -34,12 +34,12 @@ import ASN1.Decoder;
 import ASN1.Encoder;
 
 class RSA_PK extends PK{
-	final static String type="RSA";
+	//final static String type="RSA";
 	final static String V0="0";
 	String version = V0; // version to write out, decoding converts to this version
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	String hash_alg="SHA-256";//"MD5";
+	String hash_alg=Cipher.SHA256;//"MD5";
 	BigInteger N;
 	BigInteger e;
 	static SecureRandom sr = new SecureRandom();
@@ -83,7 +83,7 @@ class RSA_PK extends PK{
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
-		enc.addToSequence(new Encoder(type));
+		enc.addToSequence(new Encoder(RSA.type));
 		enc.addToSequence(new Encoder(version).setASN1Type(DD.TAG_AC0));
 		enc.addToSequence(new Encoder(e));
 		enc.addToSequence(new Encoder(N));
@@ -98,7 +98,7 @@ class RSA_PK extends PK{
 		Decoder dec = decoder.getContent();
 		if(dec==null) throw new ASN1DecoderFail("Not RSA");
 		if(DEBUG)System.out.println("RSA_PK:decode: content");
-		if(0!=type.compareTo(dec.getFirstObject(true).getString())) throw new ASN1DecoderFail("Not RSA");
+		if(0!=RSA.type.compareTo(dec.getFirstObject(true).getString())) throw new ASN1DecoderFail("Not RSA");
 		if(DEBUG)System.out.println("RSA_PK:decode: RSA");
 		if(dec.getFirstObject(false).getTypeByte()==DD.TAG_AC0){
 			ver = dec.getFirstObject(true).getString();
@@ -207,9 +207,17 @@ class RSA_PK extends PK{
 		if(DEBUG)System.out.println("RSA:verify_unpad_hash: return "+result);
 		return result;
 	}
+	@Override
+	public CipherSuit getCipherSuite() {
+		CipherSuit result = new CipherSuit();
+		result.cipher = Cipher.ECDSA;
+		result.ciphersize = N.bitLength();
+		result.hash_alg = hash_alg;
+		return result;
+	}
 }
 class RSA_SK extends SK{
-	final static String type="RSA";
+	//final static String type="RSA";
 	final static String V0="0";
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -225,7 +233,7 @@ class RSA_SK extends SK{
 	static SecureRandom sr = new SecureRandom();
 	@Override
 	public boolean sameAs(SK sk) {
-		if(!type.equals(sk.getType())) return false;
+		if(!RSA.type.equals(sk.getType())) return false;
 		RSA_SK _sk = (RSA_SK)sk;
 		if(N!=null){
 			if(!N.equals(_sk.N)) return false;
@@ -237,7 +245,7 @@ class RSA_SK extends SK{
 		return true;
 	}
 	public String getType() {
-		return type;
+		return RSA.type;
 	}
 	public String toString() {
 		return "\nRSA_SK: [\nd="+d+"\n,N="+N+"]";
@@ -254,7 +262,7 @@ class RSA_SK extends SK{
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
-		enc.addToSequence(new Encoder(type));
+		enc.addToSequence(new Encoder(RSA.type));
 		enc.addToSequence(new Encoder(version).setASN1Type(DD.TAG_AC0));
 		enc.addToSequence(new Encoder(p));
 		enc.addToSequence(new Encoder(q));
@@ -272,7 +280,7 @@ class RSA_SK extends SK{
 		String ver=null;
 		try{
 		Decoder dec = decoder.getContent();
-		if(0!=type.compareTo(dec.getFirstObject(true).getString())) throw new ASN1DecoderFail("Not RSA");
+		if(0!=RSA.type.compareTo(dec.getFirstObject(true).getString())) throw new ASN1DecoderFail("Not RSA");
 		if(dec.getFirstObject(false).getTypeByte()==DD.TAG_AC0){
 			ver = dec.getFirstObject(true).getString();
 		}
@@ -410,6 +418,7 @@ class RSA_SK extends SK{
 	}
 }
 public class RSA extends ciphersuits.Cipher {
+	public final static String type = Cipher.RSA;
 	private static final int DD_PRIME_CERTAINTY = 10;
 	RSA_SK sk = null; //new RSA_SK();
 	RSA_PK pk = null; //new RSA_PK();

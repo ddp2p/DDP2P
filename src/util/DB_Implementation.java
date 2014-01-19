@@ -14,4 +14,5 @@ interface DB_Implementation{
     public void update(String sql, String[] params, boolean dbg) throws P2PDDSQLException;
     public void _update(String sql, String[] params, boolean dbg) throws P2PDDSQLException;
     public void open(String _filename) throws P2PDDSQLException;
+	public void close() throws P2PDDSQLException;
 }

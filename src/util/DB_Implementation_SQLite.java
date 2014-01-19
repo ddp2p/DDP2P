@@ -22,6 +22,11 @@ class DB_Implementation_SQLite implements DB_Implementation {
 	private boolean conn_open;
 	private SQLiteConnection conn;
 	private String filename;
+	@Override
+	public void close() {
+		if(conn_open)
+			if (db != null) db.dispose();
+	}
     public synchronized ArrayList<ArrayList<Object>> select(String sql, String[] params, boolean DEBUG) throws P2PDDSQLException{
     	//try{throw new Exception("?");}catch(Exception e){e.printStackTrace();}
     	//conn_open = true;

@@ -41,6 +41,8 @@ import java.util.Enumeration;
 import util.P2PDDSQLException;
 
 import config.Application;
+import config.DD;
+import config.ThreadsAccounting;
 
 import util.DBInterface;
 import util.Util;
@@ -59,10 +61,34 @@ public class DirectoryServer extends Thread{
 	private static final boolean _DEBUG = true;
 	private static final boolean VERIFY_SIGNATURES = false;
 	private static final long REMOTE_DATE_THRESHOLD_MILLIS = 60*60*1000; // 1 hour
+	/**
+	 * Monitor for opening the db database (it can be open from two place: server and widget)
+	 */
+	private static final Object db_monitor = new Object();
 	public DatagramSocket udp_socket;
 	DirectoryServerUDP dsu;
-	public DBInterface db = null;
+	public static DBInterface db = null;
 	ServerSocket ss = null;
+	public static DBInterface getDirDB(String dbfile) {
+		synchronized (db_monitor) {
+			if (db==null) {
+					try {
+						db = new DBInterface(dbfile);
+						ArrayList<ArrayList<Object>> a = db._select("SELECT * FROM "+table.registered.TNAME+" LIMIT 1", new String[]{}, DEBUG);
+						if (DEBUG) {
+							System.out.println("DirectoryServer:getDBDir got "+a.size());
+							for (ArrayList<Object> t : a) {
+								System.out.println("DirectoryServer:getDBDir table "+t.size());
+							}
+						}
+					} catch (P2PDDSQLException e) {
+						System.out.println("Failure to open directory database: "+dbfile);
+						e.printStackTrace();
+					}
+			}
+		}
+		return db;
+	}
 	public DirectoryServer(int port) throws Exception {
 		boolean connected = false;
 		try{
@@ -74,9 +100,7 @@ public class DirectoryServer extends Thread{
 		}
 		udp_socket.setSoTimeout(Server.TIMEOUT_Server);
 		dsu = new DirectoryServerUDP(this);
-		if (db==null) {
-				db = new DBInterface(Application.DIRECTORY_FILE);
-		}
+		db = getDirDB(Application.CURRENT_DATABASE_DIR()+Application.DIRECTORY_FILE);
 		do{
 			try{
 				if(port <= 0) port = Server.getRandomPort();
@@ -182,19 +206,33 @@ public class DirectoryServer extends Thread{
 			DirectoryAnnouncement da,
 			Address detected_sa,
 			DBInterface db,
-			boolean storeNAT, boolean TCP) throws P2PDDSQLException{
-		if(DEBUG)System.out.println("DirectoryServer:Got announcement: "+da);
-		if(detected_sa!=null) da.address._addresses = prependAddress(da.address._addresses, detected_sa);
+			boolean storeNAT, boolean TCP) throws P2PDDSQLException {
+		if (DEBUG) System.out.println("DirectoryServer:_monitored_handleAnnouncement:Got announcement: "+da);
+		if (da.address._addresses==null) {
+			if (DEBUG) System.out.println("DirectoryServer:_monitored_handleAnnouncement:Got empty announcement: "+da
+					+" detected="+detected_sa);
+		}
+		if (detected_sa != null)
+			da.address._addresses = prependAddress(da.address._addresses, detected_sa);
 
 		DirectoryServerCache.loadAndSetEntry(da, TCP);
 		
-		byte[] answer = new DirectoryAnnouncement_Answer(detected_sa.toString()).encode();
-		if(DEBUG) out.println("sending answer: "+Util.byteToHexDump(answer));
+		byte[] answer = new DirectoryAnnouncement_Answer(Util.getString(detected_sa)).encode();
+		if (DEBUG) out.println("DS:_monitored_handleAnnouncement: sending answer: "+Util.byteToHexDump(answer));
 		return answer;
 	}
-	private static Address[] prependAddress(Address[] i, Address h){
+	/**
+	 * places h in front of i
+	 * @param tail
+	 * @param h
+	 * @return
+	 */
+	private static Address[] prependAddress(Address[] tail, Address h) {
+		if (tail == null)
+			return new Address[]{h};
 		ArrayList<Address> ad = new ArrayList<Address>();
-		for(Address a : i) ad.add(a);
+		for (Address a : tail)
+			if (a!=null) ad.add(a);
 		ad.add(0, h);
 		return ad.toArray(new Address[0]);
 		
@@ -220,7 +258,9 @@ public class DirectoryServer extends Thread{
 		params[table.registered.REG_CERT] = (da.certificate.length==0)?null:Util.stringSignatureFromByte(da.certificate);
 		params[table.registered.REG_ADDR] = adr;
 		params[table.registered.REG_SIGN] = (da.signature.length==0)?null:Util.stringSignatureFromByte(da.signature);
-		params[table.registered.REG_TIME] = (Util.CalendargetInstance().getTimeInMillis()/1000)+"";
+		Calendar timestamp = da.date;
+		if(timestamp == null) timestamp = Util.CalendargetInstance();
+		params[table.registered.REG_TIME] = Encoder.getGeneralizedTime(timestamp); //(Util.CalendargetInstance().getTimeInMillis()/1000)+"";
 		
 		long id=db.insert(table.registered.TNAME, table.registered.fields_noID_list,
 //				new String[]{table.registered.global_peer_ID,table.registered.certificate,table.registered.addresses,table.registered.signature,table.registered.timestamp},
@@ -261,6 +301,18 @@ public class DirectoryServer extends Thread{
 		return result;
 	}
 	public void run () {
+		this.setName("Directory Server");
+		ThreadsAccounting.registerThread();
+		try {
+			DirectoryServerCache.startSaverThread();
+			_run();
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+		DirectoryServerCache.stopSaverThread();
+		ThreadsAccounting.unregisterThread();
+	}
+	public void _run () {
 		out.println("Enter DS Server Thread");
 		dsu.start();
 		for(;;) {
@@ -298,7 +350,11 @@ public class DirectoryServer extends Thread{
 					String globalIDhash = dr.globalIDhash;
 					D_DirectoryEntry de = DirectoryServerCache.getEntry(globalID, globalIDhash);
 					DirectoryAnswer da = getDA(de, dr.version);
-					
+
+					if ((da == null) || (da.date == null))
+						System.out.println("DirectoryServer:run ?why da="+da+
+								"\n\tde="+de+
+								"\n\tdr="+dr);
 					
 					byte msg[] = da.encode();
 					//out.println("answer: "+Util.byteToHexDump(msg, " ")+"\n\tI.e.: "+da);
@@ -323,8 +379,14 @@ public class DirectoryServer extends Thread{
 	}
 	private DirectoryAnswer getDA(D_DirectoryEntry de, int version) {
 		DirectoryAnswer da = new DirectoryAnswer();
+		if (de.addresses == null) {
+			return da;
+		}
 		da.version = version;
 		da.date = de.timestamp;
+		if (da.date == null) {
+			da.date = Util.CalendargetInstance();
+		}
 		
 		if(de.addresses != null)
 			for(int k=0; k<de.addresses.length; k++) {
@@ -388,9 +450,12 @@ public class DirectoryServer extends Thread{
 			Address detected_sa) {
 		if(detected_sa == null) return null;
 		Address[] addr = da.address._addresses;
-		for(int k =0; k<addr.length; k++) {
+		if ((da == null) || (da.address == null) || (da.address._addresses == null))
+			return detected_sa;
+		for (int k =0; k<addr.length; k++) {
 			Address a = addr[k];
-			if(a.domain.equals(detected_sa.domain) && a.udp_port==detected_sa.udp_port) return null; // not NAT
+			if(a.domain.equals(detected_sa.domain) && a.udp_port==detected_sa.udp_port)
+				return null; // not NAT
 		}
 		detected_sa.protocol = Address.NAT;
 		return detected_sa;

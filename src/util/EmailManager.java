@@ -229,7 +229,7 @@ public class EmailManager {
 		try {
 			DD_IdentityVerification_Request iv = new DD_IdentityVerification_Request();
 			iv.verified = new D_Constituent(constituent_ID);
-			iv.verifier = D_PeerAddress.get_myself(Identity.getMyPeerGID());
+			iv.verifier = D_PeerAddress.get_myself_from_Identity();
 			iv.d = Util.getGeneralizedTime();
 			iv.r = new BigInteger(DD_IdentityVerification_Request.R_SIZE, new SecureRandom());
 			//DD.setAppText("VI:"+iv.verified.global_constituent_id_hash, iv.r.toString());

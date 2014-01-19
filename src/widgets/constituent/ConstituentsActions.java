@@ -669,6 +669,7 @@ class ConstituentsAddAction extends DebateDecideAction {
     		String organizationGID = model.getOrgGID();//D_Organization.getGlobalOrgID(organizationID+"");
     		
     		data.D_Constituent wbc = new data.D_Constituent();
+    		wbc.weight = dialog.weight+"";
     		wbc.email = dialog.emailEditor;
     		wbc.external = true;
     		wbc.forename = dialog.gnEditor;
@@ -1051,7 +1052,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	long id;
 		try {
 			id = storeMyConstituentData(tree, dialog, false, true);
-			if (id>=0){
+			if (id >= 0) {
 				D_Constituent.readSignSave(id, model.getConstituentIDMyself());
 				DD.status.setMeConstituent(new D_Constituent(id));
 			}else
@@ -1107,12 +1108,16 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	Cipher keys;
     	SK sk = ib.getKeys();
     	keys = ib.getCipher();
+    	
     	if(keys==null) {
-    		keys = Util.getKeyedGlobalID("Constituent", dialog.emailEditor+now);
-    		keys.genKey(1024);
-    		DD.storeSK(keys, "CST:"+dialog.snEditor+"_"+dialog.gnEditor, now);
-    		sk = keys.getSK();
     		
+        	keys = Cipher.mGetStoreCipher(
+        			dialog.ciphersuit,
+        			dialog.hash_alg,
+        			dialog.ciphersize, "CST:"+dialog.snEditor+"_"+dialog.gnEditor,
+        			"Constituent",
+        			dialog.emailEditor, now);
+    		sk = keys.getSK();
     	}
     	
 		String gcd = Util.getKeyedIDPK(keys);
@@ -1128,6 +1133,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
 		String organizationGID = model.getOrgGID();//D_Organization.getGlobalOrgID(Util.getStringID(organizationID));
 		
 		data.D_Constituent wbc = new data.D_Constituent();
+		wbc.weight = dialog.weight+"";
 		wbc.global_constituent_id = gcd;
 		wbc.global_constituent_id_hash = gcdhash;
 		wbc.email = dialog.emailEditor;
