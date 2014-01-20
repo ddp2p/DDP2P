@@ -1,11 +1,26 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2014 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package util;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 
 interface JPEG_Chunk {
@@ -692,30 +707,6 @@ public class JPEG {
 		}
 		return result;
 	}
-	static byte[] readAll(File f) {
-		int cnt;
-		BufferedInputStream br;
-		try {
-			br = new BufferedInputStream(new FileInputStream(f));
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-			return null;
-		}
-		byte data[] = new byte[(int)f.length()];
-		try {
-			cnt = br.read(data);
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}finally{
-			try {
-				br.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return data;
-	}
 	long length() {
 		long len = 0;
 		for (JPEG_Chunk c : this.chunks) {
@@ -738,7 +729,7 @@ public class JPEG {
 		filename = _filename;
 		int cnt = 0, off = 0;
 		File f = new File(filename);
-		byte[] data = readAll(f);
+		byte[] data = Util.readAll(f);
 		if (data == null) return;
 		cnt = data.length;
 		while (off < cnt) {

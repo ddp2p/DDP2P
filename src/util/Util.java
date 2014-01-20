@@ -57,11 +57,13 @@ import java.awt.Point;
 import java.awt.Window;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -2426,6 +2428,26 @@ public class Util {
 		r = (byte_to_uint(b[off])<<8) + byte_to_uint(b[off+1]);
 		return r;
 	}
+	public static void cpu_to_be32(long val, byte[] b, int off) {
+		int i = (int) ((val >> 16) & 0x00FFFF);
+		Util.cpu_to_16be(i, b, off);
+		int j = (int) ((val) & 0x00FFFF);
+		Util.cpu_to_16be(j, b, off+2);
+	}
+	public static void cpu_to_le32(long val, byte[] b, int off) {
+		int i = (int) ((val >> 16) & 0x00FFFF);
+		Util.cpu_to_16be(i, b, off+2);
+		int j = (int) ((val) & 0x00FFFF);
+		Util.cpu_to_16be(j, b, off);
+	}
+	public static long be32_to_cpu(byte[] b, int off) {
+		long r = be16_to_cpu(b, off);
+		return (r<<16)+be16_to_cpu(b, off+2);
+	}
+	public static long le32_to_cpu(byte[] b, int off) {
+		long r = le16_to_cpu(b, off+2);
+		return (r<<16)+le16_to_cpu(b, off);
+	}
 	/**
 	 * same as byte_to_uint
 	 * @param b
@@ -2462,6 +2484,39 @@ public class Util {
 	public static String toString16(BigInteger i){
 		if(i==null) return null;
 		return i.toString(16);
+	}
+	public static boolean isUpperCase(byte b) {
+		return (b >= 'A') && (b <= 'Z');
+	}
+	public static boolean isLowerCase(byte b) {
+		return (b >= 'a') && (b <= 'z');
+	}
+	public static boolean isAsciiAlpha(byte b) {
+		return isUpperCase(b) || isLowerCase(b);
+	}
+	public static byte[] readAll(File f) {
+		int cnt;
+		BufferedInputStream br;
+		try {
+			br = new BufferedInputStream(new FileInputStream(f));
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+			return null;
+		}
+		byte data[] = new byte[(int)f.length()];
+		try {
+			cnt = br.read(data);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}finally{
+			try {
+				br.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return data;
 	}
 }
 class GetHostName extends Thread{
