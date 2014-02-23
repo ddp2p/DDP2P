@@ -210,7 +210,7 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 		else text = "";
 		if (selected) peer_selected.setText(text);
 		if (me) {
-			if (peer.getInstance() != null) text += ":"+peer.getInstance();
+			if ((peer != null) && (peer.getInstance() != null)) text += ":"+peer.getInstance();
 			peer_me.setText(text);
 		}
 	}

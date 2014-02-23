@@ -306,7 +306,7 @@ public class D_PeerAddress extends ASNObj implements DDP2P_DoubleLinkedList_Node
 			_myself = new D_PeerAddress(gid);
 			_myself.setCurrentInstance(instance);
 			
-			if (Identity.current_peer_ID != null) {
+			if ((Identity.current_peer_ID != null) && (Identity.current_peer_ID.globalID != null)) {
 				String global_peer_ID = Identity.current_peer_ID.globalID;
 				String peer_instance = Identity.current_peer_ID.instance;
 				if (global_peer_ID.equals(_myself.getGID())) {
