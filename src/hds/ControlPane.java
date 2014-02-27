@@ -1422,7 +1422,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			}else if(setListingDirectories_action.equals(e.getActionCommand())){
 				String listing_directories = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
 				if(_DEBUG)System.out.println("listing directories: "+listing_directories);
-				listing_directories = Util.concat(listing_directories.split(Pattern.quote(",")),"\n ");
+				if (listing_directories != null)
+					listing_directories = Util.concat(listing_directories.split(Pattern.quote(",")),"\n ");
 				String val=
 					JOptionPane.showInputDialog(
 							this,
