@@ -476,6 +476,7 @@ public class TypedAddress extends ASNObj{
 		int certif = countCertifAndDIR(arrival);
 		int crt = 0;
 		TypedAddress[] result = new TypedAddress[certif];
+		if ((certif == 0) || (arrival == null)) return result;
 		for (TypedAddress a : arrival) {
 			if (a.certified || Address.DIR.equals(a.type)) result[crt++] = a;
 			else
