@@ -247,6 +247,13 @@ class DirectoryPing extends Thread{
 	void _run() {
 		Hashtable<String, InetSocketAddress> addr = new Hashtable<String, InetSocketAddress>();
 		while(!stop) {
+			try {
+			    synchronized(this){
+				this.wait(WAIT_TIME_MS);
+			    }
+			} catch (InterruptedException e) {
+			    e.printStackTrace();
+			}
 			//GID = Identity.getMyPeerGID();
 			String id = null;
 			String GID = null;
@@ -288,13 +295,13 @@ class DirectoryPing extends Thread{
 					
 					m.fireTableRowsUpdated(k, k);
 				}
-				try {
-					synchronized(this){
-						this.wait(WAIT_TIME_MS);
-					}
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+			}
+			try {
+			    synchronized(this){
+				this.wait(WAIT_TIME_MS);
+			    }
+			} catch (InterruptedException e) {
+			    e.printStackTrace();
 			}
 		}
 	}
