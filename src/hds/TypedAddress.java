@@ -493,6 +493,7 @@ public class TypedAddress extends ASNObj{
 	}
 	private static int countCertifAndDIR(TypedAddress[] arrival) {
 		int certif = 0;
+		if (arrival == null) return 0;
 		for (TypedAddress a : arrival) {
 			if (a.certified || Address.DIR.equals(a.type)) certif ++;
 		}
