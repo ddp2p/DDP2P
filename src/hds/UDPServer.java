@@ -754,6 +754,7 @@ public class UDPServer extends Thread {
 		DirectoryAnnouncement da = UDPServer.directoryAnnouncement;
 		if(DEBUG_DIR) out.println("UDPServer: announceMyselfToDirectory Registering: domain=\""+da.address.addresses()+"\" UDP port=\""+da.address.udp_port+"\"");
 		_announceMyselfToDirectories(UDPServer.directoryAnnouncement, ds);
+		if (true) Server.announceMyselfToDirectories(da);
 		if(DEBUG_DIR) out.println("UDPServer: announceMyselfToDirectory: done");
 	}	
 	public static void announceMyselfToDirectoriesTCP(){
