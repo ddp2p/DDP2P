@@ -1,0 +1,116 @@
+INSERT INTO "application" VALUES('DD_DB_VERSION', '1.0.5');
+INSERT INTO "application" VALUES('listing_directories','163.118.78.44:25123,163.118.78.40:25123');
+
+INSERT INTO "updates" ("updates_ID",
+        "original_mirror_name",
+        "my_name_for_mirror",
+        "url",
+        "last_version",
+        "used",
+        "tester_info",
+        "last_contact_date",
+        "activity"
+        )
+	 VALUES(1,'Khalid',NULL,'wsdl:http://andrew.cs.fit.edu/~kalhamed2011/webservices/ddWS_doc5.php?wsdl&123331c847ba3a5d6a52e817a4d0109fe65ffbc2038f68c8db1c3f9793b50c0d',NULL,1,NULL,NULL,NULL);
+
+INSERT INTO "updates"  ("updates_ID",
+        "original_mirror_name",
+        "my_name_for_mirror",
+        "url",
+        "last_version",
+        "used",
+        "tester_info",
+        "last_contact_date",
+        "activity"
+	)
+	 VALUES(2,'Silaghi DD',NULL,'http://debatedecide.org/DD_Updates',NULL,1,NULL,NULL,NULL);
+
+INSERT INTO "updates"  ("updates_ID",
+        "original_mirror_name",
+        "my_name_for_mirror",
+        "url",
+        "last_version",
+        "used",
+        "tester_info",
+        "last_contact_date",
+        "activity"
+        )
+	 VALUES(3,'Silaghi DC',NULL,'http://distributedcensus.com/DD_Updates',NULL,0,NULL,NULL,NULL);
+
+INSERT INTO "updates_keys" ("updates_keys_ID",
+        "original_tester_name",
+        "my_name_for_tester",
+        "public_key",
+        "public_key_hash",
+        "trusted_as_mirror",
+        "trusted_as_tester",
+        "trust_weight",
+        "reference_tester",
+        "expected_test_thresholds"
+	)
+	VALUES(1,'MARIUS SILAGHI',NULL,'MIIEGgwDUlNBYAEwAgMBAAECggQAexHMIt8qukBE03zeLQQZcIawJNLaq15POjKDiEnjfIy0qtTCxnNwDnOM4E6dYDMNsYe4OSqmGVpqLxDOs2u2GN2KgtSbyHgvXQ5ynOQMixFbeDy8CjJeknl0/oQ76VNPCTT4B05RD/jzW8bNwN/23tYJkXLgHp7/Vn8qv7GK6762+i2xjf82D1hg0+BO9+4cArmTWFygV7TAp2GWyBNnG4EzsIew7ocESiU5CBDbrOdsEn7jVMzHTm+jBBTT/SjCd/bD+D4Q4UAcGko1PMmn8nzQKOU7BbE2BVBQIbny1ItlnxKZha9XumXXNUhw8cfE+UfwhnILoiROvn/j9q5aoGakY+UyYCrp8SUGN+mFRG+IqZu0HzvzojPWKPWmJ7Ef4SXN4pnZjAM9dj/9pdN5EVWAs9P0IdQXNlbdnxhuI3Rhuu0G8kcQzywSXkXsCM75ZvYG+1ovZvilYLOUhLz+ngLUIZJB3sYsagBwPUMUrDRI+K+flwLKaIctot1Yq0sXAUvXTt+YnDKZFmkJuOjvhhvnJuOmguWhmRQHxPWG2wrjJnk2+ADrd06yvgAudVCoCIL20spHHQwisNpSOkqqqhEuV/pnMN8eFhMw/r6xd9CAjFlLULBx9ut7Am3VqNbM58SaUbVGofZFSlOr80+CwnOe9WBbysC8udmgRjiHPKuU3TERBIc4fbdic56mf6/B7nBgeaxfoefDb1Y8w5LQGqr0sT2+FEz9Bgohf4Bg8zAgkrH+9SNP7Qweg37oxjppLSdo3ZFAglIO9/7wlWrGnn9fTmDqmgxOXotocCDcPOMNTplIR0oUwPXdKfnBIvrSMkNj7ecWC9bJ8gsOT3BS3e9SBMAfBhtQVCdEXNH5D76T6RDv80So/qAoGxX5TqpzJOZUqdOq9lwAWzQQ9IGyCFCfOw8thX2PcVaIU4NoDs6NeCCD0zpP/2miSkU36pvYfnzSQh7nCan8kJ99pk7NPBoQlXU87V9optVTioOBRa+PYvAvpSUJ2CiGCv896fwdYh/03FJwy3yGIpsZA7lIc8A2Q1+ahVmMmjnl4Mt6JFbaBv1k0zi8ej4T4JaP4z7SYrvD1xy6gc2IYYcAl8senZdRCURjByNP4oaX40iMXoDSR/FrCm5NYTeI6Lc9l+LZYdMu4WBvbQqWiZY9YHLd2HFo43SloLNCcFsla/4KxeSrY7E/hLBeIuEstWmgHhY2x0PQvvU3vbSHbFxApGL+yXqzoj4aSZ7OCF1Tzt0sPmNKRmCvGlDSErJ2ulh3dz3x6abloDiR1ndPXJqG1fmZ2TAgylwBJIuxu9OelcU/pYxzxQIy/aExDYYl4pTsM3x6qMU6mJbX8dtYnj15vMcg2wwHU0hBLTUxMg==','SHA-1:uZ36bWcATfM4t1Gm7+tlu6KJz8g=',1,1,'1.0',0,NULL);
+
+INSERT INTO "updates_keys" ("updates_keys_ID",
+        "original_tester_name",
+        "my_name_for_tester",
+        "public_key",
+        "public_key_hash",
+        "trusted_as_mirror",
+        "trusted_as_tester",
+        "trust_weight",
+        "reference_tester",
+        "expected_test_thresholds"
+	)
+	VALUES(2,'KHALID ALHAMED',NULL,'MIIEGwwDUlNBYAEwAgMBAAECggQBAJg0EIjvHFt/oLOB65Fz6mmXTl5vYsnv5WCzfbiMHi9Vhxp6mRETHOilVRdvnO0qXf5FjrzI15iXSuoFU4SuP7SNGEEdfu79c7jv6CV9p04/4BoBUJVAk/F8uBcs+S/XXzd+mq1UxUh/Qlhr6aZfcy5pSNIcSqtiXTyp1e4WtKzltGmLbIXkjYPtQAUKefcnQvHsBHPKEJEYevTlzPxPgNOUI8TH4EDJnSmqYX9XUYiZr6DoC2YJ57aUKF5A4XZ2CNkelCGuFCf6O98IAVP7+o5JMiePX3wBHuFfNd0K6SuqGKwX3WWh7cgzl8gqvpOWFYYEv/DJL2ThBOP3RIbPJiL9Q+k90apnKf5FbCGaLLbC/kkzL2K3h+kj8d/mn+5OsUNEjK7PYMT0tg3B9T5FCxlK3k4pCLdyNVHh2f2c68qdOAoKVFm766Az0JyZWzpBUxiF/MBZ8JcONcRcGbImllNc4+qYiY5yKOcz6t8IykcdXwxw1Hupm0BLYgiemu9uZlrTyAFknU+UfS5BX3WHLWeUSh6s9c3ADrkZfa0JiZd9Dmr6e6uWxjNNF7de4tM8J+4dZWbyFLcES3NzivV644SkCKthTVExKX6gkQvYZdOXi3rS4wsGrYbC1Hb85oRPAKJYYlc9pfrDSo0e+xw2xFrpOelLMxtlmIe7wP4dHX4m/CF0QQQOw5x7wramyoFly2U1/s/AeAQZcsw6i1MuI7z+1n5K6TeDTVP1mELRi/06BodSt//cKXwQQJfher6Qfqz8uP+P3f/8fas/chSk05PtewsKeHard4mOhsLrkO6LsIT9tKE9Ve4mIOphoGT7gRa36daJlOa7NplhMFV15rzU7LdJx3mk+ms5yZZb2dApSJFhXKwP2ohB+QCxznPi3p1rdd5bnZMWtVcuwVWk+O2mOr8XvqHfg7K4dWTGdlCO6Aayc6CVPfPKF7l0RPmMeoskep+gN2vGU26IR/cVnbi+jNdkvWN6QM4t3t+RWOlheqEEy0wCBzn2NrcMH3gCzBT1L5XKEpEqKzgBdlwJ7dvVDkOcvAyxcs3Pp9Ak+sBsVJQzU4FQo0nF7sN1kYr1ylCe/VuH/WqZuS4MVrtWay9mh93a0nar5MrMtf2DxS7/Tr7ZSauR0Bh/B+RAAyQBj4PeGVuAuEg0YOeJCjGs7MuhlQbUqEGfXvjpT8JzT49jg/U+ronqu1iy5MQcUPR3sJbJ2C1Hjcv3A1iMV/l66wq9Mc2ncV9wiN/0jUhpZIK38y6tBpo4hW0z+KkASRq+/mbDvakZjm1971a7/7OpBJ4425FXxaLP3yTxzWlnay+Z0w+aEJBSrxzJr1KZ6947N+YYdVK2TNqExgj3RpFs6x0MB1NIQS01MTI=','SHA-1:s0bkFaTCE1DKmmXgOrUWqYYi600=',1,1,'1.0',0,NULL);
+
+INSERT INTO "tester" ("tester_ID",
+        "name",
+        "public_key",
+        "email",
+        "url",
+        "description"
+	)
+	VALUES(1,'MARIUS SILAGHI','MIIEGgwDUlNBYAEwAgMBAAECggQAexHMIt8qukBE03zeLQQZcIawJNLaq15POjKDiEnjfIy0qtTCxnNwDnOM4E6dYDMNsYe4OSqmGVpqLxDOs2u2GN2KgtSbyHgvXQ5ynOQMixFbeDy8CjJeknl0/oQ76VNPCTT4B05RD/jzW8bNwN/23tYJkXLgHp7/Vn8qv7GK6762+i2xjf82D1hg0+BO9+4cArmTWFygV7TAp2GWyBNnG4EzsIew7ocESiU5CBDbrOdsEn7jVMzHTm+jBBTT/SjCd/bD+D4Q4UAcGko1PMmn8nzQKOU7BbE2BVBQIbny1ItlnxKZha9XumXXNUhw8cfE+UfwhnILoiROvn/j9q5aoGakY+UyYCrp8SUGN+mFRG+IqZu0HzvzojPWKPWmJ7Ef4SXN4pnZjAM9dj/9pdN5EVWAs9P0IdQXNlbdnxhuI3Rhuu0G8kcQzywSXkXsCM75ZvYG+1ovZvilYLOUhLz+ngLUIZJB3sYsagBwPUMUrDRI+K+flwLKaIctot1Yq0sXAUvXTt+YnDKZFmkJuOjvhhvnJuOmguWhmRQHxPWG2wrjJnk2+ADrd06yvgAudVCoCIL20spHHQwisNpSOkqqqhEuV/pnMN8eFhMw/r6xd9CAjFlLULBx9ut7Am3VqNbM58SaUbVGofZFSlOr80+CwnOe9WBbysC8udmgRjiHPKuU3TERBIc4fbdic56mf6/B7nBgeaxfoefDb1Y8w5LQGqr0sT2+FEz9Bgohf4Bg8zAgkrH+9SNP7Qweg37oxjppLSdo3ZFAglIO9/7wlWrGnn9fTmDqmgxOXotocCDcPOMNTplIR0oUwPXdKfnBIvrSMkNj7ecWC9bJ8gsOT3BS3e9SBMAfBhtQVCdEXNH5D76T6RDv80So/qAoGxX5TqpzJOZUqdOq9lwAWzQQ9IGyCFCfOw8thX2PcVaIU4NoDs6NeCCD0zpP/2miSkU36pvYfnzSQh7nCan8kJ99pk7NPBoQlXU87V9optVTioOBRa+PYvAvpSUJ2CiGCv896fwdYh/03FJwy3yGIpsZA7lIc8A2Q1+ahVmMmjnl4Mt6JFbaBv1k0zi8ej4T4JaP4z7SYrvD1xy6gc2IYYcAl8senZdRCURjByNP4oaX40iMXoDSR/FrCm5NYTeI6Lc9l+LZYdMu4WBvbQqWiZY9YHLd2HFo43SloLNCcFsla/4KxeSrY7E/hLBeIuEstWmgHhY2x0PQvvU3vbSHbFxApGL+yXqzoj4aSZ7OCF1Tzt0sPmNKRmCvGlDSErJ2ulh3dz3x6abloDiR1ndPXJqG1fmZ2TAgylwBJIuxu9OelcU/pYxzxQIy/aExDYYl4pTsM3x6qMU6mJbX8dtYnj15vMcg2wwHU0hBLTUxMg==','msilaghi@fit.edu','http://cs.fit.edu/~msilaghi','This is a sample description of the claim that I offer no warranties as so ever of the reliability of mycode or of my tests evaluations. Use it on your own risk!');
+
+
+INSERT INTO "tester"  ("tester_ID",
+        "name",
+        "public_key",
+        "email",
+        "url",
+        "description"
+	)
+	VALUES(2,'KHALID ALHAMED','MIIEGwwDUlNBYAEwAgMBAAECggQBAJg0EIjvHFt/oLOB65Fz6mmXTl5vYsnv5WCzfbiMHi9Vhxp6mRETHOilVRdvnO0qXf5FjrzI15iXSuoFU4SuP7SNGEEdfu79c7jv6CV9p04/4BoBUJVAk/F8uBcs+S/XXzd+mq1UxUh/Qlhr6aZfcy5pSNIcSqtiXTyp1e4WtKzltGmLbIXkjYPtQAUKefcnQvHsBHPKEJEYevTlzPxPgNOUI8TH4EDJnSmqYX9XUYiZr6DoC2YJ57aUKF5A4XZ2CNkelCGuFCf6O98IAVP7+o5JMiePX3wBHuFfNd0K6SuqGKwX3WWh7cgzl8gqvpOWFYYEv/DJL2ThBOP3RIbPJiL9Q+k90apnKf5FbCGaLLbC/kkzL2K3h+kj8d/mn+5OsUNEjK7PYMT0tg3B9T5FCxlK3k4pCLdyNVHh2f2c68qdOAoKVFm766Az0JyZWzpBUxiF/MBZ8JcONcRcGbImllNc4+qYiY5yKOcz6t8IykcdXwxw1Hupm0BLYgiemu9uZlrTyAFknU+UfS5BX3WHLWeUSh6s9c3ADrkZfa0JiZd9Dmr6e6uWxjNNF7de4tM8J+4dZWbyFLcES3NzivV644SkCKthTVExKX6gkQvYZdOXi3rS4wsGrYbC1Hb85oRPAKJYYlc9pfrDSo0e+xw2xFrpOelLMxtlmIe7wP4dHX4m/CF0QQQOw5x7wramyoFly2U1/s/AeAQZcsw6i1MuI7z+1n5K6TeDTVP1mELRi/06BodSt//cKXwQQJfher6Qfqz8uP+P3f/8fas/chSk05PtewsKeHard4mOhsLrkO6LsIT9tKE9Ve4mIOphoGT7gRa36daJlOa7NplhMFV15rzU7LdJx3mk+ms5yZZb2dApSJFhXKwP2ohB+QCxznPi3p1rdd5bnZMWtVcuwVWk+O2mOr8XvqHfg7K4dWTGdlCO6Aayc6CVPfPKF7l0RPmMeoskep+gN2vGU26IR/cVnbi+jNdkvWN6QM4t3t+RWOlheqEEy0wCBzn2NrcMH3gCzBT1L5XKEpEqKzgBdlwJ7dvVDkOcvAyxcs3Pp9Ak+sBsVJQzU4FQo0nF7sN1kYr1ylCe/VuH/WqZuS4MVrtWay9mh93a0nar5MrMtf2DxS7/Tr7ZSauR0Bh/B+RAAyQBj4PeGVuAuEg0YOeJCjGs7MuhlQbUqEGfXvjpT8JzT49jg/U+ronqu1iy5MQcUPR3sJbJ2C1Hjcv3A1iMV/l66wq9Mc2ncV9wiN/0jUhpZIK38y6tBpo4hW0z+KkASRq+/mbDvakZjm1971a7/7OpBJ4425FXxaLP3yTxzWlnay+Z0w+aEJBSrxzJr1KZ6947N+YYdVK2TNqExgj3RpFs6x0MB1NIQS01MTI=','kalhamed2011@my.fit.edu','http://my.fit.edu/~kalhamed2011','This is a sample description of the claim that I offer no warranties as so ever of the reliability of mycode or of my tests evaluations. Use it on your own risk!');
+
+
+INSERT INTO "oid" VALUES('2.5.4.15','BUSINESS_CATEGORY','','2.5.4.15');
+INSERT INTO "oid" VALUES('2.5.4.4','SN','surname','2.5.4.4');
+INSERT INTO "oid" VALUES('2.5.4.42','GN','given name','2.5.4.42');
+INSERT INTO "oid" VALUES('2.5.4.13','DESCRIPTION',NULL,'2.5.4.13');
+INSERT INTO "oid" VALUES('2.5.4.20','TELEPHONE_NUMBER',NULL,'2.5.4.20');
+INSERT INTO "oid" VALUES('2.5.4.70','COUNTY',NULL,'2.5.4.70');
+INSERT INTO "oid" VALUES('UID','UID','Unique Identifier','2.5.4.45');
+INSERT INTO "oid" VALUES('2.5.4.50','UM','Unique Member','2.5.4.50');
+INSERT INTO "oid" VALUES('2.5.4.51','HOUSE_IDENTIFIER',NULL,'2.5.4.51');
+INSERT INTO "oid" VALUES('2.5.4.17.1','POSTAL_CODE',NULL,'2.5.4.17.1');
+INSERT INTO "oid" VALUES('2.5.4.43','INITIALS',NULL,'2.5.4.43');
+INSERT INTO "oid" VALUES('GENERATION','GENERATION',NULL,'2.5.4.44');
+INSERT INTO "oid" VALUES('1.2.840.113549.1.9.2','UNSTRUCTUREDNAME',NULL,'1.2.840.113549.1.9.2');
+INSERT INTO "oid" VALUES('2.5.4.65','PSEUDONYM',NULL,'2.5.4.65');
+INSERT INTO "oid" VALUES('1.3.6.1.5.5.7.9.3','GENDER',NULL,'1.3.6.1.5.5.7.9.3');
+INSERT INTO "oid" VALUES('1.3.6.1.5.5.7.9.1','DATE_OF_BIRTH',NULL,'1.3.6.1.5.5.7.9.1');
+INSERT INTO "oid" VALUES('1.3.6.1.5.5.7.9.2','PLACE_OF_BIRTH',NULL,'1.3.6.1.5.5.7.9.2');
+INSERT INTO "oid" VALUES('1.3.36.8.3.14','NAME_AT_BIRTH',NULL,'1.3.36.8.3.14');
+INSERT INTO "oid" VALUES('1.2.840.113549.1.9.8','UNSTRUCTUREDADDRESS',NULL,'1.2.840.113549.1.9.8');
+INSERT INTO "oid" VALUES('2.5.4.16','POSTAL_ADDRESS',NULL,'2.5.4.16');
+INSERT INTO "oid" VALUES('1.3.6.1.4.1.2787.100.1.1','WEIGHT','Importance of vote','1.3.6.1.4.1.2787.100.1.1');
+INSERT INTO "oid" VALUES('1.3.6.1.4.1.2787.100.1.2','CNP',NULL,'1.3.6.1.4.1.2787.100.1.2');
+INSERT INTO "oid" VALUES('1.3.6.1.5.5.7.9.5','COUNTRY_OF_RESIDENCE',NULL,'1.3.6.1.5.5.7.9.5');
+INSERT INTO "oid" VALUES('1.3.6.1.5.5.7.9.4','COUNTRY_OF_CITIZENSHIP',NULL,'1.3.6.1.5.5.7.9.4');
+INSERT INTO "oid" VALUES('T','Title',NULL,'2.5.4.12');
+INSERT INTO "oid" VALUES('STREET','STREET',NULL,'2.5.4.9');
+INSERT INTO "oid" VALUES('L','LOCALITY',NULL,'2.5.4.7');
+INSERT INTO "oid" VALUES('ST','State/Province',NULL,'2.5.4.8');
+INSERT INTO "oid" VALUES('C','COUNTRY',NULL,'2.5.4.6');
+INSERT INTO "oid" VALUES('O','ORGANIZATION',NULL,'2.5.4.10');
+INSERT INTO "oid" VALUES('OU','ORGANIZATION UNIT',NULL,'2.5.4.11');

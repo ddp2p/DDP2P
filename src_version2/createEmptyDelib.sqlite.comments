@@ -1,0 +1,701 @@
+CREATE TABLE "application" (
+    "field" TEXT PRIMARY KEY NOT NULL,
+    "value" BLOB
+);
+CREATE TABLE "key" ( # keys -> key
+    "key_ID" INTEGER PRIMARY KEY,
+    "public_key" TEXT  UNIQUE ON CONFLICT FAIL,
+    "secret_key" TEXT  UNIQUE ON CONFLICT FAIL,
+    "ID_hash" TEXT  UNIQUE ON CONFLICT FAIL,
+    "name" TEXT, # date
+    "preference_date" TEXT,
+    "creation_date" TEXT,
+    "type" TEXT,
+    "hide" TEXT
+);
+CREATE TABLE "public_keys" (
+	pk_ID INTEGER PRIMARY KEY,
+	"public_key" TEXT UNIQUE ON CONFLICT FAIL,
+	"pk_hash" TEXT UNIQUE ON CONFLICT FAIL
+);
+CREATE TABLE "constituent_verification" (
+	"constituent_ID" INTEGER NOT NULL,
+	"challenge" TEXT,
+	"date" TEXT,
+	UNIQUE (constituent_ID) ON CONFLICT FAIL,
+	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID)
+);
+CREATE TABLE directory_tokens (
+	"directory_tokens_ID" INTEGER PRIMARY KEY,
+	"peer_ID" INTEGER NOT NULL,
+	"peer_instance_ID" INTEGER,
+	"directory_domain" TEXT,
+	"directory_tcp_port" TEXT,
+	"token" TEXT,
+	"instructions_from_directory" TEXT,
+	"date_instructions" TEXT,
+	UNIQUE (peer_ID, peer_instance_ID, directory_domain, directory_tcp_port) ON CONFLICT FAIL,
+    	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID),
+    	FOREIGN KEY(peer_instance_ID) REFERENCES peer_instance(peer_instance_ID)
+);
+CREATE TABLE directory_forwarding_terms (
+	"term_ID" INTEGER PRIMARY KEY,
+	"priority"	INTEGER,
+	"topic" INTEGER, # pointer to directory_tokens_ID or NULL
+	"ad"	INTEGER,
+	"plaintext" INTEGER,
+	"payment" INTEGER,
+	"payment_amount" TEXT,
+	"peer_ID" INTEGER NOT NULL,
+	"peer_instance_ID" INTEGER DEFAULT (0),
+    	"dir_addr" TEXT, # this is the domain
+   	"dir_tcp_port" TEXT, # this is the domain
+    	"service" TEXT,
+   	"preference_date" TEXT,
+    	"priority_type" TEXT,
+    	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID),
+    	FOREIGN KEY(peer_instance_ID) REFERENCES peer_instance(peer_instance_ID),
+    	FOREIGN KEY(topic) REFERENCES directory_tokens(directory_tokens_ID)
+);
+CREATE TABLE mirror (
+	"mirror_ID" INTEGER PRIMARY KEY,
+	"public_key" TEXT,
+	"original_mirror_name"	TEXT,
+	"my_name_for_mirror" TEXT,
+	"url"	TEXT,
+	"used" INTEGER,
+	"last_contact_date" TEXT,
+	"activity" TEXT,
+      	"location" TEXT,  
+	"protocol" TEXT,
+	"last_version" TEXT,
+	"last_version_branch" TEXT,
+	"last_version_testers_info" TEXT,
+	"last_version_releaseQD" TEXT,
+	"last_version_info" TEXT,
+	"data_version" TEXT,
+	"creation_date" TEXT,
+	"preference_date" TEXT 
+);
+CREATE TABLE updates ( #deprecated (replaced by mirror)
+	"updates_ID" INTEGER PRIMARY KEY,
+	"original_mirror_name"	TEXT,
+	"my_name_for_mirror" TEXT,
+	"url"	TEXT,
+	"last_version" TEXT,
+	"used" INTEGER,
+	"tester_info" TEXT,
+	"last_contact_date" TEXT,
+	"activity" TEXT,
+	"last_releaseQD" TEXT # last releaseQoT 
+);
+CREATE TABLE updates_keys ( #deprecated (merged into tester)
+	"updates_keys_ID" INTEGER PRIMARY KEY,
+	"original_tester_name"	TEXT,
+	"my_name_for_tester" TEXT,
+	"public_key" TEXT,
+        "public_key_hash" TEXT,
+	"trusted_as_mirror" INTEGER,
+	"trusted_as_tester" INTEGER,
+	"trust_weight" TEXT,
+	"reference_tester" INTEGER,
+	"expected_test_thresholds" TEXT
+);
+CREATE TABLE tester (
+	"tester_ID" INTEGER PRIMARY KEY,
+	"original_tester_name"	TEXT,
+	"my_name_for_tester" TEXT,
+	"public_key" TEXT, # used only if pk available at "url" in <current>
+ 	"public_key_hash" TEXT, 
+	"email"	TEXT,
+	"url"	TEXT,
+	"revoked" INTEGER, # set if the pk is available at "url" in <revoked>
+     	"revoked_info" TEXT,
+     	"revoked_GID_hash" TEXT,
+	"description" TEXT,
+	"trusted_as_mirror" INTEGER,
+	"trusted_as_tester" INTEGER,
+	"trust_weight" TEXT,
+	"reference_tester" INTEGER,
+	"expected_test_thresholds" TEXT,
+	
+	"data_version" TEXT,
+	"creation_date" TEXT,
+	"preference_date" TEXT,
+# deprecated attributes
+	"name"	TEXT
+);
+
+CREATE TABLE peer (
+    "peer_ID" INTEGER PRIMARY KEY NOT NULL,
+    "global_peer_ID" TEXT UNIQUE ON CONFLICT FAIL,
+    "global_peer_ID_hash" TEXT UNIQUE ON CONFLICT FAIL,
+    "GID_key" INTEGER DEFAULT NULL UNIQUE ON CONFLICT FAIL,
+    "name" TEXT,
+    "broadcastable" INTEGER DEFAULT (0), ## may be sent to others
+    "slogan" TEXT,
+    "used" INTEGER DEFAULT (0), ## bool: do I contact this peer?
+    "blocked" INTEGER DEFAULT (0), ## do I accept data from this peer?
+    "hash_alg" TEXT,
+    "version" TEXT,
+    "signature" BLOB,
+    "picture" BLOB,
+    "plugin_info" TEXT,
+    "exp_avg" REAL, 
+    "experience" INTEGER, 
+    "filtered" INTEGER DEFAULT (0),
+    "last_sync_date" TEXT,
+    "last_reset" TEXT, # Last generalized date when last_sync_date was reset for all orgs (once may need extension for each org separately
+    "emails" TEXT,
+	"email_verified" TEXT,
+	"name_verified" TEXT,
+	"category" TEXT,
+    "phones" TEXT,
+    "urls" TEXT,
+    "plugins_msg" BLOB, # An encoded array of messages (peer pluginGID,byte[]data)
+    "revoked" INTEGER DEFAULT (0), # once set, never clean
+    "revokation_instructions" TEXT,
+    "revokation_replacement_GIDhash" TEXT,
+    "hidden" INTEGER DEFAULT (0),
+    "creation_date" TEXT, # date_creation -> creation_date ## when the peer was first created on its machine
+    "arrival_date" TIMESTAMP, # date -> arrival_date,
+    "temporary" TEXT,
+    "first_provider_peer" INTEGER DEFAULT NULL,
+    "preferences_date" TEXT,
+    FOREIGN KEY (first_provider_peer) REFERENCES peer(peer_ID),
+    FOREIGN KEY (GID_key) REFERENCES public_keys(pk_ID)
+);
+#CREATE TABLE peer_instance (
+#   "peer_instance_ID" INTEGER PRIMARY KEY
+#);
+#CREATE TABLE test (
+#       a INTEGER
+#);
+CREATE TABLE peer_instance (
+   "peer_instance_ID" INTEGER PRIMARY KEY,
+   "peer_ID" INTEGER NOT NULL,
+   "peer_instance" TEXT,
+   "branch" TEXT,
+   "version" TEXT,
+   "plugin_info" TEXT,
+   "last_sync_date" TEXT, #last date with this instance
+   "last_reset" TEXT,  # when reset last happened 
+   "last_contact_date" TEXT,
+   "objects_synchronized" INTEGER,
+   "signature_date" TEXT,
+   "signature" TEXT,
+   "created_locally" TEXT,
+    UNIQUE ("peer_ID", "peer_instance") ON CONFLICT FAIL,
+    FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE peer_address ( # peers_addresses -> peer_address
+	peer_address_ID INTEGER PRIMARY KEY, # address_ID -> peer_address_ID 
+	peer_ID INTEGER,
+	instance INTEGER, 	#everything else than a positive integer means the NULL instance
+	type TEXT, 
+	domain TEXT,
+	branch TEXT,
+	agent_version TEXT,
+	tcp_port INTEGER,
+	udp_port INTEGER,
+	address TEXT, # prot%B%V://domain:tcp:udp,
+	certified TEXT DEFAULT (0), # set if this address is signed in the signature
+	priority INTEGER DEFAULT (0), # ASC, the order in which the element is to be tested (for certif)
+	my_last_connection TEXT,
+	arrival_date TIMESTAMP, # date -> arrival_date
+	UNIQUE ("peer_ID" , "address", "type") ON CONFLICT FAIL,
+        FOREIGN KEY(instance) REFERENCES peer_instance(peer_instance_ID),
+	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE "peer_my_data" ( # peers_my_data -> peer_my_data
+	"peer_ID" INTEGER UNIQUE NOT NULL,
+	"name" TEXT,
+	"slogan" TEXT,
+	"broadcastable" TEXT,
+	"picture" BLOB,
+	"my_topic" TEXT,
+	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE directory_address ( # directories to which I announce myself
+	directory_address_ID INTEGER PRIMARY KEY,
+	GID TEXT, # public key
+	GIDH TEXT, # D:SHA:GID
+	instance TEXT,
+	protocol TEXT,
+	branch TEXT,
+	version TEXT,
+	agent_version TEXT,
+	domain TEXT,
+	tcp_port TEXT,
+	udp_port TEXT,
+	name TEXT, # my name given to this
+	comments TEXT,
+	signature TEXT, #SIGN(instance,protocol,brance,version,domain,tcp,udp,comments,date,revocation)
+	date_signature TEXT, 
+	date_last_connection TEXT, 
+	active INTEGER, # if I use it to disseminate myself
+	revokation INTEGER DEFAULT (0)
+);
+CREATE TABLE "plugin" (
+	"plugin_ID" INTEGER PRIMARY KEY,
+	"global_plugin_ID" TEXT UNIQUE ON CONFLICT FAIL, # plugin_global_ID -> global_plugin_ID
+	"plugin_info" TEXT,
+	 "creation_date" TEXT,
+	"arrival_date" TIMESTAMP
+);
+CREATE TABLE "peer_plugin" ( # peers_plugins -> peer_plugin
+	"peer_plugin_ID" INTEGER PRIMARY KEY NOT NULL, # peers_plugin_ID -> peer_plugin_ID
+	"peer_ID" INTEGER NOT NULL,
+        "peer_instance_ID" TEXT,
+	"plugin_ID" INTEGER NOT NULL,
+	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
+	FOREIGN KEY(plugin_ID) REFERENCES plugin(plugin_ID)
+);
+CREATE TABLE "plugin_local_storage" (
+	"plugin_ID" INTEGER,
+	"data" TEXT,
+	"plugin_key" TEXT,
+	FOREIGN KEY(plugin_ID) REFERENCES plugin(plugin_ID)
+);
+CREATE TABLE organization ( # organizations -> organization
+	organization_ID INTEGER PRIMARY KEY, # organizationID -> organization_ID
+	global_organization_ID_hash TEXT UNIQUE ON CONFLICT FAIL, 
+	global_organization_ID TEXT UNIQUE ON CONFLICT FAIL,
+	name TEXT, ## the name of the organization
+	creator_ID INTEGER,
+	description TEXT, 
+	certification_methods INTEGER  DEFAULT (0), ## 0-dictator 1-grassroot 2-expression 
+	category TEXT, 
+	certificate BLOB, 		# if creator is certified by higher authority (?) not yet used
+	signature TEXT,      # signature with orgGID, or grassroot orgGID
+	signature_initiator TEXT,
+	broadcast_rule TEXT DEFAULT (1), # set to 1 if by default this org should not be broadcasted
+	neighborhoods_rule TEXT DEFAULT(1), # set to 1 to allow users to change neighborhood hierarchy structures, 0 for fix structures, 2 for dynamic neighborhoods but no language specs
+	crl BLOB, 
+	crl_date DATE, 
+	default_scoring_options TEXT, 
+	instructions_new_motions TEXT, 
+	instructions_registration TEXT, 
+	preapproved TEXT,
+	languages TEXT, 
+	name_forum TEXT, 
+	name_justification TEXT, 
+	name_motion TEXT, 
+	name_organization TEXT, 
+	"motions_excluding" INTEGER   DEFAULT (0),
+	"plugins_excluding" INTEGER   DEFAULT (0),
+	hash_org_alg TEXT, 		# I forgot what this does
+	hash_org BLOB,  		# forgot what this does, to :(
+	"hash_orgID" TEXT, ##  hash of the global_org_ID (not clear what the use is)
+	blocked TEXT  DEFAULT (0),  # do not stored data received for this
+	requested TEXT DEFAULT (0),                      # request data about this item, in filters
+	broadcasted TEXT DEFAULT (0),        # send data for this
+	specific_requests TEXT,              # data specified by GIDhash
+	"revoked" INTEGER DEFAULT (0), # once set, never clean
+        "hidden" INTEGER DEFAULT (0),
+	"temporary" INTEGER DEFAULT (0),
+	"peer_source_ID" TEXT, # peer from which I got this
+	"creation_date" TEXT, # creation_time ->  creation_date
+	"arrival_date" TIMESTAMP, # arrival_time -> arrival_date
+	"reset_date" TEXT, # when data was unblocked
+	"preferences_date" TEXT,
+ 	FOREIGN KEY(creator_ID) REFERENCES peer(peer_ID),
+ 	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE my_organization_data (
+	organization_ID INTEGER,
+	name TEXT,
+	creator TEXT,
+	category TEXT,
+	data_to_request BLOB, # structure with arrays of GIDs to request in Syncs
+ 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
+);
+# The next table is listing the organizations that each peer advertised to be using
+CREATE TABLE "peer_org" ( # peers_orgs -> peer_org
+	"peer_org_ID" INTEGER PRIMARY KEY NOT NULL, # peers_orgs_ID -> peer_org_ID
+	"peer_ID" INTEGER NOT NULL,
+	"organization_ID" INTEGER NOT NULL,
+	"served" INTEGER NOT NULL DEFAULT (0), # is not used in new versions
+	"last_sync_date" TEXT,
+	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID),
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
+);
+# The next table shows the orgs that each peer will be queried for (because they provided data on it in the past)
+CREATE TABLE "peer_org_inferred" ( 
+        "peer_org_inferred_ID" INTEGER PRIMARY KEY NOT NULL, # peers_orgs_ID -> peer_org_ID
+        "peer_ID" INTEGER NOT NULL,
+        "organization_ID" INTEGER NOT NULL,
+        "served" INTEGER NOT NULL DEFAULT (0), # is not used
+        "last_sync_date" TEXT,
+        FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID),
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
+);
+# The next table is used for private organizations to tell which peers are allowed to get them
+CREATE TABLE "org_distribution" (
+       "peer_distribution_ID" INTEGER PRIMARY KEY NOT NULL,
+       "organization_ID" TEXT,
+       "peer_ID" TEXT,  # peer that can get this organization
+       "reset_date" TEXT,
+       "distribute" INTEGER DEFAULT(1),
+       arrival_date TEXT,
+       UNIQUE (organization_ID, peer_ID) ON CONFLICT FAIL,
+ 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
+ 	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE "translation" ( # translations -> translation
+	"translation_ID" INTEGER PRIMARY KEY, # tID -> translation_ID
+	"global_translation_ID" TEXT UNIQUE ON CONFLICT FAIL, # global_tID -> global_translation_ID
+	"hash_alg" TEXT,
+	"value" TEXT,
+	"value_lang" TEXT,
+	"value_ctx" TEXT,
+	"translation" TEXT,
+	"translation_lang" TEXT,
+	"translation_charset" TEXT,
+	"translation_flavor" TEXT,
+	"organization_ID" INTEGER,
+	"submitter_ID" INTEGER,
+	"creation_date" TEXT,
+	"signature" BLOB,
+	"arrival_date" TEXT,
+	FOREIGN KEY(submitter_ID) REFERENCES constituent(constituent_ID),
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
+);
+CREATE TABLE constituent ( # constituents -> constituent
+    "constituent_ID" INTEGER PRIMARY KEY, # constituentID -> constituent_ID
+    "global_constituent_ID" TEXT, # global_constituentID -> global_constituent_ID
+    "global_constituent_ID_hash" TEXT,
+    "GID_key" INTEGER DEFAULT NULL UNIQUE ON CONFLICT FAIL,
+    "neighborhood_ID" INTEGER, # neighborhoodID -> neighborhood_ID
+    "organization_ID" INTEGER, # organizationID -> organization_ID
+    "submitter_ID" INTEGER, # signer for external
+    "hash_constituent_alg" TEXT,
+    "hash_constituent" BLOB,
+    "sign" BLOB,
+    "cert_hash_alg" TEXT,
+    "certChain" BLOB,
+    "certificate" BLOB, 
+    "certRequest" BLOB, # not used
+    "email" TEXT,
+    "external" INTEGER NOT NULL DEFAULT (0),
+    "weight" TEXT, # double -> weight in voting
+    "forename" TEXT,
+    "languages" TEXT,
+    "name" TEXT, # the constituent is considered incomplete until it has a name
+   "slogan" TEXT,
+    "picture" BLOB,
+   "op" INTEGER NOT NULL DEFAULT (1),
+   "revoked" INTEGER DEFAULT (0), # once set, never clean// instead of op
+    "version" INTEGER DEFAULT (0),
+    "hidden" INTEGER DEFAULT (0),
+    "peer_transmitter_ID" INTEGER,
+    "creation_date" TEXT, # date -> creation_date
+    "arrival_date" TEXT,
+    "preferences_date" TEXT,
+	requested INTEGER DEFAULT (0),
+	broadcasted INTEGER DEFAULT (1),
+	blocked INTEGER DEFAULT (0),
+	census_trustworthiness REAL DEFAULT (0),
+	census_eligibility REAL DEFAULT (0),
+	UNIQUE (global_constituent_ID,organization_ID) ON CONFLICT FAIL,
+	UNIQUE (global_constituent_ID_hash,organization_ID) ON CONFLICT FAIL,
+	UNIQUE (GID_key,organization_ID) ON CONFLICT FAIL,
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
+	FOREIGN KEY(neighborhood_ID) REFERENCES neighborhood(neighborhood_ID),
+	FOREIGN KEY(submitter_ID) REFERENCES constituent(constituent_ID),
+ 	FOREIGN KEY(peer_transmitter_ID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE my_constituent_data (
+        constituent_ID INTEGER,
+        name TEXT,
+        submitter TEXT,
+        category TEXT,
+        preferences_date TEXT,
+        FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID)
+);
+CREATE TABLE my_neighborhood_data (
+        neighborhood_ID INTEGER,
+        name TEXT,
+        category TEXT,
+        FOREIGN KEY(neighborhood_ID) REFERENCES neighborhood(neighborhood_ID)
+);
+
+CREATE TABLE motion (
+	motion_ID INTEGER PRIMARY KEY,
+	global_motion_ID TEXT UNIQUE ON CONFLICT FAIL,
+	enhances_ID INTEGER, 
+	hash_motion_alg TEXT,
+	hash_motion BLOB,
+	format_title_type TEXT, 
+	format_text_type TEXT, 
+	choices TEXT,
+	motion_title TEXT, 
+	motion_text TEXT,
+	constituent_ID INTEGER, 
+	organization_ID INTEGER, 
+	signature BLOB, 
+	status TEXT, 
+	category TEXT,
+	requested INTEGER DEFAULT (0),
+	broadcasted INTEGER DEFAULT (1),
+	blocked INTEGER DEFAULT (0),
+	hidden INTEGER DEFAULT (0),
+	temporary INTEGER DEFAULT (0),
+        peer_source_ID INTEGER,
+	creation_date TEXT, 
+	arrival_date TIMESTAMP, 
+	preferences_date TEXT,
+	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
+	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID),
+	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID)
+);
+CREATE TABLE my_motion_data (
+	motion_ID INTEGER UNIQUE ON CONFLICT FAIL,
+	name TEXT,
+	creator TEXT,
+	category TEXT,
+	data_to_request BLOB, # structure with arrays of GIDs to request in Syncs
+ 	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID)
+);
+CREATE TABLE justification ( # justifications -> justification
+	justification_ID INTEGER PRIMARY KEY, 
+	global_justification_ID TEXT UNIQUE ON CONFLICT FAIL, 
+	motion_ID INTEGER, 
+	answerTo_ID INTEGER, 
+	hash_justification_alg TEXT, 
+	hash_justification BLOB, 
+	justification_title_format TEXT, 
+	justification_title TEXT, 
+	constituent_ID INTEGER, 
+	justification_text_format TEXT, 
+	justification_text BLOB, 
+	signature BLOB,
+	last_reference_date DATE,  ## last date of a reference known
+	creation_date DATE, # creation_date -> date
+	arrival_date TIMESTAMP,
+	temporary INTEGER DEFAULT (0),
+	blocked INTEGER DEFAULT (0),
+	requested INTEGER DEFAULT (0),
+	broadcasted INTEGER DEFAULT (1),
+	peer_source_ID INTEGER,
+	preferences_date TEXT,
+	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
+	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID),
+	FOREIGN KEY(answerTo_ID) REFERENCES justification(justification_ID),
+	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE my_justification_data (
+	justification_ID INTEGER UNIQUE ON CONFLICT FAIL,
+	name TEXT,
+	creator TEXT,
+	category TEXT,
+	data_to_request BLOB, # structure with arrays of GIDs to request in Syncs
+ 	FOREIGN KEY(justification_ID) REFERENCES justification(justification_ID)
+);
+CREATE TABLE signature ( # signatures -> signature
+	signature_ID INTEGER PRIMARY KEY, 
+	global_signature_ID TEXT UNIQUE ON CONFLICT FAIL, 
+	hash_signature_alg TEXT, 
+	hash_signature BLOB, 
+	constituent_ID INTEGER, 
+	justification_ID INTEGER, 
+	motion_ID INTEGER, 
+	signature BLOB, 
+	format TEXT, 
+	choice TEXT,
+	creation_date DATE, 
+	arrival_date TIMESTAMP, 
+	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
+	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID),
+	FOREIGN KEY(justification_ID) REFERENCES justification(justification_ID)
+);
+CREATE TABLE neighborhood ( # neighborhoods -> neighborhood
+	"neighborhood_ID" INTEGER PRIMARY KEY, # neighborhoodID -> neighborhood_ID
+	"global_neighborhood_ID" TEXT UNIQUE ON CONFLICT FAIL, # global_nID -> global_neighborhood_ID
+	"address" BLOB,
+	"description" TEXT,
+	"parent_nID" INTEGER,
+	"name" TEXT,
+	"name_lang" TEXT,
+	"name_charset" TEXT,
+	"name_division" TEXT,
+	"name_division_lang" TEXT,
+	"name_division_charset" TEXT,
+	"names_subdivisions" TEXT,
+	"name_subdivisions_lang" TEXT,
+	"name_subdivisions_charset" TEXT,
+	"picture" BLOB,
+	"submitter_ID" INTEGER, # submitterID -> submitter_ID
+	"organization_ID" INTEGER, # organizationID -> organization_ID
+	"signature" BLOB,
+	creation_date DATE, 
+        "hidden" INTEGER DEFAULT (0),
+	"blocked" INTEGER DEFAULT (0),
+	"requested" INTEGER DEFAULT (0),
+	"broadcasted" INTEGER DEFAULT (1),
+	arrival_date TIMESTAMP, 
+	preferences_date TEXT DEFAULT NULL,
+	peer_source_ID INTEGER DEFAULT NULL,
+	FOREIGN KEY(submitter_ID) REFERENCES constituent(constituent_ID),
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
+	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE witness ( # witnesses -> witness
+	witness_ID INTEGER PRIMARY KEY, # witnessID -> witness_ID
+	global_witness_ID TEXT UNIQUE ON CONFLICT FAIL, 
+	hash_witness_alg TEXT, 
+	hash_witness BLOB, 
+	category TEXT, 
+	neighborhood_ID INTEGER,  # neighborhoodID -> neighborhood_ID
+	sense_y_n NUMERIC,
+	sense_y_trustworthiness NUMERIC,
+	category_trustworthiness TEXT, 
+	statements BLOB,
+	source_ID INTEGER, # sourceID -> source_ID
+	target_ID NUMERIC, # targetID -> target_ID
+	signature BLOB,
+	creation_date DATE, # date -> creation_date
+	arrival_date TIMESTAMP, 
+	FOREIGN KEY(source_ID) REFERENCES constituent(constituent_ID),
+	FOREIGN KEY(target_ID) REFERENCES constituent(constituent_ID),
+	FOREIGN KEY(neighborhood_ID) REFERENCES neighborhood(neighborhood_ID)
+);
+CREATE TABLE registration (
+	registration_ID INTEGER PRIMARY KEY,
+	constituent_ID NUMERIC, 
+	organization_ID NUMERIC
+);
+CREATE TABLE directory (
+	directory_ID INTEGER PRIMARY KEY, 
+	domain_IP TEXT, 
+	port NUMERIC, 
+	comments TEXT
+);
+CREATE TABLE "identity" ( # identities -> identity
+	"identity_ID" INTEGER PRIMARY KEY, # identitiesID -> identity_ID
+	"profile_name" TEXT,
+	"organization_ID" INTEGER, # organizationID -> organization_ID
+	"constituent_ID" INTEGER, # constituentID -> constituent_ID
+	"secret_credential" TEXT,
+	"default_id" INTEGER   DEFAULT (0), 
+	"preferred_lang" TEXT   DEFAULT ('en_US:ro_RO'), 
+	"preferred_charsets" TEXT, 
+	"authorship_charset" TEXT   DEFAULT ('latin'), 
+	"authorship_lang" TEXT   DEFAULT ('en_US'),
+	password TEXT,
+	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
+);
+CREATE TABLE identity_ids ( # storing constituent_ID for each org
+    identity_ids_ID INTEGER PRIMARY KEY,
+    identity_ID INTEGER,
+    organization_ID INTEGER,
+    constituent_ID INTEGER,
+    FOREIGN KEY(identity_ID) REFERENCES identity(identity_ID),
+    FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
+   FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
+);
+CREATE TABLE oid (
+    "oid_ID" TEXT, # sequence of numbers or standard string: UID, STREET, etc
+    "OID_name" TEXT NOT NULL,
+    "explanation" TEXT,
+    "sequence" TEXT PRIMARY KEY NOT NULL # sequence of numbers separated by dots
+);
+CREATE TABLE certificate (
+    "certificate_ID" INTEGER PRIMARY KEY,
+    "secret" BLOB NOT NULL,
+    "certificate" BLOB NOT NULL,
+    "CA" BLOB,
+    "intermediate_chain" BLOB,
+    "explanation" TEXT
+);
+CREATE TABLE identity_value ( # identity_values -> identity_value
+    "identity_value_ID" INTEGER PRIMARY KEY, # identity_values_ID -> identity_value_ID
+    "identity_ID" INTEGER NOT NULL, # identitiesID -> identity_ID
+    "oid_ID" INTEGER, # OID -> oid_ID
+    "value" TEXT,
+    "sequence_ordering" INTEGER, # used for ordering identities
+    "certificate_ID" INTEGER, # certificateID -> certificate_ID
+	FOREIGN KEY(identity_ID) REFERENCES identity(identity_ID),
+	FOREIGN KEY(certificate_ID) REFERENCES certificate(certificate_ID)
+);
+CREATE TABLE "motion_choice" (
+    "choice_ID" INTEGER PRIMARY KEY,
+    "motion_ID" INTEGER,
+    "choiceName" TEXT NOT NULL,
+    "shortName" TEXT NOT NULL
+);
+CREATE TABLE field_extra ( # fields_extra -> field_extra
+	"field_extra_ID" INTEGER PRIMARY KEY, # fieldID -> field_extra_ID
+	"global_field_extra_ID" TEXT, #key only together with orgid
+	"label" TEXT,
+	"default_val" TEXT,
+	"list_of_values" TEXT,
+	"required" NUMERIC,
+	"can_be_provided_later" NUMERIC,
+	"certificated" NUMERIC,
+	"entry_size" NUMERIC,
+	"organization_ID" INTEGER, # organizationID -> organization_ID
+	"partNeigh" NUMERIC,
+	"tip" TEXT,
+	"tip_lang" TEXT, 
+	"label_lang" TEXT, 
+	"list_of_values_lang" TEXT, 
+	"default_value_lang" TEXT, 
+	"oid" TEXT,
+	"version" TEXT,
+	"tmp" TEXT,
+	UNIQUE ("organization_ID" , "global_field_extra_ID") ON CONFLICT FAIL,
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
+ );
+# CREATE UNIQUE INDEX field_extra_index ON field_extra ( "organization_ID" ASC, "global_field_extra_ID" );
+CREATE TABLE field_value ( # fields_values -> field_value
+	"field_value_ID" INTEGER PRIMARY KEY, # fields_valuesID -> field_value_ID
+	"constituent_ID" INTEGER, # constituentID -> constituentID
+	"field_extra_ID" INTEGER, # fieldID -> field_extra_ID
+	"value" TEXT,
+	"fieldID_above" INTEGER,
+	"field_default_next" INTEGER,
+	"neighborhood_ID" INTEGER NOT NULL DEFAULT (0), # neighborhood -> neighborhood_ID
+	"value_lang" TEXT,
+	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
+	FOREIGN KEY(neighborhood_ID) REFERENCES neighborhood(neighborhood_ID),
+	FOREIGN KEY(field_extra_ID) REFERENCES field_extra(field_extra_ID),
+	FOREIGN KEY(fieldID_above) REFERENCES field_extra(field_extra_ID),
+	FOREIGN KEY(field_default_next) REFERENCES field_extra(field_extra_ID)
+);
+CREATE TABLE "news" (
+    "news_ID" INTEGER PRIMARY KEY, # id -> news_ID
+    "hash_alg" TEXT,
+    "global_news_ID" TEXT UNIQUE ON CONFLICT FAIL,
+    "constituent_ID" INTEGER, # constituentID -> constituent_ID
+    "organization_ID" INTEGER, # organizationID -> organization_ID
+    "motion_ID" INTEGER, # motionID -> motion_ID
+    # "justification_ID" INTEGER, # justificationID -> justification_ID
+    "creation_date" DATE,
+    "arrival_date" TIMESTAMP,
+    "news" BLOB,
+    "type" TEXT,
+    "title" TEXT,
+    "title_type" TEXT,
+    "signature" BLOB, 
+	"peer_source_ID" TEXT, # peer from which I got this
+	requested INTEGER DEFAULT (0),
+	broadcasted INTEGER DEFAULT (1),
+	blocked INTEGER DEFAULT (0),
+	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
+	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID),
+	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID),
+ 	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE my_news_data (
+	news_ID INTEGER UNIQUE ON CONFLICT FAIL,
+	name TEXT,
+	creator TEXT,
+	category TEXT,
+	#data_to_request BLOB, # structure with arrays of GIDs to request in Syncs
+ 	FOREIGN KEY(news_ID) REFERENCES news(news_ID)
+);
+
+

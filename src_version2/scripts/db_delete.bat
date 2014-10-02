@@ -1,0 +1,1 @@
+java -cp "./libs/MultiSplit.jar;sqlite4java-201/sqlite4java.jar;." simulator/DB_zap
