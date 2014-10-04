@@ -976,12 +976,26 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public Encoder getEncoder() {
 		return getEncoder(new ArrayList<String>());
 	}
+	@Override
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {
+		return getEncoder(dictionary_GIDs, 0);
+	}
 	/**
-	 * parameter used for dictionaries
+	 * TODO: Have to decide later if parent and submitter should be send even when descendants is none...
 	 */
 	@Override
-	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) { 
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
+		int new_dependants = dependants;
+		if (dependants > 0) new_dependants = dependants - 1;
+		
 		Encoder enc = new Encoder().initSequence();
+		/**
+		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
+		 * available at the destination from enclosing fields, and will be filled out at expansion
+		 * by ASNSyncPayload.expand at decoding.
+		 * However, it is not that damaging when using compression, and can be stored without much overhead.
+		 * So it is left here for now. Test if you comment out!
+		 */
 		if (this.getOrgGID() != null) {
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getOrgGID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString));
@@ -1001,13 +1015,17 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			enc.addToSequence(new Encoder(repl_GID).setASN1Type(DD.TAG_AC7));
 		}
 		//else if((parent!=null)&&(parent.global_neighborhood_ID!=null)) enc.addToSequence(new Encoder(parent.global_neighborhood_ID).setASN1Type(DD.TAG_AC7));
-		if (parent != null) enc.addToSequence(parent.getEncoder(dictionary_GIDs)).setASN1Type(DD.TAG_AC8);
+		if (dependants != ASNObj.DEPENDANTS_NONE) {
+			if (parent != null) enc.addToSequence(parent.getEncoder(dictionary_GIDs, new_dependants)).setASN1Type(DD.TAG_AC8);
+		}
 		if (getSubmitter_GID() != null) {
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getSubmitter_GID());
 			enc.addToSequence(new Encoder(repl_GID).setASN1Type(DD.TAG_AC9));
 		}
 		//else if((submitter!=null)&&(submitter.global_ID!=null)) enc.addToSequence(new Encoder(submitter.global_ID).setASN1Type(DD.TAG_AC9));
-		if (submitter!=null) enc.addToSequence(submitter.getEncoder(dictionary_GIDs)).setASN1Type(DD.TAG_AC10);
+		if (dependants != ASNObj.DEPENDANTS_NONE) {
+			if (submitter!=null) enc.addToSequence(submitter.getEncoder(dictionary_GIDs, new_dependants)).setASN1Type(DD.TAG_AC10);
+		}
 		if(getCreationDate()!=null)enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC11));
 		if(getPicture()!=null) enc.addToSequence(new Encoder(getPicture()).setASN1Type(DD.TAG_AC12));
 		if(getSignature()!=null)enc.addToSequence(new Encoder(getSignature()).setASN1Type(DD.TAG_AC13));
@@ -1027,7 +1045,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		else if((parent!=null)&&(parent.getGID()!=null)) enc.addToSequence(new Encoder(parent.getGID()).setASN1Type(DD.TAG_AC7));
 		//if(parent!=null) enc.addToSequence(parent.getEncoder()).setASN1Type(DD.TAG_AC8);
 		if(getSubmitter_GID()!=null) enc.addToSequence(new Encoder(getSubmitter_GID()).setASN1Type(DD.TAG_AC9));
-		else if((submitter!=null)&&(submitter.global_constituent_id!=null)) enc.addToSequence(new Encoder(submitter.global_constituent_id).setASN1Type(DD.TAG_AC9));
+		else if((submitter!=null)&&(submitter.getGID()!=null)) enc.addToSequence(new Encoder(submitter.getGID()).setASN1Type(DD.TAG_AC9));
 		//if(submitter!=null) enc.addToSequence(submitter.getEncoder()).setASN1Type(DD.TAG_AC10);
 		if(getCreationDate()!=null)enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC11));
 		if(getPicture()!=null) enc.addToSequence(new Encoder(getPicture()).setASN1Type(DD.TAG_AC12));
@@ -1157,8 +1175,8 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		}
 		
 		String pk_ID = this.submitter_global_ID;
-		if ((pk_ID == null) && (this.submitter != null) && (this.submitter.global_constituent_id != null))
-			pk_ID = this.submitter.global_constituent_id;
+		if ((pk_ID == null) && (this.submitter != null) && (this.submitter.getGID() != null))
+			pk_ID = this.submitter.getGID();
 		if (pk_ID == null){
 			if(_DEBUG) System.out.println("D_Neighborhood: verifySign: unknown submitter");
 			return false;

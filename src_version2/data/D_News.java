@@ -21,6 +21,7 @@
 package data;
 
 import static java.lang.System.out;
+import hds.ASNSyncPayload;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -196,22 +197,55 @@ class D_News extends ASNObj{
 	}
 	@Override
 	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {
+		return getEncoder(dictionary_GIDs, 0);
+	}
+	@Override
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
+		int new_dependants = dependants;
+		if (dependants > 0) new_dependants = dependants - 1;
+		
 		Encoder enc = new Encoder().initSequence();
-		if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
-		if(global_news_ID!=null)enc.addToSequence(new Encoder(global_news_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
-		if(title!=null)enc.addToSequence(title.getEncoder().setASN1Type(DD.TAG_AC2));
-		if(news!=null)enc.addToSequence(news.getEncoder().setASN1Type(DD.TAG_AC3));
-		if(global_constituent_ID!=null)enc.addToSequence(new Encoder(global_constituent_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
+		if (hash_alg != null) enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
+		
+		if (global_news_ID != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_news_ID);
+			enc.addToSequence(new Encoder(repl_GID, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
+		}
+		if (title!=null)enc.addToSequence(title.getEncoder().setASN1Type(DD.TAG_AC2));
+		if (news!=null)enc.addToSequence(news.getEncoder().setASN1Type(DD.TAG_AC3));
+		if (global_constituent_ID != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_constituent_ID);
+			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
+		}
 		//if(global_enhanced_newsID!=null)enc.addToSequence(new Encoder(global_enhanced_newsID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC5));
-		if(global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
-		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC7));
-		if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC8));
+		/**
+		 * TODO
+		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
+		 * available at the destination from enclosing fields, and will be filled out at expansion
+		 * by ASNSyncPayload.expand at decoding.
+		 * However, it is not that damaging when using compression, and can be stored without much overhead.
+		 * So it is left here for now.  Test if you comment out!
+		 */
+		if (global_organization_ID != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_organization_ID);
+			enc.addToSequence(new Encoder(repl_GID, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
+		}
+		if (creation_date != null) enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC7));
+		if (signature != null) enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC8));
 		//if(choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC9));
-		if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC10));
-		//if(enhanced!=null)enc.addToSequence(enhanced.getEncoder().setASN1Type(DD.TAG_AC11));
-		if(organization!=null)enc.addToSequence(organization.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC12));
-		if(global_motion_ID!=null)enc.addToSequence(new Encoder(global_motion_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC14));
-		if(motion!=null)enc.addToSequence(motion.getEncoder().setASN1Type(DD.TAG_AC13));
+		
+		if (dependants != ASNObj.DEPENDANTS_NONE) {
+			if (constituent!=null) enc.addToSequence(constituent.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC10));
+			//if(enhanced!=null)enc.addToSequence(enhanced.getEncoder().setASN1Type(DD.TAG_AC11));
+			if (organization != null) enc.addToSequence(organization.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC12));
+		}
+		if (global_motion_ID != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_motion_ID);
+			enc.addToSequence(new Encoder(repl_GID, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC14));
+		}
+		if (dependants != ASNObj.DEPENDANTS_NONE) {
+			if (motion != null) enc.addToSequence(motion.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC13));
+		}
 		return enc;
 	}
 	public Encoder getSignableEncoder() {
@@ -305,8 +339,8 @@ class D_News extends ASNObj{
 	public boolean verifySignature(){
 		if(DEBUG) System.out.println("WB_Motion:verifySignature: start");
 		String pk_ID = this.global_constituent_ID;//.submitter_global_ID;
-		if((pk_ID == null) && (this.constituent!=null) && (this.constituent.global_constituent_id!=null))
-			pk_ID = this.constituent.global_constituent_id;
+		if((pk_ID == null) && (this.constituent!=null) && (this.constituent.getGID()!=null))
+			pk_ID = this.constituent.getGID();
 		if(pk_ID == null) return false;
 		
 		String newGID = make_ID();

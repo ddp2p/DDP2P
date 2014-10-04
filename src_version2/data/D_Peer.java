@@ -209,7 +209,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 							||
 							D_Peer.is_crt_peer(candidate)
 							||
-							(candidate == HandlingMyself_Peer.get_myself())){
+							(candidate == HandlingMyself_Peer.get_myself_with_wait())){
 						setRecent(candidate);
 						continue;
 					}
@@ -304,7 +304,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public D_Peer_Local_Agent_State component_local_agent_state = new D_Peer_Local_Agent_State();
 
 	public static boolean is_crt_peer(D_Peer candidate) {
-		D_Peer myself = data.HandlingMyself_Peer.get_myself();
+		D_Peer myself = data.HandlingMyself_Peer.get_myself_with_wait();
 		if (myself == candidate) return true;
 		return Application_GUI.is_crt_peer(candidate);
 	}
@@ -3811,6 +3811,14 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		this.served_org_inferred.add(poi);
 		
 		this.dirty_served_orgs_inferred = true;
+		/**
+		 * Since the thread may need to immediately answer the sender, IT MAY BE
+		 * a good idea to store this immediately (since the query for whose organization
+		 * data to ask in based on the data currently in the database, not in the caches
+		 * (could be eventually repaired, to use the caches).
+		 * TODO
+		 */
+		this.storeSynchronouslyNoException();
 	}
 	public void setServingOrg(long orgID) {
 		assertReferenced();
@@ -5067,7 +5075,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			//Util.printCallPath("D_Peer: incStatusReferences: Will sleep for getting: "+getStatusLockWrite()+" for "+getName());
 			//Util.printCallPath(lastPath, "Last lp path was: ", "     ");
 			int limit = 1;
-			if (this == data.HandlingMyself_Peer.get_myself()) {
+			if (this == data.HandlingMyself_Peer.get_myself_or_null()) {
 				limit = 2;
 			}
 			synchronized(monitor_reserve) {

@@ -15,7 +15,7 @@ public class DD_Slogan extends ASNObj implements StegoStructure {
 	String slogan;
 	@Override
 	public void save() throws P2PDDSQLException {
-		D_Peer me = HandlingMyself_Peer.get_myself();
+		D_Peer me = HandlingMyself_Peer.get_myself_with_wait();
 		me = D_Peer.getPeerByPeer_Keep(me);
 		me.setSlogan(slogan);
 		me.setCreationDate();

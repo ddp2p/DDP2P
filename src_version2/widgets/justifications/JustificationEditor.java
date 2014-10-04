@@ -317,7 +317,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 				_sign = new D_Vote();
 				//_sign.motion = moti;
 				_sign.motion_ID = just.getMotionLIDstr();
-				_sign.global_motion_ID = just.getMotionGID();
+				_sign.setMotionGID(just.getMotionGID());
 				_sign.justification_ID = null;
 				_sign.constituent_ID = constituent_ID;
 				_sign.global_constituent_ID = constituent_GID;

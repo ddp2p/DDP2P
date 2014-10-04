@@ -20,6 +20,8 @@
 
 package data;
 
+import hds.ASNSyncPayload;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -30,14 +32,10 @@ import streaming.MotionHandling;
 import streaming.OrgHandling;
 import streaming.RequestData;
 import util.Util;
-
 import ciphersuits.SK;
-
 import util.P2PDDSQLException;
-
 import config.Application;
 import config.DD;
-
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
@@ -186,9 +184,18 @@ class D_Translations extends ASNObj{
 	}
 	@Override
 	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {
+		return getEncoder(dictionary_GIDs, 0);
+	}
+	@Override
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
+		String repl_GID;
+		
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(hash_alg));
-		enc.addToSequence(new Encoder(global_translation_ID));
+		
+		repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_translation_ID);
+		enc.addToSequence(new Encoder(repl_GID));
+		
 		enc.addToSequence(new Encoder(value));
 		enc.addToSequence(new Encoder(value_lang));
 		enc.addToSequence(new Encoder(value_ctx));
@@ -196,10 +203,24 @@ class D_Translations extends ASNObj{
 		enc.addToSequence(new Encoder(translation_lang));
 		enc.addToSequence(new Encoder(translation_charset));
 		enc.addToSequence(new Encoder(translation_flavor));
-		enc.addToSequence(new Encoder(global_constituent_ID));
-		enc.addToSequence(new Encoder(global_organization_ID));
+		
+		repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_constituent_ID);
+		enc.addToSequence(new Encoder(repl_GID));
+
+		repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_translation_ID);
+		enc.addToSequence(new Encoder(repl_GID));
+		
 		enc.addToSequence(new Encoder(creation_date));		
 		enc.addToSequence(new Encoder(signature));
+		/**
+		 * TODO
+		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
+		 * available at the destination from enclosing fields, and will be filled out at expansion
+		 * by ASNSyncPayload.expand at decoding.
+		 * However, it is not that damaging when using compression, and can be stored without much overhead.
+		 * So it is left here for now.  Test if you comment out!
+		 */
+		//enc.addToSequence(new Encoder(this.global_organization_ID));
 		return enc;
 	}
 	
@@ -273,8 +294,8 @@ class D_Translations extends ASNObj{
 	public boolean verifySignature(){
 		if(_DEBUG) System.out.println("WB_Translations:verifySignature: start");
 		String pk_ID = this.global_constituent_ID;//.submitter_global_ID;
-		if((pk_ID == null) && (this.constituent!=null) && (this.constituent.global_constituent_id!=null))
-			pk_ID = this.constituent.global_constituent_id;
+		if((pk_ID == null) && (this.constituent!=null) && (this.constituent.getGID()!=null))
+			pk_ID = this.constituent.getGID();
 		if(pk_ID == null) return false;
 		
 		String newGID = make_ID();

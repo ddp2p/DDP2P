@@ -109,6 +109,9 @@ public class ASNSyncPayload extends ASNObj{
 	private void _prepareDictionary() {
 		// start with peerGIDs, orgGIDs, constGIDs,,,,, ince these are large
 		
+		/**
+		 * I think responderGID can be safely replaced since it is not part of a cached object 
+		 */
 		if (this.responderGID != null) responderGID = addToDictionaryGetIdxS(dictionary_GIDs, responderGID);
 		
 		preparePeersDictionary();
@@ -167,25 +170,47 @@ public class ASNSyncPayload extends ASNObj{
 	private void prepareOrgDictionary(D_Organization o) {
 		prepareOrgDictionary(o, dictionary_GIDs);
 		
-		if(o.constituents != null)
-			for(data.ASNConstituentOP c : o.constituents) {
-				if(c.constituent==null) continue;
-				c.constituent.global_organization_ID = null;
-				if(!STREAMING_SEND_NEIGHBORHOOD_IN_CONSTITUENT) c.constituent.neighborhood = null;
+		if (o.constituents != null)
+			for (data.ASNConstituentOP c : o.constituents) {
+				if (c.constituent==null) continue;
+				// the next must be commented since ORG_GID is compressed (or eliminated in the objec's encoder)
+				// but should certainly not change cached objects!
+				//c.constituent.global_organization_ID = null; 
+				if (!STREAMING_SEND_NEIGHBORHOOD_IN_CONSTITUENT) c.constituent.neighborhood = null;
 				prepareConstDictionary(c.constituent);
 			}
 		if(o.neighborhoods != null)
 			for(ASNNeighborhoodOP n : o.neighborhoods) {
 				if(n.neighborhood==null) continue;
-				n.neighborhood.setOrgGID(null);
+				// the next must be commented since ORG_GID is compressed (or eliminated in the objec's encoder)
+				//n.neighborhood.setOrgGID(null);
 				prepareNeigDictionary(n.neighborhood);
 			}
-		if(o.witnesses!=null) for(D_Witness w : o.witnesses) {w.global_organization_ID = null;prepareWitnDictionary(w);}
-		if(o.motions!=null) for(D_Motion m : o.motions) {m.setOrganizationGID(null);prepareMotiDictionary(m);}
-		if(o.signatures!=null) for(D_Vote v : o.signatures) {v.global_organization_ID = null;prepareVoteDictionary(v);}
-		if(o.justifications!=null) for(D_Justification j : o.justifications) {j.setOrgGID(null);prepareJustDictionary(j);}
-		if(o.news!=null) for(D_News e : o.news) {e.global_organization_ID = null;prepareNewsDictionary(e);}
-		if(o.translations!=null) for(D_Translations t : o.translations) {t.global_organization_ID = null;prepareTranDictionary(t);}
+		if(o.witnesses!=null)
+			for(D_Witness w : o.witnesses) {
+				//w.global_organization_ID = null;
+				prepareWitnDictionary(w);}
+		if(o.motions!=null)
+			for(D_Motion m : o.motions)
+			{//m.setOrganizationGID(null);
+				prepareMotiDictionary(m);
+			}
+		if(o.signatures!=null)
+			for(D_Vote v : o.signatures) {//v.global_organization_ID = null;
+				prepareVoteDictionary(v);
+			}
+		if(o.justifications!=null)
+			for(D_Justification j : o.justifications) {//j.setOrgGID(null);
+				prepareJustDictionary(j);
+			}
+		if(o.news!=null)
+			for(D_News e : o.news) {
+				//e.global_organization_ID = null;
+				prepareNewsDictionary(e);}
+		if(o.translations!=null)
+			for(D_Translations t : o.translations) {//t.global_organization_ID = null;
+				prepareTranDictionary(t);
+			}
 	}
 	public static void prepareOrgDictionary(D_Organization o, ArrayList<String> dictionary_GIDs) {
 		//if(o.global_organization_ID!=null) o.global_organization_IDhash=null; // drop hash
@@ -194,7 +219,8 @@ public class ASNSyncPayload extends ASNObj{
 				preparePeerDictionary(o.creator, dictionary_GIDs);
 			}else{
 				System.err.println("AsnSyncPayload:prepareOrgsDictionary: will drop org creator = "+o.creator);
-				o.creator=null;
+				//should br done in encoder
+				//o.creator=null;
 			}
 		}
 
@@ -316,11 +342,11 @@ public class ASNSyncPayload extends ASNObj{
 	}
 	public static void prepareServedTableDictionary(D_PeerOrgs s,
 			ArrayList<String> dictionary_GIDs) {
-		if (s.global_organization_ID != null) s.setOrgGIDH(null);
-		if (s.global_organization_ID != null) s.global_organization_ID = 
+		//if (s.global_organization_ID != null) s.setOrgGIDH(null);
+		if (s.global_organization_ID != null) //s.global_organization_ID = 
 			addToDictionaryGetIdxS(dictionary_GIDs, s.global_organization_ID);
-		if (s.getOrgGIDH_Or_Null() != null) s.setOrgGIDH(
-			addToDictionaryGetIdxS(dictionary_GIDs, s.getOrgGIDH_Or_Null()));
+		if (s.getOrgGIDH_Or_Null() != null) //s.setOrgGIDH(
+			addToDictionaryGetIdxS(dictionary_GIDs, s.getOrgGIDH_Or_Null());
 	}
 	private void prepareServedTableDictionary(D_PeerOrgs s) {
 		prepareServedTableDictionary(s, dictionary_GIDs);
@@ -380,12 +406,24 @@ public class ASNSyncPayload extends ASNObj{
 			}
 	}
 	/**
-	 * global_translation_ID need not be extracted as it is not referred
+	 * TODO: I believe that the translation objects are not yet implemented with caching (and their encoder is not using yet the dictionary).
+	 *  Therefore the result of addToDictionaryGetIdxS should still be saved in  GIDs (like e.global_organization_ID), in order for the messages
+	 *  to be compressed. I remove that compression only because I am afraid that whoever will implement caching forD_ Translation (as I will
+	 *  likely no longer have time for it) will forget to remove these lines and would get in bit troubles debugging afterwards.
+	 *  
+	 *  TODO: Do not forget! One should implement aversion of the ASN getEncoder() for D_Translation, D_News, D_Justification, and D_Witness
+	 *  (the not yet cached objects) such that it takes a dictionary as parameters (as already done for D_Peer, D_COnstituent, ....)
+	 *  Then, in the encoder of objects in a ASNPayload, when calling getEncoder on a sub-object of the 4 types above, one must make 
+	 *  sure to also pass the dictionary received in parameter (as done for the already cached objects of types D_Peer, etc...).
+	 * 
+	 * global_translation_ID need not be extracted as it is not referred anywhere else (so its compression with our algorithm is useless)
 	 * @param e
 	 */
 	public static void prepareTranDictionary(D_Translations e, ArrayList<String> dictionary_GIDs) {
-		if(e.global_organization_ID!=null) e.global_organization_ID = addToDictionaryGetIdxS(dictionary_GIDs, e.global_organization_ID);
-		if(e.global_constituent_ID!=null) e.global_constituent_ID = addToDictionaryGetIdxS(dictionary_GIDs, e.global_constituent_ID);
+		if(e.global_organization_ID!=null) //e.global_organization_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, e.global_organization_ID);
+		if(e.global_constituent_ID!=null) //e.global_constituent_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, e.global_constituent_ID);
 		//if(e.global_translation_ID!=null) e.global_translation_ID = addToDictionaryGetIdxS(dictionary_GIDs, e.global_translation_ID);
 		if(e.organization!=null) prepareOrgDictionary(e.organization, dictionary_GIDs);
 		if(e.constituent!=null) prepareConstDictionary(e.constituent, dictionary_GIDs);
@@ -437,16 +475,23 @@ public class ASNSyncPayload extends ASNObj{
 		if(j.getMotion()!=null) expandMotiDictionariesAtDecoding(j.getMotion(), dictionary_GIDs);
 	}
 	/**
+	 * TODO: as for the comment to D_Translations, votes are not yet implemented with caching and their encoding do not use dictionarius.
+	 *  So compression is not yet done. I comment compression  (assignment to GIDs) to avoid troubles for others
+	 * 
 	 * VoteID is not extracted as it is not typically referred anywhere. Need not even be sent at all here, except as checksums
 	 * @param v
 	 * @param dictionary_GIDs
 	 */
 
 	public static void prepareVoteDictionary(D_Vote v, ArrayList<String> dictionary_GIDs) {
-		if(v.global_organization_ID!=null) v.global_organization_ID = addToDictionaryGetIdxS(dictionary_GIDs, v.global_organization_ID);
-		if(v.global_constituent_ID!=null) v.global_constituent_ID = addToDictionaryGetIdxS(dictionary_GIDs, v.global_constituent_ID);
-		if(v.global_motion_ID!=null) v.global_motion_ID = addToDictionaryGetIdxS(dictionary_GIDs, v.global_motion_ID);
-		if(v.global_justification_ID!=null) v.global_justification_ID = addToDictionaryGetIdxS(dictionary_GIDs, v.global_justification_ID);
+		if(v.global_organization_ID!=null) // v.global_organization_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, v.global_organization_ID);
+		if(v.global_constituent_ID!=null) //v.global_constituent_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, v.global_constituent_ID);
+		if(v.getMotionGID() != null) //v.global_motion_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, v.getMotionGID());
+		if(v.global_justification_ID!=null) //v.global_justification_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, v.global_justification_ID);
 		//v.global_vote_ID = null;
 		//if(v.global_vote_ID!=null) v.global_vote_ID = addToDictionaryGetIdxS(dictionary_GIDs, v.global_vote_ID);
 		if(v.constituent!=null) ASNSyncPayload.prepareConstDictionary(v.constituent, dictionary_GIDs);
@@ -462,7 +507,7 @@ public class ASNSyncPayload extends ASNObj{
 	public static void expandVoteDictionariesAtDecoding(D_Vote v, ArrayList<String> dictionary_GIDs) {
 		if(v.global_organization_ID!=null) v.global_organization_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_organization_ID));
 		if(v.global_constituent_ID!=null) v.global_constituent_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_constituent_ID));
-		if(v.global_motion_ID!=null) v.global_motion_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_motion_ID));
+		if(v.getMotionGID()!=null) v.setMotionGID(getDictionaryValueOrKeep(dictionary_GIDs,(v.getMotionGID())));
 		if(v.global_justification_ID!=null) v.global_justification_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_justification_ID));
 		//v.global_vote_ID = v.make_ID();
 		//if(v.global_vote_ID!=null) v.global_vote_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_vote_ID));
@@ -471,13 +516,20 @@ public class ASNSyncPayload extends ASNObj{
 		if(v.justification!=null) ASNSyncPayload.expandJustDictionariesAtDecoding(v.justification, dictionary_GIDs);
 	}
 	/**
+	 * TODO, just as with the Translations with Votes
+	 * 
+	 *
+	 * 
 	 * NewsID is not extracted as it is not referred
 	 * @param e
 	 */
 	public static void prepareNewsDictionary(D_News e, ArrayList<String> dictionary_GIDs) {
-		if(e.global_organization_ID!=null) e.global_organization_ID = addToDictionaryGetIdxS(dictionary_GIDs, e.global_organization_ID);
-		if(e.global_constituent_ID!=null) e.global_constituent_ID = addToDictionaryGetIdxS(dictionary_GIDs, e.global_constituent_ID);
-		if(e.global_motion_ID!=null) e.global_motion_ID = addToDictionaryGetIdxS(dictionary_GIDs, e.global_motion_ID);
+		if(e.global_organization_ID!=null) //e.global_organization_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, e.global_organization_ID);
+		if(e.global_constituent_ID!=null) //e.global_constituent_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, e.global_constituent_ID);
+		if(e.global_motion_ID!=null) //e.global_motion_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, e.global_motion_ID);
 		//if(e.global_news_ID!=null) e.global_news_ID = addToDictionaryGetIdxS(dictionary_GIDs, e.global_news_ID);
 		if(e.constituent!=null) prepareConstDictionary(e.constituent, dictionary_GIDs);
 		if(e.motion!=null) prepareMotiDictionary(e.motion, dictionary_GIDs);
@@ -500,12 +552,16 @@ public class ASNSyncPayload extends ASNObj{
 	}
 
 	public static void prepareMotiDictionary(D_Motion m, ArrayList<String> dictionary_GIDs) {
-		if(m.getOrganizationGID()!=null) m.setOrganizationGID(addToDictionaryGetIdxS(dictionary_GIDs, m.getOrganizationGID()));
-		if(m.getConstituentGID()!=null) m.setConstituentGID(addToDictionaryGetIdxS(dictionary_GIDs, m.getConstituentGID()));
-		if(m.getGID()!=null) m.setGID(addToDictionaryGetIdxS(dictionary_GIDs, m.getGID()));
-		if(m.getEnhancedMotionGID()!=null) m.setEnhancedMotionGID(addToDictionaryGetIdxS(dictionary_GIDs, m.getEnhancedMotionGID()));
+		if (m.getOrganizationGID()!=null) //m.setOrganizationGID(
+				addToDictionaryGetIdxS(dictionary_GIDs, m.getOrganizationGID());
+		if (m.getConstituentGID()!=null) //m.setConstituentGID(
+			addToDictionaryGetIdxS(dictionary_GIDs, m.getConstituentGID()); //);
+		if (m.getGID() != null) //m.setGID(
+				addToDictionaryGetIdxS(dictionary_GIDs, m.getGID());
+		if (m.getEnhancedMotionGID()!=null) //m.setEnhancedMotionGID(
+			addToDictionaryGetIdxS(dictionary_GIDs, m.getEnhancedMotionGID());
 		
-		if(m.getConstituent()!=null) prepareConstDictionary(m.getConstituent(), dictionary_GIDs);
+		if (m.getConstituent()!=null) prepareConstDictionary(m.getConstituent(), dictionary_GIDs);
 	}
 	private void prepareMotiDictionary(D_Motion m) {
 		prepareMotiDictionary(m, this.dictionary_GIDs);
@@ -523,17 +579,23 @@ public class ASNSyncPayload extends ASNObj{
 		if(m.getConstituent()!=null) expandConstDictionariesAtDecoding(m.getConstituent(), dictionary_GIDs);
 	}
 	/**
+	 * TODO: Just as for News, Votes and Translations
+	 * 
 	 * WitnessID needs not be extracts as it is not referred
 	 * @param w
 	 * @param dictionary_GIDs
 	 */
 	public static void prepareWitnDictionary(D_Witness w,
 			ArrayList<String> dictionary_GIDs) {
-		if(w.global_organization_ID!=null) w.global_organization_ID = addToDictionaryGetIdxS(dictionary_GIDs, w.global_organization_ID);
+		if(w.global_organization_ID!=null) //w.global_organization_ID = 
+			addToDictionaryGetIdxS(dictionary_GIDs, w.global_organization_ID);
 		//if(w.global_witness_ID!=null) w.global_witness_ID = addToDictionaryGetIdxS(dictionary_GIDs, w.global_witness_ID);
-		if(w.witnessed_global_neighborhoodID!=null) w.witnessed_global_neighborhoodID = addToDictionaryGetIdxS(dictionary_GIDs, w.witnessed_global_neighborhoodID);
-		if(w.witnessing_global_constituentID!=null) w.witnessing_global_constituentID = addToDictionaryGetIdxS(dictionary_GIDs, w.witnessing_global_constituentID);
-		if(w.witnessed_global_constituentID!=null) w.witnessed_global_constituentID = addToDictionaryGetIdxS(dictionary_GIDs, w.witnessed_global_constituentID);
+		if(w.witnessed_global_neighborhoodID!=null) //w.witnessed_global_neighborhoodID = 
+			addToDictionaryGetIdxS(dictionary_GIDs, w.witnessed_global_neighborhoodID);
+		if(w.witnessing_global_constituentID!=null) //w.witnessing_global_constituentID = 
+			addToDictionaryGetIdxS(dictionary_GIDs, w.witnessing_global_constituentID);
+		if(w.witnessed_global_constituentID!=null) //w.witnessed_global_constituentID = 
+			addToDictionaryGetIdxS(dictionary_GIDs, w.witnessed_global_constituentID);
 		
 		if(w.witnessed!=null) prepareConstDictionary(w.witnessed, dictionary_GIDs);
 		if(w.witnessing!=null) prepareConstDictionary(w.witnessing, dictionary_GIDs);
@@ -598,8 +660,8 @@ public class ASNSyncPayload extends ASNObj{
 			addToDictionaryGetIdxS(dictionary_GIDs, c.global_organization_ID);
 		if(c.global_neighborhood_ID!=null) //c.global_neighborhood_ID = 
 			addToDictionaryGetIdxS(dictionary_GIDs, c.global_neighborhood_ID);
-		if(c.global_constituent_id!=null) //c.global_constituent_id =
-			addToDictionaryGetIdxS(dictionary_GIDs, c.global_constituent_id);
+		if(c.getGID()!=null) //c.global_constituent_id =
+			addToDictionaryGetIdxS(dictionary_GIDs, c.getGID());
 		//if(c.global_constituent_id_hash!=null) c.global_constituent_id_hash = addToDictionaryGetIdxS(dictionary_GIDs, c.global_constituent_id_hash);
 		if(c.global_submitter_id!=null) //c.global_submitter_id = 
 			addToDictionaryGetIdxS(dictionary_GIDs, c.global_submitter_id);
@@ -627,11 +689,11 @@ public class ASNSyncPayload extends ASNObj{
 		if(c==null) return;
 		if(c.global_organization_ID!=null) c.global_organization_ID = getDictionaryValueOrKeep(dictionary_GIDs, (c.global_organization_ID));
 		if(c.global_neighborhood_ID!=null) c.global_neighborhood_ID = getDictionaryValueOrKeep(dictionary_GIDs, (c.global_neighborhood_ID));
-		if(c.global_constituent_id!=null) c.global_constituent_id = getDictionaryValueOrKeep(dictionary_GIDs, (c.global_constituent_id));
+		if(c.getGID()!=null) c._set_GID(getDictionaryValueOrKeep(dictionary_GIDs, (c.getGID())));
 		if(c.global_constituent_id_hash!=null) c.global_constituent_id_hash = getDictionaryValueOrKeep(dictionary_GIDs, (c.global_constituent_id_hash));
 		if(c.global_submitter_id!=null) c.global_submitter_id = getDictionaryValueOrKeep(dictionary_GIDs, (c.global_submitter_id));
 		if(c.address!=null) for(int k =0; k<c.address.length; k++) expandValuedictionaries(c.address[k], dictionary_GIDs);
-		if(c.global_constituent_id!=null)c.global_constituent_id_hash=D_Constituent.getGIDHashFromGID(c.global_constituent_id);
+		if(c.getGID()!=null)c.global_constituent_id_hash=D_Constituent.getGIDHashFromGID(c.getGID());
 		
 		if(c.neighborhood!=null) for(int k=0; k<c.neighborhood.length; k++) expandNeigDictionariesAtDecoding(c.neighborhood[k], dictionary_GIDs);
 		if(c.submitter!=null) expandConstDictionariesAtDecoding(c.submitter, dictionary_GIDs);

@@ -125,40 +125,47 @@ public class D_Message extends ASNObj {
 
 	@Override
 	public Encoder getEncoder() {
+		int dependants = 10; // could be ASNObj.DEPENDANTS_ALL, but risks being too big;
 		
-		if(DD.ADHOC_MESSAGES_USE_DICTIONARIES){
-			if(dictionary_GIDs.size()>0){
+		if (DD.ADHOC_MESSAGES_USE_DICTIONARIES){
+			if (dictionary_GIDs.size() > 0) {
 				System.err.println("D_Message:getEncoder: compacting dictionaries: prior dicts were not empty");
 				dictionary_GIDs = new ArrayList<String>();
 			}
 			this.prepareDictionary();
-			if(ASNSyncPayload.DEBUG||DEBUG)System.out.println("D_Message:getEncoder:compacted dictionaries:"+this);
-		}else{
-			if(dictionary_GIDs.size()>0) System.err.println("D_Message:getEncoder: not compacting dictionaries: prior dicts were not empty");
+			if (ASNSyncPayload.DEBUG || DEBUG) System.out.println("D_Message:getEncoder:compacted dictionaries:"+this);
+		} else {
+			if (dictionary_GIDs.size() > 0) System.err.println("D_Message:getEncoder: not compacting dictionaries: prior dicts were not empty");
 			dictionary_GIDs = new ArrayList<String>();
-			if(_DEBUG)System.out.println("D_Message:getEncoder: not compacting dictionaries");
+			if (_DEBUG) System.out.println("D_Message:getEncoder: not compacting dictionaries");
 		}
 		
 		Encoder enc = new Encoder().initSequence();
-		if(sender!=null) enc.addToSequence(sender.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC0));
-		if(Peer!=null) enc.addToSequence(Peer.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC1));
-		if(interest!=null) enc.addToSequence(interest.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC2));
-		if(organization!=null)enc.addToSequence(organization.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC3));
-		if(motion!=null) enc.addToSequence(motion.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC4));
-		if(constituent!=null) enc.addToSequence(constituent.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC5));
-		if(witness!=null) enc.addToSequence(witness.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC6));
-		if(vote!=null)enc.addToSequence(vote.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC7));
-		if(signature!=null) enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC8));
-		if(neighborhoods!=null) enc.addToSequence(Encoder.getEncoder(neighborhoods, dictionary_GIDs).setASN1Type(DD.TAG_AC9));
-		if(recent_senders!=null){
+		if (sender != null) enc.addToSequence(sender.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC0));
+		if (Peer != null) enc.addToSequence(Peer.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC1));
+		if (interest != null) enc.addToSequence(interest.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC2));
+
+		// encoded with dependants
+		if (organization != null) enc.addToSequence(organization.getEncoder(dictionary_GIDs, dependants).setASN1Type(DD.TAG_AC3));
+		if (motion!=null) enc.addToSequence(motion.getEncoder(dictionary_GIDs, dependants).setASN1Type(DD.TAG_AC4));
+		if (constituent!=null) enc.addToSequence(constituent.getEncoder(dictionary_GIDs, dependants).setASN1Type(DD.TAG_AC5));
+		if (witness!=null) enc.addToSequence(witness.getEncoder(dictionary_GIDs, dependants).setASN1Type(DD.TAG_AC6));
+		if (vote!=null)enc.addToSequence(vote.getEncoder(dictionary_GIDs, dependants).setASN1Type(DD.TAG_AC7));
+		
+		if (signature != null) enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC8));
+
+		// encoded with dependants
+		if (neighborhoods != null) enc.addToSequence(Encoder.getEncoder(neighborhoods, dictionary_GIDs, dependants).setASN1Type(DD.TAG_AC9));
+
+		if (recent_senders != null) {
 			String[] senders = recent_senders.toArray(new String[0]);
 			enc.addToSequence(Encoder.getStringEncoder(senders, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC10));
 		}
 		
-		if(dictionary_GIDs!=null) enc.addToSequence(Encoder.getStringEncoder(dictionary_GIDs.toArray(new String[0]), Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC17));
+		if (dictionary_GIDs != null) enc.addToSequence(Encoder.getStringEncoder(dictionary_GIDs.toArray(new String[0]), Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC17));
 
-		if(DD.ADHOC_MESSAGES_USE_DICTIONARIES)  this.expandDictionariesAtDecoding();
-		if(dictionary_GIDs!=null) dictionary_GIDs = new ArrayList<String>();
+		if (DD.ADHOC_MESSAGES_USE_DICTIONARIES)  this.expandDictionariesAtDecoding();
+		if (dictionary_GIDs != null) dictionary_GIDs = new ArrayList<String>();
 		
 		return enc;
 	}

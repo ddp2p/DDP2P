@@ -391,13 +391,13 @@ public class ConstituentHandling {
 				return result;
 			}
 		}
-		D_Constituent lc = D_Constituent.integrateRemote(c, __peer, sol_rq, new_rq, default_blocked);
+		D_Constituent lc = D_Constituent.integrateRemote(c, __peer, sol_rq, new_rq, default_blocked, Util.getCalendar(arrival_time));
 		//		D_Constituent.getConstByGID_or_GIDH(c.getGID(), c.getGIDH(), true, true, true, __peer, Util.lval(org_local_ID));
 		//lc.loadRemote(sol_rq, new_rq, c, __peer);
 		//c.fillLocals(new_rq, true, true, true, true);
 		//long _result = c.storeVerified(orgGID, org_local_ID, arrival_time);
 		//if (_result > 0)
-		sol_rq.cons.put(c.global_constituent_id, DD.EMPTYDATE);
+		sol_rq.cons.put(c.getGID(), DD.EMPTYDATE);
 		result = Util.getStringID(c.storeRequest_getID());
 		c.releaseReference();
 		if (DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData: exit");

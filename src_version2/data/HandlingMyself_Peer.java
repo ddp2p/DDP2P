@@ -38,10 +38,13 @@ public class HandlingMyself_Peer {
 
 	/**
 	 * returns myself if set,
-	 * System.exist if un-existing (should never happen!)
+	 * System.exist if interrupted when un-existing (should never happen!)
+	 * 
+	 * Otherwise blocks and waits until it is created!
+	 * 
 	 * @return
 	 */
-	public static D_Peer get_myself() {
+	public static D_Peer get_myself_with_wait() {
 		if (DEBUG) System.out.println("HandlingMyself: get_myself: start");
 		//Util.printCallPath("Who?");
 		synchronized(_myself_monitor) {
@@ -574,13 +577,13 @@ public class HandlingMyself_Peer {
 	 * @return
 	 */
 	public static String getMyPeerIDhash() {
-		return get_myself().getGIDH_force();
+		return get_myself_with_wait().getGIDH_force();
 //		try {return DD.getAppText(DD.APP_my_global_peer_ID_hash);
 //		} catch (P2PDDSQLException e) {}
 //		return null;
 	}
 	public static String getMyPeerName() {
-		return get_myself().getName();
+		return get_myself_with_wait().getName();
 //		try {return DD.getAppText(DD.APP_my_peer_name);
 //		} catch (P2PDDSQLException e) {}
 //		return null;
@@ -611,20 +614,20 @@ public class HandlingMyself_Peer {
 			 * @return
 			 */
 	public static SK getMyPeerSK() {
-		return get_myself().getSK();
+		return get_myself_with_wait().getSK();
 	}
 	/**
 	 * Get my PK as string from Identity
 	 * @return
 	 */
 	public static String getMyPeerGID() {
-		return get_myself().getGID();
+		return get_myself_with_wait().getGID();
 	}
 	public static String getMyPeerID() {
-		return get_myself().getLIDstr_keep_force();
+		return get_myself_with_wait().getLIDstr_keep_force();
 	}
 	public static void setAmIBroadcastable(boolean val){
-		get_myself().setBroadcastable(val);
+		get_myself_with_wait().setBroadcastable(val);
 	}
 	/**
 	 * Should use "myself"
@@ -633,7 +636,7 @@ public class HandlingMyself_Peer {
 	 */
 	public static DD_Address getMyDDAddress() throws P2PDDSQLException {
 		DD_Address myAddress;
-		D_Peer me = HandlingMyself_Peer.get_myself();
+		D_Peer me = HandlingMyself_Peer.get_myself_with_wait();
 		if(D_Peer.DEBUG) System.out.println("D_Peer:getMyDDAddress: D_Peer: "+me);
 		if(!me.verifySignature()) {
 			if(D_Peer._DEBUG) System.out.println("D_Peer:getMyDDAddress: fail signature: "+me);
@@ -652,12 +655,12 @@ public class HandlingMyself_Peer {
 		return myAddress;
 	}
 	public static String getMyPeerSlogan() {
-		return get_myself().getSlogan();
+		return get_myself_with_wait().getSlogan();
 	}
 	public static String getMyPeerEmail() {
-		return get_myself().getEmail();
+		return get_myself_with_wait().getEmail();
 	}
 	public static String getMyPeerInstance() {
-		return get_myself().getInstance();
+		return get_myself_with_wait().getInstance();
 	}
 }

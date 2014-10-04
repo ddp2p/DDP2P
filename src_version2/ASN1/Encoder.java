@@ -691,6 +691,17 @@ class Encoder{
 		}
 		return enc;
 	}
+	public static <T> Encoder getEncoder(T[] param, ArrayList<String> dictionary_GIDs, int dependants) {
+		if (param == null) {
+			return Encoder.getNullEncoder();
+		}
+		Encoder enc = new Encoder().initSequence();
+		for (int k = 0 ; k < param.length ; k ++) {
+			if (param[k] != null) enc.addToSequence(((ASNObj)param[k]).getEncoder(dictionary_GIDs, dependants));
+			else enc.addToSequence(Encoder.getNullEncoder());
+		}
+		return enc;
+	}
 	/**
 	 * 
 	 * @param param, an array of String[] to encode

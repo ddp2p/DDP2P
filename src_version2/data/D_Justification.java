@@ -985,13 +985,19 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	public Encoder getEncoder() {
 		return getEncoder(new ArrayList<String>());
 	}
+	@Override
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {
+		return getEncoder(dictionary_GIDs, 0);
+	}
 	/**
 	 * parameter used for dictionaries
 	 */
 	@Override
-	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) { 
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
+		int new_dependants = dependants;
+		if (dependants > 0) new_dependants = dependants - 1;
 		Encoder enc = new Encoder().initSequence();
-		if(getHashAlg() != null)enc.addToSequence(new Encoder(getHashAlg(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
+		if (getHashAlg() != null)enc.addToSequence(new Encoder(getHashAlg(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
 		if (getGID() != null) {
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getGID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
@@ -1000,25 +1006,34 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getMotionGID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
 		}
-		if(getAnswerTo_GID()!=null) {
+		if (getAnswerTo_GID()!=null) {
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getAnswerTo_GID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
 		}
-		if(getConstituentGID()!=null) {
+		if (getConstituentGID()!=null) {
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getConstituentGID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
 		}
-		if(getJustificationTitle()!=null) enc.addToSequence(getJustificationTitle().getEncoder().setASN1Type(DD.TAG_AC5));
-		if(getJustificationText()!=null)enc.addToSequence(getJustificationText().getEncoder().setASN1Type(DD.TAG_AC6));
+		if (getJustificationTitle()!=null) enc.addToSequence(getJustificationTitle().getEncoder().setASN1Type(DD.TAG_AC5));
+		if (getJustificationText()!=null)enc.addToSequence(getJustificationText().getEncoder().setASN1Type(DD.TAG_AC6));
 		//if(author!=null)enc.addToSequence(author.getEncoder().setASN1Type(DD.TAG_AC7));
 		//if(last_reference_date!=null)enc.addToSequence(new Encoder(last_reference_date).setASN1Type(DD.TAG_AC8));
 		if(getCreationDate()!=null)enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC9));
 		if(getSignature()!=null)enc.addToSequence(new Encoder(getSignature()).setASN1Type(DD.TAG_AC10));
 		
-		if(getMotion()!=null)enc.addToSequence(getMotion().getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC11));
-		if(getConstituent()!=null)enc.addToSequence(getConstituent().getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC12));
-		if(getAnswerTo()!=null)enc.addToSequence(getAnswerTo().getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC13));
-		if(getOrgGID()!=null) {
+		if (dependants != ASNObj.DEPENDANTS_NONE) {
+			if (getMotion()!=null)enc.addToSequence(getMotion().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC11));
+			if (getConstituent()!=null)enc.addToSequence(getConstituent().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC12));
+			if (getAnswerTo()!=null)enc.addToSequence(getAnswerTo().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC13));
+		}
+		/**
+		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
+		 * available at the destination from enclosing fields, and will be filled out at expansion
+		 * by ASNSyncPayload.expand at decoding.
+		 * However, it is not that damaging when using compression, and can be stored without much overhead.
+		 * So it is left here for now.  Test if you comment out!
+		 */
+		if (getOrgGID() != null) {
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getOrgGID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC14));
 		}
@@ -1044,7 +1059,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if(dec.getTypeByte()==DD.TAG_AC13)answerTo = new D_Justification().decode(dec.getFirstObject(true));
 		if(dec.getTypeByte()==DD.TAG_AC14)global_organization_ID = dec.getFirstObject(true).getString(DD.TAG_AC14);
 		
-		if ((global_constituent_ID == null) && (constituent != null)) global_constituent_ID = constituent.global_constituent_id;
+		if ((global_constituent_ID == null) && (constituent != null)) global_constituent_ID = constituent.getGID();
 		if ((global_answerTo_ID == null) && (answerTo != null)) global_answerTo_ID = answerTo.global_justificationID;
 		if ((global_motionID == null) && (motion != null)) global_motionID = motion.getGID();
 		return this;
@@ -1376,8 +1391,8 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	public boolean verifySignature(){
 		if(DEBUG) System.out.println("WB_Justification:verifySignature: start");
 		String pk_ID = this.getConstituentGID();//.submitter_global_ID;
-		if((pk_ID == null) && (this.getConstituent()!=null) && (this.getConstituent().global_constituent_id!=null))
-			pk_ID = this.getConstituent().global_constituent_id;
+		if((pk_ID == null) && (this.getConstituent()!=null) && (this.getConstituent().getGID()!=null))
+			pk_ID = this.getConstituent().getGID();
 		if(pk_ID == null) return false;
 		
 		String newGID = make_ID();

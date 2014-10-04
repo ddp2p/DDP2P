@@ -479,9 +479,9 @@ public class UpdatePeersTable {
 			String emails = p.getEmail(); //Util.getString(p.get(10));
 			String phones = p.getPhones(); //Util.getString(p.get(11));
 			
-			if(global_peer_ID.equals(Identity.getMyPeerGID())) {
-				D_Peer me = HandlingMyself_Peer.get_myself();
-				if(!me.verifySignature()){
+			if (global_peer_ID.equals(Identity.getMyPeerGID())) {
+				D_Peer me = HandlingMyself_Peer.get_myself_with_wait();
+				if (!me.verifySignature()){
 					me.setCreationDate(); //.component_basic_data.creation_date = Util.CalendargetInstance();
 					me.signMe();
 					me.storeRequest();

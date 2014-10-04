@@ -134,7 +134,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 			}
 			if ((peer != null) && (global_peer_ID.equals(peer.getGID()))) return;
 			if (me) {
-				peer = HandlingMyself_Peer.get_myself();
+				peer = HandlingMyself_Peer.get_myself_with_wait();
 			} else {
 				peer = D_Peer.getPeerByGID_or_GIDhash(global_peer_ID, null, true, false, false, null);
 			}

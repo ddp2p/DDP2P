@@ -1294,7 +1294,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		if (DEBUG) System.out.println("Connections: getKnownDirectoryAddresses: query dir = "+dir_address+" GIDH = "+GIDH+" : "+instance);
 		String directory_domain = dir_address.getIP();
 		int directory_udp_port = dir_address.udp_port;
-		D_Peer me = data.HandlingMyself_Peer.get_myself();
+		D_Peer me = data.HandlingMyself_Peer.get_myself_with_wait();
 		
 		if ((Util.equalStrings_null_or_not(instance, me.getInstance())) && Util.equalStrings_null_or_not(GIDH, me.getGIDH_force())) {
 			String ipport = directory_domain+":"+directory_udp_port;
@@ -1334,7 +1334,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		if (directory_udp_port <= 0) directory_udp_port = sa.getPort();
 		if (directory_domain == null) directory_domain = sa.getHostString();
 		String ipport = directory_domain+":"+directory_udp_port;
-		D_Peer me = data.HandlingMyself_Peer.get_myself();
+		D_Peer me = data.HandlingMyself_Peer.get_myself_with_wait();
 		D_Peer target = D_Peer.getPeerByGID_or_GIDhash(null, dami.remote_GIDhash, true, false, false, null);
 		ClientSync.reportDa(ipport+"/UDP", target.getGID(), target.getName(), dami, null);
 		Connections_Peer_Directory pd;

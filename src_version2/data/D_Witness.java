@@ -22,6 +22,7 @@ package data;
 
 import static java.lang.System.out;
 import static util.Util.__;
+import hds.ASNSyncPayload;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -111,6 +112,7 @@ class D_Witness extends ASNObj implements Summary {
 	public Calendar arrival_date;
 	public D_Constituent witnessed;
 	public D_Constituent witnessing;
+	public D_Neighborhood witnessed_neighborhood;
 	public D_WitnessStatements statements;
 	
 	public void global_organization_ID(String val){
@@ -203,6 +205,7 @@ class D_Witness extends ASNObj implements Summary {
 		if(DEBUG) System.out.println("D_Witness:D_Witness: Done");
 	}
 	public D_Witness(String witnessGID) throws P2PDDSQLException{
+		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("D_Witness:D_Witness: start wGID="+witnessGID);
 		if(witnessGID==null) throw new D_NoDataException("null witnessGID");
 		String sql = 
@@ -223,7 +226,7 @@ class D_Witness extends ASNObj implements Summary {
 		ArrayList<ArrayList<Object>> w = Application.db.select(sql, new String[]{witnessGID}, DEBUG);
 		if (w.size() > 0) init(w.get(0));
 		else throw new D_NoDataException("absent witnessGID:"+witnessGID);
-		if(DEBUG) System.out.println("D_Witness:D_Witness: Done");
+		if(DEBUG) System.out.println("D_Witness:D_Witness: Done: "+this);
 	}
 	/**
 	 * "SELECT "
@@ -287,6 +290,7 @@ class D_Witness extends ASNObj implements Summary {
 	 * @param w
 	 */
 	public void init(ArrayList<Object> w) {
+		//boolean DEBUG = true;
 		if(DEBUG)System.out.println("D_Witness:init: start");
 		hash_alg = Util.getString(w.get(table.witness.WIT_COL_HASH_ALG));
 		global_witness_ID = Util.getString(w.get(table.witness.WIT_COL_GID));
@@ -309,12 +313,13 @@ class D_Witness extends ASNObj implements Summary {
 		witnessed_global_neighborhoodID = D_Neighborhood.getGIDFromLID(witnessed_neighborhoodID); //Util.getString(w.get(table.witness.WIT_FIELDS+0));
 		witnessed_global_constituentID = D_Constituent.getGIDFromLID(witnessed_constituentID); //Util.getString(w.get(table.witness.WIT_FIELDS+1));
 		D_Constituent witness = D_Constituent.getConstByLID(witnessing_constituentID, true, false);
+		if (DEBUG) System.out.println("D_Witness:init: witness= "+witness);
 		if (witness != null) {
 			witnessing_global_constituentID = witness.getGID(); //Util.getString(w.get(table.witness.WIT_FIELDS+2));
 			global_organization_ID = witness.getOrgGID(); //Util.getString(w.get(table.witness.WIT_FIELDS+3));
 			organization_ID = witness.getOrganizationIDStr(); //Util.getString(w.get(table.witness.WIT_FIELDS+4));
 		}
-		if (DEBUG) System.out.println("D_Witness:init: done");
+		if (DEBUG) System.out.println("D_Witness:init: done: ");
 	}
 	public D_Witness instance() throws CloneNotSupportedException{
 		return new D_Witness();
@@ -334,29 +339,66 @@ class D_Witness extends ASNObj implements Summary {
 		signature = d.getFirstObject(true).getBytes();
 		if(d.getTypeByte() == DD.TAG_AC0) witnessing = D_Constituent.getEmpty().decode(d.getFirstObject(true));
 		if(d.getTypeByte() == DD.TAG_AC1) witnessed = D_Constituent.getEmpty().decode(d.getFirstObject(true));
+		if(d.getTypeByte() == DD.TAG_AC5) witnessed_neighborhood = D_Neighborhood.getEmpty().decode(d.getFirstObject(true));
 		if(d.getTypeByte() == DD.TAG_AC2) statements = new D_WitnessStatements().decode(d.getFirstObject(true));
-		if(d.getTypeByte() == DD.TAG_AC3) witness_trustworthiness_category = d.getFirstObject(true).getString();
-		if(d.getTypeByte() == DD.TAG_AC4) sense_y_trustworthiness = d.getFirstObject(true).getInteger().intValue();
+		if(d.getTypeByte() == DD.TAG_AC3) witness_trustworthiness_category = d.getFirstObject(true).getString(DD.TAG_AC3);
+		if(d.getTypeByte() == DD.TAG_AC4) sense_y_trustworthiness = d.getFirstObject(true).getInteger(DD.TAG_AC4).intValue();
 		return this;
 	}
 	@Override
 	public Encoder getEncoder() {
+		return getEncoder(new ArrayList<String>());
+	}
+	@Override
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {
+		return getEncoder(dictionary_GIDs, 0);
+	}
+	@Override
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(hash_alg));
-		enc.addToSequence(new Encoder(global_witness_ID));
+		String repl_GID;
+		
+		repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_witness_ID);
+		enc.addToSequence(new Encoder(repl_GID));
+
 		enc.addToSequence(new Encoder(witness_eligibility_category));
-		enc.addToSequence(new Encoder(witnessed_global_neighborhoodID));
-		enc.addToSequence(new Encoder(witnessed_global_constituentID));
-		enc.addToSequence(new Encoder(witnessing_global_constituentID));
-		enc.addToSequence(new Encoder(global_organization_ID));
+
+		repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, witnessed_global_neighborhoodID);
+		enc.addToSequence(new Encoder(repl_GID));
+		
+		repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, witnessed_global_constituentID);
+		enc.addToSequence(new Encoder(repl_GID));
+		
+		repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, witnessing_global_constituentID);
+		enc.addToSequence(new Encoder(repl_GID));
+		
+		/**
+		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
+		 * available at the destination from enclosing fields, and will be filled out at expansion
+		 * by ASNSyncPayload.expand at decoding.
+		 * However, it is not that damaging when using compression, and can be stored without much overhead.
+		 * So it is left here for now.  Test if you comment out!
+		 */
+		repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_organization_ID);
+		enc.addToSequence(new Encoder(repl_GID));
+		
 		enc.addToSequence(new Encoder(new BigInteger(""+sense_y_n)));
 		enc.addToSequence(new Encoder(creation_date));		
 		enc.addToSequence(new Encoder(signature));
-		if(witnessing!=null) enc.addToSequence(witnessing.getEncoder().setASN1Type(DD.TAG_AC0));
-		if(witnessed!=null) enc.addToSequence(witnessed.getEncoder().setASN1Type(DD.TAG_AC1));
-		if(statements!=null) enc.addToSequence(statements.getEncoder().setASN1Type(DD.TAG_AC2));
-		if(this.witness_trustworthiness_category!=null)  enc.addToSequence(new Encoder(witness_trustworthiness_category).setASN1Type(DD.TAG_AC3));
-		if(this.sense_y_trustworthiness!=0)  enc.addToSequence(new Encoder(sense_y_trustworthiness).setASN1Type(DD.TAG_AC4));
+		
+		if (dependants != ASNObj.DEPENDANTS_NONE) {
+			int new_dependants = dependants;
+			if (dependants > 0) new_dependants = dependants - 1;
+				
+			if (witnessing != null) enc.addToSequence(witnessing.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC0));
+			if (witnessed != null) enc.addToSequence(witnessed.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC1));
+			if (witnessed_neighborhood != null) enc.addToSequence(witnessed_neighborhood.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC5));
+		}
+		
+		if (statements != null) enc.addToSequence(statements.getEncoder().setASN1Type(DD.TAG_AC2));
+		if (this.witness_trustworthiness_category != null)  enc.addToSequence(new Encoder(witness_trustworthiness_category).setASN1Type(DD.TAG_AC3));
+		if (this.sense_y_trustworthiness != 0)  enc.addToSequence(new Encoder(sense_y_trustworthiness).setASN1Type(DD.TAG_AC4));
 		return enc;
 	}
 	public Encoder getSignableEncoder() {
@@ -424,7 +466,7 @@ class D_Witness extends ASNObj implements Summary {
 			e.printStackTrace();
 		}
 		// return this.global_witness_ID =  
-		return "W:"+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
+		return data.D_GIDH.d_Witn+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
 	}
 	public boolean verifySignature(){
 		if(DEBUG) System.out.println("D_Witness:D_Witness: start");
@@ -434,8 +476,8 @@ class D_Witness extends ASNObj implements Summary {
 			e.printStackTrace();
 		}
 		String pk_ID = this.witnessing_global_constituentID;//.submitter_global_ID;
-		if((pk_ID == null) && (this.witnessing!=null) && (this.witnessing.global_constituent_id!=null))
-			pk_ID = this.witnessing.global_constituent_id;
+		if((pk_ID == null) && (this.witnessing!=null) && (this.witnessing.getGID()!=null))
+			pk_ID = this.witnessing.getGID();
 		if(pk_ID == null) return false;
 		
 		String newGID = make_ID();
@@ -447,7 +489,7 @@ class D_Witness extends ASNObj implements Summary {
 		}
 		
 		boolean result = Util.verifySignByID(this.getSignableEncoder().getBytes(), pk_ID, signature);
-		if(DEBUG){
+		if (_DEBUG) {
 			System.out.println("D_Witness:verifySignature: result="+result);
 			if(result == false) System.out.println("D_Witness:verifySignature: failed for object="+this);
 			if(result == false) System.out.println("D_Witness:verifySignature: failed for pk="+pk_ID);
@@ -575,20 +617,21 @@ class D_Witness extends ASNObj implements Summary {
 			}
 		}
 			
-		if((this.witnessing_global_constituentID!=null) && (witnessing_constituentID <= 0)) {
+		if ((this.witnessing_global_constituentID!=null) && (witnessing_constituentID <= 0)) {
 			this.witnessing_constituentID = Util.lval(D_Constituent.getLIDFromGID(witnessing_global_constituentID, Util.lval(this.organization_ID)), this.witnessing_constituentID);
-			if(tempConst && (witnessing_constituentID <= 0 ))  {
+			if (tempConst && (witnessing_constituentID <= 0 ))  {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(witnessing_global_constituentID);
-				if(new_rq!=null)new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
+				if (new_rq != null) new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
 				witnessing_constituentID = D_Constituent.insertTemporaryGID(witnessing_global_constituentID, null, Util.lval(this.organization_ID), __peer, default_blocked);
+				if (_DEBUG) System.out.println("D_Witness: fillLocals: getting tmp LID from GID, lid="+witnessing_constituentID);
 			}
-			if(witnessing_constituentID <= 0){
-				Util.printCallPath("cannot store witness with no constituent");
+			if (witnessing_constituentID <= 0){
+				Util.printCallPath("cannot store witness with no constituent, tmp="+tempConst+", gid="+witnessing_global_constituentID);
 				return false;
 			}
 		}
 		
-		if((this.witnessed_global_constituentID!=null) && (witnessed_constituentID <= 0)) {
+		if ((this.witnessed_global_constituentID!=null) && (witnessed_constituentID <= 0)) {
 			String witned_id=D_Constituent.getLIDstrFromGID(this.witnessed_global_constituentID, Util.Lval(this.organization_ID));
 			this.witnessed_constituentID = Util.lval(witned_id, this.witnessed_constituentID);
 			if(tempConst && (this.witnessed_constituentID <= 0 ))  {
@@ -973,7 +1016,7 @@ class D_Witness extends ASNObj implements Summary {
     	//if(wItemIx >= dialog.first_negative){
     	//	sense = 0;
     	//}else sense=1;
-    	String gcd = c.global_constituent_id;
+    	String gcd = c.getGID();
      	try {
      		/*
      		ConstituentsModel model = Application.constituents.tree.getModel();
@@ -985,7 +1028,7 @@ class D_Witness extends ASNObj implements Summary {
     		D_Constituent myself = Application_GUI.getMeConstituent(); //MainFrame.status.getMeConstituent();
     		if (myself == null) return;
     		long myself_LID = myself.getLID();
-    		String myself_GID = myself.global_constituent_id;
+    		String myself_GID = myself.getGID();
     		//long organizationID = Util.lval(myself.organization_ID);
     		String organizationGID = myself.global_organization_ID;
     		
@@ -1010,7 +1053,7 @@ class D_Witness extends ASNObj implements Summary {
     		D_Witness wbw = new D_Witness();
     		wbw.global_organization_ID(organizationGID);
     		wbw.witnessed_constituentID = c.getLID();
-    		wbw.witnessed_global_constituentID = c.global_constituent_id;
+    		wbw.witnessed_global_constituentID = c.getGID();
     		wbw.witnessing_global_constituentID = myself_GID;
     		wbw.witnessing_constituentID = myself_LID;
     		wbw.witness_eligibility_category = witness_category;

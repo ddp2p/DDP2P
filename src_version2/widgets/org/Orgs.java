@@ -963,7 +963,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	public static boolean toggleServing(String organization_ID, boolean toggle, boolean val) {
 		if(_DEBUG) System.err.println("\n************\nOrgs:OrgsModel:toggleServing: orgID=" + Util.trimmed(organization_ID)+" toggle="+toggle+" val="+val);
 		
-		D_Peer myself = HandlingMyself_Peer.get_myself();
+		D_Peer myself = HandlingMyself_Peer.get_myself_with_wait();
 		boolean old_serving = myself.servesOrg(Util.lval(organization_ID,-1));
 		D_Organization.setBroadcasting(organization_ID, !old_serving); // set in organization.broadcasted
 		myself.setServingOrg(Util.lval(organization_ID,-1), !old_serving);

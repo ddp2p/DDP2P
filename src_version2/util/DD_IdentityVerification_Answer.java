@@ -62,7 +62,7 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 		long constituent_id = -1;
 		if(this.verified.getLIDstr() == null) {
 			this.verified.setConstituentLID(D_Constituent.getLIDFromGID_or_GIDH(
-					verified.global_constituent_id,
+					verified.getGID(),
 					verified.global_constituent_id_hash,
 					verified.getOrganizationID()));
 		}
@@ -90,7 +90,7 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 		Long oID = this.verified.getOrganizationID();
 		if ( oID <= 0 ) oID = D_Organization.getLIDbyGID(verified.getGID());
 		D_Constituent c = 
-				D_Constituent.getConstByGID_or_GIDH(this.verified.global_constituent_id, null, true, false, oID);
+				D_Constituent.getConstByGID_or_GIDH(this.verified.getGID(), null, true, false, oID);
 				//new D_Constituent(this.verified.global_constituent_id,
 				//this.verified.global_constituent_id, D_Constituent.EXPAND_NONE);
 		D_Witness.witness(c);
@@ -206,7 +206,7 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 		signature = new byte[0];
 		
 		byte[] digest = this.encode();
-		PK pk = Cipher.getPK(this.verified.global_constituent_id);
+		PK pk = Cipher.getPK(this.verified.getGID());
 		if(DEBUG)System.out.println("pk="+pk+"\nmsg="+Util.getGID_as_Hash(digest)+"\nsgn="+Util.getGID_as_Hash(signature));
 		boolean val = Util.verifySign(digest, pk, _signature);
 
@@ -297,7 +297,7 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 			a.r_prim = new BigInteger(300, new SecureRandom());
 			a.verifier = D_Peer.getPeerByLID_NoKeep(1, true);
 			a.verified = D_Constituent.getConstByLID(new Long(2), true, false);
-			a.generateSignature(Util.getStoredSK(a.verified.global_constituent_id));
+			a.generateSignature(Util.getStoredSK(a.verified.getGID()));
 			
 			System.out.println("a="+a);
 			byte[] msg = a.encode();

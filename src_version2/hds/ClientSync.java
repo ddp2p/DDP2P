@@ -338,7 +338,7 @@ public class ClientSync{
 			//String global_peer_ID = Identity.current_peer_ID.globalID;
 			//if(DEBUG) System.out.println("Client: buildRequests: myself=: "+global_peer_ID);
 			try {
-				sr.address = HandlingMyself_Peer.get_myself();//new D_PeerAddress(global_peer_ID, 0, true, false, true);
+				sr.address = HandlingMyself_Peer.get_myself_with_wait();//new D_PeerAddress(global_peer_ID, 0, true, false, true);
 				sr.dpi = sr.address.getPeerInstance(sr.address.getInstance());
 			} catch (Exception e) {
 				e.printStackTrace();

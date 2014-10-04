@@ -470,7 +470,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				return;
 			}
 			
-			D_Peer p = data.HandlingMyself_Peer.get_myself();
+			D_Peer p = data.HandlingMyself_Peer.get_myself_with_wait();
 			sa.peer_instance = p.getPeerInstance(p.getInstance());
 			
 			if (peer_sender != null) if (DEBUG) System.out.println("UDPServerThread:handleAnswer: return "+sa.elements()+" upto: "+Encoder.getGeneralizedTime(sa.upToDate));
@@ -733,7 +733,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				
 				if (Identity.getAmIBroadcastableToMyPeers()) {
 					try {
-						asreq.address = HandlingMyself_Peer.get_myself();
+						asreq.address = HandlingMyself_Peer.get_myself_with_wait();
 						asreq.dpi = asreq.address.getPeerInstance(asreq.address.getInstance());
 					} catch (Exception e) {
 						e.printStackTrace();

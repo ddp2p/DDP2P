@@ -1931,7 +1931,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		String peer_Slogan = HandlingMyself_Peer.getMyPeerSlogan();//Identity.current_peer_ID.slogan;
 		String val = JOptionPane.showInputDialog(win, __("Change Peer Slogan.\nPreviously: ")+peer_Slogan, __("Peer Slogan"), Application_GUI.QUESTION_MESSAGE);
 		if ((val != null) && (!"".equals(val))) {
-			D_Peer me = HandlingMyself_Peer.get_myself();
+			D_Peer me = HandlingMyself_Peer.get_myself_with_wait();
 			
 			//Identity.current_peer_ID.slogan = val;
 			//DD.setAppText(DD.APP_my_peer_slogan, val);
@@ -1947,7 +1947,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		}
 	}
 	public static String queryEmails (Component win) throws P2PDDSQLException{
-		String peer_Emails = HandlingMyself_Peer.get_myself().getEmail();
+		String peer_Emails = HandlingMyself_Peer.get_myself_with_wait().getEmail();
 		String val=JOptionPane.showInputDialog(win, __("Change Peer Email.\nPreviously: ")+
 				peer_Emails,
 				__("Peer Emails"), Application_GUI.QUESTION_MESSAGE);
@@ -1964,7 +1964,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		//String peer_Slogan = Identity.current_peer_ID.slogan;
 		String val = ControlPane.queryEmails(win);
 		if ((val!=null) && (!"".equals(val))) {
-			D_Peer me = HandlingMyself_Peer.get_myself();
+			D_Peer me = HandlingMyself_Peer.get_myself_with_wait();
 			
 			Identity.setAgentWideEmails(val);
 			
@@ -1997,7 +1997,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		
 		String val = ControlPane.queryName(win);
 		if ((val != null) && (!"".equals(val))) {
-			D_Peer me = HandlingMyself_Peer.get_myself();
+			D_Peer me = HandlingMyself_Peer.get_myself_with_wait();
 			
 			//Identity.current_peer_ID.name = val;
 			//DD.setAppText(DD.APP_my_peer_name, val);

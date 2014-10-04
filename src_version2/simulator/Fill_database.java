@@ -216,7 +216,7 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 		if(DEBUG)System.out.println("CONS data : "+vote.constituent);
 		vote.motion_ID = ""+motion_ID;
 		vote.motion = D_Motion.getMotiByLID(motion_ID, true, false);
-		vote.global_motion_ID = vote.motion.getGID();
+		vote.setMotionGID(vote.motion.getGID());
 		vote.creation_date = creation_date;
 		vote.arrival_date = creation_date;
 		vote.choice = Util.random_Y_N();
@@ -686,7 +686,7 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 		SK sk = keys.getSK();
 	
 		D_Constituent Cons = D_Constituent.getConstByGID_or_GIDH(gcID, gcIDhash, true, true, true, null, organization_ID2);
-		Cons.global_constituent_id = gcID;
+		Cons._set_GID(gcID);
 		Cons.global_constituent_id_hash = gcIDhash;
 		Cons.surname = surname;
 		Cons.forename = forename;

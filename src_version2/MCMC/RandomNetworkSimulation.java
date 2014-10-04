@@ -182,9 +182,9 @@ public class RandomNetworkSimulation extends Thread{
 				//Cipher cipher = Cipher.getCipher("RSA", "SHA1", "C"+c);
 				//PK pk = cipher.getPK();
 				//sk[n][c] = cipher.getSK();
-				_c.global_constituent_id = gcd; //Util.getKeyedIDPK(cipher);
-				if(_c.global_constituent_id != null){
-					_c.global_constituent_id_hash = D_Constituent.getGIDHashFromGID(_c.global_constituent_id);
+				_c.setGID(gcd, null, p_oLID); //Util.getKeyedIDPK(cipher);
+				if(_c.getGID() != null){
+					_c.global_constituent_id_hash = D_Constituent.getGIDHashFromGID(_c.getGID());
 				}else{
 					Application_GUI.warning(("NULL Random Net???"), ("Null const"));
 				}
@@ -196,7 +196,7 @@ public class RandomNetworkSimulation extends Thread{
 					d_n.setCreationDate(Util.CalendargetInstance());
 					d_n.setName("Neighborhood "+n);
 					d_n.setBroadcasted(true);
-					d_n.setSubmitter_GID(_c.global_constituent_id);
+					d_n.setSubmitter_GID(_c.getGID());
 					d_n.submitter = _c;
 					d_n.setGID(d_n.make_ID());
 					d_n.sign(sk[n][c]);

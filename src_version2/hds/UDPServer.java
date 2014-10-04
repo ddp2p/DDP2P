@@ -974,7 +974,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			e.printStackTrace();
 		}
 		// wait for myself
-		data.HandlingMyself_Peer.get_myself();
+		data.HandlingMyself_Peer.get_myself_with_wait();
 		//MyselfHandling.set_my_peer_ID_UDP (id, ds);
 		if (DEBUG) System.out.println("UDPServer:_run: will broadcast");
 		UDPServer.announceMyselfToDirectories();
@@ -1066,7 +1066,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			Identity id = HandlingMyself_Peer.loadIdentity(null);
 			D_Peer me = HandlingMyself_Peer.getPeer(id);
 			HandlingMyself_Peer.setMyself(me, false);
-			HandlingMyself_Peer.get_myself(); // just tests by exit
+			HandlingMyself_Peer.get_myself_with_wait(); // just tests by exit
 			System.out.println("UDPServThread: main: got myself");
 			//String last_sync_date = Encoder.getGeneralizedTime(Util.getCalendar("00000000000000.000Z"));
 			//String[] _maxDate  = new String[]{Util.getGeneralizedTime()};
@@ -1083,7 +1083,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			asr.lastSnapshot = Util.getCalendar("00000000000000.000Z");
 			String peerID="1";
 			asr.tableNames=new String[]{table.peer.G_TNAME};
-			asr.address = HandlingMyself_Peer.get_myself();
+			asr.address = HandlingMyself_Peer.get_myself_with_wait();
 			
 			
 			//if(filtered) asr.orgFilter=UpdateMessages.getOrgFilter(peerID);

@@ -228,7 +228,7 @@ class EmailManager {
 	public static void verify(long constituent_ID) {
 			DD_IdentityVerification_Request iv = new DD_IdentityVerification_Request();
 			iv.verified = D_Constituent.getConstByLID(constituent_ID, true, false); // new D_Constituent(constituent_ID);
-			iv.verifier = HandlingMyself_Peer.get_myself();
+			iv.verifier = HandlingMyself_Peer.get_myself_with_wait();
 			iv.d = Util.getGeneralizedTime();
 			iv.r = new BigInteger(DD_IdentityVerification_Request.R_SIZE, new SecureRandom());
 			//DD.setAppText("VI:"+iv.verified.global_constituent_id_hash, iv.r.toString());

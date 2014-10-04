@@ -1451,7 +1451,9 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 	}
 
 	public String getConstituentMyselfName() {
-		D_Constituent cons = D_Constituent.getConstByLID(getConstituentIDMyself(), true, false);
+		long lid = getConstituentIDMyself();
+		D_Constituent cons = null;
+		if (lid > 0) cons = D_Constituent.getConstByLID(lid, true, false);
 		if (cons == null) return __("None");
 		return cons.getSurName();
 	}

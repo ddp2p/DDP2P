@@ -1222,6 +1222,18 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 */
 	@Override
 	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) { 
+		return getEncoder(dictionary_GIDs, 0);
+	}
+	/**
+	 * TODO: Have to decide later if neighborhoods and submitter should be send even when descendants is none...
+	 * TODO: Also have to decide if to encode descendants using the provided dependants (or inferred new_dependents)
+	 * Currently only passing new_dependants to the creator
+	 */
+	@Override
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
+		int new_dependants = dependants;
+		if (dependants > 0) new_dependants = dependants - 1;
+		
 		if (ASNSyncRequest.DEBUG) System.out.println("Encoding OrgData: "+this);
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(version,false));
@@ -1234,17 +1246,49 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (broadcast_rule != true) enc.addToSequence(new Encoder(broadcast_rule).setASN1Type(DD.TAG_AC15));
 		if (signature != null) enc.addToSequence(new Encoder(signature));
 		if (signature_initiator != null) enc.addToSequence(new Encoder(signature_initiator).setASN1Type(DD.TAG_AC14));
-		if (creator != null) enc.addToSequence(creator.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC0));
 		
-		if (neighborhoods != null) enc.addToSequence(Encoder.getEncoder(neighborhoods, dictionary_GIDs).setASN1Type(DD.TAG_AC3));
-		if (constituents != null) enc.addToSequence(Encoder.getEncoder(constituents, dictionary_GIDs).setASN1Type(DD.TAG_AC4));
-		if (witnesses != null) enc.addToSequence(Encoder.getEncoder(witnesses, dictionary_GIDs).setASN1Type(DD.TAG_AC5));
-		if (motions != null) enc.addToSequence(Encoder.getEncoder(motions, dictionary_GIDs).setASN1Type(DD.TAG_AC6));
-		if (justifications != null) enc.addToSequence(Encoder.getEncoder(justifications, dictionary_GIDs).setASN1Type(DD.TAG_AC7));		
-		if (signatures != null) enc.addToSequence(Encoder.getEncoder(signatures).setASN1Type(DD.TAG_AC8));
-		if (translations != null) enc.addToSequence(Encoder.getEncoder(translations, dictionary_GIDs).setASN1Type(DD.TAG_AC9));
-		if (news != null) enc.addToSequence(Encoder.getEncoder(news, dictionary_GIDs).setASN1Type(DD.TAG_AC10));
-		if (requested_data != null) enc.addToSequence(Encoder.getEncoder(requested_data, dictionary_GIDs).setASN1Type(DD.TAG_AC11));
+		if (dependants != ASNObj.DEPENDANTS_NONE) {
+			if (ASNSyncPayload.STREAMING_SEND_CREATOR_IN_PEER)
+				if (creator != null) enc.addToSequence(creator.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC0));
+		}
+		
+		if (neighborhoods != null) {
+			if (_DEBUG) System.out.println("D_Organization: getEncoder: why? data available in neighborhoods: "+neighborhoods);
+			enc.addToSequence(Encoder.getEncoder(neighborhoods, dictionary_GIDs).setASN1Type(DD.TAG_AC3));
+		}
+		if (constituents != null) {
+			if (_DEBUG) System.out.println("D_Organization: getEncoder: why? data available in constituents: "+constituents);
+			enc.addToSequence(Encoder.getEncoder(constituents, dictionary_GIDs).setASN1Type(DD.TAG_AC4));
+		}
+		if (witnesses != null) {
+			if (_DEBUG) System.out.println("D_Organization: getEncoder: why? data available in witnesses: "+witnesses);
+			enc.addToSequence(Encoder.getEncoder(witnesses, dictionary_GIDs).setASN1Type(DD.TAG_AC5));
+		}
+		if (motions != null) {
+			if (_DEBUG) System.out.println("D_Organization: getEncoder: why? data available in motions: "+motions);
+			enc.addToSequence(Encoder.getEncoder(motions, dictionary_GIDs).setASN1Type(DD.TAG_AC6));
+		}
+		if (justifications != null) {
+			if (_DEBUG) System.out.println("D_Organization: getEncoder: why? data available in justifications: "+justifications);
+			enc.addToSequence(Encoder.getEncoder(justifications, dictionary_GIDs).setASN1Type(DD.TAG_AC7));		
+		}
+		if (signatures != null) {
+			if (_DEBUG) System.out.println("D_Organization: getEncoder: why? data available in signatures: "+signatures);
+			enc.addToSequence(Encoder.getEncoder(signatures).setASN1Type(DD.TAG_AC8));
+		}
+		if (translations != null) {
+			if (_DEBUG) System.out.println("D_Organization: getEncoder: why? data available in translations: "+translations);
+			enc.addToSequence(Encoder.getEncoder(translations, dictionary_GIDs).setASN1Type(DD.TAG_AC9));
+		}
+		if (news != null) {
+			if (_DEBUG) System.out.println("D_Organization: getEncoder: why? data available in news: "+news);
+			enc.addToSequence(Encoder.getEncoder(news, dictionary_GIDs).setASN1Type(DD.TAG_AC10));
+		}
+	
+		if (requested_data != null) {
+			if (_DEBUG) System.out.println("D_Organization: getEncoder: why? data available in requested_data: "+requested_data);
+			enc.addToSequence(Encoder.getEncoder(requested_data, dictionary_GIDs).setASN1Type(DD.TAG_AC11));
+		}
 		// these are aggregated in ASNSyncPayload in "advertised"
 		//if (this.availableHashes != null) enc.addToSequence(availableHashes.getEncoder().setASN1Type(DD.TAG_AC12));
 		

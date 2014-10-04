@@ -607,7 +607,7 @@ public class Server extends util.DDP2P_ServiceThread {
 									prepareLocalDomainsLists(Identity.port);
 								} catch(Exception e) {e.printStackTrace();}
 								
-								data.HandlingMyself_Peer.updateAddress(data.HandlingMyself_Peer.get_myself());
+								data.HandlingMyself_Peer.updateAddress(data.HandlingMyself_Peer.get_myself_with_wait());
 								if (DEBUG) System.out.println("Server:<Thread>run: updateAddress");
 								Application_GUI.ThreadsAccounting_ping("Detected domains");
 							} catch (Exception e) {

@@ -95,7 +95,7 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 	public void save() throws P2PDDSQLException {
 		if(DEBUG)System.out.println("DD_IdentityVerification:save");
 		//Application.warning(_("Got:")+this, _("Identity Verification"));
-		SK sk = Util.getStoredSK(verified.global_constituent_id);
+		SK sk = Util.getStoredSK(verified.getGID());
 		if(sk == null){
 			Application_GUI.warning(__("I do not have the secret key for:")+"\n"+this,
 					__("Identity Verification"));
@@ -104,7 +104,7 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 		}
 		Long oID = this.verified.getOrganizationID();
 		if ( oID <= 0 ) oID = D_Organization.getLIDbyGID(verified.getGID());
-		D_Constituent mine = D_Constituent.getConstByGID_or_GIDH(verified.global_constituent_id, null, true, false, oID);
+		D_Constituent mine = D_Constituent.getConstByGID_or_GIDH(verified.getGID(), null, true, false, oID);
 				//new D_Constituent(verified.global_constituent_id,
 				//verified.global_constituent_id, D_Constituent.EXPAND_NONE);
 		if(mine == null) {
@@ -112,10 +112,10 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 					__("Identity Verification"));
 			return;
 		}
-		if((!mine.global_constituent_id.equals(this.verified.global_constituent_id))||
+		if((!mine.getGID().equals(this.verified.getGID()))||
 				(!mine.global_constituent_id_hash.equals(this.verified.global_constituent_id_hash))) {
 			Application_GUI.warning(__("Inconsistent Global Identifiers:")+
-					"\n GIDs match: "+mine.global_constituent_id.equals(this.verified.global_constituent_id)+
+					"\n GIDs match: "+mine.getGID().equals(this.verified.getGID())+
 				"\n GIDshash =: "+mine.global_constituent_id_hash.equals(this.verified.global_constituent_id_hash)+
 					"\n"+this,
 					__("Identity Verification"));

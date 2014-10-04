@@ -112,11 +112,13 @@ public class IdentityBranch extends IdentityNode{
 				if (DEBUG) System.err.println("No default identity found!");
 				return;
 			}
-			String cID = Util.getString(id.get(0).get(0));
-			String oID = Util.getString(id.get(0).get(1));
+			long _cID = Util.lval(id.get(0).get(0));
+			long _oID = Util.lval(id.get(0).get(1));
 			
-			D_Organization org = D_Organization.getOrgByLID_NoKeep(oID, true);
-			D_Constituent cons = D_Constituent.getConstByLID(cID, true, false);
+			D_Organization org = null;
+			if (_oID > 0) org = D_Organization.getOrgByLID_NoKeep(_oID, true);
+			D_Constituent cons = null;
+			if (_cID > 0) cons = D_Constituent.getConstByLID(_cID, true, false);
 			if (cons != null) {			
 				globalID = cons.getGID(); //(String) id.get(0).get(0);
 				globalOrgID = org.getGID(); //(String) id.get(0).get(1);

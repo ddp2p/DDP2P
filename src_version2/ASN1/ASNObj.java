@@ -24,12 +24,26 @@ import java.util.ArrayList;
 import util.Util;
 
 public abstract class ASNObj{
+	public static final int DEPENDANTS_NONE = 0;
+	public static final int DEPENDANTS_ALL = -1;
 	public abstract Encoder getEncoder();
 	public byte[] encode(){
 		//System.out.println("will encode: " +this);
 		return getEncoder().getBytes();
 	}
 	public abstract Object decode(Decoder dec) throws ASN1DecoderFail;
-	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {Util.printCallPath("getEncoder: impl "+this); return getEncoder();}
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {Util.printCallPath("getEncoder: you need to implement getEncoder(dictionaries) for objects of type: "+this); return getEncoder();}
 	public ASNObj instance() throws CloneNotSupportedException{return (ASNObj) clone();}
+	/**
+	 * 
+	 * @param dictionary_GIDs
+	 * @param dependants : pass 0 for no dependents (ASNObj.DEPENDANTS_NONE)
+	 *    pass -1 for DEPENDANTS_ALL.
+	 *    Any positive number is decremented at each level.
+	 *    
+	 *    Other custom schemas can be defined using remaining negative numbers.
+	 * @return
+	 */
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
+		Util.printCallPath("getEncoder: you need to implement getEncoder(dictionaries, dependants) for objects of type: "+this); return getEncoder(dictionary_GIDs);}
 }

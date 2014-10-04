@@ -1509,7 +1509,7 @@ class PeersRowAction extends DebateDecideAction {
 	   	case Peers.COMMAND_MENU_NEW_MYSELF:
 	   		//
     		try {
-				D_Peer peer_old = HandlingMyself_Peer.get_myself();
+				D_Peer peer_old = HandlingMyself_Peer.get_myself_with_wait();
 				PeerInput pi = PeerInput.getPeerInput(peer_old);
 				pi.incName();
 				//MyselfHandling.createMyPeerID(pi);
@@ -1529,7 +1529,7 @@ class PeersRowAction extends DebateDecideAction {
 	   	case Peers.COMMAND_MENU_REPLICATE_MYSELF:
     		//
     		try {
-				D_Peer peer_old = HandlingMyself_Peer.get_myself();
+				D_Peer peer_old = HandlingMyself_Peer.get_myself_with_wait();
 				PeerInput pi = PeerInput.getPeerInput(peer_old);
 				pi.incName();
 				//MyselfHandling.createMyPeerID(pi);

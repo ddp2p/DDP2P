@@ -1210,7 +1210,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
 		
 		data.D_Constituent wbc = D_Constituent.getEmpty();//new data.D_Constituent();
 		wbc.weight = dialog.weight+"";
-		wbc.global_constituent_id = gcd;
+		wbc._set_GID(gcd);
 		wbc.global_constituent_id_hash = gcdhash;
 		wbc.email = dialog.emailEditor;
 		wbc.external = false;

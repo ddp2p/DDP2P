@@ -47,7 +47,7 @@ class DirectoriesSaverThread extends util.DDP2P_ServiceThread {
 	    	}
     	}
 		if (Application.as != null) {
-			HandlingMyself_Peer.updateAddress(HandlingMyself_Peer.get_myself());
+			HandlingMyself_Peer.updateAddress(HandlingMyself_Peer.get_myself_with_wait());
 			UDPServer.announceMyselfToDirectories();
 		}
 	}

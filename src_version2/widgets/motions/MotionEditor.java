@@ -589,7 +589,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				_sign.motion = getMotion();
 				_sign.choice = getMotion().getDefaultChoice();
 				_sign.motion_ID = getMotion().getLIDstr();
-				_sign.global_motion_ID = getMotion().getGID();
+				_sign.setMotionGID(getMotion().getGID());
 				_sign.justification_ID = null;
 				_sign.constituent_ID = constituent_ID;
 				_sign.global_constituent_ID = constituent_GID;
@@ -1521,7 +1521,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				}
 				
 				D_Vote _signature = vEditor.signature;
-				_signature.global_motion_ID = this.getMotion().getGID();
+				_signature.setMotionGID(this.getMotion().getGID());
 				_signature.motion_ID = Util.getStringID(m_id);
 				_signature.global_constituent_ID = this.getMotion().getConstituentGID();
 				_signature.constituent_ID = this.getMotion().getConstituentLIDstr();

@@ -27,6 +27,7 @@ import hds.ASNSyncRequest;
 import hds.SyncAnswer;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Hashtable;
 
@@ -34,6 +35,7 @@ import util.Util;
 import util.P2PDDSQLException;
 import config.Application_GUI;
 import config.DD;
+import data.D_GIDH;
 import data.D_News;
 import data.D_OrgDistribution;
 import data.D_Organization;
@@ -170,34 +172,39 @@ public class WB_Messages extends ASNObj{
 		if(DEBUG) System.out.println("WB_Messages: getRequestedData: data request content #"+rd.size());
 		
 		for(RequestData r: rd) {
-			for(String gid: r.orgs) {
-				if(DEBUG) System.out.println("WB_Messages: getRequestedData: org gid="+gid);
-				String org_id = Util.getStringID(D_Organization.getLocalOrgID(gid, gid));
+			for(String gid_or_hash: r.orgs) {
+				if(DEBUG) System.out.println("WB_Messages: getRequestedData: org gid="+gid_or_hash);
+				String gid = D_GIDH.getGID(gid_or_hash);
+				String gidh = D_GIDH.getGIDH(gid_or_hash);
+				String org_id = Util.getStringID(D_Organization.getLocalOrgID(gid, gidh));
 
 				if(!OrgHandling.serving(asr, org_id)) continue;
 				
 				if((sa!=null)&&sa.hasOrg(gid)) continue;
 				try {
-					D_Organization o = D_Organization.getOrgByGID_or_GIDhash_NoCreate(gid, null, true, false);
+					D_Organization o = D_Organization.getOrgByGID_or_GIDhash_NoCreate(gid, gidh, true, false);
 					if ( (o == null)  || ! o.readyToSend()) continue;
 					result.orgs.add(o);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got org");
 				} catch (Exception e) {
-					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested org: "+gid);
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested org: "+gid_or_hash);
 					//e.printStackTrace();
 				}
 			}
-			for (String gid: r.cons.keySet()) {
-				if (DEBUG) System.out.println("WB_Messages: getRequestedData: cons gid="+gid);
+			for (String gid_or_hash: r.cons.keySet()) {
+				if (DEBUG) System.out.println("WB_Messages: getRequestedData: cons gid="+gid_or_hash);
 				// TODO if gid is sa, then skip to avoid duplicating work 
-				if ((sa != null) && sa.hasConstituent(gid, r.cons.get(gid))) continue;
+				String gid = D_GIDH.getGID(gid_or_hash);
+				String gidh = D_GIDH.getGIDH(gid_or_hash);
+				if ((sa != null) && (gid != null) && sa.hasConstituent(gid, r.cons.get(gid))) continue;
+				if ((sa != null) && (gidh != null) && sa.hasConstituent(gidh, r.cons.get(gidh))) continue;
 				try {
-					D_Constituent c = D_Constituent.getConstByGID_or_GIDH(gid, gid, true, false);
+					D_Constituent c = D_Constituent.getConstByGID_or_GIDH(gid, gidh, true, false);
 					if (!c.readyToSend()) continue;
 					if (!OrgHandling.serving(asr, c.getOrganizationIDStr())) continue;
 					result.cons.add(c);
 				} catch(Exception e) {
-					if (DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested const: "+gid);
+					if (DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested const: "+gid_or_hash);
 					//e.printStackTrace();
 				}
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: got cons");
@@ -216,6 +223,7 @@ public class WB_Messages extends ASNObj{
 				}
 			}
 			for (String gid: r.witn) {
+				//boolean DEBUG = true;
 				if (DEBUG) System.out.println("WB_Messages: getRequestedData: witn gid="+gid);
 				if ((sa != null) && sa.hasWitness(gid)) continue;
 				D_Witness w = null;
@@ -223,7 +231,7 @@ public class WB_Messages extends ASNObj{
 					w = new D_Witness(gid);
 					if(!OrgHandling.serving(asr, w.organization_ID)) continue;
 					result.witn.add(w);
-					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got witn");
+					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got witn: "+w);
 				}
 				catch (data.D_NoDataException e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested witn: "+gid);
@@ -311,23 +319,26 @@ public class WB_Messages extends ASNObj{
 	}
 	private static void fillPeers(Hashtable<String, String> request,
 			ArrayList<D_Peer> result, SyncAnswer sa) {
-		for(String gid: request.keySet()) {
-			if(DEBUG) System.out.println("WB_Messages: fillPeers: peer gid="+gid);
+		for (String gid_or_hash: request.keySet()) {
+			if(DEBUG) System.out.println("WB_Messages: fillPeers: peer gid="+gid_or_hash);
+			String gid = D_GIDH.getGID(gid_or_hash);
+			String gidh = D_GIDH.getGIDH(gid_or_hash);
 			// TODO if gid is sa, then skip to avoid duplicating work 
-			if ((sa != null) && sa.hasPeer(gid, request.get(gid))) continue;
+			if ((sa != null) && (gid != null) && sa.hasPeer(gid, request.get(gid))) continue;
+			if ((sa != null) && (gidh != null) && sa.hasPeer(gidh, request.get(gidh))) continue;
 			try{ 
-				D_Peer p = D_Peer.getPeerByGID_or_GIDhash(gid, null, true, false, false, null);
+				D_Peer p = D_Peer.getPeerByGID_or_GIDhash(gid, gidh, true, false, false, null);
 				if ((p == null) || !p.readyToSend()) continue;
 				String localDate = p.getCreationDate();
 				if (localDate == null) 
 						localDate = DD.EMPTYDATE;
-				if (request.get(gid).compareTo(localDate) > 0) {
-					if(_DEBUG) System.out.println("WB_Messages: fillPeers: I don't have requested peer date: "+gid+", "+request.get(gid));
+				if (request.get(gid_or_hash).compareTo(localDate) > 0) {
+					if(_DEBUG) System.out.println("WB_Messages: fillPeers: I don't have requested peer date: "+gid_or_hash+", "+request.get(gid_or_hash));
 					continue;
 				}
 				result.add(p);
 			} catch (Exception e) {
-				if (_DEBUG) System.out.println("WB_Messages: fillPeers: I don't have requested peer: "+gid);
+				if (_DEBUG) System.out.println("WB_Messages: fillPeers: I don't have requested peer: "+gid_or_hash);
 				e.printStackTrace();
 			}
 			if (DEBUG) System.out.println("WB_Messages: fillPeers: got peer");
@@ -352,6 +363,8 @@ public class WB_Messages extends ASNObj{
 		boolean default_const_blocked = false;
 		RequestData obtained;
 		RequestData rq, sol_rq, new_rq; 
+		Calendar arrival_time = Util.CalendargetInstance();//.getGeneralizedTime();
+		
 		if (DEBUG) System.out.println("WB_Messages: store: start");
 		if (r == null) {
 			if(DEBUG) System.out.println("WB_Messages: store: exit null requested");
@@ -448,7 +461,7 @@ public class WB_Messages extends ASNObj{
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
 			
-			D_Constituent _c = D_Constituent.integrateRemote(c, peer, sol_rq, new_rq, default_const_blocked); //c.store(sol_rq, new_rq);
+			D_Constituent _c = D_Constituent.integrateRemote(c, peer, sol_rq, new_rq, default_const_blocked, arrival_time); //c.store(sol_rq, new_rq);
 			if (_c == null) {
 				if (_DEBUG) System.out.println("WB_Messages: store: failed to handled const: "+c+" "+dbg_msg);
 				continue;
@@ -459,7 +472,7 @@ public class WB_Messages extends ASNObj{
 			
 			obtained = obtained_sr.get(c.global_organization_ID);
 			if(obtained==null) obtained = new RequestData();
-			obtained.cons.put(c.global_constituent_id, DD.EMPTYDATE);
+			obtained.cons.put(c.getGID(), DD.EMPTYDATE);
 			obtained.cons.put(c.global_constituent_id_hash, DD.EMPTYDATE);
 			obtained_sr.put(c.global_organization_ID, obtained);
 			orgs.add(c.global_organization_ID);

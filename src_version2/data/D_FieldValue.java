@@ -169,6 +169,7 @@ public class D_FieldValue extends ASNObj{
 			//c.postalAddress[a].oid = new int[0];
 			if(DEBUG) System.out.println("D_FieldValue:getFieldValues: New Constituent address = "+result[a]);		
 		}
+		Arrays.sort(result, new FVComparator()); 
 		return result;
 	}
 	static D_FieldValue[] getFieldValues(long c_ID) throws P2PDDSQLException {
@@ -199,6 +200,15 @@ public class D_FieldValue extends ASNObj{
 		if(DEBUG) System.out.println("D_FieldValue:store: end result="+id);
 		return id;
 	}
+	/**
+	 * Compares the values of extra fields.
+	 * Sorts a2 (assuming that is is not yet sorted).
+	 * Does not sort a1 which is assumed sorted (? have to check that this is true)
+	 * based on FVComparator
+	 * @param a1 (local)
+	 * @param a2 (remote)
+	 * @return
+	 */
 	public static boolean different(D_FieldValue[] a1,
 			D_FieldValue[] a2) {
 		if ( (a1 == null) && (a2 == null) ) return false;
@@ -215,7 +225,15 @@ public class D_FieldValue extends ASNObj{
 				return o1.field_extra_GID.compareTo(o2.field_extra_GID);
 			}}); 
 		*/
-		Arrays.sort(a2, new Comparator<D_FieldValue>(){
+		//Arrays.sort(a1, new FVComparator()); 
+		Arrays.sort(a2, new FVComparator()); 
+		
+		for (int k = 0; k < a1.length; k ++) {
+			if (different(a1[k], a2[k])) return true;
+		}
+		return false;
+	}
+	static class FVComparator implements Comparator<D_FieldValue> {
 
 			@Override
 			public int compare(D_FieldValue o1, D_FieldValue o2) {
@@ -223,13 +241,8 @@ public class D_FieldValue extends ASNObj{
 				if (o1.field_extra_GID == null && o2.field_extra_GID != null) return -1;
 				if (o1.field_extra_GID != null && o2.field_extra_GID == null) return 1;
 				return o1.field_extra_GID.compareTo(o2.field_extra_GID);
-			}}); 
-		
-		for (int k = 0; k <= a1.length; k ++) {
-			if (different(a1[k], a2[k])) return true;
-		}
-		return false;
-	}
+			}
+	 }
 	public static boolean different(D_FieldValue f1,
 			D_FieldValue f2) {
 		if (f1 == null && f2 == null) return false;

@@ -194,7 +194,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		this.temporary = Util.stringInt2bool(o.get(table.motion.M_TEMPORARY),false);
 		this.broadcasted = Util.stringInt2bool(o.get(table.motion.M_BROADCASTED), D_Organization.DEFAULT_BROADCASTED_ORG_ITSELF);
 		
-		global_motionID = Util.getString(o.get(table.motion.M_MOTION_GID));
+		_setGID(Util.getString(o.get(table.motion.M_MOTION_GID)));
 		global_constituent_ID = D_Constituent.getGIDFromLID(constituent_ID); //Util.getString(o.get(table.motion.M_FIELDS+0));
 		global_enhanced_motionID = Util.getString(o.get(table.motion.M_FIELDS+0)); //+1
 		global_organization_ID = D_Organization.getGIDbyLIDstr(organization_ID); //Util.getString(o.get(table.motion.M_FIELDS+2));
@@ -843,11 +843,25 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public static long getLIDFromGID(String GID2, Long oID) {
 		if (GID2 == null) return -1;
 		D_Motion c = D_Motion.getMotiByGID(GID2, true, false, oID);
+		if (c == null) return -1;
 		return c.getLID();
 	}
 	public static String getLIDstrFromGID(String GID2, Long oID) {
 		if (GID2 == null) return null;
 		D_Motion c = D_Motion.getMotiByGID(GID2, true, false, oID);
+		if (c == null) return null;
+		return c.getLIDstr();
+	}
+	/**
+	 * Inserts a temporary one if needed
+	 * @param GID2
+	 * @param oID
+	 * @param __peer_first_sending_this
+	 * @return
+	 */
+	public static String getLIDstrFromGID_or_Tmp(String GID2, Long oID, D_Peer __peer_first_sending_this) {
+		if (GID2 == null) return null;
+		D_Motion c = D_Motion.getMotiByGID(GID2, true, true, false, __peer_first_sending_this, oID);
 		return c.getLIDstr();
 	}
 	public static String getLIDstrFromGID_or_GIDH(
@@ -970,16 +984,16 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		
 	public Encoder getSignableEncoder() {
 		Encoder enc = new Encoder().initSequence();
-		if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
-		if(global_motionID!=null)enc.addToSequence(new Encoder(global_motionID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
-		if(motion_title!=null)enc.addToSequence(motion_title.getEncoder().setASN1Type(DD.TAG_AC2));
-		if(motion_text!=null)enc.addToSequence(motion_text.getEncoder().setASN1Type(DD.TAG_AC3));
-		if(category!=null)enc.addToSequence(new Encoder(category).setASN1Type(DD.TAG_AC11));
-		if(global_constituent_ID!=null)enc.addToSequence(new Encoder(global_constituent_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC5));
-		if(global_enhanced_motionID!=null)enc.addToSequence(new Encoder(global_enhanced_motionID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
-		if(global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC7));
-		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC8));
-		if(choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
+		if (hash_alg != null) enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
+		if (getGID() != null) enc.addToSequence(new Encoder(getGID() ,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
+		if (motion_title != null) enc.addToSequence(motion_title.getEncoder().setASN1Type(DD.TAG_AC2));
+		if (motion_text != null) enc.addToSequence(motion_text.getEncoder().setASN1Type(DD.TAG_AC3));
+		if (category!=null)enc.addToSequence(new Encoder(category).setASN1Type(DD.TAG_AC11));
+		if (global_constituent_ID!=null)enc.addToSequence(new Encoder(global_constituent_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC5));
+		if (global_enhanced_motionID!=null)enc.addToSequence(new Encoder(global_enhanced_motionID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
+		if (global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC7));
+		if (creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC8));
+		if (choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC9));
 		//if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC4));
 		return enc;
@@ -1009,11 +1023,18 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 * parameter used for dictionaries
 	 */
 	@Override
-	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) { 
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {
+		return getEncoder(dictionary_GIDs, 0);
+	}
+	@Override
+	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
+		int new_dependants = dependants;
+		if (dependants > 0) new_dependants = dependants - 1;
+
 		Encoder enc = new Encoder().initSequence();
 		if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
-		if(global_motionID!=null) {
-			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_motionID);
+		if(getGID()!=null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getGID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
 		}
 		if(motion_title!=null)enc.addToSequence(motion_title.getEncoder().setASN1Type(DD.TAG_AC2));
@@ -1026,18 +1047,27 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_enhanced_motionID);
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC5));
 		}
+		/**
+		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
+		 * available at the destination from enclosing fields, and will be filled out at explansion
+		 * by ASNSyncPayload.expand at decoding.
+		 * However, it is not that damaging when using compression, and can be stored without much overhead.
+		 * So it is left here for now.  Test if you comment out!
+		 */
 		if (global_organization_ID != null) {
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_organization_ID);
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
 		}
-		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC7));
-		if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC8));
-		if(choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC9));
+		if (creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC7));
+		if (signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC8));
+		if (choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC9));
 		
-		if(constituent!=null)enc.addToSequence(constituent.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC10));
-		if(enhanced!=null)enc.addToSequence(enhanced.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC11));
-		if(organization!=null)enc.addToSequence(organization.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC12));
-		if(category!=null)enc.addToSequence(new Encoder(category).setASN1Type(DD.TAG_AC13));
+		if (dependants != ASNObj.DEPENDANTS_NONE) {
+			if (constituent!=null)enc.addToSequence(constituent.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC10));
+			if (enhanced!=null)enc.addToSequence(enhanced.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC11));
+			if (organization!=null)enc.addToSequence(organization.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC12));
+		}
+		if (category != null) enc.addToSequence(new Encoder(category).setASN1Type(DD.TAG_AC13));
 		
 		enc.setASN1Type(getASN1Type());
 		return enc;
@@ -1050,7 +1080,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public D_Motion decode(Decoder decoder) throws ASN1DecoderFail {
 		Decoder dec = decoder.getContent();
 		if(dec.getTypeByte()==DD.TAG_AC0)hash_alg = dec.getFirstObject(true).getString(DD.TAG_AC0);
-		if(dec.getTypeByte()==DD.TAG_AC1)global_motionID = dec.getFirstObject(true).getString(DD.TAG_AC1);
+		if(dec.getTypeByte()==DD.TAG_AC1) _setGID(dec.getFirstObject(true).getString(DD.TAG_AC1));
 		if(dec.getTypeByte()==DD.TAG_AC2)motion_title = new D_Document_Title().decode(dec.getFirstObject(true));	
 		//System.out.println("D_Motion:decode: title="+motion_title);
 		if(dec.getTypeByte()==DD.TAG_AC3)motion_text = new D_Document().decode(dec.getFirstObject(true));	
@@ -1114,8 +1144,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if(DEBUG) System.out.println("D_Motion:verifySignature: start");
 		String pk_ID = this.getConstituentGID();//.submitter_global_ID;
 		
-		if ((pk_ID == null) && (this.getConstituent()!=null) && (this.getConstituent().global_constituent_id!=null))
-			pk_ID = this.getConstituent().global_constituent_id;
+		if ((pk_ID == null) && (this.getConstituent()!=null) && (this.getConstituent().getGID()!=null))
+			pk_ID = this.getConstituent().getGID();
 		if (pk_ID == null) return false;
 		
 		String newGID = make_ID();
@@ -1294,8 +1324,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		this.creation_date = r.creation_date;
 		this.signature = r.signature;
 		
-		if (! Util.equalStrings_null_or_not(this.global_motionID, r.global_motionID)) {
-			this.global_motionID = r.global_motionID;
+		if (! Util.equalStrings_null_or_not(this.getGID(), r.getGID())) {
+			this._setGID(r.getGID());
 			this.setLIDstr(null);
 		}
 		if (! Util.equalStrings_null_or_not(this.global_organization_ID, r.global_organization_ID)) {
@@ -1333,7 +1363,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			}
 			//this.constituent = r.constituent;
 		}
-		if (sol_rq != null) sol_rq.moti.add(this.global_motionID);
+		if (sol_rq != null) sol_rq.moti.add(this.getGID());
 		this.dirty_main = true;
 		if (this.peer_source_ID <= 0 && __peer != null)
 			this.peer_source_ID = __peer.getLID_keep_force();
@@ -1579,9 +1609,20 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public String getGID() {
 		return global_motionID;
 	}
-	public String setGID(String global_motionID) {
+	public void _setGID(String global_motion_ID) {
+		try{
+			int id = Integer.parseInt(global_motion_ID);
+			throw new RuntimeException("Impossible happened: Packing already packed:" + global_motion_ID);
+			//return id;
+		}catch(NumberFormatException e){}
+		catch(Exception e) {
+			Util.printCallPath(e.getLocalizedMessage());
+		}
+		this.global_motionID = global_motion_ID;
+	}
+	public String setGID(String _global_motionID) {
 		boolean loaded_in_cache = this.isLoaded();
-		this.global_motionID = global_motionID;
+		_setGID(_global_motionID);
 		this.dirty_main = true;
 		Long oID = this.getOrganizationLID();
 		if (loaded_in_cache) {
@@ -1590,7 +1631,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			if (this.getGIDH() != null)
 				D_Motion_Node.putConstByGIDH(this.getGIDH(), oID, this); //.loaded_const_By_GIDhash.put(this.getGIDH(), this);
 		}
-		return global_motionID;
+		return _global_motionID;
 	}
 	public boolean isLoaded() {
 		String GIDH, GID;

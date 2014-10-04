@@ -36,6 +36,7 @@ import util.P2PDDSQLException;
 import util.Util;
 import widgets.components.DDLanguageSelector;
 
+@SuppressWarnings("serial")
 public class StatusBar extends JPanel implements OrgListener, MotionsListener, MouseListener, PeerListener, ConstituentListener, ActionListener{
 	GUIStatusHistory status;
 	JLabel peer_me;
