@@ -29,6 +29,7 @@ do
  cp $a/*.gif $dest/$a/
  cp $a/*.png $dest/$a/
  cp $a/*.jpg $dest/$a/
+ cp $a/*.ico $dest/$a/
 done
 
 for a in plugins/chatApp/plugin /plugins/chatApp/chatApp
