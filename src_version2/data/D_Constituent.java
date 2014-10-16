@@ -540,13 +540,19 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 					return result;
 				}
 				
-				loaded_consts.remove(removed);
+				if (loaded_consts.inListProbably(removed)) {
+					try {
+						loaded_consts.remove(removed);
+						if (removed.component_node.message != null) current_space -= removed.component_node.message.length;	
+						if (DEBUG) System.out.println("D_Constituent: dropLoaded: exit with force="+force+" result="+result);
+					} catch (Exception e) {
+						if (_DEBUG) e.printStackTrace();
+					}
+				}
 				if (removed.getLIDstr() != null) loaded_const_By_LocalID.remove(new Long(removed.getLID())); 
 				if (removed.getGID() != null) D_Constituent_Node.remConstByGID(removed.getGID(), removed.getLID()); //loaded_const_By_GID.remove(removed.getGID());
 				if (removed.getGIDH() != null) D_Constituent_Node.remConstByGIDH(removed.getGIDH(), removed.getLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 				if (DEBUG) System.out.println("D_Constituent: drop_loaded: remove GIDH="+removed.getGIDH());
-				if (removed.component_node.message != null) current_space -= removed.component_node.message.length;	
-				if (DEBUG) System.out.println("D_Constituent: dropLoaded: exit with force="+force+" result="+result);
 				return result;
 			}
 		}
@@ -1847,7 +1853,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public String getNameFull() {
 		if((this.forename==null)||(this.forename.trim().length()==0)) return surname;
 		if((this.surname==null)||(this.surname.trim().length()==0)) return surname;
-		return this.forename+", "+this.surname;
+		return this.surname+", "+ this.forename;
 	}
 	public String getNameOrMy() {
 		String n = mydata.name;

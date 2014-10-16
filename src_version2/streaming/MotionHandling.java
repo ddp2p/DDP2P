@@ -50,14 +50,38 @@ public class MotionHandling {
 			motions[k].setOrganizationGID(orgGID);
 			motions[k].setOrganizationLIDstr(org_local_ID);
 			// motions[k].store(sol_rq, new_rq);
-			D_Motion m = D_Motion.getMotiByGID(motions[k].getGID(), true, true, true, __peer, Util.lval(org_local_ID));
+			D_Motion m = D_Motion.getMotiByGID(motions[k].getGID(), true, true, true, __peer, Util.lval(org_local_ID), null);
 			m.loadRemote(motions[k], sol_rq, new_rq, __peer);
 			m.storeRequest();
 			m.releaseReference();
 		}
 		return motions.length>0;
 	}
+	private static final String sql_motions = //_nofi=
+			"SELECT m."+table.motion.arrival_date+", m."+table.motion.organization_ID//", w."+table.witness.source_ID+
+			+" FROM "+table.motion.TNAME+" AS m "
+			+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=m."+table.motion.constituent_ID+")"
+			+" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"
+			+" WHERE " +
+			//" m."+table.motion.signature+" IS NOT NULL "+
+			" m."+table.motion.temporary+" = '0' "+
+			" AND m."+table.motion.broadcasted+" <> '0' "+
+			" AND o."+table.organization.broadcasted+" <> '0' "+
+			" AND c."+table.constituent.broadcasted+" <> '0' "+
+					" AND m."+table.motion.arrival_date+">? ";
 	
+//	private static final String sql_motions_ofi =
+//			"SELECT m."+table.motion.arrival_date+", m."+table.motion.organization_ID//", w."+table.witness.source_ID+
+//			+" FROM "+table.motion.TNAME+" AS m "
+//			+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=m."+table.motion.constituent_ID+")"
+//			+" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"
+//			//+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=w."+table.witness.source_ID+")"
+//			+" WHERE " +
+//			" m."+table.motion.signature+" IS NOT NULL "+
+//			" AND m."+table.motion.broadcasted+" <> '0' "+
+//			" AND o."+table.organization.broadcasted+" <> '0' "+
+//			" AND c."+table.constituent.broadcasted+" <> '0' "+
+//					" AND m."+table.motion.arrival_date+">? ";
 /**
  * Return the date allowing approx LIMIT=5 witness messages
  * @param last_sync_date
@@ -73,18 +97,8 @@ public class MotionHandling {
 		if(DEBUG) out.println("MotionHandling:getNextMotionDate: start: between: "+last_sync_date+" : "+_maxDate);
 		ArrayList<ArrayList<Object>> w;
 		String[] params;
-		if(ofi==null){
-			String sql=
-				"SELECT m."+table.motion.arrival_date+", m."+table.motion.organization_ID//", w."+table.witness.source_ID+
-				+" FROM "+table.motion.TNAME+" AS m "
-				+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=m."+table.motion.constituent_ID+")"
-				+" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"
-				+" WHERE " +
-				" m."+table.motion.signature+" IS NOT NULL "+
-				" AND m."+table.motion.broadcasted+" <> '0' "+
-				" AND o."+table.organization.broadcasted+" <> '0' "+
-				" AND c."+table.constituent.broadcasted+" <> '0' "+
-						" AND m."+table.motion.arrival_date+">? " +
+		if (ofi == null) {
+			String sql = sql_motions +
 				((_maxDate!=null)?" AND m."+table.motion.arrival_date+"<=? ":"")
 				+" ORDER BY m."+table.motion.arrival_date
 						+" LIMIT "+(1+limitMotionLow)+
@@ -98,18 +112,7 @@ public class MotionHandling {
 			}
 			
 		}else{
-			String sql=
-				"SELECT m."+table.motion.arrival_date+", m."+table.motion.organization_ID//", w."+table.witness.source_ID+
-				+" FROM "+table.motion.TNAME+" AS m "
-				+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=m."+table.motion.constituent_ID+")"
-				+" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"
-				//+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=w."+table.witness.source_ID+")"
-				+" WHERE " +
-				" m."+table.motion.signature+" IS NOT NULL "+
-				" AND m."+table.motion.broadcasted+" <> '0' "+
-				" AND o."+table.organization.broadcasted+" <> '0' "+
-				" AND c."+table.constituent.broadcasted+" <> '0' "+
-						" AND m."+table.motion.arrival_date+">? " +
+			String sql = sql_motions +
 				((_maxDate!=null)?" AND m."+table.motion.arrival_date+"<=? ":"")
 				+" AND m."+table.motion.organization_ID+"=? "
 				+" ORDER BY m."+table.motion.arrival_date
@@ -131,6 +134,25 @@ public class MotionHandling {
 		return _maxDate;
 	}
 
+	private static final String sql_motion_data=
+			"SELECT "+
+					//Util.setDatabaseAlias(table.motion.fields,"m")+
+					"m."+table.motion.motion_ID+
+//			", c."+table.constituent.global_constituent_ID+
+//			", e."+table.motion.global_motion_ID+
+//			", o."+table.organization.global_organization_ID+
+			" FROM "+table.motion.TNAME+" AS m "+
+			" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=m."+table.motion.constituent_ID+")"+
+			//" LEFT JOIN "+table.motion.TNAME+" AS e ON(e."+table.motion.motion_ID+"=m."+table.motion.enhances_ID+")"+
+			" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
+				" WHERE " +
+				//" m."+table.motion.signature+" IS NOT NULL "+
+				" m."+table.motion.temporary+" == '0' "+
+				" AND m."+table.motion.broadcasted+" <> '0' "+
+				" AND o."+table.organization.broadcasted+" <> '0' "+
+				" AND c."+table.constituent.broadcasted+" <> '0' "+
+				" AND m."+table.motion.arrival_date+">? ";
+	
 	public static D_Motion[] getMotionData(ASNSyncRequest asr,
 			String last_sync_date, String org_gid, String org_id,
 			String[] __maxDate) throws P2PDDSQLException {
@@ -141,43 +163,30 @@ public class MotionHandling {
 		ArrayList<ArrayList<Object>> w;
 		String[] params;
 		
-		String sql=
-			"SELECT "+Util.setDatabaseAlias(table.motion.fields,"m")+
-			", c."+table.constituent.global_constituent_ID+
-			", e."+table.motion.global_motion_ID+
-			", o."+table.organization.global_organization_ID+
-			" FROM "+table.motion.TNAME+" AS m "+
-			" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=m."+table.motion.constituent_ID+")"+
-			" LEFT JOIN "+table.motion.TNAME+" AS e ON(e."+table.motion.motion_ID+"=m."+table.motion.enhances_ID+")"+
-			" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
-				" WHERE " +
-				" m."+table.motion.signature+" IS NOT NULL "+
-				" AND m."+table.motion.broadcasted+" <> '0' "+
-				" AND o."+table.organization.broadcasted+" <> '0' "+
-				" AND c."+table.constituent.broadcasted+" <> '0' "+
-				" AND m."+table.motion.arrival_date+">? " +
+		String sql= sql_motion_data +
 				((_maxDate!=null)?" AND m."+table.motion.arrival_date+"<=? ":"")
 				+" AND m."+table.motion.organization_ID+"=? "
 				+" ORDER BY m."+table.motion.arrival_date
 				+" LIMIT "+BIG_LIMIT
 						+";";
 		
-		if(_maxDate==null) params = new String[]{last_sync_date, org_id};
+		if (_maxDate == null) params = new String[]{last_sync_date, org_id};
 		else params = new String[]{last_sync_date, _maxDate, org_id};
 		w = Application.db.select(sql, params, DEBUG);
 
-		if(w.size()>0) {
+		if (w.size() > 0) {
 			result = new D_Motion[w.size()];
-			for(int k=0; k<w.size(); k++) {
+			for (int k = 0; k < w.size(); k++) {
 				ArrayList<Object> s = w.get(k);
-				result[k] = D_Motion.getMotiByLID(Util.getString(s.get(table.motion.M_MOTION_ID)), true, false); //new D_Motion(s);
+				//result[k] = D_Motion.getMotiByLID(Util.getString(s.get(table.motion.M_MOTION_ID)), true, false); //new D_Motion(s);
+				result[k] = D_Motion.getMotiByLID(Util.getString(s.get(0)), true, false); //new D_Motion(s);
 			}
 		}
 		
 		if(DEBUG) out.println("MotionHandling:getMotionData: found#= "+((result!=null)?result.length:"null"));
 		return result;
 	}
-	static String sql_get_hashes=
+	private static final String sql_get_hashes=
 		"SELECT m."+table.motion.global_motion_ID+
 		" FROM "+table.motion.TNAME+" AS m "+
 		" JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=m."+table.motion.constituent_ID+")"+
@@ -191,7 +200,8 @@ public class MotionHandling {
 			//" AND o."+table.organization.broadcasted+" <> '0' "+
 			" AND c."+table.constituent.broadcasted+" <> '0' "+
 			" AND m."+table.motion.broadcasted+" <> '0' "+
-			" AND m."+table.motion.signature+" IS NOT NULL "+
+			//" AND m."+table.motion.signature+" IS NOT NULL "+
+			" AND m."+table.motion.temporary+" == '0' "+
 			" AND m."+table.motion.global_motion_ID+" IS NOT NULL "+
 			" ORDER BY m."+table.motion.arrival_date
 		;

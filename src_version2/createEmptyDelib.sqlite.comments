@@ -475,6 +475,7 @@ CREATE TABLE justification ( # justifications -> justification
 	creation_date DATE, # creation_date -> date
 	arrival_date TIMESTAMP,
 	temporary INTEGER DEFAULT (0),
+	hidden INTEGER DEFAULT (0),
 	blocked INTEGER DEFAULT (0),
 	requested INTEGER DEFAULT (0),
 	broadcasted INTEGER DEFAULT (1),
@@ -672,7 +673,7 @@ CREATE TABLE "news" (
     "constituent_ID" INTEGER, # constituentID -> constituent_ID
     "organization_ID" INTEGER, # organizationID -> organization_ID
     "motion_ID" INTEGER, # motionID -> motion_ID
-    # "justification_ID" INTEGER, # justificationID -> justification_ID
+    "justification_ID" INTEGER, # justificationID -> justification_ID
     "creation_date" DATE,
     "arrival_date" TIMESTAMP,
     "news" BLOB,

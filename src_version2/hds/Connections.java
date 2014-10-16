@@ -1416,7 +1416,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 					dami.remote_GIDhash, type, s_addr_ip, peer_key, now,
 					p_c,
 					DEBUG);
-			if (_DEBUG) Util.printPeerContacts("Connections: registerIncomingDirectoryAnswer: after:"); 
+			if (DEBUG) Util.printPeerContacts("Connections: registerIncomingDirectoryAnswer: after:"); 
 			if (DEBUG) System.out.println("Connections: registerIncomingDirectoryAnswer: set in = "+peer_key);
 		
 			Connection_Peer _pc[] = new Connection_Peer[1];

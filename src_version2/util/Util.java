@@ -65,6 +65,7 @@ import config.Application;
 import config.Application_GUI;
 import config.DD;
 import ciphersuits.Cipher;
+import ciphersuits.ECDSA_Signature;
 import ciphersuits.PK;
 import ciphersuits.SK;
 import data.D_Peer;
@@ -812,17 +813,28 @@ public class Util {
 	public static boolean verifySign(byte[] message, PK senderPK, byte[] signature) {
 		//boolean DEBUG = true;
 		boolean result;
-		if(DEBUG)System.err.println("Util: verifySign: start ");
-		if (senderPK==null){
+		if (DEBUG) System.err.println("Util: verifySign: start ");
+		if (senderPK == null){
 			System.err.println("Util: verifySign: null PK ");
 			Util.printCallPath("verifying");
 			return false;
 		}
-		try{
-			if(DEBUG)System.err.println("Util: verifySign: msg["+message.length+"]="+Util.byteToHexDump(message, ":")+"   \n"+Util.getGID_as_Hash(message));
-			if(DEBUG)System.err.println("Util: verifySign: sign["+signature.length+"]="+Util.byteToHexDump(signature, ":")+"   \n"+Util.getGID_as_Hash(signature));
+		try {
+			//if(DEBUG)System.err.println("Util: verifySign: msg["+message.length+"]="+Util.byteToHexDump(message, ":")+"   \n"+Util.getGID_as_Hash(message));
+			//if(DEBUG)System.err.println("Util: verifySign: sign["+signature.length+"]="+Util.byteToHexDump(signature, ":")+"   \n"+Util.getGID_as_Hash(signature));
+
+			if(DEBUG)System.out.println("Util: verifySign: v: sign="+Util.byteToHex(signature)+"\n hash="+Util.byteToHex(Util.simple_hash(signature, Cipher.MD5)));
+			if(DEBUG)System.out.println("Util: verifySign: v: msg="+Util.byteToHex(message)+"\n hash="+Util.byteToHex(Util.simple_hash(message, Cipher.MD5)));
+			if(DEBUG)System.out.println("Util: verifySign: v: pk="+senderPK);
 			result = senderPK.verify_unpad_hash(signature, message);
-		}catch(Exception e){
+			ECDSA_Signature sg = null; 
+			try {
+				if (DEBUG) sg = new ECDSA_Signature(signature);
+			} catch (ASN1DecoderFail e) {
+//				e.printStackTrace();
+			}
+			if(DEBUG)System.out.println("Util: verifySign: s="+sg+"\nv="+result);
+		}catch(Exception e) {
 			//if(DEBUG)
 				e.printStackTrace();
 			return false;
@@ -869,15 +881,15 @@ public class Util {
 	 */
 	public static byte[] sign(byte[] msg, SK key) {
 		if(DEBUG) System.out.println("Util:sign "+Util.byteToHexDump(msg));
-		if(key==null){
+		if (key == null) {
 			System.err.println("Util:sig:signing with empty key");
 			Util.printCallPath("Empty key");
 			return new byte[0];
 		}
 		//if(_DEBUG) System.out.println("Util:sign: msg["+msg.length+"]="+Util.byteToHexDump(msg));
-		if(DEBUG)System.err.println("Util: sign: msg["+msg.length+"]="+Util.byteToHexDump(msg, ":")+"   \n"+Util.getGID_as_Hash(msg));
+		if (DEBUG) System.err.println("Util: sign: msg["+msg.length+"]="+Util.byteToHexDump(msg, ":")+"   \n"+Util.getGID_as_Hash(msg));
 		byte[] signature = key.sign_pad_hash(msg);
-		if(DEBUG)System.err.println("Util: sign: sign["+signature.length+"]="+Util.byteToHexDump(signature, ":")+"   \n"+Util.getGID_as_Hash(signature));
+		if (DEBUG) System.err.println("Util: sign: sign["+signature.length+"]="+Util.byteToHexDump(signature, ":")+"   \n"+Util.getGID_as_Hash(signature));
 		return signature; 
 	}
 

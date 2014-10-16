@@ -166,15 +166,15 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 				getTableHeader().getColumnModel().getColumn(col_index).setHeaderRenderer(rend);
 		}
 		
-    	try{
-    		if (Identity.getCurrentIdentity().identity_id!=null) {
-    			//long id = new Integer(Identity.current.identity_id).longValue();
-    			long orgID = Identity.getDefaultOrgID();
-    			this.setCurrent(orgID);
-    			int row =this.getSelectedRow();
-     			this.fireListener(row, A_NON_FORCE_COL);
-    		}
-    	}catch(Exception e){e.printStackTrace();}
+//    	try{
+//    		if (Identity.getCurrentIdentity().identity_id!=null) {
+//    			//long id = new Integer(Identity.current.identity_id).longValue();
+//    			long orgID = Identity.getDefaultOrgID();
+//    			this.setCurrent(orgID);
+//    			int row =this.getSelectedRow();
+//     			this.fireListener(row, A_NON_FORCE_COL);
+//    		}
+//    	}catch(Exception e){e.printStackTrace();}
 		if(DEBUG) System.out.println("Motions: init: End");
 	}
 	public JScrollPane getScrollPane(){
@@ -380,7 +380,7 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
     	Point point = evt.getPoint();
         row = this.rowAtPoint(point);
         col = this.columnAtPoint(point);
-        if ((row < 0) || (col <0 )) return;
+        if ((row < 0) || (col < 0 )) return;
         
     	MotionsModel model = (MotionsModel)getModel();
  		int model_row = convertRowIndexToModel(row);

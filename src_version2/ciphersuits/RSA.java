@@ -603,6 +603,6 @@ public class RSA extends ciphersuits.Cipher {
 	}
 	@Override
 	public String getType() {
-		return Cipher.RSA+this.cipherTypeSeparator+this.hash_alg;
+		return Cipher.RSA+Cipher.cipherTypeSeparator+this.hash_alg;
 	}
 }

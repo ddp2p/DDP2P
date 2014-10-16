@@ -53,6 +53,7 @@ import widgets.components.GUI_Swing;
 import widgets.components.TranslatedLabel;
 import widgets.justifications.JustificationEditor;
 import ASN1.Encoder;
+import data.D_Constituent;
 import data.D_Justification;
 import data.D_Motion;
 import data.D_MotionChoice;
@@ -64,6 +65,7 @@ import data.JustGIDItem;
 public class VoteEditor  extends JPanel  implements DocumentListener, ItemListener, ActionListener{
 
 	public JButton just_submit_field;
+	public JButton just_submit_anonymous_field;
 	public JComboBox vote_choice_field;
 	public JComboBox just_old_just_field;
 	public JRadioButton vote_nojust_field;
@@ -85,17 +87,39 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 	private boolean enabled = true;
 	private JustificationEditor justificationEditor;
 
+	boolean haveMotionSubmit() {
+		if (DEBUG) {
+			System.out.println("VoteEditor: haveMotionSubmit: edit = "+(motionEditor != null));
+			if (motionEditor != null) {
+				System.out.println("VoteEditor: haveMotionSubmit: mot = "+(motionEditor.getMotion() != null));
+				if (motionEditor.getMotion() != null) 
+					System.out.println("VoteEditor: haveMotionSubmit: mot_edit = "+(motionEditor.getMotion().isEditable()));
+			}
+		}
+		
+		return
+				(motionEditor != null)
+				&& (motionEditor.getMotion() != null)
+				&& (motionEditor.getMotion().isEditable());
+	}
 	public void disable_it() {
-		if ((motionEditor!=null) && (motionEditor.getMotion()!=null) && (motionEditor.getMotion().isEditable())) {
-			if(this.just_submit_field!=null){
+		if (haveMotionSubmit()) {
+			if (this.just_submit_field != null) {
 				this.just_submit_field.setEnabled(false);
 				this.just_submit_field.setVisible(false);
 			}
-		}else{
+			if (this.just_submit_anonymous_field != null) {
+				this.just_submit_anonymous_field.setEnabled(false);
+				this.just_submit_anonymous_field.setVisible(false);
+			}
+		} else {
 			this.just_submit_field.setEnabled(true);
 			this.just_submit_field.setVisible(true);			
+			
+			this.just_submit_anonymous_field.setEnabled(true);
+			this.just_submit_anonymous_field.setVisible(true);			
 		}
-		if(true) return;
+		if (true) return;
 		enabled  = false;
 		if(this.vote_choice_field!=null) this.vote_choice_field.setEnabled(false);
 		if(this.just_old_just_field!=null) this.just_old_just_field.setEnabled(false);
@@ -105,23 +129,30 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		if(this.vote_date_field!=null) this.vote_date_field.setEnabled(false);
 		if(this.vote_dategen_field!=null) this.vote_dategen_field.setEnabled(false);
 		if(this.just_submit_field!=null) this.just_submit_field.setEnabled(false);
+		if(this.just_submit_anonymous_field!=null) this.just_submit_anonymous_field.setEnabled(false);
 	}
 	public void enable_it() {
 		enabled  = true;
-		if(DEBUG)System.out.println("JustificationEditor:Enabling");
-		if(this.vote_choice_field!=null) this.vote_choice_field.setEnabled(true);
-		if(this.just_old_just_field!=null) this.just_old_just_field.setEnabled(true);
-		if(this.vote_nojust_field!=null) this.vote_nojust_field.setEnabled(true);
-		if(this.vote_oldjust_field!=null) this.vote_oldjust_field.setEnabled(true);
-		if(this.vote_newjust_field!=null) this.vote_newjust_field.setEnabled(true);
-		if(this.vote_date_field!=null) this.vote_date_field.setEnabled(true);
-		if(this.vote_dategen_field!=null) this.vote_dategen_field.setEnabled(true);
-		if(this.just_submit_field!=null){ this.just_submit_field.setEnabled(true); this.just_submit_field.setVisible(true);}
-		if ((motionEditor!=null) && (motionEditor.getMotion()!=null) && (motionEditor.getMotion().isEditable())) 
-			if(this.just_submit_field!=null){
+		if (DEBUG)System.out.println("JustificationEditor:Enabling");
+		if (this.vote_choice_field != null) this.vote_choice_field.setEnabled(true);
+		if (this.just_old_just_field != null) this.just_old_just_field.setEnabled(true);
+		if (this.vote_nojust_field != null) this.vote_nojust_field.setEnabled(true);
+		if (this.vote_oldjust_field != null) this.vote_oldjust_field.setEnabled(true);
+		if (this.vote_newjust_field != null) this.vote_newjust_field.setEnabled(true);
+		if (this.vote_date_field != null) this.vote_date_field.setEnabled(true);
+		if (this.vote_dategen_field != null) this.vote_dategen_field.setEnabled(true);
+		if (this.just_submit_field != null) { this.just_submit_field.setEnabled(true); this.just_submit_field.setVisible(true);}
+		if (this.just_submit_anonymous_field != null) { this.just_submit_anonymous_field.setEnabled(true); this.just_submit_anonymous_field.setVisible(true);}
+		if (haveMotionSubmit()) {
+			if (this.just_submit_field != null) {
 				this.just_submit_field.setEnabled(false);
 				this.just_submit_field.setVisible(false);
 			}
+			if (this.just_submit_anonymous_field != null) {
+				this.just_submit_anonymous_field.setEnabled(false);
+				this.just_submit_anonymous_field.setVisible(false);
+			}
+		}
 	}
 	public VoteEditor(MotionEditor _motionEditor, JustificationEditor _justificationEditor, int _mode){
 		motionEditor = _motionEditor;
@@ -186,18 +217,18 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		*/
 	
 	
-	D_Motion getMotion(){
-		if(motionEditor!=null) return motionEditor.getMotion();
-		if(justificationEditor!=null) return justificationEditor.getMotion();
+	D_Motion getMotion() {
+		if (motionEditor != null) return motionEditor.getMotion();
+		if (justificationEditor != null) return justificationEditor.getMotion();
 		return null;
 	}
 	public D_MotionChoice[] getChoices() {
 		if(DEBUG) System.out.println("VoteEditor: getChoices: start");
 		D_MotionChoice[] choices = null;
-		if(!initMotionOrg()){
+		if (! initMotionOrg()) {
 			choices =  D_Organization.getDefaultMotionChoices(D_Organization.get_DEFAULT_OPTIONS());
-			if(DEBUG)if(choices!=null)for(D_MotionChoice m : choices) System.out.println("VEditor:getChoices:1:"+m);
-		}else{
+			if (DEBUG) if (choices != null) for (D_MotionChoice m : choices) System.out.println("VEditor:getChoices:1:"+m);
+		} else {
 			choices = getMotion().getChoices();
 			if( (choices == null) || (choices.length==0)){
 				choices = getMotion().getOrganization().getDefaultMotionChoices();
@@ -307,6 +338,13 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			c.anchor = GridBagConstraints.WEST;
 			p.add(just_submit_field = new JButton(__("Submit Vote")),c);
 			just_submit_field.addActionListener(this);
+			
+			c.anchor = GridBagConstraints.EAST;
+			c.gridx = 0; c.gridy = y++;		
+			c.gridx = 1;
+			c.anchor = GridBagConstraints.WEST;
+			p.add(just_submit_anonymous_field = new JButton(__("Submit Anonymously")),c);
+			just_submit_anonymous_field.addActionListener(this);
 		}
 		_y[0] = y;
 		return p;
@@ -343,7 +381,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		if(DEBUG)System.out.println("VoteEditor: handleFieldEvent: enter enabled="+enabled);
 		//if(!enabled) return;
 		//String currentTime = Util.getGeneralizedTime();
-		if(mode == CHOICE) {
+		if (mode == CHOICE) {
 			handleChoiceEvent(source);
 			return;
 		}else{
@@ -362,7 +400,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			creationTime = Util.getGeneralizedTime();
 		}
 		*/
-		if((this.vote_date_field==source)||(this.vote_date_field.getDocument()==source)) {
+		if ((this.vote_date_field==source)||(this.vote_date_field.getDocument()==source)) {
 			if(DEBUG) out.println("JustificationEditor:handleFieldEvent: date title");
 			String new_text = this.vote_date_field.getText();
 			Calendar cal = Util.getCalendar(new_text);
@@ -393,12 +431,12 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			//setChoiceOldJustification(creationTime);
 			//enable_just();
 			if(motionEditor!=null){
-				if(_DEBUG) out.println("VoteEditor:handleFieldEvent: choice newjust_radio, in motioneditor");
+				if(DEBUG) out.println("VoteEditor:handleFieldEvent: choice newjust_radio, in motioneditor");
 				motionEditor.enableNewJustification(true);
 				signature.justification_ID = motionEditor.getNewJustificationID();
 				signature.global_justification_ID = null;
 			}else{
-				if(_DEBUG) out.println("VoteEditor:handleFieldEvent: choice newjust_radio, in justeditor");
+				if(DEBUG) out.println("VoteEditor:handleFieldEvent: choice newjust_radio, in justeditor");
 				this.justificationEditor.make_new();
 				this.enable_just();
 				signature.justification_ID = this.justificationEditor.just.getLIDstr(); // namely set to null
@@ -417,15 +455,15 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			}
 			return;
 		}
-		if(this.vote_nojust_field==source) {
-			if(DEBUG) out.println("VoteEditor:handleFieldEvent: choice nojust_radio");
+		if (this.vote_nojust_field == source) {
+			if (DEBUG) out.println("VoteEditor:handleFieldEvent: choice nojust_radio");
 			this.just_old_just_field.setEnabled(false);
-			if(motionEditor!=null){
+			if (motionEditor != null) {
 				motionEditor.enableNewJustification(false);
-			}else{
+			} else {
 				this.disable_just();
 			}
-			try{
+			try {
 				signature.justification_ID = null;
 				signature.global_justification_ID = null;
 				//this.signature.creation_date = Util.getCalendar(creationTime);
@@ -435,33 +473,183 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				e.printStackTrace();
 			}	
 		}
-		if(just_old_just_field==source) {
+		if (just_old_just_field == source) {
 			if(DEBUG) out.println("VoteEditor:handleFieldEvent: choice old_just_combo");
 			//if(DEBUG) Util.printCallPath("Linux tracing");
 			setChoiceOldJustification();
 			return;
 		}
-		if(this.vote_choice_field == source) {
+		if (this.vote_choice_field == source) {
 			if(DEBUG) out.println("VoteEditor:handleFieldEvent: choice vote_choice_field combo");
 			setChoice();
 			return;
 		}
-		if((just_submit_field == source)) {
-			if(DEBUG) out.println("VoteEditor:handleFieldEvent: submit");
+		if ((just_submit_anonymous_field == source)) {
+			if (DEBUG) out.println("VoteEditor:handleFieldEvent: submit");
+			
+			D_Constituent c_myself = GUI_Swing.constituents.tree.getModel().getConstituentMyself();
+			String c_myself_GID = GUI_Swing.constituents.tree.getModel().getConstituentGIDMyself();
+			long c_myself_LID = GUI_Swing.constituents.tree.getModel().getConstituentIDMyself();
+			if (c_myself_GID == null) {
+				Application_GUI.warning(__("You should first select a constituent identity for this organization!"), __("No constituent ID for this org!"));
+						return;
+			}
+			
 			try {
-				long j_id=-1;
-				D_Justification justification =null;
-				if(signature.choice==null){
+				long j_id = -1;
+				D_Justification justification = null;
+				if (signature.choice == null) {
 					Application_GUI.warning(__("No voting choice made.\nPlease return and make a voting choice."), __("No Choice Made"));
 					return;
 				}
-				if(vote_newjust_field.isSelected()) {
+				if (vote_newjust_field.isSelected()) {
+					if (DEBUG) out.println("VoteEditor:handleFieldEvent: new justification");
+					justification = justificationEditor.just;
+					if (motionEditor != null) {
+						justification = motionEditor.getNewJustification();
+						if (DEBUG) out.println("VoteEditor:handleFieldEvent: new justification from motionEditor="+justification);
+					} else {
+						if (DEBUG) out.println("VoteEditor:handleFieldEvent: new justification from justEditor="+justification);						
+					}
+					
+					justification = D_Justification.getJustByJust_Keep(justification);
+					justification.setConstituentGID(null);
+					justification.setConstituentLIDstr(null);
+//					if (justification.getConstituentGID() == null) {
+//						if (DEBUG) out.println("VoteEditor:handleFieldEvent: reget justification");
+//						justification.setConstituentGID(GUI_Swing.constituents.tree.getModel().getConstituentGIDMyself());
+//						justification.setConstituentLIDstr(Util.getStringID(GUI_Swing.constituents.tree.getModel().getConstituentIDMyself()));
+//						justification.storeRequest();
+//						justification.releaseReference();
+//
+//						if (justification.getConstituentGID() == null) {							
+//							Application_GUI.warning(__("You should first select a constituent identity for this organization!"), __("No Constituent ID for this org!"));
+//							return;
+//						}
+//					}
+
+//					if (this.getMotion() != null) {
+//						justification.setMotionGID(this.getMotion().getGID());
+//						justification.setMotionLID(this.getMotion().getLID()); //m_id);
+//	
+//						justification.setOrgGID(this.getMotion().getOrganizationGID());
+//						justification.setOrganizationLIDstr(this.getMotion().getOrganizationLIDstr());
+//					}
+					
+					String gid = justification.make_ID();
+					justification.setGID(gid);
+										
+					D_Justification j = D_Justification.getJustByGID(gid, true, true, true, null,
+							justification.getOrganizationLID(), justification.getMotionLID(),
+							justification);
+					
+					//justification.setGID(gid);
+					//justification.sign();
+					
+					if (j != justification) {
+						if (_DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: just new allocation: "+j);
+					
+						if (! j.loadRemote(justification, null, null, null))
+							j.setArrivalDate();
+						if (_DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: just: set arrival");
+						justificationEditor.just = justification = j;
+					} else {
+						justification.setTemporary(false);
+						justification.setArrivalDate();
+					}
+					
+					j_id = j.storeRequest_getID(); //.storeVerified(DEBUG);
+					j.releaseReference();
+					
+					if (j_id <= 0) {
+						if (_DEBUG) Util.printCallPath("VoteEditor:handleFieldEvent: failed saving no new justif");
+						return;					
+					}
+				} else {
+					if(DEBUG) out.println("VoteEditor:handleFieldEvent: no new justification selected");
+				}
+				
+				//signature = signature;
+				//signature.global_motion_ID = null;
+				//signature.motion_ID = justificationEditor.just.motion_ID;
+				if (vote_newjust_field.isSelected()) {
+					signature.global_justification_ID = justification.getGID();
+					signature.justification_ID = justification.getLIDstr();//Util.getStringID(j_id);//justificationEditor.just.justification_ID;
+				}
+				signature.global_constituent_ID = c_myself_GID; //this.getMotion().getConstituentGID();
+				signature.constituent_ID = Util.getStringID(c_myself_LID);//this.getMotion().getConstituentLIDstr();
+				signature.constituent = c_myself;
+				signature.global_vote_ID = signature.make_ID();
+				
+				D_Vote old = new D_Vote(signature.global_vote_ID);
+				if (old.vote_ID != null) {
+					String old_date = Encoder.getGeneralizedTime(old.creation_date);
+					String new_date = Encoder.getGeneralizedTime(signature.creation_date);
+					if (old_date.equals(new_date)) {
+						int attack = Application_GUI.ask(
+								__("Are you sure you want to create a new vote \n" +
+								"with the manually specified date? \n" + new_date + "\n"+
+								//"This can amount to an attack where you give different people different votes!\n" +
+								//"Except if they order such votes by signature (to be implemented)\n" +
+								"An old vote may have priority over this based on its GID.\n" +
+								"On selecting NO, we will update the creation date to now."),
+								__("Votes from you on the same issue!"), JOptionPane.YES_NO_CANCEL_OPTION);
+						switch (attack) {
+						case 0: //YES
+							break;
+						case 1: // NO
+							signature.creation_date = Util.CalendargetInstance();
+							this.vote_date_field.setText(Encoder.getGeneralizedTime(this.signature.creation_date));
+							break;
+						case 2: // CANCEL
+						default:
+							return;
+						}
+					}
+				}
+				
+				signature.sign();
+				long v_id = this.signature.storeVerified();
+				if (v_id <= 0) {
+					if(_DEBUG) Util.printCallPath("VoteEditor:handleFieldEvent: submit sign got no local ID");
+					return;
+				}
+				
+				/*
+				justificationEditor.just.global_justificationID = justificationEditor.just.make_ID();
+				justificationEditor.just.sign();
+				long id = justificationEditor.just.storeVerified();
+				if(id<=0) return;
+				*/
+				disable_it();
+				justificationEditor.disable_it();
+				try {
+					D_Motion m = D_Motion.getMotiByLID(signature.motion_ID, true, true);
+					m.setBroadcasted(true);
+					m.storeRequest();
+					m.releaseReference();
+				} catch(Exception e){e.printStackTrace();}
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		if ((just_submit_field == source)) {
+			if (DEBUG) out.println("VoteEditor:handleFieldEvent: submit");
+			try {
+				long j_id = -1;
+				D_Justification justification = null;
+				if (signature.choice == null) {
+					Application_GUI.warning(__("No voting choice made.\nPlease return and make a voting choice."), __("No Choice Made"));
+					return;
+				}
+				if (vote_newjust_field.isSelected()) {
 					if(DEBUG) out.println("VoteEditor:handleFieldEvent: new justification");
 					justification = justificationEditor.just;
-					if(motionEditor!=null){
+					if (motionEditor != null) {
 						justification = motionEditor.getNewJustification();
-						if(DEBUG) out.println("VoteEditor:handleFieldEvent: new justification from motionEditor="+justification);
-					}else{
+						if (DEBUG) out.println("VoteEditor:handleFieldEvent: new justification from motionEditor="+justification);
+					} else {
 						if(DEBUG) out.println("VoteEditor:handleFieldEvent: new justification from justEditor="+justification);						
 					}
 					
@@ -501,25 +689,25 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				//signature = signature;
 				//signature.global_motion_ID = null;
 				//signature.motion_ID = justificationEditor.just.motion_ID;
-				if(vote_newjust_field.isSelected()) {
+				if (vote_newjust_field.isSelected()) {
 					signature.global_justification_ID = justification.getGID();
 					signature.justification_ID = Util.getStringID(j_id);//justificationEditor.just.justification_ID;
 				}
 				signature.global_vote_ID = signature.make_ID();
 				
 				D_Vote old = new D_Vote(signature.global_vote_ID);
-				if(old.vote_ID!=null){
+				if (old.vote_ID != null) {
 					String old_date = Encoder.getGeneralizedTime(old.creation_date);
 					String new_date = Encoder.getGeneralizedTime(signature.creation_date);
-					if(old_date.equals(new_date)){
+					if (old_date.equals(new_date)) { // They always have the same value since the date is saved
 						int attack = Application_GUI.ask(
 								__("Are you sure you want to create a new vote \n" +
-								"with the same date as your previous vote? \n" +
-								"This can amount to an attack where you give different people different votes!\n" +
-								"Except if they order such votes by signature (to be implemented)\n" +
+								"with the manually specified date? \n" +
+//								"This can amount to an attack where you give different people different votes!\n" +
+								"An old vote may have priority over this based on its GID.\n" +
 								"On selecting NO, we will update the creation date to now."),
-								__("Votes from you on the same issue and with same date!"), JOptionPane.YES_NO_CANCEL_OPTION);
-						switch(attack) {
+								__("Votes from you on the same issue!"), JOptionPane.YES_NO_CANCEL_OPTION);
+						switch (attack) {
 						case 0: //YES
 							break;
 						case 1: // NO
@@ -535,8 +723,8 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				
 				signature.sign();
 				long v_id = this.signature.storeVerified();
-				if(v_id<=0){
-					if(_DEBUG) out.println("VoteEditor:handleFieldEvent: submit sign got no local ID");
+				if (v_id <= 0) {
+					if (_DEBUG) out.println("VoteEditor:handleFieldEvent: submit sign got no local ID");
 					return;
 				}
 				
@@ -548,16 +736,17 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				*/
 				disable_it();
 				justificationEditor.disable_it();
-				try{
+				try {
 					D_Motion m = D_Motion.getMotiByLID(signature.motion_ID, true, true);
 					m.setBroadcasted(true);
 					m.storeRequest();
 					m.releaseReference();
-				}catch(Exception e){e.printStackTrace();}
+				} catch(Exception e){e.printStackTrace();}
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 		}
+
 	}
 	private void disable_just() {
 		justificationEditor.disable_it();
@@ -579,16 +768,16 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		JustGIDItem selected = (JustGIDItem) just_old_just_field.getSelectedItem();
 		String id = null, gid=null;
 		try {
-			if(selected == null){
+			if (selected == null) {
 				if(DEBUG) System.out.println("VoteEditor: setChoiceOldJustification no selection null");
 				id = null;
-			}else{
-				if(DEBUG) out.println("VoteEditor:handleFieldEvent: selected old just ="+selected.toStringDump());
-				if(selected.id == null){
-					if(DEBUG) out.println("VoteEditor:handleFieldEvent: selected id=null");
+			} else {
+				if (DEBUG) out.println("VoteEditor:handleFieldEvent: selected old just ="+selected.toStringDump());
+				if (selected.id == null) {
+					if (DEBUG) out.println("VoteEditor:handleFieldEvent: selected id=null");
 					id = null;
 				}
-				else{
+				else {
 					id = ""+(new Integer(selected.id).longValue());
 					gid = selected.gid;
 				}
@@ -600,18 +789,18 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			e.printStackTrace();
 		}	
 	}
-	public void setChoice(){
+	public void setChoice() {
 		if(DEBUG) System.out.println("VoteEditor: setChoice start");
 		D_MotionChoice selected = (D_MotionChoice) this.vote_choice_field.getSelectedItem();
 		String name = null, short_name=null;
 		try {
-			if(selected == null){
+			if (selected == null) {
 				if(DEBUG) System.out.println("VoteEditor: setChoiceOldJustification no selection null");
 				short_name = null;
-			}else{
-				if(DEBUG) out.println("VoteEditor:handleFieldEvent: selected old just ="+selected.toStringDump());
-				if(selected.short_name == null){
-					if(DEBUG) out.println("VoteEditor:handleFieldEvent: selected choice = null");
+			} else {
+				if (DEBUG) out.println("VoteEditor:handleFieldEvent: selected old just ="+selected.toStringDump());
+				if (selected.short_name == null){
+					if (DEBUG) out.println("VoteEditor:handleFieldEvent: selected choice = null");
 					short_name = null;
 				}
 				else {

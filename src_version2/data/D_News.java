@@ -678,7 +678,7 @@ class D_News extends ASNObj{
 		try {
 			ArrayList<ArrayList<Object>> orgs;
 			if (days == 0) orgs = Application.db.select(sql_just, new String[]{j.getLIDstr()});
-			else orgs = Application.db.select(sql_just, new String[]{j.getLIDstr(), Util.getGeneralizedDate(days)});
+			else orgs = Application.db.select(sql_just2, new String[]{j.getLIDstr(), Util.getGeneralizedDate(days)});
 			
 			if (orgs.size() > 0)
 				result = Util.lval(orgs.get(0).get(0),0);

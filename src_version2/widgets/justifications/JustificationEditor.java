@@ -294,11 +294,11 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		return true;
 	}
 	private boolean update_it(boolean force) {
-		if(DEBUG) out.println("JustEditor:updateit: start");
-		if(reloadJust(force))
+		if (DEBUG) out.println("JustEditor:updateit: start");
+		if (reloadJust(force))
 			enable_it();
 		//else return false; // further processing changes arrival_date by handling creator and default_scoring fields
-		if(just == null){
+		if (just == null) {
 			if(DEBUG) out.println("JustEditor:updateit: quit null just");
 			return false;
 		}
@@ -310,10 +310,10 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		String signature_ID = MotionEditor.findMyVote(just.getMotionLIDstr(), constituent_ID);
 		D_Vote _sign;
 		try {
-			long _s_ID = Util.lval(signature_ID,-1);
-			if(_s_ID > 0) {
+			long _s_ID = Util.lval(signature_ID, -1);
+			if (_s_ID > 0) {
 				_sign = new D_Vote(_s_ID);
-			}else{
+			} else {
 				_sign = new D_Vote();
 				//_sign.motion = moti;
 				_sign.motion_ID = just.getMotionLIDstr();
@@ -326,7 +326,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 				_sign.creation_date = creation_date;
 			}
 			vEditor.setSignature(_sign, motionEditor);
-		}catch(Exception e){
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		

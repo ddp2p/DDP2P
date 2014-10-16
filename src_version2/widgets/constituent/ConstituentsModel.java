@@ -1435,7 +1435,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		trees.add(tree);
 	}
 	public D_Constituent getConstituentMyself(){
-		return D_Constituent.getConstByLID(getConstituentIDMyself(), false, true);
+		return D_Constituent.getConstByLID(getConstituentIDMyself(), false, false);
 	}
 	public long getConstituentIDMyself(){
 		return my_constituentID;

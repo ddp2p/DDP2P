@@ -293,7 +293,7 @@ public class ReceivedBroadcastableMessages {
 			RequestData sol_rq = new RequestData();
 			RequestData new_rq = new RequestData();
 			
-			D_Motion m = D_Motion.getMotiByGID(vote.motion.getGID(), true, true, true, __peer, o_ID);
+			D_Motion m = D_Motion.getMotiByGID(vote.motion.getGID(), true, true, true, __peer, o_ID, null);
 			m.loadRemote(vote.motion, sol_rq, new_rq, __peer); //.store(sol_rq, new_rq);//pm should be passed
 			motion_id = m.storeRequest_getID();
 			m.releaseReference();

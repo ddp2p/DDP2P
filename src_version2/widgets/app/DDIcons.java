@@ -91,6 +91,9 @@ public class DDIcons {
 	private static final String I_BALANCE20 = "balance20.gif";	
 	private static final String I_SIGNATURE20 = "voting_booth20.gif";	
 	private static final String I_CONSTITUENT20 = "profile20.gif";	
+	private static final String I_CREATOR20 = "creator20.jpg";	
+	private static final String I_PROVIDER20 = "delivery20.jpg";//"delivery20.png"	
+	private static final String I_LANDING20 = "landings20.jpg";	
 	private static final String I_BACK20 = "back20.gif";		
 	private static final String I_FORW20 = "forward20.gif";		
 
@@ -340,6 +343,24 @@ public class DDIcons {
 		if(_II_CON == null) _II_CON= getImageIconFromResource(I_CONSTITUENT20, descr);
 		if(_II_CON == null) Util.printCallPath("null");
 		return _II_CON;
+	}
+	private static ImageIcon _II_CRE = null;
+	public static ImageIcon getCreatorImageIcon(String descr){
+		if(_II_CRE == null) _II_CRE= getImageIconFromResource(I_CREATOR20, descr);
+		if(_II_CRE == null) Util.printCallPath("null");
+		return _II_CRE;
+	}
+	private static ImageIcon _II_MAIL = null;
+	public static ImageIcon getMailImageIcon(String descr){
+		if(_II_MAIL == null) _II_MAIL= getImageIconFromResource(I_PROVIDER20, descr);
+		if(_II_MAIL == null) Util.printCallPath("null");
+		return _II_MAIL;
+	}
+	private static ImageIcon _II_ARRIV = null;
+	public static ImageIcon getLandingImageIcon(String descr){
+		if(_II_ARRIV == null) _II_ARRIV= getImageIconFromResource(I_LANDING20, descr);
+		if(_II_ARRIV == null) Util.printCallPath("null");
+		return _II_ARRIV;
 	}
 	private static ImageIcon _II_STAT = null;
 	public static ImageIcon getStaImageIcon(String descr){

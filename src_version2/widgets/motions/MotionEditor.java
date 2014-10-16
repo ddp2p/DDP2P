@@ -72,6 +72,7 @@ import config.Application;
 import config.Application_GUI;
 import config.DD;
 import config.MotionsListener;
+import data.D_Constituent;
 import data.D_Document;
 import data.D_Justification;
 import data.D_Motion;
@@ -99,6 +100,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	public JComboBox motion_answer_field;
 	public DocumentEditor motion_body_field;
 	public JButton motion_submit_field;
+	public JButton motion_submit_anonymously_field;
 	public JTextField date_field;
 	public JButton dategen_field;
 	public JButton load_field;
@@ -197,6 +199,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			this.motion_submit_field.setEnabled(false);
 			if(VISIBILITY_MOTION)this.motion_submit_field.setVisible(false);
 		}
+		if(this.motion_submit_anonymously_field!=null){
+			this.motion_submit_anonymously_field.setEnabled(false);
+			if(VISIBILITY_MOTION)this.motion_submit_anonymously_field.setVisible(false);
+		}
 		if(this.dategen_field!=null){
 			this.dategen_field.setEnabled(false);
 			if(VISIBILITY_MOTION)this.dategen_field.setVisible(false);
@@ -275,6 +281,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		if(this.motion_submit_field!=null){
 			this.motion_submit_field.setEnabled(true);
 			if(VISIBILITY_MOTION)this.motion_submit_field.setVisible(true);
+		}
+		if(this.motion_submit_anonymously_field!=null){
+			this.motion_submit_anonymously_field.setEnabled(true);
+			if (VISIBILITY_MOTION) this.motion_submit_anonymously_field.setVisible(true);
 		}
 		if(this.dategen_field!=null){
 			this.dategen_field.setEnabled(true);
@@ -559,15 +569,15 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		signature_ID = findMyVote(motionID, constituent_ID);
 		try {
 			long _s_ID = Util.lval(signature_ID,-1);
-			if(_s_ID > 0) {
+			if (_s_ID > 0) {
 				signature = new D_Vote(_s_ID);
 				signature.motion = getMotion();
 				long _jID = Util.lval(signature.justification_ID,-1);
-				if((_jID > 0) && (signature.justification == null)) {
+				if ((_jID > 0) && (signature.justification == null)) {
 					justification = signature.justification = D_Justification.getJustByLID(_jID, true, false);
 					vEditor.setSignature(signature, this);
 					jEditor.setJustification(justification,false, this);
-				}else{
+				} else {
 					vEditor.setSignature(signature, this);
 					
 					D_Justification _just = D_Justification.getEmpty();
@@ -904,7 +914,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		TranslatedLabel label_just_body = new TranslatedLabel("Motion");
 		p.add(label_just_body, c);
 		*/
-		if(SUBMIT) {
+		if (SUBMIT) {
 			c.anchor = GridBagConstraints.EAST;
 			c.gridx = 0; c.gridy = y++; // +1		
 			//c.gridx = 1;
@@ -912,6 +922,14 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			//c.anchor = GridBagConstraints.WEST;
 			p.add(motion_submit_field = new JButton(__("Submit Motion")),c);
 			motion_submit_field.addActionListener(this);
+			
+			c.anchor = GridBagConstraints.EAST;
+			c.gridx = 0; c.gridy = y++; // +1		
+			//c.gridx = 1;
+			c.anchor = GridBagConstraints.EAST;
+			//c.anchor = GridBagConstraints.WEST;
+			p.add(motion_submit_anonymously_field = new JButton(__("Submit Anonymously")),c);
+			motion_submit_anonymously_field.addActionListener(this);
 		}
 		
 		c.gridx = 0; c.gridy = y++;		
@@ -1040,6 +1058,8 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			c.anchor = GridBagConstraints.WEST;
 			p.add(motion_submit_field = new JButton(__("Submit Motion")),c);
 			motion_submit_field.addActionListener(this);
+			p.add(motion_submit_anonymously_field = new JButton(__("Submit Anonymous")),c);
+			motion_submit_anonymously_field.addActionListener(this);
 		}
 		
 		c.anchor = GridBagConstraints.NORTHWEST;
@@ -1173,6 +1193,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		
 		if(this.scoring_options_field == source) {
 			if(DEBUG) out.println("MotionEditor:handleFieldEvent: default scoring"); 
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final options!");
+				return;
+			}
 			//String[] editable_scores = this.scoring_options_field.getVal();
 			//String new_text = D_OrgConcepts.stringFromStringArray(editable_scores);
 			this.setMotion(D_Motion.getMotiByMoti_Keep(getMotion()));
@@ -1194,6 +1218,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		
 		if((this.motion_body_field==source)||(this.motion_body_field.getDocumentSource()==source)) {
 			if(DEBUG) out.println("MotionEditor:handleFieldEvent: just body");
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final body! "+this.getMotion().getTitleOrMy());
+				return;
+			}
 			String new_text = this.motion_body_field.getText();
 			this.setMotion(D_Motion.getMotiByMoti_Keep(getMotion()));
 			this.getMotion().getMotionText().setDocumentString(new_text);
@@ -1211,6 +1239,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		}
 		if(this.setTxtMode==source) {
 			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setText");
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final text mode!");
+				return;
+			}
 
 			this.setMotion(D_Motion.getMotiByMoti_Keep(getMotion()));
 			switchMode(D_Document.TXT_BODY_FORMAT);
@@ -1227,6 +1259,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		}
 		if(this.setHTMMode==source) {
 			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setHTM");
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final html mode!");
+				return;
+			}
 
 			this.setMotion(D_Motion.getMotiByMoti_Keep(getMotion()));
 			switchMode(D_Document.HTM_BODY_FORMAT);
@@ -1243,6 +1279,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		}
 		if (this.load_field == source) {
 			if(DEBUG)System.err.println("ControlPane:actionImport: import file");
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final import!");
+				return;
+			}
 			int returnVal = fd.showOpenDialog(this);
 			if(DEBUG)System.err.println("ControlPane:actionImport: Got: selected");
 	        if (returnVal == JFileChooser.APPROVE_OPTION) {
@@ -1351,8 +1391,12 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 
 		if ((this.motion_title_field==source)||(this.motion_title_field.getDocument() == source)) {
 			if (DEBUG) out.println("MotionEditor:handleFieldEvent: motion title");
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final title!");
+				return;
+			}
 			String new_text = this.motion_title_field.getText();
-			if (_DEBUG) out.println("MotionEditor:handleFieldEvent: motion title got: "+new_text);
+			if (DEBUG) out.println("MotionEditor:handleFieldEvent: motion title got: "+new_text);
 			if (getMotion() == null) {
 				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: had null motion changing title_field");
 			}
@@ -1389,6 +1433,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 
 		if((this.date_field==source)||(this.date_field.getDocument()==source)) {
 			if(DEBUG) out.println("MotionEditor:handleFieldEvent: date title");
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final date!");
+				return;
+			}
 			String new_text = this.date_field.getText();
 			Calendar cal = Util.getCalendar(new_text);
 			if(cal == null) return;
@@ -1406,6 +1454,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			return;			
 		}
 		if(this.dategen_field==source) {
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final dategen!");
+				return;
+			}
 			Calendar now = Util.CalendargetInstance();
 			this.date_field.setText(Encoder.getGeneralizedTime(now));
 			
@@ -1423,6 +1475,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		}
 		if(motion_answer_field==source) {
 			if(DEBUG) out.println("MotionEditor:handleFieldEvent: creator");
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final answer!");
+				return;
+			}
 			if(DEBUG) Util.printCallPath("Linux tracing");
 			MotionsGIDItem selected = (MotionsGIDItem) motion_answer_field.getSelectedItem();
 			String id = null;
@@ -1451,6 +1507,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		}
 		if((category_field==source) || (category_field_editor==source)||(category_field_editor.getDocument()==source)) {
 			if(DEBUG) out.println("OrgEditor:handleFieldEvent: category");
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final category!");
+				return;
+			}
 			String new_category = Util.getString(category_field.getSelectedItem());
 
 			if((new_category!=null) && "".equals(new_category.trim())) new_category = null;
@@ -1469,13 +1529,136 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			return;
 		}
 		
-		if((motion_submit_field == source)) {
+		if ((motion_submit_anonymously_field == source)) {
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final submit anonym!");
+				return;
+			}
+			/*
+			if (vEditor.vote_newjust_field.isSelected()) {
+				this.justification = jEditor.just;
+				if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: initial just = "+this.justification);
+			}
+			*/
+
+			
+			D_Constituent c_myself = GUI_Swing.constituents.tree.getModel().getConstituentMyself();
+			String c_myself_GID = GUI_Swing.constituents.tree.getModel().getConstituentGIDMyself();
+			long c_myself_LID = GUI_Swing.constituents.tree.getModel().getConstituentIDMyself();
+			if (c_myself_GID == null) {
+				Application_GUI.warning(__("You should first select a constituent identity for this organization!"), __("No Constituent ID for this org!"));
+						return;
+			}
+			
 			try {
 				long j_id = -1;
-				this.setMotion(D_Motion.getMotiByMoti_Keep(getMotion()));
+				//this.setMotion(D_Motion.getMotiByMoti_Keep(getMotion()));
+				this.getMotion().setConstituentGID(null);
+				//this.getMotion().setGID(this.getMotion().make_ID()); // this goes with getMotiByMoti_Keep instead of next 6 lines
+				this.getMotion()._setGID(this.getMotion().make_ID());				
+				D_Motion m = D_Motion.getMotiByGID(this.getMotion().getGID(), true, true, true, null, this.getMotion().getOrganizationLID(), this.getMotion());
+				if (m != this.getMotion()) {
+					m.loadRemote(getMotion(), null, null, null);
+					this.setMotion(m);
+				}
+				this.getMotion().setTemporary(false);
+				
+				this.getMotion().setBroadcasted(true); // if you sign it, you probably want to broadcast it...
+				if (DEBUG) System.out.println("\nMotionEditor: handleFieldEvent: submitting: signing"+this.getMotion());
+				//this.getMotion().sign();
+				//boolean ver = this.getMotion().verifySignature();
+				this.getMotion().setArrivalDate();
+				if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: signed:"+this.getMotion());
+				long m_id = this.getMotion().storeRequest_getID();
+				this.getMotion().releaseReference();
+
+				if (m_id <= 0) {
+					Util.printCallPath("Why Error saving motion!"); 
+					return;
+				}
+				
+				if (vEditor.vote_newjust_field.isSelected()) {
+					this.justification = jEditor.just;
+					if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: crt just = "+this.justification);
+					
+					this.justification.setMotionGID(this.getMotion().getGID());
+					this.justification.setMotionLID(this.getMotion().getLID()); //m_id);
+					
+					this.justification.setConstituentGID(this.getMotion().getConstituentGID());
+					this.justification.setConstituentLIDstr(this.getMotion().getConstituentLIDstr());
+					
+					this.justification.setOrgGID(this.getMotion().getOrganizationGID());
+					this.justification.setOrganizationLIDstr(this.getMotion().getOrganizationLIDstr());
+					
+					this.justification.setGID(this.justification.make_ID());
+					//justification.sign(); // anonymous
+					
+					D_Justification j = D_Justification.getJustByGID(justification.getGID(), true, true, true, null, justification.getOrganizationLID(), justification.getMotionLID(), justification);
+					
+					if (j != justification) {
+						if (_DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: just new allocation: "+j);
+					
+						if (! j.loadRemote(justification, null, null, null))
+							j.setArrivalDate();
+						if (_DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: just: set arrival");
+						jEditor.just = justification = j;
+					} else {
+						this.justification.setTemporary(false);
+						this.justification.setArrivalDate();
+					}
+					j_id = j.storeRequest_getID();
+					j.releaseReference();
+					if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: final just = " + j);
+					if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: final _just = " + justification);
+					
+					if (j_id <= 0) {
+						Util.printCallPath("Why Error saving justification!"); 
+						return;					
+					}
+				}
+				
+				D_Vote _signature = vEditor.signature;
+				_signature.setMotionGID(this.getMotion().getGID());
+				_signature.motion_ID = Util.getStringID(m_id);
+				_signature.global_constituent_ID = c_myself_GID; //this.getMotion().getConstituentGID();
+				_signature.constituent_ID = Util.getStringID(c_myself_LID);//this.getMotion().getConstituentLIDstr();
+				_signature.constituent = c_myself;
+				_signature.global_organization_ID = this.getMotion().getOrganizationGID();
+				_signature.organization_ID = this.getMotion().getOrganizationLIDstr();
+				if (vEditor.vote_newjust_field.isSelected()) {
+					_signature.global_justification_ID = justification.getGID();
+					_signature.justification_ID = Util.getStringID(j_id);
+				}
+				_signature.global_vote_ID = _signature.make_ID();
+				_signature.sign();
+				long v_id = _signature.storeVerified();
+				if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: final sign = " + _signature);
+				signature = _signature;
+				if (v_id <= 0) {
+					Util.printCallPath("Why Error saving vote!"); 
+					return;
+				}
+				
+				disable_it();
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		if ((motion_submit_field == source)) {
+			if (! this.getMotion().isTemporary()) {
+				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final subm!");
+				return;
+			}
+			D_Constituent c_myself = GUI_Swing.constituents.tree.getModel().getConstituentMyself();
+			String c_myself_GID = GUI_Swing.constituents.tree.getModel().getConstituentGIDMyself();
+			long c_myself_LID = GUI_Swing.constituents.tree.getModel().getConstituentIDMyself();
+			try {
+				long j_id = -1;
+				//this.setMotion(D_Motion.getMotiByMoti_Keep(getMotion()));
+				
 				if (this.getMotion().getConstituentGID() == null) {
-					this.getMotion().setConstituentGID(GUI_Swing.constituents.tree.getModel().getConstituentGIDMyself());
-					this.getMotion().setConstituentLIDstr(Util.getStringID(GUI_Swing.constituents.tree.getModel().getConstituentIDMyself()));
+					this.getMotion().setConstituentGID(c_myself_GID);//GUI_Swing.constituents.tree.getModel().getConstituentGIDMyself());
+					this.getMotion().setConstituentLID(c_myself_LID);//Util.getStringID(GUI_Swing.constituents.tree.getModel().getConstituentIDMyself()));
 					if (this.getMotion().getConstituentGID() == null) {
 						this.getMotion().storeRequest();
 						this.getMotion().releaseReference();
@@ -1483,41 +1666,81 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 						return;
 					}
 				}
-				this.getMotion().setGID(this.getMotion().make_ID());
+				//this.getMotion().setGID(this.getMotion().make_ID()); // this goes with getMotiByMoti_Keep instead of next 6 lines
+				this.getMotion()._setGID(this.getMotion().make_ID());
+				D_Motion m = D_Motion.getMotiByGID(this.getMotion().getGID(), true, true, true, null, this.getMotion().getOrganizationLID(), this.getMotion());
+				if (m != this.getMotion()) {
+					m.loadRemote(getMotion(), null, null, null);						
+					this.setMotion(m);
+				}
+				this.getMotion().setTemporary(false);				
+				
 				//this.moti.sign();
 				//long m_id = this.moti.storeVerified(DEBUG);
 				this.getMotion().setBroadcasted(true); // if you sign it, you probably want to broadcast it...
-				this.getMotion().setSignature(getMotion().sign());
+				if (DEBUG) System.out.println("\nMotionEditor: handleFieldEvent: submitting: signing"+this.getMotion());
+				this.getMotion().sign();
+				this.getMotion().setArrivalDate();
+				//this.getMotion().setSignature();
+				/*
+				boolean ver = this.getMotion().verifySignature();
+				if (!ver)
+					if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: fail verif");
+				*/
+				if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: signed:"+this.getMotion());
 				long m_id = this.getMotion().storeRequest_getID();
 				this.getMotion().releaseReference();
-				
+
+				/*
+				boolean _ver = this.getMotion().verifySignature();
+				if (! _ver)
+					if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: end fail verif");
+				*/
 				//D_Motion mot = new D_Motion(Util.lval(this.moti.getLIDstr(), -1));
 				//this.moti.setGID(mot.setGID(mot.make_ID()));
 //				this.moti.setSignature(mot.setSignature(mot.sign()));
 //				m_id = mot.storeVerified(DEBUG);
 //				D_Motion.readSignSave(Util.lval(mot.getLIDstr(), -1), Util.lval(mot.getConstituentLIDstr(),-1));
 //				this.moti = new D_Motion(m_id);
-				if (m_id <= 0) return;
+				if (m_id <= 0) {
+					Util.printCallPath("Why Error saving motion!"); 
+					return;
+				}
 				
 				if(vEditor.vote_newjust_field.isSelected()) {
 					this.justification = jEditor.just;
 					
 					this.justification.setMotionGID(this.getMotion().getGID());
+					this.justification.setMotionLID(this.getMotion().getLID());
+									
 					this.justification.setConstituentGID(this.getMotion().getConstituentGID());
 					this.justification.setConstituentLIDstr(this.getMotion().getConstituentLIDstr());
+					
 					this.justification.setOrgGID(this.getMotion().getOrganizationGID());
 					this.justification.setOrganizationLIDstr(this.getMotion().getOrganizationLIDstr());
+					
 					this.justification.setGID(this.justification.make_ID());
 					justification.sign();
 					
-					D_Justification j = D_Justification.getJustByGID(justification.getGID(), true, true, true, null, justification.getLID(), getMotion().getLID(), justification);
+					D_Justification j = D_Justification.getJustByGID(justification.getGID(), true, true, true, null, justification.getOrganizationLID(), justification.getMotionLID(), justification);
 					
-					j.loadRemote(justification, null, null, null);
+					if (j != justification) {
+						if (! j.loadRemote(justification, null, null, null)) {
+							if (DEBUG) out.println("MotionEditor:handleFieldEvent: subm: just: set arrival");
+							j.setArrivalDate();
+						}
+					} else {
+						j.setTemporary(false);
+						j.setArrivalDate();
+					}
 					j_id = j.storeRequest_getID();
 					j.releaseReference();
 					
 //					j_id = this.justification.storeVerified(DEBUG);
-					if(j_id<=0) return;					
+					if (j_id <= 0) {
+						Util.printCallPath("Why Error saving justification!"); 
+						return;					
+					}
 				}
 				
 				D_Vote _signature = vEditor.signature;
@@ -1535,7 +1758,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				_signature.sign();
 				long v_id = _signature.storeVerified();
 				signature = _signature;
-				if(v_id<=0) return;
+				if (v_id <= 0) {
+					Util.printCallPath("Why Error saving vote!"); 
+					return;
+				}
 				
 				disable_it();
 			} catch (P2PDDSQLException e) {

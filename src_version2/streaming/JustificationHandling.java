@@ -40,26 +40,29 @@ public class JustificationHandling {
 	private static final boolean _DEBUG = true;
 	private static final int LIMIT = 5;
 	private static final int BIG_LIMIT = 500;
+	
+	private static final String sql_motions =
+			"SELECT j."+table.justification.arrival_date+", c."+table.constituent.organization_ID//", w."+table.witness.source_ID+
+			+" FROM "+table.justification.TNAME+" AS j "
+			+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=j."+table.justification.constituent_ID+")"
+			+" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=j."+table.justification.motion_ID+")"
+			+" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=c."+table.constituent.organization_ID+")"
+			+" WHERE " +
+			//" j."+table.justification.signature+" IS NOT NULL "+
+			" j."+table.justification.temporary+" == '0' "+
+			" AND j."+table.justification.broadcasted+" <> '0' "+
+			" AND m."+table.motion.broadcasted+" <> '0' "+
+			" AND o."+table.organization.broadcasted+" <> '0' "+
+			" AND c."+table.constituent.broadcasted+" <> '0' "+
+					" AND j."+table.justification.arrival_date+">? ";
 
 	public static String getNextJustificationDate(String last_sync_date,
 			String _maxDate, OrgFilter ofi, HashSet<String> orgs, int limitJustLow) throws P2PDDSQLException {
 		if(DEBUG) out.println("JustificationHandling:getNextJustificationDate: start: between: "+last_sync_date+" : "+_maxDate);
 		ArrayList<ArrayList<Object>> w;
 		String[] params;
-		if(ofi==null){
-			String sql=
-				"SELECT j."+table.justification.arrival_date+", c."+table.constituent.organization_ID//", w."+table.witness.source_ID+
-				+" FROM "+table.justification.TNAME+" AS j "
-				+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=j."+table.justification.constituent_ID+")"
-				+" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=j."+table.justification.motion_ID+")"
-				+" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=c."+table.constituent.organization_ID+")"
-				+" WHERE " +
-				" j."+table.justification.signature+" IS NOT NULL "+
-				" AND j."+table.justification.broadcasted+" <> '0' "+
-				" AND m."+table.motion.broadcasted+" <> '0' "+
-				" AND o."+table.organization.broadcasted+" <> '0' "+
-				" AND c."+table.constituent.broadcasted+" <> '0' "+
-						" AND j."+table.justification.arrival_date+">? " +
+		if (ofi == null) {
+			String sql = sql_motions +
 				((_maxDate!=null)?" AND j."+table.justification.arrival_date+"<=? ":"")
 				+" ORDER BY j."+table.justification.arrival_date
 						+" LIMIT "+(1+limitJustLow)+
@@ -72,20 +75,20 @@ public class JustificationHandling {
 				orgs.add(Util.getString(s.get(1)));
 			}
 			
-		}else{
-			String sql=
-				"SELECT j."+table.justification.arrival_date+", c."+table.constituent.organization_ID//", w."+table.witness.source_ID+
-				+" FROM "+table.justification.TNAME+" AS j "
-				+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=j."+table.justification.constituent_ID+")"
-				+" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=j."+table.justification.motion_ID+")"
-				+" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=c."+table.constituent.organization_ID+")"
-				+" WHERE " +
-				" j."+table.justification.signature+" IS NOT NULL "+
-				" AND j."+table.justification.broadcasted+" <> '0' "+
-				" AND m."+table.motion.broadcasted+" <> '0' "+
-				" AND o."+table.organization.broadcasted+" <> '0' "+
-				" AND c."+table.constituent.broadcasted+" <> '0' "+
-						" AND j."+table.justification.arrival_date+">? " +
+		} else {
+			String sql = sql_motions +
+//				"SELECT j."+table.justification.arrival_date+", c."+table.constituent.organization_ID//", w."+table.witness.source_ID+
+//				+" FROM "+table.justification.TNAME+" AS j "
+//				+" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=j."+table.justification.constituent_ID+")"
+//				+" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=j."+table.justification.motion_ID+")"
+//				+" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=c."+table.constituent.organization_ID+")"
+//				+" WHERE " +
+//				" j."+table.justification.signature+" IS NOT NULL "+
+//				" AND j."+table.justification.broadcasted+" <> '0' "+
+//				" AND m."+table.motion.broadcasted+" <> '0' "+
+//				" AND o."+table.organization.broadcasted+" <> '0' "+
+//				" AND c."+table.constituent.broadcasted+" <> '0' "+
+//						" AND j."+table.justification.arrival_date+">? " +
 				((_maxDate!=null)?" AND j."+table.justification.arrival_date+"<=? ":"")
 				+" AND c."+table.constituent.organization_ID+"=? "
 				+" ORDER BY j."+table.justification.arrival_date
@@ -106,7 +109,7 @@ public class JustificationHandling {
 		if(DEBUG) out.println("JustificationHandling:getNextJustificationDate: end: "+_maxDate);
 		return _maxDate;
 	}
-	static String sql_get_hashes=
+	private static final String sql_get_hashes=
 		"SELECT j."+table.justification.global_justification_ID+
 		" FROM "+table.justification.TNAME+" AS j "+
 		" JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=j."+table.justification.constituent_ID+")"+
@@ -122,7 +125,8 @@ public class JustificationHandling {
 			" AND c."+table.constituent.broadcasted+" <> '0' "+
 			" AND m."+table.motion.broadcasted+" <> '0' "+
 			" AND j."+table.justification.broadcasted+" <> '0' "+
-			" AND j."+table.justification.signature+" IS NOT NULL "+
+			//" AND j."+table.justification.signature+" IS NOT NULL "+
+			" AND j."+table.justification.temporary+" == '0' "+
 			" AND j."+table.justification.global_justification_ID+" IS NOT NULL "+
 			" ORDER BY j."+table.justification.arrival_date
 		;
@@ -135,6 +139,29 @@ public class JustificationHandling {
 		return Util.AL_AL_O_2_AL_S(result);
 	}
 
+	private static final String sql_justification_data=
+			"SELECT "+
+					//Util.setDatabaseAlias(table.justification.fields,"j")+
+					"j."+table.justification.justification_ID +
+			//", c."+table.constituent.global_constituent_ID+
+			//", m."+table.motion.global_motion_ID+
+//			", a."+table.justification.global_justification_ID+
+			//", o."+table.organization.global_organization_ID+
+			//", o."+table.organization.organization_ID+
+			" FROM "+table.justification.TNAME+" AS j "+
+			" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=j."+table.justification.constituent_ID+")"+
+			" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=j."+table.justification.motion_ID+")"+
+//			" LEFT JOIN "+table.justification.TNAME+" AS a ON(a."+table.justification.justification_ID+"=j."+table.justification.answerTo_ID+")"+
+			//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
+				" WHERE " +
+				//" j."+table.justification.signature+" IS NOT NULL "+
+				" j."+table.justification.temporary+" == '0' "+
+				" AND j."+table.justification.broadcasted+" <> '0' "+
+				" AND m."+table.motion.broadcasted+" <> '0' "+
+				" AND o."+table.organization.broadcasted+" <> '0' "+
+				" AND c."+table.constituent.broadcasted+" <> '0' "+
+				" AND j."+table.justification.arrival_date+">? ";
+	
 	public static D_Justification[] getJustificationData(
 			ASNSyncRequest asr, String last_sync_date, String org_gid,
 			String org_id, String[] __maxDate) throws P2PDDSQLException {
@@ -145,25 +172,7 @@ public class JustificationHandling {
 		ArrayList<ArrayList<Object>> w;
 		String[] params;
 		
-		String sql=
-			"SELECT "+Util.setDatabaseAlias(table.justification.fields,"j")+
-			//", c."+table.constituent.global_constituent_ID+
-			//", m."+table.motion.global_motion_ID+
-			", a."+table.justification.global_justification_ID+
-			//", o."+table.organization.global_organization_ID+
-			//", o."+table.organization.organization_ID+
-			" FROM "+table.justification.TNAME+" AS j "+
-			" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=j."+table.justification.constituent_ID+")"+
-			" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=j."+table.justification.motion_ID+")"+
-			" LEFT JOIN "+table.justification.TNAME+" AS a ON(a."+table.justification.justification_ID+"=j."+table.justification.answerTo_ID+")"+
-			//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
-				" WHERE " +
-				" j."+table.justification.signature+" IS NOT NULL "+
-				" AND j."+table.justification.broadcasted+" <> '0' "+
-				" AND m."+table.motion.broadcasted+" <> '0' "+
-				" AND o."+table.organization.broadcasted+" <> '0' "+
-				" AND c."+table.constituent.broadcasted+" <> '0' "+
-				" AND j."+table.justification.arrival_date+">? " +
+		String sql= sql_justification_data +
 				((_maxDate!=null)?" AND j."+table.justification.arrival_date+"<=? ":"")
 				+" AND m."+table.motion.organization_ID+"=? "
 				+" ORDER BY j."+table.justification.arrival_date
@@ -178,7 +187,8 @@ public class JustificationHandling {
 			result = new D_Justification[w.size()];
 			for(int k=0; k<w.size(); k++) {
 				ArrayList<Object> s = w.get(k);
-				result[k] = D_Justification.getJustByLID(Util.getString(s.get(table.justification.J_ID)), true, false);
+				//result[k] = D_Justification.getJustByLID(Util.getString(s.get(table.justification.J_ID)), true, false);
+				result[k] = D_Justification.getJustByLID(Util.getString(s.get(0)), true, false);
 			}
 		}
 		

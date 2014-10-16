@@ -108,7 +108,7 @@ public class DDP2P_DoubleLinkedList<T> {
 	}
 
 	synchronized public T removeTail() {
-		if(count <=0 ) return null;
+		if (count <=0 ) return null;
 		count--;
 		DDP2P_DoubleLinkedList_Node<T> last = head.previous;
 		DDP2P_DoubleLinkedList_Node<T> new_last = last.previous;
@@ -145,8 +145,8 @@ public class DDP2P_DoubleLinkedList<T> {
 		
 		DDP2P_DoubleLinkedList_Node<T> prev = ins.previous;
 		DDP2P_DoubleLinkedList_Node<T> next = ins.next;
-		prev.next = next;
-		next.previous = prev;
+		if (prev != null) prev.next = next;
+		if (next != null) next.previous = prev;
 		
 		DDP2P_DoubleLinkedList_Node<T> old_first = head.next;
 		ins.next = old_first;
@@ -170,11 +170,12 @@ public class DDP2P_DoubleLinkedList<T> {
 		
 		DDP2P_DoubleLinkedList_Node<T> prev = ins.previous;
 		DDP2P_DoubleLinkedList_Node<T> next = ins.next;
-		prev.next = next;
-		next.previous = prev;
+		if (prev != null) prev.next = next;
+		if (next != null) next.previous = prev;
 		
 		ins.next = null;
 		ins.previous = null;
+		p.set_DDP2P_DoubleLinkedList_Node(null); // free it
 	}
 	public boolean inListProbably(T crt) {
 		if (!(crt instanceof DDP2P_DoubleLinkedList_Node_Payload<?>)) {

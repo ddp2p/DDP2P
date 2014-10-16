@@ -20,8 +20,6 @@
 
 package ciphersuits;
 
-import java.math.BigInteger;
-
 import ASN1.ASNObj;
 
 abstract public class SK extends ASNObj{

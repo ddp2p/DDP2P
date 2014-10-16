@@ -41,8 +41,9 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	private static final boolean _DEBUG = true;
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
 	private static final String V0 = "0";
+	private static final String V1 = "1";
 	
-	private String hash_alg = V0;
+	private String hash_alg = V1;
 	private String global_justificationID;//Printable
 	private String global_motionID;//Printable
 	private String global_answerTo_ID;//Printable
@@ -69,7 +70,8 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	private String organization_ID;
 	
 	private long peer_source_ID;
-	private boolean temporary = false;
+	private boolean hidden = false;
+	private boolean temporary = true;
 	private boolean requested = false;
 	private boolean blocked = false;
 	private boolean broadcasted = D_Organization.DEFAULT_BROADCASTED_ORG;
@@ -139,8 +141,8 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	public static class D_Justification_Node {
 		private static final int MAX_TRIES = 30;
 		/** Currently loaded peers, ordered by the access time*/
-		private static DDP2P_DoubleLinkedList<D_Justification> loaded_consts = new DDP2P_DoubleLinkedList<D_Justification>();
-		private static Hashtable<Long, D_Justification> loaded_const_By_LocalID = new Hashtable<Long, D_Justification>();
+		private static DDP2P_DoubleLinkedList<D_Justification> loaded_objects = new DDP2P_DoubleLinkedList<D_Justification>();
+		private static Hashtable<Long, D_Justification> loaded_By_LocalID = new Hashtable<Long, D_Justification>();
 		//private static Hashtable<String, D_Justification> loaded_const_By_GID = new Hashtable<String, D_Justification>();
 		//private static Hashtable<String, D_Justification> loaded_const_By_GIDhash = new Hashtable<String, D_Justification>();
 		private static Hashtable<String, Hashtable<Long, D_Justification>> loaded_const_By_GIDH_ORG = new Hashtable<String, Hashtable<Long, D_Justification>>();
@@ -266,7 +268,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			if(!crt.loaded_globals) return;
 			if ((crt.getGID() != null) && (!crt.isTemporary())) {
 				byte[] message = crt.encode();
-				synchronized(loaded_consts) {
+				synchronized(loaded_objects) {
 					crt.component_node.message = message; // crt.encoder.getBytes();
 					if(crt.component_node.message != null) current_space += crt.component_node.message.length;
 				}
@@ -285,15 +287,15 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		private static void register_loaded(D_Justification crt) {
 			if (DEBUG) System.out.println("D_Justification: register_loaded: start crt = "+crt);
 			crt.reloadMessage(); 
-			synchronized (loaded_consts) {
+			synchronized (loaded_objects) {
 				String gid = crt.getGID();
 				String gidh = crt.getGIDH();
 				long lid = crt.getLID();
 				Long organizationLID = crt.getOrganizationLID();
 				
-				loaded_consts.offerFirst(crt);
+				loaded_objects.offerFirst(crt);
 				if (lid > 0) {
-					loaded_const_By_LocalID.put(new Long(lid), crt);
+					loaded_By_LocalID.put(new Long(lid), crt);
 					if (DEBUG) System.out.println("D_Justification: register_loaded: store lid="+lid+" crt="+crt.getGIDH());
 				}else{
 					if (DEBUG) System.out.println("D_Justification: register_loaded: no store lid="+lid+" crt="+crt.getGIDH());
@@ -313,13 +315,13 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
 				
 				int tries = 0;
-				while ((loaded_consts.size() > MAX_LOADED_OBJECTS)
+				while ((loaded_objects.size() > MAX_LOADED_OBJECTS)
 						|| (current_space > MAX_OBJECTS_RAM)) {
-					if (loaded_consts.size() <= MIN_OBJECTS) break; // at least _crt_peer and _myself
+					if (loaded_objects.size() <= MIN_OBJECTS) break; // at least _crt_peer and _myself
 	
 					if (tries > MAX_TRIES) break;
 					tries ++;
-					D_Justification candidate = loaded_consts.getTail();
+					D_Justification candidate = loaded_objects.getTail();
 					if ((candidate.status_references > 0)
 							//||
 							//D_Justification.is_crt_const(candidate)
@@ -331,8 +333,8 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 						continue;
 					}
 					
-					D_Justification removed = loaded_consts.removeTail();//remove(loaded_peers.size()-1);
-					loaded_const_By_LocalID.remove(new Long(removed.getLID())); 
+					D_Justification removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
+					loaded_By_LocalID.remove(new Long(removed.getLID())); 
 					D_Justification_Node.remConstByGID(removed.getGID(), removed.getOrganizationLID());//loaded_const_By_GID.remove(removed.getGID());
 					D_Justification_Node.remConstByGIDH(removed.getGIDH(), removed.getOrganizationLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 					if (DEBUG) System.out.println("D_Justification: register_loaded: remove GIDH="+removed.getGIDH());
@@ -345,11 +347,11 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		 * @param crt
 		 */
 		private static void setRecent(D_Justification crt) {
-			loaded_consts.moveToFront(crt);
+			loaded_objects.moveToFront(crt);
 		}
 		public static boolean dropLoaded(D_Justification removed, boolean force) {
 			boolean result = true;
-			synchronized(loaded_consts) {
+			synchronized(loaded_objects) {
 				if (removed.status_references > 0 || removed.get_DDP2P_DoubleLinkedList_Node() == null)
 					result = false;
 				if (! force && ! result) {
@@ -357,13 +359,19 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 					return result;
 				}
 				
-				loaded_consts.remove(removed);
-				if (removed.getLIDstr() != null) loaded_const_By_LocalID.remove(new Long(removed.getLID())); 
+				if (loaded_objects.inListProbably(removed)) {
+					try {
+						loaded_objects.remove(removed); // Exception if not loaded
+						if (removed.component_node.message != null) current_space -= removed.component_node.message.length;	
+						if (DEBUG) System.out.println("D_Justification: dropLoaded: exit with force="+force+" result="+result);
+					} catch (Exception e) {
+						if (_DEBUG) e.printStackTrace();
+					}
+				}
+				if (removed.getLIDstr() != null) loaded_By_LocalID.remove(new Long(removed.getLID())); 
 				if (removed.getGID() != null) D_Justification_Node.remConstByGID(removed.getGID(), removed.getLID()); //loaded_const_By_GID.remove(removed.getGID());
 				if (removed.getGIDH() != null) D_Justification_Node.remConstByGIDH(removed.getGIDH(), removed.getLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 				if (DEBUG) System.out.println("D_Justification: drop_loaded: remove GIDH="+removed.getGIDH());
-				if (removed.component_node.message != null) current_space -= removed.component_node.message.length;	
-				if (DEBUG) System.out.println("D_Justification: dropLoaded: exit with force="+force+" result="+result);
 				return result;
 			}
 		}
@@ -424,6 +432,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 
 		this.peer_source_ID = Util.lval(o.get(table.justification.J_PEER_SOURCE_ID));
 		this.temporary = Util.stringInt2bool(o.get(table.justification.J_TEMPORARY),false);
+		this.hidden = Util.stringInt2bool(o.get(table.justification.J_HIDDEN),false);
 		this.blocked = Util.stringInt2bool(o.get(table.justification.J_BLOCKED),false);
 		this.requested = Util.stringInt2bool(o.get(table.justification.J_REQUESTED),false);
 		this.broadcasted = Util.stringInt2bool(o.get(table.justification.J_BROADCASTED), D_Organization.DEFAULT_BROADCASTED_ORG_ITSELF);
@@ -510,7 +519,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	static private D_Justification getJustByLID_AttemptCacheOnly (long ID, boolean load_Globals) {
 		if (ID <= 0) return null;
 		Long id = new Long(ID);
-		D_Justification crt = D_Justification_Node.loaded_const_By_LocalID.get(id);
+		D_Justification crt = D_Justification_Node.loaded_By_LocalID.get(id);
 		if (crt == null) return null;
 		
 		if (load_Globals && !crt.loaded_globals) {
@@ -731,11 +740,12 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			}
 
 			try {
-				if (storage != null)
+				if (storage == null)
 					crt = new D_Justification(GID, load_Globals, create, __peer, p_oLID, p_mLID);
-				else 
+				else {
+					D_Justification_Node.dropLoaded(storage, true);
 					crt = storage.initNew(GID, __peer, p_oLID, p_mLID);
-				
+				}
 				if (DEBUG) System.out.println("D_Justification: getJustByGID: loaded crt="+crt);
 				if (keep) {
 					crt.status_references ++;
@@ -811,8 +821,8 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		D_Justification c = D_Justification.getJustByLID(LID, true, false);
 		if (c == null) {
 			if (_DEBUG) System.out.println("D_Justification: getGIDFromLID: null for nLID = "+n_lID);
-			for (Long l : D_Justification_Node.loaded_const_By_LocalID.keySet()) {
-				if (_DEBUG) System.out.println("D_Justification: getGIDFromLID: available ["+l+"]"+D_Justification_Node.loaded_const_By_LocalID.get(l).getGIDH());
+			for (Long l : D_Justification_Node.loaded_By_LocalID.keySet()) {
+				if (_DEBUG) System.out.println("D_Justification: getGIDFromLID: available ["+l+"]"+D_Justification_Node.loaded_By_LocalID.get(l).getGIDH());
 			}
 			return null;
 		}
@@ -937,12 +947,17 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	}
 	public static String dumpDirCache() {
 		String s = "[";
-		s += D_Justification_Node.loaded_consts.toString();
+		s += D_Justification_Node.loaded_objects.toString();
 		s += "]";
 		return s;
 	}
 	
 	public Encoder getSignableEncoder() {
+		if (V0.equals(hash_alg)) return getSignableEncoder_V0();
+		if (V1.equals(hash_alg)) return getSignableEncoder_V1();
+		return getSignableEncoder_V1();
+	}
+	public Encoder getSignableEncoder_V0() {
 		Encoder enc = new Encoder().initSequence();
 		if(getHashAlg()!=null)enc.addToSequence(new Encoder(getHashAlg(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
 		if(getGID()!=null)enc.addToSequence(new Encoder(getGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
@@ -959,8 +974,25 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		//if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC11));
 		return enc;
 	}
+	public Encoder getSignableEncoder_V1() {
+		Encoder enc = new Encoder().initSequence();
+		if(getHashAlg()!=null)enc.addToSequence(new Encoder(getHashAlg(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
+		if(getGID()!=null)enc.addToSequence(new Encoder(getGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
+		if(getMotionGID()!=null)enc.addToSequence(new Encoder(getMotionGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
+		if(getAnswerTo_GID()!=null)enc.addToSequence(new Encoder(getAnswerTo_GID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
+		if(getJustificationTitle()!=null) enc.addToSequence(getJustificationTitle().getEncoder().setASN1Type(DD.TAG_AC4));
+		if(getJustificationText()!=null)enc.addToSequence(getJustificationText().getEncoder().setASN1Type(DD.TAG_AC5));
+		if(getConstituentGID()!=null)enc.addToSequence(new Encoder(getConstituentGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
+		//if(getCreationDate()!=null)enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC8));
+		return enc;
+	}
 	
 	public Encoder getHashEncoder() {
+		if (V0.equals(hash_alg)) return getHashEncoder_V0();
+		if (V1.equals(hash_alg)) return getHashEncoder_V1();
+		return getHashEncoder_V1();
+	}
+	public Encoder getHashEncoder_V0() {
 		Encoder enc = new Encoder().initSequence();
 		//if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
 		//if(global_justificationID!=null)enc.addToSequence(new Encoder(global_justificationID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
@@ -975,6 +1007,15 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC9));
 		//if(motion!=null)enc.addToSequence(motion.getEncoder().setASN1Type(DD.TAG_AC10));
 		//if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC11));
+		return enc;
+	}
+	public Encoder getHashEncoder_V1() {
+		Encoder enc = new Encoder().initSequence();
+		if(getMotionGID()!=null)enc.addToSequence(new Encoder(getMotionGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
+		if(getAnswerTo_GID()!=null)enc.addToSequence(new Encoder(getAnswerTo_GID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
+		if(getJustificationTitle()!=null) enc.addToSequence(getJustificationTitle().getEncoder().setASN1Type(DD.TAG_AC4));
+		if(getJustificationText()!=null)enc.addToSequence(getJustificationText().getEncoder().setASN1Type(DD.TAG_AC5));
+		if(getConstituentGID()!=null)enc.addToSequence(new Encoder(getConstituentGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
 		return enc;
 	}
 	public static byte getASN1Type() {
@@ -994,6 +1035,11 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	 */
 	@Override
 	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
+		if (V0.equals(hash_alg)) return getEncoder_V0(dictionary_GIDs, dependants);
+		if (V1.equals(hash_alg)) return getEncoder_V1(dictionary_GIDs, dependants);
+		return getEncoder_V1(dictionary_GIDs, dependants);
+	}
+	public Encoder getEncoder_V0(ArrayList<String> dictionary_GIDs, int dependants) {
 		int new_dependants = dependants;
 		if (dependants > 0) new_dependants = dependants - 1;
 		Encoder enc = new Encoder().initSequence();
@@ -1039,11 +1085,62 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		}
 		return enc;
 	}
+	public Encoder getEncoder_V1(ArrayList<String> dictionary_GIDs, int dependants) {
+		int new_dependants = dependants;
+		if (dependants > 0) new_dependants = dependants - 1;
+		Encoder enc = new Encoder().initSequence();
+		if (getHashAlg() != null)enc.addToSequence(new Encoder(getHashAlg(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
+		if (getGID() != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getGID());
+			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
+		}
+		if (getMotionGID() != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getMotionGID());
+			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
+		}
+		if (getAnswerTo_GID()!=null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getAnswerTo_GID());
+			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
+		}
+		if (getConstituentGID()!=null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getConstituentGID());
+			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
+		}
+		if (getJustificationTitle()!=null) enc.addToSequence(getJustificationTitle().getEncoder().setASN1Type(DD.TAG_AC5));
+		if (getJustificationText()!=null)enc.addToSequence(getJustificationText().getEncoder().setASN1Type(DD.TAG_AC6));
+		//if(author!=null)enc.addToSequence(author.getEncoder().setASN1Type(DD.TAG_AC7));
+		//if(last_reference_date!=null)enc.addToSequence(new Encoder(last_reference_date).setASN1Type(DD.TAG_AC8));
+		//if(getCreationDate()!=null)enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC9));
+		if(getSignature()!=null)enc.addToSequence(new Encoder(getSignature()).setASN1Type(DD.TAG_AC10));
+		
+		if (dependants != ASNObj.DEPENDANTS_NONE) {
+			if (getMotion()!=null)enc.addToSequence(getMotion().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC11));
+			if (getConstituent()!=null)enc.addToSequence(getConstituent().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC12));
+			if (getAnswerTo()!=null)enc.addToSequence(getAnswerTo().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC13));
+		}
+		/**
+		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
+		 * available at the destination from enclosing fields, and will be filled out at expansion
+		 * by ASNSyncPayload.expand at decoding.
+		 * However, it is not that damaging when using compression, and can be stored without much overhead.
+		 * So it is left here for now.  Test if you comment out!
+		 */
+		if (getOrgGID() != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getOrgGID());
+			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC14));
+		}
+		return enc;
+	}
 
 	@Override
 	public D_Justification decode(Decoder decoder) throws ASN1DecoderFail {
 		Decoder dec = decoder.getContent();
 		if(dec.getTypeByte()==DD.TAG_AC0)hash_alg = dec.getFirstObject(true).getString(DD.TAG_AC0);
+		if (V0.equals(hash_alg)) return decode_V0(dec);
+		if (V1.equals(hash_alg)) return decode_V1(dec);
+		return decode_V1(dec);
+	}
+	public D_Justification decode_V0(Decoder dec) throws ASN1DecoderFail {
 		if(dec.getTypeByte()==DD.TAG_AC1)global_justificationID = dec.getFirstObject(true).getString(DD.TAG_AC1);
 		if(dec.getTypeByte()==DD.TAG_AC2)global_motionID = dec.getFirstObject(true).getString(DD.TAG_AC2);
 		if(dec.getTypeByte()==DD.TAG_AC3)global_answerTo_ID = dec.getFirstObject(true).getString(DD.TAG_AC3);
@@ -1062,6 +1159,31 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if ((global_constituent_ID == null) && (constituent != null)) global_constituent_ID = constituent.getGID();
 		if ((global_answerTo_ID == null) && (answerTo != null)) global_answerTo_ID = answerTo.global_justificationID;
 		if ((global_motionID == null) && (motion != null)) global_motionID = motion.getGID();
+		
+		this.setTemporary(false);
+		return this;
+	}
+	public D_Justification decode_V1(Decoder dec) throws ASN1DecoderFail {
+		if(dec.getTypeByte()==DD.TAG_AC1)global_justificationID = dec.getFirstObject(true).getString(DD.TAG_AC1);
+		if(dec.getTypeByte()==DD.TAG_AC2)global_motionID = dec.getFirstObject(true).getString(DD.TAG_AC2);
+		if(dec.getTypeByte()==DD.TAG_AC3)global_answerTo_ID = dec.getFirstObject(true).getString(DD.TAG_AC3);
+		if(dec.getTypeByte()==DD.TAG_AC4)global_constituent_ID = dec.getFirstObject(true).getString(DD.TAG_AC4);
+		if(dec.getTypeByte()==DD.TAG_AC5)justification_title = new D_Document_Title().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC6)justification_text = new D_Document().decode(dec.getFirstObject(true));
+		//if(dec.getTypeByte()==DD.TAG_AC7)author = new D_Constituent().decode(dec.getFirstObject(true));
+		//if(dec.getTypeByte()==DD.TAG_AC8)last_reference_date = dec.getFirstObject(true).getGeneralizedTimeCalender(DD.TAG_AC8);
+		//if(dec.getTypeByte()==DD.TAG_AC9)creation_date = dec.getFirstObject(true).getGeneralizedTimeCalender(DD.TAG_AC9);
+		if(dec.getTypeByte()==DD.TAG_AC10)signature = dec.getFirstObject(true).getBytes(DD.TAG_AC10);
+		if(dec.getTypeByte()==DD.TAG_AC11)motion = D_Motion.getEmpty().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC12)constituent = D_Constituent.getEmpty().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC13)answerTo = new D_Justification().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC14)global_organization_ID = dec.getFirstObject(true).getString(DD.TAG_AC14);
+		
+		if ((global_constituent_ID == null) && (constituent != null)) global_constituent_ID = constituent.getGID();
+		if ((global_answerTo_ID == null) && (answerTo != null)) global_answerTo_ID = answerTo.global_justificationID;
+		if ((global_motionID == null) && (motion != null)) global_motionID = motion.getGID();
+		
+		this.setTemporary(false);
 		return this;
 	}
 
@@ -1160,7 +1282,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	}
 	
 	long storeAct() throws P2PDDSQLException {
-		///Util.printCallPath("");
+		//Util.printCallPath(""+this);
 		
 		if (dirty_main || dirty_preferences || dirty_local) {
 			storeAct_main();
@@ -1170,6 +1292,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		}
 		return this.getLID();
 	}
+	
 	long storeAct_mydata() throws P2PDDSQLException {
 		this.dirty_mydata = false;
 		String param[];
@@ -1206,6 +1329,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if (this.arrival_date == null && (this.getGIDH() != null)) {
 			this.arrival_date = Util.CalendargetInstance();
 			if (_DEBUG) System.out.println("D_Justification: storeAct_main: missing arrival_date");
+			Util.printCallPath("");
 		}		
 		
 		if (DEBUG) System.out.println("D_Justification:storeVerified: fixed local="+this);
@@ -1231,6 +1355,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		params[table.justification.J_REQUESTED] = Util.bool2StringInt(requested);
 		params[table.justification.J_BROADCASTED] = Util.bool2StringInt(broadcasted);
 		params[table.justification.J_TEMPORARY] = Util.bool2StringInt(temporary);
+		params[table.justification.J_HIDDEN] = Util.bool2StringInt(hidden);
 		params[table.justification.J_PEER_SOURCE_ID] = Util.getStringID(peer_source_ID);
 		if(this.justification_ID == null) {
 			if(DEBUG) System.out.println("WB_Justification:storeVerified:inserting");
@@ -1335,6 +1460,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	 * @return
 	 */
 	public long storeSynchronouslyNoException() {
+		//Util.printCallPath("Why store sync?");
 		try {
 			return storeAct();
 		} catch (P2PDDSQLException e) {
@@ -1448,6 +1574,10 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	}
 	public void setConstituentGID(String global_constituent_ID) {
 		this.global_constituent_ID = global_constituent_ID;
+		if (global_constituent_ID == null) {
+			this.constituent = null;
+			this.constituent_ID = null;
+		}
 	}
 	public String getOrgGID() {
 		return global_organization_ID;
@@ -1531,6 +1661,9 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	}
 	public Calendar getArrivalDate() {
 		return arrival_date;
+	}
+	public Calendar setArrivalDate() {
+		return this.setArrivalDate(Util.CalendargetInstance());
 	}
 	public Calendar setArrivalDate(Calendar arrival_date) {
 		this.arrival_date = arrival_date;
@@ -1701,7 +1834,10 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		boolean default_blocked_cons = false;
 		boolean default_blocked_mot = false;
 		
-		if (!this.isTemporary()) return false;
+		if (! this.isTemporary()) {
+			if (_DEBUG) System.out.println("D_Justification: loadRemote: this not temporary! quit");
+			return false;
+		}
 		
 		this.hash_alg = r.hash_alg;
 		this.justification_title = r.justification_title;
@@ -1747,11 +1883,13 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			if (new_rq != null) new_rq.just.add(r.getAnswerTo_GID());
 			//this.answerTo = r.answerTo;
 		}
-		sol_rq.just.add(this.getGID());
 		this.dirty_main = true;
+		if (sol_rq != null) sol_rq.just.add(this.getGID());
 		if (this.peer_source_ID <= 0 && __peer != null)
 			this.peer_source_ID = __peer.getLID_keep_force();
 		this.setTemporary(false);
+		this.setArrivalDate();
+		this.dirty_local = true;
 		return true;
 	}
 
@@ -1871,6 +2009,29 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 				r.add(new JustGIDItem(gid, id, name));
 			}
 			return r;
+	}
+
+	public long getProviderID() {
+		return this.peer_source_ID;
+	}
+	public D_Peer getProvider() {
+		if (peer_source_ID <= 0) return null;
+		return D_Peer.getPeerByLID(peer_source_ID, true, false);
+	}
+
+	public boolean isHidden() {
+		return this.hidden;
+	}
+	/**
+	 * sets dirty preferences
+	 * @param h
+	 * @return
+	 */
+	public boolean setHidden(boolean h) {
+		boolean old = this.hidden;
+		this.hidden = h;
+		this.dirty_preferences = true;
+		return old;
 	}
 }
 

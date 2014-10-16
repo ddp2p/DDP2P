@@ -41,6 +41,7 @@ abstract public class Cipher{
 	String hash_alg;
 	public static final String RSA = "RSA";
 	public static final String ECDSA = "ECDSA";
+	public static final String DSA = "DSA";
 //	public static final String EC_EG = "ECElGamal";
 	public static final String MD5 = "MD5";
 	public static final String MD2 = "MD2";
@@ -97,6 +98,12 @@ abstract public class Cipher{
 		}
 		if(ECDSA.equals(cipher)){
 			result = new ECDSA();
+			result.hash_alg = _hash_alg;
+			result.comment = _comments;
+			return result;
+		}
+		if(DSA.equals(cipher)){
+			result = new DSA();
 			result.hash_alg = _hash_alg;
 			result.comment = _comments;
 			return result;
@@ -176,6 +183,19 @@ abstract public class Cipher{
 			}
 			return pk;
 		}
+		if (DSA.equals(type)) {
+			if (DEBUG) System.err.println("Cipher:getPK: found DSA");
+			DSA_PK pk = null;
+			try {
+				if (DEBUG) System.err.println("Cipher:getPK: decoding");
+				pk = new DSA_PK(decoder);
+				if (DEBUG) System.err.println("Cipher:getPK: decoded");
+			} catch (ASN1DecoderFail e) {
+				if (_DEBUG) System.err.println("Cipher:getPK: failed decoding");
+				return null;
+			}
+			return pk;
+		}
 		if(DEBUG) System.err.println("Cipher:getPK: unknown");
 		return null;
 	}
@@ -220,6 +240,16 @@ abstract public class Cipher{
 			}
 			return sk;
 		}
+		if(DSA.equals(type)){
+			DSA_SK sk = null;
+			try {
+				sk = new DSA_SK(decoder);
+			} catch (ASN1DecoderFail e) {
+				e.printStackTrace();
+				return null;
+			}
+			return sk;
+		}
     	if(_DEBUG)System.err.println("SK:getSK: Unsupported Cipher type: "+type);
 		return null;
 	}
@@ -235,6 +265,9 @@ abstract public class Cipher{
 		}
 		if (pk instanceof ECDSA_PK) {
 			return new ciphersuits.ECDSA(null, (ECDSA_PK)pk);
+		}
+		if (pk instanceof DSA_PK) {
+			return new ciphersuits.DSA(null, (DSA_PK)pk);
 		}
 		return null;
 	}
@@ -256,6 +289,10 @@ abstract public class Cipher{
 			if (pk == null) pk = sk.getPK();
 			return new ciphersuits.ECDSA((ECDSA_SK)sk, (ECDSA_PK)pk);
 		}
+		if (sk instanceof DSA_SK) {
+			if (pk == null) pk = sk.getPK();
+			return new ciphersuits.DSA((DSA_SK)sk, (DSA_PK)pk);
+		}
 		return null;
 	}
 	public static boolean isPair(SK sk, PK pk) {
@@ -276,6 +313,12 @@ abstract public class Cipher{
 			if(_pk.__equals(pk)) return true;
 			if (DEBUG) System.out.println("Cipher:isPair: ECDSA <> \n"+pk+"\n\n"+_pk);
 		}
+		if (DSA.equals(sk.getType())) {
+			if (DEBUG) System.out.println("Cipher:isPair: compare DSA");
+			DSA_PK _pk = (DSA_PK) (sk.getPK());
+			if(_pk.__equals(pk)) return true;
+			if (DEBUG) System.out.println("Cipher:isPair: DSA <> \n"+pk+"\n\n"+_pk);
+		}
 		return false;
 	}
 	public static boolean equalPK(PK p1, PK p2){
@@ -289,10 +332,15 @@ abstract public class Cipher{
 			ECDSA_PK r2 = (ECDSA_PK) p2;
 			return r1.__equals(r2);
 		}
+		if ((p1 instanceof DSA_PK) && (p2 instanceof DSA_PK)) {
+			DSA_PK r1 = (DSA_PK) p1;
+			DSA_PK r2 = (DSA_PK) p2;
+			return r1.__equals(r2);
+		}
 		return false;
 	}
 	public static String[] getAvailableCiphers() {
-		return new String[]{Cipher.RSA, Cipher.ECDSA};
+		return new String[]{Cipher.RSA, Cipher.ECDSA, Cipher.DSA};
 	}
 	public static Cipher_Sizes getAvailableSizes(String cipher) {
 		if(cipher == null) {
@@ -303,6 +351,10 @@ abstract public class Cipher{
 		if(Cipher.RSA.equals(cipher)) {
 			if (DEBUG) System.out.println("Cipher:getAvailableSizes RSA");
 			return new Cipher_Sizes(2048, Cipher_Sizes.INT_RANGE, new int[]{230,20000});
+		}
+		if(Cipher.DSA.equals(cipher)) {
+			if (DEBUG) System.out.println("Cipher:getAvailableSizes DSA");
+			return new Cipher_Sizes(1024, Cipher_Sizes.INT_RANGE, new int[]{230,20000});
 		}
 		if (Cipher.ECDSA.equals(cipher)) {
 			if (DEBUG) System.out.println("Cipher:getAvailableSizes ECDSA");
@@ -328,6 +380,8 @@ abstract public class Cipher{
 			else if(size > 160+30) return new String[]{Cipher.SHA1, Cipher.MD5, Cipher.HNULL};
 			else if(size > 128+30) return new String[]{Cipher.MD5, Cipher.HNULL};
 			return null;
+		case Cipher.DSA:
+			return new String[]{Cipher.SHA1, Cipher.MD5, Cipher.HNULL};
 		case Cipher.ECDSA:
 			size = ECC.getCurveID(size);
 			switch(size) {
@@ -347,9 +401,11 @@ abstract public class Cipher{
 	public static String getDefaultCipher() {
 		return Cipher.ECDSA;
 	}
+	/*
 	public static String buildCiphersuitID(String ciphersuit, String hash) {
-		return ciphersuit+":"+hash;
+		return ciphersuit+Cipher.cipherTypeSeparator+hash;
 	}
+	*/
 	/**
 	 * Key comment based on:  key_comment+"://"+seed+now
 	 * @param ciphersuit

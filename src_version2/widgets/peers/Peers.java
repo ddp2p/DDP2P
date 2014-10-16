@@ -2183,6 +2183,8 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		if(column == PeersModel.TABLE_COL_REVOKED){ 
 			return DDIcons.getRevokedImageIcon("Revoked");
 		}
+//		if (column == PeersModel.TABLE_COL_ARRIVAL_DATE)
+//			return DDIcons.getLandingImageIcon("Arrival");	
 		return null;
 	}
 	private String getPluginGIDcol(int col) {

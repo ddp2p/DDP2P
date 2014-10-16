@@ -1072,6 +1072,14 @@ public class DD {
 	public static final int CLIENTS_RANDOM_MEMORY = 10; // max size of randomID for ASNSyncRequest
 	public static final String APP_CLAIMED_DATA_HASHES = "CLAIMED_DATA_HASHES";
 	public static final long DOMAINS_UPDATE_WAIT = 1000 * 200;
+	/**
+	 *  // when motions signatures were deleted by error, this fixes those who were signed with a key I know.
+	 */
+	public static final boolean FIX_UNSIGNED_MOTIONS = false;
+	/**
+	 * Accept unsigned motions (but normally accompanied with some signatures
+	 */
+	public static final boolean ACCEPT_ANONYMOUS_MOTIONS = true;
 	
 	public static boolean RELEASE = true;
 	/** dir_IP: (GID: ()addresses) */

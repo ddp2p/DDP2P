@@ -37,6 +37,7 @@ public class justification {
 	 public static final String arrival_date = "arrival_date";
 	 public static final String preferences_date = "preferences_date";
 	 public static final String temporary = "temporary";
+	 public static final String hidden = "hidden";
 	 public static final String peer_source_ID = "peer_source_ID";
 	 public static final String blocked = "blocked";
 	public static final String requested = "requested";
@@ -64,7 +65,8 @@ public class justification {
 		broadcasted+","+
 		temporary+","+
 		peer_source_ID+","+
-		preferences_date
+		preferences_date+","+
+		hidden
 		// +","+organization_ID
 		;
 	public static String fields = fields_noID + "," + justification_ID;
@@ -92,7 +94,8 @@ public class justification {
 	public static final int J_TEMPORARY = 17;
 	public static final int J_PEER_SOURCE_ID = 18;
 	public static final int J_PREFERENCES_DATE = 19;
+	public static final int J_HIDDEN = 20;
 	//public static final int J_ORG_ID = 14;
-	public static final int J_ID = 20;
+	public static final int J_ID = 21;
 	public static final int J_FIELDS = fields_array.length;
 }

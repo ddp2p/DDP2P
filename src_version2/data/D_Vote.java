@@ -674,7 +674,7 @@ class D_Vote extends ASNObj{
 			constituent_ID = D_Constituent.getLIDstrFromGID(this.global_constituent_ID, Util.Lval(organization_ID));
 		
 		if(constituent_ID == null){
-			if(DEBUG) System.out.println("WB_Vote:storeVerified: no signer!");
+			if(_DEBUG) System.out.println("WB_Vote:storeVerified: abandon no signer!");
 			return -1;
 		}
 		if((this.motion_ID == null ) && (this.getMotionGID() != null))

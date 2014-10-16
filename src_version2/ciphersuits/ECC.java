@@ -105,7 +105,7 @@ class ECC extends ASNObj {
 		BigInteger exponent = p.subtract(BigInteger.ONE)
 				.shiftRight(1);
 		BigInteger test = y2.modPow(exponent, p);
-		if(!hasSquare(test))
+		if (! hasSquare(test))
 				throw new RuntimeException("Not square: "+y2+" test="+test+" exp="+exponent+" p="+p);
 		return modSquareRoot(y2);
 	}

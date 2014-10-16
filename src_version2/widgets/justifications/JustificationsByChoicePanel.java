@@ -204,17 +204,18 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 		j = new Justifications[choices.length];
 		js = new JScrollPane[choices.length];
 		jl = new JLabel[choices.length];
-		for(int k=0; k<choices.length; k++){
+		for (int k = 0; k < choices.length; k ++){
 			Justifications jus;
 			jus = new Justifications(300);
-			j[k]=jus;
+			j[k] = jus;
 			JustificationsModel model = jus.getModel();
 			D_MotionChoice choice = choices[k];
-			String short_name = (choice==null)?(__("Choice")+"_"+k):choice.short_name;
+			String short_name = (choice == null) ? (__("Choice") + "_" + k) : choice.short_name;
 			model.setCrtChoice(short_name);
-			if(DEBUG) System.out.println("JBC:update_layout: name="+choices[k].short_name);
-			js[k]=jus.getScrollPane();
-			jl[k]=new JLabel();
+			jus.init(); //.initColumnSizes();
+			if (DEBUG) System.out.println("JBC:update_layout: name="+choices[k].short_name);
+			js[k] = jus.getScrollPane();
+			jl[k] = new JLabel();
 			jl[k].setPreferredSize(new Dimension(0,TOTALS_HEIGHT));
 			multiSplitPane.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT,jl[k],js[k]),short_name);
 			//j[k].setPreferredSize(new Dimension(1000,1000));

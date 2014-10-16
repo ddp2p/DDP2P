@@ -24,11 +24,8 @@ import java.security.SecureRandom;
 import java.util.Hashtable;
 
 import util.Util;
-
 import config.DD;
-
 import ASN1.ASN1DecoderFail;
-import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 class ECDSA_PK extends PK {
@@ -110,8 +107,10 @@ class ECDSA_PK extends PK {
 	}
 	public String toString() {
 		return "ECDSA_PK[ID="+this.ECC_curve_ID+"\n"
-				+ " y="+y+"\n"
-				+ " x="+x+"\n"
+				+ " y="+EC_Point.toString(y,curve)+" \n"
+				+ " x="+EC_Point.toString(x,curve)+" \n"
+//				+ " y="+y+"\n"
+//				+ " x="+x+"\n"
 				+ " curve="+curve+"\n"
 				+ "]";
 	}
@@ -244,37 +243,10 @@ class ECDSA_PK extends PK {
 	}
 	
 }
-class ECDSA_Signature extends ASNObj{
-	BigInteger r;
-	BigInteger s;
-	public String toString(){
-		return "ECDSA_SG[r="+Util.toString16(r)+" s="+Util.toString16(s)+"]";
-	}
-	ECDSA_Signature(BigInteger r, BigInteger s) {
-		this.r = r;
-		this.s = s;
-	}
-	public ECDSA_Signature(byte[] signature) throws ASN1DecoderFail {
-		this.decode(new Decoder(signature));
-	}
-	@Override
-	public Encoder getEncoder() {
-		Encoder enc = new Encoder().initSequence();
-		enc.addToSequence(new Encoder(r));
-		enc.addToSequence(new Encoder(s));
-		return enc;
-	}
-	@Override
-	public ECDSA_Signature decode(Decoder dec) throws ASN1DecoderFail {
-		Decoder d = dec.getContent();
-		r = d.getFirstObject(true).getInteger();
-		s = d.getFirstObject(true).getInteger();
-		return this;
-	}
-}
 class ECDSA_SK extends SK{
 	final static String V0="0";
 	private static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
 	String version = V0; // version to write out, decoding converts to this version
 	int ECC_curve_ID;
 	//BigInteger p;
@@ -293,10 +265,10 @@ class ECDSA_SK extends SK{
 	BigInteger n; // order of x
 	String hash_alg = Cipher.SHA1;
 	public String toString() {
-		return "ECDSA_SK[\n"
+		return "ECDSA_SK[ID="+ECC_curve_ID+"\n"
 				+ " m="+m+" \n"
-				+ " y="+y+" \n"
-				+ " x="+x+" \n"
+				+ " y="+EC_Point.toString(y,curve)+" \n"
+				+ " x="+EC_Point.toString(x,curve)+" \n"
 				+ " curve="+curve+"\n"
 				+ " hash="+hash_alg+"\n"
 				+ "]";
@@ -305,9 +277,14 @@ class ECDSA_SK extends SK{
 	public ECDSA_SK(Decoder d) throws ASN1DecoderFail{
 		decode(d);
 	}
-	public ECDSA_SK(int id, BigInteger d) {
+	/**
+	 * Curve id and secret point m
+	 * @param id
+	 * @param _m
+	 */
+	public ECDSA_SK(int id, BigInteger _m) {
 		init(id);
-		m = d;
+		m = _m;
 		y = ECC.mul(x, m);
 		//System.out.println("m="+m.toString(16));
 		//System.out.println("y="+y);
@@ -473,7 +450,7 @@ class ECDSA_SK extends SK{
 	@Override
 	public ECDSA_SK decode(Decoder dec) throws ASN1DecoderFail {
 		String ver;
-		byte tag;
+		//byte tag;
 		Decoder d = dec.getContent();
 		if (0 != ECDSA.type.compareTo(d.getFirstObject(true).getString()))
 			throw new ASN1DecoderFail("Not ECC");
@@ -491,10 +468,15 @@ class ECDSA_SK extends SK{
 		init(ECC_curve_ID);
 		//x = new EC_Point(curve, d.getFirstObject(true));
 		m = d.getFirstObject(true).getInteger();
-		if ((d.getFirstObject(false) != null)&&(d.getTypeByte() == EC_Point.getASN1TAG() )) {
+		if ((d.getFirstObject(false) != null) && (d.getTypeByte() == EC_Point.getASN1TAG() )) {
+			if (DEBUG) System.out.println("ECDSA: decode: y");
 			y = new EC_Point(curve, d.getFirstObject(true));
+			if (DEBUG) System.out.println("ECDSA: decode: y ="+y);
+			//y = x.mul(m);
+			//if (_DEBUG) System.out.println("ECDSA: decode: y?="+y);
 		} else {
 			y = x.mul(m);
+			if (DEBUG) System.out.println("ECDSA: decode: y<="+y);
 		}
 		if (d.getFirstObject(false) != null) {
 			comment = d.getFirstObject(true).getString();
@@ -822,17 +804,19 @@ public class ECDSA extends ciphersuits.Cipher{
 	}
 	public static void main(String[] args) {
 		int id = Integer.parseInt(args[0]);
-		BigInteger d = new BigInteger(args[1],16);
-		BigInteger k = new BigInteger(args[2],16);
+		BigInteger d = new BigInteger(args[1],10);
+		//BigInteger k = new BigInteger(args[2],16);
 		byte[] msg = Util._byteSignatureFromString(args[3]);//new BigInteger(args[3],16);
 		//Cipher c = Cipher.getCipher(Cipher.ECDSA, Cipher.SHA1, "Test");
 		ECDSA_SK sk = new ECDSA_SK(id, d);
+		sk.hash_alg = Cipher.SHA384;
 		//EC_Point ecp = new EC_Point(sk.x.getX(),true, sk.curve);
 		//ecp.decompress();
 		//System.out.println("ECDSA: point: ="+ecp+"\n minus="+ecp.minus());
 		byte message[] = msg;//new byte[]{1,2,3};
 		//byte sign[] = sk.sign(message, k);
 		byte sign[] = sk.sign_pad_hash(message);
+		System.out.println("ECDSA: sign="+Util.byteToHex(sign));
 		ECDSA_Signature sg = null;
 		try {
 			sg = new ECDSA_Signature(sign);
@@ -841,7 +825,11 @@ public class ECDSA extends ciphersuits.Cipher{
 		}
 		PK pk = sk.getPK();
 		//boolean v = pk.verify(sign, message);
+		System.out.println("ECDSA: v: sign="+Util.byteToHex(sign)+"\n hash="+Util.byteToHex(Util.simple_hash(sign, Cipher.MD5)));
+		System.out.println("ECDSA: v: msg="+Util.byteToHex(msg)+"\n hash="+Util.byteToHex(Util.simple_hash(msg, Cipher.MD5)));
+		System.out.println("ECDSA: v: pk="+pk);
 		boolean v = pk.verify_unpad_hash(sign, message);
 		System.out.println("ECDSA: s="+sg+"\nv="+v);
+		System.out.println("ECDSA: sk="+sk);
 	}
 }

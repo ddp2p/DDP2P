@@ -22,7 +22,6 @@ package ciphersuits;
 import java.math.BigInteger;
 
 import util.Util;
-
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
@@ -38,6 +37,7 @@ import config.DD;
 class EC_Point extends ASNObj implements AdditiveGroup{
 	public static final EC_Point INFINITY = null;
 	private static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
 	ECC _curve;
 	public static ECC default_curve;
 	boolean inf = false; // null is infinity
@@ -74,7 +74,7 @@ class EC_Point extends ASNObj implements AdditiveGroup{
 	}
 	public EC_Point(EC_Point x2) {
 		x = new BigInteger(x2.x.toByteArray());
-		y= new BigInteger(x2.getY().toByteArray());
+		y = new BigInteger(x2.getY().toByteArray());
 		this.compressed = x2.compressed;
 		this.compressed_y = x2.compressed_y;
 		this._curve = x2._curve;
@@ -110,7 +110,8 @@ class EC_Point extends ASNObj implements AdditiveGroup{
 			this._curve = curve;
 	}
 	public void decompress() {
-		if(y != null){
+		if (y != null) {
+			if (DEBUG) System.out.println("EC_Point: decompress  y not null: "+y);
 			return;
 		} else {
 			if (DEBUG) System.out.println("EC_Point: decompress not null: "+this);
@@ -121,20 +122,29 @@ class EC_Point extends ASNObj implements AdditiveGroup{
 	 * Execute even if y already existed (overwriting it
 	 */
 	public void force_decompress() {
-		if(!compressed){
+		if (DEBUG) System.out.println("EC_Point: force_decompress: start");
+		if (! compressed) {
 			System.out.println("EC_Point: decompressed.. not compressed");
 			return;
 		}
-		if(getCurve()==null) throw new RuntimeException("Set EC!");
+		if (getCurve() == null) throw new RuntimeException("Set EC!");
 		y = getCurve().evaluate_y(x);
-		if (DEBUG) System.out.println("EC_Point: force_decompress "+y);
-		if((compressed_y)&&(!y.testBit(0))) {
+		if (DEBUG) System.out.println("EC_Point: force_decompress was: "+y);
+		if ((compressed_y) && (! y.testBit(0))) {
+			if (DEBUG) System.out.println("EC_Point: force_decompress <- "+y);
 			y = getCurve().minus(y);
-			if (DEBUG) System.out.println("EC_Point: force_decompress -- "+y);
+			if (DEBUG) System.out.println("EC_Point: force_decompress -> "+y);
+			return;
+		}
+		if ((! compressed_y) && (y.testBit(0))) {
+			if (DEBUG) System.out.println("EC_Point: .force_decompress <- "+y);
+			y = getCurve().minus(y);
+			if (DEBUG) System.out.println("EC_Point: .force_decompress -> "+y);
+			return;
 		}
 	}
 	public void compress() {
-		if(inf || (y==null)) return;
+		if (inf || (y == null)) return;
 		compressed_y = y.testBit(0);
 		compressed = true;
 	}
@@ -152,6 +162,13 @@ class EC_Point extends ASNObj implements AdditiveGroup{
 		return "("+Util.toString16(getX())+","+Util.toString16(y)+"/"+compressed_y+
 				"\n\tPoint curve="+getCurve()+")";
 	}
+	public static String toString(EC_Point _x, ECC curve) {
+		if (_x == null) return "null";
+		if(_x.inf) return "INFINITY";
+		_x.compress();
+		return "("+Util.toString16(_x.getX())+","+Util.toString16(_x.y)+"/"+_x.compressed_y+
+				((curve == _x.getCurve())?"":"\n\tPoint curve="+_x.getCurve())+")";
+	}
 	/**
 	 * TAC_AC13
 	 * @return
@@ -163,7 +180,7 @@ class EC_Point extends ASNObj implements AdditiveGroup{
 	public Encoder getEncoder() {
 		Encoder e = new Encoder().initSequence();
 		compress();
-		if(inf){
+		if (inf) {
 			e.addToSequence(new Encoder(inf));
 		}else{
 			e.addToSequence(new Encoder(x));
@@ -174,19 +191,21 @@ class EC_Point extends ASNObj implements AdditiveGroup{
 	@Override
 	public EC_Point decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();
-		if(d.getFirstObject(false).getTypeByte()==Encoder.TAG_BOOLEAN){
+		if (d.getFirstObject(false).getTypeByte() == Encoder.TAG_BOOLEAN) {
 			inf = true;
 			return this;
 		}
 		x = d.getFirstObject(true).getInteger();
 		compressed_y = d.getFirstObject(true).getBoolean();
 		compressed = true;
-		if(getCurve()!=null) decompress();
+		if (DEBUG) System.out.println("EC_Point: decode: uncompressed yet is: "+this);
+		if (getCurve() != null) decompress();
+		if (DEBUG) System.out.println("EC_Point: decode: decompressed yep is: "+this);
 		return this;
 	}
 	public boolean nullEnd() {
 		boolean r = BigInteger.ZERO.equals(getY());
-		if(DEBUG) System.out.println("nullEnd: "+r+" due to y="+getY());
+		if (DEBUG) System.out.println("nullEnd: "+r+" due to y="+getY());
 		return r;
 	}
 	@Override

@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import javax.swing.Action;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -41,6 +42,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.UIManager;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
@@ -52,10 +54,13 @@ import util.DBInterface;
 import util.Util;
 import widgets.app.DDIcons;
 import widgets.app.MainFrame;
+import widgets.components.BulletRenderer;
 import widgets.components.DebateDecideAction;
 //import widgets.org.ColorRenderer;
 import widgets.components.DocumentTitleRenderer;
 import widgets.justifications.JustificationsModel;
+import widgets.motions.Motions;
+import widgets.motions.MotionsModel;
 import config.Application;
 import config.JustificationsListener;
 //import config.DDIcons;
@@ -73,28 +78,37 @@ public class Justifications extends JTable implements MouseListener, Justificati
 	private static final boolean DEBUG = false;
 	private DocumentTitleRenderer titleRenderer;
 	DefaultTableCellRenderer centerRenderer;
+	BulletRenderer hotRenderer;
 	public Justifications(int dim_x) {
 		super(new JustificationsModel(Application.db));
 		DIM_X = dim_x;
+		//getModel().columnNames = getModel().getCrtColumns();
 		init();
+		//getModel().setCrtChoice(null);
 	}
 	public Justifications() {
 		super(new JustificationsModel(Application.db));
+		//getModel().columnNames = getModel().getCrtColumns();
 		init();
+		//getModel().setCrtChoice(null);
 	}
 	public Justifications(DBInterface _db) {
 		super(new JustificationsModel(_db));
+		//getModel().columnNames = getModel().getCrtColumns();
 		init();
+		//getModel().setCrtChoice(null);
 	}
 	public Justifications(JustificationsModel dm) {
 		super(dm);
+		//dm.columnNames = dm.getCrtColumns();
 		init();
+		//getModel().setCrtChoice(null);
 	}
 	public void connectWidget() {
 		getModel().connectWidget();
 		
 		MainFrame.status.addMotionStatusListener(this.getModel());
-    	if(_jedit != null) MainFrame.status.addJustificationStatusListener(_jedit);
+    	if (_jedit != null) MainFrame.status.addJustificationStatusListener(_jedit);
     	MainFrame.status.addJustificationStatusListener(this);
 	}
 	public void disconnectWidget() {
@@ -108,10 +122,10 @@ public class Justifications extends JTable implements MouseListener, Justificati
 	//JPanel
 	Component just_panel = null;
 	public Component getComboPanel() {
-		if(just_panel != null) return just_panel;
-		if(DEBUG) System.out.println("createAndShowGUI: added justif");
-    	if(_jedit == null) _jedit = new JustificationEditor();
-		if(DEBUG) System.out.println("createAndShowGUI: added justif editor");
+		if (just_panel != null) return just_panel;
+		if (DEBUG) System.out.println("createAndShowGUI: added justif");
+    	if (_jedit == null) _jedit = new JustificationEditor();
+		if (DEBUG) System.out.println("createAndShowGUI: added justif editor");
     	just_panel = MainFrame.makeJustificationPanel(_jedit, this);
     	//javax.swing.JScrollPane jscj = new javax.swing.JScrollPane(just_panel);
 		//tabbedPane.addTab("Justifications", jscj);
@@ -123,13 +137,16 @@ public class Justifications extends JTable implements MouseListener, Justificati
 		MainFrame.status.addJustificationStatusListener(_jedit);
     	return just_panel;//jscj;
 	}
-	void init(){
+	void init() {
 		getModel().setTable(this);
 		addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
 		//colorRenderer = new ColorRenderer(getModel());
 		titleRenderer = new DocumentTitleRenderer();
 		centerRenderer = new DefaultTableCellRenderer();
+		hotRenderer = new BulletRenderer(
+				DDIcons.getHotImageIcon("Hot"), DDIcons.getHotGImageIcon("Hot"),
+				null, __("Recently Contacted"),  __("Not Recently Contacted"), null);
 		centerRenderer.setHorizontalAlignment( JLabel.CENTER );
 		initColumnSizes();
 		this.getTableHeader().setToolTipText(
@@ -142,11 +159,11 @@ public class Justifications extends JTable implements MouseListener, Justificati
 
 			//@Override
 			public int _compare(Object o1, Object o2) {
-				if(o1==null) return 1;
-				if(o2==null) return -1;
+				if (o1 == null) return 1;
+				if (o2 == null) return -1;
 				String s1 = Util.getString(o1), s2 = Util.getString(o2);
-				if(o1 instanceof data.D_Document_Title) s1 = ((data.D_Document_Title)o1).title_document.getDocumentUTFString();
-				if(o2 instanceof data.D_Document_Title) s2 = ((data.D_Document_Title)o2).title_document.getDocumentUTFString();
+				if (o1 instanceof data.D_Document_Title) s1 = ((data.D_Document_Title)o1).title_document.getDocumentUTFString();
+				if (o2 instanceof data.D_Document_Title) s2 = ((data.D_Document_Title)o2).title_document.getDocumentUTFString();
 				return s1.compareTo(s2);
 			}
 
@@ -162,16 +179,36 @@ public class Justifications extends JTable implements MouseListener, Justificati
 		this.getRowSorter().toggleSortOrder(getModel().TABLE_COL_ARRIVAL_DATE);
 		this.getRowSorter().toggleSortOrder(getModel().TABLE_COL_ARRIVAL_DATE);
 
+		DefaultTableCellRenderer rend = new DefaultTableCellRenderer() {
+			public Component getTableCellRendererComponent(JTable table,
+			Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+				JLabel headerLabel = (JLabel)
+						super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+				Icon icon = Justifications.this.getModel().getIcon(column);
+				if(icon != null)  headerLabel.setText(null);
+				headerLabel.setIcon(icon);
+			    setBorder(UIManager.getBorder("TableHeader.cellBorder"));
+			    setHorizontalAlignment(JLabel.CENTER);
+			    return headerLabel;
+			}
+		};
 		
-    	try{
-    		if (Identity.getCurrentIdentity().identity_id!=null) {
-    			//long id = new Integer(Identity.current.identity_id).longValue();
-    			long orgID = Identity.getDefaultOrgID();
-    			this.setCurrentJust(orgID);
-    			int row =this.getSelectedRow();
-     			this.fireListener(row, A_NON_FORCE_COL, true);
-    		}
-    	}catch(Exception e){e.printStackTrace();}
+		//getTableHeader().setDefaultRenderer(rend);
+		for (int col_index = 0; col_index < getModel().getColumnCount(); col_index++) {
+			if (getModel().getIcon(col_index) != null) {
+				getTableHeader().getColumnModel().getColumn(col_index).setHeaderRenderer(rend);
+			}
+		}
+		
+//    	try{
+//    		if (Identity.getCurrentIdentity().identity_id!=null) {
+//    			//long id = new Integer(Identity.current.identity_id).longValue();
+//    			long orgID = Identity.getDefaultOrgID();
+//    			this.setCurrentJust(orgID);
+//    			int row =this.getSelectedRow();
+//     			this.fireListener(row, A_NON_FORCE_COL, true);
+//    		}
+//    	}catch(Exception e){e.printStackTrace();}
 	}
 	public JScrollPane getScrollPane(){
         JScrollPane scrollPane = new JScrollPane(this);
@@ -187,9 +224,21 @@ public class Justifications extends JTable implements MouseListener, Justificati
 		return jp;
     }
 
+    DefaultTableCellRenderer defaultTableCellRenderer = new DefaultTableCellRenderer();
 	public TableCellRenderer getCellRenderer(int row, int column) {
 		if ((column == getModel().TABLE_COL_NAME)) return titleRenderer;
 		if ((column == getModel().TABLE_COL_VOTERS_NB)) return centerRenderer;
+
+		
+		if (column == getModel().TABLE_COL_RECENT) //return super.getCellRenderer(row, column);
+			return hotRenderer;
+		if (column == getModel().TABLE_COL_BROADCASTED) return super.getCellRenderer(row, column);
+		if (column == getModel().TABLE_COL_BLOCKED) return super.getCellRenderer(row, column);
+		if (column == getModel().TABLE_COL_TMP) return super.getCellRenderer(row, column);
+		if (column == getModel().TABLE_COL_GID_VALID) return super.getCellRenderer(row, column);
+		if (column == getModel().TABLE_COL_SIGN_VALID) return super.getCellRenderer(row, column);
+		if (column == getModel().TABLE_COL_HIDDEN) return super.getCellRenderer(row, column);
+		//return super.getCellRenderer(row, column);
 		//if ((column == JustificationsModel.TABLE_COL_CONNECTION)) return bulletRenderer;
 //		if (column >= JustificationsModel.TABLE_COL_PLUGINS) {
 //			int plug = column-JustificationsModel.TABLE_COL_PLUGINS;
@@ -198,7 +247,10 @@ public class Justifications extends JTable implements MouseListener, Justificati
 //				return plugin_applets.get(pluginID).renderer;
 //			}
 //		}
-		return super.getCellRenderer(row, column);
+		TableCellRenderer result = defaultTableCellRenderer;//super.getCellRenderer(row, column);
+        if(DEBUG) System.out.println("Motions:getCellRenderer default="+result);
+		return result;
+		//return super.getCellRenderer(row, column);
 	}
     @SuppressWarnings("serial")
 	protected JTableHeader createDefaultTableHeader() {

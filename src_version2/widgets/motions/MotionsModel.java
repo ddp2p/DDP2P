@@ -43,6 +43,7 @@ import data.D_Document_Title;
 import data.D_Justification;
 import data.D_Motion;
 import data.D_Organization;
+import data.D_Peer;
 import data.D_Vote;
 import streaming.RequestData;
 import streaming.WB_Messages;
@@ -63,15 +64,16 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	public static final int TABLE_COL_ACTIVITY = 4; // number of votes + news
 	public static final int TABLE_COL_RECENT = 5; // any activity in the last x days?
 	public static final int TABLE_COL_NEWS = 6; // unread news?
-	public static final int TABLE_COL_CREATION_DATE = 7; // unread news?
-	public static final int TABLE_COL_BROADCASTED = 8; // unread news?
-	public static final int TABLE_COL_BLOCKED = 9; // unread news?
+	public static final int TABLE_COL_PROVIDER = 7; 
+	public static final int TABLE_COL_BROADCASTED = 8; 
+	public static final int TABLE_COL_BLOCKED = 9; 
 	public static final int TABLE_COL_TMP = 10; // GID without remaining data and signature
 	public static final int TABLE_COL_GID_VALID = 11; // GID matches data
 	public static final int TABLE_COL_SIGN_VALID = 12; // motion signed
 	public static final int TABLE_COL_HIDDEN = 13; // hidden
 	public static final int TABLE_COL_ARRIVAL_DATE = 14; // unread news?
 	public static final int TABLE_COL_PREFERENCES_DATE = 15; // unread news?
+	public static final int TABLE_COL_CREATION_DATE = 16; 
 	//public static final int TABLE_COL_PLUGINS = 7;
 	public static int RECENT_DAYS_OLD = 10;
 	private static final boolean DEBUG = false;
@@ -101,7 +103,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		__("How many constituents submit any choice?"),
 		__("Recently created, within a number of days, here")+" "+RECENT_DAYS_OLD,
 		__("Number of news items linked to this motion"),
-		__("Creation date of the item by its initiator"),
+		__("Provider"),
 		__("Should this be disseminated to others?"),
 		__("Should votes and justifications about this be stored when received?"),
 		__("Is this a temporary item under editing (not yet finalized?"),
@@ -110,12 +112,14 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		__("Hide this item from the view of this user?"),
 		__("Date when the last version of this item was received!"),
 		__("Date when the local preferences about this item were last modified!"),
+		__("Creation date of the item declared by its initiator!"),
 		};
 	String columnNames[]={
 			__("Title"),__("Initiator"),__("Category"),
 			__("Support"),__("Voters"),
-			__("Hot"),__("News"),__("Date"), __("^"), __("X"),
+			__("Hot"),__("News"),__("Provider"), __("^"), __("X"),
 			__("T"), __("G"), __("S"), __("H"), __("Arrival"), __("Preferences")
+			//, __("Creation")
 			};
 	ArrayList<Motions> tables= new ArrayList<Motions>();
 	Hashtable<Long, Integer> rowByID =  new Hashtable<Long, Integer>();
@@ -123,20 +127,20 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	private D_Constituent constituent;
 	private D_Organization organization;
 	public Icon getIcon(int column) {
-		switch(column) {
+		switch (column) {
 			case TABLE_COL_HIDDEN: 
 				return DDIcons.getHideImageIcon("Hidden");
 			case TABLE_COL_TMP: 
 				return DDIcons.getTmpImageIcon("TMP");
-			case MotionsModel.TABLE_COL_GID_VALID: 
+			case TABLE_COL_GID_VALID: 
 				return DDIcons.getGIDImageIcon("GID");
-			case MotionsModel.TABLE_COL_BLOCKED: 
+			case TABLE_COL_BLOCKED: 
 				return DDIcons.getBlockImageIcon("Block");
-			case MotionsModel.TABLE_COL_BROADCASTED: 
+			case TABLE_COL_BROADCASTED: 
 				return DDIcons.getBroadcastImageIcon("Broadcast");
-			case MotionsModel.TABLE_COL_SIGN_VALID: 
+			case TABLE_COL_SIGN_VALID: 
 				return DDIcons.getSignedImageIcon("Signed");
-			case MotionsModel.TABLE_COL_RECENT: 
+			case TABLE_COL_RECENT: 
 				return DDIcons.getHotImageIcon("Hot");
 			case TABLE_COL_NEWS:
 				return DDIcons.getNewsImageIcon("News");
@@ -144,6 +148,12 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 				return DDIcons.getSigImageIcon("Support");
 			case TABLE_COL_ACTIVITY:
 				return DDIcons.getConImageIcon("Voters");	
+			case TABLE_COL_CREATOR:
+				return DDIcons.getCreatorImageIcon("Creator");	
+			case TABLE_COL_PROVIDER:
+				return DDIcons.getMailImageIcon("DHL");	
+			case TABLE_COL_ARRIVAL_DATE:
+				return DDIcons.getLandingImageIcon("Arrival");	
 		}
 		return null;
 	}
@@ -174,21 +184,25 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	public D_Motion getMotion(int row) {
 		D_Motion[] _motions = _motion;
 		if (row >= _motions.length) return null;
+		if (row < 0) return null;
 		return _motions[row];
 	}
 	public boolean isBlocked(int row) {
 		D_Motion[] _motions = _motion;
 		if (row >= _motions.length) return false;
+		if (row < 0) return false;
 		return _motions[row].isBlocked();
 	}
 	public boolean isBroadcasted(int row) {
 		D_Motion[] _motions = _motion;
 		if(row >= _motions.length) return false;
+		if (row < 0) return false;
 		return _motions[row].isBroadcasted();
 	}
 	public boolean isRequested(int row) {
 		D_Motion[] _motions = _motion;
 		if (row >= _motions.length) return false;
+		if (row < 0) return false;
 		return _motions[row].isRequested();
 	}
 	public boolean isServing(int row) {
@@ -268,9 +282,10 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			break;
 		case TABLE_COL_TMP:
 			//m = D_Motion.getMotiByLID(_motID, false, false);
-			newGID = _m.make_ID();
-			if (newGID == null) result = new Boolean(false);
-			else result = new Boolean(_m.isTemporary() || !newGID.equals(_m.getGID()));
+//			newGID = _m.make_ID();
+//			if (newGID == null) result = new Boolean(false);
+//			else result = new Boolean(_m.isTemporary() || !newGID.equals(_m.getGID()));
+			result = new Boolean(_m.isTemporary());
 			break;
 		case TABLE_COL_GID_VALID:
 			//m = D_Motion.getMotiByLID(_motID, false, false);
@@ -344,10 +359,16 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			}
 			break;
 			*/
+		case TABLE_COL_PROVIDER:
+			//m = D_Motion.getMotiByLID(_motID, false, false);
+			D_Peer r = _m.getProvider();
+			if (r == null) result = "";// __("Empty");
+			else result = r.getName_MyOrDefault(); 
+			break;
 		case TABLE_COL_CREATOR:
 			//m = D_Motion.getMotiByLID(_motID, false, false);
 			result = _m.getCreatorOrMy();
-			if (result == null) result = __("Empty");
+			if (result == null) result = "";// __("Empty");
 			break;
 			
 //			String sql_cr = "SELECT o."+table.motion.constituent_ID+", m."+table.my_motion_data.creator+//", c."+table.constituent.name+
@@ -493,37 +514,20 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			K = this.rowByID.get(motion_id);
 		}
 		if (K == null) return;
-		int k = K;
-//		for (int k = 0; k < __motions.length; k ++) {
-			D_Motion i = __motions[k];
-			if (DEBUG) System.out.println("MotionsModel:setCurrent: k="+k+" mot_ID="+i);
-			if (i == null) return;
-			Long id = i.getLID();
-			if ((id != null) && (id.longValue()==motion_id)) {
-					/*
-					try {
-						//long constituent_ID = 
-						if(DEBUG) System.out.println("MotionsModel:setCurrent: will set current org");
-						Identity.setCurrentOrg(motion_id);
-						
-					} catch (P2PDDSQLException e) {
-						e.printStackTrace();
-					}
-					*/
-					for (Motions o: tables) {
-						int tk = o.convertRowIndexToView(k);
-						o.setRowSelectionAllowed(true);
-						ListSelectionModel selectionModel = o.getSelectionModel();
-						selectionModel.setSelectionInterval(tk, tk);
-						//o.requestFocus();
-						o.scrollRectToVisible(o.getCellRect(tk, 0, true));
-						//o.setEditingRow(k);
-						//o.setRowSelectionInterval(k, k);
-						o.fireListener(k, 0);
-					}
-					//break;
+		D_Motion i = __motions[K];
+		if (DEBUG) System.out.println("MotionsModel:setCurrent: k="+K+" mot_ID="+i);
+		if (i == null) return;
+		Long id = i.getLID();
+		if ((id != null) && (id.longValue() == motion_id)) {
+			for (Motions o: tables) {
+				int tk = o.convertRowIndexToView(K);
+				o.setRowSelectionAllowed(true);
+				ListSelectionModel selectionModel = o.getSelectionModel();
+				selectionModel.setSelectionInterval(tk, tk);
+				o.scrollRectToVisible(o.getCellRect(tk, 0, true));
+				o.fireListener(K, 0);
 			}
-//		}
+		}
 		if(DEBUG) System.out.println("MotionsModel:setCurrent: Done");
 		
 	}
@@ -712,19 +716,30 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			boolean val4 = ((Boolean)value).booleanValue();
 			int q = 1;
 			if (val4) {
-				q = Application_GUI.ask(__("Are you sure you want to reget this?"),
-						__("Set temporary?"), JOptionPane.OK_CANCEL_OPTION);
+				q = Application_GUI.ask(__("Are you sure you want to force setting this to true (stop dissemination)? \nNo recomputes default!s"),
+						__("Set temporary to true?"), JOptionPane.YES_NO_CANCEL_OPTION);
 			} else {
-				q = Application_GUI.ask(__("Are you sure you want to never reget this?"),
-						__("Set temporary?"), JOptionPane.OK_CANCEL_OPTION);
+				q = Application_GUI.ask(__("Are you sure you want to set this to false (disseminate)? \nNo recomputes default!"),
+						__("Set temporary to false?"), JOptionPane.YES_NO_CANCEL_OPTION);
 			}
 			if (0 == q) {
 				//set_data(table.motion.temporary, Util.bool2StringInt(val4), row);
 				_m.setTemporary(val4);
 			}
+			if (1 == q) {
+				if (_m.getGID() != null && _m.verifySignature()) {
+					_m.setTemporary(false);
+				} else {
+					_m.setTemporary(true);
+				}
+			}
 			break;
 		case TABLE_COL_GID_VALID:
-			if (!(value instanceof Boolean)) break;
+			if (_DEBUG) System.out.println("MotionsModel: setValueAt: setGID for "+_m);
+			if (!(value instanceof Boolean)) {
+				if (_DEBUG) System.out.println("MotionsModel: setValueAt: setGID quit not boolean: "+value);
+				break;
+			}
 			boolean val5 = ((Boolean)value).booleanValue();
 			int qq;
 			
@@ -732,6 +747,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 				qq = Application_GUI.ask(__("Are you sure you want to recompute this GID?"),
 						__("Set GID valid?"), JOptionPane.OK_CANCEL_OPTION);
 				if (qq == 0) {
+					if (_DEBUG) System.out.println("MotionsModel: setValueAt: setGID user set new ");
 					//D_Motion m = D_Motion.getMotiByLID(_motID, true, true);
 					if (
 							(_m.getConstituentLIDstr() != null)
@@ -739,18 +755,29 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 							&& (MainFrame.status.getMeConstituent() != null)
 							&& (_m.getConstituentLID() == MainFrame.status.getMeConstituent().getLID())
 						) {
+						if (_DEBUG) System.out.println("MotionsModel: setValueAt: setGID motion mine");
+					} else {
+						if (_DEBUG) System.out.println("MotionsModel: setValueAt: setGID motion maybe not mine");
 						//m.releaseReference();
-						break;
+						if (_m.getConstituentLIDstr() != null) {
+							if (_DEBUG) System.out.println("MotionsModel: setValueAt: setGID motion not mine");
+							break;
+						}
 					}
 					_m.setGID(_m.make_ID());
-					if (_m.getConstituentLIDstr()!=null)
+					if (_m.getConstituentLIDstr() != null) {
+						if (_DEBUG) System.out.println("MotionsModel: setValueAt: setGID motion set non-anonymous");
 						_m.setSignature(_m.sign());
+					}
 					//_m.storeRequest();
+				} else {
+					if (_DEBUG) System.out.println("MotionsModel: setValueAt: setGID user not set new ");
 				}
 			} else {
 				qq = Application_GUI.ask(__("Are you sure you want to remove this GID?"),
 						__("Set GID valid?"), JOptionPane.OK_CANCEL_OPTION);
 				if (qq == 0) {
+					if (_DEBUG) System.out.println("MotionsModel: setValueAt: setGID user set null ");
 					//D_Motion m = D_Motion.getMotiByLID(_motID, true, true);
 					_m.setGID(null);
 					_m.setTemporary();
@@ -760,9 +787,10 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			}
 			break;
 		}
-		_m.storeRequest();
+		if (_m.dirty_any()) _m.storeRequest();
 		_m.releaseReference();
 		fireTableCellUpdated(row, col);
+		fireTableCellUpdated(row, MotionsModel.TABLE_COL_PREFERENCES_DATE);
 	}
 	/*
 	private void set_my_data(String field_name, String value, int row) {

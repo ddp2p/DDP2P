@@ -528,7 +528,7 @@ public class WB_Messages extends ASNObj{
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
 			long p_oLID = D_Organization.getLIDbyGID(m.getOrganizationLIDstr());
-			D_Motion mot = D_Motion.getMotiByGID(m.getGID(), true, true, true, peer, p_oLID);
+			D_Motion mot = D_Motion.getMotiByGID(m.getGID(), true, true, true, peer, p_oLID, null);
 			if (mot.loadRemote(m, sol_rq, new_rq, peer)) {
 				config.Application_GUI.inform_arrival(mot, peer);
 			}

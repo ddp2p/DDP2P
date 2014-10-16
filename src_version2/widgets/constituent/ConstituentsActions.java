@@ -388,24 +388,26 @@ class ConstituentsCustomAction extends DebateDecideAction {
        					if (dc != null) {
        						//D_Constituent dc = new D_Constituent(cID);
 
-       						dc.neighborhood_ID = Util.getStringID(can.n_data.neighborhoodID);
-       						dc.global_neighborhood_ID = nGID;
-       						//dc.organization_ID = ""+model.organizationID;
-       						//dc.global_organization_ID = D_Organization.getGlobalOrgID(""+model.organizationID);
-       						if (dc.getSK() == null) {
-           						SK sk = model.getConstituentSKMyself();
-           						dc.setSK(sk);
-       						}
        						dc = D_Constituent.getConstByConst_Keep(dc);
-       						dc.setCreationDate();
-       						dc.sign();
-       						dc.storeRequest();
-       						dc.releaseReference();
+       						if (dc != null) {
+	       						dc.neighborhood_ID = Util.getStringID(can.n_data.neighborhoodID);
+	       						dc.global_neighborhood_ID = nGID;
+	       						//dc.organization_ID = ""+model.organizationID;
+	       						//dc.global_organization_ID = D_Organization.getGlobalOrgID(""+model.organizationID);
+	       						if (dc.getSK() == null) {
+	           						SK sk = model.getConstituentSKMyself();
+	           						dc.setSK(sk);
+	       						}
+	       						dc.setCreationDate();
+	       						dc.sign();
+	       						dc.storeRequest();
+	       						dc.releaseReference();
+       						}
        						//dc.signModified(sk, dc.global_organization_ID);
        						//dc.signModified(dc.global_organization_ID, dc.global_constituent_id);
        						//dc.store(new RequestData(), new RequestData());
        						ConstituentsIDNode cin = model.expandConstituentID(tree, ""+cID, true);
-       						if(cin!=null) {
+       						if (cin != null) {
        							//cin.constituent.slogan = val;
        							if(DEBUG) System.err.println("ConstituentsAction:SLOGAN:fire changed="+cin);
        							TreePath tp = new TreePath(cin.getPath());

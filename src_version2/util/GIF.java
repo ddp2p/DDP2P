@@ -468,6 +468,7 @@ class GIFApplicationBlock implements GIFComponent {
 		for(GIFBlock f : data){
 			sz += f.getSize();
 		}
+		sz += 1; //for termination byte //Rakesh
 		return sz;
 	}
 
@@ -479,6 +480,7 @@ class GIFApplicationBlock implements GIFComponent {
 		for(GIFBlock f : data){
 			start = f.fillBuffer(buf, start);
 		}
+		buf[start++] = GIF.EXTENSION_DATA_SUB_BLOCK_TERMINATOR; // Rakesh
 		return start;
 	}
 
@@ -486,6 +488,7 @@ class GIFApplicationBlock implements GIFComponent {
 	public int fillStructure(byte[] buf, int start) {
 		if(buf[start++] != GIF.BLOCK_EXTENSION) return GIF.ERROR;
 		if(buf[start++] != GIF.EXTENSION_APPLICATION) return GIF.ERROR;
+		//System.out.println("b."+start); //Rakesh
 		start = header.fillStructure(buf, start);
 		GIFCommentFrag f;
 		do {
@@ -943,7 +946,7 @@ class ImageData implements GIFBlock{
 	private void compress() {
 		if(compressed != null) return;
 		if(uncompressed == null) compressed = new byte[0];
-		compressed = Util.LZW_Compress(uncompressed, initial_code_size, bits_last_byte, 511);
+		compressed = Util.LZW_Compress(uncompressed, initial_code_size, bits_last_byte, 511, GIF.MAX_CODE_SIZE);
 	}
 	private void uncompress() {
 		if(uncompressed != null) return;
@@ -1132,13 +1135,14 @@ public class GIF {
 	static final byte EXTENSION_GCE_IMAGE = (byte) 0xF9;
 	static final byte EXTENSION_COMMENT = (byte) 0xFE;
 	static final byte EXTENSION_APPLICATION = (byte) 0xFF;
+	static final byte  EXTENSION_DATA_SUB_BLOCK_TERMINATOR = 0x00; // Rakesh
 	static final boolean DEBUG = false;
 
 	final byte header[]={'G','I','F'};
 	byte version[]={'8','9','a'};
-	LogicalScreenDescriptor mLogicalScreenDescriptor = new LogicalScreenDescriptor();
-	ColorTable mGlobalColorTable = null;
-	ArrayList<GIFComponent> content = new ArrayList<GIFComponent>();
+	private LogicalScreenDescriptor mLogicalScreenDescriptor = new LogicalScreenDescriptor();
+	private ColorTable mGlobalColorTable = null;
+	private ArrayList<GIFComponent> content = new ArrayList<GIFComponent>();
 	GIF(){
 	}
 	GIF(boolean gif87){
@@ -1149,7 +1153,7 @@ public class GIF {
 		gif.fillStructure(file, 0);
 		GIFCommentBlock gcb = new GIFCommentBlock();
 		gcb.setMessage(data, 0, data.length);
-		gif.content.add(0, gcb);
+		gif.getContent().add(0, gcb);
 		return gif;
 	}
 	public
@@ -1184,7 +1188,7 @@ public class GIF {
 			Util.readAll(new FileInputStream(in), buf);
 			GIF gif = new GIF();
 			gif.fillStructure(buf, 0, 1);
-			GIFComponent e = gif.content.get(0);
+			GIFComponent e = gif.getContent().get(0);
 			if(! (e instanceof GIFCommentBlock)) return null;
 			GIFCommentBlock gcb = (GIFCommentBlock) e;
 			
@@ -1209,14 +1213,14 @@ public class GIF {
 	public int fillStructure(byte []buf, int start, int max_blocks) {
 		Util.copyBytes(header, 0, buf, header.length, start); start += header.length;
 		Util.copyBytes(version, 0, buf, version.length, start); start += version.length;
-		start = mLogicalScreenDescriptor.fillStructure(buf, start); //start += mLogicalScreenDescriptor.getSize();
-		if(mLogicalScreenDescriptor.hasGCT()) {	
-			this.mGlobalColorTable = new ColorTable(this.mLogicalScreenDescriptor.getGCTSize());
-			start = mGlobalColorTable.fillStructure(buf, start);
+		start = getmLogicalScreenDescriptor().fillStructure(buf, start); //start += mLogicalScreenDescriptor.getSize();
+		if(getmLogicalScreenDescriptor().hasGCT()) {	
+			this.setmGlobalColorTable(new ColorTable(this.getmLogicalScreenDescriptor().getGCTSize()));
+			start = getmGlobalColorTable().fillStructure(buf, start);
 		}
 		if (GIF.DEBUG) System.out.println("GIF read header "+start+" -> \n"); //+ this);
 		while(start < buf.length) {
-			if((max_blocks >= 0) && (content.size() >= max_blocks)) return start;
+			if((max_blocks >= 0) && (getContent().size() >= max_blocks)) return start;
 			if (GIF.DEBUG) System.out.println("GIF read content "+start);
 			switch(buf[start]) {
 			case GIF.BLOCK_TERMINATOR:
@@ -1232,13 +1236,13 @@ public class GIF {
 					if (GIF.DEBUG) System.out.println("GIF read content extension comment");
 					GIFCommentBlock commentBlock = new GIFCommentBlock();
 					start = commentBlock.fillStructure(buf, start);
-					content.add(commentBlock);
+					getContent().add(commentBlock);
 					continue;
 				case GIF.EXTENSION_APPLICATION:
 					if (GIF.DEBUG) System.out.println("GIF read content extension application");
 					GIFApplicationBlock applicationBlock = new GIFApplicationBlock();
 					start = applicationBlock.fillStructure(buf, start);
-					content.add(applicationBlock);
+					getContent().add(applicationBlock);
 					continue;
 				case GIF.EXTENSION_PLAINTEXT:
 					if (GIF.DEBUG) System.out.println("GIF read content extension plaintext");
@@ -1247,20 +1251,20 @@ public class GIF {
 					if (GIF.DEBUG) System.out.println("GIF read content extension unknown");
 					GIFComponentUnknown unknown = new GIFComponentUnknown();
 					start = unknown.fillStructure(buf, start); //start += unknown.getSize();
-					content.add(unknown);
+					getContent().add(unknown);
 					continue;
 				}
 			case GIF.BLOCK_IMAGE:
 				if (GIF.DEBUG) System.out.println("GIF read content image block");
 				GIFContent content_block = new GIFContent();
 				start = content_block.fillStructure(buf, start); //start += content_block.getSize();
-				content.add(content_block);
+				getContent().add(content_block);
 				break;
 			default:
 				if (GIF.DEBUG) System.out.println("GIF read content unknown block id: "+Util.byteToHex(buf[start]));
 				GIFComponentUnknown unknown = new GIFComponentUnknown();
 				start = unknown.fillStructure(buf, start); //start += unknown.getSize();
-				content.add(unknown);
+				getContent().add(unknown);
 				continue;
 			}
 		}
@@ -1269,10 +1273,10 @@ public class GIF {
 	public int fillBuffer(byte[]buf, int start) {
 		Util.copyBytes(buf, start, header, header.length, 0); start += header.length;
 		Util.copyBytes(buf, start, version, version.length, 0); start += version.length;
-		start = mLogicalScreenDescriptor.fillBuffer(buf, start); //start += mLogicalScreenDescriptor.getSize();
-		if(this.mGlobalColorTable!=null) start = mGlobalColorTable.fillBuffer(buf, start); //start += mGlobalColorTable.getSize();
+		start = getmLogicalScreenDescriptor().fillBuffer(buf, start); //start += mLogicalScreenDescriptor.getSize();
+		if(this.getmGlobalColorTable()!=null) start = getmGlobalColorTable().fillBuffer(buf, start); //start += mGlobalColorTable.getSize();
 		
-		for(GIFComponent c : content) {
+		for(GIFComponent c : getContent()) {
 			start = c.fillBuffer(buf, start); //start +=  c.getSize();
 		}
 		
@@ -1284,9 +1288,9 @@ public class GIF {
 		String result = "";
 		result += "Header: \""+Util.byteToString(header)+"\"\n";
 		result += "Version: \""+Util.byteToString(version)+"\"\n";
-		result += "Logical Screen Descriptor: \n"+this.mLogicalScreenDescriptor+"\n";
-		if(mGlobalColorTable != null) result += "Global Color Table: \n"+mGlobalColorTable+"\n";
-		for(GIFComponent c : content) {
+		result += "Logical Screen Descriptor: \n"+this.getmLogicalScreenDescriptor()+"\n";
+		if(getmGlobalColorTable() != null) result += "Global Color Table: \n"+getmGlobalColorTable()+"\n";
+		for(GIFComponent c : getContent()) {
 			result += "Component: \n"+c+"\n";
 		}
 		if (GIF.DEBUG) System.out.println("EOF");
@@ -1298,17 +1302,17 @@ public class GIF {
 				+ getLSDSize()
 				+ getGCDSize()
 				+ 1; //terminator
-		for(GIFComponent c:content){
+		for(GIFComponent c:getContent()){
 			sz += c.getSize();
 		}
 		return sz;
 	}
 	private int getGCDSize() {
-		if(mGlobalColorTable!=null) return mGlobalColorTable.getSize();
+		if(getmGlobalColorTable()!=null) return getmGlobalColorTable().getSize();
 		return 0;
 	}
 	private int getLSDSize() {
-		if(mLogicalScreenDescriptor!=null) return mLogicalScreenDescriptor.getSize();
+		if(getmLogicalScreenDescriptor()!=null) return getmLogicalScreenDescriptor().getSize();
 		return 0;
 	}
 	/**
@@ -1346,18 +1350,18 @@ public class GIF {
 	
 	public static void genmain(String args[]) {
 		GIF gif = new GIF();
-		gif.mLogicalScreenDescriptor.width_16le = Util.cpu_to_16le(30);
-		gif.mLogicalScreenDescriptor.height_16le = Util.cpu_to_16le(20);
+		gif.getmLogicalScreenDescriptor().width_16le = Util.cpu_to_16le(30);
+		gif.getmLogicalScreenDescriptor().height_16le = Util.cpu_to_16le(20);
 		//gif.mLogicalScreenDescriptor.mBackgroundColor = 0;
 		//gif.mLogicalScreenDescriptor.setGCTSorted(false);
-		gif.mLogicalScreenDescriptor.setLog2GCTSize(8);
+		gif.getmLogicalScreenDescriptor().setLog2GCTSize(8);
 		//gif.mLogicalScreenDescriptor.setRatio(0);
 
-		gif.mLogicalScreenDescriptor.setGCTbppc(8);
-		gif.mLogicalScreenDescriptor.setGCT(true);
+		gif.getmLogicalScreenDescriptor().setGCTbppc(8);
+		gif.getmLogicalScreenDescriptor().setGCT(true);
 		
-		gif.mGlobalColorTable  = new ColorTable(gif.mLogicalScreenDescriptor.getGCTSize());
-		gif.mGlobalColorTable.colors[0][2] = (byte) 0xFF; // blue
+		gif.setmGlobalColorTable(new ColorTable(gif.getmLogicalScreenDescriptor().getGCTSize()));
+		gif.getmGlobalColorTable().colors[0][2] = (byte) 0xFF; // blue
 		
 		GIFContent gc = new GIFContent();
 		GIFImageData gid = new GIFImageData();
@@ -1373,7 +1377,7 @@ public class GIF {
 		gid.data.add(new ImageData());
 		
 		gc.mGIFContentBody = gid;
-		gif.content.add(gc);
+		gif.getContent().add(gc);
 		
 		byte[] buf = gif.content();
 		String fname = "test.gif";
@@ -1411,5 +1415,23 @@ public class GIF {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	public LogicalScreenDescriptor getmLogicalScreenDescriptor() {
+		return mLogicalScreenDescriptor;
+	}
+	void setmLogicalScreenDescriptor(LogicalScreenDescriptor mLogicalScreenDescriptor) {
+		this.mLogicalScreenDescriptor = mLogicalScreenDescriptor;
+	}
+	ColorTable getmGlobalColorTable() {
+		return mGlobalColorTable;
+	}
+	void setmGlobalColorTable(ColorTable mGlobalColorTable) {
+		this.mGlobalColorTable = mGlobalColorTable;
+	}
+	ArrayList<GIFComponent> getContent() {
+		return content;
+	}
+	void setContent(ArrayList<GIFComponent> content) {
+		this.content = content;
 	}
 }
