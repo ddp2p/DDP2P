@@ -465,7 +465,7 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 		String instance = data.get(row).peer_instance;
 		try {
 			currentPeer.setCurrentInstance(instance);
-			HandlingMyself_Peer.setMyself(currentPeer, true);
+			HandlingMyself_Peer.setMyself(currentPeer, true, false); // not kept
 			HandlingMyself_Peer.updateAddress(currentPeer);
 		} catch (Exception e) {
 			e.printStackTrace();

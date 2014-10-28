@@ -1110,4 +1110,9 @@ Address ::= SEQUENCE {
 		this.tcp_port = t_port;
 		this.udp_port = u_port;
 	}
+	public boolean validAddress() {
+		if (this.domain == null) return false;
+		if (this.tcp_port <= 0 && this.udp_port <= 0) return false;
+		return true;
+	}
 }

@@ -207,11 +207,17 @@ abstract public class Cipher{
 	public static SK getSK(String _sk) {
 		//String[]splits = Util.splitHex(senderID);
 		byte[] sID = Util.byteSignatureFromString(_sk); //Util.hexToBytes(splits);
-		if((sID==null)||(sID.length==0)) {
+		if ((sID == null) || (sID.length == 0)) {
 	    	if(_DEBUG)System.err.println("SK:getSK: wrong null input: \""+_sk+"\"");
 			return null;
 		}
+		return getSK(sID);
+	}
+	public static SK getSK(byte[] sID) {
 		Decoder decoder = new Decoder(sID);
+		return getSK(decoder);
+	}
+	public static SK getSK(Decoder decoder) {
 		Decoder dec;
 		try {
 			dec = decoder.getContent();

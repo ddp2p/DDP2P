@@ -136,7 +136,7 @@ public class SpecificRequest extends ASNObj implements Summary{
 	 * @throws P2PDDSQLException
 	 */
 	public static SpecificRequest getPeerRequest(String peer_ID) throws P2PDDSQLException {
-		boolean DEBUG = true;
+		//boolean DEBUG = true;
 		String sql_orgs_all_queried = sql_orgs_inferred_queried_for_peer+" UNION "+sql_orgs_queried_for_peer;
 		if (DEBUG) System.out.println("SpecificRequest: getPeerRequest: start "+peer_ID);
 		long _peer_ID = Util.lval(peer_ID, -1);

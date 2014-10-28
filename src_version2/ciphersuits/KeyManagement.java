@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import util.DBInterface;
+import util.DD_SK;
+import util.DD_SK_Entry;
 import util.P2PDDSQLException;
 import util.Util;
 import config.Application;
@@ -76,6 +78,37 @@ public class KeyManagement {
 		else bw.write("");
 		bw.newLine();
 		bw.close();
+		return true;
+	}
+	/**
+	 * Returns false in the absence of the key
+	 * @param dsk
+	 * @param gid
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public static boolean fill_sk(DD_SK dsk, String gid) throws P2PDDSQLException {
+		String sql =
+				"SELECT "+table.key.secret_key+","+table.key.name+","+table.key.type+","+table.key.creation_date+
+				" FROM "+table.key.TNAME+
+				" WHERE "+table.key.public_key+"=?;";
+		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{gid}, _DEBUG);
+		if (a.size() == 0) {
+			System.out.println("KeyManagement: fillsk: not finding key for: "+gid);
+			return false;
+		}
+		String sk = Util.getString(a.get(0).get(0));
+		String name = Util.getString(a.get(0).get(1));
+		String type = Util.getString(a.get(0).get(2));
+		String date = Util.getString(a.get(0).get(3));
+		DD_SK_Entry dde = new DD_SK_Entry();
+		dde.key = Cipher.getSK(sk);
+		dde.name = name;
+		dde.type = type;
+		dde.creation = Util.getCalendar(date);
+		
+		dsk.sk.add(dde);
+		System.out.println("KeyManagement: fillsk: Done: "+dsk);
 		return true;
 	}
 	public static SK loadSecretKey(String sk_file, String[] __pk) throws IOException, P2PDDSQLException {
@@ -237,7 +270,7 @@ public class KeyManagement {
 			peer.setLID(null);
 
 			if ((args.length > 2) && (Util.stringInt2bool(args[2], false))) {
-				HandlingMyself_Peer.setMyself(peer, true);
+				HandlingMyself_Peer.setMyself(peer, true, false); // peer is not kept
 				HandlingMyself_Peer.updateAddress(peer);
 			}
 			peer.sign(new_sk);
@@ -245,6 +278,6 @@ public class KeyManagement {
 			peer.storeSynchronouslyNoException();
 
 		}catch(Exception e2){e2.printStackTrace();}
-	}
+	} 
 }
 

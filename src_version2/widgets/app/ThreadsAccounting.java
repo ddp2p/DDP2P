@@ -24,6 +24,13 @@ class Thread_Info {
 	Calendar last_ping_date;
 	String _last_ping_date;
 	Thread thread;
+	public String toString() {
+		return "ThreadInfo["
+				+"\n name = "+name
+				+"\n state = "+state
+				+"\n thread = "+thread
+				+"\n...]";
+	}
 }
 
 @SuppressWarnings("serial")
@@ -55,7 +62,7 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 		synchronized (monitor_running) {
 			if ((old_info = running.get(crt)) != null) {
 				System.out.println("ThreadsAccounting:register Already existing: "+old_info);
-				Util.printCallPath("ThreadsAccounting:register");
+				Util.printCallPath("ThreadsAccounting:register "+crt);
 				old_info._last_ping_date = info._creation_date;
 				old_info.last_ping_date = info.creation_date;
 				old_info.state = REPLICATED_CREATION;

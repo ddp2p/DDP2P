@@ -1126,7 +1126,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	@Override
 	public void motion_update(String motID, int col, D_Motion d_motion) {
 		if(DEBUG)System.out.println("MotionEditor: motion_update: col: "+col+" motID="+motID);
-		if (motID == null) Util.printCallPath("");
+		if (motID == null) Util.printCallPath("setting null motionID");
 		this.setMotion(motID, false);
 	}
 	@Override
@@ -1216,16 +1216,25 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 		}
 
 		
-		if((this.motion_body_field==source)||(this.motion_body_field.getDocumentSource()==source)) {
+		if ((this.motion_body_field == source) || (this.motion_body_field.getDocumentSource() == source)) {
 			if(DEBUG) out.println("MotionEditor:handleFieldEvent: just body");
 			if (! this.getMotion().isTemporary()) {
 				if (_DEBUG) out.println("MotionEditor:handleFieldEvent: abandon modifying final body! "+this.getMotion().getTitleOrMy());
 				return;
 			}
 			String new_text = this.motion_body_field.getText();
+			String old_text = this.getMotion().getMotionText().getDocumentString();
+			
+			String editor_format = this.motion_body_field.getFormatString();
+			String old_old_text = this.getMotion().getMotionText().getFormatString();
+			
+			if (Util.equalStrings_null_or_not(new_text, old_text)
+					&& Util.equalStrings_null_or_not(editor_format, old_old_text)) {
+				return;
+			}
+			
 			this.setMotion(D_Motion.getMotiByMoti_Keep(getMotion()));
-			this.getMotion().getMotionText().setDocumentString(new_text);
-			this.getMotion().getMotionText().setFormatString(this.motion_body_field.getFormatString());//BODY_FORMAT);
+			this.getMotion().setMotionText(new_text, editor_format);
 			this.getMotion().setCreationDate(Util.getCalendar(creationTime));
 			this.getMotion().setEditable();
 			this.getMotion().storeRequest();

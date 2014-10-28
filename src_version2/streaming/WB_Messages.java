@@ -480,11 +480,15 @@ public class WB_Messages extends ASNObj{
 		}
 		for (D_Neighborhood n: r.neig) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle neig: "+n);
-			rq = missing_sr.get(n.getOrgGID());
+			rq = missing_sr.get(n.getOrgGIDH());
 			if (rq == null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
-			long oLID = D_Organization.getLIDbyGID(n.getOrgGID());
+			long oLID = D_Organization.getLIDbyGIDH(n.getOrgGIDH());
+			if (oLID <= 0) {
+				if (_DEBUG) System.out.println("WB_Messages: store: neigh: organization not found for: "+n.getOrgGIDH());
+				continue;
+			}
 			long lid = n.storeRemoteThis(n.getOrgGID(), oLID, Util.getGeneralizedTime(), sol_rq, new_rq, peer);
 			//long lid=n.store(sol_rq, new_rq);
 			if (lid <= 0) {
@@ -492,11 +496,15 @@ public class WB_Messages extends ASNObj{
 				continue;
 			}
 			rq.update(sol_rq, new_rq);
-			missing_sr.put(n.getOrgGID(), rq);			
+			missing_sr.put(n.getOrgGIDH(), rq);			
 			
-			obtained = obtained_sr.get(n.getOrgGID());
-			if(obtained==null) obtained = new RequestData();
+			obtained = obtained_sr.get(n.getOrgGIDH());
+			if (obtained == null) obtained = obtained_sr.get(n.getOrgGID());
+			if (obtained == null) obtained = new RequestData();
 			obtained.neig.add(n.getGID());
+			obtained_sr.put(n.getOrgGIDH(), obtained);
+			orgs.add(n.getOrgGIDH());
+			
 			obtained_sr.put(n.getOrgGID(), obtained);
 			orgs.add(n.getOrgGID());
 		}
@@ -527,7 +535,14 @@ public class WB_Messages extends ASNObj{
 			if (rq == null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
-			long p_oLID = D_Organization.getLIDbyGID(m.getOrganizationLIDstr());
+			
+			long p_oLID = m.getOrganizationLID();
+			if (p_oLID <= 0) p_oLID = D_Organization.getLIDbyGIDH(m.getOrganizationGIDH());
+			if (p_oLID <= 0) {
+				if (_DEBUG) System.out.println("WB_Messages: store: moti: organization not found for: "+m.getOrganizationGIDH());
+				continue;
+			}
+			
 			D_Motion mot = D_Motion.getMotiByGID(m.getGID(), true, true, true, peer, p_oLID, null);
 			if (mot.loadRemote(m, sol_rq, new_rq, peer)) {
 				config.Application_GUI.inform_arrival(mot, peer);
@@ -539,46 +554,68 @@ public class WB_Messages extends ASNObj{
 				continue;
 			}
 			rq.update(sol_rq, new_rq);
-			missing_sr.put(m.getOrganizationGID(), rq);			
+			missing_sr.put(m.getOrganizationGIDH(), rq);			
 			
-			obtained = obtained_sr.get(m.getOrganizationGID());
-			if(obtained==null) obtained = new RequestData();
-			obtained.moti.add(m.getGID());
+			obtained = obtained_sr.get(m.getOrganizationGIDH());
+			if (obtained == null) obtained_sr.get(m.getOrganizationGID());
+			if (obtained == null) obtained = new RequestData();
+			
+			obtained.moti.add(m.getGIDH());
+
+			obtained_sr.put(m.getOrganizationGIDH(), obtained);
+			orgs.add(m.getOrganizationGIDH());
+
 			obtained_sr.put(m.getOrganizationGID(), obtained);
 			orgs.add(m.getOrganizationGID());
+
 			if(DEBUG) System.out.println("WB_Messages: store: handled moti: "+m.getGID()+" "+m.getMotionTitle());
 		}
 		for(D_Justification j: r.just) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle just: "+j);
-			if(j.getOrgGID() == null){
+			if(j.getOrgGIDH() == null){
 				j.setOrgGID(j.guessOrganizationGID());
-				if(j.getOrgGID() == null) {
+				if(j.getOrgGIDH() == null) {
 					if(_DEBUG) System.out.println("WB_Messages: store: cannot determine org: skip");
 					continue;
 				}
 			}
-			long p_oLID = D_Organization.getLIDbyGID(j.getOrganizationLIDstr());
-			long p_mLID = D_Motion.getLIDFromGID(j.getGID(), p_oLID);
-			rq = missing_sr.get(j.getOrgGID());
-			if(rq==null) rq = new RequestData();
+			long p_oLID = D_Organization.getLIDbyGIDH(j.getOrgGIDH());
+			if (p_oLID <= 0) {
+				if (_DEBUG) System.out.println("WB_Messages: store: justif: organization not found for: "+j.getOrgGIDH());
+				continue;
+			}
+			long p_mLID = D_Motion.getLIDFromGID(j.getMotionGID(), p_oLID);
+			if (p_mLID <= 0) {
+				if (_DEBUG) System.out.println("WB_Messages: store: justif: motion not found for: "+j.getMotionGID());
+				continue;
+			}
+			rq = missing_sr.get(j.getOrgGIDH());
+			if (rq==null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
 			D_Justification jus = D_Justification.getJustByGID(j.getGID(), true, true, true, peer, p_oLID, p_mLID, j);
+			long lid = jus.getLID();
 			if (jus.loadRemote(j, sol_rq, new_rq, peer)) {
 				config.Application_GUI.inform_arrival(jus, peer);
+				lid = jus.storeRequest_getID(); //j.store(sol_rq, new_rq);
 			}
-			long lid = jus.storeRequest_getID(); //j.store(sol_rq, new_rq);
 			jus.releaseReference();
 			if (lid <= 0) {
-				if(_DEBUG) System.out.println("WB_Messages: store: failed to handled just: "+j+" "+dbg_msg);
+				if (_DEBUG) System.out.println("WB_Messages: store: failed to handled just: "+j+" "+dbg_msg);
 				continue;
 			}
 			rq.update(sol_rq, new_rq);
-			missing_sr.put(j.getOrgGID(), rq);			
+			missing_sr.put(j.getOrgGIDH(), rq);			
 			
-			obtained = obtained_sr.get(j.getOrgGID());
-			if(obtained==null) obtained = new RequestData();
-			obtained.just.add(j.getGID());
+			obtained = obtained_sr.get(j.getOrgGIDH());
+			if (obtained == null) obtained_sr.get(j.getOrgGID());
+			if (obtained == null) obtained = new RequestData();
+			
+			obtained.just.add(j.getGIDH());
+			
+			obtained_sr.put(j.getOrgGIDH(), obtained);
+			orgs.add(j.getOrgGIDH());
+
 			obtained_sr.put(j.getOrgGID(), obtained);
 			orgs.add(j.getOrgGID());
 		}
@@ -599,7 +636,7 @@ public class WB_Messages extends ASNObj{
 				missing_sr.put(v.global_organization_ID, rq);			
 				
 				obtained = obtained_sr.get(v.global_organization_ID);
-				if(obtained==null) obtained = new RequestData();
+				if (obtained == null) obtained = new RequestData();
 				obtained.sign.put(v.global_vote_ID, DD.EMPTYDATE);
 				obtained_sr.put(v.global_organization_ID, obtained);
 				orgs.add(v.global_organization_ID);

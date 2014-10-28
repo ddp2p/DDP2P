@@ -67,7 +67,7 @@ public class MotionHandling {
 			" m."+table.motion.temporary+" = '0' "+
 			" AND m."+table.motion.broadcasted+" <> '0' "+
 			" AND o."+table.organization.broadcasted+" <> '0' "+
-			" AND c."+table.constituent.broadcasted+" <> '0' "+
+			" AND ( c."+table.constituent.broadcasted+" <> '0' OR c."+table.constituent.constituent_ID+" ISNULL ) "+
 					" AND m."+table.motion.arrival_date+">? ";
 	
 //	private static final String sql_motions_ofi =
@@ -150,13 +150,14 @@ public class MotionHandling {
 				" m."+table.motion.temporary+" == '0' "+
 				" AND m."+table.motion.broadcasted+" <> '0' "+
 				" AND o."+table.organization.broadcasted+" <> '0' "+
-				" AND c."+table.constituent.broadcasted+" <> '0' "+
+				" AND ( c."+table.constituent.broadcasted+" <> '0'  OR c."+table.constituent.constituent_ID+" ISNULL ) "+
 				" AND m."+table.motion.arrival_date+">? ";
 	
 	public static D_Motion[] getMotionData(ASNSyncRequest asr,
 			String last_sync_date, String org_gid, String org_id,
 			String[] __maxDate) throws P2PDDSQLException {
 		
+		if (DEBUG) System.out.println("MotionHandling: getMotData: start");
 		D_Motion[] result=null;
 		String _maxDate = __maxDate[0];
 		if(DEBUG) out.println("MotionHandling:getMotionData: start: between: "+last_sync_date+" : "+_maxDate);
@@ -189,16 +190,16 @@ public class MotionHandling {
 	private static final String sql_get_hashes=
 		"SELECT m."+table.motion.global_motion_ID+
 		" FROM "+table.motion.TNAME+" AS m "+
-		" JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=m."+table.motion.constituent_ID+")"+
+		" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=m."+table.motion.constituent_ID+")"+
 		//" LEFT JOIN "+table.motion.TNAME+" AS e ON(e."+table.motion.motion_ID+"=m."+table.motion.enhances_ID+")"+
 		//" JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
 			" WHERE " +
 			" m."+table.motion.organization_ID+"=? "+
-			" AND m."+table.motion.organization_ID+"= c."+table.constituent.organization_ID+
+			" AND ( m."+table.motion.organization_ID+"= c."+table.constituent.organization_ID + " OR  c."+table.constituent.constituent_ID+" ISNULL ) "+
 			" AND m."+table.motion.arrival_date+">? " +
 			" AND m."+table.motion.arrival_date+"<=? "+
 			//" AND o."+table.organization.broadcasted+" <> '0' "+
-			" AND c."+table.constituent.broadcasted+" <> '0' "+
+			" AND ( c."+table.constituent.broadcasted+" <> '0'  OR c."+table.constituent.constituent_ID+" ISNULL ) "+
 			" AND m."+table.motion.broadcasted+" <> '0' "+
 			//" AND m."+table.motion.signature+" IS NOT NULL "+
 			" AND m."+table.motion.temporary+" == '0' "+
@@ -207,6 +208,7 @@ public class MotionHandling {
 		;
 	public static ArrayList<String> getMotionHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
+		if (DEBUG) System.out.println("MotionHandling: getMotHashes: start");
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
 		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",

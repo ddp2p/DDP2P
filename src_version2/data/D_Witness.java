@@ -516,14 +516,14 @@ class D_Witness extends ASNObj implements Summary {
 		boolean default_blocked = false;
 		
 		boolean locals = fillLocals(new_rq, true, true, true, true);
-		if(!locals){
-			if(_DEBUG) out.println("D_Witness:store: locals fail");
+		if (!locals) {
+			if (_DEBUG) out.println("D_Witness:store: locals fail");
 			return -1;
 		}
 		
 		
-		if(! verifySignature()) {
-			if(! DD.ACCEPT_UNSIGNED_DATA){
+		if (! verifySignature()) {
+			if (! DD.ACCEPT_UNSIGNED_DATA){
 				if(_DEBUG) out.println("D_Witness:store: sign fail exit");
 				return -1;
 			}

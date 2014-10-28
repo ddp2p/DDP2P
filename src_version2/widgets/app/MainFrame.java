@@ -1585,7 +1585,7 @@ public class MainFrame {
 			StartUp.detect_OS_and_store_in_DD_OS_var();
 			StartUp.fill_install_paths_all_OSs_from_DB(); // to be done before importing!!!
 			StartUp.switch_install_paths_to_ones_for_current_OS();
-			if(DD.WARN_OF_INVALID_SCRIPTS_BASE_DIR != null) {
+			if (DD.WARN_OF_INVALID_SCRIPTS_BASE_DIR != null) {
 				Application_GUI.fixScriptsBaseDir(Application.CURRENT_SCRIPTS_BASE_DIR());
 				StartUp.fill_install_paths_all_OSs_from_DB(); // to be done before importing!!!
 				StartUp.switch_install_paths_to_ones_for_current_OS();

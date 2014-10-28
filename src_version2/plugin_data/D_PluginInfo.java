@@ -28,8 +28,10 @@ import java.util.Hashtable;
 import util.P2PDDSQLException;
 import config.Application;
 import config.DD;
+import data.ASN64String_2_ASNPluginInfoArray;
 import data.D_Peer;
-import ASN1.Encoder;
+import data.D_PeerInstance;
+import ASN1.ASN1DecoderFail;
 import util.Util;
 
 public
@@ -108,8 +110,7 @@ class D_PluginInfo{
 			if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nD_PluginInfo: recordPluginInfo: no plugin remote peer info received");
 			return;
 		}
-		if(Application.peers!=null) Application.peers.setPluginsInfo(plugins, _global_peer_ID, _peer_ID);
-		String info = Util.stringSignatureFromByte(Encoder.getEncoder(plugins).getBytes());
+		if (Application.peers!=null) Application.peers.setPluginsInfo(plugins, _global_peer_ID, _peer_ID);
 		/*
 		Application.db.update(
 				table.peer.TNAME,
@@ -120,7 +121,7 @@ class D_PluginInfo{
 		*/
 		D_Peer peer = D_Peer.getPeerByLID(Util.lval(_peer_ID), true, true);
 		if (peer != null) {
-			peer.setPluginInfo(peer_instance, info);
+			peer.setPluginInfo(peer_instance, plugins);
 			if (peer.dirty_any())
 				peer.storeRequest();
 			peer.releaseReference();
@@ -152,5 +153,20 @@ class D_PluginInfo{
 			return true;
 		}
 		return false;
+	}
+	public static ASNPluginInfo[] getPluginInfoArray(String _plugin_info) {
+		if (_plugin_info == null) return null;
+		try {
+			ASNPluginInfo[] _info = new ASN64String_2_ASNPluginInfoArray(_plugin_info).get_PluginInfo();
+			//new Decoder(Util.byteSignatureFromString(_plugin_info)).getSequenceOf(ASNPluginInfo.getASN1Type(), new ASNPluginInfo[0], new ASNPluginInfo());
+			return _info;
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	public static String getPluginInfoFromArray(ASNPluginInfo[] _plugin_info) {
+		return new ASN64String_2_ASNPluginInfoArray(_plugin_info).get_PluginInfoString();
+		//Util.stringSignatureFromByte(Encoder.getEncoder(_plugin_info).getBytes());
 	}
 }

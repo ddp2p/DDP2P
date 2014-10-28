@@ -6,6 +6,7 @@ abstract public class DDP2P_ServiceRunnable implements Runnable {
 	public Object ctx;
 	String name;
 	boolean daemon;
+	boolean accounting = true;
 	public DDP2P_ServiceRunnable (String name, boolean daemon) {
 		this.name = name;
 		this.daemon = daemon;
@@ -15,12 +16,18 @@ abstract public class DDP2P_ServiceRunnable implements Runnable {
 		this.daemon = daemon;
 		this.ctx = ctx;
 	}
+	public DDP2P_ServiceRunnable (String name, boolean daemon, boolean accounting, Object ctx) {
+		this.name = name;
+		this.daemon = daemon;
+		this.ctx = ctx;
+		this.accounting = accounting;
+	}
 	public DDP2P_ServiceRunnable (Object ctx) {
 		this.ctx = ctx;
 	}
 	public Thread start() {
 		Thread th = new Thread(this);
-		th.setDaemon(daemon);
+		if (daemon) th.setDaemon(daemon);
 		if (name != null) th.setName(name);
 		th.start();
 		return th;
@@ -29,13 +36,13 @@ abstract public class DDP2P_ServiceRunnable implements Runnable {
 		Application_GUI.ThreadsAccounting_ping(msg);
 	}
 	public void run () {
-		Application_GUI.ThreadsAccounting_registerThread();//ThreadsAccounting.registerThread();
+		if (accounting) Application_GUI.ThreadsAccounting_registerThread();//ThreadsAccounting.registerThread();
 		try {
 			_run();
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
-		Application_GUI.ThreadsAccounting_unregisterThread();//ThreadsAccounting.unregisterThread();
+		if (accounting) Application_GUI.ThreadsAccounting_unregisterThread();//ThreadsAccounting.unregisterThread();
 	}
 	abstract public void _run();
 }

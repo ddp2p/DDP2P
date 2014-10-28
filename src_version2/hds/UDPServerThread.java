@@ -318,9 +318,9 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 					} else {
 						System.out.println("UDPServerThread: handleAnswer: Answer from "+peer.getName()+" inst=["+sa.peer_instance.peer_instance+"] /upto:"+Encoder.getGeneralizedTime(sa.upToDate));
 					}
-					if (_DEBUG) System.out.println("UDPServerThread: handleRequest: adv=" + sa.advertised);
-					if (_DEBUG) System.out.println("UDPServerThread: handleRequest: orgs=" + sa.advertised_orgs);
-					if (_DEBUG) System.out.println("UDPServerThread: handleRequest: o_hash=" + sa.advertised_orgs_hash);
+					if (DEBUG) System.out.println("UDPServerThread: handleAnswer: adv=" + sa.advertised);
+					if (DEBUG) System.out.println("UDPServerThread: handleAnswer: orgs=" + sa.advertised_orgs);
+					if (DEBUG) System.out.println("UDPServerThread: handleAnswer: o_hash=" + sa.advertised_orgs_hash);
 					
 				}
 				if (peer != null) {
@@ -392,15 +392,15 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 			asr.decode(dec);
 			//if (_DEBUG) System.out.println("***UDPServerThread: handleRequest: Request new from: "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(asr.lastSnapshot));
 			if (! registerASR(asr, peer_address, msg)) {
-				if (_DEBUG) System.out.println("UDPServerThread: handleRequest: Drop duplicate request from: "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(asr.lastSnapshot));
+				if (DEBUG) System.out.println("UDPServerThread: handleRequest: Drop duplicate request from: "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(asr.lastSnapshot));
 				if (true || ! DD.RELEASE) return;
 			}
 			if (_DEBUG) System.out.println("UDPServerThread: handleRequest: Request from: "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(asr.lastSnapshot) + " len=" + msg.length);
-			if (_DEBUG) System.out.println("UDPServerThread: handleRequest: req=" + asr.request);
+			if (DEBUG) System.out.println("UDPServerThread: handleRequest: specific requests=" + asr.request);
 			if (asr.pushChanges != null) {
-				if (_DEBUG) System.out.println("UDPServerThread: handleRequest: adv=" + asr.pushChanges.advertised);
-				if (_DEBUG) System.out.println("UDPServerThread: handleRequest: orgs=" + asr.pushChanges.advertised_orgs);
-				if (_DEBUG) System.out.println("UDPServerThread: handleRequest: o_has=" + asr.pushChanges.advertised_orgs_hash);
+				if (DEBUG) System.out.println("UDPServerThread: handleRequest: advertised=" + asr.pushChanges.advertised);
+				if (DEBUG) System.out.println("UDPServerThread: handleRequest: advertised_orgs=" + asr.pushChanges.advertised_orgs);
+				if (DEBUG) System.out.println("UDPServerThread: handleRequest: advertised_orgs_hash=" + asr.pushChanges.advertised_orgs_hash);
 			}
 			if (DEBUG) System.out.println("UDPServerThread: handleRequest: Received request from: "+psa);
 			if (DEBUG || DD.DEBUG_COMMUNICATION) System.out.println("UDPServer: Decoded request: "+asr.toSummaryString()+" from: "+psa);
@@ -551,7 +551,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				return false;
 			}
 
-			if (_DEBUG)
+			if (DEBUG)
 				System.out.println("UDPServerThread: same: "
 						+ " len=" + msg.length
 						+ " date=" + syncDate
@@ -759,15 +759,15 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 					_pk = ciphersuits.Cipher.getPK(asreq.address.component_basic_data.globalID);
 					if ( ! Cipher.isPair(sk,_pk)) {
 						Util.printCallPath("Unmatched keys undecoded");
-						System.out.println("\n\n\nUDPServer:run: pk="+_pk);
-						System.out.println("\n\n\nUDPServer:run: sk="+sk);
-						System.out.println("\n\n\nUDPServer:run: asreq="+asreq);
+						System.out.println("\n\n\nUDPServerTh: handleSTUNdromPeer: pk="+_pk);
+						System.out.println("\n\n\nUDPServerTh: handleSTUNdromPeer: sk="+sk);
+						System.out.println("\n\n\nUDPServerTh: handleSTUNdromPeer: asreq="+asreq);
 					}
 				}catch(Exception e){e.printStackTrace();}
 				boolean r = asreq.verifySignature();
-				if (!r) Util.printCallPath("failed verifying: "+asreq);
+				if (!r) Util.printCallPath("before decoding: failed verifying: "+asreq);
 				else
-					if(DEBUG)System.out.println("UDPServThread: _run: signature success");
+					if(DEBUG)System.out.println("UDPServerTh: handleSTUNdromPeer: before decoded: signature success");
 			}
 
 			byte[] buf = asreq.encode();
@@ -778,21 +778,25 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				//if(DEBUG)System.out.println("UDPServer: Received request from: "+psa);
 				if(DEBUG)System.out.println("UDPServer: handleSTUNfromPeer: verif sent Decoded request: "+asr.toSummaryString());
 
-				ciphersuits.PK pk;
+				ciphersuits.PK pk=null;
 				try {
 					pk = ciphersuits.Cipher.getPK(asr.address.component_basic_data.globalID);
-					if (!Cipher.isPair(sk,pk)) {
+					if (! Cipher.isPair(sk,pk)) {
 						Util.printCallPath("Unmatched keys");
-						System.out.println("UDPServThread: _run: pk ="+pk);
-						System.out.println("UDPServThread: _run: _pk ="+_pk);
-						System.out.println("UDPServThread: _run: pk_eq ="+pk.equals(_pk));
+						System.out.println("UDPServerTh: handleSTUNdromPeer: cipher pair failed : pk ="+pk);
+						System.out.println("UDPServerTh: handleSTUNdromPeer: cipher pair failed : _pk ="+_pk);
+						System.out.println("UDPServerTh: handleSTUNdromPeer: cipher pair failed : pk_eq ="+pk.equals(_pk));
 					}
 				} catch(Exception e) { e.printStackTrace(); }
 				if (!asr.verifySignature()) {
 					//DD.ed.fireServerUpdate(new CommEvent(this, null, psa, "UDPServer", "Unsigned Sync Request received: "+asr));
-					System.err.println("UDPServer:run: Unsigned Request sent: "+asr.toSummaryString());
-					System.err.println("UDPServer:run: Unsigned Request rsent: "+asr.toString());
-					System.err.println("UDPServer:run: Unsigned Request old: "+asreq.toString());
+					System.err.println("UDPServerTh: handleSTUNdromPeer: Unsigned Request sent: "+asr.toSummaryString());
+					System.err.println("UDPServerTh: handleSTUNdromPeer: Unsigned Request rsent: "+asr.toString());
+					System.err.println("UDPServerTh: handleSTUNdromPeer: Unsigned Request old: "+asreq.toString());
+					System.err.println("UDPServerTh: handleSTUNdromPeer: SK was: "+sk);
+					System.err.println("UDPServerTh: handleSTUNdromPeer: PK was: "+pk);
+					System.err.println("UDPServerTh: handleSTUNdromPeer: old verif: "+asreq.verifySignature(pk, true));
+					System.err.println("UDPServerTh: handleSTUNdromPeer: Messages for: "+aup+" peer="+peer);
 					if (verification_warning ++ < MAX_VERIFICATION_WARNING)
 						new DDP2P_ServiceThread("UDP Server Warning", true) {
 						public void _run(){

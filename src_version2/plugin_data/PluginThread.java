@@ -132,7 +132,7 @@ class PluginThread extends DDP2P_ServiceThread {
 					continue;
 				}
 				ArrayList<Address> pca = ClientSync.peer_contacted_addresses.get(msg.peer_GID);
-				if (_DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread: _run: Found stored client address = "+pca);
+				if (DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread: _run: Found stored client address = "+pca);
 				if (DD.WARN_OF_UNUSED_PEERS && (pca == null)) {
 					D_Peer peer;
 					peer = D_Peer.getPeerByGID_or_GIDhash(msg.peer_GID, null, true, false, false, null);

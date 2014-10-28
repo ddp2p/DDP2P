@@ -53,7 +53,7 @@ public class JustificationHandling {
 			" AND j."+table.justification.broadcasted+" <> '0' "+
 			" AND m."+table.motion.broadcasted+" <> '0' "+
 			" AND o."+table.organization.broadcasted+" <> '0' "+
-			" AND c."+table.constituent.broadcasted+" <> '0' "+
+			" AND ( c."+table.constituent.broadcasted+" <> '0'  OR c."+table.constituent.constituent_ID+" ISNULL ) "+
 					" AND j."+table.justification.arrival_date+">? ";
 
 	public static String getNextJustificationDate(String last_sync_date,
@@ -112,17 +112,17 @@ public class JustificationHandling {
 	private static final String sql_get_hashes=
 		"SELECT j."+table.justification.global_justification_ID+
 		" FROM "+table.justification.TNAME+" AS j "+
-		" JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=j."+table.justification.constituent_ID+")"+
+		" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=j."+table.justification.constituent_ID+")"+
 		" JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=j."+table.justification.motion_ID+")"+
 		//" LEFT JOIN "+table.justification.TNAME+" AS a ON(a."+table.justification.justification_ID+"=j."+table.justification.answerTo_ID+")"+
 		//" JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
 			" WHERE " +
 			" m."+table.motion.organization_ID+"=? "+
-			" AND m."+table.motion.organization_ID+"= c."+table.constituent.organization_ID+
+			" AND ( m."+table.motion.organization_ID+"= c."+table.constituent.organization_ID+"  OR c."+table.constituent.constituent_ID+" ISNULL ) "+
 			" AND j."+table.justification.arrival_date+">? " +
 			" AND j."+table.justification.arrival_date+"<=? "+
 			//" AND o."+table.organization.broadcasted+" <> '0' "+
-			" AND c."+table.constituent.broadcasted+" <> '0' "+
+			" AND ( c."+table.constituent.broadcasted+" <> '0'  OR c."+table.constituent.constituent_ID+" ISNULL ) "+
 			" AND m."+table.motion.broadcasted+" <> '0' "+
 			" AND j."+table.justification.broadcasted+" <> '0' "+
 			//" AND j."+table.justification.signature+" IS NOT NULL "+
@@ -132,6 +132,7 @@ public class JustificationHandling {
 		;
 	public static ArrayList<String> getJustificationHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
+		if (DEBUG) System.out.println("JustificationHandling: getJustHashes: start");
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
 		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
@@ -159,7 +160,7 @@ public class JustificationHandling {
 				" AND j."+table.justification.broadcasted+" <> '0' "+
 				" AND m."+table.motion.broadcasted+" <> '0' "+
 				" AND o."+table.organization.broadcasted+" <> '0' "+
-				" AND c."+table.constituent.broadcasted+" <> '0' "+
+				" AND ( c."+table.constituent.broadcasted+" <> '0'  OR c."+table.constituent.constituent_ID+" ISNULL ) "+
 				" AND j."+table.justification.arrival_date+">? ";
 	
 	public static D_Justification[] getJustificationData(

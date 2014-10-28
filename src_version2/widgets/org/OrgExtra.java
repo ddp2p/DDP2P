@@ -46,6 +46,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -69,6 +70,7 @@ import widgets.components.DDCountrySelector;
 import widgets.components.DebateDecideAction;
 import widgets.components.LVEditor;
 import widgets.components.LVRenderer;
+import widgets.news.NewsModel;
 
 @SuppressWarnings("serial")
 public class OrgExtra extends JTable implements MouseListener, ActionListener {
@@ -355,10 +357,39 @@ class OrgExtraAddAction extends DebateDecideAction {
     		//org_id = tree.getModel().getOrgLID();
     		//System.err.println("Row selected: " + row);
     	}
-    	OrgExtraModel model = (OrgExtraModel)tree.getModel();
-    	long extra_ID = model.addRow(row);
-    	if (extra_ID >= 0) tree.setCurrentField(extra_ID);
- 		return;
+    	class OrgExtra_SP {
+    		public int row;
+    		public long id;
+    		public OrgExtra tree;
+    		OrgExtra_SP (int _row, OrgExtra _tree) {row = _row; tree = _tree;}
+    		//OrgExtra_SP (int _row, long _id, OrgExtra _tree) {row = _row; id = _id; tree = _tree;}
+    	}
+    	new util.DDP2P_ServiceThread("OrgExtraRows", true, new OrgExtra_SP(row, tree)) {
+
+			@Override
+			public void _run() {
+				OrgExtra_SP tree_sp = (OrgExtra_SP) ctx;
+				OrgExtraModel model = (OrgExtraModel) tree_sp.tree.getModel();
+		    	long extra_ID = model.addRow(tree_sp.row);
+		    	if (extra_ID >= 0) {
+					int cnt = model.getRowCount();
+		    		tree_sp.row = cnt - 1;
+		    		tree_sp.id = extra_ID;
+		    		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable("OrgExtra_SW", true, tree_sp) {
+
+						@Override
+						public void _run() {
+							OrgExtra_SP tree_sp = (OrgExtra_SP) ctx;
+							OrgExtraModel model = (OrgExtraModel) tree_sp.tree.getModel();
+							model.fireTableRowsInserted(tree_sp.row,  tree_sp.row);
+				    		tree.setCurrentField(tree_sp.id);
+						}
+		    			
+		    		});
+		    	}
+				
+			}}.start();
+  		return;
     }
 }
 @SuppressWarnings("serial")
@@ -412,7 +443,7 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 		//System.err.println("OrgExtraModel:act: orig org: \n" + org);
 		long extra_ID = org.addEmptyOrgExtraParam(new_level);
 		//System.err.println("OrgExtraModel:act: final org: row=" +extra_ID+" cnt="+this.getRowCount()+"\n" + org);
-		fireTableRowsInserted(getRowCount()-1,  getRowCount()-1);
+		//fireTableRowsInserted(getRowCount()-1,  getRowCount()-1);
 		if (org.dirty_any()) org.storeRequest();
 		org.releaseReference();
 		return extra_ID;
@@ -484,12 +515,26 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 			//m_extras = null;
 			org = null;
 			if (DEBUG) System.out.println ("OrgExtraModel: setCurrentOrg: null orgID="+_orgID);
-			this.fireTableDataChanged();
+//			this.fireTableDataChanged();
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+				@Override
+				public void _run() {
+					((OrgExtraModel)ctx).fireTableDataChanged();
+				}
+			});
 			return;
 		}
 		
 		org = D_Organization.getOrgByLID_NoKeep (_orgID, true);
-		this.fireTableDataChanged();
+		//this.fireTableDataChanged();
+		
+		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+			@Override
+			public void _run() {
+				((OrgExtraModel)ctx).fireTableDataChanged();
+			}
+		});
+		
 		/*
 		String sql = "SELECT "+Util.setDatabaseAlias(table.field_extra.org_field_extra,"e")+
 		",o."+table.oid.oid_ID+",o."+table.oid.OID_name+",o."+table.oid.explanation+

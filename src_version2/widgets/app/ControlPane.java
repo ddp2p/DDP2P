@@ -1936,12 +1936,14 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			//Identity.current_peer_ID.slogan = val;
 			//DD.setAppText(DD.APP_my_peer_slogan, val);
 			
+			me = D_Peer.getPeerByPeer_Keep(me);
 			me.setSlogan(val);
 			me.setCreationDate();
 			me.sign();
 			me.dirty_main = true;
 			me.setArrivalDate();
 			me.storeRequest();
+			me.releaseReference();
 			DD.touchClient();
 			if(D_Peer.DEBUG) System.out.println("D_Peer:changeMyPeerSlodan:Saving:"+me);
 		}
@@ -1968,12 +1970,14 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			
 			Identity.setAgentWideEmails(val);
 			
+			me = D_Peer.getPeerByPeer_Keep(me);
 			me.setEmail(val);
 			me.setCreationDate();
 			me.sign();
 			me.dirty_main = true;
 			me.setArrivalDate();
 			me.storeRequest();
+			me.releaseReference();
 			DD.touchClient();
 			if(D_Peer.DEBUG) System.out.println("D_Peer:changeMyPeerEmails:Saving:"+me);
 		}
@@ -2001,13 +2005,14 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			
 			//Identity.current_peer_ID.name = val;
 			//DD.setAppText(DD.APP_my_peer_name, val);
-	
+			me = D_Peer.getPeerByPeer_Keep(me);
 			me.setName(val);
 			me.setCreationDate();
 			me.sign();
 			me.dirty_main = true;
 			me.setArrivalDate();
 			me.storeRequest();
+			me.releaseReference();
 			DD.touchClient();
 			if (D_Peer.DEBUG) System.out.println("HandlingMyself_Peer:changeMyPeerName:Saving:"+me);
 		} else {

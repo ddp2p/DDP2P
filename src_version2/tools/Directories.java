@@ -14,7 +14,7 @@ public class Directories {
 	 */
 	public static void setLinuxPaths(String crt_version_path) {
 		String linux_path = crt_version_path;
-		if(!linux_path.endsWith(Application.LINUX_PATH_SEPARATOR)) linux_path += Application.LINUX_PATH_SEPARATOR;
+		if (!linux_path.endsWith(Application.LINUX_PATH_SEPARATOR)) linux_path += Application.LINUX_PATH_SEPARATOR;
 		String _linux_parent=Util.getParent(linux_path);
 		if((_linux_parent!=null) && !_linux_parent.endsWith(Application.LINUX_PATH_SEPARATOR)) _linux_parent += Application.LINUX_PATH_SEPARATOR;
 		try {
@@ -36,7 +36,7 @@ public class Directories {
 	 */
 	public static void setWindowsPaths(String crt_version_path) {
 		String win_path = crt_version_path;
-		if(!win_path.endsWith(Application.WINDOWS_PATH_SEPARATOR)){
+		if ( ! win_path.endsWith(Application.WINDOWS_PATH_SEPARATOR)){
 			System.out.println("Windows path without terminator="+win_path);
 			win_path += Application.WINDOWS_PATH_SEPARATOR;
 			System.out.println("Windows path with terminator="+win_path);
@@ -82,23 +82,5 @@ public class Directories {
 			e.printStackTrace();
 		} 
 		StartUp.switch_install_paths_to_ones_for_current_OS();		
-	}
-	static public void main(String args[]) {
-		System.out.println("Saved in application field values="+args.length);
-		if (args.length==0) return;
-		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-			setLinuxPaths(args[0]);
-			
-			if(args.length > 1)
-				setWindowsPaths(args[1]);
-			
-			StartUp.detect_OS_and_store_in_DD_OS_var();
-			StartUp.fill_install_paths_all_OSs_from_DB(); // to be done before importing!!!
-			StartUp.switch_install_paths_to_ones_for_current_OS();		
-		
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
 	}
 }

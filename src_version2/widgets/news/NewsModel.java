@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Hashtable;
 
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
@@ -44,6 +45,8 @@ import util.DBInterface;
 import util.DBListener;
 import util.Util;
 import widgets.components.GUI_Swing;
+import widgets.motions.Motions;
+import widgets.motions.MotionsModel;
 import widgets.news.NewsTable;
 
 @SuppressWarnings("serial")
@@ -69,6 +72,8 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 	
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
+	
+	static final  Object monitor_update = new Object(); 
 	DBInterface db;
 	Object _news[]=new Object[0];
 	//Object _meth[]=new Object[0];
@@ -427,66 +432,95 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
 		if(DEBUG) System.out.println("\nwidgets.news.NewsModel: update table= "+_table+": info= "+info);
 		if(DEBUG) System.out.println("\nwidgets.news.NewsModel: crt_motion_id = "+this.crt_motionID);
-		Object old_sel[] = new Object[tables.size()];
-		for(int i=0; i<old_sel.length; i++){
-			int sel = tables.get(i).getSelectedRow();
-			if((sel >= 0) && (sel < _news.length)) old_sel[i] = _news[sel];
-		}
 		String sql = sql_news;
 		ArrayList<String> params = new ArrayList<String>(); 
-		if(this.crt_motionID != null) {
+		if (this.crt_motionID != null) {
 			sql += " AND n."+table.news.motion_ID + "=? ";
 			params.add(this.crt_motionID);
 		}
-		if(this.crt_orgID != null) {
+		if (this.crt_orgID != null) {
 			sql += " AND n."+table.news.organization_ID + "=? ";
 			params.add(this.crt_orgID);
 		}
-		try {
-			ArrayList<ArrayList<Object>> news_data;
-			news_data = db.select(sql, params.toArray(new String[0]), DEBUG);
-			_news = new Object[news_data.size()];
-			//_meth = new Object[orgs.size()];
-			_hash = new Object[news_data.size()];
-			_crea = new Object[news_data.size()];
-			_crea_date = new Object[news_data.size()];
-			//_votes = new Object[news_data.size()];
-			_gid = new boolean[news_data.size()]; // has creatoe
-			_blo = new boolean[news_data.size()];
-			_bro = new boolean[news_data.size()];
-			_req = new boolean[news_data.size()];
-			for(int k=0; k<_news.length; k++) {
-				_news[k] = news_data.get(k).get(0);
-				_crea_date[k] = news_data.get(k).get(1);
-				//_meth[k] = orgs.get(k).get(1);
-				_hash[k] = news_data.get(k).get(2);
-				_crea[k] = news_data.get(k).get(3);
-				_gid[k] = (news_data.get(k).get(3) != null);
-				_blo[k] = "1".equals(news_data.get(k).get(4));
-				_bro[k] = "1".equals(news_data.get(k).get(5));
-				_req[k] = "1".equals(news_data.get(k).get(6));
-				//_votes[k] = news_data.get(k).get(7);
+		Object old_sel[] = new Object[tables.size()];
+		synchronized(monitor_update) {
+			try {
+				for (int old_view_idx = 0; old_view_idx < old_sel.length; old_view_idx ++) {
+					NewsTable old_view = tables.get(old_view_idx);
+					int sel_view = old_view.getSelectedRow();
+					if ((sel_view >= 0) && (sel_view < _news.length)) {
+						int sel_model = old_view.convertRowIndexToModel(sel_view);
+						old_sel[old_view_idx] = _news[sel_model];
+					}
+				}
+				ArrayList<ArrayList<Object>> news_data;
+				news_data = db.select(sql, params.toArray(new String[0]), DEBUG);
+				_news = new Object[news_data.size()];
+				//_meth = new Object[orgs.size()];
+				_hash = new Object[news_data.size()];
+				_crea = new Object[news_data.size()];
+				_crea_date = new Object[news_data.size()];
+				//_votes = new Object[news_data.size()];
+				_gid = new boolean[news_data.size()]; // has creatoe
+				_blo = new boolean[news_data.size()];
+				_bro = new boolean[news_data.size()];
+				_req = new boolean[news_data.size()];
+				for (int k = 0; k < _news.length; k ++) {
+					_news[k] = news_data.get(k).get(0);
+					_crea_date[k] = news_data.get(k).get(1);
+					//_meth[k] = orgs.get(k).get(1);
+					_hash[k] = news_data.get(k).get(2);
+					_crea[k] = news_data.get(k).get(3);
+					_gid[k] = (news_data.get(k).get(3) != null);
+					_blo[k] = "1".equals(news_data.get(k).get(4));
+					_bro[k] = "1".equals(news_data.get(k).get(5));
+					_req[k] = "1".equals(news_data.get(k).get(6));
+					//_votes[k] = news_data.get(k).get(7);
+				}
+				if(DEBUG) System.out.println("widgets.org.News: A total of: "+_news.length);
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
 			}
-			if(DEBUG) System.out.println("widgets.org.News: A total of: "+_news.length);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
 		}
-		for(int k=0; k<old_sel.length; k++){
-			NewsTable i = tables.get(k);
+		
+		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+			@Override
+			public void _run() {
+				((NewsModel)ctx).fireTableDataChanged();
+			}
+		});
+		
+		for ( int crt_view_idx = 0; crt_view_idx < old_sel.length; crt_view_idx ++) {
+			NewsTable crt_view = tables.get(crt_view_idx);
 			//int row = i.getSelectedRow();
-			int row = findRow(old_sel[k]);
-			if(DEBUG) System.out.println("widgets.org.News: selected row: "+row);
+			int row_model = findModelRow(old_sel[crt_view_idx]);
+			if(DEBUG) System.out.println("widgets.org.News: selected row: "+row_model);
 			//i.revalidate();
-			this.fireTableDataChanged();
-			if((row >= 0)&&(row<_news.length)) i.setRowSelectionInterval(row, row);
-			i.fireListener(row, NewsTable.A_NON_FORCE_COL);
+			
+			class O {int row_model; NewsTable crt_view; O(int _row, NewsTable _view) {row_model = _row; crt_view = _view;}}
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, new O(row_model,crt_view)) {
+				@Override
+				public void _run() {
+					O o = (O)ctx;
+					// _news.length
+					if ((o.row_model >= 0) && (o.row_model < o.crt_view.getModel().getRowCount())) {
+						int row_view = o.crt_view.convertRowIndexToView(o.row_model);
+						o.crt_view.setRowSelectionInterval(row_view, row_view);
+					}
+					// _motion.length
+//					if ((o.row_view >= 0) && (o.row_view < o.crt_view.getRowCount())) o.crt_view.setRowSelectionInterval(o.row_view, o.row_view);
+					o.crt_view.initColumnSizes();
+				}
+			});
+
+			crt_view.fireListener(row_model, NewsTable.A_NON_FORCE_COL);
 		}		
 		if(DEBUG) System.out.println("widgets.org.News: Done");
 	}
 
-	private int findRow(Object id) {
-		if(id==null) return -1;
-		for(int k=0; k < _news.length; k++) if(id.equals(_news[k])) return k;
+	private int findModelRow(Object id) {
+		if (id == null) return -1;
+		for (int k = 0; k < _news.length; k ++) if (id.equals(_news[k])) return k;
 		return -1;
 	}
 	@Override

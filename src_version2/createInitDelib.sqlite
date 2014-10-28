@@ -1,5 +1,6 @@
 INSERT INTO "application" VALUES('DD_DB_VERSION', '1.0.5');
-INSERT INTO "application" VALUES('listing_directories','163.118.78.44:25123,163.118.78.40:25123');
+INSERT INTO "application" VALUES('listing_directories','163.118.78.40:10000,163.118.78.40:25123');
+INSERT INTO "directory_address" VALUES(3,NULL,NULL,NULL,'DIR','B','0','0.10.01','163.118.78.40','10000','10000','DD',NULL,NULL,NULL,NULL,1,0);
 
 INSERT INTO "updates" ("updates_ID",
         "original_mirror_name",

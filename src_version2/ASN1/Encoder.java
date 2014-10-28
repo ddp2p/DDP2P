@@ -50,7 +50,7 @@ class Encoder{
 	public static final byte TAG_EMBEDDED_PDV=11;
 	public static final byte TAG_UTF8String=12;
 	public static final byte TAG_RELATIVE_OID=13;
-	public static final byte TAG_SEQUENCE=16+(1<<5);
+	public static final byte TAG_SEQUENCE=16+(1<<5); //0x30
 	public static final byte TAG_SET=17+(1<<5);
 	public static final byte TAG_NumericString=18;
 	public static final byte TAG_PrintableString=19;
@@ -58,7 +58,7 @@ class Encoder{
 	public static final byte TAG_VideotextString2=1;
 	public static final byte TAG_IA5String=22;
 	public static final byte TAG_UTCTime=23;
-	public static final byte TAG_GeneralizedTime=24;
+	public static final byte TAG_GeneralizedTime=24; //0x18
 	public static final byte TAG_GraphicString=25;
 	public static final byte TAG_VisibleString=26;
 	public static final byte TAG_GenerlString=27;
@@ -206,9 +206,10 @@ class Encoder{
 	 * @return returns this
 	 */
 	public static byte buildASN1byteType(int classASN1, int PCASN1, byte tag_number){
-		if((tag_number&0x1F) >= 31) {
-			Util.printCallPath("Need more bytes");
-			tag_number = 25;
+		if((tag_number) >= 31) { //tag_number&0x1F
+			if (tag_number != Encoder.TAG_SEQUENCE) Util.printCallPath("Need more bytes for:"+tag_number);
+			tag_number = (byte)(tag_number & (byte)0x1F);//25;
+			if(tag_number == 31) tag_number = 25;
 		}
 		int tag = ((classASN1&0x3)<<6)+((PCASN1&1)<<5)+(tag_number&0x1f);
 		return (byte)tag;

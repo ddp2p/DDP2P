@@ -784,6 +784,79 @@ public class ASNSyncRequest extends ASNObj implements Summary {
 	//Address directory=null;
 	public ASNSyncPayload pushChanges=null;
 	byte[] signature; // covers version,lastSnapshot,tableNames,orgFilter,address,pushChanges
+
+	@Override
+	public boolean equals(Object o) {
+		ASNSyncRequest r = (ASNSyncRequest) o;
+		if (! Util.equalStrings_null_or_not(version, r.version)) { System.out.println("diff version"); return false;}
+		if (! Util.equalCalendars_null_or_not(lastSnapshot, r.lastSnapshot)) { System.out.println("diff snap"); return false;}
+		if (! Util.equalBytes_null_or_not(randomID, r.randomID)) { System.out.println("diff rand"); return false;}
+		
+		if (tableNames != null) {
+			if (! Util.equalBytes_null_or_not(
+					Encoder.getStringEncoder(tableNames, DD.TAG_PP0).setASN1Type(DD.TAG_AC0).getBytes(),
+					Encoder.getStringEncoder(r.tableNames, DD.TAG_PP0).setASN1Type(DD.TAG_AC0).getBytes()))
+			{ System.out.println("diff tables"); return false;}
+		}
+		if (orgFilter != null) {
+			if (! Util.equalBytes_null_or_not(
+					Encoder.getEncoder(orgFilter).setASN1Type(DD.TAG_AC1).getBytes(),
+					Encoder.getEncoder(r.orgFilter).setASN1Type(DD.TAG_AC1).getBytes()))
+					{ System.out.println("diff filter"); return false;}
+		}
+		if (address != null) {
+			if (! Util.equalBytes_null_or_not(
+					address.getEncoder().setASN1Type(DD.TAG_AC2).getBytes(),
+					r.address.getEncoder().setASN1Type(DD.TAG_AC2).getBytes()))
+			{ System.out.println("diff addr"); return false;}
+		}
+		if (request != null) {
+			if (! Util.equalBytes_null_or_not(
+					request.getEncoder().setASN1Type(DD.TAG_AC3).getBytes(),
+					r.request.getEncoder().setASN1Type(DD.TAG_AC3).getBytes()))
+			{ System.out.println("diff req"); return false;}
+		}
+		if (plugin_msg != null) {
+			if (! Util.equalBytes_null_or_not(
+					plugin_msg.getEncoder().setASN1Type(DD.TAG_AC4).getBytes(),
+					r.plugin_msg.getEncoder().setASN1Type(DD.TAG_AC4).getBytes()))
+			{ System.out.println("diff plugin"); return false;}
+		}
+		if (plugin_info != null) {
+			if (! Util.equalBytes_null_or_not(
+					Encoder.getEncoder(this.plugin_info).setASN1Type(DD.TAG_AC6).getBytes(),
+					Encoder.getEncoder(r.plugin_info).setASN1Type(DD.TAG_AC6).getBytes()))
+			{ System.out.println("diff info"); return false;}
+		}
+		/*
+		if(directory!=null) {
+			Encoder encPA = directory.getEncoder();
+			enc.addToSequence(encPA.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)3));			
+		}
+		*/
+		// pushChanges ASNSyncPayload OPTIONAL
+		if (pushChanges != null) {
+			if (! Util.equalBytes_null_or_not(
+					pushChanges.getEncoder().getBytes(),
+					r.pushChanges.getEncoder().getBytes()))
+			{ System.out.println("diff push"); return false;}
+		}
+		if (signature != null) {
+			if (! Util.equalBytes_null_or_not(signature, r.signature)) { System.out.println("diff sign"); return false;}
+		} else {
+			if(_DEBUG)System.out.println("ASNSyncReq:encode:*******************************");
+			if(_DEBUG)System.out.println("ASNSyncReq:encode:**********SHOULD HAVE HAD SIGNATURE!");
+			if(_DEBUG)System.out.println("ASNSyncReq:encode:*******************************");
+		}
+		if (dpi != null) {
+			if (! Util.equalBytes_null_or_not(
+					dpi.getEncoder().setASN1Type(DD.TAG_AC7).getBytes(),
+					dpi.getEncoder().setASN1Type(DD.TAG_AC7).getBytes()))
+			{ System.out.println("diff dpi"); return false;}
+		}
+		return true;
+	}
+	
 	public ASNSyncRequest() {
 	}
 	public String toSummaryString() {
@@ -819,6 +892,8 @@ public class ASNSyncRequest extends ASNObj implements Summary {
 				}
 				result += "],";
 		}
+		result += ";\n\t rnd=["+Util.byteToHex(randomID, ":")+"; ";
+		result += ";\n\t sgn=["+Util.byteToHex(signature, ":")+"; ";
 		result += ";\n\t orgFilter=["+Util.concat(orgFilter, "; ")+"];";
 		result += ";\n\t address="+address+"; ";
 		result += ";\n\t dpi="+dpi+"; ";
@@ -960,6 +1035,61 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 		enc.setASN1Type(getASN1TAG());
 		return enc;
 	}
+	
+	public void pEncoder() {
+		Encoder e;
+		Encoder enc = new Encoder().initSequence();
+		enc.addToSequence(e=new Encoder(version)); //version UTF8String
+		System.out.println("v="+Util.byteToHex(e.getBytes(), ":"));
+		// lastSnapshot GeneralizedTime OPTIONAL
+		if (lastSnapshot != null) { enc.addToSequence(e=new Encoder(lastSnapshot).setASN1Type(Encoder.TAG_GeneralizedTime));
+		System.out.println("lS="+Util.byteToHex(e.getBytes(), ":"));}
+		if (randomID != null) { enc.addToSequence(e=new Encoder(randomID).setASN1Type(DD.TAG_AP8));
+		System.out.println("r="+Util.byteToHex(e.getBytes(), ":"));}
+		// tableNames [APPLICATION C0] IMPLICIT SEQUENCE OF TableName OPTIONAL
+		if (tableNames != null) { enc.addToSequence(e=Encoder.getStringEncoder(tableNames, DD.TAG_PP0).setASN1Type(DD.TAG_AC0));		
+		System.out.println("tN="+Util.byteToHex(e.getBytes(), ":"));}
+		// orgFilter [APPLICATION C1] IMPLICIT SEQUENCE OF OrgFilter OPTIONAL,
+		if (orgFilter != null) { enc.addToSequence(e=Encoder.getEncoder(orgFilter).setASN1Type(DD.TAG_AC1));
+		System.out.println("oF="+Util.byteToHex(e.getBytes(), ":"));}
+		// address [APPLICATION C2] IMPLICIT D_PeerAddress OPTIONAL
+		if (address != null) { enc.addToSequence(e=address.getEncoder().setASN1Type(DD.TAG_AC2));
+		System.out.println("addr="+Util.byteToHex(e.getBytes(), ":")); address.pEncoder();}
+		// request [APPLICATION C3] IMPLICIT SpecificRequest OPTIONAL
+		if (request != null) { enc.addToSequence(e=request.getEncoder().setASN1Type(DD.TAG_AC3));
+		System.out.println("req="+Util.byteToHex(e.getBytes(), ":"));}
+		// plugin_msg [APPLICATION C4] IMPLICIT D_PluginData OPTIONAL
+		if (plugin_msg != null) { enc.addToSequence(e=plugin_msg.getEncoder().setASN1Type(DD.TAG_AC4));
+		System.out.println("pm="+Util.byteToHex(e.getBytes(), ":"));}
+		// plugin_info [APPLICATION C6] IMPLICIT SEQUENCE OF ASNPluginInfo OPTIONAL
+		if (plugin_info != null) { enc.addToSequence(e=Encoder.getEncoder(this.plugin_info).setASN1Type(DD.TAG_AC6));
+		System.out.println("pi="+Util.byteToHex(e.getBytes(), ":"));}
+		/*
+		if(directory!=null) {
+			Encoder encPA = directory.getEncoder();
+			enc.addToSequence(encPA.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)3));			
+		}
+		*/
+		// pushChanges ASNSyncPayload OPTIONAL
+		if (pushChanges != null) { enc.addToSequence(e=pushChanges.getEncoder());// DD.TAG_AC8
+		System.out.println("pc="+Util.byteToHex(e.getBytes(), ":"));}
+		if (signature != null) {
+			Encoder sign = new Encoder(this.signature);
+			// signature [APPLICATION 5] IMPLICIT
+			if (!versionAfter(version,1)) sign.setASN1Type(DD.TYPE_SignSyncReq);
+			// signature NULLOCTETSTRING
+			enc.addToSequence(e=sign);
+			System.out.println("sgn="+Util.byteToHex(e.getBytes(), ":"));
+		} else {
+			if(_DEBUG)System.out.println("ASNSyncReq:encode:*******************************");
+			if(_DEBUG)System.out.println("ASNSyncReq:encode:**********SHOULD HAVE HAD SIGNATURE!");
+			if(_DEBUG)System.out.println("ASNSyncReq:encode:*******************************");
+		}
+		if (dpi != null) { enc.addToSequence(e=dpi.getEncoder().setASN1Type(DD.TAG_AC7));
+		System.out.println("dpi ="+Util.byteToHex(e.getBytes(), ":"));}
+		enc.setASN1Type(getASN1TAG());
+		//return enc;
+	}
 	private boolean versionAfter(String v1, String v2) {
 		if(v1==null) return false;
 		if(v2==null) return true;
@@ -1018,7 +1148,7 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 			} else
 				return false;
 		}
-		boolean result = verifySignature(pk);
+		boolean result = verifySignature(pk, false);
 		if ( !result ) {
 			Util.printCallPath("Fail sync request!");
 			System.err.println("ASNSyncRequest:verifySignature: Faulty message="+this);
@@ -1061,19 +1191,21 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 		if(ClientSync.DEBUG)System.out.println("ASR: signing sk ="+sk);
 		signature = Util.sign(msg,sk);
 	}
-	public boolean verifySignature(ciphersuits.PK pk) {
+	public boolean verifySignature(ciphersuits.PK pk, boolean dbg) {
 		byte[] sgn = signature;
 		signature = new byte[0];
 		byte[] msg = this.getEncoder().getBytes();
-		if(ClientSync.DEBUG)System.out.println("ASR:VerSigning msg ="+msg.length);
-		if(ClientSync.DEBUG)System.out.println("ASR:VerSigning msg hash ="+Util.stringSignatureFromByte(Util.simple_hash(msg,Cipher.MD5)));
-		if(ClientSync.DEBUG)System.out.println("ASR:VerSigning pk ="+pk);
+		if(ClientSync.DEBUG || dbg)System.out.println("ASR:VerSigning msg ="+msg.length);
+		if(ClientSync.DEBUG || dbg)System.out.println("ASR:VerSigning msg hash ="+Util.stringSignatureFromByte(Util.simple_hash(msg,Cipher.MD5)));
+		if(ClientSync.DEBUG || dbg)System.out.println("ASR:VerSigning msg hash ="+Util.stringSignatureFromByte(msg));
+		if(ClientSync.DEBUG || dbg)System.out.println("ASR:VerSigning pk ="+pk);
 		signature = sgn;
 		boolean result = Util.verifySign(msg, pk, sgn);
 		if (! result) {
 			Util.printCallPath("Fail sync request");
 			if(_DEBUG)System.out.println("ASR:VerSigning msg ="+msg.length);
 			if(_DEBUG)System.out.println("ASR:VerSigning msg hash ="+Util.stringSignatureFromByte(Util.simple_hash(msg,Cipher.MD5)));
+			if(_DEBUG)System.out.println("ASR:VerSigning msg ="+Util.stringSignatureFromByte(msg));
 			if(_DEBUG)System.out.println("ASR:VerSigning pk ="+pk);
 		}
 		return result;

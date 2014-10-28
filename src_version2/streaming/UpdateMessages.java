@@ -630,9 +630,9 @@ public class UpdateMessages {
 				}
 			}
 		}
-		if (_DEBUG) System.out.println("UpdateMessages: evaluate_interests: got interest: "+sp);
+		if (DEBUG) System.out.println("UpdateMessages: evaluate_interests: got interest: "+sp);
 		evaluate_interest_global(advertised, sp);			
-		if (_DEBUG) System.out.println("UpdateMessages: evaluate_interests: got interest gb: "+sp);
+		if (DEBUG) System.out.println("UpdateMessages: evaluate_interests: got interest gb: "+sp);
 		
 	}
 	private static void evaluate_interest_global(SpecificRequest advertised, SpecificRequest sp_rq) throws P2PDDSQLException {

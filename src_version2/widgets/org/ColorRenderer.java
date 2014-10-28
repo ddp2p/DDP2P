@@ -42,7 +42,7 @@ class ColorRenderer extends JLabel implements TableCellRenderer {
 			boolean isSelected, boolean hasFocus, int row, int column) {
 		int model_row = table.convertRowIndexToModel(row);
 		if(model.isNotReady(model_row)) { // I am creating it
-			setBackground(Color.BLUE);
+			setBackground(Color.BLACK);
 			this.setForeground(Color.YELLOW);
 			this.setText(Util.getString(obj));
 			if(DEBUG) System.out.println("org.ColorRenderer:nr Row="+model_row+" Col="+column+"  val="+obj);

@@ -20,9 +20,7 @@
 package widgets.peers;
 import hds.ASNPluginInfo;
 import hds.PeerInput;
-
 import java.awt.BorderLayout;
-import java.awt.GridLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -32,7 +30,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
@@ -51,12 +48,10 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
@@ -65,17 +60,10 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
-import javax.swing.tree.TreePath;
 
 import plugin_data.D_PluginInfo;
-import plugin_data.PeerPlugin;
-import plugin_data.PeerPluginAction;
-import plugin_data.PeerPluginEditor;
-import plugin_data.PeerPluginMenuItem;
-import plugin_data.PeerPluginRenderer;
 import plugin_data.PluginMenus;
 import plugin_data.PluginRegistration;
-import plugin_data.PluginRequest;
 import ciphersuits.KeyManagement;
 import ciphersuits.PK;
 import ciphersuits.SK;
@@ -88,30 +76,24 @@ import config.PeerListener;
 import config.Peers_View;
 import data.D_OrgDistribution;
 import data.D_Peer;
-import data.D_PeerInstance;
-import data.D_PluginData;
 import data.HandlingMyself_Peer;
 import util.DBInfo;
 import util.DBInterface;
 import util.DBListener;
 import util.DBSelector;
 import util.DDP2P_ServiceThread;
+import util.DD_SK;
 import util.Util;
 import widgets.app.ControlPane;
 import widgets.app.DDIcons;
 import widgets.app.MainFrame;
-import widgets.app.ThreadsAccounting;
 import widgets.app.Util_GUI;
 import widgets.components.BulletRenderer;
 import widgets.components.DebateDecideAction;
 import widgets.components.GUI_Swing;
 import widgets.components.TableUpdater;
-import widgets.components.UpdatesFilterKey;
 import widgets.dir_fw_terms.TermsPanel;
-import widgets.motions.Motions;
-import widgets.motions.MotionsModel;
 import widgets.private_org.PrivateOrgPanel;
-import widgets.private_org.PrivateOrgTable;
 import static util.Util.__;
 
 class NoPluginRenderer implements TableCellRenderer{
@@ -1443,22 +1425,30 @@ class PeersRowAction extends DebateDecideAction {
 			File fileTrustedSK = filterUpdates.getSelectedFile();
 			SK sk;
 			PK pk;
-			if(fileTrustedSK.exists()) {
+			if (fileTrustedSK.exists()) {
 				int c = Application_GUI.ask(__("Existing file. Overwrite: "+fileTrustedSK+"?"), __("Overwrite file?"), JOptionPane.OK_CANCEL_OPTION);
-				if(c!=0) break;
+				if (c != 0) break;
 			}
 			String gid = model.getGID(row);
 			try {
-				boolean result = KeyManagement.saveSecretKey(gid, fileTrustedSK.getCanonicalPath());
-				if(result) break;
+				boolean result = false;
+				//result = KeyManagement.saveSecretKey(gid, fileTrustedSK.getCanonicalPath());
+				DD_SK dsk =  new DD_SK(); 
+				if (KeyManagement.fill_sk(dsk, gid)) {
+					System.out.println("Peers:savesk: will encode: "+dsk);
+					
+					String []explain = new String[1];
+					result = DD.embedPeerInBMP(fileTrustedSK, explain, dsk);
+				}		
+				if (result) break;
 			} catch (P2PDDSQLException e3) {
 				Application_GUI.warning(__("Failed to save key: "+e3.getMessage()), __("Failed to save key"));
 				e3.printStackTrace();
 				break;
-			} catch (IOException e3) {
-				Application_GUI.warning(__("Failed to save key: "+e3.getMessage()), __("Failed to save key"));
-				e3.printStackTrace();
-				break;
+//			} catch (IOException e3) {
+//				Application_GUI.warning(__("Failed to save key: "+e3.getMessage()), __("Failed to save key"));
+//				e3.printStackTrace();
+//				break;
 			} catch (Exception e4) {
 				Application_GUI.warning(__("Failed to save key: "+e4.getMessage()), __("Failed to save key"));
 				e4.printStackTrace();
@@ -1560,7 +1550,7 @@ class PeersRowAction extends DebateDecideAction {
     		if (row < 0) return;
     		peerID = Util.getString(model.getPeers().get(row).get(PeersModel.SELECT_COL_ID));
     		try {
-    			D_Peer me_peer = D_Peer.getPeerByLID_NoKeep(peerID, false);
+    			D_Peer me_peer = D_Peer.getPeerByLID(peerID, true, true);//.getPeerByLID_NoKeep(peerID, false);
     			String current = me_peer.getInstance();
     			String expected = HandlingMyself_Peer.peekSomeInstance(me_peer);
     			switch (Application_GUI.ask(__("Do you want to set the Noname instance?\nRather than: expected=\"")+expected+"\" / current=\""+current+"\"", __("Noname instance?"), JOptionPane.YES_NO_CANCEL_OPTION)) {
@@ -1574,12 +1564,14 @@ class PeersRowAction extends DebateDecideAction {
     				break;
     			default:
     				if (_DEBUG) System.out.println("Peers:setmyself action: keep current instance:"+current);
+    				me_peer.releaseReference();
     				return;
     			}
-				HandlingMyself_Peer.setMyself(me_peer, true);
+				HandlingMyself_Peer.setMyself(me_peer, true, true); // kept
 				HandlingMyself_Peer.updateAddress(me_peer);
 				me_peer.sign(me_peer.getSK());
 				me_peer.storeRequest();
+				me_peer.releaseReference();
 				//D_PeerAddress peer = new D_PeerAddress(Util.lval(peerID));
 				
 				if ((me_peer != null) && (me_peer.component_basic_data != null))
@@ -2411,10 +2403,16 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	public void setValueAt(Object value, int row, int col) {
 		D_Peer peer = getPeer(row);
 		if (peer == null) return;
+		String _value;
 		switch (col) {
 		case TABLE_COL_NAME:
 			//set_my_data(table.peer_my_data.name, SELECT_COL_M_NAME, Util.getString(value), row);
-			D_Peer.setName_My(peer, Util.getString(value));
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name obj: "+value);
+			_value = Util.getString(value);
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
+			if ("".equals(_value)) _value = null;
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
+			D_Peer.setName_My(peer, _value);
 			break;
 		case TABLE_COL_BROADCASTED:
 			D_Peer.setBroadcastableMy(peer, (Boolean)value);
@@ -2441,8 +2439,13 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			D_Peer.setBlocked(peer, (Boolean)value);
 			break;
 		case TABLE_COL_CATEGORY:
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name obj: "+value);
+			_value = Util.getString(value);
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
+			if ("".equals(_value)) _value = null;
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
 			//set_data(table.peer.category, SELECT_COL_CATEG, Util.getString(value), row);
-			D_Peer.setCategory(peer, Util.getString(value));
+			D_Peer.setCategory(peer, _value);
 			break;
 		case TABLE_COL_HIDDEN:
 			//set_data(table.peer.hidden, SELECT_COL_HIDDEN, Util.getString(value), row);
@@ -2478,7 +2481,12 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			break;
 		case TABLE_COL_SLOGAN:
 			//set_my_data(table.peer_my_data.slogan, SELECT_COL_M_SLOGAN, Util.getString(value), row);
-			D_Peer.setSlogan_My(peer, Util.getString(value));
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name obj: "+value);
+			_value = Util.getString(value);
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
+			if ("".equals(_value)) _value = null;
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
+			D_Peer.setSlogan_My(peer, _value);
 			break;
 		}
 		/*
@@ -2501,7 +2509,8 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			e.printStackTrace();
 		}
 		*/
-		fireTableCellUpdated(row, col);
+		//fireTableCellUpdated(row, col);
+		this.fireTableRowsUpdated(row, row);
 	}
 	public void setConnectionState(String peerID, int state) {
 		if (peerID != null) this.connTCPByID.put(peerID, new Integer(state));
@@ -2538,6 +2547,17 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	@Override
 	public void update(ArrayList<String> a_table, Hashtable<String,DBInfo> info) {
 		if(DEBUG) System.out.println("Peers:update:peers start");
+		
+		if (a_table != null && !a_table.contains(table.peer.TNAME)) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+				@Override
+				public void _run() {
+					((PeersModel)ctx).fireTableDataChanged();
+				}
+			});
+			return;
+		}
+		
 		updates_requested = true;
 		/*
 		if (automatic_refresh){
@@ -2578,11 +2598,32 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 	public void __update(ArrayList<String> a_table, Hashtable<String,DBInfo> info) {
 		if(DEBUG) System.out.println("Peers:update:peers start");
 		ArrayList<ArrayList<Object>> _peers = D_Peer.getAllPeers();
+		
+		if (__peers != null && (_peers.size() == __peers.size())) {
+			boolean different = false;
+			for (int k = 0; k < __peers.size(); k++) {
+				//Util.lval(_justifications[k]);
+				if (Util.lval(__peers.get(k).get(SELECT_COL_ID)) != Util.lval(_peers.get(k).get(SELECT_COL_ID))) {
+					different = true;
+					break;
+				}
+			}
+			if (! different) {
+				SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+					@Override
+					public void _run() {
+						((PeersModel)ctx).fireTableDataChanged();
+					}
+				});
+				return;
+			}
+		}
+		
 
 		Hashtable<String,Integer> _rowByPeerID = new Hashtable<String,Integer>();
 		if (DEBUG) System.out.println("Peers:update:peers#="+_peers.size());
 		//_peers_ID = new String[peers.size()];
-		for (int i=0; i<_peers.size(); i++) {
+		for (int i = 0; i < _peers.size(); i++) {
 			_rowByPeerID.put(Util.getString(_peers.get(i).get(SELECT_COL_ID)), new Integer(i));
 			//_peers_ID[i] = Util.getString(peers.get(i).get(SELECT_COL_ID));
 		}
@@ -2590,10 +2631,22 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			__peers = _peers;
 			__rowByPeerID = _rowByPeerID;
 		}
+		
+		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+			@Override
+			public void _run() {
+				((PeersModel)ctx).fireTableDataChanged();
+			}
+		});
+		
 		//this.fireTableStructureChanged();
-		try {
-			this.fireTableDataChanged();
-		} catch(Exception e) {if (DEBUG) e.printStackTrace();}
+//		try {
+//			this.fireTableDataChanged();
+//		} catch(Exception e) {if (DEBUG) e.printStackTrace();}
+		/**
+		 * The next updater is executed in the Swing thread (called with SwingUtilities.invokeLater(this);).
+		 * Should be modified to keep the selected value.
+		 */
 		new TableUpdater(this, p_table, null);
 		//this.fireTableDataChanged();
 		if(DEBUG) System.out.println("Peers:update:peers done");

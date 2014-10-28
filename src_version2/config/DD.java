@@ -55,6 +55,7 @@ import util.DD_DirectoryServer;
 import util.DD_IdentityVerification_Answer;
 import util.DD_IdentityVerification_Request;
 import util.DD_Mirrors;
+import util.DD_SK;
 import util.DD_Testers;
 import util.DirectoryAddress;
 import util.EmbedInMedia;
@@ -74,7 +75,7 @@ import ASN1.Encoder;
 
 public class DD {
 	public static final String BRANCH = "B";//FIT_HDSSL_SILAGHI";
-	public static final String VERSION = "0.9.56";
+	public static final String VERSION = "0.10.01";
 	public static final boolean ONLY_IP4 = false;
 
 	private static final String PK_Developer = "MIIEGgwDUlNBYAEwAgMBAAECggQASKs9x2VEQH1SRxRwO43yt6HXCTnOmPJVUjN8bQQUTVBdFXhQsTpnTP1yLe/qFlA0jnIzheHT4WEcsU874N800iPMWHCjpCowQwwTj9SQLTmfbfhL8z0a7Dw6ZJQ+DnYoPVhx3JHL57CK3YeVYclZCoHetZ5PEIpcAwxaPmnL3GQaOgJiVHb6CLMi+hNHLxsjQZwTYTeoUOXQKgyTcRDE6xCvw8+q0U6/Uan3KCx/KmtdRQMEtGAXSPANv12kle84Dv8AdJxT1CJGsXm0+N6+wbbvkL77kMr+79sCR/8drZmOnrbjveQpab2pSh0vO//XqslrDRbzhniGSpqFW+YNTOixWAsCp35hNPbAx5xqPXg6DEIrysGslDGo4gC3Ew5mN/JkOQA+pd6uIzC4EgbfWqJKMvrtOQN67hJR7Ysxn7cLDXGvmhK1s7oSJcnOmhWljSZ6joviVwAWKgzdm1gMBhn5+VdgwoEE7g5Inw0dH9UmgufloNiBQMM9m2igdQPaLRuVttrAEcs55F/Z5NFtJquTeQFBLAGux3MVxrYCgivRaoAzAkUMhGOA+00KU3oh3Bds0U8GYCMuYYrwSAWTZf0Z9lvUwJv8HtLJvI6p1p53oGzIW9bo20d0PMz7XrzNDOLEME9PaXKLo6vMCAxXIj19nm/bE1HBY7e7HErKMX3M7LC2xZ8PH7wsnl5M3y0ZZ6c9quwhvz/dWcUAQ5963LtDZ6bOenAGVGBjdWLhHK8/2p9Vgu1ZNA1WWHWnafExsT5GxuwZQ/PMk8YtmxqEkgGy2+xVT19oUK+yO1ok+xRUjvSRZ0IbWUEcOfQ5FvLNmMdV/NSebB6vjQwM5DGCE1YDhix+Qghr558KokVz7BPVrGVe1pUxfPo2XPwHReF8es+vr16lvwXrVEmQNG8KrX1tN5Z5I29+ZVcR6ti4t90RXY6H6lmLtU3P/PSmfOrBQraNHVvDm9y1hnSP9+EhJzuWFaS8v4+7OnodIWuZsYd2WYQp4YcDJ+7grV3s1vvacujzxCOwx5/gosLxOau45bvKqhsFrZ+le6IRNAG7T6ZwC9wesqCGBJlIwS50DlAb/KhPyDIvf+7EH1iwckG4fBtixaK9co8FHnuddn/cEIc6fkWDEzr2Cu3HyxeMeDrcGRvjTRr78Wp/ptvRoOYElOLkxrkmanetjOCMqRl1DJvl53SQKePraRx2DpRemK/TMQ3+5TQkFjjEsI2P455Th0z6vF+JzpetZ3j1NUqx+iEZ2ArMhdDk7dE/4qcn2xwLz5nNMvHSnO2N0T9tCLi96CqZm/HTqGa6jTxFhJOP11sFCCQ9jkKhxvxubs0sww75dnqXQeffpxyolcht3KHwfwwHU0hBLTUxMg==";
@@ -169,10 +170,17 @@ public class DD {
 	public static final short STEGO_SIGN_CONSTITUENT_VERIF_ANSWER = 0x3EE3;
 	public static final short STEGO_SIGN_MIRRORS = 0x4774;
 	public static final short STEGO_SIGN_TESTERS = 0x588C;
+	public static final short STEGO_SK = (short) 0xBEEF;
 	public static final short STEGO_SIGN_CONSTITUENT_VERIF_REQUEST = 0x7AAD;
 	public static final short STEGO_SLOGAN = (short) 0xDEAD;
 
-	
+	/**
+	 * class(2bits)||pc(1b)||number
+	 * @param classASN1
+	 * @param PCASN1
+	 * @param tag_number
+	 * @return
+	 */
 	public static byte asn1Type(int classASN1, int PCASN1, byte tag_number) {
 		if((tag_number&0x1F) >= 31){
 			Util.printCallPath("Need more bytes");
@@ -191,7 +199,8 @@ public class DD {
 		DD_DirectoryServer data4 = new DD_DirectoryServer();
 		DD_Testers data5 = new DD_Testers();
 		DD_Mirrors data6 = new DD_Mirrors();
-		return new StegoStructure[]{data1, data2, data3, data4, data5, data6};
+		DD_SK data7 = new DD_SK();
+		return new StegoStructure[]{data1, data2, data3, data4, data5, data6, data7};
 	}
 	/**
 	 * Function used to query available StegoStructures.
@@ -570,6 +579,7 @@ public class DD {
 	     		String listing_directories;
 				try {
 					listing_directories = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
+					if (DEBUG) System.out.println("DD: load_listing_directories: Got :"+listing_directories);
 					DirectoryAddress.reset(listing_directories);
 					dirs = DirectoryAddress.getActiveDirectoryAddresses();
 				} catch (P2PDDSQLException e) {
@@ -620,6 +630,7 @@ public class DD {
     			Identity.listing_directories_inet.add(isa);
     		} catch (Exception e) {
     			Application_GUI.warning(__("Error for")+" "+dirs[k]+"\nLoad Error: "+e.getMessage(), __("Error installing directories"));
+    			e.printStackTrace();
     		}
     	}
 	}
@@ -1139,7 +1150,11 @@ public class DD {
 		
 		if (file.exists()) {
 			boolean fail = EmbedInMedia.cannotEmbedInBMPFile(file, adr_bytes, explain, _buffer_original_data, _data);
-			if (fail) return false;
+			
+			if (fail) {
+				if (_DEBUG) System.out.println("DD: embedPeerInBMP: failed embedding in existing image: "+explain[0]);
+				return false;
+			}
 		}
 		
 		if ( EmbedInMedia.DEBUG ) System.out.println("EmbedInMedia:actionExport:bmp");

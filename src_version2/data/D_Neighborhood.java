@@ -134,6 +134,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				this.organization_ID = p_oLID;
 				if (__peer != null) this.peer_source_ID = (__peer.getLIDstr_keep_force());
 				this.dirty_main = true;
+				this.setTemporary();
 				return;
 			}
 			throw new P2PDDSQLException(e.getLocalizedMessage());
@@ -1319,11 +1320,13 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		this.preferences_date = preferences_date;
 		this._preferences_date = Encoder.getGeneralizedTime(preferences_date);
 		this.dirty_local = true;
+		this.dirty_preferences = true;
 	}
 	public void setPreferencesDateStr(String _preferences_date) {
 		this._preferences_date = _preferences_date;
 		this.preferences_date = Util.getCalendar(_preferences_date); //Encoder.getGeneralizedTime(creation_date);
 		this.dirty_local = true;
+		this.dirty_preferences = true;
 	}
 	public void setPreferencesDate(Calendar preferences_date, String _preferences_date) {
 		if (preferences_date == null) setCreationDateStr(_preferences_date);
@@ -1331,6 +1334,11 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		this.preferences_date = preferences_date;
 		this._preferences_date = _preferences_date;
 		this.dirty_local = true;
+		this.dirty_preferences = true;
+	}
+	public Calendar setPreferencesDate() {
+		setPreferencesDate(Util.CalendargetInstance());
+		return preferences_date;
 	}
 	/**
 	 * Load this message in the storage cache node.
@@ -1440,6 +1448,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public void setBlocked(boolean blocked) {
 		this.blocked = blocked;
+		setPreferencesDate();
 		this.dirty_preferences = true;
 	}
 	public boolean isRequested() {
@@ -1447,6 +1456,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public void setRequested(boolean requested) {
 		this.requested = requested;
+		setPreferencesDate();
 		this.dirty_preferences = true;
 	}
 	public boolean isBroadcasted() {
@@ -1454,6 +1464,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public void setBroadcasted(boolean broadcasted) {
 		this.broadcasted = broadcasted;
+		setPreferencesDate();
 		this.dirty_preferences = true;
 	}
 	public byte[] getSignature() {
@@ -1510,6 +1521,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public void setNameMy(String name) {
 		this.mydata.name = name;
+		setPreferencesDate();
 		this.dirty_mydata = true;
 	}
 	public String getNameMy() {
@@ -1517,6 +1529,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public void setCategoryMy(String cat) {
 		this.mydata.category = cat;
+		setPreferencesDate();
 		this.dirty_mydata = true;
 	}
 	public String getCategoryMy() {
@@ -1604,6 +1617,9 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		this.neighborhoodID = Util.getStringID(_neighborhoodID);
 		this._neighborhoodID = _neighborhoodID;
 	}
+	public String getOrgGIDH() {
+		return D_Organization.getOrgGIDHashGuess(this.global_organization_ID);
+	}
 	public String getOrgGID() {
 		return this.global_organization_ID;
 	}
@@ -1669,16 +1685,17 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	private void storeAct_my() {
 		this.dirty_mydata = false;
 		String param[];
-		if (this.mydata.row <= 0) {
-			param = new String[table.my_neighborhood_data.FIELDS_NB_NOID];
-		} else {
-			param = new String[table.my_neighborhood_data.FIELDS_NB];
-		}
-		param[table.my_neighborhood_data.COL_NAME] = this.mydata.name;
-		param[table.my_neighborhood_data.COL_CATEGORY] = this.mydata.category;
-		//param[table.my_neighborhood_data.COL_SUBMITTER] = this.n_my.submitter;
-		param[table.my_neighborhood_data.COL_NEIGHBORHOOD_LID] = this.getLIDstr();
 		try {
+			if (this.mydata.row <= 0) {
+				param = new String[table.my_neighborhood_data.FIELDS_NB_NOID];
+			} else {
+				param = new String[table.my_neighborhood_data.FIELDS_NB];
+			}
+			param[table.my_neighborhood_data.COL_NAME] = this.mydata.name;
+			param[table.my_neighborhood_data.COL_CATEGORY] = this.mydata.category;
+			//param[table.my_neighborhood_data.COL_SUBMITTER] = this.n_my.submitter;
+			param[table.my_neighborhood_data.COL_NEIGHBORHOOD_LID] = this.getLIDstr();
+			
 			if (this.mydata.row <= 0) {
 				this.mydata.row =
 						Application.db.insert(true, table.my_neighborhood_data.TNAME,
@@ -1687,7 +1704,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				param[table.my_neighborhood_data.COL_ROW] = this.mydata.row+"";
 				Application.db.update(true, table.my_neighborhood_data.TNAME,
 						table.my_neighborhood_data.fields_noID,
-						new String[]{table.my_neighborhood_data.neighborhood_ID}, param, DEBUG);
+						new String[]{table.my_neighborhood_data.row}, param, DEBUG);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

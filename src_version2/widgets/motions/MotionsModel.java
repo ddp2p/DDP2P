@@ -29,6 +29,7 @@ import java.util.Hashtable;
 import javax.swing.Icon;
 import javax.swing.JOptionPane;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
@@ -497,6 +498,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	//public void removeTableModelListener(TableModelListener arg0) {}
 
 	public void setCurrent(long motion_id) {
+		// boolean DEBUG = true;
 		if (DEBUG) System.out.println("MotionsModel:setCurrent: id=" + motion_id);
 		if (motion_id < 0) {
 			for (Motions o: tables) {
@@ -513,22 +515,27 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			__motions = _motion;
 			K = this.rowByID.get(motion_id);
 		}
-		if (K == null) return;
+		if (K == null) {
+			if (DEBUG) System.out.println("MotionsModel:setCurrent: quit k="+K+" mot_ID="+motion_id);
+			return;
+		}
 		D_Motion i = __motions[K];
-		if (DEBUG) System.out.println("MotionsModel:setCurrent: k="+K+" mot_ID="+i);
+		if (DEBUG) System.out.println("MotionsModel:setCurrent: row k="+K+" mot_ID="+i);
 		if (i == null) return;
 		Long id = i.getLID();
 		if ((id != null) && (id.longValue() == motion_id)) {
 			for (Motions o: tables) {
 				int tk = o.convertRowIndexToView(K);
+				if (DEBUG) System.out.println("MotionsModel:setCurrent: loop sel motions tk = "+tk);
 				o.setRowSelectionAllowed(true);
 				ListSelectionModel selectionModel = o.getSelectionModel();
 				selectionModel.setSelectionInterval(tk, tk);
 				o.scrollRectToVisible(o.getCellRect(tk, 0, true));
+				if (DEBUG) System.out.println("MotionsModel:setCurrent: loop sel fire="+K);
 				o.fireListener(K, 0);
 			}
 		}
-		if(DEBUG) System.out.println("MotionsModel:setCurrent: Done");
+		if (DEBUG) System.out.println("MotionsModel:setCurrent: Done");
 		
 	}
 	static final String sql_motions = 
@@ -560,17 +567,21 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update table= "+_table+": info= "+info);
 		if (crt_orgID == null) return;
-		Long old_sel[] = new Long[tables.size()];
-		for (int i = 0; i < old_sel.length; i ++){
-			int sel = tables.get(i).getSelectedRow();
-			if ((sel >= 0) && (sel < _motion.length)) old_sel[i] = _motion[sel].getLID();
-			if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update oldsel "+old_sel[i]);
+		if (_table != null && !_table.contains(table.motion.TNAME)) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+
+				@Override
+				public void _run() {
+					((MotionsModel)ctx).fireTableDataChanged();
+				}
+
+			});
+			return;
 		}
-		if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update oldsel passed");
 		D_Motion[] __motions;
 		Hashtable<Long, Integer> __rowByID = new Hashtable<Long, Integer>();
 		try {
-			if(DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update pselect");
+			if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update pselect");
 			ArrayList<ArrayList<Object>> moti;
 			String sql = sql_motions;
 			if (hide)	sql	 +=	" AND "+table.motion.hidden+" != '1' ";
@@ -579,6 +590,24 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 				moti = db.select(sql, new String[]{crt_orgID, crt_enhanced});
 			} else {
 				moti = db.select(sql+";", new String[]{crt_orgID});
+			}
+			if (moti.size() == _motion.length) {
+				boolean different = false;
+				for (int k = 0; k < _motion.length; k++) {
+					if (_motion[k].getLID() != Util.lval(moti.get(k).get(SELECT_ID))) {
+						different = true;
+						break;
+					}
+				}
+				if (! different) {
+					SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+						@Override
+						public void _run() {
+							((MotionsModel)ctx).fireTableDataChanged();
+						}
+					});
+					return;
+				}
 			}
 			
 //			_motions = new Object[moti.size()];
@@ -617,39 +646,90 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 			__motions = new D_Motion[0];
 		}
 		
-		synchronized(this) {
+		Long old_sel_LID[] = new Long[tables.size()];
+		synchronized (this) {
+			{
+				//boolean DEBUG = true;
+				for (int old_view_idx = 0; old_view_idx < old_sel_LID.length; old_view_idx ++) {
+					Motions tree = tables.get(old_view_idx);
+					int sel_view = tree.getSelectedRow();
+					if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update oldselLID["+old_view_idx+"] <- row_view="+sel_view);
+					if ((sel_view >= 0) && (sel_view < _motion.length)) {
+						int sel_model = tree.convertRowIndexToModel(sel_view);
+						if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update old model oldselLID["+old_view_idx+"] <- row_model="+sel_model);
+						old_sel_LID[old_view_idx] = _motion[sel_model].getLID();
+					}
+					if (DEBUG) System.out.println("widgets.motions.MotionsModel: update oldselLID = "+old_sel_LID[old_view_idx]);
+				}
+			}
+			if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update oldsel passed");
+			
 			_motion = __motions;
 			rowByID = __rowByID;
-		}
+			
+			if (DEBUG) System.out.println("widgets.org.MotionsModel: data changed: mot");
+			
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+				@Override
+				public void _run() {
+					((MotionsModel)ctx).fireTableDataChanged();
+				}
+			});
+			
 		
-		//boolean DEBUG = true;
-		if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update part");
-		for (int k=0; k<old_sel.length; k++){
-			if (DEBUG) System.out.println("widgets.org.Motions: update k="+k);
-			Motions i = tables.get(k);
-			//int row = i.getSelectedRow();
-			if (DEBUG) System.out.println("widgets.org.Motions: update old="+old_sel[k]);
-			int row = findTableRow(i, old_sel[k]);
-			if (DEBUG) System.out.println("widgets.org.Motions: update selected row: "+row);
-			//i.revalidate();
-			this.fireTableDataChanged();
-			if (DEBUG) System.out.println("widgets.org.Motions: update data changed: mot");
-			if ((row >= 0) && (row < _motion.length)) i.setRowSelectionInterval(row, row);
-			if (DEBUG) System.out.println("widgets.org.Motions: update selected");
-			i.fireListener(row, Motions.A_NON_FORCE_COL);
-			if (DEBUG) System.out.println("widgets.org.Motions: update fired Listener (motion)");
-			i.initColumnSizes();
-			if (DEBUG) System.out.println("widgets.org.Motions: update inited cols");
-		}		
-		if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update done");
+			if (DEBUG) System.out.println("widgets.org.MotionsModel: update data changed: mot");
+			{
+				//boolean DEBUG = true;
+				if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update part");
+				for (int crt_view_idx = 0; crt_view_idx < old_sel_LID.length; crt_view_idx ++) {
+					if (DEBUG) System.out.println("widgets.org.MotionsModel: update k="+crt_view_idx);
+					Motions crt_view = tables.get(crt_view_idx);
+					//int row = crt_view.getSelectedRow();
+					if (DEBUG) System.out.println("widgets.org.MotionsModel: update old selected LID="+old_sel_LID[crt_view_idx]);
+					int row_view = findTableRow(crt_view, old_sel_LID[crt_view_idx]);
+					if (DEBUG) System.out.println("widgets.org.MotionsModel: update selected new row view: "+row_view);
+					//crt_view.revalidate();
+					
+					if (DEBUG) System.out.println("widgets.org.MotionsModel: update selected view: "+row_view);
+					
+					class O {int row_view; Motions crt_view; O(int _row, Motions _view){row_view = _row; crt_view = _view;}}
+					SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, new O(row_view,crt_view)) {
+						@Override
+						public void _run() {
+							O o = (O)ctx;
+							// _motion.length
+							if ((o.row_view >= 0) && (o.row_view < o.crt_view.getRowCount())) o.crt_view.setRowSelectionInterval(o.row_view, o.row_view);
+							o.crt_view.initColumnSizes();
+						}
+					});
+					
+					if (DEBUG) System.out.println("widgets.org.MotionsModel: update inited cols");
+					crt_view.fireListener(row_view, Motions.A_NON_FORCE_COL);
+					if (DEBUG) System.out.println("widgets.org.MotionsModel: update fired Listener (motion)");
+					if (DEBUG) Util.printCallPath("");
+				}		
+				if (DEBUG) System.out.println("\nwidgets.motions.MotionsModel: update done");
+			}
+		}
 	}
-	private int findTableRow(Motions i, Long id) {
+	/**
+	 * Computes the view (table) row with a given ID
+	 * @param crt_view
+	 * @param id
+	 * @return
+	 */
+	private int findTableRow(Motions crt_view, Long id) {
 		if (DEBUG) System.out.println("widgets.org.Motions: findTableRow1 id = " + id);
 		int modelRow = findModelRow(id);
 		if (modelRow < 0) return modelRow;
-		if (i==null) return -1;
-		return i.convertRowIndexToView(modelRow);
+		if (crt_view==null) return -1;
+		return crt_view.convertRowIndexToView(modelRow);
 	}
+	/**
+	 * Searches the model row with the ID
+	 * @param id
+	 * @return
+	 */
 	private int findModelRow(Long id) {
 		if (DEBUG) System.out.println("widgets.org.Motions: findTableRow id = " + id+" #="+this.rowByID.size());
 		if (id == null) return -1;
@@ -665,28 +745,47 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		if (_m == null) return;
 		_m = D_Motion.getMotiByMoti_Keep(_m);
 		if (_m == null) return;
-		
+		String _value;
 		//String motID = _m.getLIDstr(); //Util.getString(this._motions[row]);
 		//long _motID = _m.getLID(); // Util.lval(this._motions[row]);
+		if (_DEBUG) System.out.println("MotionsModel:setValueAt r="+row+" m = " + _m);
 		switch (col) {
 		case TABLE_COL_NAME:
-			if(value instanceof D_Document_Title){
-				D_Document_Title _value = (D_Document_Title) value;
-				if (_value.title_document != null)  {
-					String format  = _value.title_document.getFormatString();
+			if (_DEBUG) System.out.println("MotionsModel:setValueAt name init: "+value);
+			if (value instanceof D_Document_Title){
+				D_Document_Title __value = (D_Document_Title) value;
+				if (__value.title_document != null)  {
+					String format  = __value.title_document.getFormatString();
 					if((format==null) || D_Document.TXT_FORMAT.equals(format))
-						value = _value.title_document.getDocumentUTFString();
+						value = __value.title_document.getDocumentUTFString();
 				}
 			}
 			//set_my_data(table.my_motion_data.name, Util.getString(value), row);
-			_m.setNameMy(Util.getString(value));
+			if (_DEBUG) System.out.println("MotionsModel:setValueAt name obj: "+value);
+			_value = Util.getString(value);
+			if (_DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
+			if ("".equals(_value)) _value = null;
+			if (_DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
+			_m.setNameMy(_value);
 			break;
 		case TABLE_COL_CREATOR:
-			_m.setCreatorMy(Util.getString(value));
+			if (_DEBUG) System.out.println("MotionsModel:setValueAt cre obj: "+value);
+			_value = Util.getString(value);
+			if (_DEBUG) System.out.println("MotionsModel:setValueAt cre str: "+_value);
+			if ("".equals(_value)) _value = null;
+			if (_DEBUG) System.out.println("MotionsModel:setValueAt cre nulled: "+_value);
+
+			_m.setCreatorMy(_value);
 			//set_my_data(table.my_motion_data.creator, Util.getString(value), row);
 			break;
 		case TABLE_COL_CATEGORY:
-			_m.setCategoryMy(Util.getString(value));
+			if (_DEBUG) System.out.println("MotionsModel:setValueAt cat obj: "+value);
+			_value = Util.getString(value);
+			if (_DEBUG) System.out.println("MotionsModel:setValueAt cat str: "+_value);
+			if ("".equals(_value)) _value = null;
+			if (_DEBUG) System.out.println("MotionsModel:setValueAt cat nulled: "+_value);
+
+			_m.setCategoryMy(_value);
 			//set_my_data(table.my_motion_data.category, Util.getString(value), row);
 			break;
 		case TABLE_COL_BROADCASTED:
@@ -789,8 +888,9 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		}
 		if (_m.dirty_any()) _m.storeRequest();
 		_m.releaseReference();
-		fireTableCellUpdated(row, col);
-		fireTableCellUpdated(row, MotionsModel.TABLE_COL_PREFERENCES_DATE);
+//		fireTableCellUpdated(row, col);
+//		fireTableCellUpdated(row, MotionsModel.TABLE_COL_PREFERENCES_DATE);
+		this.fireTableRowsUpdated(row, row);
 	}
 	/*
 	private void set_my_data(String field_name, String value, int row) {
@@ -960,10 +1060,15 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		return  this.crt_orgID;//Application.constituents.tree.getModel().getOrganizationID();
 	}
 	
-	public String getMotionID(int row) {
+	public String getMotionIDstr(int row) {
 		D_Motion _m = this.getMotion(row);
 		if (_m == null) return null;
 		return _m.getLIDstr(); //Util.getString(this._motions[row]);
+	}
+	public long getMotionID(int row) {
+		D_Motion _m = this.getMotion(row);
+		if (_m == null) return -1;
+		return _m.getLID(); //Util.getString(this._motions[row]);
 	}
 	
 	public String getMotionGID(int row) {

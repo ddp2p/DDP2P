@@ -501,7 +501,7 @@ class D_Vote extends ASNObj{
 
 		
 		if((this.organization_ID == null ) && (this.global_organization_ID != null))
-			this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
+			this.organization_ID = D_Organization.getLIDstrByGID_(this.global_organization_ID);
 		if((this.organization_ID == null ) && (this.global_organization_ID != null)) {
 			organization_ID = ""+data.D_Organization.insertTemporaryGID(global_organization_ID, __peer);
 			new_rq.orgs.add(global_organization_ID);
@@ -668,7 +668,7 @@ class D_Vote extends ASNObj{
 		if(DEBUG) System.out.println("WB_Vote:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		
 		if((this.organization_ID == null ) && (this.global_organization_ID != null))
-			this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
+			this.organization_ID = D_Organization.getLIDstrByGID_(this.global_organization_ID);
 		
 		if(this.constituent_ID == null )
 			constituent_ID = D_Constituent.getLIDstrFromGID(this.global_constituent_ID, Util.Lval(organization_ID));

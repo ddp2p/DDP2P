@@ -165,7 +165,7 @@ public class DirectoryAddress extends ASNObj{
 			e.printStackTrace();
 		}
 	}
-	static String getActiveDirs = "SELECT "+table.directory_address.fields+
+	static final String getActiveDirs = "SELECT "+table.directory_address.fields+
 			" FROM "+table.directory_address.TNAME+
 			" WHERE "+table.directory_address.active+"='1';";
 	public static DirectoryAddress[] getActiveDirectoryAddresses() {
@@ -182,7 +182,7 @@ public class DirectoryAddress extends ASNObj{
 		}
 		return result;
 	}
-	static String getDirs = "SELECT "+table.directory_address.fields+
+	static final String getDirs = "SELECT "+table.directory_address.fields+
 			" FROM "+table.directory_address.TNAME+";";
 	public static DirectoryAddress[] getDirectoryAddresses() {
 		DirectoryAddress[] result;
@@ -255,6 +255,7 @@ public class DirectoryAddress extends ASNObj{
 		}
 		DD_DirectoryServer ds = new DD_DirectoryServer();
 		ds.parseAddress(val);
+		//System.out.println("DirectoryAddress: reset: val = "+ds);
 		ds.save();
 	}
 

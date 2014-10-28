@@ -1929,17 +1929,23 @@ public class Util {
 		if(s == null) return 0;
 		if(s.length() == 0) return 0;
 		int k=0;
-		for(; k<s.length(); k++){
-			if(s.charAt(k)<'0') break;
-			if(s.charAt(k)>'9') break;
+		for (; k < s.length(); k++){
+			if (s.charAt(k) < '0') break;
+			if (s.charAt(k) > '9') break;
 		}
-		if(k==0) return 0;
+		if (k == 0) return 0;
 		return Integer.parseInt(s.substring(0, k));
 	}
+	/**
+	 * Tests whether the calendars are euqal or both null
+	 * @param c1
+	 * @param c2
+	 * @return
+	 */
 	public static boolean equalCalendars_null_or_not(Calendar c1,
 			Calendar c2) {
-		if((c1==null) && (c2==null)) return true;
-		if((c1==null) || (c2==null)) return false;
+		if ((c1 == null) && (c2 == null)) return true;
+		if ((c1 == null) || (c2 == null)) return false;
 		return c1.equals(c2);
 	}
 	public static int[] mkIntArray(String[] iDs_strings) {

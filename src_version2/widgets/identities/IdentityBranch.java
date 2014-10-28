@@ -121,8 +121,8 @@ public class IdentityBranch extends IdentityNode{
 			if (_cID > 0) cons = D_Constituent.getConstByLID(_cID, true, false);
 			if (cons != null) {			
 				globalID = cons.getGID(); //(String) id.get(0).get(0);
-				globalOrgID = org.getGID(); //(String) id.get(0).get(1);
-				org_name = org.getOrgNameOrMy(); //(String) id.get(0).get(2);
+				if (org != null) globalOrgID = org.getGID(); //(String) id.get(0).get(1);
+				if (org != null) org_name = org.getOrgNameOrMy(); //(String) id.get(0).get(2);
 				c_name = cons.getSurName(); //(String) id.get(0).get(3);
 				c_forename = cons.getForename(); //(String) id.get(0).get(4);
 				c_name_my = cons.getNameOrMy();

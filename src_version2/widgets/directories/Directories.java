@@ -456,8 +456,17 @@ class DirectoriesCustomAction extends DebateDecideAction {
     		tree.initColumnSizes();
         } else  if (command == C_ADIR) {
         	String adr = Application_GUI.input(__("Directory Address, such as:\n\"DIR%B%0.5.6://10.0.0.1:25123:24123:Name\""), __("New Directory!"), JOptionPane.QUESTION_MESSAGE);
-           	if (DEBUG) System.out.println("DirectoriesAction: adir adr="+adr);
+        	if (DEBUG) System.out.println("DirectoriesAction: adir adr="+adr);
+        	if (adr == null) {
+               	if (DEBUG) System.out.println("DirectoriesAction: adir abandoned");
+        		return;
+        	}
         	Address a = new Address(adr);
+        	if (! a.validAddress()) {
+               	if (_DEBUG) System.out.println("DirectoriesAction: adir invalid a="+a.toLongString());
+               	Application_GUI.warning(__("DirectoriesAction: directory invalid")+"\n"+a.toLongString(), __("Invalid Address"));
+        		return;
+        	}
            	if (DEBUG) System.out.println("DirectoriesAction: adir a="+a.toLongString());
            	util.DirectoryAddress da = new util.DirectoryAddress(a); //have names for addresses
            	if (DEBUG) System.out.println("DirectoriesAction: adir da="+da);

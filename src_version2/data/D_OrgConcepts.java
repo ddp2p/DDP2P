@@ -71,8 +71,8 @@ class D_OrgConcepts extends ASNObj {
 	 */
 	public static String stringFromStringArray(String[] in){
 		String result = null;
-		if(in==null) return null;
-		byte[] data = Encoder.getStringEncoder(in,Encoder.TAG_UTF8String).getBytes();
+		if (in == null) return null;
+		byte[] data = new ASN64String_2_StringArray(in).encode(); //Encoder.getStringEncoder(in,Encoder.TAG_UTF8String).getBytes();
 		result = Util.stringSignatureFromByte(data);
 		return result;
 	}
@@ -85,20 +85,22 @@ class D_OrgConcepts extends ASNObj {
 		return stringArrayFromString(in, DEBUG);
 	}
 	public static String[] stringArrayFromString(String in, boolean DEBUG){
-		if(DEBUG) System.err.println("OrgConcepts:stringArrayFromString: parsing \""+in);
+		if (DEBUG) System.err.println("OrgConcepts:stringArrayFromString: parsing \""+in);
 		String result[] = null;
-		if(in==null) return null;
-		if(in.equals("null")) return null;
-		byte[] data = Util.byteSignatureFromString(in);
+		//if (in == null) return null;
+		//if (in.equals("null")) return null;
+		//byte[] data = Util.byteSignatureFromString(in);
 		try {
-			if(data==null)  throw new ASN1DecoderFail("Wrong hex for String Array");
-			Decoder dec=new Decoder(data);
-			if(dec.getTypeByte()!=Encoder.TAG_SEQUENCE){
-				 System.err.println("OrgConcepts:stringArrayFromString: parsing \""+in+"\"");
-				 System.err.println("OrgConcepts:stringArrayFromString: parsing data:\"["+data.length+"]="+Util.byteToHex(data));
-				throw new ASN1DecoderFail("Wrong tag for String Array");
-			}
-			result = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_UTF8String);
+			//if (data == null)  throw new ASN1DecoderFail("Wrong hex for String Array");
+			//Decoder dec = new Decoder(data);
+//			if (dec.getTypeByte() != Encoder.TAG_SEQUENCE) {
+//				 System.err.println("OrgConcepts:stringArrayFromString: parsing \""+in+"\"");
+//				 System.err.println("OrgConcepts:stringArrayFromString: parsing data:\"["+data.length+"]="+Util.byteToHex(data));
+//				throw new ASN1DecoderFail("Wrong tag for String Array");
+//			}
+//			result = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_UTF8String);
+			//result = new ASN_StringArray(dec).getStrsArray();
+			result = new ASN64String_2_StringArray(in).getStrsArray();
 		} catch (ASN1DecoderFail e) {
 			if(DEBUG) System.err.println("OrgConcepts:stringArrayFromString: fail to parse an array out of string \""+in+"\" error:"+e.getMessage());
 			e.printStackTrace();

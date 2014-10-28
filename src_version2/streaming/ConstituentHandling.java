@@ -41,7 +41,7 @@ import util.Util;
 import ASN1.Encoder;
 
 public class ConstituentHandling {
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final int BIG_LIMIT = 300;
 	

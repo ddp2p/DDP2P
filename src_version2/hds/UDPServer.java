@@ -1065,7 +1065,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			System.out.println("UDPServThread: main: inited IDs");
 			Identity id = HandlingMyself_Peer.loadIdentity(null);
 			D_Peer me = HandlingMyself_Peer.getPeer(id);
-			HandlingMyself_Peer.setMyself(me, false);
+			HandlingMyself_Peer.setMyself(me, false, false); // me not kept
 			HandlingMyself_Peer.get_myself_with_wait(); // just tests by exit
 			System.out.println("UDPServThread: main: got myself");
 			//String last_sync_date = Encoder.getGeneralizedTime(Util.getCalendar("00000000000000.000Z"));

@@ -96,6 +96,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public boolean dirty_main = false;
 	public boolean dirty_params = false;
 	public boolean dirty_locals = true;
+	public boolean dirty_preferences = true;
 	public boolean dirty_mydata = false;
 	
 	public boolean loaded_globals = false;
@@ -445,9 +446,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @throws P2PDDSQLException 
 	 */
 	private D_Organization(String gID, String gIDH, boolean create, D_Peer __peer) throws P2PDDSQLException {
-		if (_DEBUG) err.println("D_Organization: getOrgByGID_or_GIDhash: org_gidh: "+gIDH);
+		if (DEBUG) err.println("D_Organization: <init(gID_gIDH)>: org_gidh: "+gIDH);
 		if (gIDH == null) gIDH = D_Organization.getOrgGIDHashGuess(gID);
-		if (_DEBUG) err.println("D_Organization: getOrgByGID_or_GIDhash: org_gidh: "+gIDH);
+		if (DEBUG) err.println("D_Organization: <init(gID_gIDH)>: org_gidh: "+gIDH);
 		init_ByGID(gID, gIDH, create, __peer);
 	}
 	
@@ -561,7 +562,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 					}
 				}
 			} catch (Exception e) {
-				if (DEBUG) e.printStackTrace();
+				if (_DEBUG) e.printStackTrace();
 				return null;
 			}
 			D_Organization_Node.register_loaded(crt);
@@ -673,7 +674,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			} catch (Exception e) {e.printStackTrace();}
 			
 			try {
-				if (DEBUG) err.println("D_Organization: getOrgByGID_or_GIDhash: org_gidh: "+GIDhash);
+				if (DEBUG) err.println("D_Organization: getOrgByGID_or_GIDhash: load org_gidh= "+GIDhash);
 				crt = new D_Organization(GID, GIDhash, create, __peer);
 				if (keep) {
 					crt.incStatusReferences();
@@ -951,7 +952,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @throws P2PDDSQLException
 	 */
 	public void init_ByGID(String gID, String orgGIDhash, boolean create, D_Peer __peer) throws P2PDDSQLException{
-		boolean DEBUG = true;
+		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("D_Organization: init: gID: GIDhash: "+orgGIDhash+" gID="+gID);
 		// sanitize inputs
 		orgGIDhash = D_Organization.getOrgGIDHashGuess(orgGIDhash);
@@ -971,6 +972,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				assert(__peer.getLIDstr_force() != null);
 				this.first_provider_peer = __peer.getLIDstr_force();
 			}
+			this.setTemporary();
 			dirty_main = true;
 			dirty_params = true;
 			init_new();
@@ -1385,21 +1387,30 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		preferences_date = ((c == null) ? Util.getCalendar(_c) : c);
 		_preferences_date = ((_c == null) ? Encoder.getGeneralizedTime(c) : _c);
 	}
+	public Calendar setPreferencesDate() {
+		this.preferences_date = Util.CalendargetInstance();
+		this._preferences_date = Encoder.getGeneralizedTime(preferences_date);
+		this.dirty_preferences = true;
+		return preferences_date;
+	}
 	public void setRequested(boolean val) {
 		if (DEBUG) System.out.println("Orgs:setRequested: set="+val);
 		this.requested = val;
-		this.dirty_locals = true;
+		setPreferencesDate();
+		this.dirty_preferences = true;
 	}
 	public void setBlocking(boolean val) {
 		if(DEBUG) System.out.println("Orgs:setBlocking: set="+val);
 		this.blocked = val;
-		this.dirty_locals = true;
+		setPreferencesDate();
+		this.dirty_preferences = true;
 	}
 	public void setBroadcasting(boolean val) {
 		if(DEBUG) System.out.println("Orgs:setBlocking: set="+val);
 		this.broadcasted = val;
 		this.reset_date = Util.CalendargetInstance();
-		this.dirty_locals = true;
+		setPreferencesDate();
+		this.dirty_preferences = true;
 	}
 	/**
 	 * This function just sets the "broadcasted" flag (calling sync on the database).
@@ -1412,10 +1423,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (DEBUG) System.out.println("Orgs:setBroadcasting: set="+val+" for orgID="+orgID);
 		D_Organization org = D_Organization.getOrgByLID(orgID, true, true);
 		
-		org.broadcasted = val;
-		org.reset_date = Util.CalendargetInstance();
-		org.dirty_main = true;
-		org.dirty_locals = true;
+		org.setBroadcasting(val);
+		//org.broadcasted = val;
+		//org.reset_date = Util.CalendargetInstance();
+		org.dirty_main = true; //?? why
+		//org.dirty_locals = true;
 		org.storeRequest();
 		org.releaseReference();
 		
@@ -1589,7 +1601,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	/** Storing */
 	public static D_Organization_SaverThread saverThread = new D_Organization_SaverThread();
 	public boolean dirty_any() {
-		return dirty_main || dirty_params || dirty_locals || dirty_mydata;
+		return dirty_main || dirty_params || dirty_locals || dirty_mydata || dirty_preferences;
 	}
 	/**
 	 * This function has to be called after the appropriate dirty flags are set:
@@ -1685,9 +1697,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			*/
 			fillLocals();
 			
-			if (this.dirty_params || dirty_locals || dirty_main) {
+			if (this.dirty_params || dirty_locals || dirty_main || this.dirty_preferences) {
 				int filter = 0;
-				this.dirty_params = dirty_locals = dirty_main = false;
+				this.dirty_params = dirty_locals = dirty_main = this.dirty_preferences = false;
 				
 				if (DEBUG) out.println("D_Organization: storeAct: dirty main & locals & params");
 
@@ -1773,7 +1785,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 					if (DEBUG) out.println("D_Organization: storeVerified: Inserted: "+mydata);
 				} else {
 					p[table.my_organization_data.COL_ROW] = mydata.row + "";
-					Application.db.updateNoSync(table.my_organization_data.TNAME, table.my_organization_data.fields_noID, new String[]{table.my_organization_data.row}, p, DEBUG);//changed = true;
+					Application.db.updateNoSync(
+							table.my_organization_data.TNAME,
+							table.my_organization_data.fields_noID,
+							new String[]{table.my_organization_data.row},
+							p, DEBUG);//changed = true;
 					if(DEBUG) out.println("\nD_Organization: storeVerified: Updated: "+mydata);
 				}
 			}
@@ -1901,15 +1917,15 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return result;
 	}
 	public static String getGIDHbyLID(Long p_organization_ID) {
-		if (_DEBUG) System.out.println("D_Organization: getGIDbyLID: lID="+p_organization_ID);
+		if (_DEBUG) System.out.println("D_Organization: getGIDHbyLID: lID="+p_organization_ID);
 		D_Organization org = D_Organization.getOrgByLID_NoKeep(p_organization_ID, true);
 		if (org == null) {
-			if (_DEBUG) System.out.println("D_Organization: getGIDbyLID: no org for LID="+p_organization_ID);
+			if (_DEBUG) System.out.println("D_Organization: getGIDHbyLID: no org for LID="+p_organization_ID);
 			return null;
 		}
 		String result = org.getGIDH_or_guess();
 		if (result == null)
-			if (_DEBUG) System.out.println("D_Organization: getGIDbyLID: no orgGID for LID="+p_organization_ID+"\n in "+org);
+			if (_DEBUG) System.out.println("D_Organization: getGIDHbyLID: no orgGIDH for LID="+p_organization_ID+"\n in "+org);
 		return result;
 	}
 	/**
@@ -1917,7 +1933,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @param p_global_organization_IDH
 	 * @return
 	 */
-	public static long getLocalOrgIDByGIDH(String p_global_organization_IDH) {
+	public static long getLIDbyGIDH(String p_global_organization_IDH) {
 		D_Organization org = D_Organization.getOrgByGID_or_GIDhash_NoCreate(null, p_global_organization_IDH, true, false);
 		if (org == null) return -1;
 		return org.getLID_forced();
@@ -1937,7 +1953,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @param p_global_organization_ID
 	 * @return
 	 */
-	public static String getLocalOrgID_(String p_global_organization_ID) {
+	public static String getLIDstrByGID_(String p_global_organization_ID) {
 		D_Organization org = D_Organization.getOrgByGID_or_GIDhash_NoCreate(p_global_organization_ID, null, true, false);
 		if (org == null) return null;
 		return org.getLIDstr_forced();
@@ -1963,7 +1979,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			//return getLocalOrgID(p_global_organization_ID);
 		}
 		if (orgGID_hash != null)
-			return getLocalOrgIDByGIDH(orgGID_hash);
+			return getLIDbyGIDH(orgGID_hash);
 		return -1;
 	}
 	public static void setTemporary(D_Organization org) {
@@ -1992,7 +2008,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	public void setHidden() {
 		this.hidden = true;
-		this.dirty_locals = true;
+		setPreferencesDate();
+		this.dirty_preferences = true;
 	}
 	public boolean getHidden() {
 		return this.hidden;
@@ -2817,15 +2834,15 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.broadcast_rule = val;
 		this.dirty_main = true;
 	}
-
 	public boolean getBroadcasted() {
 		return this.broadcasted;
 	}
+	/*
 	public void setBroadcasted(boolean val) {
 		this.broadcasted = val;
 		this.dirty_locals = true;
 	}
-	
+	*/
 	public String[] getLanguages() {
 		return this.params.languages;
 	}
@@ -3013,18 +3030,21 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 
 	public void setNameMy(String _name) {
-		this.dirty_mydata = true;
 		this.mydata.name = _name;
+		setPreferencesDate();
+		this.dirty_mydata = true;
 	}
 
 	public void setCreatorMy(String creator2) {
-		this.dirty_mydata = true;
 		this.mydata.creator = creator2;
+		setPreferencesDate();
+		this.dirty_mydata = true;
 	}
 
 	public void setCategoryMy(String cat2) {
-		this.dirty_mydata = true;
 		this.mydata.category = cat2;
+		setPreferencesDate();
+		this.dirty_mydata = true;
 	}
 	/*
 	private void set_my_data(String field_name, String value, int row) {

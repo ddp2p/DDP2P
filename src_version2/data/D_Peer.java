@@ -1,6 +1,7 @@
 package data;
 
 import static util.Util.__;
+import hds.ASNPluginInfo;
 import hds.ASNSyncPayload;
 import hds.Address;
 import hds.PeerInput;
@@ -16,6 +17,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
+import plugin_data.D_PluginInfo;
 import config.Application;
 import config.Application_GUI;
 import config.DD;
@@ -402,9 +404,9 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		loaded_my_data = true;
 		loaded_local_agent_state = true;
 		loaded_local_preferences = true;
-		//this.setTemporary();
+		this.setTemporary();
 		this.component_basic_data._signature = null; //setSignature(null);
-		this.temporary = true;
+		//this.temporary = true;
 		//this.dirty_main = true;
 	}
 	private void init_ByLID(String _peerID) throws P2PDDSQLException {
@@ -504,7 +506,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		// a first loading (Deprecated).
 		// in the future it will be loaded from the peer_instance tables
 		D_PeerInstance instance_null = new D_PeerInstance();
-		instance_null.plugin_info =  Util.getString(p.get(table.peer.PEER_COL_PLUG_INFO));
+		instance_null.set_PluginInfo(Util.getString(p.get(table.peer.PEER_COL_PLUG_INFO)));
 		instance_null.set_last_sync_date_str(Util.getString(p.get(table.peer.PEER_COL_LAST_SYNC)));
 		instance_null.set_last_reset(Util.getString(p.get(table.peer.PEER_COL_LAST_RESET)));
 		instance_null.setLID(getLIDstr(), getLID());
@@ -906,7 +908,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				if (crt != null) {
 					crt.incStatusLockWrite();
 					if (crt.getStatusLockWrite() >  1) {
-						Util.printCallPath("Why: GIDH="+GIDhash+" GID="+GID);
+						Util.printCallPath("Why already locked: GIDH="+GIDhash+" GID="+GID);
 					}
 				}
 				return crt;
@@ -2470,6 +2472,72 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (this.loaded_globals) this.component_node.message = this.encode(); //crt.encoder.getBytes();
 	}
 
+	public Encoder pEncoder() {
+		ArrayList<String> dictionary_GIDs = new ArrayList<String>();
+		Encoder e;
+		Encoder enc = new Encoder().initSequence();
+		enc.addToSequence(e = new Encoder(component_basic_data.version,false));
+		System.out.println("P_v="+Util.byteToHex(e.getBytes(), ":"));
+		String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, component_basic_data.globalID);
+		enc.addToSequence(e=new Encoder(repl_GID).setASN1Type(Encoder.TAG_PrintableString));
+		System.out.println("P_GID="+Util.byteToHex(e.getBytes(), ":"));
+
+		if (component_basic_data.name != null) {enc.addToSequence(e=new Encoder(component_basic_data.name,Encoder.TAG_UTF8String));
+		System.out.println("P_n="+Util.byteToHex(e.getBytes(), ":"));}
+		if (component_basic_data.slogan != null) {enc.addToSequence(e=new Encoder(component_basic_data.slogan,DD.TAG_AC0));
+		System.out.println("P_s="+Util.byteToHex(e.getBytes(), ":"));}
+		if (component_basic_data.emails != null) {enc.addToSequence(e=new Encoder(component_basic_data.emails,DD.TAG_AC1));
+		System.out.println("P_e="+Util.byteToHex(e.getBytes(), ":"));}
+		if (component_basic_data.phones != null) {enc.addToSequence(new Encoder(component_basic_data.phones,DD.TAG_AC2));
+		System.out.println("P_p="+Util.byteToHex(e.getBytes(), ":"));}
+		if (instance != null) { enc.addToSequence(e=new Encoder(instance,DD.TAG_AC3));
+		System.out.println("P_in="+Util.byteToHex(e.getBytes(), ":"));}
+		if (this._instances.size() > 0) {
+			ArrayList<D_PeerInstance> tmp = new ArrayList<D_PeerInstance>(this._instances.values());
+			Collections.sort(tmp, new Comparator<D_PeerInstance> () {
+				public int compare(D_PeerInstance p1, D_PeerInstance p2) {
+					if (p1.peer_instance == null) return -1;
+					if (p2.peer_instance == null) return 1;
+					return p1.peer_instance.compareTo(p2.peer_instance);
+				}
+				
+			});
+			enc.addToSequence(e=Encoder.getEncoder(tmp).setASN1Type(DD.TAG_AC4));
+			System.out.println("P_is="+Util.byteToHex(e.getBytes(), ":"));
+		}
+		if (this.getCreationTime() != null) {enc.addToSequence(e=new Encoder(this.getCreationTime()));
+		System.out.println("P_cT="+Util.byteToHex(e.getBytes(), ":"));}
+		if (this.shared_addresses != null) {
+			if (Util.Ival(this.component_basic_data.version) <= Util.Ival(DD_Address.V2)) {
+				boolean v0 = true;
+				for (Address sa : shared_addresses) {
+					sa.set_version_structure(Address.V0);
+					v0 &= sa.checkVersionV0();
+					if (!v0) break;
+				}
+				if (!v0) {
+					for (Address sa : shared_addresses) {
+						sa.set_version_structure(Address.V2);
+					}
+					System.out.println("D_Peer: getEncoder: up version "+this);
+				}
+			}
+			enc.addToSequence(e=Encoder.getEncoder(shared_addresses));
+			System.out.println("P_sa="+Util.byteToHex(e.getBytes(), ":"));
+		}
+		enc.addToSequence(e=new Encoder(component_basic_data.broadcastable));
+		System.out.println("P_broad="+Util.byteToHex(e.getBytes(), ":"));
+		if (Util.Ival(this.component_basic_data.version) <= Util.Ival(DD_Address.V2)) 
+			if (signature_alg != null) {enc.addToSequence(e=Encoder.getStringEncoder(signature_alg, Encoder.TAG_PrintableString));
+			System.out.println("P_salg="+Util.byteToHex(e.getBytes(), ":"));}
+		if ((served_orgs != null) && (served_orgs.length > 0)) {
+			enc.addToSequence(e=Encoder.getEncoder(this.served_orgs, dictionary_GIDs).setASN1Type(DD.TAG_AC12));
+			System.out.println("P_so="+Util.byteToHex(e.getBytes(), ":"));}
+		enc.addToSequence(e=new Encoder(getSignature()));
+		System.out.println("P_sgn="+Util.byteToHex(e.getBytes(), ":"));
+		enc.setASN1Type(TAG);
+		return enc;
+	}
 	/**
 	 * version, globalID, name, slogan, creation_date, address*, broadcastable, signature_alg, served_orgs, signature*
 	 * D_Peer ::= SEQUENCE {
@@ -3307,6 +3375,9 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public static Hashtable<String, Hashtable<String, Hashtable<String, Hashtable<String,String>>>> peer_contacts = 
 			new Hashtable<String, Hashtable<String, Hashtable<String, Hashtable<String,String>>>>();
 	
+	/**
+	 * Decrements the write lock, calling decStatusLockWrite()
+	 */
 	public void releaseReference() {
 		if (getStatusLockWrite() <= 0) Util.printCallPath("Null reference already!");
 		else decStatusLockWrite();
@@ -4050,6 +4121,12 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public String getCategory() {
 		return this.component_preferences.category;
 	}
+	public void setPreferencesDate(Calendar val) {
+		this.component_preferences.preferences_date = val;
+	}
+	public void setPreferencesDate() {
+		this.setPreferencesDate(Util.CalendargetInstance());
+	}
 	public static void setName_My(D_Peer peer, String name) {
 		peer = D_Peer.getPeerByPeer_Keep(peer);
 		peer.setName_My(name);
@@ -4058,6 +4135,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public void setName_My(String name) {
 		assertReferenced();
 		this.component_preferences.my_name = name;
+		setPreferencesDate();
 		this.dirty_my_data = true;
 		this.storeRequest();
 	}
@@ -4069,6 +4147,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public void setSlogan_My(String slogan) {
 		assertReferenced();
 		this.component_preferences.my_slogan = slogan;
+		setPreferencesDate();
 		this.dirty_my_data = true;
 		this.storeRequest();
 	}
@@ -4091,6 +4170,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		assertReferenced();
 		if (value != getBlocked()) {
 			setBlocked(value);
+			setPreferencesDate();
 			this.dirty_main = true;
 		}
 		//this.storeRequest();
@@ -4111,6 +4191,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	}
 	public void setCategory(String cat) {
 		this.component_preferences.category = cat;
+		setPreferencesDate();
 	}
 	public static void setHidden(D_Peer peer, Boolean value) {
 		peer = D_Peer.getPeerByPeer_Keep(peer);
@@ -4120,19 +4201,37 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	private void setHidden(Boolean value) {
 		assertReferenced();
 		this.component_preferences.hidden = value;
+		setPreferencesDate();
 		this.dirty_main = true;
 		this.storeRequest();
 	}
 	public static void setTemporary(D_Peer peer) {
 		peer = D_Peer.getPeerByPeer_Keep(peer);
-		peer.setTemporary();
+		peer.setTemporary_CancellSignature_StoreReq();
 		peer.releaseReference();
 	}
-	public void setTemporary() {
+	/**
+	 * Sets Temporary flag, signature to null and call storereq
+	 */
+	public void setTemporary_CancellSignature_StoreReq() {
 		this.setSignature(null);
 		this.temporary = true;
 		this.dirty_main = true;
 		this.storeRequest();
+	}
+	/**
+	 * Also sets dirty_main
+	 */
+	public void setTemporary() {
+		setTemporary(true);
+	}
+	/**
+	 * Also sets dirty main
+	 * @param val
+	 */
+	public void setTemporary(boolean val) {
+		this.temporary = val;
+		this.dirty_main = true;
 	}
 	public boolean getFiltered() {
 		return this.component_preferences.filtered;
@@ -4145,6 +4244,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public void setFiltered(boolean filtered) {
 		assertReferenced();
 		this.component_preferences.filtered = filtered;
+		setPreferencesDate();
 		this.dirty_main = true;
 		this.storeRequest();
 	}
@@ -4757,16 +4857,34 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			inst.dirty = true;
 			this.dirty_instances = true;
 		}
-		if (!Util.equalStrings_null_or_not(inst.plugin_info, plugin_info)) {
-			inst.plugin_info = plugin_info;
+		if (!Util.equalStrings_null_or_not(inst.get_PluginInfo(), plugin_info)) {
+			inst.set_PluginInfo(plugin_info);
 			inst.dirty = true;
 			this.dirty_instances = true;
 		}
 	}
-	public String getPluginInfo(String instance) {
+	public void setPluginInfo(String instance, ASNPluginInfo[] _plugin_info) {
+		D_PeerInstance inst = this.getPeerInstance(instance);
+		if (inst == null) {
+			System.out.println("D_Peer: setPluginInfo: No known instance object for: \""+instance+"\"");
+			Util.printCallPath(""+this);
+			//return;
+			inst = new D_PeerInstance(instance);
+			this.putPeerInstance_setDirty(instance, inst);
+			inst.dirty = true;
+			this.dirty_instances = true;
+		}
+		String plugin_info = D_PluginInfo.getPluginInfoFromArray(_plugin_info);
+		if (! Util.equalStrings_null_or_not(inst.get_PluginInfo(), plugin_info)) {
+			inst.set_PluginInfoAndArray(plugin_info, _plugin_info);
+			inst.dirty = true;
+			this.dirty_instances = true;
+		}
+	}
+	public String getPluginInfoByInstance(String instance) {
 		D_PeerInstance inst = this.getPeerInstance(instance);
 		if (inst == null) return null;
-		return inst.plugin_info;
+		return inst.get_PluginInfo();
 	}
 	public static ArrayList<D_Peer> getPeersChunk(String last_sync_date,
 			String maxDate, int limitPeersMax) {

@@ -340,7 +340,7 @@ class D_Translations extends ASNObj{
 		config.Application_GUI.inform_arrival(this, __peer);
 		
 		if((this.organization_ID == null ) && (this.global_organization_ID != null))
-			this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
+			this.organization_ID = D_Organization.getLIDstrByGID_(this.global_organization_ID);
 		if((this.organization_ID == null ) && (this.global_organization_ID != null)) {
 			organization_ID = ""+data.D_Organization.insertTemporaryGID(global_organization_ID, __peer);
 			new_rq.orgs.add(global_organization_ID);
@@ -459,7 +459,7 @@ class D_Translations extends ASNObj{
 		}
 		
 		if((this.organization_ID == null ) && (this.global_organization_ID != null))
-			this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
+			this.organization_ID = D_Organization.getLIDstrByGID_(this.global_organization_ID);
 		
 		if((this.translation_ID == null ) && (this.global_translation_ID != null))
 			this.translation_ID = getLocalID(this.global_translation_ID);

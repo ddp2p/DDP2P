@@ -101,9 +101,11 @@ public class DD_DirectoryServer extends ASNObj implements StegoStructure {
     			try {
     				this.add(d[0], Integer.parseInt(d[1]));
     			} catch (Exception e) {
-    				if (DEBUG) e.printStackTrace();
+    				if (_DEBUG) e.printStackTrace();
     				return false;
     			}
+    		} else {
+				if (_DEBUG) System.out.println("DD_DirectoryServer: parseAddress: not able to handle: "+l);
     		}
     	}
 		if (DEBUG) System.out.println("DD_DirServ:parsed:"+this.getString());

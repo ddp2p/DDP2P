@@ -385,7 +385,7 @@ class D_News extends ASNObj{
 
 		
 		if((this.organization_ID == null ) && (this.global_organization_ID != null))
-			this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
+			this.organization_ID = D_Organization.getLIDstrByGID_(this.global_organization_ID);
 		if((this.organization_ID == null ) && (this.global_organization_ID != null)) {
 			organization_ID = ""+data.D_Organization.insertTemporaryGID(global_organization_ID, __peer);
 			new_rq.orgs.add(global_organization_ID);
@@ -493,7 +493,7 @@ class D_News extends ASNObj{
 		}
 
 		if((this.organization_ID == null ) && (this.global_organization_ID != null))
-			this.organization_ID = D_Organization.getLocalOrgID_(this.global_organization_ID);
+			this.organization_ID = D_Organization.getLIDstrByGID_(this.global_organization_ID);
 
 		if((this.motion_ID == null ) && (this.global_motion_ID != null))
 			this.motion_ID = D_Motion.getLIDstrFromGID(this.global_motion_ID, Util.Lval(organization_ID));

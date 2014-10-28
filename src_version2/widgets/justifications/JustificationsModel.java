@@ -27,6 +27,7 @@ import java.util.Hashtable;
 
 import javax.swing.Icon;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
@@ -49,7 +50,6 @@ import util.DBListener;
 import util.Util;
 import widgets.app.DDIcons;
 import widgets.components.GUI_Swing;
-//import widgets.motions.MotionsModel;
 
 @SuppressWarnings("serial")
 public class JustificationsModel extends AbstractTableModel implements TableModel, DBListener, MotionsListener {
@@ -518,7 +518,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			if(DEBUG) System.out.println("JustificationsModel:setCurrent: choice="+crt_choice+"  Done -1");
 			return;
 		}
-		int k = this.findRow(just_id);
+		int k = this.findModelRow(just_id);
 		if(k>=0) {
 			for(Justifications o: tables){
 				int tk = o.convertRowIndexToView(k);
@@ -634,13 +634,15 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			if(DEBUG) System.out.println("\nwidgets.justifications.JustificationsModel: null crt_motion_id");
 			return;
 		}
-		Object old_sel[] = new Object[tables.size()];
-		{
-			Object[] __justifications = _justifications;
-			for(int i=0; i<old_sel.length; i++) {
-				int sel = tables.get(i).getSelectedRow();
-				if ((sel >= 0) && (sel < __justifications.length)) old_sel[i] = __justifications[sel];
-			}
+		
+		if (_table != null && !_table.contains(table.justification.TNAME)) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+				@Override
+				public void _run() {
+					((JustificationsModel)ctx).fireTableDataChanged();
+				}
+			});
+			return;
 		}
 		
 		Object[] _t__justifications;
@@ -650,10 +652,33 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		
 		try {
 			ArrayList<ArrayList<Object>> justi=null;
-			if((crt_choice == null)&&(crt_answered==null)) justi = db.select(sql_no_choice_no_answer, new String[]{crt_motionID}, DEBUG);
-			if((crt_choice != null)&&(crt_answered==null)) justi = db.select(sql_choice_no_answer, new String[]{crt_choice, crt_motionID}, DEBUG);
-			if((crt_choice == null)&&(crt_answered!=null)) justi = db.select(sql_no_choice_answer, new String[]{crt_motionID, crt_answered}, DEBUG);
-			if((crt_choice != null)&&(crt_answered!=null)) justi = db.select(sql_choice_answer, new String[]{crt_choice, crt_motionID, crt_answered}, DEBUG);
+			if ((crt_choice == null) && (crt_answered == null)) justi = db.select(sql_no_choice_no_answer, new String[]{crt_motionID}, DEBUG);
+			if ((crt_choice != null) && (crt_answered == null)) justi = db.select(sql_choice_no_answer, new String[]{crt_choice, crt_motionID}, DEBUG);
+			if ((crt_choice == null) && (crt_answered != null)) justi = db.select(sql_no_choice_answer, new String[]{crt_motionID, crt_answered}, DEBUG);
+			if ((crt_choice != null) && (crt_answered != null)) justi = db.select(sql_choice_answer, new String[]{crt_choice, crt_motionID, crt_answered}, DEBUG);
+
+			if (justi.size() == _justification.length) {
+				boolean different = false;
+				for (int k = 0; k < _justification.length; k++) {
+					//Util.lval(_justifications[k]);
+					if (_justification[k].getLID() != Util.lval(justi.get(k).get(SELECT_ID))) {
+						different = true;
+						break;
+					}
+				}
+				if (! different) {
+					SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+						@Override
+						public void _run() {
+							((JustificationsModel)ctx).fireTableDataChanged();
+						}
+					});
+					return;
+				}
+			}
+			
+			
+			
 			_t__justifications = new Object[justi.size()];
 			_t__justification = new D_Justification[justi.size()];
 			_t__votes = new Object[justi.size()];
@@ -668,7 +693,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 //			_bro = new boolean[justi.size()];
 //			_req = new boolean[justi.size()];
 			_t_rowByID = new Hashtable<String, Integer>();
-			for(int k = 0; k<_t__justifications.length; k++) {
+			for (int k = 0; k < _t__justifications.length; k ++) {
 				ArrayList<Object> j = justi.get(k);
 				_t__justifications[k] = j.get(SELECT_ID);
 				_t__justification[k] = D_Justification.getJustByLID(Util.Lval(_t__justifications[k]), true, false);
@@ -698,29 +723,63 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			return;
 		}
 
+		Object old_sel[] = new Object[tables.size()];
 		synchronized (this) {
+			{
+				Object[] __justifications = _justifications;
+				for (int old_view_idx = 0; old_view_idx < old_sel.length; old_view_idx ++) {
+					Justifications old_view = tables.get(old_view_idx);
+					int sel_view = old_view.getSelectedRow();
+					if ((sel_view >= 0) && (sel_view < __justifications.length)) {
+						int sel_model = old_view.convertRowIndexToModel(sel_view);
+						old_sel[old_view_idx] = __justifications[sel_model];
+					}
+				}
+			}
 			this._justification = _t__justification;
 			this._justifications = _t__justifications;
 			//this._votes = _t__votes;
 			this.rowByID = _t_rowByID;
 		}
 		
-		for (int k = 0; k < old_sel.length; k ++){
-			Justifications i = tables.get(k);
+		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+			@Override
+			public void _run() {
+				((JustificationsModel)ctx).fireTableDataChanged();
+			}
+		});
+		
+		for (int crt_view_idx = 0; crt_view_idx < old_sel.length; crt_view_idx ++) {
+			Justifications crt_view = tables.get(crt_view_idx);
 			//int row = i.getSelectedRow();
-			int row = findRow(old_sel[k]);
-			if(DEBUG) System.out.println("widgets.org.Justifications: selected row: "+row);
+			int row_model = findModelRow(old_sel[crt_view_idx]);
+			if (DEBUG) System.out.println("widgets.org.Justifications: selected row: "+row_model);
 			//i.revalidate();
-			this.fireTableDataChanged();
-			if ((row >= 0) && (row < _justifications.length)) i.setRowSelectionInterval(row, row);
-			i.fireListener(row, Justifications.A_NON_FORCE_COL, true); // no need to tell listeners of an update (except if telling the cause)
-			//TODO the next is probably slowing down the system. May be run only on request
-			i.initColumnSizes();
+//			if ((row_model >= 0) && (row_model < _justifications.length)) {
+//				int row_view = crt_view.convertRowIndexToView(row_model);
+//				crt_view.setRowSelectionInterval(row_view, row_view);
+//			}
+			
+			class O {int row_model; Justifications crt_view; O(int _row, Justifications _view){row_model = _row; crt_view = _view;}}
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, new O(row_model,crt_view)) {
+				@Override
+				public void _run() {
+					O o = (O)ctx;
+					if ((o.row_model >= 0) && (o.row_model < o.crt_view.getModel().getRowCount())) {
+						int row_view = o.crt_view.convertRowIndexToView(o.row_model);
+						o.crt_view.setRowSelectionInterval(row_view, row_view);
+					}
+					//TODO the next is probably slowing down the system. May be run only on request
+					o.crt_view.initColumnSizes();
+				}
+			});
+			
+			crt_view.fireListener(row_model, Justifications.A_NON_FORCE_COL, true); // no need to tell listeners of an update (except if telling the cause)
 		}		
 		if(DEBUG) System.out.println("widgets.org.Justifications: Done");
 	}
 
-	private int findRow(Object id) {
+	private int findModelRow(Object id) {
 		if (id == null) return -1;
 		Integer row = this.rowByID.get(id);
 		if (row == null) return -1;
@@ -735,21 +794,34 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		_m = D_Justification.getJustByJust_Keep(_m);
 		if (_m == null) return;
 
-		if (col == TABLE_COL_NAME)
-			if(value instanceof D_Document_Title){
-				D_Document_Title _value = (D_Document_Title) value;
-				if (_value.title_document != null)  {
-					String format  = _value.title_document.getFormatString();
+		String _value;
+		
+		if (col == TABLE_COL_NAME) {
+			if (value instanceof D_Document_Title){
+				D_Document_Title __value = (D_Document_Title) value;
+				if (__value.title_document != null)  {
+					String format  = __value.title_document.getFormatString();
 					if((format==null) || D_Document.TXT_FORMAT.equals(format))
-						value = _value.title_document.getDocumentUTFString();
+						value = __value.title_document.getDocumentUTFString();
 				}
 			}
-			_m.setNameMy(Util.getString(value));
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name obj: "+value);
+			_value = Util.getString(value);
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
+			if ("".equals(_value)) _value = null;
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
+			_m.setNameMy(_value);
 			//set_my_data(table.my_justification_data.name, Util.getString(value), row);
-			
-		if (col == TABLE_COL_CREATOR)
-			_m.setCreatorMy(Util.getString(value));
+		}
+		if (col == TABLE_COL_CREATOR) {
+			if (DEBUG) System.out.println("MotionsModel:setValueAt cre obj: "+value);
+			_value = Util.getString(value);
+			if (DEBUG) System.out.println("MotionsModel:setValueAt cre str: "+_value);
+			if ("".equals(_value)) _value = null;
+			if (DEBUG) System.out.println("MotionsModel:setValueAt cre nulled: "+_value);
+			_m.setCreatorMy(_value);
 			//set_my_data(table.my_justification_data.creator, Util.getString(value), row);
+		}
 			/*
 		case TABLE_COL_CATEGORY:
 			set_my_data(table.my_justification_data.category, Util.getString(value), row);
@@ -758,7 +830,8 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		//}
 		_m.storeRequest();
 		_m.releaseReference();
-		fireTableCellUpdated(row, col);
+		//fireTableCellUpdated(row, col);
+		this.fireTableRowsUpdated(row, row);
 	}
 //	private void set_my_data(String field_name, String value, int row) {
 //		if(row >= _justifications.length) return;

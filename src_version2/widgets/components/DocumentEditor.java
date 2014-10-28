@@ -264,7 +264,7 @@ public class DocumentEditor implements DocumentListener{
 	public String getFormatString() {
 		//if(true)return PDF_BODY_FORMAT; //break;
 		
-		switch(type_editor){
+		switch(type_editor) {
 		case D_Document.TEXTAREA: return D_Document.TXT_BODY_FORMAT; //break;
 		case D_Document.RTEDIT: return D_Document.HTM_BODY_FORMAT; //break;
 		case D_Document.DJNative: return D_Document.PDF_BODY_FORMAT; //break;

@@ -152,7 +152,7 @@ public class NewsTable extends JTable implements MouseListener {
 	public String getMotionID() {
 		return  getModel().getMotionID();
 	}
-	private void initColumnSizes() {
+	void initColumnSizes() {
         NewsModel model = (NewsModel)this.getModel();
         TableColumn column = null;
         Component comp = null;

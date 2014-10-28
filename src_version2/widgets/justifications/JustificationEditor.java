@@ -812,13 +812,21 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		}else{
 			creationTime = Util.getGeneralizedTime();
 		}
-		if((this.just_body_field==source)||(this.just_body_field.getDocumentSource()==source)) {
-			if(DEBUG) out.println("JustEditor:handleFieldEvent: just body");
+		if ((this.just_body_field == source) || (this.just_body_field.getDocumentSource() == source)) {
+			if (DEBUG) out.println("JustEditor:handleFieldEvent: just body");
 			String new_text = this.just_body_field.getText();
+			String old_text = this.just.getJustificationText().getDocumentString();
+			
+			String editor_format = this.just_body_field.getFormatString();
+			String old_old_text = this.just.getJustificationText().getFormatString();
+			
+			if (Util.equalStrings_null_or_not(new_text, old_text)
+					&& Util.equalStrings_null_or_not(editor_format, old_old_text)) {
+				return;
+			}
 			
 			this.just = D_Justification.getJustByJust_Keep(just);
-			this.just.getJustificationText().setDocumentString(new_text);
-			this.just.getJustificationText().setFormatString(BODY_FORMAT);
+			this.just.setJustificationText(new_text, editor_format);
 			this.just.setCreationDate(Util.getCalendar(creationTime));
 			this.just.setEditable();
 			this.just.storeRequest();

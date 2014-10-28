@@ -124,6 +124,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				this.setOrganizationLID(p_oLID);
 				if (__peer != null) this.setPeerSourceLID((__peer.getLID()));
 				this.dirty_main = true;
+				this.setTemporary();
 				return;
 			}
 			throw new P2PDDSQLException(e.getLocalizedMessage());
@@ -206,10 +207,13 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		String db_choices = Util.getString(o.get(table.motion.M_CHOICES));
 		String[] s_choices = D_OrgConcepts.stringArrayFromString(db_choices);
 		choices = D_MotionChoice.getChoices(s_choices);
-		//System.out.println("D_Motion:init:db_choices="+db_choices);
-		//System.out.println("D_Motion:init: s_choices="+Util.concat(s_choices, ":"));
-		//System.out.println("D_Motion:init: choices="+Util.concat(choices, ":"));
+		if (DEBUG) {
+			System.out.println("D_Motion:init:db_choices="+db_choices);
+			System.out.println("D_Motion:init: s_choices="+Util.concat(s_choices, ":"));
+			System.out.println("D_Motion:init: choices="+Util.concat(choices, ":"));
+		}
 		D_MotionChoice[] _choices = D_MotionChoice.getChoices(getLIDstr());
+		// System.out.println("D_Motion:init: _choices="+Util.concat(_choices, ":"));
 		//if (_choices != null)
 		choices = _choices;
 			
@@ -260,7 +264,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		private static final int MAX_TRIES = 30;
 		/** Currently loaded peers, ordered by the access time*/
 		private static DDP2P_DoubleLinkedList<D_Motion> loaded_objects = new DDP2P_DoubleLinkedList<D_Motion>();
-		private static Hashtable<Long, D_Motion> loaded_const_By_LocalID = new Hashtable<Long, D_Motion>();
+		private static Hashtable<Long, D_Motion> loaded_By_LocalID = new Hashtable<Long, D_Motion>();
 		//private static Hashtable<String, D_Motion> loaded_const_By_GID = new Hashtable<String, D_Motion>();
 		//private static Hashtable<String, D_Motion> loaded_const_By_GIDhash = new Hashtable<String, D_Motion>();
 		private static Hashtable<String, Hashtable<Long, D_Motion>> loaded_const_By_GIDH_ORG = new Hashtable<String, Hashtable<Long, D_Motion>>();
@@ -413,7 +417,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				
 				loaded_objects.offerFirst(crt);
 				if (lid > 0) {
-					loaded_const_By_LocalID.put(new Long(lid), crt);
+					loaded_By_LocalID.put(new Long(lid), crt);
 					if (DEBUG) System.out.println("D_Motion: register_loaded: store lid="+lid+" crt="+crt.getGIDH());
 				}else{
 					if (DEBUG) System.out.println("D_Motion: register_loaded: no store lid="+lid+" crt="+crt.getGIDH());
@@ -452,7 +456,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 					}
 					
 					D_Motion removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
-					loaded_const_By_LocalID.remove(new Long(removed.getLID())); 
+					loaded_By_LocalID.remove(new Long(removed.getLID())); 
 					D_Motion_Node.remConstByGID(removed.getGID(), removed.getOrganizationLID());//loaded_const_By_GID.remove(removed.getGID());
 					D_Motion_Node.remConstByGIDH(removed.getGIDH(), removed.getOrganizationLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 					if (DEBUG) System.out.println("D_Motion: register_loaded: remove GIDH="+removed.getGIDH());
@@ -486,7 +490,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 						if (_DEBUG) e.printStackTrace();
 					}
 				}
-				if (removed.getLIDstr() != null) loaded_const_By_LocalID.remove(new Long(removed.getLID())); 
+				if (removed.getLIDstr() != null) loaded_By_LocalID.remove(new Long(removed.getLID())); 
 				if (removed.getGID() != null) D_Motion_Node.remConstByGID(removed.getGID(), removed.getLID()); //loaded_const_By_GID.remove(removed.getGID());
 				if (removed.getGIDH() != null) D_Motion_Node.remConstByGIDH(removed.getGIDH(), removed.getLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 				if (DEBUG) System.out.println("D_Motion: drop_loaded: remove GIDH="+removed.getGIDH());
@@ -513,7 +517,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	static private D_Motion getMotiByLID_AttemptCacheOnly (long ID, boolean load_Globals) {
 		if (ID <= 0) return null;
 		Long id = new Long(ID);
-		D_Motion crt = D_Motion_Node.loaded_const_By_LocalID.get(id);
+		D_Motion crt = D_Motion_Node.loaded_By_LocalID.get(id);
 		if (crt == null) return null;
 		
 		if (load_Globals && !crt.loaded_globals) {
@@ -762,7 +766,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				D_Motion_Node.register_loaded(crt);
 			} catch (Exception e) {
 				if (DEBUG) System.out.println("D_Motion: getMotiByGID: error loading");
-				e.printStackTrace();
+				if (DEBUG) e.printStackTrace();
 				return null;
 			}
 			if (DEBUG) System.out.println("D_Motion: getMotiByGID: Done");
@@ -873,8 +877,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		D_Motion c = D_Motion.getMotiByLID(LID, true, false);
 		if (c == null) {
 			if (_DEBUG) System.out.println("D_Motion: getGIDFromLID: null for nLID = "+n_lID);
-			for (Long l : D_Motion_Node.loaded_const_By_LocalID.keySet()) {
-				if (_DEBUG) System.out.println("D_Motion: getGIDFromLID: available ["+l+"]"+D_Motion_Node.loaded_const_By_LocalID.get(l).getGIDH());
+			for (Long l : D_Motion_Node.loaded_By_LocalID.keySet()) {
+				if (_DEBUG) System.out.println("D_Motion: getGIDFromLID: available ["+l+"]"+D_Motion_Node.loaded_By_LocalID.get(l).getGIDH());
 			}
 			return null;
 		}
@@ -1043,7 +1047,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if (global_enhanced_motionID!=null)enc.addToSequence(new Encoder(global_enhanced_motionID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
 		if (global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC7));
 		if (creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC8));
-		if (choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
+		if (choices!=null && choices.length>0)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC9));
 		//if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC4));
 		return enc;
@@ -1059,7 +1063,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if (global_enhanced_motionID!=null)enc.addToSequence(new Encoder(global_enhanced_motionID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
 		if (global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC7));
 		//if (creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC8));
-		if (choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
+		if (choices!=null && choices.length>0)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC9));
 		//if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC4));
 		return enc;
@@ -1074,15 +1078,23 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		//if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
 		//if(global_motionID!=null)enc.addToSequence(new Encoder(global_motionID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
 		if(motion_title!=null)enc.addToSequence(motion_title.getEncoder().setASN1Type(DD.TAG_AC2));
+		//System.out.println("mti=\""+motion_title+"\"\n" + Util.stringSignatureFromByte(enc.getBytes()));
 		if(motion_text!=null)enc.addToSequence(motion_text.getEncoder().setASN1Type(DD.TAG_AC3));
+		//System.out.println("mtx=\""+motion_text+"\"\n" + Util.stringSignatureFromByte(enc.getBytes()));
 		if(category!=null)enc.addToSequence(new Encoder(category).setASN1Type(DD.TAG_AC11));
+		//System.out.println("cat=\""+category+"\"\n" + Util.stringSignatureFromByte(enc.getBytes()));
 		if(global_constituent_ID!=null)enc.addToSequence(new Encoder(global_constituent_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC5));
+		//System.out.println("cGID="+global_constituent_ID+"\n" + Util.stringSignatureFromByte(enc.getBytes()));
 		if(global_enhanced_motionID!=null)enc.addToSequence(new Encoder(global_enhanced_motionID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
+		//System.out.println("eGID="+global_enhanced_motionID+"\n" + Util.stringSignatureFromByte(enc.getBytes()));
 		if(global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC7));
+		//System.out.println("oGID="+global_organization_ID+"\n" + Util.stringSignatureFromByte(enc.getBytes()));
 		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC8));
-		if(choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
+		//System.out.println("crea="+creation_date+"\n" + Util.stringSignatureFromByte(enc.getBytes()));
+		if(choices!=null && choices.length>0)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC9));
 		//if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC4));
+		//System.out.println("D_Motion:getHash: this_0="+this);
 		return enc;
 	}
 	public Encoder getHashEncoder_V1() {
@@ -1094,7 +1106,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if(global_enhanced_motionID!=null)enc.addToSequence(new Encoder(global_enhanced_motionID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
 		if(global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC7));
 		//if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC8));
-		if(choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
+		if(choices!=null && choices.length>0)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
+		//System.out.println("D_Motion:getHash: this_1="+this);
 		return enc;
 	}
 	
@@ -1218,7 +1231,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		return decode_V1(dec);
 	}
 	public D_Motion decode_V0(Decoder dec) throws ASN1DecoderFail {
-		if(dec.getTypeByte()==DD.TAG_AC1) _setGID(dec.getFirstObject(true).getString(DD.TAG_AC1));
+		if(dec.getTypeByte()==DD.TAG_AC1) __setGID(dec.getFirstObject(true).getString(DD.TAG_AC1));
 		if(dec.getTypeByte()==DD.TAG_AC2)motion_title = new D_Document_Title().decode(dec.getFirstObject(true));	
 		//System.out.println("D_Motion:decode: title="+motion_title);
 		if(dec.getTypeByte()==DD.TAG_AC3)motion_text = new D_Document().decode(dec.getFirstObject(true));	
@@ -1240,7 +1253,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		return this;
 	}
 	public D_Motion decode_V1(Decoder dec) throws ASN1DecoderFail {
-		if(dec.getTypeByte()==DD.TAG_AC1) _setGID(dec.getFirstObject(true).getString(DD.TAG_AC1));
+		if(dec.getTypeByte()==DD.TAG_AC1) __setGID(dec.getFirstObject(true).getString(DD.TAG_AC1));
 		if(dec.getTypeByte()==DD.TAG_AC2)motion_title = new D_Document_Title().decode(dec.getFirstObject(true));	
 		//System.out.println("D_Motion:decode: title="+motion_title);
 		if(dec.getTypeByte()==DD.TAG_AC3)motion_text = new D_Document().decode(dec.getFirstObject(true));	
@@ -1322,8 +1335,10 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 */
 	public String make_ID(){
 		fillGlobals();
+		byte hash[] = this.getHashEncoder().getBytes();
+		//System.out.println("D_Motion:make_ID: got: "+Util.stringSignatureFromByte(hash));
 		// return this.global_motion_ID =  
-		return D_GIDH.d_Moti+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
+		return D_GIDH.d_Moti+Util.getGID_as_Hash(hash);
 	}
 	public boolean verifySignature() {
 		if(DEBUG) System.out.println("D_Motion:verifySignature: start");
@@ -1390,10 +1405,13 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	}
 
 	public long storeAct() throws P2PDDSQLException {
-		if (this.dirty_local || this.dirty_main || this.dirty_preferences)
+		if (this.dirty_local || this.dirty_main || this.dirty_preferences) {
+			System.out.println("D_Motion: storeAct: main dirty: l="+this.dirty_local +" ma="+ this.dirty_main +" p="+ this.dirty_preferences);
 			storeAct_main();
+		}
 		if (this.dirty_choices)
 			storeAct_choices();
+		
 		if (this.dirty_mydata)
 			storeAct_my();
 		return this.getLID();
@@ -1412,18 +1430,21 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			ClientSync.payload_recent.add(streaming.RequestData.MOTI, this.getGID(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 	}
 	private void storeAct_my() {
-		this.dirty_mydata = false;
-		String param[];
-		if (this.mydata.row <= 0) {
-			param = new String[table.my_motion_data.FIELDS_NB_NOID];
-		} else {
-			param = new String[table.my_motion_data.FIELDS_NB];
-		}
-		param[table.my_motion_data.COL_NAME] = this.mydata.name;
-		param[table.my_motion_data.COL_CATEGORY] = this.mydata.category;
-		param[table.my_motion_data.COL_CREATOR] = this.mydata.creator;
-		param[table.my_motion_data.COL_MOTION_LID] = this.getLIDstr();
+		boolean DEBUG = true;
 		try {
+			if (DEBUG) System.out.println("D_Motion: storeAct_my: r="+this.mydata.row);
+			this.dirty_mydata = false;
+			String param[];
+			if (this.mydata.row <= 0) {
+				param = new String[table.my_motion_data.FIELDS_NB_NOID];
+			} else {
+				param = new String[table.my_motion_data.FIELDS_NB];
+			}
+			param[table.my_motion_data.COL_NAME] = this.mydata.name;
+			param[table.my_motion_data.COL_CATEGORY] = this.mydata.category;
+			param[table.my_motion_data.COL_CREATOR] = this.mydata.creator;
+			param[table.my_motion_data.COL_MOTION_LID] = this.getLIDstr();
+			
 			if (this.mydata.row <= 0) {
 				this.mydata.row =
 						Application.db.insert(true, table.my_motion_data.TNAME,
@@ -1432,14 +1453,15 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				param[table.my_motion_data.COL_ROW] = this.mydata.row+"";
 				Application.db.update(true, table.my_motion_data.TNAME,
 						table.my_motion_data.fields_noID,
-						new String[]{table.my_motion_data.motion_ID}, param, DEBUG);
+						new String[]{table.my_motion_data.row}, param, DEBUG);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		if (DEBUG) System.out.println("D_Motion: storeAct_my: done="+this.mydata.row);
 	}
 	public long storeAct_main() throws P2PDDSQLException {
-		// boolean DEBUG = true;
+		boolean DEBUG = true;
 
 		if (this.arrival_date == null && (this.getGIDH() != null)) {
 			this.arrival_date = Util.CalendargetInstance();
@@ -1535,8 +1557,9 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		boolean default_blocked_org = false;
 		boolean default_blocked_cons = false;
 		boolean default_blocked_mot = false;
+		System.out.println("D_Motion: loadRemote: in r =" + r);
 		
-		if (!this.isTemporary()) {
+		if (! this.isTemporary()) {
 			if (_DEBUG) System.out.println("D_Motion: loadRemote: abandon incoming since this is not temporary!");
 			return false;
 		}
@@ -1544,9 +1567,15 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		this.hash_alg = r.hash_alg;
 		this.motion_title = r.motion_title;
 		this.motion_text = r.motion_text;
-		this.choices = r.choices;
+		this.category = r.category;
+		//if (r.choices != this.choices) {
+		if (!((r.choices == null || r.choices.length == 0) && (this.choices == null || this.choices.length == 0))) {
+			this.choices = r.choices;
+			this.dirty_choices = true;
+		}
 		this.creation_date = r.creation_date;
 		this.signature = r.signature;
+		System.out.println("D_Motion: loadRemote: loaded this="+this);
 		
 		if (! Util.equalStrings_null_or_not(this.getGID(), r.getGID())) {
 			this._setGID(r.getGID());
@@ -1593,6 +1622,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			this.peer_source_ID = __peer.getLID_keep_force();
 		this.setTemporary(false);
 		this.setArrivalDate();
+		System.out.println("D_Motion: loadRemote: done this="+this);
 		return true;
 	}
 	
@@ -1665,16 +1695,17 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public static D_Motion insertTemporaryGID_org(
 			String p_cGID, long p_oLID,
 			D_Peer __peer, boolean default_blocked) {
-		D_Motion neigh;
+		D_Motion moti;
 		if ((p_cGID != null)) {
-			neigh = D_Motion.getMotiByGID(p_cGID, true, true, true, __peer, p_oLID, null);
+			moti = D_Motion.getMotiByGID(p_cGID, true, true, true, __peer, p_oLID, null);
 			//consts.setName(_name);
-			neigh.setBlocked(default_blocked);
-			neigh.storeRequest();
-			neigh.releaseReference();
+			moti.setBlocked(default_blocked);
+			moti.setArrivalDate();
+			moti.storeRequest();
+			moti.releaseReference();
 		}
 		else return null;
-		return neigh; 
+		return moti; 
 	}
 	/**
 	 * This function has to be called after the appropriate dirty flags are set:
@@ -1850,6 +1881,13 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		catch(Exception e) {
 			Util.printCallPath(e.getLocalizedMessage());
 		}
+		__setGID(global_motion_ID);
+	}
+	/**
+	 * Just sets the GID
+	 * @param global_motion_ID
+	 */
+	public void __setGID(String global_motion_ID) {
 		this.global_motionID = global_motion_ID;
 	}
 	/**
@@ -1858,6 +1896,9 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 * @return
 	 */
 	public String setGID(String _global_motionID) {
+		if (Util.equalStrings_null_or_not(_global_motionID, this.getGID())) {
+			return _global_motionID;
+		}
 		boolean loaded_in_cache = this.isLoaded();
 		_setGID(_global_motionID);
 		this.dirty_main = true;
@@ -1876,7 +1917,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		long lID = this.getLID();
 		long oID = this.getOrganizationLID();
 		if (lID > 0)
-			if ( null != D_Motion_Node.loaded_const_By_LocalID.get(new Long(lID)) ) return true;
+			if ( null != D_Motion_Node.loaded_By_LocalID.get(new Long(lID)) ) return true;
 		if ((GIDH = this.getGIDH()) != null)
 			if ( null != D_Motion_Node.getConstByGIDH(GIDH, oID) //.loaded_const_By_GIDhash.get(GIDH)
 			) return true;
@@ -1955,16 +1996,24 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public Calendar getCreationDate() {
 		return creation_date;
 	}
+	/**
+	 * Sets dirty only if different
+	 * @param creation_date
+	 */
 	public void setCreationDate(Calendar creation_date) {
-		this.creation_date = creation_date;
-		this.dirty_main = true;
+		if (! Util.equalCalendars_null_or_not(this.creation_date, creation_date)) {
+			this.creation_date = creation_date;
+			this.dirty_main = true;
+		}
 	}
 	public byte[] getSignature() {
 		return signature;
 	}
 	public byte[] setSignature(byte[] signature) {
-		this.signature = signature;
-		this.dirty_main = true;
+		if (signature != this.signature) {
+			this.signature = signature;
+			this.dirty_main = true;
+		}
 		return signature;
 	}
 	
@@ -2363,6 +2412,25 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public D_Peer getProvider() {
 		if (this.peer_source_ID <= 0) return null;
 		return D_Peer.getPeerByLID(peer_source_ID, true, false);
+	}
+	/**
+	 * 
+	 * @param new_text
+	 * @param editor_format
+	 */
+	public void setMotionText(String new_text, String editor_format) {
+		String old_text = this.getMotionText().getDocumentString();
+		
+		String old_old_text = this.getMotionText().getFormatString();
+
+		if (! Util.equalStrings_null_or_not(new_text, old_text)) {
+			this.getMotionText().setDocumentString(new_text);
+			this.dirty_main = true;
+		}
+		if (! Util.equalStrings_null_or_not(editor_format, old_old_text)) {
+			this.getMotionText().setFormatString(editor_format);//BODY_FORMAT);
+			this.dirty_main = true;
+		}
 	}
 
 }

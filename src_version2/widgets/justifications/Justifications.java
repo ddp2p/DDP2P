@@ -276,26 +276,26 @@ public class Justifications extends JTable implements MouseListener, Justificati
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
  
-        for (int i = 0; i < model.getColumnCount(); i++) {
+        for (int col_model = 0; col_model < model.getColumnCount(); col_model++) {
         	int headerWidth = 0;
         	int cellWidth = 0;
-            column = this.getColumnModel().getColumn(i);
+            column = this.getColumnModel().getColumn(col_model);
  
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
  
-            for(int r=0; r<model.getRowCount(); r++) {
-            	comp = this.getDefaultRenderer(model.getColumnClass(i)).
+            for(int r = 0; r < this.getRowCount(); r++) {
+            	comp = this.getDefaultRenderer(model.getColumnClass(col_model)).
                              getTableCellRendererComponent(
-                                 this, getValueAt(r, i),
-                                 false, false, 0, i);
+                                 this, getValueAt(r, this.convertColumnIndexToView(col_model)),
+                                 false, false, 0, col_model);
             	cellWidth = Math.max(comp.getPreferredSize().width, cellWidth);
             }
             if (DEBUG) {
                 System.out.println("Initializing width of column "
-                                   + i + ". "
+                                   + col_model + ". "
                                    + "headerWidth = " + headerWidth
                                    + "; cellWidth = " + cellWidth);
             }

@@ -81,6 +81,10 @@ class D_MotionChoice extends ASNObj{
 	public D_MotionChoice instance() throws CloneNotSupportedException{
 		return new D_MotionChoice();
 	}
+	public static final String sql_choice_IDs =
+			"SELECT "+table.motion_choice.choice_ID+
+			" FROM "+table.motion_choice.TNAME+
+			" WHERE "+table.motion_choice.motion_ID+"=? AND ( "+table.motion_choice.choice_Name+"=? OR "+table.motion_choice.shortName+"=?);";
 	/**
 	 * Saves a choice for motionID, assuming no other choice exists with the same name OR GID
 	 * @param motionID
@@ -89,11 +93,7 @@ class D_MotionChoice extends ASNObj{
 	 */
 	public long save(String motionID, boolean sync) throws P2PDDSQLException {
 		long result = -1;
-		String sql =
-			"SELECT "+table.motion_choice.choice_ID+
-			" FROM "+table.motion_choice.TNAME+
-			" WHERE "+table.motion_choice.motion_ID+"=? AND ( "+table.motion_choice.choice_Name+"=? OR "+table.motion_choice.shortName+"=?);";
-		ArrayList<ArrayList<Object>> c = Application.db.select(sql, new String[]{motionID, name, short_name}, DEBUG);
+		ArrayList<ArrayList<Object>> c = Application.db.select(sql_choice_IDs, new String[]{motionID, name, short_name}, DEBUG);
 		if(c.size()!=0){
 			String old = Util.getString(c.get(0).get(0));
 			Application_GUI.warning(Util.__("Duplicate motion choice:")+" "+old+"\n"+this, Util.__("Duplicate motion choice"));
@@ -118,14 +118,14 @@ class D_MotionChoice extends ASNObj{
 			c.save(motionID, sync);
 		}
 	}
+	public static final String sql_get_choices = 
+			"SELECT "+table.motion_choice.fields +
+			" FROM "+table.motion_choice.TNAME +
+			" WHERE "+table.motion_choice.motion_ID+"=? ORDER BY "+table.motion_choice.shortName+";";
 	public static D_MotionChoice[] getChoices(String motionID) throws P2PDDSQLException {
 		D_MotionChoice[] result;
-		String sql = 
-			"SELECT "+table.motion_choice.fields+
-			" FROM "+table.motion_choice.TNAME+
-			" WHERE "+table.motion_choice.motion_ID+"=? ORDER BY "+table.motion_choice.shortName+";";
 		String[] params=new String[]{motionID};
-		ArrayList<ArrayList<Object>> ch = Application.db.select(sql, params, DEBUG);
+		ArrayList<ArrayList<Object>> ch = Application.db.select(sql_get_choices, params, DEBUG);
 		if (ch.size() == 0) return null;
 		result = new D_MotionChoice[ch.size()];
 		for(int k=0; k<result.length; k++) {

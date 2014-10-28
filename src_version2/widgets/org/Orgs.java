@@ -44,6 +44,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -64,6 +65,9 @@ import widgets.components.DebateDecideAction;
 import widgets.components.GUI_Swing;
 import widgets.components.XTableColumnModel;
 import widgets.instance.Instances;
+import widgets.justifications.Justifications;
+import widgets.justifications.JustificationsModel;
+import widgets.motions.MotionsModel;
 import wireless.BroadcastClient;
 
 import javax.swing.table.TableCellEditor;
@@ -861,9 +865,14 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		D_Organization o = data.remove(row);
 		if (!Util.equalStrings_null_or_not(o.getLIDstr_forced(), orgID)) data.add(row, o);
 	}
-	public String getLIDstr(int row) {
-		if ((row < 0) || (row >= data.size())) return null;
-		return data.get(row).getLIDstr_forced();
+	/**
+	 * By Model-row
+	 * @param model_row
+	 * @return
+	 */
+	public String getLIDstr(int model_row) {
+		if ((model_row < 0) || (model_row >= data.size())) return null;
+		return data.get(model_row).getLIDstr_forced();
 	}
 	public Long getLID(int row) {
 		if ((row < 0) || (row >= data.size())) return null;
@@ -1176,8 +1185,39 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		//final int SELECT_BROADCASTED = 5;
 		//final int SELECT_REQUESTED = 6;
 		if(DEBUG) System.out.println("\nwidgets.org.Orgs: update table= "+_table+": info= "+info);
+		
+		
+		if (_table != null && !_table.contains(table.organization.TNAME)) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+				@Override
+				public void _run() {
+					((OrgsModel)ctx).fireTableDataChanged();
+				}
+			});
+			return;
+		}
+		
 		//ArrayList<ArrayList<Object>> orgs = db.select(sql_orgs, new String[]{},DEBUG);
 		ArrayList<ArrayList<Object>> orgs = D_Organization.getListOrgLIDs();
+		if (orgs.size() == data.size()) {
+			boolean different = false;
+			for (int k = 0; k < data.size(); k++) {
+				if (data.get(k).getLID() != Util.lval(orgs.get(k).get(SELECT_ORG_ID))) {
+					different = true;
+					break;
+				}
+			}
+			if (! different) {
+				SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+					@Override
+					public void _run() {
+						((OrgsModel)ctx).fireTableDataChanged();
+					}
+				});
+				return;
+			}
+		}
+		
 		ArrayList<D_Organization> _data = new ArrayList<D_Organization>();
 			
 		//_orgs = new Object[orgs.size()];
@@ -1192,11 +1232,17 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		Hashtable<Long, Integer> _rowByLID = new Hashtable<Long, Integer>();
 		for (int k = 0; k < orgs.size(); k ++) {
 				ArrayList<Object> o = orgs.get(k);
-				_data.add(D_Organization.getOrgByLID_NoKeep(Util.getString(o.get(SELECT_ORG_ID)), true));
+				Object oLID = o.get(SELECT_ORG_ID);
+				D_Organization org_crt = D_Organization.getOrgByLID_NoKeep(Util.getString(oLID), true);
+				if (org_crt == null) {
+					Util.printCallPath("Why fail: "+oLID);
+					continue;
+				}
+				_data.add(org_crt);
 				
 				//_orgs[k] = o.get(SELECT_ORG_ID);
-				_rowByID.put(_data.get(k).getLIDstr_forced(), new Integer(k));
-				_rowByLID.put(_data.get(k).getLID_forced(), new Integer(k));
+				_rowByID.put(org_crt.getLIDstr_forced(), new Integer(_data.size()-1));
+				_rowByLID.put(org_crt.getLID_forced(), new Integer(_data.size()-1));
 				//_meth[k] = o.get(SELECT_METHODS);
 				//_hash[k] = o.get(SELECT_ORG_GIDH);
 				//_crea[k] = o.get(SELECT_ORG_CREAT_ID);
@@ -1209,27 +1255,57 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		synchronized (monitor_data) {
 			Object old_sel[] = new Object[tables.size()];
 			for (int i = 0; i < old_sel.length; i ++) {
-				int sel = tables.get(i).getSelectedRow();
+				Orgs old_view = tables.get(i);
+				int sel = old_view.getSelectedRow();
 				if(DEBUG) System.out.println("widgets.org.Orgs: old selected row: table["+i+"]="+sel);
-				if ((sel >= 0) && (sel < data.size())) old_sel[i] = getLIDstr(sel);
+				if ((sel >= 0) && (sel < data.size())) {
+					int sel_model = old_view.convertRowIndexToModel(sel);
+					if(DEBUG) System.out.println("widgets.org.Orgs: old selected row: table["+i+"]="+sel_model);
+					old_sel[i] = getLIDstr(sel_model);
+				}
 			}
 			data = _data;
 			rowByID = _rowByID;
 			rowByLID = _rowByLID;
-			for (int k = 0; k < old_sel.length; k ++) {
-				Orgs i = tables.get(k);
+			
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+				@Override
+				public void _run() {
+					((OrgsModel)ctx).fireTableDataChanged();
+				}
+			});
+
+			for (int crt_view_idx = 0; crt_view_idx < old_sel.length; crt_view_idx ++) {
+				Orgs crt_view = tables.get(crt_view_idx);
 				//int row = i.getSelectedRow();
-				int row = findRowForOrgLID(old_sel[k]);
-				if(DEBUG) System.out.println("widgets.org.Orgs: selected row: table["+k+"]="+row);
+				int row_model = findModelRowForOrgLID(old_sel[crt_view_idx]);
+				if(DEBUG) System.out.println("widgets.org.Orgs: selected row: table["+crt_view_idx+"]="+row_model);
 				//i.revalidate();
-				this.fireTableDataChanged();
-				if ((row >= 0) && (row < _data.size())) i.setRowSelectionInterval(row, row);
-				i.fireListener(row, Orgs.A_NON_FORCE_COL);
+//				if ((row_model >= 0) && (row_model < _data.size())) {
+//					int view_row = crt_view.convertRowIndexToView(row_model);
+//					crt_view.setRowSelectionInterval(view_row, view_row);
+//				}
+				
+				class O {int row_model; Orgs crt_view; O(int _row, Orgs _view){row_model = _row; crt_view = _view;}}
+				SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, new O(row_model,crt_view)) {
+					@Override
+					public void _run() {
+						O o = (O)ctx;
+						if ((o.row_model >= 0) && (o.row_model < o.crt_view.getModel().getRowCount())) {
+							int row_view = o.crt_view.convertRowIndexToView(o.row_model);
+							o.crt_view.setRowSelectionInterval(row_view, row_view);
+						}
+						//TODO the next is probably slowing down the system. May be run only on request
+						o.crt_view.initColumnSizes();
+					}
+				});
+				
+				crt_view.fireListener(row_model, Orgs.A_NON_FORCE_COL);
 			}
 		}
 	}
 
-	private int findRowForOrgLID(Object id) {
+	private int findModelRowForOrgLID(Object id) {
 		if (id == null) return -1;
 		long lID = Util.lval(id);
 		Integer row = rowByLID.get(new Long(lID));
@@ -1402,10 +1478,16 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	public void setValueAt(Object value, int row, int col) {
 		D_Organization org = data.get(row);
 		org = D_Organization.getOrgByOrg_Keep(org);
+		String _value;
 		switch(col) {
 		case TABLE_COL_NAME:
 			//set_my_data(table.my_organization_data.name, Util.getString(value), row);
-			org.setNameMy(Util.getString(value));
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name obj: "+value);
+			_value = Util.getString(value);
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
+			if ("".equals(_value)) _value = null;
+			if (DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
+			org.setNameMy(_value);
 			break;
 		case TABLE_COL_CREATOR:
 			String creator = Util.getString(value);
@@ -1415,7 +1497,12 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			break;
 		case TABLE_COL_CATEGORY:
 			//set_my_data(table.my_organization_data.category, Util.getString(value), row);
-			org.setCategoryMy(Util.getString(value));
+			if (DEBUG) System.out.println("MotionsModel:setValueAt cat obj: "+value);
+			_value = Util.getString(value);
+			if (DEBUG) System.out.println("MotionsModel:setValueAt cat str: "+_value);
+			if ("".equals(_value)) _value = null;
+			if (DEBUG) System.out.println("MotionsModel:setValueAt cat nulled: "+_value);
+			org.setCategoryMy(_value);
 			break;
 			default:
 				org.releaseReference();
@@ -1423,7 +1510,8 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		org.storeRequest();
 		org.releaseReference();
 
-		fireTableCellUpdated(row, col);
+		//fireTableCellUpdated(row, col);
+		this.fireTableRowsUpdated(row, row);
 	}
 	public boolean isMine(int row) {
 		if (row >= this.getRowCount()) return false;
@@ -1460,6 +1548,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			if(DEBUG) System.out.println("Orgs:isNotReady: gid false");
 			return true;
 		}
+		/*
 		if (DD.ANONYMOUS_ORG_ACCEPTED) {
 			String cID = data.get(row).getCreatorLID(); //Util.getString(_crea[row]);
 			if (cID == null) {
@@ -1467,6 +1556,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 				return true;
 			}
 		}
+		*/
 		int method = -1;
 		try {method = data.get(row).getCertifyingMethod();}catch(Exception e){}
 		

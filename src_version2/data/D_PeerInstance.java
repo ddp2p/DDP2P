@@ -1,5 +1,6 @@
 package data;
 
+import hds.ASNPluginInfo;
 import hds.Address;
 
 import java.math.BigInteger;
@@ -7,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 
+import plugin_data.D_PluginInfo;
 import ciphersuits.PK;
 import ciphersuits.SK;
 import util.P2PDDSQLException;
@@ -29,7 +31,8 @@ public class D_PeerInstance extends ASNObj {
 	public String branch;
 	public String agent_version;
 	
-	public String plugin_info;
+	private String plugin_info;
+	private ASNPluginInfo[] plugin_info_array;
 	private String _last_sync_date;
 	private Calendar last_sync_date;
 	private String _last_reset;
@@ -56,17 +59,35 @@ public class D_PeerInstance extends ASNObj {
 	
 	public String toString() {
 		String result = "";
+		result += " v="+version;
 		result += " ID="+peer_instance_ID;
 		result += " peer_ID="+peer_ID;
-		result += " instance="+peer_instance;
-		result += " info="+plugin_info;
+		result += " instance="+peer_instance+" ("+this.peer_instance_ID+")";
+		result += " info="+get_PluginInfo();
+		result += " info[]="+Util.concat(get_PluginInfoArray(), ":");
+		result += " branch="+this.branch;
+		result += " av="+this.agent_version;
 		result += " sync="+_last_sync_date;
 		result += " rst="+_last_reset;
 		result += " cnt="+_last_contact_date;
 		result += " loc="+createdLocally;
 		result += " addresses="+Util.concatA(addresses, "---", "NULL");
 		result += " creat="+_creation_date;
+		result += " obj="+this.objects_synchronized;
+		result += " dty/del="+this.dirty+"/"+this.deleted;
 		return result;
+	}
+	public ASNPluginInfo[] getPluginInfo() {
+		return get_PluginInfoArray();
+//		try {
+//			ASNPluginInfo[] _info = new Decoder(Util.byteSignatureFromString(plugin_info)).getSequenceOf(ASNPluginInfo.getASN1Type(), new ASNPluginInfo[0], new ASNPluginInfo());
+//			ASNPluginInfo[] result = _info; //"+Util.concat(_info, ":");
+//			return result;
+//		} catch (ASN1DecoderFail e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}		
+//		return null;
 	}
 
 	static String sql_peer = 
@@ -127,7 +148,7 @@ public class D_PeerInstance extends ASNObj {
 		params[table.peer_instance.PI_PEER_INSTANCE] = peer_instance;
 		params[table.peer_instance.PI_PEER_BRANCH] = branch;
 		params[table.peer_instance.PI_PEER_AGENT_VERSION] = agent_version;
-		params[table.peer_instance.PI_PLUGIN_INFO] = plugin_info;
+		params[table.peer_instance.PI_PLUGIN_INFO] = get_PluginInfo();
 		params[table.peer_instance.PI_OBJECTS_SYNCH] = ""+objects_synchronized;
 		params[table.peer_instance.PI_LAST_SYNC_DATE] = _last_sync_date;
 		params[table.peer_instance.PI_LAST_RESET] = _last_reset;
@@ -184,7 +205,7 @@ public class D_PeerInstance extends ASNObj {
 		peer_instance = Util.getString(k.get(table.peer_instance.PI_PEER_INSTANCE));
 		branch = Util.getString(k.get(table.peer_instance.PI_PEER_BRANCH));
 		agent_version = Util.getString(k.get(table.peer_instance.PI_PEER_AGENT_VERSION));
-		plugin_info = Util.getString(k.get(table.peer_instance.PI_PLUGIN_INFO));
+		set_PluginInfo(Util.getString(k.get(table.peer_instance.PI_PLUGIN_INFO)));
 		
 		_last_sync_date = Util.getString(k.get(table.peer_instance.PI_LAST_SYNC_DATE));
 		last_sync_date = Util.getCalendar(_last_sync_date);
@@ -234,8 +255,8 @@ public class D_PeerInstance extends ASNObj {
 		this.dirty = d.dirty;
 		this.deleted = d.deleted;
 		peer_instance = d.peer_instance;
-		plugin_info = d.plugin_info;
-		
+		set_PluginInfo_(d.get_PluginInfo());
+		set_PluginInfoArray_(d.get_PluginInfoArray());
 		_peer_ID = d._peer_ID;
 		peer_ID = d.peer_ID;
 		
@@ -376,7 +397,7 @@ D_PeerInstance := [AC11] SEQUENCE {
 		enc.addToSequence(new Encoder(branch));
 		enc.addToSequence(new Encoder(agent_version));
 		enc.addToSequence(Encoder.getEncoder(addresses));
-		enc.addToSequence(new Encoder(plugin_info));
+		enc.addToSequence(new Encoder(get_PluginInfo()));
 		byte[] _signature = null;
 		enc.addToSequence(new Encoder(_signature)); //signature
 		return enc.setASN1Type(getASN1Type());
@@ -389,7 +410,7 @@ D_PeerInstance := [AC11] SEQUENCE {
 		enc.addToSequence(new Encoder(branch));
 		enc.addToSequence(new Encoder(agent_version));
 		if ((addresses != null) && (addresses.size() > 0)) enc.addToSequence(Encoder.getEncoder(addresses).setASN1Type(DD.TAG_AC1));
-		if (plugin_info != null) enc.addToSequence(new Encoder(plugin_info).setASN1Type(DD.TAG_AP2));
+		if (get_PluginInfo() != null) enc.addToSequence(new Encoder(get_PluginInfo()).setASN1Type(DD.TAG_AP2));
 		//if ((signature != null) && (signature.length > 0)) enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC3));
 		return enc.setASN1Type(getASN1Type());
 	}
@@ -409,7 +430,7 @@ D_PeerInstance := [AC11] SEQUENCE {
 		enc.addToSequence(new Encoder(branch));
 		enc.addToSequence(new Encoder(agent_version));
 		enc.addToSequence(Encoder.getEncoder(addresses));
-		enc.addToSequence(new Encoder(plugin_info));
+		enc.addToSequence(new Encoder(get_PluginInfo()));
 		enc.addToSequence(new Encoder(signature));
 		return enc.setASN1Type(getASN1Type());
 	}
@@ -421,7 +442,7 @@ D_PeerInstance := [AC11] SEQUENCE {
 		enc.addToSequence(new Encoder(branch));
 		enc.addToSequence(new Encoder(agent_version));
 		if ((addresses != null) && (addresses.size() > 0)) enc.addToSequence(Encoder.getEncoder(addresses).setASN1Type(DD.TAG_AC1));
-		if (plugin_info != null) enc.addToSequence(new Encoder(plugin_info).setASN1Type(DD.TAG_AP2));
+		if (get_PluginInfo() != null) enc.addToSequence(new Encoder(get_PluginInfo()).setASN1Type(DD.TAG_AP2));
 		if ((signature != null) && (signature.length > 0)) enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC3));
 		return enc.setASN1Type(getASN1Type());
 	}
@@ -432,7 +453,8 @@ D_PeerInstance := [AC11] SEQUENCE {
 		branch = in.branch;
 		agent_version = in.agent_version;
 		addresses = in.addresses;
-		plugin_info = in.plugin_info;
+		set_PluginInfo_(in.get_PluginInfo());
+		set_PluginInfoArray_(in.get_PluginInfoArray());
 		signature = in.signature;
 		this.dirty = true;
 		if (addresses != null) for (Address a: addresses) a.dirty = true;
@@ -444,7 +466,10 @@ D_PeerInstance := [AC11] SEQUENCE {
 		branch = in.branch;
 		agent_version = in.agent_version;
 		if (in.addresses != null) addresses = in.addresses;
-		if (in.plugin_info != null) plugin_info = in.plugin_info;
+		if (in.get_PluginInfo() != null) {
+			set_PluginInfo_(in.get_PluginInfo());
+			set_PluginInfoArray_(in.get_PluginInfoArray());
+		}
 		this.dirty = true;
 		if (addresses != null) for (Address a: addresses) a.dirty = true;
 	}
@@ -454,7 +479,10 @@ D_PeerInstance := [AC11] SEQUENCE {
 		//branch = in.branch;
 		//agent_version = in.agent_version;
 		if (addresses == null) addresses = in.addresses;
-		if (plugin_info == null) plugin_info = in.plugin_info;
+		if (get_PluginInfo() == null) {
+			set_PluginInfo_(in.get_PluginInfo());
+			set_PluginInfoArray_(in.get_PluginInfoArray());
+		}
 		this.dirty = true;
 		if (addresses != null) for (Address a: addresses) a.dirty = true;
 	}
@@ -474,7 +502,7 @@ D_PeerInstance := [AC11] SEQUENCE {
 		branch = d.getFirstObject(true).getString();
 		agent_version = d.getFirstObject(true).getString();
 		addresses = d.getFirstObject(true).getSequenceOfAL(Address.getASN1Type(), new Address());
-		plugin_info = d.getFirstObject(true).getString();
+		set_PluginInfo(d.getFirstObject(true).getString());
 		signature = d.getFirstObject(true).getBytes();
 		return this;
 	}
@@ -485,7 +513,9 @@ D_PeerInstance := [AC11] SEQUENCE {
 		agent_version = d.getFirstObject(true).getString();
 		if (d.getTypeByte() == DD.TAG_AC1) addresses = d.getFirstObject(true).getSequenceOfAL(Address.getASN1Type(), new Address());
 		else addresses = new ArrayList<Address>();
-		if (d.getTypeByte() == DD.TAG_AP1) plugin_info = d.getFirstObject(true).getString(DD.TAG_AP1);
+		if (d.getTypeByte() == DD.TAG_AP2) {
+			set_PluginInfo(d.getFirstObject(true).getString(DD.TAG_AP2));
+		}
 		if (d.getTypeByte() == DD.TAG_AC3) signature = d.getFirstObject(true).getBytes(DD.TAG_AC3);
 		return this;
 	}
@@ -505,5 +535,37 @@ D_PeerInstance := [AC11] SEQUENCE {
 	}
 	public String get_peer_instance() {
 		return peer_instance;
+	}
+	public String get_PluginInfo() {
+		return plugin_info;
+	}
+	public void set_PluginInfo(String plugin_info) {
+		this.plugin_info = plugin_info;
+		plugin_info_array = D_PluginInfo.getPluginInfoArray(plugin_info);
+	}
+	public void set_PluginInfo_(String plugin_info) {
+		this.plugin_info = plugin_info;
+	}
+	public ASNPluginInfo[] get_PluginInfoArray() {
+		return plugin_info_array;
+	}
+	/**
+	 * Sets this without setting the "string" version
+	 * @param plugin_info_array
+	 */
+	public void set_PluginInfoArray_(ASNPluginInfo[] plugin_info_array) {
+		this.plugin_info_array = plugin_info_array;
+	}
+	/**
+	 * Setting all
+	 * @param plugin_info_array
+	 */
+	public void set_PluginInfoArray(ASNPluginInfo[] plugin_info_array) {
+		this.plugin_info_array = plugin_info_array;
+		this.plugin_info = D_PluginInfo.getPluginInfoFromArray(plugin_info_array);// Util.stringSignatureFromByte(Encoder.getEncoder(plugin_info_array).getBytes());
+	}
+	public void set_PluginInfoAndArray(String plugin_info, ASNPluginInfo[] plugin_info_array) {
+		this.plugin_info_array = plugin_info_array;
+		this.plugin_info = plugin_info;
 	}
 }

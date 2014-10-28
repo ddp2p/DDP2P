@@ -341,7 +341,7 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 			motion_ID = null;
 			crt_mot = null;
 		} else {
-			motion_ID = this.getModel().getMotionID(this.convertRowIndexToModel(table_row));
+			motion_ID = this.getModel().getMotionIDstr(this.convertRowIndexToModel(table_row));
 			crt_mot = D_Motion.getMotiByLID(motion_ID, true, false);
 			if (crt_mot == null)
 				motion_ID = null;
@@ -357,7 +357,7 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 		int row =this.getSelectedRow();
 		if(row>=0) {
 			if(DEBUG) System.out.println("Motions:addListener: row="+row);
-			l.motion_update(this.getModel().getMotionID(this.convertRowIndexToModel(row)),A_NON_FORCE_COL, null);
+			l.motion_update(this.getModel().getMotionIDstr(this.convertRowIndexToModel(row)),A_NON_FORCE_COL, null);
 		}
 		if(DEBUG) System.out.println("\n************\nMotions:addListener: Done");
 	}
@@ -373,6 +373,7 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 
 	@Override
 	public void mouseClicked(MouseEvent evt) {
+		// boolean DEBUG = true;
     	int row; //=this.getSelectedRow();
     	int col; //=this.getSelectedColumn();
     	//if(!evt.isPopupTrigger()) return;
@@ -382,13 +383,16 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
         col = this.columnAtPoint(point);
         if ((row < 0) || (col < 0 )) return;
         
+		if (DEBUG) System.out.println("Motions: mouseClicked: row=" + row);
     	MotionsModel model = (MotionsModel)getModel();
  		int model_row = convertRowIndexToModel(row);
+ 		if (DEBUG) System.out.println("Motions: mouseClicked: model_row="+model_row);
    	   	if (model_row >= 0) {
-   	   		String motID = model.getMotionID(model_row); //Util.getString(model._motions[model_row]);
-   	   		try {
-   	   			long mID = Util.lval(motID);
-   	   			model.setCurrent(mID);
+   	   		long motID = model.getMotionID(model_row); //Util.getString(model._motions[model_row]);
+   			if (DEBUG) System.out.println("Motions: mouseClicked: mot ID =" + motID);
+  	   		try {
+   	   			//long mID = Util.lval(motID);
+   	   			model.setCurrent(motID);
    	   		} catch(Exception e){};
    	   	}
         
@@ -651,7 +655,7 @@ class MotionCustomAction extends DebateDecideAction {
     	}
         if (cmd == M_DEL) {
     		if (DEBUG) System.out.println("Motions:MotionCustomAction: Del: start");
-    		String _m_ID = model.getMotionID(row);
+    		String _m_ID = model.getMotionIDstr(row);
     		if(_m_ID == null) return;
     		D_Motion.zapp(_m_ID);
      	}
@@ -701,7 +705,7 @@ class MotionCustomAction extends DebateDecideAction {
     	}
     	if (cmd == M_ENHANCING_THIS) {
     		if (DEBUG) System.out.println("Motions:MotionCustomAction: Enhance This: start");
-    		model.setCrtEnhanced(model.getMotionID(row));
+    		model.setCrtEnhanced(model.getMotionIDstr(row));
     	}
         if (cmd == M_REM_ENHANCING) {
     		if (DEBUG) System.out.println("Motions:MotionCustomAction: Rem Enhancing: start");
@@ -712,7 +716,7 @@ class MotionCustomAction extends DebateDecideAction {
     		long cID = tree.getConstituentIDMyself();
     		if (cID <= 0) return;
     		D_Motion n_motion;
-        	long m_ID = Util.lval(model.getMotionID(row), -1);
+        	long m_ID = Util.lval(model.getMotionIDstr(row), -1);
         	
         	D_Motion old_motion = D_Motion.getMotiByLID(m_ID, true, false);
         	n_motion = D_Motion.getEmpty();

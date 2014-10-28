@@ -175,9 +175,12 @@ public class HandlingMyself_Peer {
 		}
 		return null;
 	}
-	static public boolean setMyself( D_Peer me, boolean saveInDB) {
-		return setMyself(me, saveInDB, Identity.current_peer_ID);
+	static public boolean setMyself( D_Peer me, boolean saveInDB, boolean me_kept) {
+		return setMyself(me, saveInDB, Identity.current_peer_ID, me_kept);
 	}
+//	static public boolean setMyself( D_Peer me, boolean saveInDB) {
+//		return setMyself(me, saveInDB, Identity.current_peer_ID);
+//	}
 	/**
 	 * - save in database
 	 * - save in Identity
@@ -192,16 +195,34 @@ public class HandlingMyself_Peer {
 	 * @return true on success
 	 */
 	static public boolean setMyself( D_Peer me, boolean saveInDB, Identity my_ID) {
-		if (DEBUG) System.out.println("HandlingMyself:setMyself: start");
+		return setMyself (me, saveInDB, my_ID, false);
+	}
+	/**
+	 * - save in database
+	 * - save in Identity
+	 * - save in _myself
+	 * - trigger listener in DD.status
+	 * - announce_Directories of the change
+	 * 
+	 * - will warn if no instance set, and possible
+	 *  
+	 * @param me
+	 * @param saveInDB set to false when loading from DB
+	 * @param my_ID
+	 * @param kept (is me already kept)
+	 * @return  true on success
+	 */
+	static public boolean setMyself( D_Peer me, boolean saveInDB, Identity my_ID, boolean kept) {
+		if (DEBUG) System.out.println("HandlingMyself: setMyself: start");
 		if (me == null) {
-			if (DEBUG) System.out.println("HandlingMyself:setMyself: exit null");
+			if (DEBUG) System.out.println("HandlingMyself: setMyself: exit null");
 			return false;
 		}
 
 		synchronized (monitor_init_myself) {
 			SK sk = me.getSK();
 			if (sk == null) {
-				System.out.println("HandlingMyself_Peer:setMyself: exit since unknown secret key!");
+				System.out.println("HandlingMyself_Peer: setMyself: exit since unknown secret key!");
 				return false;
 			}
 			me.loadInstancesToHash();
@@ -221,11 +242,15 @@ public class HandlingMyself_Peer {
 				saveCrtIdentityInDB(me);
 			}
 			synchronized(_myself_monitor) {
-				if (_myself != null) _myself.dec_StatusReferences();//if (_myself != null) _myself.releaseReference();
-				if (me != null) me = D_Peer.getPeerByGID_or_GIDhash(null, me.getGIDH_force(), true, false, true, null);
+				boolean keeping_here = false;
+				if (_myself != null) _myself.dec_StatusReferences(); //if (_myself != null) _myself.releaseReference();
+				if (me != null && !kept) {
+					me = D_Peer.getPeerByGID_or_GIDhash(null, me.getGIDH_force(), true, false, true, null);
+					keeping_here = true;
+				}
 				if (me != null) {
 					me.inc_StatusReferences(); // keep it during the process to avoid it being dropped in-between
-					me.releaseReference();
+					if (keeping_here) me.releaseReference();
 				}
 				_myself = me;
 				_myself_monitor.notifyAll();
@@ -343,7 +368,7 @@ public class HandlingMyself_Peer {
 		try {
 			peer = HandlingMyself_Peer.createPeerUnsigned_Keep(pi);
 			if (peer != null) {
-				HandlingMyself_Peer.setMyself(peer, saveIdentityInIB);
+				HandlingMyself_Peer.setMyself(peer, saveIdentityInIB, true); //kept
 				HandlingMyself_Peer.updateAddress(peer);
 				if (peer.dirty_any()) peer.storeRequest();
 				peer.releaseReference();
@@ -365,7 +390,7 @@ public class HandlingMyself_Peer {
 			peer = HandlingMyself_Peer.createPeer_by_dialog_Keep();
 			if (DEBUG) System.out.println("HandlingMyself_Peer:createMyselfPeer_by_dialog_w_Addresses: got:"+peer);
 			if (peer != null) {
-				HandlingMyself_Peer.setMyself(peer, saveIdentityInIB, my_ID);
+				HandlingMyself_Peer.setMyself(peer, saveIdentityInIB, my_ID, true); //kept
 				HandlingMyself_Peer.updateAddress(peer);
 				peer.sign();
 				peer.storeRequest();
@@ -385,7 +410,7 @@ public class HandlingMyself_Peer {
 			peer = HandlingMyself_Peer.createPeer_by_dialog_inited_Keep(pi);
 			if (DEBUG) System.out.println("HandlingMyself_Peer:createMyselfPeer_by_dialog_w_Addresses: got:"+peer);
 			if (peer != null) {
-				HandlingMyself_Peer.setMyself(peer, saveIdentityInIB, my_ID);
+				HandlingMyself_Peer.setMyself(peer, saveIdentityInIB, my_ID, true); //kept
 				HandlingMyself_Peer.updateAddress(peer);
 				peer.sign();
 				peer.storeRequest();
