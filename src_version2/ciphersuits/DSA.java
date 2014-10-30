@@ -203,6 +203,7 @@ public class DSA extends ciphersuits.Cipher {
 	private DSA_SK genKey(int size, int ddPrimeCertainty) {
 		sk = new DSA_SK(size, ddPrimeCertainty);
 		sk.hash_alg = hash_alg;
+		// TODO
 		return sk;
 	}
 
