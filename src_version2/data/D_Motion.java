@@ -1404,9 +1404,30 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		return result;
 	}
 
+	/**
+	 * The next monitor is used for the storeAct, to avoid concurrent modifications of the same object.
+	 * Potentially the monitor can be a field in the same object (since saving of different objects
+	 * is not considered dangerous, even when they are of the same type)
+	 * 
+	 * What we do is the equivalent of a synchronized method "storeAct" that we avoid to avoid accidental synchronization
+	 * with other methods.
+	 */
+	final Object monitor = new Object();
+	//static final Object monitor = new Object();
+	
 	public long storeAct() throws P2PDDSQLException {
+		synchronized(monitor) {
+			return _storeAct();
+		}
+	}
+	/**
+	 * This is not synchronized
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public long _storeAct() throws P2PDDSQLException {
 		if (this.dirty_local || this.dirty_main || this.dirty_preferences) {
-			System.out.println("D_Motion: storeAct: main dirty: l="+this.dirty_local +" ma="+ this.dirty_main +" p="+ this.dirty_preferences);
+			if (DEBUG) System.out.println("D_Motion: storeAct: main dirty: l="+this.dirty_local +" ma="+ this.dirty_main +" p="+ this.dirty_preferences);
 			storeAct_main();
 		}
 		if (this.dirty_choices)
@@ -1430,7 +1451,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			ClientSync.payload_recent.add(streaming.RequestData.MOTI, this.getGID(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 	}
 	private void storeAct_my() {
-		boolean DEBUG = true;
+		//boolean DEBUG = true;
 		try {
 			if (DEBUG) System.out.println("D_Motion: storeAct_my: r="+this.mydata.row);
 			this.dirty_mydata = false;
@@ -1461,7 +1482,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if (DEBUG) System.out.println("D_Motion: storeAct_my: done="+this.mydata.row);
 	}
 	public long storeAct_main() throws P2PDDSQLException {
-		boolean DEBUG = true;
+		//boolean DEBUG = true;
 
 		if (this.arrival_date == null && (this.getGIDH() != null)) {
 			this.arrival_date = Util.CalendargetInstance();
@@ -1557,7 +1578,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		boolean default_blocked_org = false;
 		boolean default_blocked_cons = false;
 		boolean default_blocked_mot = false;
-		System.out.println("D_Motion: loadRemote: in r =" + r);
+		if (DEBUG) System.out.println("D_Motion: loadRemote: in r =" + r);
 		
 		if (! this.isTemporary()) {
 			if (_DEBUG) System.out.println("D_Motion: loadRemote: abandon incoming since this is not temporary!");
@@ -1575,7 +1596,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		}
 		this.creation_date = r.creation_date;
 		this.signature = r.signature;
-		System.out.println("D_Motion: loadRemote: loaded this="+this);
+		if (DEBUG) System.out.println("D_Motion: loadRemote: loaded this="+this);
 		
 		if (! Util.equalStrings_null_or_not(this.getGID(), r.getGID())) {
 			this._setGID(r.getGID());
@@ -1622,7 +1643,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			this.peer_source_ID = __peer.getLID_keep_force();
 		this.setTemporary(false);
 		this.setArrivalDate();
-		System.out.println("D_Motion: loadRemote: done this="+this);
+		if (DEBUG) System.out.println("D_Motion: loadRemote: done this="+this);
 		return true;
 	}
 	
@@ -2017,20 +2038,42 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		return signature;
 	}
 	
-	// set objects
+	/**
+	 * If the constituent object was not loaded, load it.
+	 * @return
+	 */
 	public D_Constituent getConstituent() {
+		String cLID = this.getConstituentLIDstr();
+		if ((this.constituent == null) && (cLID != null))
+			this.constituent = D_Constituent.getConstByLID(cLID, true, false);
 		return constituent;
 	}
 	public void setConstituent(D_Constituent constituent) {
 		this.constituent = constituent;
 	}
+	/**
+	 * If the enhanced motion object is not loaded, loads it
+	 * @return
+	 */
 	public D_Motion getEnhancedMotion() {
+		String mLID = this.getEnhancedMotionLIDstr();
+		if ((this.enhanced == null) && (mLID != null))
+			this.enhanced = D_Motion.getMotiByLID(mLID, true, false);
 		return enhanced;
 	}
 	public void setEnhancedMotion(D_Motion enhanced) {
 		this.enhanced = enhanced;
 	}
+	/**
+	 * If the organization object was not loaded, loads it.
+	 * @return
+	 */
 	public D_Organization getOrganization() {
+		String oLID = this.getOrganizationLIDstr();
+		if ((this.organization == null) && (oLID != null))
+			this.organization = D_Organization.getOrgByLID(oLID, true, false);
+		
+		//D_Organization.getOrgByLID(getOrganizationLIDstr(), true, false);
 		return organization;
 	}
 	public void setOrganization(D_Organization organization) {
@@ -2284,12 +2327,21 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			e1.printStackTrace();
 		}
 	}
+	/**
+	 * Returns the value stored in the field "choice" for a support vote (typically "0").
+	 * Obtained now from the static constant D_Vote.DEFAULT_YES_COUNTED_LABEL.
+	 * @return
+	 */
+	public String getSupportChoice() {
+		return D_Vote.DEFAULT_YES_COUNTED_LABEL;
+	}
 	static final String sql_co = "SELECT count(*) FROM "+table.signature.TNAME+
 		" WHERE "+table.signature.motion_ID+" = ? AND "+table.signature.choice+" = ?;";
 	public Object getSupport(int i) {
 		Object result = null;
 		try {
-			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_co, new String[]{this.getLIDstr(), D_Vote.DEFAULT_YES_COUNTED_LABEL});
+			ArrayList<ArrayList<Object>> orgs =
+					Application.db.select(sql_co, new String[]{this.getLIDstr(), this.getSupportChoice()});
 			if (orgs.size() > 0) result = orgs.get(0).get(0);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -2502,7 +2554,7 @@ class D_Motion_SaverThreadWorker extends util.DDP2P_ServiceThread {
 	private static final long SAVER_SLEEP = 5000;
 	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
-	public static final Object saver_thread_monitor = new Object();
+	//public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
 	D_Motion_SaverThreadWorker() {
 		super("D_Motion Saver Worker", false);

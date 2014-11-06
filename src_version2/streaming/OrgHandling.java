@@ -73,7 +73,7 @@ public class OrgHandling {
 	 */
 	public	static boolean updateOrg(ASNSyncPayload asa, D_Organization od, String[] _orgID, String arrival_time,
 			RequestData _sol_rq, RequestData _new_rq, D_Peer peer) throws P2PDDSQLException {
-		boolean DEBUG = true;
+		//boolean DEBUG = true;
 		boolean changed=false;
 		//String id_hash;
 		if (DEBUG) out.println("OrgHandling:updateOrg: enter");
@@ -113,7 +113,11 @@ public class OrgHandling {
 		}
 		long id = -1;
 		if (DEBUG) out.println("OrgHandling:updateOrg: decide org storage");
-		boolean verified = od.verifySignature();
+		boolean verified = false;
+		if (! od.justGIDContainer()) {
+			verified = od.verifySignature();
+		} else 
+			if (DEBUG) out.println("OrgHandling:updateOrg: empty org: no data, just Gid");
 		boolean anonymous = od.isAnonymous();
 		if (
 				(verified)

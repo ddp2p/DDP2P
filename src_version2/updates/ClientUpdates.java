@@ -137,19 +137,21 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 		if(urls.size()==0) return false;
 		return true;
 	}
-	synchronized public void turnOff(){
+	synchronized public void turnOff() {
+		if (DEBUG) System.out.println("ClientUpdates: turnOff: start");
 		run = false;
 		this.notifyAll();
 	}
 
 	static boolean forceStart = false;
+	
 	public void _run() {
-		if(DEBUG)System.out.println("ClientUpdates run: start");
+		if (DEBUG) System.out.println("ClientUpdates _run: start");
 
 		Calendar crt = Util.CalendargetInstance();
-		if(!forceStart ||
+		if ( ! forceStart ||
 				( crt.getTimeInMillis() - DD.startTime.getTimeInMillis() < DD.UPDATES_WAIT_ON_STARTUP_MILLISECONDS ))
-		synchronized (this){
+		synchronized (this) {
 			try {
 				forceStart = true;
 				this.wait(DD.UPDATES_WAIT_ON_STARTUP_MILLISECONDS);
@@ -158,33 +160,33 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 				return;
 			}
 		}
-		Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("ClientUpdates:STATUS") {
+		Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("ClientUpdates: _run: STATUS") {
 			public void _run() {
-				Application_GUI.clientUpdates_Start();
+				Application_GUI.clientUpdates_Stop();
 			}
 		});
-		if(DEBUG)System.out.println("ClientUpdates run: set stop");
-		synchronized(monitor){ClientUpdates.cnt_clients++;}
-		try{
+		if (DEBUG) System.out.println("ClientUpdates _run: set start done");
+		synchronized (monitor) {ClientUpdates.cnt_clients ++;}
+		try {
 			___run();
-		}catch(Exception e){
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
-		synchronized(monitor){
+		synchronized (monitor) {
 			ClientUpdates.cnt_clients--;
-			if(ClientUpdates.cnt_clients == 0){
-				Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("ClientUpdates:STATUS2") {
-					public void _run(){
-						Application_GUI.clientUpdates_Stop();
+			if (ClientUpdates.cnt_clients == 0) {
+				Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("ClientUpdates: _run: STATUS2") {
+					public void _run() {
+						Application_GUI.clientUpdates_Start();
 					}
 				});
-				if(DEBUG)System.out.println("ClientUpdates run: set start");
+				if (DEBUG) System.out.println("ClientUpdates _run: set start");
 			}
 		}
 		
-		if(DEBUG)System.out.println("ClientUpdates run: stopped: "+ClientUpdates.cnt_clients);
+		if (DEBUG) System.out.println("ClientUpdates _run: stopped: "+ClientUpdates.cnt_clients);
 	}
-	public static PK[] getTrustedKeys(){
+	public static PK[] getTrustedKeys() {
 		String[] _trusted = new String[0];
 		try {
 				String __trusted = DD.getAppText(DD.TRUSTED_UPDATES_GID);
@@ -241,19 +243,27 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 	
 	public void ___run() {
 		//DEBUG = true;
+		if (DEBUG) System.out.println(" ClientUpdates: ___run: start");
 		boolean starting = true;
-		for(;;) {
-			synchronized(this){
+		for (;;) {
+			if (DEBUG) System.out.println(" ClientUpdates: ___run: loop start");
+			synchronized(this) {
 				try {
-					if(!run) return;
-					if(!starting){
+					if (! run) {
+						if (DEBUG) System.out.println(" ClientUpdates: ___run: quit run=false");
+						return;
+					}
+					if (! starting) {
 						this.wait(DD.UPDATES_WAIT_MILLISECONDS );
 						Application_GUI.ThreadsAccounting_ping("Will wait for in Cycle for: "+DD.UPDATES_WAIT_MILLISECONDS);
 					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				if(!run) return;
+				if (! run) {
+					if (DEBUG) System.out.println(" ClientUpdates: ___run: quit run2=false");
+					return;
+				}
 			}
 			starting = false;
 			Application_GUI.ThreadsAccounting_ping("Will work on urls: "+urls.size());
@@ -277,7 +287,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 			// Should update database with QoTS and RoTs
 			D_MirrorInfo.store_QoTs_and_RoTs(versions);
 			
-			if(!DD.UPDATES_AUTOMATIC_VALIDATION_AND_INSTALL) continue;
+			if (! DD.UPDATES_AUTOMATIC_VALIDATION_AND_INSTALL) continue;
 			
 			// check testers preferances (weight+ number+ Required)
 			Hashtable<VersionInfo, Hashtable<String, VersionInfo>> valid_versions = D_MirrorInfo.validateVersionInfo(versions);
@@ -1004,7 +1014,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 		}
 		if(DEBUG)System.out.println("ClientUpdates downloadNewer: Will check executable base");
 		if(update_script.exists()&&update_script.canExecute()) {
-			if(DEBUG)System.out.println("ClientUpdates downloadNewer: "+__("Executing: ")+Util.concat(script_absolute,","));
+			if(DEBUG)System.out.println("ClientUpdates downloadNewer: "+__("Executing: ")+" dir="+newDirFile+", script="+Util.concat(script_absolute,","));
 			int q = Application_GUI.ask(
 					__("A new version is dowloaded.")+"\n"+
 							__("Execute script:")+" \""+update_script+"\"?",
@@ -1046,7 +1056,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 									__("New Version Downloaded"),
 									Application_GUI.OK_CANCEL_OPTION);
 					if(q!=0) return false;
-					if(DEBUG)System.out.println("ClientUpdates downloadNewer: "+__("Executing: ")+Util.concat(_script_absolute,","));
+					if(DEBUG)System.out.println("ClientUpdates downloadNewer: "+__("Executing UNIX: ")+" dir="+newDirFile+", script="+Util.concat(_script_absolute,","));
 					BufferedReader output = Util.getProcessOutput(_script_absolute, null, newDirFile, null);
 					String outp = Util.readAll(output);
 					String lines[] = outp.split(Pattern.quote("\n"));
@@ -1081,8 +1091,15 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 									__("New Version Downloaded"),
 									Application_GUI.OK_CANCEL_OPTION);
 					if(q!=0) return false;
-					if(DEBUG)System.out.println("ClientUpdates downloadNewer: "+__("Executing: ")+Util.concat(_script_absolute,","));
+					if(DEBUG)System.out.println("ClientUpdates downloadNewer: "+__("Executing WIN: ")+" dir="+newDirFile+", script="+Util.concat(_script_absolute,","));
 					BufferedReader output = Util.getProcessOutput(_script_absolute, null, newDirFile, null);
+					if (output == null) {
+						Application_GUI.warning(
+								__("Basic Output From:")+" \""+_update_script+"\"\n"+
+										"Null Output from process",
+										__("Updates Process Output"));
+						return false;
+					}
 					String outp = Util.readAll(output);
 					String lines[] = outp.split(Pattern.quote("\n"));
 					System.out.println("\n\nClientUpdates:downloadNewer: updating script:\n"+outp+"\n\n");
@@ -1259,19 +1276,22 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 		return cmp;
 	}
 	public static void startClient(boolean b) {
-		synchronized(monitor){
-			if(DEBUG)System.out.println("ClientUpdates startClient: start "+b);
-			if(b) {
-				if(DEBUG)System.out.println("ClientUpdates startClient: start really "+b);
+		synchronized (monitor) {
+			if (DEBUG) System.out.println("ClientUpdates: startClient: start "+b);
+			if (b) {
+				if (DEBUG) System.out.println("ClientUpdates startClient: start really "+b);
 				ClientUpdates.clientUpdates = new ClientUpdates();
 				ClientUpdates.clientUpdates.start();
 			} else {
-				if(ClientUpdates.clientUpdates == null) return;
-				ClientUpdates.clientUpdates.run=false;
+				if (ClientUpdates.clientUpdates == null) {
+					if (DEBUG) System.out.println("ClientUpdates: startClient: stopping... nothing to stop");
+					return;
+				}
+				ClientUpdates.clientUpdates.run = false;
 				ClientUpdates.clientUpdates.turnOff();
 				ClientUpdates.clientUpdates.interrupt();
 				ClientUpdates.clientUpdates = null;
-				if(DEBUG)System.out.println("ClientUpdates startClient: stopped");
+				if (DEBUG) System.out.println("ClientUpdates: startClient: stopped");
 			}
 		}
 	}

@@ -220,8 +220,8 @@ public class SignatureHandling {
 		}
 		for(int k=0; k<signatures.length; k++) {
 			if(DEBUG) out.println("SignatureHandling:integrateNewData: doing["+k+"]: #"+signatures[k]);
-			signatures[k].global_organization_ID = org_GID;
-			signatures[k].organization_ID = org_local_ID;
+			signatures[k].setOrganizationGID(org_GID);
+			signatures[k].setOrganizationLID(org_local_ID);
 			signatures[k].store(sol_rq, new_rq);
 		}
 		if(DEBUG) out.println("SignatureHandling:integrateNewData: done for:"+signatures.length);

@@ -1675,7 +1675,28 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		this.name_charset = name_charset;
 		this.dirty_main = true;
 	}
+	/**
+	 * The next monitor is used for the storeAct, to avoid concurrent modifications of the same object.
+	 * Potentially the monitor can be a field in the same object (since saving of different objects
+	 * is not considered dangerous, even when they are of the same type)
+	 * 
+	 * What we do is the equivalent of a synchronized method "storeAct" that we avoid to avoid accidental synchronization
+	 * with other methods.
+	 */
+	final Object monitor = new Object();
+	//static final Object monitor = new Object();
+	
 	public long storeAct() throws P2PDDSQLException {
+		synchronized(monitor) {
+			return _storeAct();
+		}
+	}
+	/**
+	 * This is not synchronized
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	private long _storeAct() throws P2PDDSQLException {
 		if (this.dirty_local || this.dirty_main || this.dirty_preferences)
 			storeAct_main();
 		if (this.dirty_mydata)
@@ -2367,7 +2388,7 @@ class D_Neighborhood_SaverThreadWorker extends util.DDP2P_ServiceThread {
 	private static final long SAVER_SLEEP = 5000;
 	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
-	public static final Object saver_thread_monitor = new Object();
+	// public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
 	D_Neighborhood_SaverThreadWorker() {
 		super("D_Neighborhood Saver Worker", false);

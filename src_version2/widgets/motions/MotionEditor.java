@@ -312,7 +312,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			this.blocked.setEnabled(true);
 		}
 		vEditor.enable_it();
-		if((signature!=null) && (signature.justification_ID!=null)) jEditor.enable_it();
+		if((signature!=null) && (signature.getJustificationLIDstr()!=null)) jEditor.enable_it();
 		else jEditor.disable_it();
 	}
 	public MotionEditor () {
@@ -571,10 +571,10 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			long _s_ID = Util.lval(signature_ID,-1);
 			if (_s_ID > 0) {
 				signature = new D_Vote(_s_ID);
-				signature.motion = getMotion();
-				long _jID = Util.lval(signature.justification_ID,-1);
-				if ((_jID > 0) && (signature.justification == null)) {
-					justification = signature.justification = D_Justification.getJustByLID(_jID, true, false);
+				signature.setMotion(getMotion());
+				long _jID = Util.lval(signature.getJustificationLIDstr(),-1);
+				if ((_jID > 0) && (signature.getJustification() == null)) {
+					justification = signature.setJustification(D_Justification.getJustByLID(_jID, true, false));
 					vEditor.setSignature(signature, this);
 					jEditor.setJustification(justification,false, this);
 				} else {
@@ -596,16 +596,16 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				}
 			} else {
 				D_Vote _sign = new D_Vote();
-				_sign.motion = getMotion();
-				_sign.choice = getMotion().getDefaultChoice();
-				_sign.motion_ID = getMotion().getLIDstr();
+				_sign.setMotion(getMotion());
+				_sign.setChoice(getMotion().getDefaultChoice());
+				_sign.setMotionLID(getMotion().getLIDstr());
 				_sign.setMotionGID(getMotion().getGID());
-				_sign.justification_ID = null;
-				_sign.constituent_ID = constituent_ID;
-				_sign.global_constituent_ID = constituent_GID;
-				_sign.organization_ID = this.getMotion().getOrganizationLIDstr();
-				_sign.global_organization_ID = this.getMotion().getOrganizationGID();
-				_sign.creation_date = creation_date;
+				_sign.setJustificationLID(null);
+				_sign.setConstituentLID(constituent_ID);
+				_sign.setConstituentGID(constituent_GID);
+				_sign.setOrganizationLID(this.getMotion().getOrganizationLIDstr());
+				_sign.setOrganizationGID(this.getMotion().getOrganizationGID());
+				_sign.setCreationDate(creation_date);
 				vEditor.setSignature(_sign, this);
 				signature = _sign;
 				
@@ -1628,17 +1628,17 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				
 				D_Vote _signature = vEditor.signature;
 				_signature.setMotionGID(this.getMotion().getGID());
-				_signature.motion_ID = Util.getStringID(m_id);
-				_signature.global_constituent_ID = c_myself_GID; //this.getMotion().getConstituentGID();
-				_signature.constituent_ID = Util.getStringID(c_myself_LID);//this.getMotion().getConstituentLIDstr();
-				_signature.constituent = c_myself;
-				_signature.global_organization_ID = this.getMotion().getOrganizationGID();
-				_signature.organization_ID = this.getMotion().getOrganizationLIDstr();
+				_signature.setMotionLID(Util.getStringID(m_id));
+				_signature.setConstituentGID(c_myself_GID); //this.getMotion().getConstituentGID();
+				_signature.setConstituentLID(Util.getStringID(c_myself_LID));//this.getMotion().getConstituentLIDstr();
+				_signature.setConstituent(c_myself);
+				_signature.setOrganizationGID(this.getMotion().getOrganizationGID());
+				_signature.setOrganizationLID(this.getMotion().getOrganizationLIDstr());
 				if (vEditor.vote_newjust_field.isSelected()) {
-					_signature.global_justification_ID = justification.getGID();
-					_signature.justification_ID = Util.getStringID(j_id);
+					_signature.setJustificationGID(justification.getGID());
+					_signature.setJustificationLID(Util.getStringID(j_id));
 				}
-				_signature.global_vote_ID = _signature.make_ID();
+				_signature.setGID(_signature.make_ID());
 				_signature.sign();
 				long v_id = _signature.storeVerified();
 				if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: final sign = " + _signature);
@@ -1754,16 +1754,16 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 				
 				D_Vote _signature = vEditor.signature;
 				_signature.setMotionGID(this.getMotion().getGID());
-				_signature.motion_ID = Util.getStringID(m_id);
-				_signature.global_constituent_ID = this.getMotion().getConstituentGID();
-				_signature.constituent_ID = this.getMotion().getConstituentLIDstr();
-				_signature.global_organization_ID = this.getMotion().getOrganizationGID();
-				_signature.organization_ID = this.getMotion().getOrganizationLIDstr();
+				_signature.setMotionLID(Util.getStringID(m_id));
+				_signature.setConstituentGID(this.getMotion().getConstituentGID());
+				_signature.setConstituentLID(this.getMotion().getConstituentLIDstr());
+				_signature.setOrganizationGID(this.getMotion().getOrganizationGID());
+				_signature.setOrganizationLID(this.getMotion().getOrganizationLIDstr());
 				if(vEditor.vote_newjust_field.isSelected()) {
-					_signature.global_justification_ID = justification.getGID();
-					_signature.justification_ID = Util.getStringID(j_id);
+					_signature.setJustificationGID(justification.getGID());
+					_signature.setJustificationLID(Util.getStringID(j_id));
 				}
-				_signature.global_vote_ID = _signature.make_ID();
+				_signature.setGID(_signature.make_ID());
 				_signature.sign();
 				long v_id = _signature.storeVerified();
 				signature = _signature;
@@ -1794,7 +1794,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 	 * @param jID
 	 */
 	public void setNewJustificationID(String jID) {
-		if(jID.equals(vEditor.signature.justification_ID)) return;
+		if(jID.equals(vEditor.signature.getJustificationLIDstr())) return;
 		vEditor.setNewJustificationID(jID);
 	}
 	@Override

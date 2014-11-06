@@ -518,9 +518,9 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 					last_row = Integer.parseInt(vote.get(table.signature.S_ID).toString());
 					v.init_all(vote);
 					asn1.vote = v;
-					if(DEBUG)System.out.println("VOTE_ID : "+asn1.vote.vote_ID);
-					ArrayList<Object> org_data = get_org_db_by_local(v.organization_ID);
-					asn1.organization = get_ASN_Organization_by_OrgID(org_data,v.organization_ID);
+					if(DEBUG)System.out.println("VOTE_ID : "+asn1.vote.getLIDstr());
+					ArrayList<Object> org_data = get_org_db_by_local(v.getOrganizationLIDstr());
+					asn1.organization = get_ASN_Organization_by_OrgID(org_data,v.getOrganizationLIDstr());
 					Encoder enc = asn1.getEncoder();	
 					byte msg [] = enc.getBytes();
 					if(DEBUG)System.out.println("MSG : "+msg.length);					

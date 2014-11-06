@@ -405,7 +405,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			String new_text = this.vote_date_field.getText();
 			Calendar cal = Util.getCalendar(new_text);
 			if(cal == null) return;
-			this.signature.creation_date = cal;
+			this.signature.setCreationDate(cal);
 			this.signature.setEditable();
 			try {
 				this.signature.storeVerified();
@@ -415,8 +415,8 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			return;			
 		}
 		if(this.vote_dategen_field==source) {
-			this.signature.creation_date = Util.CalendargetInstance();
-			this.vote_date_field.setText(Encoder.getGeneralizedTime(this.signature.creation_date));
+			this.signature.setCreationDate(Util.CalendargetInstance());
+			this.vote_date_field.setText(Encoder.getGeneralizedTime(this.signature.getCreationDate()));
 			this.signature.setEditable();
 			try {
 				this.signature.storeVerified();
@@ -433,14 +433,14 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			if(motionEditor!=null){
 				if(DEBUG) out.println("VoteEditor:handleFieldEvent: choice newjust_radio, in motioneditor");
 				motionEditor.enableNewJustification(true);
-				signature.justification_ID = motionEditor.getNewJustificationID();
-				signature.global_justification_ID = null;
+				signature.setJustificationLID(motionEditor.getNewJustificationID());
+				signature.setJustificationGID(null);
 			}else{
 				if(DEBUG) out.println("VoteEditor:handleFieldEvent: choice newjust_radio, in justeditor");
 				this.justificationEditor.make_new();
 				this.enable_just();
-				signature.justification_ID = this.justificationEditor.just.getLIDstr(); // namely set to null
-				signature.global_justification_ID = null;
+				signature.setJustificationLID(this.justificationEditor.just.getLIDstr()); // namely set to null
+				signature.setJustificationGID(null);
 			}
 			return;
 		}
@@ -464,8 +464,8 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				this.disable_just();
 			}
 			try {
-				signature.justification_ID = null;
-				signature.global_justification_ID = null;
+				signature.setJustificationLID(null);
+				signature.setJustificationGID(null);
 				//this.signature.creation_date = Util.getCalendar(creationTime);
 				this.signature.setEditable();
 				this.signature.storeVerified();
@@ -498,7 +498,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			try {
 				long j_id = -1;
 				D_Justification justification = null;
-				if (signature.choice == null) {
+				if (signature.getChoice() == null) {
 					Application_GUI.warning(__("No voting choice made.\nPlease return and make a voting choice."), __("No Choice Made"));
 					return;
 				}
@@ -573,18 +573,18 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				//signature.global_motion_ID = null;
 				//signature.motion_ID = justificationEditor.just.motion_ID;
 				if (vote_newjust_field.isSelected()) {
-					signature.global_justification_ID = justification.getGID();
-					signature.justification_ID = justification.getLIDstr();//Util.getStringID(j_id);//justificationEditor.just.justification_ID;
+					signature.setJustificationGID(justification.getGID());
+					signature.setJustificationLID(justification.getLIDstr());//Util.getStringID(j_id);//justificationEditor.just.justification_ID;
 				}
-				signature.global_constituent_ID = c_myself_GID; //this.getMotion().getConstituentGID();
-				signature.constituent_ID = Util.getStringID(c_myself_LID);//this.getMotion().getConstituentLIDstr();
-				signature.constituent = c_myself;
-				signature.global_vote_ID = signature.make_ID();
+				signature.setConstituentGID(c_myself_GID); //this.getMotion().getConstituentGID();
+				signature.setConstituentLID(Util.getStringID(c_myself_LID));//this.getMotion().getConstituentLIDstr();
+				signature.setConstituent(c_myself);
+				signature.setGID(signature.make_ID());
 				
-				D_Vote old = new D_Vote(signature.global_vote_ID);
-				if (old.vote_ID != null) {
-					String old_date = Encoder.getGeneralizedTime(old.creation_date);
-					String new_date = Encoder.getGeneralizedTime(signature.creation_date);
+				D_Vote old = new D_Vote(signature.getGID());
+				if (old.getLIDstr() != null) {
+					String old_date = Encoder.getGeneralizedTime(old.getCreationDate());
+					String new_date = Encoder.getGeneralizedTime(signature.getCreationDate());
 					if (old_date.equals(new_date)) {
 						int attack = Application_GUI.ask(
 								__("Are you sure you want to create a new vote \n" +
@@ -598,8 +598,8 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 						case 0: //YES
 							break;
 						case 1: // NO
-							signature.creation_date = Util.CalendargetInstance();
-							this.vote_date_field.setText(Encoder.getGeneralizedTime(this.signature.creation_date));
+							signature.setCreationDate(Util.CalendargetInstance());
+							this.vote_date_field.setText(Encoder.getGeneralizedTime(this.signature.getCreationDate()));
 							break;
 						case 2: // CANCEL
 						default:
@@ -624,7 +624,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				disable_it();
 				justificationEditor.disable_it();
 				try {
-					D_Motion m = D_Motion.getMotiByLID(signature.motion_ID, true, true);
+					D_Motion m = D_Motion.getMotiByLID(signature.getMotionLIDstr(), true, true);
 					m.setBroadcasted(true);
 					m.storeRequest();
 					m.releaseReference();
@@ -639,7 +639,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			try {
 				long j_id = -1;
 				D_Justification justification = null;
-				if (signature.choice == null) {
+				if (signature.getChoice() == null) {
 					Application_GUI.warning(__("No voting choice made.\nPlease return and make a voting choice."), __("No Choice Made"));
 					return;
 				}
@@ -690,15 +690,15 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				//signature.global_motion_ID = null;
 				//signature.motion_ID = justificationEditor.just.motion_ID;
 				if (vote_newjust_field.isSelected()) {
-					signature.global_justification_ID = justification.getGID();
-					signature.justification_ID = Util.getStringID(j_id);//justificationEditor.just.justification_ID;
+					signature.setJustificationGID(justification.getGID());
+					signature.setJustificationLID(Util.getStringID(j_id));//justificationEditor.just.justification_ID;
 				}
-				signature.global_vote_ID = signature.make_ID();
+				signature.setGID(signature.make_ID());
 				
-				D_Vote old = new D_Vote(signature.global_vote_ID);
-				if (old.vote_ID != null) {
-					String old_date = Encoder.getGeneralizedTime(old.creation_date);
-					String new_date = Encoder.getGeneralizedTime(signature.creation_date);
+				D_Vote old = new D_Vote(signature.getGID());
+				if (old.getLIDstr() != null) {
+					String old_date = Encoder.getGeneralizedTime(old.getCreationDate());
+					String new_date = Encoder.getGeneralizedTime(signature.getCreationDate());
 					if (old_date.equals(new_date)) { // They always have the same value since the date is saved
 						int attack = Application_GUI.ask(
 								__("Are you sure you want to create a new vote \n" +
@@ -711,8 +711,8 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 						case 0: //YES
 							break;
 						case 1: // NO
-							signature.creation_date = Util.CalendargetInstance();
-							this.vote_date_field.setText(Encoder.getGeneralizedTime(this.signature.creation_date));
+							signature.setCreationDate(Util.CalendargetInstance());
+							this.vote_date_field.setText(Encoder.getGeneralizedTime(this.signature.getCreationDate()));
 							break;
 						case 2: // CANCEL
 						default:
@@ -737,7 +737,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				disable_it();
 				justificationEditor.disable_it();
 				try {
-					D_Motion m = D_Motion.getMotiByLID(signature.motion_ID, true, true);
+					D_Motion m = D_Motion.getMotiByLID(signature.getMotionLIDstr(), true, true);
 					m.setBroadcasted(true);
 					m.storeRequest();
 					m.releaseReference();
@@ -783,23 +783,23 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				}
 			}
 
-			signature.justification_ID = id;
-			signature.global_justification_ID = gid;
+			signature.setJustificationLID(id);
+			signature.setJustificationGID(gid);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 		}	
 	}
 	public void setChoice() {
-		if(DEBUG) System.out.println("VoteEditor: setChoice start");
+		if (DEBUG) System.out.println("VoteEditor: setChoice start");
 		D_MotionChoice selected = (D_MotionChoice) this.vote_choice_field.getSelectedItem();
-		String name = null, short_name=null;
+		String name = null, short_name = null;
 		try {
 			if (selected == null) {
 				if(DEBUG) System.out.println("VoteEditor: setChoiceOldJustification no selection null");
 				short_name = null;
 			} else {
 				if (DEBUG) out.println("VoteEditor:handleFieldEvent: selected old just ="+selected.toStringDump());
-				if (selected.short_name == null){
+				if (selected.short_name == null) {
 					if (DEBUG) out.println("VoteEditor:handleFieldEvent: selected choice = null");
 					short_name = null;
 				}
@@ -809,8 +809,8 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				}
 			}
 
-			signature.choice = short_name;
-			if(DEBUG) out.println("VoteEditor:handleFieldEvent: selected choice = "+name);
+			signature.setChoice(short_name);
+			if (DEBUG) out.println("VoteEditor:handleFieldEvent: selected choice = "+name);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 		}		
@@ -874,7 +874,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		for(D_MotionChoice c: this.choices) vote_choice_field.addItem(c);
 		vote_choice_field.addItemListener(this);
 		
-		Object sel = getChoiceSelection(signature.choice, this.choices);
+		Object sel = getChoiceSelection(signature.getChoice(), this.choices);
 		if(sel!=null) {
 			vote_choice_field.removeItemListener(this);
 			vote_choice_field.setSelectedItem(sel);
@@ -882,7 +882,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		}else{
 			vote_choice_field.setSelectedIndex(-1);
 		}
-		long j_ID = Util.lval(signature.justification_ID, -1);
+		long j_ID = Util.lval(signature.getJustificationLIDstr(), -1);
 		if(j_ID <= 0) {
 			this.vote_nojust_field.setSelected(true);
 			this.just_old_just_field.setEnabled(false);
@@ -890,7 +890,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		if(j_ID > 0) {
 			D_Justification _just = getJustification();
 			if(DEBUG)System.out.println("VoteEditor: update_signature: just="+_just);
-			if ((_just!=null)&&(_just.isEditable())&&(signature.constituent_ID.equals(_just.getConstituentLIDstr()))) {
+			if ((_just!=null)&&(_just.isEditable())&&(signature.getConstituentLIDstr().equals(_just.getConstituentLIDstr()))) {
 				this.vote_newjust_field.setSelected(true);
 				this.just_old_just_field.setEnabled(false);
 			}else{
@@ -900,11 +900,11 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		}
 
 		vote_date_field.getDocument().removeDocumentListener(this);
-		vote_date_field.setText(Encoder.getGeneralizedTime(signature.creation_date));
+		vote_date_field.setText(Encoder.getGeneralizedTime(signature.getCreationDate()));
 		vote_date_field.getDocument().addDocumentListener(this);
 
 		if(_choices) {
-			loadJustificationChoices(signature.motion_ID);
+			loadJustificationChoices(signature.getMotionLIDstr());
 		}
 
 		if(just_old_just_field != null) {
@@ -913,8 +913,8 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			JustGIDItem osel=null;
 			for(JustGIDItem i : combo_answerTo){
 				just_old_just_field.addItem(i);
-				if((signature !=null) && (signature.justification_ID != null)) {
-					if((i.id!=null)&&i.id.equals(signature.justification_ID)){ osel = i;}
+				if((signature !=null) && (signature.getJustificationLIDstr() != null)) {
+					if((i.id!=null)&&i.id.equals(signature.getJustificationLIDstr())){ osel = i;}
 				}
 			}
 			if(osel!=null)just_old_just_field.setSelectedItem(osel);
@@ -926,8 +926,8 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 	}
 	public void setNewJustificationID(String jID) {
 		try{
-			signature.justification_ID = jID;
-			signature.global_justification_ID = null;
+			signature.setJustificationLID(jID);
+			signature.setJustificationGID(null);
 			//this.signature.creation_date = Util.getCalendar(creationTime);
 			this.signature.setEditable();
 			this.signature.storeVerified();

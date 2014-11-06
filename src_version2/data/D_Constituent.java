@@ -167,8 +167,11 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			} else {
 				load(c.get(0), EXPAND_NONE);
 			}
+		} catch (D_NoDataException e) {
+			if (DEBUG) e.printStackTrace();
+			throw e;//new RuntimeException(e.getMessage());
 		} catch (Exception e) {
-			e.printStackTrace();
+			if (_DEBUG) e.printStackTrace();
 			throw new RuntimeException(e.getMessage());
 		}
 	}
@@ -269,6 +272,10 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public long getSubmitterLID() {
 		return Util.lval(submitter_ID);
 	}
+	/**
+	 * EXPAND_NONE, EXPAND_ONE, EXPAND_ALL
+	 * @param _neighborhoods
+	 */
 	public void loadNeighborhoods (int _neighborhoods) {
 		if (_neighborhoods == EXPAND_NONE || ((global_neighborhood_ID == null) && (neighborhood_ID == null))) { neighborhood = null; return; }
 		try {
@@ -771,6 +778,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	@Deprecated
 	static public D_Constituent getConstByGID_or_GIDH(String GID, String GIDH, boolean load_Globals, boolean keep) {
 		System.out.println("D_Constituent: getConstByGID_or_GIDH: Remove me setting orgID");
+		
 		return getConstByGID_or_GIDH(GID, GIDH, load_Globals, false, keep, null, -1);
 	}
 	static public D_Constituent getConstByGID_or_GIDH(String GID, String GIDH, boolean load_Globals, boolean keep, Long oID) {
@@ -871,7 +879,9 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	 * This returns asynchronously (without waiting for the storing to happen).
 	 */
 	public void storeRequest() {
-		//Util.printCallPath("Why store?");
+		// if (this.constituent_ID == null) Util.printCallPath("Why store null LID: "+this);
+		// else Util.printCallPath("Why store nonull LID: "+this);
+		
 		if (! this.dirty_any()) {
 			Util.printCallPath("Why store when not dirty?");
 			return;
@@ -932,8 +942,28 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		return -1;
 	}
-	static Object monitor = new Object();
+	/**
+	 * The next monitor is used for the storeAct, to avoid concurrent modifications of the same object.
+	 * Potentially the monitor can be a field in the same object (since saving of different objects
+	 * is not considered dangerous, even when they are of the same type)
+	 * 
+	 * What we do is the equivalent of a synchronized method "storeAct" that we avoid to avoid accidental synchronization
+	 * with other methods.
+	 */
+	final Object monitor = new Object();
+	//static final Object monitor = new Object();
+	
 	public long storeAct() throws P2PDDSQLException {
+		synchronized(monitor) {
+			return _storeAct();
+		}
+	}
+	/**
+	 * This is not synchronized
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	private long _storeAct() throws P2PDDSQLException {
 		boolean sync = true; 
 		D_Organization org = D_Organization.getOrgByLID(this.organization_ID, true, false);
 		if (org == null) {
@@ -961,6 +991,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		return _constituent_ID;
 	}
 	private long storeAct_main(boolean sync) throws P2PDDSQLException {
+		// Util.printCallPath("sync="+sync+" this="+this);
 		if (this.arrival_date == null && (this.signature != null && this.signature.length > 0)) {
 			this.arrival_date = Util.CalendargetInstance();
 			if (_DEBUG) System.out.println("D_Constituent: missing arrival_date");
@@ -1015,6 +1046,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		if (DEBUG) System.out.println("D_Constituent: store_main: exit: "+_constituent_ID);
 		return _constituent_ID;
 	}
 	private void storeAct_my(boolean sync) {
@@ -1950,7 +1982,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			return -1;
 		}
 		return consts.getLID_force();//.getLID(); 
-	}
+	}/** inserts temporary using also the organization LID */
 	public static D_Constituent insertTemporaryGID_org(
 			String p_cGID, String p_cGIDH, long p_oLID,
 			D_Peer __peer, boolean default_blocked) {
@@ -2119,7 +2151,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			RequestData sol_rq, RequestData new_rq, boolean default_blocked, Calendar arrival_date) {
 		long oID = D_Organization.getLIDbyGID (c.global_organization_ID);
 		if (oID <= 0) {
-			D_Organization o = D_Organization.insertTemporaryGID_org(c.getGID(), c.getGIDH(), __peer, default_blocked, null);
+			D_Organization o = D_Organization.insertTemporaryGID_org(c.getOrgGID(), c.getOrgGIDH_if_available(), __peer, default_blocked, null);
 			//c.setOrganization(o.getGID(), o.getLID());
 			oID = o.getLID_forced();
 		}
@@ -2137,45 +2169,55 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		return lc;
 	}
+	/**
+	 * Currently returns null
+	 * @return
+	 */
+	public String getOrgGIDH_if_available() {
+		return null;
+	}
 	public boolean loadRemote(RequestData sol_rq, RequestData new_rq, D_Constituent r, D_Peer __peer, boolean default_blocked) {
 		return loadRemote(sol_rq, new_rq, r, __peer, default_blocked, Util.CalendargetInstance());
 	}
-	public boolean loadRemote(RequestData sol_rq, RequestData new_rq, D_Constituent r, D_Peer __peer, boolean default_blocked, Calendar arrival_date) {
+	public boolean loadRemote(RequestData sol_rq, RequestData new_rq, D_Constituent remote, D_Peer __peer, boolean default_blocked, Calendar arrival_date) {
+		boolean _t = true, _n = true; // n left false in temporary
+		if (! (_t = this.isTemporary()) && ! (_n = newer(remote, this))) return false;
 		
-		if (!this.isTemporary() && !newer(r, this)) return false;
+		if (DEBUG)
+			System.out.println("D_Constituents: loadRemote: tmp t="+_t+" n="+_n+" old="+this.getCreationDateStr()+" remote="+remote.getCreationDateStr());
 		
-		this.version = r.version;
-		this.creation_date = r.creation_date;
-		this._creation_date = r._creation_date;
+		this.version = remote.version;
+		this.creation_date = remote.creation_date;
+		this._creation_date = remote._creation_date;
 		
-		if (! Util.equalStrings_null_or_not(global_organization_ID, r.global_organization_ID)) {
-			long oID = D_Organization.getLIDbyGID(r.global_organization_ID);
+		if (! Util.equalStrings_null_or_not(global_organization_ID, remote.global_organization_ID)) {
+			long oID = D_Organization.getLIDbyGID(remote.global_organization_ID);
 			if (this.global_organization_ID != null && oID <= 0) {
-				D_Organization o = D_Organization.insertTemporaryGID_org(r.global_organization_ID, null, __peer, default_blocked, null);
+				D_Organization o = D_Organization.insertTemporaryGID_org(remote.global_organization_ID, null, __peer, default_blocked, null);
 				this.setOrganization(o.getGID(), o.getLID_forced());
 				if (new_rq != null && o.isTemporary()) new_rq.orgs.add(o.getGIDH_or_guess());
 			} else
-				this.setOrganization(r.global_organization_ID, oID);
+				this.setOrganization(remote.global_organization_ID, oID);
 		}
-		if (! Util.equalStrings_null_or_not(getGID(), r.getGID())) {
-			if (r.getGID() != null) this.setGID(r.getGID(), r.global_constituent_id_hash, this.getOrganizationID());
+		if (! Util.equalStrings_null_or_not(getGID(), remote.getGID())) {
+			if (remote.getGID() != null) this.setGID(remote.getGID(), remote.global_constituent_id_hash, this.getOrganizationID());
 			//if (r.global_constituent_id_hash != null) this.global_constituent_id_hash = r.global_constituent_id_hash;
 			this.constituent_ID = null;
 			this._constituent_ID = -1;
 		}
 		
-		if (! Util.equalStrings_null_or_not(global_submitter_id, r.global_submitter_id)) {
-			this.global_submitter_id = r.global_submitter_id;
-			long sID = D_Constituent.getLIDFromGID(r.global_submitter_id, this._organization_ID);
+		if (! Util.equalStrings_null_or_not(global_submitter_id, remote.global_submitter_id)) {
+			this.global_submitter_id = remote.global_submitter_id;
+			long sID = D_Constituent.getLIDFromGID(remote.global_submitter_id, this._organization_ID);
 			if (this.global_submitter_id != null && sID <= 0) {
-				D_Constituent c = D_Constituent.insertTemporaryGID_org(r.global_submitter_id, null, this.getOrganizationID(), __peer, default_blocked);
+				D_Constituent c = D_Constituent.insertTemporaryGID_org(remote.global_submitter_id, null, this.getOrganizationID(), __peer, default_blocked);
 				this.submitter = c; //r.submitter;
 				this.submitter_ID = c.getLIDstr_force(); //r.submitter_ID;
 				if (new_rq != null && c.isTemporary()) new_rq.cons.put(c.getGIDH(), DD.EMPTYDATE);
 			}
 		}
-		if (! Util.equalStrings_null_or_not(this.global_neighborhood_ID, r.global_neighborhood_ID)) {
-			this.global_neighborhood_ID = r.global_neighborhood_ID;
+		if (! Util.equalStrings_null_or_not(this.global_neighborhood_ID, remote.global_neighborhood_ID)) {
+			this.global_neighborhood_ID = remote.global_neighborhood_ID;
 			//this.neighborhood = null;// r.neighborhood;
 			//this.neighborhood_ID = r.neighborhood_ID;
 			D_Neighborhood n;
@@ -2188,24 +2230,24 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			}
 			//this.setNeighborhoodIDs(global_neighborhood_ID, -1);
 		}
-		this.surname = r.surname;
-		this.forename = r.forename;
-		this.email = r.email;
-		this.weight = r.weight;
-		this.revoked |= r.revoked;
-		this.slogan = r.slogan;
-		this.external = r.external;
-		this.languages = r.languages;
-		this.picture = r.picture;
-		this.hash_alg = r.hash_alg;
-		this.signature = r.signature;
-		this.certificate = r.certificate;
+		this.surname = remote.surname;
+		this.forename = remote.forename;
+		this.email = remote.email;
+		this.weight = remote.weight;
+		this.revoked |= remote.revoked;
+		this.slogan = remote.slogan;
+		this.external = remote.external;
+		this.languages = remote.languages;
+		this.picture = remote.picture;
+		this.hash_alg = remote.hash_alg;
+		this.signature = remote.signature;
+		this.certificate = remote.certificate;
 		//if (r.valid_support != null) this.valid_support = r.valid_support;
 		//this.valid_support = null;
 		
 		this.dirty_main = true;
-		if (data.D_FieldValue.different(this.address, r.address)) {
-			this.address = r.address;
+		if (data.D_FieldValue.different(this.address, remote.address)) {
+			this.address = remote.address;
 			this.dirty_params = true;
 		}
 		if ((sol_rq != null) && (sol_rq.cons != null)) sol_rq.cons.put(getGID(), DD.EMPTYDATE);
@@ -2220,13 +2262,13 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		return Util.getStringID(this.getLID_force());
 	}
 	/**
-	 * If one newer than two?
+	 * Is one newer than two?
 	 * @param one
 	 * @param two
-	 * @return
+	 * @return returns false if two is revoked, or one creation is newer
 	 */
 	public static boolean newer(D_Constituent one, D_Constituent two) {
-		assert(one != null && two != null);
+		assert (one != null && two != null);
 		if (two.revoked) return false;
 		return newer(one.getCreationDate(), two.getCreationDate());
 	}
@@ -2287,7 +2329,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 				) result = false;
 		
 		if ((c != null) && c.isBlocked()) result = true;
-		if (_DEBUG || DBG) System.out.println("D_Constituent: available: "+hash+" in "+orgID+" = "+result);
+		if (DEBUG || DBG) System.out.println("D_Constituent: available: "+hash+" in "+orgID+" = "+result);
 		return result;
 	}
 	private boolean isBlocked() {
@@ -2705,8 +2747,9 @@ class D_Constituent_SaverThread extends util.DDP2P_ServiceThread {
 	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	/**
-	 * The next monitor is needed to ensure that two D_Constituent_SaverThreadWorker are not concurrently modifying the database,
+	 * The next monitor is needed to ensure that two D_Constituent_SaverThreadWorker are not concurrently modifying the cache and database,
 	 * and no thread is started when it is not needed (since one is already running).
+	 * The database is also protected by a monitor in the object (around the storeAct).
 	 */
 	public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
@@ -2764,7 +2807,7 @@ class D_Constituent_SaverThreadWorker extends util.DDP2P_ServiceThread {
 	private static final long SAVER_SLEEP = 5000;
 	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
-	public static final Object saver_thread_monitor = new Object();
+	//public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
 	D_Constituent_SaverThreadWorker() {
 		super("D_Constituent Saver Worker", false);

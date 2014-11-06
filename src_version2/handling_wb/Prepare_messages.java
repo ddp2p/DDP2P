@@ -476,10 +476,10 @@ public class Prepare_messages {
 					last_row = Integer.parseInt(vote.get(table.signature.S_ID).toString());
 					v.init_all(vote);
 					asn1.vote = v;
-					if(DEBUG)System.out.println("VOTE_ID : "+asn1.vote.vote_ID);
+					if(DEBUG)System.out.println("VOTE_ID : "+asn1.vote.getLIDstr());
 					if(DEBUG)System.out.println("VOTE DATA : "+asn1.vote);
-					ArrayList<Object> org_data = get_org_db_by_local(v.organization_ID);
-					asn1.organization = get_ASN_Organization_by_OrgID(org_data,v.organization_ID);
+					ArrayList<Object> org_data = get_org_db_by_local(v.getOrganizationLIDstr());
+					asn1.organization = get_ASN_Organization_by_OrgID(org_data,v.getOrganizationLIDstr());
 					Encoder enc = asn1.getEncoder();	
 					byte msg [] = enc.getBytes();
 					if(DEBUG)System.out.println("MSG : "+msg.length);					
@@ -488,9 +488,9 @@ public class Prepare_messages {
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
 					if(asn1.organization!=null)pm.org_ID_hash = asn1.organization.global_organization_IDhash;
-					if(v.motion!=null)pm.motion_ID = v.motion.getGID();
-					if(v.constituent!=null)pm.constituent_ID_hash.add(v.constituent.global_constituent_id_hash);
-					if(v.justification!=null)pm.justification_ID=v.justification.getGID();
+					if(v.getMotion()!=null)pm.motion_ID = v.getMotion().getGID();
+					if(v.getConstituent()!=null)pm.constituent_ID_hash.add(v.getConstituent().global_constituent_id_hash);
+					if(v.getJustification()!=null)pm.justification_ID=v.getJustification().getGID();
 					//pm.neighborhood_ID = ;
 					
 					vote_msgs.add(pm);

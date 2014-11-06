@@ -266,7 +266,7 @@ public class ASNSyncPayload extends ASNObj{
 		if(o.signatures!=null)
 			for(D_Vote v : o.signatures) {
 				expandVoteDictionariesAtDecoding(v);
-				v.global_organization_ID = o.global_organization_ID;
+				v.setOrganizationGID(o.global_organization_ID);
 			}
 		if(o.justifications!=null)
 			for(D_Justification j : o.justifications) {
@@ -484,19 +484,19 @@ public class ASNSyncPayload extends ASNObj{
 	 */
 
 	public static void prepareVoteDictionary(D_Vote v, ArrayList<String> dictionary_GIDs) {
-		if(v.global_organization_ID!=null) // v.global_organization_ID = 
-				addToDictionaryGetIdxS(dictionary_GIDs, v.global_organization_ID);
-		if(v.global_constituent_ID!=null) //v.global_constituent_ID = 
-				addToDictionaryGetIdxS(dictionary_GIDs, v.global_constituent_ID);
+		if(v.getOrganizationGID()!=null) // v.global_organization_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, v.getOrganizationGID());
+		if(v.getConstituentGID()!=null) //v.global_constituent_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, v.getConstituentGID());
 		if(v.getMotionGID() != null) //v.global_motion_ID = 
 				addToDictionaryGetIdxS(dictionary_GIDs, v.getMotionGID());
-		if(v.global_justification_ID!=null) //v.global_justification_ID = 
-				addToDictionaryGetIdxS(dictionary_GIDs, v.global_justification_ID);
+		if(v.getJustificationGID()!=null) //v.global_justification_ID = 
+				addToDictionaryGetIdxS(dictionary_GIDs, v.getJustificationGID());
 		//v.global_vote_ID = null;
 		//if(v.global_vote_ID!=null) v.global_vote_ID = addToDictionaryGetIdxS(dictionary_GIDs, v.global_vote_ID);
-		if(v.constituent!=null) ASNSyncPayload.prepareConstDictionary(v.constituent, dictionary_GIDs);
-		if(v.motion!=null) ASNSyncPayload.prepareMotiDictionary(v.motion, dictionary_GIDs);
-		if(v.justification!=null) ASNSyncPayload.prepareJustDictionary(v.justification, dictionary_GIDs);
+		if(v.getConstituent()!=null) ASNSyncPayload.prepareConstDictionary(v.getConstituent(), dictionary_GIDs);
+		if(v.getMotion()!=null) ASNSyncPayload.prepareMotiDictionary(v.getMotion(), dictionary_GIDs);
+		if(v.getJustification()!=null) ASNSyncPayload.prepareJustDictionary(v.getJustification(), dictionary_GIDs);
 	}
 	private void prepareVoteDictionary(D_Vote v) {
 		prepareVoteDictionary(v, dictionary_GIDs);
@@ -505,15 +505,15 @@ public class ASNSyncPayload extends ASNObj{
 		expandVoteDictionariesAtDecoding(v, dictionary_GIDs);
 	}
 	public static void expandVoteDictionariesAtDecoding(D_Vote v, ArrayList<String> dictionary_GIDs) {
-		if(v.global_organization_ID!=null) v.global_organization_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_organization_ID));
-		if(v.global_constituent_ID!=null) v.global_constituent_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_constituent_ID));
+		if(v.getOrganizationGID()!=null) v.setOrganizationGID(getDictionaryValueOrKeep(dictionary_GIDs,(v.getOrganizationGID())));
+		if(v.getConstituentGID()!=null) v.setConstituentGID(getDictionaryValueOrKeep(dictionary_GIDs,(v.getConstituentGID())));
 		if(v.getMotionGID()!=null) v.setMotionGID(getDictionaryValueOrKeep(dictionary_GIDs,(v.getMotionGID())));
-		if(v.global_justification_ID!=null) v.global_justification_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_justification_ID));
+		if(v.getJustificationGID()!=null) v.setJustificationGID(getDictionaryValueOrKeep(dictionary_GIDs,(v.getJustificationGID())));
 		//v.global_vote_ID = v.make_ID();
 		//if(v.global_vote_ID!=null) v.global_vote_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_vote_ID));
-		if(v.constituent!=null) ASNSyncPayload.expandConstDictionariesAtDecoding(v.constituent, dictionary_GIDs);
-		if(v.motion!=null) ASNSyncPayload.expandMotiDictionariesAtDecoding(v.motion, dictionary_GIDs);
-		if(v.justification!=null) ASNSyncPayload.expandJustDictionariesAtDecoding(v.justification, dictionary_GIDs);
+		if(v.getConstituent()!=null) ASNSyncPayload.expandConstDictionariesAtDecoding(v.getConstituent(), dictionary_GIDs);
+		if(v.getMotion()!=null) ASNSyncPayload.expandMotiDictionariesAtDecoding(v.getMotion(), dictionary_GIDs);
+		if(v.getJustification()!=null) ASNSyncPayload.expandJustDictionariesAtDecoding(v.getJustification(), dictionary_GIDs);
 	}
 	/**
 	 * TODO, just as with the Translations with Votes

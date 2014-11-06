@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 
 import util.Util;
 
+@Deprecated
 public class updatesKeys {
 
 	public static final String TNAME = "updates_keys";

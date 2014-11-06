@@ -2540,7 +2540,7 @@ public class Util {
 				if(concats) crtScriptProcess =  Runtime.getRuntime().exec(cmd_names[0]);
 				else crtScriptProcess = Runtime.getRuntime().exec(cmd_names, env, dir);
 				BufferedReader bri1 = new BufferedReader (new InputStreamReader(crtScriptProcess.getInputStream()));
-				for(;;){
+				for(;;) {
 					String line = bri1.readLine();
 					if(line == null) break;
 					if(result == null) result = line;
@@ -2555,16 +2555,19 @@ public class Util {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				if(0!=exit){
+				if (0 != exit) {
 					if(DD.SCRIPTS_ERRORS_WARNING)
 						Application_GUI.warning(__("Process:"+"\n"+cmd+"\n"+__("exits with:")+exit), __("Process exit error"));
-					if(_DEBUG)System.out.println("Util:getProcessOutput: exit with: "+exit+" output=\n"+result+"\n*******");
+					if(_DEBUG)System.out.println("Util:getProcessOutput: cmd="+ cmd + " in dir="+dir +" exit with: "+exit+" output=\n"+result+"\n*******");
 				}
 				if(DEBUG)System.out.println("Util:getProcessOutput: output=\n"+result+"\n*******");
 				//if(crtProcessLabel!=null) EventQueue.invokeLater(new RunnableCmd("Done: \""+cmd+"\""));
 				if (ctx != null) Application_GUI.updateProgress(ctx, "Done: \""+cmd+"\"");
 			}
-			if(result == null) return null;
+			if(result == null) {
+				if(DEBUG)System.out.println("Util:getProcessOutput: output null result\n*******");
+				return null;
+			}
 			BufferedReader r = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(result.getBytes())));
 			return r;
 		}

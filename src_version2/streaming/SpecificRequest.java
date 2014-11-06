@@ -151,7 +151,7 @@ public class SpecificRequest extends ASNObj implements Summary{
 			String oGIDhash = Util.getString(o.get(0));
 			D_Organization or = D_Organization.getOrgByGID_or_GIDhash_NoCreate(null, oGIDhash, true, false);
 			if (or == null) continue;
-			OrgPeerDataHashes no = or.specific_request;//new OrgPeerDataHashes(rd, oGIDhash);
+			OrgPeerDataHashes no = or.getSpecificRequest();//new OrgPeerDataHashes(rd, oGIDhash);
 			if (DEBUG) System.out.println("SpecificRequest: getPeerRequest: add "+no);
 			RequestData n = no.getRequestData(_peer_ID);
 			

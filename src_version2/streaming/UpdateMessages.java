@@ -393,7 +393,7 @@ public class UpdateMessages {
 							org_gid+" GIDH="+ org_gidh + " from peer="+ _received_peer);
 					continue;
 				}
-				if (_DEBUG) err.println("UpdateMessages:integrateUpdate: org_gidh: "+org_gidh);
+				if (DEBUG) err.println("UpdateMessages:integrateUpdate: org_gidh: "+org_gidh);
 				D_Organization org = 
 						D_Organization.getOrgByGID_or_GIDhash_NoCreate(null, org_gidh, true, false);
 						//D_Organization.getOrgByGID(asa.orgData[i].global_organization_ID, true, false);
@@ -402,7 +402,7 @@ public class UpdateMessages {
 				//if(organization_ID>0) asa.orgData[i].organization_ID = Util.getStringID(organization_ID);
 				OrgPeerDataHashes opdh = null;
 				if (org != null) //asa.orgData[i]._organization_ID > 0)
-					opdh = org.specific_request; // OrgPeerDataHashes.get(asa.orgData[i]._organization_ID);
+					opdh = org.getSpecificRequest(); // OrgPeerDataHashes.get(asa.orgData[i]._organization_ID);
 				else if (DEBUG) System.out.println("UpdateMessages: integrateUpdates: org["+i+"] new");
 				/**
 				 * From the following set of hashes we remove what we received now fully
@@ -453,7 +453,7 @@ public class UpdateMessages {
 				if (! asa.orgData[i].blocked) {
 					if (DEBUG) out.println("UpdateMessages:integrateUpdate: org not blocked");
 					if (org != null) {
-						opdh = org.specific_request;
+						opdh = org.getSpecificRequest();
 						if (opdh != null) {
 							opdh.updateAfterChanges(old_rq, _sol_rq, _new_rq, peer_ID, crt_date);
 							if (!opdh.empty()) future_requests = true;
@@ -476,7 +476,7 @@ public class UpdateMessages {
 		SpecificRequest sp = new SpecificRequest();
 		evaluate_interest(asa.advertised, sp); // check existing/non-blocked data and insert wished one into sp, store sp in orgs
 		if (store_detected_interests(sp, peer_ID, crt_date, _received_peer)) {
-			if (_DEBUG) out.println("UpdateMessages:integrateUpdate: have new future requests");
+			if (DEBUG) out.println("UpdateMessages:integrateUpdate: have new future requests");
 			future_requests = true;
 		}
 		//purge(orgs, obtained);
@@ -592,12 +592,13 @@ public class UpdateMessages {
 			
 			OrgPeerDataHashes old = OrgPeerDataHashes.get(orgID);
 			if (old != null) {
+				if (DEBUG) out.println("UpdateMessages: store_detected_interests: stored old ["+orgID+"]->"+old);
 				old.add(rq, _peer_ID, generalizedTime);
 				if ( ! rq.empty()) result |= true;
 				old.save(orgID, _peer_ID, peer);
-				if (_DEBUG) out.println("UpdateMessages: store_detected_interests: stored from ="+orgID+"->"+old);
+				if (DEBUG) out.println("UpdateMessages: store_detected_interests: stored got ["+orgID+"]->"+old);
 			} else {
-				if (DEBUG) out.println("UpdateMessages:store_detected_interests: no interests for orgid ="+orgID);
+				if (_DEBUG) out.println("UpdateMessages:store_detected_interests: not storing interests for orgid ="+orgID);
 			}
 			/*
 			RequestData old = new RequestData(orgID);

@@ -57,26 +57,6 @@ CREATE TABLE directory_forwarding_terms (
     	FOREIGN KEY(peer_instance_ID) REFERENCES peer_instance(peer_instance_ID),
     	FOREIGN KEY(topic) REFERENCES directory_tokens(directory_tokens_ID)
 );
-CREATE TABLE mirror (
-	"mirror_ID" INTEGER PRIMARY KEY,
-	"public_key" TEXT,
-	"original_mirror_name"	TEXT,
-	"my_name_for_mirror" TEXT,
-	"url"	TEXT,
-	"used" INTEGER,
-	"last_contact_date" TEXT,
-	"activity" TEXT,
-      	"location" TEXT,  
-	"protocol" TEXT,
-	"last_version" TEXT,
-	"last_version_branch" TEXT,
-	"last_version_testers_info" TEXT,
-	"last_version_releaseQD" TEXT,
-	"last_version_info" TEXT,
-	"data_version" TEXT,
-	"creation_date" TEXT,
-	"preference_date" TEXT 
-);
 CREATE TABLE updates ( 
 	"updates_ID" INTEGER PRIMARY KEY,
 	"original_mirror_name"	TEXT,
@@ -101,27 +81,54 @@ CREATE TABLE updates_keys (
 	"reference_tester" INTEGER,
 	"expected_test_thresholds" TEXT
 );
+
+CREATE TABLE mirror (
+	"mirror_ID" INTEGER PRIMARY KEY, 
+	"public_key" TEXT,  	    	 
+	"original_mirror_name"	TEXT,	 
+	"my_name_for_mirror" TEXT,	 
+	"url"	TEXT,	     		 
+	"revoked" INTEGER, 		
+     	"revoked_info" TEXT,		
+     	"revoked_GID_hash" TEXT,	
+	"used" INTEGER,			 
+	"last_contact_date" TEXT,	 
+	"activity" TEXT,    		 
+      	"location" TEXT,  		 
+	"protocol" TEXT,		 
+	"last_version" TEXT,		 
+	"last_version_branch" TEXT,	 
+	"last_version_testers_info" TEXT,
+	"last_version_releaseQD" TEXT,	 
+	"last_version_info" TEXT,	 
+	"data_version" TEXT,		 
+	"signature"    TEXT,		 
+	"creation_date" TEXT,		 
+	"preference_date" TEXT 		 
+);
+
 CREATE TABLE tester (
-	"tester_ID" INTEGER PRIMARY KEY,
-	"original_tester_name"	TEXT,
-	"my_name_for_tester" TEXT,
-	"public_key" TEXT, 
- 	"public_key_hash" TEXT, 
-	"email"	TEXT,
-	"url"	TEXT,
-	"revoked" INTEGER, 
-     	"revoked_info" TEXT,
-     	"revoked_GID_hash" TEXT,
-	"description" TEXT,
-	"trusted_as_mirror" INTEGER,
-	"trusted_as_tester" INTEGER,
-	"trust_weight" TEXT,
-	"reference_tester" INTEGER,
-	"expected_test_thresholds" TEXT,
+	"tester_ID" INTEGER PRIMARY KEY,	
+	"original_tester_name"	TEXT,		
+	"my_name_for_tester" TEXT,		
+	"public_key" TEXT,   			
+ 	"public_key_hash" TEXT, 		
+	"email"	TEXT,	  			
+	"url"	TEXT,				
+	"revoked" INTEGER, 			
+     	"revoked_info" TEXT,			
+     	"revoked_GID_hash" TEXT,		
+	"description" TEXT,			
+	"trusted_as_mirror" INTEGER,		
+	"trusted_as_tester" INTEGER,		
+	"trust_weight" TEXT,			
+	"reference_tester" INTEGER,		
+	"expected_test_thresholds" TEXT,	
 	
-	"data_version" TEXT,
-	"creation_date" TEXT,
-	"preference_date" TEXT,
+	"data_version" TEXT,			
+	"signature" TEXT,			
+	"creation_date" TEXT,			
+	"preference_date" TEXT,			
 
 	"name"	TEXT
 );

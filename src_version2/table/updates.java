@@ -24,8 +24,8 @@ import java.util.regex.Pattern;
 
 import util.Util;
 
+@Deprecated
 public class updates {
-
 	public static final String TNAME = "updates";
 	public static final String updates_ID = "updates_ID";
 	public static final String original_mirror_name = "original_mirror_name";

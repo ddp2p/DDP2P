@@ -29,6 +29,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -36,8 +37,10 @@ import java.util.Comparator;
 import javax.swing.Action;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -50,12 +53,17 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableRowSorter;
 
+import ciphersuits.KeyManagement;
+import ciphersuits.PK;
+import ciphersuits.SK;
 import util.P2PDDSQLException;
 import streaming.RequestData;
 import util.DBInterface;
+import util.DD_SK;
 import util.Util;
 import widgets.app.DDIcons;
 import widgets.app.MainFrame;
+import widgets.app.Util_GUI;
 import widgets.components.BulletRenderer;
 import widgets.components.DebateDecideAction;
 //import widgets.org.ColorRenderer;
@@ -69,9 +77,14 @@ import config.DD;
 import config.MotionsListener;
 //import config.DDIcons;
 import config.Identity;
+import data.D_Constituent;
 import data.D_Document_Title;
 import data.D_Justification;
 import data.D_Motion;
+import data.D_Neighborhood;
+import data.D_Organization;
+import data.D_Peer;
+import data.D_Vote;
 @SuppressWarnings("serial")
 public class Motions extends JTable implements MouseListener, MotionsListener  {
 	private static final int DIM_X = 1000;
@@ -433,6 +446,11 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);    	
 
+    	aAction = new MotionCustomAction(this, __("Export!"), addicon,__("Export."), __("Export"), KeyEvent.VK_X, MotionCustomAction.M_EXPORT);
+    	aAction.putValue("row", new Integer(model_row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);    	
+
     	if(MotionsModel.hide)
     		aAction = new MotionCustomAction(this, __("Show Hidden!"), addicon,__("Show Hidden."), __("Show Hidden"),KeyEvent.VK_H, MotionCustomAction.M_TOGGLE_HIDE);
     	else
@@ -581,8 +599,13 @@ class MotionCustomAction extends DebateDecideAction {
 	public static final int M_WLAN_REQUEST = 8;
 	public static final int M_TOGGLE_HIDE = 9;
 	public static final int M_REDRAW = 10;
+	public static final int M_EXPORT = 11;
+	
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
+    
+	public static final JFileChooser filterUpdates = new JFileChooser();
+    
 	Motions tree; ImageIcon icon; int cmd;
     public MotionCustomAction(Motions tree,
 			     String text, ImageIcon icon,
@@ -595,7 +618,7 @@ class MotionCustomAction extends DebateDecideAction {
     	if (DEBUG) System.out.println("MotionCAction: start");
     	Object src = e.getSource();
     	JMenuItem mnu;
-    	int row =-1;
+    	int row = -1;
     	String org_id=null;
     	if(src instanceof JMenuItem){
     		mnu = (JMenuItem)src;
@@ -632,7 +655,7 @@ class MotionCustomAction extends DebateDecideAction {
 			} catch (Exception e1) {
 				e1.printStackTrace();
 			}
-			if(!rq.moti.contains(_m_GID)) {
+			if (! rq.moti.contains(_m_GID)) {
 				rq.moti.add(_m_GID);
 				if(BroadcastClient.msgs == null){
 					System.out.println("Motions:MotionCustomAction:WLANRequest: empty messages queue!");
@@ -738,5 +761,88 @@ class MotionCustomAction extends DebateDecideAction {
         	if (DEBUG) System.out.println("MotionCAction: fire="+nID);
         	tree.fireListener(n_motion, ""+nID, 0);
      	}
+       	if (cmd == M_EXPORT) {
+        	if (DEBUG) System.out.println("MotionsCAction: start Export");
+			//String lid = model.getMotionIDstr(row); //.getGID(row);
+			D_Motion motion = model.getMotion(row); // D_Motion.getMotiByLID(lid, true, false);
+			
+			if (motion.isTemporary()) {
+				Application_GUI.warning(__("Cannot Export Temporary Motions!"), __("Temporary Motion"));
+				return;
+			}
+			
+			long declared_motion_author_lid = motion.getConstituentLID();
+			D_Constituent declared_motion_author = null;
+			if (declared_motion_author_lid > 0) declared_motion_author = D_Constituent.getConstByLID(declared_motion_author_lid, true, false);
+			long myself_constituent_lid = model.getConstituentIDMyself();
+			D_Constituent myself_constituent = null;
+			if (myself_constituent_lid > 0) myself_constituent = D_Constituent.getConstByLID(myself_constituent_lid, true, false);
+			
+			D_Vote vote = D_Vote.getOneBroadcastedSupportForMotion(motion, myself_constituent, motion.getSupportChoice());
+			if (vote == null) {
+				Application_GUI.warning(__("Cannot Export Unsupported Motions!"), __("Unsupported Motion"));
+				return;
+			}
+			D_Motion enhanced = motion.getEnhancedMotion();
+			D_Constituent cons = vote.getConstituent();
+			D_Justification just = vote.getJustification();
+			D_Organization org = motion.getOrganization();//D_Organization.getOrgByLID(m.getOrganizationLIDstr(), true, false);
+			
+			filterUpdates.setFileFilter(new widgets.components.StegoFilterKey());
+			filterUpdates.setName(__("Select Secret Trusted Key"));
+			//filterUpdates.setSelectedFile(null);
+			Util_GUI.cleanFileSelector(filterUpdates);
+			int returnVal = filterUpdates.showDialog(tree,__("Specify Motion File"));
+			if (returnVal != JFileChooser.APPROVE_OPTION)  return;
+			File fileTrustedSK = filterUpdates.getSelectedFile();
+			//SK sk;
+			//PK pk;
+			if (fileTrustedSK.exists()) {
+				int _c = Application_GUI.ask(__("Existing file. Overwrite: "+fileTrustedSK+"?"), __("Overwrite file?"), JOptionPane.OK_CANCEL_OPTION);
+				if (_c != 0) return;
+			}
+			try {
+				boolean result = false;
+				//result = KeyManagement.saveSecretKey(gid, fileTrustedSK.getCanonicalPath());
+				DD_SK dsk =  new DD_SK(); 
+				dsk.org.add(org);
+				dsk.moti.add(motion);
+				if (enhanced != null) dsk.moti.add(enhanced);
+				if (cons != null) {
+					cons.loadNeighborhoods(D_Constituent.EXPAND_ALL);
+					dsk.constit.add(cons);
+					if (cons.neighborhood != null) {
+						for (int k = 0; k < cons.neighborhood.length; k++) {
+							dsk.neigh.add(cons.neighborhood[k]);
+						}
+					}
+				}
+				if (declared_motion_author != null) {
+					declared_motion_author.loadNeighborhoods(D_Constituent.EXPAND_ALL);
+					dsk.constit.add(declared_motion_author);
+					if (declared_motion_author.neighborhood != null) {
+						for (int k = 0; k < declared_motion_author.neighborhood.length; k++) {
+							dsk.neigh.add(declared_motion_author.neighborhood[k]);
+						}
+					}
+				}
+				if (just != null) dsk.just.add(just);
+				if (vote != null) dsk.vote.add(vote);
+				D_Peer org_creat = org.getCreator();
+				if (org_creat != null) dsk.peer.add(org_creat);
+				
+				dsk.sign_and_set_sender(data.HandlingMyself_Peer.get_myself_or_null()); //D_Peer.getPeerByGID_or_GIDhash_NoCreate(gid, null, true, false);
+				if (_DEBUG) System.out.println("MotionsCAction: PeersRowAction: actionPerformed: export: will encode: "+dsk);
+					
+				String []explain = new String[1];
+				result = DD.embedPeerInBMP(fileTrustedSK, explain, dsk);
+						
+				if (result) return;
+			} catch (Exception e3) {
+				Application_GUI.warning(__("Failed to save motion: "+e3.getMessage()), __("Failed to save motion"));
+				e3.printStackTrace();
+				return;
+			}
+       	}
     }
 }

@@ -62,7 +62,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	public Hashtable<String,Hashtable<Long,String>> sign=new Hashtable<String,Hashtable<Long,String>>();
 	public Hashtable<String,Hashtable<Long,String>> news=new Hashtable<String,Hashtable<Long,String>>();
 	public Hashtable<String,Hashtable<Long,String>> tran=new Hashtable<String,Hashtable<Long,String>>();
-	String global_organization_ID_hash;
+	private String global_organization_ID_hash; // not saved
 	
 	private String getStringRepresentationOfHashes(
 			Hashtable<String, Hashtable<Long, String>> data_peers) {
@@ -81,7 +81,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	
 	public String toString(){
 		String result = "OrgPeerDataHashes: [\n";
-		result += "    GIDhash = "+global_organization_ID_hash;
+		result += "    orgGIDhash = "+getOrganizationGIDH();
 		if((cons!=null)&&(cons.size()>0)) result += "\n  cons = "+getStringRepresentationOfHashes(cons);
 		if((witn!=null)&&(witn.size()>0)) result += "\n  witn = "+getStringRepresentationOfHashes(witn);
 		if((neig!=null)&&(neig.size()>0)) result += "\n  neig = "+getStringRepresentationOfHashes(neig);
@@ -106,7 +106,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 			System.err.println("OrgPeerDataHashes: get: null for "+orgID);
 			return null;
 		}
-		OrgPeerDataHashes requests = org.specific_request;
+		OrgPeerDataHashes requests = org.getSpecificRequest();
 		//org.releaseReference(); // not kept
 		/*
 		String sql =
@@ -145,14 +145,14 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	 */
 	public void save(long orgID, long peer_ID, D_Peer peer) throws P2PDDSQLException {
 		//boolean DEBUG = true;
-		if (_DEBUG)System.out.println("\nOrgPeerDataHashes: save: saving "+this);
-		//Util.printCallPath("Try");
+		if (DEBUG) System.out.println("\nOrgPeerDataHashes: save: saving oLID="+orgID+" pLID="+peer_ID+" "+this);
+		if (this.getOrganizationGIDH() == null) Util.printCallPath("Try");
 
 		D_Organization or = D_Organization.getOrgByLID(orgID, true, true);
-		if (or.specific_request != this) {
-			if(DEBUG)System.out.println("\nOrgPeerDataHashes: save: difference \n"+this+"\nvs"+or.specific_request);			
+		if (or.getSpecificRequest() != this) {
+			if (_DEBUG) System.out.println("\nOrgPeerDataHashes: save: difference \n"+this+"\nvs"+or.getSpecificRequest());			
 		}
-		or.specific_request = this;
+		or.setSpecificRequest(this);
 		or.dirty_locals = true;
 		or.storeRequest();
 		or.releaseReference();
@@ -170,10 +170,10 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 		*/
 		
 		if ((peer != null) && (peer.servesOrgEntryExists(orgID))) {
-			if (_DEBUG) System.out.println("\nOrgPeerDataHashes: save: exists");
+			if (DEBUG) System.out.println("\nOrgPeerDataHashes: save: exists");
 			return;
 		} else {
-			if (_DEBUG) System.out.println("\nOrgPeerDataHashes: save: not existing");
+			if (DEBUG) System.out.println("\nOrgPeerDataHashes: save: not existing");
 		}
 		peer.setServingOrgInferred(orgID, true);
 		/*
@@ -213,7 +213,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	 */
 	RequestData getRequestData() {
 		RequestData r = new RequestData();
-		r.global_organization_ID_hash = this.global_organization_ID_hash;
+		r.global_organization_ID_hash = this.getOrganizationGIDH();
 		r.cons = new Hashtable<String, String>(Util.getHSS(this.cons.keySet()));
 		r.witn = new ArrayList<String>(this.witn.keySet());
 		r.neig = new ArrayList<String>(this.neig.keySet());
@@ -269,7 +269,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	public RequestData getRequestData(long peer_ID) {
 		Long _peer_ID = new Long(peer_ID);
 		RequestData r = new RequestData();
-		r.global_organization_ID_hash = this.global_organization_ID_hash;
+		r.global_organization_ID_hash = this.getOrganizationGIDH();
 		//r.peers = addFromPeer(peers, _peer_ID, r.peers);
 		r.cons = addFromPeer(cons, _peer_ID, r.cons);
 		r.witn = addFromPeer(witn, _peer_ID, r.witn);
@@ -589,5 +589,13 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 				sign.size()+
 				tran.size()+
 				news.size();
+	}
+
+	public String getOrganizationGIDH() {
+		return global_organization_ID_hash;
+	}
+
+	public void setOrganizationGIDH(String global_organization_ID_hash) {
+		this.global_organization_ID_hash = global_organization_ID_hash;
 	}
 }

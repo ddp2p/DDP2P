@@ -24,7 +24,11 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.HeadlessException;
 import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -1427,19 +1431,41 @@ class PeersRowAction extends DebateDecideAction {
 			PK pk;
 			if (fileTrustedSK.exists()) {
 				int c = Application_GUI.ask(__("Existing file. Overwrite: "+fileTrustedSK+"?"), __("Overwrite file?"), JOptionPane.OK_CANCEL_OPTION);
-				if (c != 0) break;
+				if (c != 0) {
+					String gid = model.getGID(row);
+					DD_SK dsk =  new DD_SK(); 
+					try {
+						if (KeyManagement.fill_sk(dsk, gid)) {
+							byte[] esk = dsk.getBytes();
+							StringSelection stringSelection = new StringSelection (Util.stringSignatureFromByte(esk));
+							Clipboard clpbrd = Toolkit.getDefaultToolkit ().getSystemClipboard ();
+							clpbrd.setContents (stringSelection, null);
+						}
+					} catch (HeadlessException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (P2PDDSQLException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					break;
+				}
 			}
 			String gid = model.getGID(row);
 			try {
 				boolean result = false;
-				//result = KeyManagement.saveSecretKey(gid, fileTrustedSK.getCanonicalPath());
-				DD_SK dsk =  new DD_SK(); 
-				if (KeyManagement.fill_sk(dsk, gid)) {
-					System.out.println("Peers:savesk: will encode: "+dsk);
-					
-					String []explain = new String[1];
-					result = DD.embedPeerInBMP(fileTrustedSK, explain, dsk);
-				}		
+				if (fileTrustedSK.getName().endsWith("."+widgets.components.UpdatesFilterKey.EXT_SK)) {
+					result = KeyManagement.saveSecretKey(gid, fileTrustedSK.getCanonicalPath());
+				} else {
+					DD_SK dsk =  new DD_SK(); 
+					if (KeyManagement.fill_sk(dsk, gid)) {
+						dsk.sign_and_set_sender(D_Peer.getPeerByGID_or_GIDhash_NoCreate(gid, null, true, false));
+						if (_DEBUG) System.out.println("Peers: PeersRowAction: actionPerformed: savesk: will encode: "+dsk);
+						
+						String []explain = new String[1];
+						result = DD.embedPeerInBMP(fileTrustedSK, explain, dsk);
+					}		
+				}
 				if (result) break;
 			} catch (P2PDDSQLException e3) {
 				Application_GUI.warning(__("Failed to save key: "+e3.getMessage()), __("Failed to save key"));

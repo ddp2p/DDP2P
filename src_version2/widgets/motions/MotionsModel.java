@@ -1090,12 +1090,12 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		try {
 			D_Motion m = D_Motion.getMotiByGID(hash, true, false, Util.lval(this.getOrganizationID()));
 			if (ClientSync.USE_PAYLOAD_REQUESTED) ClientSync.payload.requested.moti.add(m);
-			D_Vote vote = D_Vote.getMyVoteForMotion(m.getLIDstr());
+			D_Vote vote = D_Vote.getOpinionForMotion(m.getLIDstr(), this.getConstituentIDMyself());
 			if ((vote != null) && (vote.readyToSend())) {
-				ClientSync.addToPayloadFix(RequestData.SIGN, vote.global_vote_ID, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
+				ClientSync.addToPayloadFix(RequestData.SIGN, vote.getGID(), org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 				if (ClientSync.USE_PAYLOAD_REQUESTED) ClientSync.payload.requested.sign.add(vote);
-				if (vote.justification_ID != null) {
-					D_Justification just = D_Justification.getJustByLID(vote.justification_ID, true, false);
+				if (vote.getJustificationLIDstr() != null) {
+					D_Justification just = D_Justification.getJustByLID(vote.getJustificationLIDstr(), true, false);
 					if ((just!=null)&&(just.readyToSend())){
 						ClientSync.addToPayloadFix(RequestData.JUST, just.getGID(), org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 						if (ClientSync.USE_PAYLOAD_REQUESTED) ClientSync.payload.requested.just.add(just);

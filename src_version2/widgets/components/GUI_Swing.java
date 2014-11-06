@@ -255,12 +255,12 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 
 	@Override
 	public void clientUpdates_Start() {
-		if(MainFrame.controlPane!=null) MainFrame.controlPane.startClientUpdates.setText(ControlPane.START_CLIENT_UPDATES);
+		if (MainFrame.controlPane != null) MainFrame.controlPane.startClientUpdates.setText(ControlPane.START_CLIENT_UPDATES);
 	}
 
 	@Override
 	public void clientUpdates_Stop() {
-		if(MainFrame.controlPane!=null) MainFrame.controlPane.startClientUpdates.setText(ControlPane.STOP_CLIENT_UPDATES);
+		if (MainFrame.controlPane != null) MainFrame.controlPane.startClientUpdates.setText(ControlPane.STOP_CLIENT_UPDATES);
 	}
 
 	@Override

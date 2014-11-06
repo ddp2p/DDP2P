@@ -29,16 +29,25 @@ public class tester {
 	public static final String tester_ID = "tester_ID";
 	public static final String original_tester_name = "original_tester_name";
 	public static final String my_name_for_tester = "my_name_for_tester";
+	public static final String public_key = "public_key";
+	public static final String public_key_hash = "public_key_hash";
 	public static final String email = "email";
 	public static final String url = "url";
 	public static final String description = "description";
-	public static final String public_key = "public_key";
-	public static final String public_key_hash = "public_key_hash";
 	public static final String trusted_as_mirror = "trusted_as_mirror";
 	public static final String trusted_as_tester = "trusted_as_tester";
 	public static final String trust_weight = "trust_weight";
 	public static final String reference_tester = "reference_tester";
 	public static final String expected_test_thresholds = "expected_test_thresholds";
+	
+	public static final String revoked = "revoked";
+	public static final String revoked_info = "revoked_info";
+	public static final String revoked_GID_hash = "revoked_GID_hash";
+	
+	public static final String data_version = "data_version";
+	public static final String signature = "signature";
+	public static final String creation_date = "creation_date";
+	public static final String preference_date = "preference_date";
 	
 	public static final String fields_tester_no_ID = 
 			original_tester_name+","+
@@ -52,7 +61,14 @@ public class tester {
 			trusted_as_tester+","+
 			trust_weight+","+
 			reference_tester+","+
-			expected_test_thresholds
+			expected_test_thresholds+","+
+			revoked+","+
+			revoked_info+","+
+			revoked_GID_hash+","+
+			data_version+","+
+			signature+","+
+			creation_date+","+
+			preference_date
 			;
 //	+","+		last_contact_date+","+	activity;
 	public static final String[] _fields_tester_no_ID = Util.trimmed(fields_tester_no_ID.split(Pattern.quote(",")));
@@ -71,6 +87,13 @@ public class tester {
 	public static final int F_WEIGHT = 9;
 	public static final int F_REFERENCE = 10;
 	public static final int F_EXPECTED_TEST_THRESHOLDS = 11;
-	public static final int F_ID = 12;
+	public static final int F_REVOKED = 12;
+	public static final int F_REVOKED_INFO = 13;
+	public static final int F_REVOKED_GID_HASH = 14;
+	public static final int F_DATA_VERSION = 15;
+	public static final int F_SIGNATURE = 16;
+	public static final int F_CREATION_DATE = 17;
+	public static final int F_PREFERENCE_DATE = 18;
+	public static final int F_ID = 19;
 	
 }

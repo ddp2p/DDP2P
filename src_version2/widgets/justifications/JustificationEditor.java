@@ -316,14 +316,14 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			} else {
 				_sign = new D_Vote();
 				//_sign.motion = moti;
-				_sign.motion_ID = just.getMotionLIDstr();
+				_sign.setMotionLID(just.getMotionLIDstr());
 				_sign.setMotionGID(just.getMotionGID());
-				_sign.justification_ID = null;
-				_sign.constituent_ID = constituent_ID;
-				_sign.global_constituent_ID = constituent_GID;
-				_sign.organization_ID = this.just.getOrganizationLIDstr();
-				_sign.global_organization_ID = this.just.getOrgGID();
-				_sign.creation_date = creation_date;
+				_sign.setJustificationLID(null);
+				_sign.setConstituentLID(constituent_ID);
+				_sign.setConstituentGID(constituent_GID);
+				_sign.setOrganizationLID(this.just.getOrganizationLIDstr());
+				_sign.setOrganizationGID(this.just.getOrgGID());
+				_sign.setCreationDate(creation_date);
 			}
 			vEditor.setSignature(_sign, motionEditor);
 		} catch(Exception e) {

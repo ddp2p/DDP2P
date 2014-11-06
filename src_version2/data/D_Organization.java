@@ -60,7 +60,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 
 	// Data to be transmitted, relevant to this organization
 	public RequestData availableHashes;
-	public OrgPeerDataHashes specific_request = new OrgPeerDataHashes();
+	private OrgPeerDataHashes specific_request = new OrgPeerDataHashes();
 	
 	public D_Peer creator;
 	public data.D_Message requested_data[]; //AC11, data requested on a GID basis
@@ -1054,9 +1054,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		try {
 			String d = Util.getString(row.get(table.organization.ORG_COL_SPECIFIC));
 			if (d != null) {
-				this.specific_request = new OrgPeerDataHashes(new Decoder(Util.byteSignatureFromString(d)));
+				this.setSpecificRequest(new OrgPeerDataHashes(new Decoder(Util.byteSignatureFromString(d))));
 			}
-			if(DEBUG) System.out.println("OrgPeerDataHashes: "+this.specific_request);
+			if(DEBUG) System.out.println("OrgPeerDataHashes: "+this.getSpecificRequest());
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();
 		}
@@ -1665,12 +1665,33 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return -1;
 	}
 	/**
+	 * The next monitor is used for the storeAct, to avoid concurrent modifications of the same object.
+	 * Potentially the monitor can be a field in the same object (since saving of different objects
+	 * is not considered dangerous, even when they are of the same type)
+	 * 
+	 * What we do is the equivalent of a synchronized method "storeAct" that we avoid to avoid accidental synchronization
+	 * with other methods.
+	 */
+	final Object monitor = new Object();
+	//static final Object monitor = new Object();
+	
+	/**
 	 * use:  this.arrival_date = Util.getCalendar(arrival_time);
 	 * sync not sent
 	 * 
 	 * @throws P2PDDSQLException
 	 */
 	public long storeAct() throws P2PDDSQLException {
+		synchronized(monitor) {
+			return _storeAct();
+		}
+	}
+	/**
+	 * This is not synchronized
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	private long _storeAct() throws P2PDDSQLException {
 		// final boolean DEBUG = true;
 		if (DEBUG) out.println("D_Organization: storeAct: start "+this.global_organization_IDhash);
 		//D_Peer source_peer = null;
@@ -1746,7 +1767,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				p[table.organization.ORG_COL_FIRST_PROVIDER_PEER] = this.first_provider_peer;
 				p[table.organization.ORG_COL_TEMPORARY] = Util.bool2StringInt(this.temporary);
 				p[table.organization.ORG_COL_HIDDEN] = Util.bool2StringInt(this.hidden);
-				if (this.specific_request != null) p[table.organization.ORG_COL_SPECIFIC] = Util.stringSignatureFromByte(this.specific_request.encode());
+				if (this.getSpecificRequest() != null) p[table.organization.ORG_COL_SPECIFIC] = Util.stringSignatureFromByte(this.getSpecificRequest().encode());
 				
 				//String orgID;
 				if (filter == 0) {//organization_ID == null) {
@@ -2429,11 +2450,12 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				boolean[]verif = new boolean[]{false};
 				String tmpGID = this.getOrgGIDandHashForGrassRoot(verif);
 				//if(!Util.equalBytes(hash, getHashFromGrassrootGID(global_organization_ID))) {
-				if(!verif[0]||(tmpGID==null)||(global_organization_ID==null)||(tmpGID.compareTo(global_organization_ID)!=0)) {
+				if (! verif[0] || (tmpGID == null) || (global_organization_ID == null) || (tmpGID.compareTo(global_organization_ID)!=0)) {
 					verified = false;
-					if(_DEBUG) out.println("D_Organization:verifySignatureAllTypes: recomp hash="+tmpGID);
-					if(_DEBUG) out.println("D_Organization:verifySignatureAllTypes:      IDhash="+global_organization_ID);
-					if(_DEBUG) out.println("D_Organization:verifySignatureAllTypes: exit grassroot signature verification failed");
+					if (_DEBUG) out.println("D_Organization:verifySignatureAllTypes: recomp hash="+tmpGID);
+					if (_DEBUG) out.println("D_Organization:verifySignatureAllTypes:      IDhash="+global_organization_ID);
+					if (_DEBUG) out.println("D_Organization:verifySignatureAllTypes: exit grassroot signature verification failed:\n"+this);
+					if (_DEBUG) Util.printCallPath("");
 				}
 			}
 			if (verified && (! isAnonymous()) && !this.verifySignInitiator()) {
@@ -2443,8 +2465,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			if (! verified) {
 				return false;
 			}
-		} else if(params.certifMethods == table.organization._AUTHORITARIAN){
-			if ((signature == null) || (signature.length == 0) || !verifySignAuthoritarian()){
+		} else if(params.certifMethods == table.organization._AUTHORITARIAN) {
+			if ((signature == null) || (signature.length == 0) || ! verifySignAuthoritarian()){
 				if(_DEBUG) out.println("D_Organization:verifySignatureAllTypes exit authoritarian signature verification failed");
 				return false;
 			}
@@ -2992,6 +3014,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return getOrgName();
 	}
 	
+	/**
+	 * Loads the creator, if not already loaded.
+	 * @return
+	 */
 	public D_Peer getCreator() {
 		String cLID = this.getCreatorLID();
 		if ((this.creator == null) && (cLID != null))
@@ -3554,6 +3580,26 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		}
 		Application_GUI.ThreadsAccounting_ping("Dropped org references for "+getOrgName());
 	}
+
+	public OrgPeerDataHashes getSpecificRequest() {
+		if (specific_request != null && specific_request.getOrganizationGIDH() == null)
+			specific_request.setOrganizationGIDH(this.getGIDH());
+		return specific_request;
+	}
+
+	public void setSpecificRequest(OrgPeerDataHashes specific_request) {
+		this.specific_request = specific_request;
+	}
+	
+	/**
+	 * Checks if name is null.
+	 * Possible when not DD.ACCEPT_ORGANIZATIONS_WITH_NULL_NAME
+	 * @return
+	 */
+	public boolean justGIDContainer() {
+		if (DD.ACCEPT_ORGANIZATIONS_WITH_NULL_NAME) return false;
+		return name == null;
+	}
 }
 
 class D_Organization_SaverThread extends util.DDP2P_ServiceThread {
@@ -3620,7 +3666,7 @@ class D_Organization_SaverThreadWorker extends util.DDP2P_ServiceThread {
 	private static final long SAVER_SLEEP = 5000;
 	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
-	public static final Object saver_thread_monitor = new Object();
+	// public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
 	D_Organization_SaverThreadWorker() {
 		super("D_Organization Saver Worker", false);

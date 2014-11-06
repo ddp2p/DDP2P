@@ -182,6 +182,7 @@ class D_Witness extends ASNObj implements Summary {
 				+"]";
 	}
 	
+	public static D_Witness getEmpty() {return new D_Witness();}
 	public D_Witness(){}
 	public D_Witness(long witnessID) throws P2PDDSQLException{
 		if(DEBUG) System.out.println("D_Witness:D_Witness: start wID="+witnessID);
@@ -623,7 +624,7 @@ class D_Witness extends ASNObj implements Summary {
 				String consGID_hash = D_Constituent.getGIDHashFromGID(witnessing_global_constituentID);
 				if (new_rq != null) new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
 				witnessing_constituentID = D_Constituent.insertTemporaryGID(witnessing_global_constituentID, null, Util.lval(this.organization_ID), __peer, default_blocked);
-				if (_DEBUG) System.out.println("D_Witness: fillLocals: getting tmp LID from GID, lid="+witnessing_constituentID);
+				if (DEBUG) System.out.println("D_Witness: fillLocals: getting tmp LID from GID, lid="+witnessing_constituentID);
 			}
 			if (witnessing_constituentID <= 0){
 				Util.printCallPath("cannot store witness with no constituent, tmp="+tempConst+", gid="+witnessing_global_constituentID);
@@ -1150,4 +1151,5 @@ class D_Witness extends ASNObj implements Summary {
 			e.printStackTrace();
 		}
 	}
+
 }

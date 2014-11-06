@@ -1590,10 +1590,13 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				//String sign = "";//sign hash with secret key
 				try {
 					//String _date = Util.getGeneralizedTime();
-					
-					Application.db.insert(table.key.TNAME, 
-							new String[]{table.key.ID_hash,table.key.public_key,table.key.secret_key,table.key.type,table.key.creation_date},
-							new String[]{gIDhash, gID, sID, type, date});
+					ArrayList<ArrayList<Object>> a = Application.db.select("SELECT * FROM "+table.key.TNAME+" WHERE "+table.key.ID_hash+"=?;",
+							new String[]{gIDhash}, DEBUG);
+					if (a.size() <= 0) {
+						Application.db.insert(table.key.TNAME, 
+								new String[]{table.key.ID_hash,table.key.public_key,table.key.secret_key,table.key.type,table.key.creation_date},
+								new String[]{gIDhash, gID, sID, type, date});
+					}
 					/*
 					Application.db.update(table.organization.TNAME,
 							new String[]{table.organization.global_organization_ID,

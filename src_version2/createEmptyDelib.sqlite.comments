@@ -57,26 +57,6 @@ CREATE TABLE directory_forwarding_terms (
     	FOREIGN KEY(peer_instance_ID) REFERENCES peer_instance(peer_instance_ID),
     	FOREIGN KEY(topic) REFERENCES directory_tokens(directory_tokens_ID)
 );
-CREATE TABLE mirror (
-	"mirror_ID" INTEGER PRIMARY KEY,
-	"public_key" TEXT,
-	"original_mirror_name"	TEXT,
-	"my_name_for_mirror" TEXT,
-	"url"	TEXT,
-	"used" INTEGER,
-	"last_contact_date" TEXT,
-	"activity" TEXT,
-      	"location" TEXT,  
-	"protocol" TEXT,
-	"last_version" TEXT,
-	"last_version_branch" TEXT,
-	"last_version_testers_info" TEXT,
-	"last_version_releaseQD" TEXT,
-	"last_version_info" TEXT,
-	"data_version" TEXT,
-	"creation_date" TEXT,
-	"preference_date" TEXT 
-);
 CREATE TABLE updates ( #deprecated (replaced by mirror)
 	"updates_ID" INTEGER PRIMARY KEY,
 	"original_mirror_name"	TEXT,
@@ -101,27 +81,54 @@ CREATE TABLE updates_keys ( #deprecated (merged into tester)
 	"reference_tester" INTEGER,
 	"expected_test_thresholds" TEXT
 );
+# Table mirror contains information about mirrors
+CREATE TABLE mirror (
+	"mirror_ID" INTEGER PRIMARY KEY, # the pseudokey
+	"public_key" TEXT,  	    	 # the public key of the mirror
+	"original_mirror_name"	TEXT,	 # the mirror name signed by the mirror key
+	"my_name_for_mirror" TEXT,	 # preference: preference name for the mirror
+	"url"	TEXT,	     		 # the url of the update description file (important) "[[wsdl:]http://domain/Path[?wsdl&KEY_HASH]]"
+	"revoked" INTEGER, 		# set if the pk available at "url" is <revoked>
+     	"revoked_info" TEXT,		# explanation for the revokation
+     	"revoked_GID_hash" TEXT,	# hash of the tester that is recommended in place of this revoked tester
+	"used" INTEGER,			 # preference: flag telling whether this mirror is to be contacted and polled
+	"last_contact_date" TEXT,	 # last date of successful contact and retrival of a descriptor
+	"activity" TEXT,    		 # flag to tell whether the last attempt to contact was succesfull 
+      	"location" TEXT,  		 # (not used) field good for faster download? (now always null)
+	"protocol" TEXT,		 # (not used) indicator of whether this si a web/web service: http, wisdl (now always null)
+	"last_version" TEXT,		 # name of last available version 
+	"last_version_branch" TEXT,	 # branch of last available version
+	"last_version_testers_info" TEXT,# String of the type {T1:QoT1:RoT1:QoT2:RoT2;T2:QoT1:RoT1:...}
+	"last_version_releaseQD" TEXT,	 # Quality Definitions for the last version
+	"last_version_info" TEXT,	 # Textual Description of the last version 
+	"data_version" TEXT,		 # version for the structure (signed fields) of the mirror
+	"signature"    TEXT,		 # signature of the data about the mirror
+	"creation_date" TEXT,		 # Creation Date of the mirror
+	"preference_date" TEXT 		 # preference: Date when the last preferences were safe
+);
+# contains data about testers
 CREATE TABLE tester (
-	"tester_ID" INTEGER PRIMARY KEY,
-	"original_tester_name"	TEXT,
-	"my_name_for_tester" TEXT,
-	"public_key" TEXT, # used only if pk available at "url" in <current>
- 	"public_key_hash" TEXT, 
-	"email"	TEXT,
-	"url"	TEXT,
-	"revoked" INTEGER, # set if the pk is available at "url" in <revoked>
-     	"revoked_info" TEXT,
-     	"revoked_GID_hash" TEXT,
-	"description" TEXT,
-	"trusted_as_mirror" INTEGER,
-	"trusted_as_tester" INTEGER,
-	"trust_weight" TEXT,
-	"reference_tester" INTEGER,
-	"expected_test_thresholds" TEXT,
+	"tester_ID" INTEGER PRIMARY KEY,	# pseudokey
+	"original_tester_name"	TEXT,		# signed tester name
+	"my_name_for_tester" TEXT,		# preference: my preference for his hame
+	"public_key" TEXT,   			# used only if pk available at "url" in <current>
+ 	"public_key_hash" TEXT, 		# public key hash (used to search for the tester)
+	"email"	TEXT,	  			# the email of the tester
+	"url"	TEXT,				# a url where revokation information for the key can be downloaded
+	"revoked" INTEGER, 			# set if the pk available at "url" is <revoked>
+     	"revoked_info" TEXT,			# explanation for the revokation
+     	"revoked_GID_hash" TEXT,		# hash of the tester that is recommended in place of this revoked tester
+	"description" TEXT,			# description of the tester
+	"trusted_as_mirror" INTEGER,		# preference: is this tester also trusted as mirror (?)
+	"trusted_as_tester" INTEGER,		# preference: is this tester as tester
+	"trust_weight" TEXT,			# preference: weight between 0 and 1
+	"reference_tester" INTEGER,		# preference: tester required to be part of those approving a release
+	"expected_test_thresholds" TEXT,	# preference: expected threshold
 	
-	"data_version" TEXT,
-	"creation_date" TEXT,
-	"preference_date" TEXT,
+	"data_version" TEXT,			# version for the structure (signed fields) of the tester
+	"signature" TEXT,			# signature of the data about the tester		
+	"creation_date" TEXT,			# date when the tester data was created
+	"preference_date" TEXT,			# preference: date of the preference data
 # deprecated attributes
 	"name"	TEXT
 );

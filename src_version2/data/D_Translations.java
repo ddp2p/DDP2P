@@ -69,6 +69,7 @@ class D_Translations extends ASNObj{
 	public String submitter_ID;
 	public String organization_ID;
 
+	public static D_Translations getEmpty() {return new D_Translations();}
 	public D_Translations(){}
 	public D_Translations(long translationID) throws P2PDDSQLException{
 		if(_DEBUG) System.out.println("WB_Translations:WB_Translations: start wID="+translationID);

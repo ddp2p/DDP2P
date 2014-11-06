@@ -207,19 +207,19 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 		SK sk = DD.getConstituentSK(constituent_ID);
 		if(DEBUG)System.out.println("Fill_database : add_vote() : after creating sk");
 		D_Vote vote = new D_Vote();
-		vote.organization_ID = ""+organization_ID;
-		vote.global_organization_ID = D_Organization.getGIDbyLIDstr(vote.organization_ID);
-		vote.constituent_ID = ""+constituent_ID;
-		vote.global_constituent_ID =  D_Constituent.getGIDFromLID(vote.constituent_ID);
-		vote.constituent = D_Constituent.getConstByLID(constituent_ID, true, false);
-		if(DEBUG)System.out.println("CONS ID : "+vote.constituent_ID);
-		if(DEBUG)System.out.println("CONS data : "+vote.constituent);
-		vote.motion_ID = ""+motion_ID;
-		vote.motion = D_Motion.getMotiByLID(motion_ID, true, false);
-		vote.setMotionGID(vote.motion.getGID());
-		vote.creation_date = creation_date;
-		vote.arrival_date = creation_date;
-		vote.choice = Util.random_Y_N();
+		vote.setOrganizationLID(""+organization_ID);
+		vote.setOrganizationGID(D_Organization.getGIDbyLIDstr(vote.getOrganizationLIDstr()));
+		vote.setConstituentLID(""+constituent_ID);
+		vote.setConstituentGID(D_Constituent.getGIDFromLID(vote.getConstituentLIDstr()));
+		vote.setConstituent(D_Constituent.getConstByLID(constituent_ID, true, false));
+		if(DEBUG)System.out.println("CONS ID : "+vote.getConstituentLIDstr());
+		if(DEBUG)System.out.println("CONS data : "+vote.getConstituent());
+		vote.setMotionLID(""+motion_ID);
+		vote.setMotion(D_Motion.getMotiByLID(motion_ID, true, false));
+		vote.setMotionGID(vote.getMotion().getGID());
+		vote.setCreationDate(creation_date);
+		vote.setArrivalDate(creation_date);
+		vote.setChoice(Util.random_Y_N());
 		vote.format = "format";
 		if(DEBUG)System.out.println("Fill_database : add_vote() : after filling -without jus-");
 		int justification_choice = Util.pick_randomly(new float[]{SimulationParameters.adding_new_justification_in_vote,
@@ -241,13 +241,13 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 				just_id = add_justification(motion_ID, constituent_ID,organization_ID, r>0);
 			}
 
-			vote.justification_ID = ""+just_id;
-			vote.global_justification_ID = D_Justification.getGIDFromLID(vote.justification_ID);
-			vote.justification = D_Justification.getJustByLID(just_id, true, false);
-			vote.global_vote_ID = vote.make_ID();
-			vote.signature = vote.sign(sk);
+			vote.setJustificationLID(""+just_id);
+			vote.setJustificationGID(D_Justification.getGIDFromLID(vote.getJustificationLIDstr()));
+			vote.setJustification(D_Justification.getJustByLID(just_id, true, false));
+			vote.setGID(vote.make_ID());
+			vote.setSignature(vote.sign(sk));
 			added_vote = vote.storeVerified();
-			if(DEBUG)System.out.println("Fill_database : vote() : END CASE 0 : "+vote.global_vote_ID);
+			if(DEBUG)System.out.println("Fill_database : vote() : END CASE 0 : "+vote.getGID());
 			if(DEBUG)System.out.println("Fill_database : add_vote_with_justification : END vote_id="+added_vote);
 			return added_vote;
 		} 
@@ -255,13 +255,13 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 		case 1: //add vote and do not add justification with it
 		{ 
 			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE ONLY");
-			vote.global_vote_ID = vote.make_ID();
+			vote.setGID(vote.make_ID());
 			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE ONLY before sign");
-			vote.signature = vote.sign(sk);
+			vote.setSignature(vote.sign(sk));
 			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE ONLY after sign befor storing");
 			added_vote = vote.storeVerified();
 			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE ONLY after storing");
-			if(DEBUG)System.out.println("Fill_database : vote() : END CASE 1 : "+vote.global_vote_ID);
+			if(DEBUG)System.out.println("Fill_database : vote() : END CASE 1 : "+vote.getGID());
 			if(DEBUG)System.out.println("Fill_database : add_vote_only : END vote_id="+added_vote);
 			return added_vote;
 		}
@@ -271,13 +271,13 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE AND EXISTING JUSTIFICATION");
 			long just_id =-1;
 			just_id = select_random_justification(motion_ID,constituent_ID,organization_ID);
-			vote.justification_ID = ""+just_id;
-			vote.global_justification_ID = D_Justification.getGIDFromLID(vote.justification_ID);
-			vote.justification = D_Justification.getJustByLID(just_id, true, false);
-			vote.global_vote_ID = vote.make_ID();
-			vote.signature = vote.sign(sk);
+			vote.setJustificationLID(""+just_id);
+			vote.setJustificationGID(D_Justification.getGIDFromLID(vote.getJustificationLIDstr()));
+			vote.setJustification(D_Justification.getJustByLID(just_id, true, false));
+			vote.setGID(vote.make_ID());
+			vote.setSignature(vote.sign(sk));
 			added_vote = vote.storeVerified();
-			if(DEBUG)System.out.println("Fill_database : vote() : END CASE 2 : "+vote.global_vote_ID);
+			if(DEBUG)System.out.println("Fill_database : vote() : END CASE 2 : "+vote.getGID());
 			if(DEBUG)System.out.println("Fill_database : add_vote_with_refering_to_existing_just : END vote_id="+added_vote);
 			return added_vote;
 		} 

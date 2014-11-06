@@ -70,6 +70,7 @@ class D_News extends ASNObj{
 	public boolean broadcasted = D_Organization.DEFAULT_BROADCASTED_ORG;
 	public int status_references = 0;
 		
+	public static D_News getEmpty() {return new D_News();}
 	public D_News() {}
 	public D_News(long _news_ID) throws P2PDDSQLException {
 		if(_news_ID<=0) return;

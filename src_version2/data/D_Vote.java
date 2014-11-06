@@ -64,32 +64,33 @@ class D_Vote extends ASNObj{
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
 	// the value stored in choice for the vote counted as "yes"
 	public static final String DEFAULT_YES_COUNTED_LABEL = "0";
-	public String hash_alg = V0;
-	public String global_vote_ID; //Printable
-	public String global_constituent_ID; //Printable
+	private String hash_alg = V0;
+	private String global_vote_ID; //Printable
+	private String global_constituent_ID; //Printable
 	private String global_motion_ID; //Printable
-	public String global_justification_ID; //Printable
-	public String global_organization_ID; //Printable
-	public String choice;//UTF8
+	private String global_justification_ID; //Printable
+	private String global_organization_ID; //Printable
+	private String choice;//UTF8
 	public String format;//UTF8
-	public Calendar creation_date;
-	public byte[] signature; //OCT STR
-	public Calendar arrival_date;
+	private Calendar creation_date;
+	private byte[] signature; //OCT STR
+	private Calendar arrival_date;
 	
-	public D_Constituent constituent;
-	public D_Motion motion;
-	public D_Justification justification;
+	private D_Constituent constituent;
+	private D_Motion motion;
+	private D_Justification justification;
 	
-	public String vote_ID;
-	public String constituent_ID;
-	public String justification_ID;
-	public String motion_ID;
-	public String organization_ID;
+	private String vote_ID;
+	private String constituent_ID;
+	private String justification_ID;
+	private String motion_ID;
+	private String organization_ID;
 
+	public static D_Vote getEmpty() {return new D_Vote();}
 	public D_Vote() {}
 	public D_Vote(long _vote_ID) throws P2PDDSQLException {
 		if(_vote_ID<=0) return;
-		vote_ID = Util.getStringID(_vote_ID);
+		setLID(Util.getStringID(_vote_ID));
 		String sql = 
 			"SELECT "+Util.setDatabaseAlias(table.signature.fields,"v")+
 			//", c."+table.constituent.global_constituent_ID+
@@ -105,13 +106,13 @@ class D_Vote extends ASNObj{
 			//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
 			" WHERE v."+table.signature.signature_ID+"=?;"
 			;
-		ArrayList<ArrayList<Object>> v = Application.db.select(sql, new String[]{vote_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> v = Application.db.select(sql, new String[]{getLIDstr()}, DEBUG);
 		if(v.size() == 0) return;
 		init(v.get(0));
 	}
 	public D_Vote(String vote_GID) throws P2PDDSQLException {
 		if(vote_GID == null) return;
-		this.global_vote_ID = vote_GID;
+		this.setGID(vote_GID);
 		String sql = 
 			"SELECT "+Util.setDatabaseAlias(table.signature.fields,"v")+
 			//", c."+table.constituent.global_constituent_ID+
@@ -131,11 +132,7 @@ class D_Vote extends ASNObj{
 		if(v.size() == 0) return;
 		init(v.get(0));
 	}
-	public static D_Vote getMyVoteForMotion(String motionID) throws P2PDDSQLException {
-		D_Vote v = new D_Vote();
-		if(motionID == null) return null;
-		v.motion_ID = motionID;
-		String sql = 
+	public final static String sql_vote_for_motionID_from_constituent = 
 			"SELECT "+Util.setDatabaseAlias(table.signature.fields,"v")+
 			//", c."+table.constituent.global_constituent_ID+
 			//", m."+table.motion.organization_ID+
@@ -144,15 +141,123 @@ class D_Vote extends ASNObj{
 			//", o."+table.organization.global_organization_ID+
 			//", o."+table.organization.organization_ID+
 			" FROM "+table.signature.TNAME+" AS v "+
-			//" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=v."+table.signature.constituent_ID+")"+
+			// " LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=v."+table.signature.constituent_ID+")"+
 			//" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=v."+table.signature.motion_ID+")"+
 			//" LEFT JOIN "+table.justification.TNAME+" AS j ON(j."+table.justification.justification_ID+"=v."+table.signature.justification_ID+")"+
 			//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
-			" WHERE v."+table.signature.motion_ID+"=?;"
-			;
-		ArrayList<ArrayList<Object>> _v = Application.db.select(sql, new String[]{motionID}, DEBUG);
-		if(_v.size() == 0) return null;
+			" WHERE "
+			+ " v."+table.signature.motion_ID+"=? "
+			+ " AND v."+table.signature.constituent_ID+"=? "
+			+ ";";
+	/**
+	 * 
+	 * @param motionID
+	 * @param _constituentID : must be non-null
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public static D_Vote getOpinionForMotion(String motionID, long _constituentID) throws P2PDDSQLException {
+		//getOneBroadcastedSupportForMotion(D_Motion.getMotiByLID(motionID, true, false), _constituentID, null);
+		if (motionID == null) return null;
+		if (_constituentID <= 0) return null;
+		D_Vote v = new D_Vote();
+		v.setMotionLID(motionID);
+		ArrayList<ArrayList<Object>> _v =
+				Application.db.select(
+						sql_vote_for_motionID_from_constituent,
+						new String[]{motionID, Util.getStringID(_constituentID)},
+						DEBUG);
+		if (_v.size() == 0) return null;
 		v.init(_v.get(0));
+		return v;
+	}
+	public final static String sql_vote_for_motionID_from_constituent_with_opinion = 
+			"SELECT "+Util.setDatabaseAlias(table.signature.fields,"v")+
+			" FROM "+table.signature.TNAME+" AS v "+
+			" WHERE "
+			+ " v."+table.signature.motion_ID+"=? "
+			+ " AND v."+table.signature.constituent_ID+"=? "
+			+ " AND v."+table.signature.choice+"=? "
+			+ ";";
+	public final static String sql_one_vote_for_motionID = 
+			"SELECT "+Util.setDatabaseAlias(table.signature.fields,"v")+
+			" FROM "+table.signature.TNAME+" AS v "+
+			" WHERE "
+			+ " v."+table.signature.motion_ID+"=? "
+			+ " LIMIT 1;";
+	public final static String sql_one_vote_with_opinion = 
+			"SELECT "+Util.setDatabaseAlias(table.signature.fields,"v")+
+			" FROM "+table.signature.TNAME+" AS v "+
+			" WHERE "
+			+ " v."+table.signature.motion_ID+"=? "
+			+ " AND v."+table.signature.choice+"=? "
+			+ " LIMIT 1;";
+	/**
+	 * If  supportChoice is provided, then will only return a D_Vote with that value!
+	 * 
+	 * If the _constituent is null (of if he did not support), looks for any support with value "supportChoice"
+	 * If supportChoice is null, looks for any from _constituent, or for any....
+	 * If the _constituent is null, selected support must be broadcasted.
+	 * @param _motion
+	 * @param _constituent
+	 * @param supportChoice
+	 * @return
+	 */
+	public static D_Vote getOneBroadcastedSupportForMotion(D_Motion _motion,
+			D_Constituent _constituent, String supportChoice) {
+		ArrayList<ArrayList<Object>> _v;
+		if (_motion == null)
+			return null;
+		D_Vote v = new D_Vote();
+		v.setMotionLID(_motion.getLIDstr());
+		try {
+			if (_constituent == null && supportChoice == null) {
+				_v = Application.db.select(
+						sql_one_vote_for_motionID,
+						new String[]{_motion.getLIDstr()},
+						DEBUG);
+				
+			}  
+			else if (_constituent != null && supportChoice == null) {
+				_v = Application.db.select(
+						sql_vote_for_motionID_from_constituent,
+						new String[]{_motion.getLIDstr(), _constituent.getLIDstr()},
+						DEBUG);
+				if (_v.size() <= 0) {
+					_v = Application.db.select(
+							sql_one_vote_for_motionID,
+							new String[]{_motion.getLIDstr()},
+							DEBUG);
+				}
+			} 
+			else if (_constituent == null && supportChoice != null) {
+				_v = Application.db.select(
+						sql_one_vote_with_opinion,
+						new String[]{_motion.getLIDstr(), supportChoice},
+						DEBUG);
+						
+			}  
+			else if (_constituent != null && supportChoice != null)  {
+				_v = Application.db.select(
+						sql_vote_for_motionID_from_constituent_with_opinion,
+						new String[]{_motion.getLIDstr(), supportChoice},
+						DEBUG);
+				if (_v.size() <= 0) {
+					_v = Application.db.select(
+							sql_one_vote_with_opinion,
+							new String[]{_motion.getLIDstr(), supportChoice},
+							DEBUG);
+				}
+			}
+			else return null;
+			
+			if (_v.size() == 0) return null;
+			
+			v.init(_v.get(0));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 		return v;
 	}
 
@@ -195,27 +300,27 @@ class D_Vote extends ASNObj{
 	 * @throws P2PDDSQLException
 	 */
 	public void init(ArrayList<Object> o) throws P2PDDSQLException {
-		this.hash_alg = Util.getString(o.get(table.signature.S_HASH_ALG));
-		this.global_vote_ID = Util.getString(o.get(table.signature.S_GID));
-		this.creation_date = Util.getCalendar(Util.getString(o.get(table.signature.S_CREATION)));
-		this.arrival_date = Util.getCalendar(Util.getString(o.get(table.signature.S_ARRIVAL)));
-		this.signature = Util.byteSignatureFromString(Util.getString(o.get(table.signature.S_SIGNATURE)));
-		this.choice = Util.getString(o.get(table.signature.S_CHOICE));
+		this.setVersion(Util.getString(o.get(table.signature.S_HASH_ALG)));
+		this.setGID(Util.getString(o.get(table.signature.S_GID)));
+		this.setCreationDate(Util.getCalendar(Util.getString(o.get(table.signature.S_CREATION))));
+		this.setArrivalDate(Util.getCalendar(Util.getString(o.get(table.signature.S_ARRIVAL))));
+		this.setSignature(Util.byteSignatureFromString(Util.getString(o.get(table.signature.S_SIGNATURE))));
+		this.setChoice(Util.getString(o.get(table.signature.S_CHOICE)));
 		this.format = Util.getString(o.get(table.signature.S_FORMAT));
-		this.motion_ID = Util.getString(o.get(table.signature.S_MOTION_ID));
-		this.constituent_ID = Util.getString(o.get(table.signature.S_CONSTITUENT_ID));
-		this.justification_ID = Util.getString(o.get(table.signature.S_JUSTIFICATION_ID));
-		this.vote_ID = Util.getString(o.get(table.signature.S_ID));
+		this.setMotionLID(Util.getString(o.get(table.signature.S_MOTION_ID)));
+		this.setConstituentLID(Util.getString(o.get(table.signature.S_CONSTITUENT_ID)));
+		this.setJustificationLID(Util.getString(o.get(table.signature.S_JUSTIFICATION_ID)));
+		this.setLID(Util.getString(o.get(table.signature.S_ID)));
 		
-		this.motion = D_Motion.getMotiByLID(motion_ID, true, false);
-		this.constituent = D_Constituent.getConstByLID(constituent_ID, true, false);
-		this.justification = D_Justification.getJustByLID(justification_ID, true, false);
-		this.organization_ID = motion.getOrganizationLIDstr(); //Util.getString(o.get(table.signature.S_FIELDS+0));
-		this.global_organization_ID = motion.getOrganizationGID(); //D_Organization.getGIDbyLIDstr(organization_ID);//Util.getString(o.get(table.signature.S_FIELDS+3));
-		this.setMotionGID(motion.getGID()); //Util.getString(o.get(table.signature.S_FIELDS+1));
-		this.global_constituent_ID = constituent.getGID(); //D_Constituent.getGIDFromLID(constituent_ID);
-		if (justification != null)
-			this.global_justification_ID = justification.getGID(); //D_Justification.getGlobalID(justification_ID); //Util.getString(o.get(table.signature.S_FIELDS+2));
+		this.setMotion(D_Motion.getMotiByLID(getMotionLIDstr(), true, false));
+		this.setConstituent(D_Constituent.getConstByLID(getConstituentLIDstr(), true, false));
+		this.setJustification(D_Justification.getJustByLID(getJustificationLIDstr(), true, false));
+		this.setOrganizationLID(getMotion().getOrganizationLIDstr()); //Util.getString(o.get(table.signature.S_FIELDS+0));
+		this.setOrganizationGID(getMotion().getOrganizationGID()); //D_Organization.getGIDbyLIDstr(organization_ID);//Util.getString(o.get(table.signature.S_FIELDS+3));
+		this.setMotionGID(getMotion().getGID()); //Util.getString(o.get(table.signature.S_FIELDS+1));
+		this.setConstituentGID(getConstituent().getGID()); //D_Constituent.getGIDFromLID(constituent_ID);
+		if (getJustification() != null)
+			this.setJustificationGID(getJustification().getGID()); //D_Justification.getGlobalID(justification_ID); //Util.getString(o.get(table.signature.S_FIELDS+2));
 		//this.organization_ID = Util.getString(o.get(table.signature.S_FIELDS+4));
 		//this.choices = WB_Choice.getChoices(motionID);
 	}
@@ -225,23 +330,23 @@ class D_Vote extends ASNObj{
 			init(v);
 		}catch(Exception e){e.printStackTrace();}
 		if(DEBUG)System.out.println("D_Vote:init_all: contained objects");
-		if(constituent_ID!=null)this.constituent = D_Constituent.getConstByLID(Util.lval(this.constituent_ID), true, false);
+		if(getConstituentLIDstr()!=null)this.setConstituent(D_Constituent.getConstByLID(Util.lval(this.getConstituentLIDstr()), true, false));
 		//if(global_motion_ID!=null) this.motion =  D_Motion.getMotiByGID(this.global_motion_ID, true, false, Util.lval(this.organization_ID));
-		if(motion_ID!=null) this.motion =  D_Motion.getMotiByLID(this.motion_ID, true, false);
-		if(global_justification_ID!=null && justification == null) this.justification = D_Justification.getJustByGID(this.global_justification_ID, true, false, Util.lval(organization_ID), Util.lval(this.motion_ID));
+		if(getMotionLIDstr()!=null) this.setMotion(D_Motion.getMotiByLID(this.getMotionLIDstr(), true, false));
+		if(getJustificationGID()!=null && getJustification() == null) this.setJustification(D_Justification.getJustByGID(this.getJustificationGID(), true, false, Util.lval(getOrganizationLIDstr()), Util.lval(this.getMotionLIDstr())));
 		if(DEBUG)System.out.println("D_Vote:init_all: done");
 	}
 
 	public Encoder getSignableEncoder() {
 		Encoder enc = new Encoder().initSequence();
-		if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
-		if(global_vote_ID!=null)enc.addToSequence(new Encoder(global_vote_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
-		if(global_constituent_ID!=null)enc.addToSequence(new Encoder(global_constituent_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
+		if(getVersion()!=null)enc.addToSequence(new Encoder(getVersion(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
+		if(getGID()!=null)enc.addToSequence(new Encoder(getGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
+		if(getConstituentGID()!=null)enc.addToSequence(new Encoder(getConstituentGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
 		if(getMotionGID()!=null)enc.addToSequence(new Encoder(getMotionGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
-		if(global_justification_ID!=null)enc.addToSequence(new Encoder(global_justification_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
-		if(choice!=null)enc.addToSequence(new Encoder(choice,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC5));
+		if(getJustificationGID()!=null)enc.addToSequence(new Encoder(getJustificationGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
+		if(getChoice()!=null)enc.addToSequence(new Encoder(getChoice(),Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC5));
 		if(format!=null)enc.addToSequence(new Encoder(format,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC6));
-		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC7));
+		if(getCreationDate()!=null)enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC7));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC8));
 		//if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC9));
 		//if(motion!=null)enc.addToSequence(motion.getEncoder().setASN1Type(DD.TAG_AC10));
@@ -253,7 +358,7 @@ class D_Vote extends ASNObj{
 		Encoder enc = new Encoder().initSequence();
 		//if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
 		//if(global_vote_ID!=null)enc.addToSequence(new Encoder(global_vote_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
-		if(global_constituent_ID!=null)enc.addToSequence(new Encoder(global_constituent_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
+		if(getConstituentGID()!=null)enc.addToSequence(new Encoder(getConstituentGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
 		if(getMotionGID()!=null)enc.addToSequence(new Encoder(getMotionGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
 		//if(global_justification_ID!=null)enc.addToSequence(new Encoder(global_justification_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
 		//if(choice!=null)enc.addToSequence(new Encoder(choice,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC5));
@@ -268,19 +373,19 @@ class D_Vote extends ASNObj{
 	
 	private Encoder getEntityEncoder() {
 		Encoder enc = new Encoder().initSequence();
-		if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
-		if(global_vote_ID!=null)enc.addToSequence(new Encoder(global_vote_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
-		if(global_constituent_ID!=null)enc.addToSequence(new Encoder(global_constituent_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
+		if(getVersion()!=null)enc.addToSequence(new Encoder(getVersion(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
+		if(getGID()!=null)enc.addToSequence(new Encoder(getGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
+		if(getConstituentGID()!=null)enc.addToSequence(new Encoder(getConstituentGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
 		if(getMotionGID()!=null)enc.addToSequence(new Encoder(getMotionGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
-		if(global_justification_ID!=null)enc.addToSequence(new Encoder(global_justification_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
-		if(choice!=null)enc.addToSequence(new Encoder(choice,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC5));
+		if(getJustificationGID()!=null)enc.addToSequence(new Encoder(getJustificationGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
+		if(getChoice()!=null)enc.addToSequence(new Encoder(getChoice(),Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC5));
 		if(format!=null)enc.addToSequence(new Encoder(format,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC6));
-		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC7));
+		if(getCreationDate()!=null)enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC7));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC8));
 		//if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC9));
 		//if(motion!=null)enc.addToSequence(motion.getEncoder().setASN1Type(DD.TAG_AC10));
 		//if(justification!=null) enc.addToSequence(justification.getEncoder().setASN1Type(DD.TAG_AC11));
-		if(global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
+		if(getOrganizationGID()!=null)enc.addToSequence(new Encoder(getOrganizationGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
 		return enc;
 	}
 	@Override
@@ -296,13 +401,13 @@ class D_Vote extends ASNObj{
 //		Util.printCallPath("getEncoder: you need to implement getEncoder(dictionaries) for objects of type: "+this);
 //		return getEncoder();}
 		Encoder enc = new Encoder().initSequence();
-		if (hash_alg != null) enc.addToSequence(new Encoder(hash_alg,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
-		if (global_vote_ID != null) {
-			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_vote_ID);
+		if (getVersion() != null) enc.addToSequence(new Encoder(getVersion(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
+		if (getGID() != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getGID());
 			enc.addToSequence(new Encoder(repl_GID, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
 		}
-		if (global_constituent_ID != null) {
-			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_constituent_ID);
+		if (getConstituentGID() != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getConstituentGID());
 			enc.addToSequence(new Encoder(repl_GID, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
 		}
 		if (getMotionGID() != null) {
@@ -311,22 +416,22 @@ class D_Vote extends ASNObj{
 		} else {
 			Util.printCallPath("Null motionGID: "+this);
 		}
-		if (global_justification_ID != null) {
-			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_justification_ID);
+		if (getJustificationGID() != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getJustificationGID());
 			enc.addToSequence(new Encoder(repl_GID, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
 		}
-		if (choice != null) enc.addToSequence(new Encoder(choice,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC5));
+		if (getChoice() != null) enc.addToSequence(new Encoder(getChoice(),Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC5));
 		if (format != null) enc.addToSequence(new Encoder(format,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC6));
-		if (creation_date != null) enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC7));
-		if (signature != null) enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC8));
+		if (getCreationDate() != null) enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC7));
+		if (getSignature() != null) enc.addToSequence(new Encoder(getSignature()).setASN1Type(DD.TAG_AC8));
 		
 		if (dependants != ASNObj.DEPENDANTS_NONE) {
 			int new_dependants = dependants;
 			if (dependants > 0) new_dependants = dependants - 1;
 				
-			if (constituent != null) enc.addToSequence(constituent.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC9));
-			if (motion != null) enc.addToSequence(motion.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC10));
-			if (justification != null) enc.addToSequence(justification.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC11));
+			if (getConstituent() != null) enc.addToSequence(getConstituent().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC9));
+			if (getMotion() != null) enc.addToSequence(getMotion().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC10));
+			if (getJustification() != null) enc.addToSequence(getJustification().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC11));
 		}
 		/**
 		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
@@ -335,8 +440,8 @@ class D_Vote extends ASNObj{
 		 * However, it is not that damaging when using compression, and can be stored without much overhead.
 		 * So it is left here for now.  Test if you comment out!
 		 */
-		if (global_organization_ID != null) {
-			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_organization_ID);
+		if (getOrganizationGID() != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getOrganizationGID());
 			enc.addToSequence(new Encoder(repl_GID, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
 		}
 		return enc;
@@ -345,48 +450,48 @@ class D_Vote extends ASNObj{
 	@Override
 	public D_Vote decode(Decoder decoder) throws ASN1DecoderFail {
 		Decoder dec = decoder.getContent();
-		if(dec.getTypeByte()==DD.TAG_AC0) hash_alg = dec.getFirstObject(true).getString(DD.TAG_AC0);
-		if(dec.getTypeByte()==DD.TAG_AC1) global_vote_ID = dec.getFirstObject(true).getString(DD.TAG_AC1);
-		if(dec.getTypeByte()==DD.TAG_AC2) global_constituent_ID = dec.getFirstObject(true).getString(DD.TAG_AC2);
+		if(dec.getTypeByte()==DD.TAG_AC0) setVersion(dec.getFirstObject(true).getString(DD.TAG_AC0));
+		if(dec.getTypeByte()==DD.TAG_AC1) setGID(dec.getFirstObject(true).getString(DD.TAG_AC1));
+		if(dec.getTypeByte()==DD.TAG_AC2) setConstituentGID(dec.getFirstObject(true).getString(DD.TAG_AC2));
 		if(dec.getTypeByte()==DD.TAG_AC3) setMotionGID_or_Compact(dec.getFirstObject(true).getString(DD.TAG_AC3));
-		if(dec.getTypeByte()==DD.TAG_AC4) global_justification_ID = dec.getFirstObject(true).getString(DD.TAG_AC4);
-		if(dec.getTypeByte()==DD.TAG_AC5) choice = dec.getFirstObject(true).getString(DD.TAG_AC5);
+		if(dec.getTypeByte()==DD.TAG_AC4) setJustificationGID(dec.getFirstObject(true).getString(DD.TAG_AC4));
+		if(dec.getTypeByte()==DD.TAG_AC5) setChoice(dec.getFirstObject(true).getString(DD.TAG_AC5));
 		if(dec.getTypeByte()==DD.TAG_AC6) format = dec.getFirstObject(true).getString(DD.TAG_AC6);
-		if(dec.getTypeByte()==DD.TAG_AC7)  creation_date = dec.getFirstObject(true).getGeneralizedTimeCalender(DD.TAG_AC7);
-		if(dec.getTypeByte()==DD.TAG_AC8)  signature = dec.getFirstObject(true).getBytes(DD.TAG_AC8);
-		if(dec.getTypeByte()==DD.TAG_AC9)  constituent = D_Constituent.getEmpty().decode(dec.getFirstObject(true));
-		if(dec.getTypeByte()==DD.TAG_AC10) motion = D_Motion.getEmpty().decode(dec.getFirstObject(true));
-		if(dec.getTypeByte()==DD.TAG_AC11) justification = D_Justification.getEmpty().decode(dec.getFirstObject(true));
-		if(dec.getTypeByte()==DD.TAG_AC12) global_organization_ID = dec.getFirstObject(true).getString(DD.TAG_AC12);
+		if(dec.getTypeByte()==DD.TAG_AC7)  setCreationDate(dec.getFirstObject(true).getGeneralizedTimeCalender(DD.TAG_AC7));
+		if(dec.getTypeByte()==DD.TAG_AC8)  setSignature(dec.getFirstObject(true).getBytes(DD.TAG_AC8));
+		if(dec.getTypeByte()==DD.TAG_AC9)  setConstituent(D_Constituent.getEmpty().decode(dec.getFirstObject(true)));
+		if(dec.getTypeByte()==DD.TAG_AC10) setMotion(D_Motion.getEmpty().decode(dec.getFirstObject(true)));
+		if(dec.getTypeByte()==DD.TAG_AC11) setJustification(D_Justification.getEmpty().decode(dec.getFirstObject(true)));
+		if(dec.getTypeByte()==DD.TAG_AC12) setOrganizationGID(dec.getFirstObject(true).getString(DD.TAG_AC12));
 		return this;
 	}	
 	
 	public String toString() {
 		return "WB_Vote:" +
-				"\n hash_alg="+hash_alg+
-				"\n global_vote_id="+global_vote_ID+
-				"\n global_constituent_id="+global_constituent_ID+
+				"\n hash_alg="+getVersion()+
+				"\n global_vote_id="+getGID()+
+				"\n global_constituent_id="+getConstituentGID()+
 				"\n global_motion_id="+getMotionGID()+
-				"\n global_justification_id="+global_justification_ID+
-				"\n global_organization_ID="+global_organization_ID+
-				"\n choice="+choice+
+				"\n global_justification_id="+getJustificationGID()+
+				"\n global_organization_ID="+getOrganizationGID()+
+				"\n choice="+getChoice()+
 				"\n format="+format+
-				"\n creation_date="+Encoder.getGeneralizedTime(creation_date)+
-				"\n signature="+Util.byteToHexDump(signature)+
-				"\n arrival_date="+Encoder.getGeneralizedTime(arrival_date)+
+				"\n creation_date="+Encoder.getGeneralizedTime(getCreationDate())+
+				"\n signature="+Util.byteToHexDump(getSignature())+
+				"\n arrival_date="+Encoder.getGeneralizedTime(getArrivalDate())+
 				
-				"\n vote_ID="+vote_ID+
-				"\n constituent_ID="+constituent_ID+
-				"\n justification_ID="+justification_ID+
-				"\n motion_ID="+motion_ID+
-				"\n organization_ID="+organization_ID+
+				"\n vote_ID="+getLIDstr()+
+				"\n constituent_ID="+getConstituentLIDstr()+
+				"\n justification_ID="+getJustificationLIDstr()+
+				"\n motion_ID="+getMotionLIDstr()+
+				"\n organization_ID="+getOrganizationLIDstr()+
 				
-				"\n voter="+constituent+
-				"\n motion="+motion+
-				"\n justification="+justification;
+				"\n voter="+getConstituent()+
+				"\n motion="+getMotion()+
+				"\n justification="+getJustification();
 	}
 	public void sign() {
-		sign(this.global_constituent_ID);
+		sign(this.getConstituentGID());
 	}
 	public byte[] sign(String signer_GID) {
 		if(DEBUG) System.out.println("WB_Vote:sign: start signer="+signer_GID);
@@ -404,9 +509,9 @@ class D_Vote extends ASNObj{
 	 */
 	public byte[] sign(SK sk){
 		if(DEBUG) System.out.println("WB_Vote:sign: this="+this+"\nsk="+sk);
-		signature = Util.sign(this.getSignableEncoder().getBytes(), sk);
-		if(DEBUG) System.out.println("WB_Vote:sign:got this="+Util.byteToHexDump(signature));
-		return signature;
+		setSignature(Util.sign(this.getSignableEncoder().getBytes(), sk));
+		if(DEBUG) System.out.println("WB_Vote:sign:got this="+Util.byteToHexDump(getSignature()));
+		return getSignature();
 	}
 	public String make_ID() {
 		if(DEBUG) System.out.println("WB_Vote:makeID: start");
@@ -423,26 +528,26 @@ class D_Vote extends ASNObj{
 	}
 	public boolean verifySignature(){
 		if(DEBUG) System.out.println("WB_Vote:verifySignature: start");
-		String pk_ID = this.global_constituent_ID;//.submitter_global_ID;
-		if((pk_ID == null) && (this.constituent!=null) && (this.constituent.getGID()!=null))
-			pk_ID = this.constituent.getGID();
+		String pk_ID = this.getConstituentGID();//.submitter_global_ID;
+		if((pk_ID == null) && (this.getConstituent()!=null) && (this.getConstituent().getGID()!=null))
+			pk_ID = this.getConstituent().getGID();
 		if(pk_ID == null) return false;
 		
 		String newGID = make_ID();
-		if(!newGID.equals(this.global_vote_ID)) {
+		if(!newGID.equals(this.getGID())) {
 			Util.printCallPath("WB_Vote: WRONG EXTERNAL GID");
-			if(DEBUG) System.out.println("WB_Vote:verifySignature: WRONG HASH GID="+this.global_vote_ID+" vs="+newGID);
+			if(DEBUG) System.out.println("WB_Vote:verifySignature: WRONG HASH GID="+this.getGID()+" vs="+newGID);
 			if(DEBUG) System.out.println("WB_Vote:verifySignature: WRONG HASH GID result="+false);
 			return false;
 		}
 		
-		boolean result = Util.verifySignByID(this.getSignableEncoder().getBytes(), pk_ID, signature);
+		boolean result = Util.verifySignByID(this.getSignableEncoder().getBytes(), pk_ID, getSignature());
 		if(DEBUG) System.out.println("WB_Vote:verifySignature: result wGID="+result);
 		return result;
 	}
 	private boolean hashConflictCreationDateDropThis() throws P2PDDSQLException {
 		String this_hash=new String(this.getEntityEncoder().getBytes());
-		String old = new String(new D_Vote(this.global_vote_ID).getEntityEncoder().getBytes());
+		String old = new String(new D_Vote(this.getGID()).getEntityEncoder().getBytes());
 		if(old.compareTo(this_hash)>=0){
 			if(DEBUG) System.out.println("D_Vote:store: signature hashConflictCreationDateDropThis true");
 			return true;
@@ -481,17 +586,17 @@ class D_Vote extends ASNObj{
 		if(DEBUG) System.out.println("D_Vote:store: signature storing");
 
 		String _old_date[] = new String[1];
-		if ((this.vote_ID == null) && (this.global_vote_ID != null))
-			this.vote_ID = getLocalIDandDateforGID(this.global_vote_ID,_old_date);
-		if(this.vote_ID != null ) {
+		if ((this.getLIDstr() == null) && (this.getGID() != null))
+			this.setLID(getLocalIDandDateforGID(this.getGID(),_old_date));
+		if(this.getLIDstr() != null ) {
 			String old_date = _old_date[0];//getDateFor(this.vote_ID);
 			if(old_date != null) {
-				String new_date = Encoder.getGeneralizedTime(this.creation_date);
-				if(new_date.compareTo(old_date) < 0) return new Integer(vote_ID).longValue();
+				String new_date = Encoder.getGeneralizedTime(this.getCreationDate());
+				if(new_date.compareTo(old_date) < 0) return new Integer(getLIDstr()).longValue();
 				if(new_date.compareTo(old_date)==0) {
 					if(hashConflictCreationDateDropThis()) {
 						if(DEBUG) System.out.println("D_Vote:store: signature hashConflictCreationDateDropThis quit");
-						return new Integer(vote_ID).longValue();
+						return new Integer(getLIDstr()).longValue();
 					}
 				}
 			}
@@ -500,36 +605,36 @@ class D_Vote extends ASNObj{
 		config.Application_GUI.inform_arrival(this, __peer);
 
 		
-		if((this.organization_ID == null ) && (this.global_organization_ID != null))
-			this.organization_ID = D_Organization.getLIDstrByGID_(this.global_organization_ID);
-		if((this.organization_ID == null ) && (this.global_organization_ID != null)) {
-			organization_ID = ""+data.D_Organization.insertTemporaryGID(global_organization_ID, __peer);
-			new_rq.orgs.add(global_organization_ID);
+		if((this.getOrganizationLIDstr() == null ) && (this.getOrganizationGID() != null))
+			this.setOrganizationLID(D_Organization.getLIDstrByGID_(this.getOrganizationGID()));
+		if((this.getOrganizationLIDstr() == null ) && (this.getOrganizationGID() != null)) {
+			setOrganizationLID(""+data.D_Organization.insertTemporaryGID(getOrganizationGID(), __peer));
+			new_rq.orgs.add(getOrganizationGID());
 		}
 		
-		if((this.constituent_ID == null ) && (this.global_constituent_ID != null))
-			this.constituent_ID = D_Constituent.getLIDstrFromGID(this.global_constituent_ID, Util.Lval(this.organization_ID));
-		if((this.constituent_ID == null ) && (this.global_constituent_ID != null)) {
-			constituent_ID = Util.getStringID(D_Constituent.insertTemporaryGID(global_constituent_ID, null, Util.lval(this.organization_ID), __peer, default_blocked));
-			new_rq.cons.put(global_constituent_ID,DD.EMPTYDATE);
+		if((this.getConstituentLIDstr() == null ) && (this.getConstituentGID() != null))
+			this.setConstituentLID(D_Constituent.getLIDstrFromGID(this.getConstituentGID(), Util.Lval(this.getOrganizationLIDstr())));
+		if((this.getConstituentLIDstr() == null ) && (this.getConstituentGID() != null)) {
+			setConstituentLID(Util.getStringID(D_Constituent.insertTemporaryGID(getConstituentGID(), null, Util.lval(this.getOrganizationLIDstr()), __peer, default_blocked)));
+			new_rq.cons.put(getConstituentGID(),DD.EMPTYDATE);
 		}
 		
-		if ((this.motion_ID == null) && (this.getMotionGID() != null))
-			this.motion_ID = D_Motion.getLIDstrFromGID(this.getMotionGID(), Util.lval(this.organization_ID));
-		if ((this.motion_ID == null) && (this.getMotionGID() != null)) {
-			this.motion_ID = Util.getStringID(D_Motion.insertTemporaryGID(getMotionGID(), Util.lval(this.organization_ID), __peer, default_blocked_mot));
+		if ((this.getMotionLIDstr() == null) && (this.getMotionGID() != null))
+			this.setMotionLID(D_Motion.getLIDstrFromGID(this.getMotionGID(), Util.lval(this.getOrganizationLIDstr())));
+		if ((this.getMotionLIDstr() == null) && (this.getMotionGID() != null)) {
+			this.setMotionLID(Util.getStringID(D_Motion.insertTemporaryGID(getMotionGID(), Util.lval(this.getOrganizationLIDstr()), __peer, default_blocked_mot)));
 			new_rq.moti.add(getMotionGID());
 		}
 
-		if ((this.justification_ID == null) && (this.global_justification_ID != null))
-			this.justification_ID = D_Justification.getLIDstrFromGID(this.global_justification_ID, Util.Lval(this.organization_ID), Util.Lval(this.motion_ID));
+		if ((this.getJustificationLIDstr() == null) && (this.getJustificationGID() != null))
+			this.setJustificationLID(D_Justification.getLIDstrFromGID(this.getJustificationGID(), Util.Lval(this.getOrganizationLIDstr()), Util.Lval(this.getMotionLIDstr())));
 		
-		if ((this.justification_ID == null) && (this.global_justification_ID != null)) {
-			this.justification_ID = Util.getStringID(D_Justification.insertTemporaryGID(global_justification_ID, Util.lval(this.organization_ID), Util.lval(this.motion_ID), __peer, default_blocked_just));
-			new_rq.just.add(global_justification_ID);
+		if ((this.getJustificationLIDstr() == null) && (this.getJustificationGID() != null)) {
+			this.setJustificationLID(Util.getStringID(D_Justification.insertTemporaryGID(getJustificationGID(), Util.lval(this.getOrganizationLIDstr()), Util.lval(this.getMotionLIDstr()), __peer, default_blocked_just)));
+			new_rq.just.add(getJustificationGID());
 		}
 
-		if(sol_rq!=null)sol_rq.sign.put(this.global_vote_ID, DD.EMPTYDATE);
+		if(sol_rq!=null)sol_rq.sign.put(this.getGID(), DD.EMPTYDATE);
 		
 		return storePMVerified(pm);
 	
@@ -575,76 +680,76 @@ class D_Vote extends ASNObj{
 		boolean default_blocked_mot = false;
 		boolean default_blocked_just = false;
 	
-		if((global_organization_ID==null)&&(organization_ID == null)){
+		if((getOrganizationGID()==null)&&(getOrganizationLIDstr() == null)){
 			Util.printCallPath("cannot store vote with not orgGID");
 			return false;
 		}
 		
-		if((this.global_constituent_ID==null)&&(constituent_ID == null)){
+		if((this.getConstituentGID()==null)&&(getConstituentLIDstr() == null)){
 			Util.printCallPath("cannot store vote with not submitterGID");
 			return false;
 		}
-		if((this.getMotionGID()==null)&&(motion_ID == null)){
+		if((this.getMotionGID()==null)&&(getMotionLIDstr() == null)){
 			Util.printCallPath("cannot store vote with no motionGID");
 			return false;
 		}
 		
-		if((global_organization_ID!=null)&&(organization_ID == null)){
-			organization_ID = Util.getStringID(D_Organization.getLIDbyGID(global_organization_ID));
-			if(tempOrg && (organization_ID == null)) {
-				String orgGID_hash = D_Organization.getOrgGIDHashGuess(global_organization_ID);
+		if((getOrganizationGID()!=null)&&(getOrganizationLIDstr() == null)){
+			setOrganizationLID(Util.getStringID(D_Organization.getLIDbyGID(getOrganizationGID())));
+			if(tempOrg && (getOrganizationLIDstr() == null)) {
+				String orgGID_hash = D_Organization.getOrgGIDHashGuess(getOrganizationGID());
 				if(new_rq!=null)new_rq.orgs.add(orgGID_hash);
-				organization_ID = Util.getStringID(D_Organization.insertTemporaryGID(global_organization_ID, orgGID_hash, default_blocked_org, __peer));
+				setOrganizationLID(Util.getStringID(D_Organization.insertTemporaryGID(getOrganizationGID(), orgGID_hash, default_blocked_org, __peer)));
 				if(default_blocked_org) return false;
 			}
-			if(organization_ID == null) return false;
+			if(getOrganizationLIDstr() == null) return false;
 		}
 		
-		if ((this.global_constituent_ID != null) && (constituent_ID == null)) {
-			this.constituent_ID = D_Constituent.getLIDstrFromGID(global_constituent_ID, Util.Lval(this.organization_ID));
-			if (tempConst && (constituent_ID == null ))  {
-				String consGID_hash = D_Constituent.getGIDHashFromGID(global_constituent_ID);
+		if ((this.getConstituentGID() != null) && (getConstituentLIDstr() == null)) {
+			this.setConstituentLID(D_Constituent.getLIDstrFromGID(getConstituentGID(), Util.Lval(this.getOrganizationLIDstr())));
+			if (tempConst && (getConstituentLIDstr() == null ))  {
+				String consGID_hash = D_Constituent.getGIDHashFromGID(getConstituentGID());
 				if (consGID_hash != null) {
 					if (new_rq != null) new_rq.cons.put(consGID_hash,DD.EMPTYDATE);
-					constituent_ID = Util.getStringID(D_Constituent.insertTemporaryGID(global_constituent_ID, null, Util.lval(this.organization_ID), __peer, default_blocked));
+					setConstituentLID(Util.getStringID(D_Constituent.insertTemporaryGID(getConstituentGID(), null, Util.lval(this.getOrganizationLIDstr()), __peer, default_blocked)));
 				}else{
-					if(_DEBUG) System.out.println("D_Vote:fill_locals: invalidGID:"+this.global_constituent_ID);
+					if(_DEBUG) System.out.println("D_Vote:fill_locals: invalidGID:"+this.getConstituentGID());
 				}
 			}
-			if(constituent_ID == null) return false;
+			if(getConstituentLIDstr() == null) return false;
 		}
 		
-		if((this.getMotionGID()!=null)&&(motion_ID == null)){
-			this.motion_ID = D_Motion.getLIDstrFromGID(getMotionGID(), Util.lval(this.organization_ID));
-			if(tempMotion && (motion_ID == null ))  {
+		if((this.getMotionGID()!=null)&&(getMotionLIDstr() == null)){
+			this.setMotionLID(D_Motion.getLIDstrFromGID(getMotionGID(), Util.lval(this.getOrganizationLIDstr())));
+			if(tempMotion && (getMotionLIDstr() == null ))  {
 				if(new_rq!=null)new_rq.moti.add(getMotionGID());
-				motion_ID = Util.getStringID(D_Motion.insertTemporaryGID(getMotionGID(), Util.lval(this.organization_ID), __peer, default_blocked_mot));
+				setMotionLID(Util.getStringID(D_Motion.insertTemporaryGID(getMotionGID(), Util.lval(this.getOrganizationLIDstr()), __peer, default_blocked_mot)));
 			}
-			if(motion_ID == null) return false;
+			if(getMotionLIDstr() == null) return false;
 		}
 		
-		if((this.global_justification_ID!=null)&&(justification_ID == null)) {
-			this.justification_ID = D_Justification.getLIDstrFromGID(global_justification_ID, Util.Lval(this.organization_ID), Util.Lval(this.motion_ID));
-			if(tempJust && (justification_ID == null ))  {
-				if(new_rq!=null)new_rq.just.add(global_justification_ID);
-				justification_ID = Util.getStringID(D_Justification.insertTemporaryGID(global_justification_ID, Util.Lval(this.organization_ID), Util.Lval(this.motion_ID), __peer, default_blocked_just));
+		if((this.getJustificationGID()!=null)&&(getJustificationLIDstr() == null)) {
+			this.setJustificationLID(D_Justification.getLIDstrFromGID(getJustificationGID(), Util.Lval(this.getOrganizationLIDstr()), Util.Lval(this.getMotionLIDstr())));
+			if(tempJust && (getJustificationLIDstr() == null ))  {
+				if(new_rq!=null)new_rq.just.add(getJustificationGID());
+				setJustificationLID(Util.getStringID(D_Justification.insertTemporaryGID(getJustificationGID(), Util.Lval(this.getOrganizationLIDstr()), Util.Lval(this.getMotionLIDstr()), __peer, default_blocked_just)));
 			}
-			if(justification_ID == null) return false;
+			if(getJustificationLIDstr() == null) return false;
 		}
 		return true;
 	}
 	private void fillGlobals() throws P2PDDSQLException {
-		if((this.organization_ID != null ) && (this.global_organization_ID == null))
-			this.global_organization_ID = D_Organization.getGIDbyLIDstr(this.organization_ID);
+		if((this.getOrganizationLIDstr() != null ) && (this.getOrganizationGID() == null))
+			this.setOrganizationGID(D_Organization.getGIDbyLIDstr(this.getOrganizationLIDstr()));
 
-		if((this.justification_ID != null ) && (this.global_justification_ID == null))
-			this.global_justification_ID = D_Justification.getGIDFromLID(this.justification_ID);
+		if((this.getJustificationLIDstr() != null ) && (this.getJustificationGID() == null))
+			this.setJustificationGID(D_Justification.getGIDFromLID(this.getJustificationLIDstr()));
 		
-		if((this.motion_ID != null ) && (this.getMotionGID() == null))
-			this.setMotionGID(D_Motion.getGIDFromLID(this.motion_ID));
+		if((this.getMotionLIDstr() != null ) && (this.getMotionGID() == null))
+			this.setMotionGID(D_Motion.getGIDFromLID(this.getMotionLIDstr()));
 		
-		if((this.constituent_ID != null ) && (this.global_constituent_ID == null))
-			this.global_constituent_ID = D_Constituent.getGIDFromLID(this.constituent_ID);
+		if((this.getConstituentLIDstr() != null ) && (this.getConstituentGID() == null))
+			this.setConstituentGID(D_Constituent.getGIDFromLID(this.getConstituentLIDstr()));
 	}
 	public long storeVerified() throws P2PDDSQLException {
 		return storePMVerified(null);
@@ -667,87 +772,87 @@ class D_Vote extends ASNObj{
 		long result = -1;
 		if(DEBUG) System.out.println("WB_Vote:storeVerified: start arrival="+Encoder.getGeneralizedTime(arrival_date));
 		
-		if((this.organization_ID == null ) && (this.global_organization_ID != null))
-			this.organization_ID = D_Organization.getLIDstrByGID_(this.global_organization_ID);
+		if((this.getOrganizationLIDstr() == null ) && (this.getOrganizationGID() != null))
+			this.setOrganizationLID(D_Organization.getLIDstrByGID_(this.getOrganizationGID()));
 		
-		if(this.constituent_ID == null )
-			constituent_ID = D_Constituent.getLIDstrFromGID(this.global_constituent_ID, Util.Lval(organization_ID));
+		if(this.getConstituentLIDstr() == null )
+			setConstituentLID(D_Constituent.getLIDstrFromGID(this.getConstituentGID(), Util.Lval(getOrganizationLIDstr())));
 		
-		if(constituent_ID == null){
+		if(getConstituentLIDstr() == null){
 			if(_DEBUG) System.out.println("WB_Vote:storeVerified: abandon no signer!");
 			return -1;
 		}
-		if((this.motion_ID == null ) && (this.getMotionGID() != null))
-			this.motion_ID = D_Motion.getLIDstrFromGID(this.getMotionGID(), Util.lval(organization_ID));
+		if((this.getMotionLIDstr() == null ) && (this.getMotionGID() != null))
+			this.setMotionLID(D_Motion.getLIDstrFromGID(this.getMotionGID(), Util.lval(getOrganizationLIDstr())));
 		
-		if((this.justification_ID == null ) && (this.global_justification_ID != null))
-			this.justification_ID = D_Justification.getLIDstrFromGID(this.global_justification_ID, Util.lval(organization_ID), Util.lval(motion_ID));
+		if((this.getJustificationLIDstr() == null ) && (this.getJustificationGID() != null))
+			this.setJustificationLID(D_Justification.getLIDstrFromGID(this.getJustificationGID(), Util.lval(getOrganizationLIDstr()), Util.lval(getMotionLIDstr())));
 
 		
-		if((this.vote_ID == null ) && (this.global_vote_ID != null))
-			this.vote_ID = D_Vote.getSignatureLocalID(this.global_vote_ID);
+		if((this.getLIDstr() == null ) && (this.getGID() != null))
+			this.setLID(D_Vote.getSignatureLocalID(this.getGID()));
 		
 		if(DEBUG) System.out.println("WB_Vote:storeVerified: fixed local="+this);
 		
 		String params[] = new String[table.signature.S_FIELDS];
-		params[table.signature.S_HASH_ALG] = this.hash_alg;
-		params[table.signature.S_GID] = this.global_vote_ID;
-		params[table.signature.S_CONSTITUENT_ID] = this.constituent_ID;
-		params[table.signature.S_JUSTIFICATION_ID] = this.justification_ID;
-		params[table.signature.S_MOTION_ID] = this.motion_ID;
-		params[table.signature.S_SIGNATURE] = Util.stringSignatureFromByte(signature);
-		params[table.signature.S_CHOICE] = this.choice;
+		params[table.signature.S_HASH_ALG] = this.getVersion();
+		params[table.signature.S_GID] = this.getGID();
+		params[table.signature.S_CONSTITUENT_ID] = this.getConstituentLIDstr();
+		params[table.signature.S_JUSTIFICATION_ID] = this.getJustificationLIDstr();
+		params[table.signature.S_MOTION_ID] = this.getMotionLIDstr();
+		params[table.signature.S_SIGNATURE] = Util.stringSignatureFromByte(getSignature());
+		params[table.signature.S_CHOICE] = this.getChoice();
 		params[table.signature.S_FORMAT] = this.format;
-		params[table.signature.S_CREATION] = Encoder.getGeneralizedTime(this.creation_date);
+		params[table.signature.S_CREATION] = Encoder.getGeneralizedTime(this.getCreationDate());
 		params[table.signature.S_ARRIVAL] = Encoder.getGeneralizedTime(arrival_date);
-		if(this.vote_ID == null) {
+		if(this.getLIDstr() == null) {
 			if(DEBUG) System.out.println("WB_Vote:storeVerified:inserting");
 			result = Application.db.insert(table.signature.TNAME,
 					table.signature.fields_array,
 					params,
 					DEBUG
 					);
-			vote_ID=""+result;
+			setLID(""+result);
 		}else{
 			if(DEBUG) System.out.println("WB_Vote:storeVerified:inserting");
-			params[table.signature.S_ID] = vote_ID;
+			params[table.signature.S_ID] = getLIDstr();
 			Application.db.update(table.signature.TNAME,
 					table.signature.fields_noID_array,
 					new String[]{table.signature.signature_ID},
 					params,
 					DEBUG
 					);
-			result = Util.lval(this.vote_ID, -1);
+			result = Util.lval(this.getLIDstr(), -1);
 		}
 		synchronized(BroadcastClient.msgs_monitor) {
 			if(BroadcastClient.msgs!=null) {
 				D_Message dm = new D_Message();
-				if((this.constituent_ID != null ) && (this.global_constituent_ID == null))
-					this.global_constituent_ID = D_Constituent.getGIDFromLID(this.constituent_ID);
-				if((this.motion_ID != null ) && (this.getMotionGID() == null))
-					this.setMotionGID(D_Motion.getGIDFromLID(this.motion_ID));
-				if((this.justification_ID != null ) && (this.global_justification_ID == null))
-					this.global_justification_ID = D_Justification.getGIDFromLID(this.justification_ID);
-				if((this.organization_ID != null ) && (this.global_organization_ID == null))
-					this.global_organization_ID = D_Organization.getGIDbyLIDstr(this.organization_ID);
+				if((this.getConstituentLIDstr() != null ) && (this.getConstituentGID() == null))
+					this.setConstituentGID(D_Constituent.getGIDFromLID(this.getConstituentLIDstr()));
+				if((this.getMotionLIDstr() != null ) && (this.getMotionGID() == null))
+					this.setMotionGID(D_Motion.getGIDFromLID(this.getMotionLIDstr()));
+				if((this.getJustificationLIDstr() != null ) && (this.getJustificationGID() == null))
+					this.setJustificationGID(D_Justification.getGIDFromLID(this.getJustificationLIDstr()));
+				if((this.getOrganizationLIDstr() != null ) && (this.getOrganizationGID() == null))
+					this.setOrganizationGID(D_Organization.getGIDbyLIDstr(this.getOrganizationLIDstr()));
 				dm.vote = this; // may have to add GIDs
 				dm.sender = D_Peer.getEmpty();
 				dm.sender.component_basic_data.globalID = HandlingMyself_Peer.getMyPeerGID(); //DD.getAppText(DD.APP_my_global_peer_ID);
 				dm.sender.component_basic_data.name = HandlingMyself_Peer.getMyPeerName(); //DD.getAppText(DD.APP_my_peer_name);
 
-				if((this.signature!=null) && (global_vote_ID != null)) {
+				if((this.getSignature()!=null) && (getGID() != null)) {
 					if(pm != null) {
 						if(pm.raw == null)pm.raw = dm.encode();
-						if(pm.motion_ID == null)pm.motion_ID=this.motion.getGID();
-						if(this.constituent.global_constituent_id_hash != null)pm.constituent_ID_hash.add(this.constituent.global_constituent_id_hash);
-						if(this.justification!=null)
-							if(this.justification.getGID() != null)
-						pm.justification_ID = this.justification.getGID();
-						if(this.global_organization_ID !=null)pm.org_ID_hash = this.global_organization_ID;
+						if(pm.motion_ID == null)pm.motion_ID=this.getMotion().getGID();
+						if(this.getConstituent().global_constituent_id_hash != null)pm.constituent_ID_hash.add(this.getConstituent().global_constituent_id_hash);
+						if(this.getJustification()!=null)
+							if(this.getJustification().getGID() != null)
+						pm.justification_ID = this.getJustification().getGID();
+						if(this.getOrganizationGID() !=null)pm.org_ID_hash = this.getOrganizationGID();
 					
 						BroadcastClient.msgs.registerRecent(pm, BroadcastQueueHandled.VOTE);
 					}
-					ClientSync.payload_recent.add(streaming.RequestData.SIGN, this.global_vote_ID, this.creation_date, D_Organization.getOrgGIDHashGuess(this.global_organization_ID), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
+					ClientSync.payload_recent.add(streaming.RequestData.SIGN, this.getGID(), this.getCreationDate(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 				}
 			}
 		}
@@ -775,11 +880,11 @@ class D_Vote extends ASNObj{
 	}
 
 	public boolean setEditable() {
-		if(signature == null){
+		if(getSignature() == null){
 			if(DEBUG) out.println("D_Vote:editable: no sign");
 			return true;
 		}
-		if(this.global_vote_ID == null){
+		if(this.getGID() == null){
 			if(DEBUG) out.println("D_Vote:editable: no GID");
 			return true;
 		}
@@ -902,13 +1007,13 @@ class D_Vote extends ASNObj{
 			else System.out.println("\n************Signature Pass\n**********\nread="+c);
 			Decoder dec = new Decoder(c.getEncoder().getBytes());
 			D_Vote d = new D_Vote().decode(dec);
-			Calendar arrival_date = d.arrival_date=Util.CalendargetInstance();
+			Calendar arrival_date = d.setArrivalDate(Util.CalendargetInstance());
 			//if(d.global_organization_ID==null) d.global_organization_ID = OrgHandling.getGlobalOrgID(d.organization_ID);
 			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
 			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
-			d.global_vote_ID = d.make_ID();
+			d.setGID(d.make_ID());
 			//d.storeVerified(arrival_date);
-			if(_DEBUG) out.println("D_Vote:editable: ID="+d.global_vote_ID);
+			if(_DEBUG) out.println("D_Vote:editable: ID="+d.getGID());
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		} catch (ASN1DecoderFail e) {
@@ -1018,9 +1123,9 @@ class D_Vote extends ASNObj{
 	}
 	public boolean readyToSend() {
 		if(this.getMotionGID()==null) return false;
-		if(this.global_vote_ID==null) return false;
-		if(this.global_constituent_ID==null) return false;
-		if((this.signature==null)||(this.signature.length==0)) return false;
+		if(this.getGID()==null) return false;
+		if(this.getConstituentGID()==null) return false;
+		if((this.getSignature()==null)||(this.getSignature().length==0)) return false;
 		return true;
 	}
 	static final String sql_ac = "SELECT count(*) FROM "+table.signature.TNAME+" AS s "+
@@ -1066,7 +1171,118 @@ class D_Vote extends ASNObj{
 
 		this.global_motion_ID = global_motion_ID;
 	}
-	
-
+	public String getJustificationLIDstr() {
+		return justification_ID;
+	}
+	public void setJustificationLID(String justification_ID) {
+		this.justification_ID = justification_ID;
+	}
+	public String getJustificationGID() {
+		return global_justification_ID;
+	}
+	public void setJustificationGID(String global_justification_ID) {
+		this.global_justification_ID = global_justification_ID;
+	}
+	public Calendar getCreationDate() {
+		return creation_date;
+	}
+	public void setCreationDate(Calendar creation_date) {
+		this.creation_date = creation_date;
+	}
+	public Calendar getArrivalDate() {
+		return arrival_date;
+	}
+	public Calendar setArrivalDate(Calendar arrival_date) {
+		this.arrival_date = arrival_date;
+		return arrival_date;
+	}
+	public byte[] getSignature() {
+		return signature;
+	}
+	public void setSignature(byte[] signature) {
+		this.signature = signature;
+	}
+	public String getChoice() {
+		return choice;
+	}
+	public void setChoice(String choice) {
+		this.choice = choice;
+	}
+	public String getConstituentGID() {
+		return global_constituent_ID;
+	}
+	public void setConstituentGID(String global_constituent_ID) {
+		this.global_constituent_ID = global_constituent_ID;
+	}
+	public String getGID() {
+		return global_vote_ID;
+	}
+	public void setGID(String global_vote_ID) {
+		this.global_vote_ID = global_vote_ID;
+	}
+	public String getVersion() {
+		return hash_alg;
+	}
+	public void setVersion(String hash_alg) {
+		this.hash_alg = hash_alg;
+	}
+	public String getOrganizationGID() {
+		return global_organization_ID;
+	}
+	public void setOrganizationGID(String global_organization_ID) {
+		this.global_organization_ID = global_organization_ID;
+	}
+	public String getLIDstr() {
+		return vote_ID;
+	}
+	public void setLID(String vote_ID) {
+		this.vote_ID = vote_ID;
+	}
+	public String getConstituentLIDstr() {
+		return constituent_ID;
+	}
+	public void setConstituentLID(String constituent_ID) {
+		this.constituent_ID = constituent_ID;
+	}
+	public String getMotionLIDstr() {
+		return motion_ID;
+	}
+	public void setMotionLID(String motion_ID) {
+		this.motion_ID = motion_ID;
+	}
+	public String getOrganizationLIDstr() {
+		return organization_ID;
+	}
+	public void setOrganizationLID(String organization_ID) {
+		this.organization_ID = organization_ID;
+	}
+	public D_Constituent getConstituent() {
+		String cLID = this.getConstituentLIDstr();
+		if ((this.constituent == null) && (cLID != null))
+			this.constituent = D_Constituent.getConstByLID(cLID, true, false);
+		return constituent;
+	}
+	public void setConstituent(D_Constituent constituent) {
+		this.constituent = constituent;
+	}
+	public D_Motion getMotion() {
+		String mLID = this.getMotionLIDstr();
+		if ((this.motion == null) && (mLID != null))
+			this.motion = D_Motion.getMotiByLID(mLID, true, false);
+		return motion;
+	}
+	public void setMotion(D_Motion motion) {
+		this.motion = motion;
+	}
+	public D_Justification getJustification() {
+		String jLID = this.getJustificationLIDstr();
+		if ((this.justification == null) && (jLID != null))
+			this.justification = D_Justification.getJustByLID(jLID, true, false);
+		return justification;
+	}
+	public D_Justification setJustification(D_Justification justification) {
+		this.justification = justification;
+		return justification;
+	}
 
 }

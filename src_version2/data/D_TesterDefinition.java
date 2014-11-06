@@ -149,7 +149,7 @@ public class D_TesterDefinition extends ASNObj implements Summary{
 		
 		String params[] = new String[table.tester.F_FIELDS];
 
-		if(update) {
+		if (update) {
 			params[table.tester.F_ORIGINAL_TESTER_NAME] = this.name;
 			params[table.tester.F_PUBLIC_KEY] = this.public_key;
 			params[table.tester.F_EMAIL] = this.email;

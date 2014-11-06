@@ -93,7 +93,7 @@ public class ReceivedBroadcastableMessages {
 		if(DEBUG)System.out.println("ReceivedBroadcastableMessages : integrateMessage : msg : "+pm.raw);
 		Decoder dec = new Decoder(obtained);
 		D_Message msg = new D_Message().decode(dec);
-		if(DEBUG)System.out.println("integrateMessage : After Decoding msg : msg.vote.org_ID :"+msg.vote.global_organization_ID);
+		if(DEBUG)System.out.println("integrateMessage : After Decoding msg : msg.vote.org_ID :"+msg.vote.getOrganizationGID());
 		
 		
 		
@@ -235,14 +235,14 @@ public class ReceivedBroadcastableMessages {
 						long added_Org = handle_org(pm, msg.organization);
 						//System.exit(1);
 						if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:ORG ID : "+added_Org);
-						long added_cons =  handle_constituent(pm, msg.vote.constituent,msg.organization.global_organization_ID,added_Org, __peer);
+						long added_cons =  handle_constituent(pm, msg.vote.getConstituent(),msg.organization.global_organization_ID,added_Org, __peer);
 						if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:CONS ID : "+added_cons);
 					}
 					//else{System.out.println("ReceivedBroacastableMessage:integrateMessage ms.organization is null");}
-					int result = D_Vote.isGIDavailable(msg.vote.global_vote_ID, false);
+					int result = D_Vote.isGIDavailable(msg.vote.getGID(), false);
 					added_vote = handle_vote(pm, msg.vote, __peer);
 					WirelessLog.RCV_logging(WirelessLog.vote_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
-					if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:VOTE DATA : "+msg.vote.global_vote_ID);
+					if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:VOTE DATA : "+msg.vote.getGID());
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
 					count_dots++;
 				}
@@ -286,15 +286,15 @@ public class ReceivedBroadcastableMessages {
 		long o_ID = -1; // vote.motion.getOrganizationLID();
 		
 		long motion_id = -1;
-		if (vote.motion != null) {
+		if (vote.getMotion() != null) {
 			if (DEBUG) System.out.println("with MOTION");
-			if (DEBUG) System.out.println("MOTION Data : "+vote.motion);
-			if (o_ID <= 0) o_ID = D_Organization.getLIDbyGID(vote.motion.getGID()); //vote.motion.getOrganizationLID();
+			if (DEBUG) System.out.println("MOTION Data : "+vote.getMotion());
+			if (o_ID <= 0) o_ID = D_Organization.getLIDbyGID(vote.getMotion().getGID()); //vote.motion.getOrganizationLID();
 			RequestData sol_rq = new RequestData();
 			RequestData new_rq = new RequestData();
 			
-			D_Motion m = D_Motion.getMotiByGID(vote.motion.getGID(), true, true, true, __peer, o_ID, null);
-			m.loadRemote(vote.motion, sol_rq, new_rq, __peer); //.store(sol_rq, new_rq);//pm should be passed
+			D_Motion m = D_Motion.getMotiByGID(vote.getMotion().getGID(), true, true, true, __peer, o_ID, null);
+			m.loadRemote(vote.getMotion(), sol_rq, new_rq, __peer); //.store(sol_rq, new_rq);//pm should be passed
 			motion_id = m.storeRequest_getID();
 			m.releaseReference();
 			
@@ -304,14 +304,14 @@ public class ReceivedBroadcastableMessages {
 			if (DEBUG) System.out.println("WITHOUT MOTION");
 		
 		long just_id = -1;
-		if(vote.justification!=null) {
+		if(vote.getJustification()!=null) {
 			if(DEBUG)System.out.println("with JUSTIFICATION");
-			if(DEBUG)System.out.println("JUST Data : "+vote.justification);
+			if(DEBUG)System.out.println("JUST Data : "+vote.getJustification());
 			RequestData sol_rq = new RequestData();
 			RequestData new_rq = new RequestData();
 			try {
-				D_Justification j = D_Justification.getJustByGID(vote.justification.getGID(), true, true, true, __peer, o_ID, motion_id, vote.justification);
-				j.loadRemote(vote.justification, sol_rq, new_rq, __peer);
+				D_Justification j = D_Justification.getJustByGID(vote.getJustification().getGID(), true, true, true, __peer, o_ID, motion_id, vote.getJustification());
+				j.loadRemote(vote.getJustification(), sol_rq, new_rq, __peer);
 				just_id = j.storeRequest_getID();
 				j.releaseReference();
 				//just_id =  vote.justification.store(sol_rq, new_rq);//pm should be passed

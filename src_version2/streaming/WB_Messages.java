@@ -172,6 +172,9 @@ public class WB_Messages extends ASNObj{
 		if(DEBUG) System.out.println("WB_Messages: getRequestedData: data request content #"+rd.size());
 		
 		for(RequestData r: rd) {
+			long p_oLID = -1;
+			if (r.global_organization_ID_hash != null) 
+				p_oLID = D_Organization.getLIDbyGIDH(r.global_organization_ID_hash);
 			for(String gid_or_hash: r.orgs) {
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: org gid="+gid_or_hash);
 				String gid = D_GIDH.getGID(gid_or_hash);
@@ -199,8 +202,13 @@ public class WB_Messages extends ASNObj{
 				if ((sa != null) && (gid != null) && sa.hasConstituent(gid, r.cons.get(gid))) continue;
 				if ((sa != null) && (gidh != null) && sa.hasConstituent(gidh, r.cons.get(gidh))) continue;
 				try {
-					D_Constituent c = D_Constituent.getConstByGID_or_GIDH(gid, gidh, true, false);
-					if (!c.readyToSend()) continue;
+					D_Constituent c;
+					if (p_oLID <= 0) {
+						System.out.println("WC_Messages: getRequestedData: rd="+rd);
+						c = D_Constituent.getConstByGID_or_GIDH(gid, gidh, true, false);
+					}else
+						c = D_Constituent.getConstByGID_or_GIDH(gid, gidh, true, false, false, null, p_oLID);
+					if (c == null || ! c.readyToSend()) continue;
 					if (!OrgHandling.serving(asr, c.getOrganizationIDStr())) continue;
 					result.cons.add(c);
 				} catch(Exception e) {
@@ -287,7 +295,7 @@ public class WB_Messages extends ASNObj{
 				try{
 					D_Vote v = new D_Vote(gid);
 					if(!v.readyToSend()) continue;
-					if(!OrgHandling.serving(asr, v.organization_ID)) continue;
+					if(!OrgHandling.serving(asr, v.getOrganizationLIDstr())) continue;
 					result.sign.add(v);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got vote");
 				}
@@ -345,18 +353,21 @@ public class WB_Messages extends ASNObj{
 		}
 	}
 	/**
-	 * 		Hashtable<String, RequestData> obtained_sr = new Hashtable<String, RequestData>();
+	 * 	Hashtable<String, RequestData> obtained_sr = new Hashtable<String, RequestData>();
 		Hashtable<String, RequestData> sq_sr = new Hashtable<String, RequestData>();
 
 	 eventually, we should get mostly org_hash rather than orgGID....
 
-	 * @param r
+	 * @param _asa : the incoming message (or null if manually added)
+	 * @param peer : the peer sending the message (to be used to tag the temporary items)
+	 * @param r : the set of messages to store
 	 * @param missing_sr {GID : RequestData}
 	 * @param obtained_sr
 	 * @param orgs : the list of orgs mentioned
+	 * @param dbg_msg : a debugging message (like the ID of the sender, with a text)
 	 * @throws P2PDDSQLException
 	 */
-	public static void store(ASNSyncPayload asa, D_Peer peer, WB_Messages r,
+	public static void store(ASNSyncPayload _asa, D_Peer peer, WB_Messages r,
 			Hashtable<String, RequestData> missing_sr,
 			Hashtable<String, RequestData> obtained_sr,
 			HashSet<String> orgs, String dbg_msg) throws P2PDDSQLException {
@@ -622,7 +633,7 @@ public class WB_Messages extends ASNObj{
 		for(D_Vote v: r.sign) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle vote: "+v);
 			try{
-				rq = missing_sr.get(v.global_organization_ID);
+				rq = missing_sr.get(v.getOrganizationGID());
 				if(rq==null) rq = new RequestData();
 				sol_rq = new RequestData();
 				new_rq = new RequestData();
@@ -633,13 +644,13 @@ public class WB_Messages extends ASNObj{
 				}
 				if(DEBUG) System.out.println("WB_Messages: store: handled vote: "+v);
 				rq.update(sol_rq, new_rq);
-				missing_sr.put(v.global_organization_ID, rq);			
+				missing_sr.put(v.getOrganizationGID(), rq);			
 				
-				obtained = obtained_sr.get(v.global_organization_ID);
+				obtained = obtained_sr.get(v.getOrganizationGID());
 				if (obtained == null) obtained = new RequestData();
-				obtained.sign.put(v.global_vote_ID, DD.EMPTYDATE);
-				obtained_sr.put(v.global_organization_ID, obtained);
-				orgs.add(v.global_organization_ID);
+				obtained.sign.put(v.getGID(), DD.EMPTYDATE);
+				obtained_sr.put(v.getOrganizationGID(), obtained);
+				orgs.add(v.getOrganizationGID());
 			}catch(Exception e){
 				if(_DEBUG) System.out.println("WB_Messages: store: failed vote: "+dbg_msg+" for v="+v);
 				e.printStackTrace();

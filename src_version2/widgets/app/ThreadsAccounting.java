@@ -1,5 +1,6 @@
 package widgets.app;
 
+import java.awt.EventQueue;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
@@ -10,7 +11,6 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
 import ASN1.Encoder;
-
 import util.Util;
 import widgets.org.Orgs;
 import widgets.threads.ThreadsView;
@@ -153,10 +153,17 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 		Thread_Info old_info;
 		synchronized (monitor_running) {
 			if ((old_info = running.get(crt)) == null) {
-				System.out.println("ThreadsAccounting:ping Already unexisting: "+crt);
-				Util.printCallPath("ThreadsAccounting:ping unexisting");
 				old_info = new Thread_Info();
-				old_info.name = __("Unknown Thread:")+" "+crt.getName();
+				
+				if (! SwingUtilities.isEventDispatchThread() && ! EventQueue.isDispatchThread()) {
+					System.out.println("ThreadsAccounting:ping Already unexisting: "+crt);
+					Util.printCallPath("ThreadsAccounting:ping unexisting");
+					old_info.name = __("Unknown Thread:")+" "+crt.getName();
+				} else {
+					System.out.println("ThreadsAccounting:ping from Swing Event: "+crt);
+					old_info.name = "Swing Event:"+" "+crt.getName();
+				}
+				
 				old_info.creation_date = Util.CalendargetInstance();
 				old_info._creation_date = Encoder.getGeneralizedTime(old_info.creation_date);
 				old_info._last_ping_date = old_info._creation_date;

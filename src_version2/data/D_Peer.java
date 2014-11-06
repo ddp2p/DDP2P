@@ -1400,12 +1400,34 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		return -1;
 	}
 	/**
+	 * The next monitor is used for the storeAct, to avoid concurrent modifications of the same object.
+	 * Potentially the monitor can be a field in the same object (since saving of different objects
+	 * is not considered dangerous, even when they are of the same type)
+	 * 
+	 * What we do is the equivalent of a synchronized method "storeAct" that we avoid to avoid accidental synchronization
+	 * with other methods.
+	 */
+	final Object monitor = new Object();
+	//static final Object monitor = new Object();
+	
+	/**
 	 * 
 	 * The actual saving function where everything happens :)
 	 * @return
 	 * @throws P2PDDSQLException 
 	 */
-	synchronized public long storeAct() throws P2PDDSQLException {
+	public long storeAct() throws P2PDDSQLException {
+		synchronized(monitor) {
+			return _storeAct();
+		}
+	}
+	/**
+	 * This is not synchronized
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	//synchronized 
+	private long _storeAct() throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		//if (DEBUG) Util.printCallPath("");
 		//Util.printCallPath("store:"+this);
@@ -5229,18 +5251,18 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			return;
 		}
 		this.status_lock_write--;
-		// Application_GUI.ThreadsAccounting_ping("Drop peer references for "+getName());
+		Application_GUI.ThreadsAccounting_ping("Drop peer lock references for "+getName());
 		synchronized(monitor_reserve) {
 			monitor_reserve.notify();
 		}
-		//Application_GUI.ThreadsAccounting_ping("Dropped peer references for "+getName());
+		Application_GUI.ThreadsAccounting_ping("Dropped peer lock references for "+getName());
 	}
 	public int get_StatusReferences() {
 		return status_references;
 	}
 	public int inc_StatusReferences() {
 		this.assertReferenced(); // keep it in the process to avoid it being dropped before inc
-		Application_GUI.ThreadsAccounting_ping("Raised peer references for "+getName());
+		Application_GUI.ThreadsAccounting_ping("Raised peer status references for "+getName());
 		return status_references++;
 	}
 	public void dec_StatusReferences() {
@@ -5249,7 +5271,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			return;
 		}
 		this.status_references--;
-		Application_GUI.ThreadsAccounting_ping("Dropped peer references for "+getName());
+		Application_GUI.ThreadsAccounting_ping("Dropped peer status references for "+getName());
 	}
 
 
@@ -5318,7 +5340,7 @@ class D_Peer_SaverThreadWorker extends util.DDP2P_ServiceThread {
 	private static final long SAVER_SLEEP = 5000;
 	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
-	public static final Object saver_thread_monitor = new Object();
+	//public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
 	D_Peer_SaverThreadWorker() {
 		super("D_Peer Saver Worker", false);

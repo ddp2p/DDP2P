@@ -1,58 +1,30 @@
 package tools;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
-import util.DBInterface;
 
-import config.Application;
+import util.DBInterface;
 import config.DD;
 import table.mirror;
 import table.tester; // = tester + updateKeys;
 import table.updates;  // = mirror
 import table.updatesKeys;
 import table.application;
-
 import data.D_MirrorInfo;
 import data.D_ReleaseQuality;
 import data.D_TesterInfo;
 import data.D_UpdatesKeysInfo;
 import data. D_TesterDefinition;
-
-import ASN1.Decoder;
 import util.P2PDDSQLException;
 import util.Util;
 
 public class MigrateMirrors {
 	
 	private static final boolean _DEBUG = true;
-	public static void main(String args[]){
-		try {
-			_main(args);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	public static void _main(String args[]) throws Exception{
-		
-//		System.out.println("Try: hash="+hash);
-//		if(hash == null) return;
-		if(args.length>1) {
-			String oldDB = args[0];
-			String newDB = args[1];
-			DBInterface dbSrc = new DBInterface(oldDB);
-			DBInterface dbDes = new DBInterface(newDB);
-			migrateIfNeeded(args[0], args[1], dbSrc, dbDes);
-		} else{
-			String dbase = Application.DELIBERATION_FILE;
-			if(args.length>0) dbase = args[0];
-			DBInterface db = new DBInterface(dbase);// this is just a default DB
-			String db2path=null;
-			Application.db = db;
-			migrate(db); 
-		}
-	}
 	static boolean DEBUG = false; 
+	public static final String sql_getAppFieldRaw = " SELECT "+application.value+
+			         " FROM "+application.TNAME+
+			         " WHERE "+application.field+" =?"+" ;";
 	public static boolean migrateIfNeeded(String oldDB, String newDB, DBInterface _oldDB, DBInterface _newDB){
 		try{
 			_migrateIfNeeded(oldDB, newDB, _oldDB, _newDB);
@@ -65,15 +37,12 @@ public class MigrateMirrors {
 			DBInterface dbSrc, DBInterface dbDes
 			)throws Exception{
 		
-		String sql = " SELECT "+application.value+
-			         " FROM "+application.TNAME+
-			         " WHERE "+application.field+" =?"+" ;";
 		String[]params = new String[]{DD.DD_DB_VERSION};// where clause?
 		
 		ArrayList<ArrayList<Object>> u,u2;
 		try {
-			u = dbSrc.select(sql, params, DEBUG);
-			u2 = dbDes.select(sql, params, DEBUG);
+			u = dbSrc.select(sql_getAppFieldRaw, params, DEBUG);
+			u2 = dbDes.select(sql_getAppFieldRaw, params, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
@@ -87,6 +56,10 @@ public class MigrateMirrors {
 		if(Util.isVersionNewer("1.0.6", newVersion)) return;
 		migrate(dbDes);
 	}	
+	/**
+	 * Move from database versions up to 1.0.5 having the "updates" table, to newer databases using the "mirror" table 
+	 * @param db
+	 */
 	public static void migrate(DBInterface db){
 	    // migrate from updates to mirror table
 		String sql = "SELECT "+updates.fields_updates+" FROM "+updates.TNAME+";";
@@ -95,6 +68,9 @@ public class MigrateMirrors {
 		try {
 			u = db.select(sql, params, DEBUG);
 		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return;
+		} catch (Exception e) {
 			e.printStackTrace();
 			return;
 		}

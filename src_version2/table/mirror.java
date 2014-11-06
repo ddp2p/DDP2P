@@ -42,8 +42,14 @@ public class mirror {
 	public static final String location = "location" ; // new field good for faster download! 
 	public static final String protocol = "protocol" ; // new field "http" or "ftp"
 	public static final String data_version= "data_version"; // new field, signed fields
-	public static final String creation_date = "creation_date"; // new field, ??
+	public static final String creation_date_for_mirror_data = "creation_date"; // new field, ??
 	public static final String preference_date = "preference_date"; // new field, ??
+	public static final String signature = "signature"; // new field, signature of the mirror data
+	
+	public static final String revoked = "revoked";
+	public static final String revoked_info = "revoked_info";
+	public static final String revoked_GID_hash = "revoked_GID_hash";
+	
 			
 	public static final String fields_updates_no_ID = 
 			public_key+","+
@@ -61,8 +67,12 @@ public class mirror {
 			location+","+
 			protocol+","+
 			data_version+","+
-			creation_date+","+
-			preference_date;
+			creation_date_for_mirror_data+","+
+			preference_date+","+
+			signature+","+
+			revoked+","+
+			revoked_info+","+
+			revoked_GID_hash;
 			
 	public static final String[] _fields_updates_no_ID = Util.trimmed(fields_updates_no_ID.split(Pattern.quote(",")));
 	public static final String fields_updates = fields_updates_no_ID+","+mirror_ID;
@@ -85,6 +95,10 @@ public class mirror {
 	public static final int F_DATA_VERSION=14;
 	public static final int F_CREATION_DATE=15;
 	public static final int F_PREFERENCE_DATE=16;
-	public static final int F_ID = 17;
+	public static final int F_SIGNATURE=17;
+	public static final int F_REVOKED = 18;
+	public static final int F_REVOKED_INFO = 19;
+	public static final int F_REVOKED_GID_HASH = 20;
+	public static final int F_ID = 21;
 	
 }

@@ -178,6 +178,9 @@ public class D_MirrorInfo extends ASN1.ASNObj implements Summary{
 	                                        releaseQoT[2].subQualities[1]="ResponseTime";  	
 		*/
 	}
+	public static final String sql_upd = "SELECT "+table.mirror.url +
+			" FROM "+table.mirror.TNAME+
+			" WHERE "+table.mirror.used+"= ? ;";
 	/**
 	 * Retrieve mirrors urls from the DB
 	 * @param 
@@ -187,9 +190,7 @@ public class D_MirrorInfo extends ASN1.ASNObj implements Summary{
 	static public ArrayList<String> getUpdateURLs() throws P2PDDSQLException{
     	ArrayList<String> result =new ArrayList<String>() ;
     	ArrayList<ArrayList<Object>> urls;
-    	urls=Application.db.select("SELECT "+table.mirror.url +
-    			" FROM "+table.mirror.TNAME+
-    			" WHERE "+table.mirror.used+"= ? ;",
+    	urls=Application.db.select(sql_upd,
     			new String[]{"1"}, DEBUG);
     	if(urls.size()==0){
     		if(DEBUG) System.err.println(__("No URLs found in table: ")+table.mirror.TNAME);

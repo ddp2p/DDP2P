@@ -1172,25 +1172,28 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 
 	}
 	public void setClientUpdatesStatus(boolean _run) {
-		if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: got servers status: updates="+_run);
-		if(DD.GUI) {
+		boolean DEBUG = ControlPane.DEBUG || ClientUpdates.DEBUG;
+		if (DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: got servers status: updates="+_run);
+		if (DD.GUI) {
 			if(EventQueue.isDispatchThread()) {		
 				if(_DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: in dispatch: updates="+_run);
 				if(_run)startClientUpdates.setText(STARTING_CLIENT_UPDATES);
 				else startClientUpdates.setText(STOPPING_CLIENT_UPDATES);
 			}
 			else{
-				if(_run) {
+				if (_run) {
 					EventQueue.invokeLater(new Runnable() {
-						public void run(){
+						boolean DEBUG = ControlPane.DEBUG || ClientUpdates.DEBUG;
+						public void run() {
 							if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: in dispatch: updates starting");
 							startClientUpdates.setText(STARTING_CLIENT_UPDATES);
 						}
 					});
 				}
-				else{
-					EventQueue.invokeLater(new Runnable(){
-						public void run(){
+				else {
+					EventQueue.invokeLater(new Runnable() {
+						boolean DEBUG = ControlPane.DEBUG || ClientUpdates.DEBUG;
+						public void run() {
 							if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: in dispatch: updates stopping");
 							startClientUpdates.setText(STOPPING_CLIENT_UPDATES);
 						}
@@ -1199,11 +1202,11 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				}
 			}
 		}
-		if(_run){
-			if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: here: updates stopping");
+		if (_run) {
+			if(DEBUG) System.out.println("ControlPane: setClientUpdatesStatus: here: updates stopping");
 			ClientUpdates.startClient(true);
-		}else{
-			if(DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: here: updates stopping");
+		} else {
+			if (DEBUG) System.out.println("ControlPane: setClientUpdatesStatus: here: updates stopping");
 			ClientUpdates.startClient(false);
 		}
 		
@@ -1359,7 +1362,9 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 							__("Failed Keep Version"));
 				}
 			}else if ("updates_client".equals(e.getActionCommand())) {
-				setClientUpdatesStatus(ClientUpdates.clientUpdates == null);
+				boolean _run = (ClientUpdates.clientUpdates == null);
+				if (DEBUG || ClientUpdates.DEBUG) System.out.println("ControlPane: actionPerformed: object _run = "+_run);
+				setClientUpdatesStatus(_run);
 			}else if ("client".equals(e.getActionCommand())) {
 				setClientStatus(Application.ac == null);
 			}else if ("t_client".equals(e.getActionCommand())) {

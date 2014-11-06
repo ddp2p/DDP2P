@@ -28,6 +28,9 @@ import javax.swing.filechooser.FileFilter;
 import util.Util;
 
 public class UpdatesFilterKey extends FileFilter {
+	public static final String EXT_SK = "sk";
+	public static final String EXT_BMP = "bmp";
+	public static final String EXT_GIF = "gif";
 	public boolean accept(File f) {
 	    if (f.isDirectory()) {
 	    	return false;
@@ -36,11 +39,17 @@ public class UpdatesFilterKey extends FileFilter {
 	    String extension = Util.getExtension(f);
 	    if (extension != null) {
 	    	//System.out.println("Extension: "+extension);
-	    	if (
-	    		extension.equals("sk")) {
+	    	if (extension.equals(EXT_SK)) {
 	    			//System.out.println("Extension: "+extension+" passes");
 		        	return true;
-	    	} else {
+	    	}
+	    	if (extension.equals(EXT_BMP))
+	    		return true;
+	    	
+	    	if (extension.equals(EXT_GIF))
+	    		return true;
+	    	
+	    	{
     			//System.out.println("Extension: "+extension+" fails");
 	    		return false;
 	    	}
@@ -51,6 +60,6 @@ public class UpdatesFilterKey extends FileFilter {
 
 	@Override
 	public String getDescription() {
-		return __("Updates Trusted Key File Type (.sk)");
+		return __("Updates Trusted Key File Type")+ "(."+EXT_SK+","+EXT_BMP+")";
 	}
 }
