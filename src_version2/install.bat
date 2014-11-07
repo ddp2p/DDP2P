@@ -16,5 +16,5 @@ SET MYDDPATH=%~dp0
 REM should use %CD% or %__CD__% if the relevant path is the one from which the command is run
 echo "MYDDPATH=" %MYDDPATH%
 set MYDDPATH=%MYDDPATH:~0,-1%
-.\\unit_test.bat  util.db.SetPaths "" "%MYDDPATH%"
+.\\unit_test.bat  util.tools.SetPaths "" "%MYDDPATH%"
 

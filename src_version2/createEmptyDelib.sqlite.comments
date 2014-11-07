@@ -134,41 +134,41 @@ CREATE TABLE tester (
 );
 
 CREATE TABLE peer (
-    "peer_ID" INTEGER PRIMARY KEY NOT NULL,
-    "global_peer_ID" TEXT UNIQUE ON CONFLICT FAIL,
-    "global_peer_ID_hash" TEXT UNIQUE ON CONFLICT FAIL,
-    "GID_key" INTEGER DEFAULT NULL UNIQUE ON CONFLICT FAIL,
-    "name" TEXT,
-    "broadcastable" INTEGER DEFAULT (0), ## may be sent to others
-    "slogan" TEXT,
-    "used" INTEGER DEFAULT (0), ## bool: do I contact this peer?
-    "blocked" INTEGER DEFAULT (0), ## do I accept data from this peer?
-    "hash_alg" TEXT,
-    "version" TEXT,
-    "signature" BLOB,
-    "picture" BLOB,
-    "plugin_info" TEXT,
-    "exp_avg" REAL, 
-    "experience" INTEGER, 
-    "filtered" INTEGER DEFAULT (0),
-    "last_sync_date" TEXT,
-    "last_reset" TEXT, # Last generalized date when last_sync_date was reset for all orgs (once may need extension for each org separately
-    "emails" TEXT,
-	"email_verified" TEXT,
-	"name_verified" TEXT,
-	"category" TEXT,
-    "phones" TEXT,
-    "urls" TEXT,
-    "plugins_msg" BLOB, # An encoded array of messages (peer pluginGID,byte[]data)
-    "revoked" INTEGER DEFAULT (0), # once set, never clean
-    "revokation_instructions" TEXT,
-    "revokation_replacement_GIDhash" TEXT,
-    "hidden" INTEGER DEFAULT (0),
-    "creation_date" TEXT, # date_creation -> creation_date ## when the peer was first created on its machine
-    "arrival_date" TIMESTAMP, # date -> arrival_date,
-    "temporary" TEXT,
-    "first_provider_peer" INTEGER DEFAULT NULL,
-    "preferences_date" TEXT,
+    "peer_ID" INTEGER PRIMARY KEY NOT NULL,		#local
+    "global_peer_ID" TEXT UNIQUE ON CONFLICT FAIL,	#global
+    "global_peer_ID_hash" TEXT UNIQUE ON CONFLICT FAIL,	#global
+    "GID_key" INTEGER DEFAULT NULL UNIQUE ON CONFLICT FAIL,	#global
+    "name" TEXT,      	      	   	     	      	#global
+    "broadcastable" INTEGER DEFAULT (0), #global #may be sent to others
+    "slogan" TEXT,  	    	    	 	      	 #global
+    "used" INTEGER DEFAULT (0), #preferences# bool: do I contact this peer?
+    "blocked" INTEGER DEFAULT (0), #preferences#do I accept data from this peer?
+    "hash_alg" TEXT,  	      	   		     	#global
+    "version" TEXT,					#global
+    "signature" BLOB,					#global
+    "picture" BLOB,					#global
+    "plugin_info" TEXT,					#global
+    #"exp_avg" REAL, 
+    #"experience" INTEGER, 
+    "filtered" INTEGER DEFAULT (0),			#preferences
+    "last_sync_date" TEXT,     				#local
+    "last_reset" TEXT, #local# Last generalized date when last_sync_date was reset for all orgs (once may need extension for each org separately
+    "emails" TEXT,     	       	    		     #global
+    "email_verified" TEXT,			     #preferences
+    "name_verified" TEXT,			     #preferences
+    "category" TEXT,			     	     #preferences
+    "phones" TEXT, 				     #global
+    "urls" TEXT,				     #global
+    "plugins_msg" BLOB, 	#local# An encoded array of messages (peer pluginGID,byte[]data)
+    "revoked" INTEGER DEFAULT (0), 	   	   #global #once set, never clean
+    "revokation_instructions" TEXT,		   #global
+    "revokation_replacement_GIDhash" TEXT,	   #global
+    "hidden" INTEGER DEFAULT (0),    		   #preference
+    "creation_date" TEXT,    		#global ## when the peer was first created on its machine
+    "arrival_date" TIMESTAMP, #local,
+    "temporary" TEXT,			#global
+    "first_provider_peer" INTEGER DEFAULT NULL,	#local
+    "preferences_date" TEXT,	  	  	#preferences
     FOREIGN KEY (first_provider_peer) REFERENCES peer(peer_ID),
     FOREIGN KEY (GID_key) REFERENCES public_keys(pk_ID)
 );

@@ -1433,6 +1433,10 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 		if(DEBUG)System.out.println("ClientUpdates: create_info: success done");
 		return true;
 	}
+	/**
+	 * main duplicated in tools.UpdatesSigning
+	 * @param args
+	 */
 	public static void main(String args[]) {
 		try {
 			//System.out.println("ClientUpdates: main: start");

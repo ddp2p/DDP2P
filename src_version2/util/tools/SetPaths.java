@@ -1,9 +1,10 @@
-package util.db;
+package util.tools;
 
 import hds.StartUp;
 import util.DBInterface;
 import util.P2PDDSQLException;
 import util.Util;
+import util.db.Vendor_JDBC_EMAIL_DB;
 import config.Application;
 import config.DD;
 

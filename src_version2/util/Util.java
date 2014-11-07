@@ -2528,16 +2528,16 @@ public class Util {
 			return Util.getProcessOutput(cmd_names, concats, null, null, ctx);
 		}
 		public static BufferedReader getProcessOutput(String[] cmd_names, boolean concats, String[] env, File dir, Object ctx) throws IOException {
-			//boolean DEBUG = false;
+			boolean DEBUG = true;
 			String cmd = concat(cmd_names, "\" \"");
 			String result = null;
 			synchronized(scripts_monitor){
 				//Util.printCallPath("script");
-				if(DEBUG) System.out.println("Util:getProcessOutput: Calling: \""+cmd+"\"");
+				if (DEBUG) System.out.println("Util:getProcessOutput: Calling: \""+cmd+"\" with concats="+concats);
 				//if(crtProcessLabel!=null) EventQueue.invokeLater(new RunnableCmd("Start: \""+cmd+"\""));
 				if (ctx != null) Application_GUI.updateProgress(ctx, "Start: \""+cmd+"\"");
 				Process crtScriptProcess;
-				if(concats) crtScriptProcess =  Runtime.getRuntime().exec(cmd_names[0]);
+				if (concats) crtScriptProcess =  Runtime.getRuntime().exec(cmd_names[0]);
 				else crtScriptProcess = Runtime.getRuntime().exec(cmd_names, env, dir);
 				BufferedReader bri1 = new BufferedReader (new InputStreamReader(crtScriptProcess.getInputStream()));
 				for(;;) {
@@ -2564,8 +2564,8 @@ public class Util {
 				//if(crtProcessLabel!=null) EventQueue.invokeLater(new RunnableCmd("Done: \""+cmd+"\""));
 				if (ctx != null) Application_GUI.updateProgress(ctx, "Done: \""+cmd+"\"");
 			}
-			if(result == null) {
-				if(DEBUG)System.out.println("Util:getProcessOutput: output null result\n*******");
+			if (result == null) {
+				if (DEBUG) System.out.println("Util:getProcessOutput: output null result\n*******");
 				return null;
 			}
 			BufferedReader r = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(result.getBytes())));

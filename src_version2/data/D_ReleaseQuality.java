@@ -99,6 +99,10 @@ public class D_ReleaseQuality extends ASN1.ASNObj{
 	}
 	public ASNObj instance() throws CloneNotSupportedException{return new D_ReleaseQuality();}
 	
+	/**
+	 * Duplicated in tools.ReleaseQuality
+	 * @param args
+	 */
 	public static void main(String[]args){
 		if(args.length!=1){
 			Application_GUI.warning(__("Bad parameters list: need xml_file_name;"), __("RELEASE QUALITY"));

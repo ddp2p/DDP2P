@@ -17,18 +17,24 @@
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 /* ------------------------------------------------------------------------- */
-package config;
+package util.tools;
 
+import config.Application;
+import config.DD;
 import util.DBInterface;
 import util.Util;
-
 import util.P2PDDSQLException;
+import util.db.Vendor_JDBC_EMAIL_DB;
 
 public class UnitSetImport {
 	static public void main(String args[]) {
 		System.out.println("UnitSetImport: Saved in application field values="+args.length);
-		if(args.length==0) return;
+		if (args.length == 0) return;
+		
 		try {
+			
+			Vendor_JDBC_EMAIL_DB.initJDBCEmail();
+			
 			String db_to_import = args[0];
 			Application.db = new DBInterface(Application.DELIBERATION_FILE);
 			DD.setAppText(DD.APP_DB_TO_IMPORT, db_to_import);

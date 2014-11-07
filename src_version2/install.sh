@@ -19,5 +19,5 @@ make
 
 #scripts/addpaths.sh
 pwd
-./unit_test.sh util.db.SetPaths `pwd`/
+./unit_test.sh util.tools.SetPaths `pwd`/
 
