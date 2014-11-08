@@ -43,8 +43,8 @@ public class peer {
 	public static final String signature = "signature";
 	public static final String picture = "picture";
 	//public static final String no_update = "no_update"; // replaced by blocked
-	public static final String exp_avg = "exp_avg";
-	public static final String experience = "experience";
+	//public static final String exp_avg = "exp_avg";
+	//public static final String experience = "experience";
 	public static final String filtered = "filtered";
 	public static final String last_sync_date = "last_sync_date";
 	public static final String last_reset = "last_reset";
@@ -111,8 +111,8 @@ public class peer {
 			used+","+
 			
 			picture+","+
-			exp_avg+","+
-			experience+","+
+			//exp_avg+","+
+			//experience+","+
 			blocked+","+
 			version+","+
 			
@@ -153,21 +153,21 @@ public class peer {
 	public static final int PEER_COL_ARRIVAL = 13;
 	public static final int PEER_COL_USED = 14;
 	public static final int PEER_COL_PICTURE = 15;
-	public static final int PEER_COL_EXP_AVG = 16;
-	public static final int PEER_COL_EXPERIENCE = 17;
-	public static final int PEER_COL_BLOCKED = 18;
-	public static final int PEER_COL_VERSION = 19;
-	public static final int PEER_COL_EMAILS = 20;
-	public static final int PEER_COL_PHONES = 21;
-	public static final int PEER_COL_PREFERENCES_DATE = 22;
-	public static final int PEER_COL_VER_NAME = 23;
-	public static final int PEER_COL_VER_EMAIL = 24;
-	public static final int PEER_COL_CATEG = 25;
-	public static final int PEER_COL_REVOKED = 26;
-	public static final int PEER_COL_REVOK_INSTR = 27;
-	public static final int PEER_COL_REVOK_GIDH = 28;
-	public static final int PEER_COL_HIDDEN = 29;
-	public static final int PEER_COL_FIRST_PROVIDER_PEER = 29;
+	//public static final int PEER_COL_EXP_AVG = 16;
+	//public static final int PEER_COL_EXPERIENCE = 17;
+	public static final int PEER_COL_BLOCKED = 16;
+	public static final int PEER_COL_VERSION = 17;
+	public static final int PEER_COL_EMAILS = 18;
+	public static final int PEER_COL_PHONES = 19;
+	public static final int PEER_COL_PREFERENCES_DATE = 20;
+	public static final int PEER_COL_VER_NAME = 21;
+	public static final int PEER_COL_VER_EMAIL = 22;
+	public static final int PEER_COL_CATEG = 23;
+	public static final int PEER_COL_REVOKED = 24;
+	public static final int PEER_COL_REVOK_INSTR = 25;
+	public static final int PEER_COL_REVOK_GIDH = 26;
+	public static final int PEER_COL_HIDDEN = 27;
+	public static final int PEER_COL_FIRST_PROVIDER_PEER = 28;
 	public static final int PEER_COL_ID = PEER_COL_FIELDS_NO_ID;
 	public static final String peerFields1[] = new String[]{global_peer_ID,name,slogan,table.peer_address.address,table.peer_address.type,table.peer_address.arrival_date,table.organization.global_organization_ID, table.organization.name,hash_alg,signature};
 	public static final String peersFieldsTypes1[] = new String[]{"TEXT","TEXT","TEXT","TEXT","TEXT","TEXT","TEXT","TEXT","TEXT","TEXT"};
