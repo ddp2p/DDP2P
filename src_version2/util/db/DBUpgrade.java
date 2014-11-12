@@ -13,8 +13,11 @@ class DBUpgrade {
 		if (args.length < 3) {
 			System.out.println("Usage: prog old_db new_db temporary_DDL_filename [exist_DDL]");
 			System.out.println("Usage: 		- new_db must be initialized already: e.g., with install");
-			System.out.println("Usage: 		- exist [0:exist_DDL , 1:create_DDL_only");
+			System.out.println("Usage: 		- exist [1:exist_DDL , 0:create_DDL_only");
 			System.out.println("Usage: 		- if exist not provided then temporary_DDL_file must not exist, and will contain the used DDL");
+			System.out.println("Usage: 		- the created DDL starts each line with repeating twice a table name, followed by the attributes (from the old database)");
+			System.out.println("Usage: 		- an input DDL starts each line with the old table name, then its new table name, followed by the attributes in the new database set to positional values in old table");
+			System.out.println("Usage: 		- the DDL separator character is the space");
 			return;
 		}
 		util.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();

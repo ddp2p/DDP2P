@@ -2263,7 +2263,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return signIni(true);
 	}
 	/**
-	 * Optimized for signing bost with a creator and an organization key
+	 * Optimized for signing both with a creator and an organization key
 	 * @return
 	 */
 	public byte[]sign() {
@@ -2649,7 +2649,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return org;
 	}
 	private boolean loadRemote(D_Organization oRG, D_Peer provider, boolean[] changed, RequestData _sol_rq, RequestData _new_rq) {
-		if (_DEBUG) out.println("D_Organization: storeVerified: Will not integrate old: "+this+" vs incoming: "+oRG);
+		if (_DEBUG) out.println("D_Organization: storeVerified: Test integrate old: "+this+" vs incoming: "+oRG);
 		
 		if (! this.isTemporary() && ! newer(oRG, this)) {
 			if (DEBUG) out.println("D_Organization: storeVerified: Will not integrate old ["+oRG.getCreationDate_str()+"]: "+this);
@@ -3599,6 +3599,19 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public boolean justGIDContainer() {
 		if (DD.ACCEPT_ORGANIZATIONS_WITH_NULL_NAME) return false;
 		return name == null;
+	}
+	public final static String sql_all_orgs = "SELECT "+table.organization.organization_ID+" FROM "+table.organization.TNAME+";";
+	public static java.util.ArrayList<java.util.ArrayList<Object>> getAllOrganizations() {
+		ArrayList<ArrayList<Object>> result;
+		try {
+			if (Application.db != null)
+				result = Application.db.select(sql_all_orgs, new String[0]);
+			else result = new ArrayList<ArrayList<Object>>();
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return new ArrayList<ArrayList<Object>>();
+		}
+		return result;
 	}
 }
 

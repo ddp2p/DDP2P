@@ -65,9 +65,24 @@ public class DBAlter_Implementation_Sqlite4Java {
 		}
 		return result.toArray(new String[0]);
 	}
-
-	public static boolean _copyData(File database_old, File database_new, BufferedReader DDL, String[]_DDL) throws IOException, P2PDDSQLException{//
-		try{ 
+	/**
+	 * Returns false on error.
+	 * 
+	 * The parameter passed as bufferReader has priority if not null
+	 * 
+	 * @param database_old
+	 * @param database_new
+	 * @param p_reader_DDL
+	 * @param p_array_DDL (may be null)
+	 * @return 
+	 * @throws IOException
+	 * @throws P2PDDSQLException
+	 */
+	public static boolean _copyData(File database_old, File database_new, BufferedReader p_reader_DDL, String[]p_array_DDL) throws IOException, P2PDDSQLException{//
+		try { 
+			/**
+			 * Try to open old database. If not existing: fail!
+			 */
 			SQLiteConnection conn_src = new SQLiteConnection(database_old);
 			try {
 				conn_src.open(true);
@@ -77,6 +92,9 @@ public class DBAlter_Implementation_Sqlite4Java {
 				System.err.println("Trying:"+database_old);
 				return false;
 			}
+			/**
+			 * Tries to open new database, If not existing: fail!s
+			 */
 			SQLiteConnection conn_dst = new SQLiteConnection(database_new);
 			try{
 				conn_dst.open(true);
@@ -86,57 +104,111 @@ public class DBAlter_Implementation_Sqlite4Java {
 				System.err.println("Trying:"+database_new);
 				return false;
 			}
+			/**
+			 * Parse the DDL from the received bufferReader or array of Strings.
+			 * crt_table is the index of current table in DDL
+			 */
 			int crt_table = 0;
-			String table_DDL = null;
-			if(DDL!=null) table_DDL = DDL.readLine();
-			else if((_DDL!=null) && (_DDL.length>0)) table_DDL = _DDL[crt_table];
-			for(;;) {
-				if(DBAlter.DEBUG) System.out.println("DBAlter:copyData: next table DDL= "+table_DDL);
-				if(table_DDL==null) break;
-				table_DDL = table_DDL.trim(); if(table_DDL.length()==0) continue; // skip empty lines
-				String []table__DDL = table_DDL.split(Pattern.quote(" "));
-				SQLiteStatement olddb = conn_src.prepare("SELECT * FROM "+table__DDL[0]);
-				while(olddb.step()){
-					String attributes_new=null;
+			/**
+			 * The DDL line describing the current table (read either from the reader or from the array parameters)
+			 */
+			String crt_table_DDL = null;
+			if (p_reader_DDL != null) crt_table_DDL = p_reader_DDL.readLine();
+			else if ((p_array_DDL != null) && (p_array_DDL.length > 0)) crt_table_DDL = p_array_DDL[crt_table];
+			
+			for (;;) {
+				/**
+				 * Handling the table at index/line crt_table
+				 */
+				if( DBAlter.DEBUG) System.out.println("DBAlter:copyData: next table DDL= "+crt_table_DDL);
+				
+				if (crt_table_DDL == null) {
+					if ( DBAlter.DEBUG) System.out.println("DBAlter:copyData: end of DDL at line = "+crt_table);
+					break;
+				}
+				
+				crt_table_DDL = crt_table_DDL.trim();
+				
+				if (crt_table_DDL.length() == 0) {
+					continue; // skip empty lines
+				}
+				
+				/**
+				 * split the DDL line into fields
+				 */
+				String [] table__DDL = crt_table_DDL.split(Pattern.quote(" "));
+				/**
+				 * Select all attributes, in positional order, from the old table (in table__DDL[0]).
+				 */
+				SQLiteStatement olddb = conn_src.prepare("SELECT * FROM " + table__DDL[0]);
+				
+				while (olddb.step()) {
+					/**
+					 * In attributes_new we aggregate all the attribute names in DDL from position 2, on, concatenated with comma.
+					 */
+					String attributes_new = null;
+	    			/**
+	    			 * Number of attributes inserted from old. used to detect number of columns in old (elements in array of parameters to insert).
+	    			 * Could be taken outside this loop, for efficiency. (was here since the count was computed from result of query)
+	    			 */
 					//int attributes_count_insert = olddb.columnCount();
 					int attributes_count_insert = table__DDL.length - 2;
 					String[] values_old = new String[attributes_count_insert];
+					/**
+					 * values_old_place is a list of placeholder "?" separated by comma, to be used in the insert statement.
+					 * Use empty string instead of "?" for no list of attributes copied.
+					 */
 					String values_old_place = null;
-					for(int l=2;l<table__DDL.length;l++) { // concat fields new DB
-						if(attributes_new==null) attributes_new=table__DDL[l];
-						else attributes_new=attributes_new+" , "+table__DDL[l];
+					for (int line = 2; line < table__DDL.length; line ++) { // concat fields new DB
+						if (attributes_new == null) attributes_new = table__DDL[line];
+						else attributes_new = attributes_new+" , "+table__DDL[line];
 					}
-	
-					for(int j=0; j<attributes_count_insert; j++){
+					/**
+					 * Preparing "values_old_place", the a list of placeholder "?" separated by comma, to be used in the insert statement.
+					 * Use empty string instead of "?" for no parameters.
+					 * Also preparing the "values_old" array, to be passed as parameter to insert
+					 */
+					for (int j = 0; j < attributes_count_insert; j ++){
 						values_old[j] = olddb.columnString(j);
-						if(values_old_place==null) values_old_place= "?";
+						if (values_old_place == null) values_old_place= "?";
 						else values_old_place += " , ? ";
 					}
-					if(values_old_place==null) values_old_place = "";
+					if (values_old_place == null) values_old_place = "";
 	
 					//sql query "insert or replace" would insert if the row does not exist, or replace the values if it does. 
 					//Otherwise, use "insert or ignore" to ignore the entity if it already exists or primary key conflict
 					String sql = "insert or ignore into "+table__DDL[1]+ " ( "+attributes_new+" ) values ( "+values_old_place+" )";
-					if(DBAlter.DEBUG) System.out.println("DBAlter:copyData:running: "+sql);
+					
+					if (DBAlter.DEBUG) System.out.println("DBAlter:copyData:running: "+sql);
+					/**
+					 * Perform the actual insert
+					 */
 					SQLiteStatement newdb = conn_dst.prepare(sql);
 					try {
-						for(int k=0; k<attributes_count_insert; k++){
+						for (int k = 0; k < attributes_count_insert; k++){
 							newdb.bind(k+1, values_old[k]);
-							if(DBAlter.DEBUG) System.out.println("DBAlter:copyData:bind: "+Util.nullDiscrim(values_old[k]));
+							if (DBAlter.DEBUG) System.out.println("DBAlter:copyData:bind: "+Util.nullDiscrim(values_old[k]));
 						}
 						newdb.stepThrough();
 	
 						long result = conn_dst.getLastInsertId();
-						if(DBAlter.DEBUG) System.out.println("DBAlter:copyData:result: "+result);
+						if (DBAlter.DEBUG) System.out.println("DBAlter:copyData:result: "+result);
 					} finally {newdb.dispose();}
 	
 					//newdb.stepThrough();
 				}
-				crt_table++;
-				if(DDL != null) table_DDL = DDL.readLine();
-				else if(_DDL.length>crt_table) table_DDL = _DDL[crt_table];
-				else table_DDL = null;
+				/**
+				 * Read the next table's line in the DDL, and loop
+				 */
+				crt_table ++;
+				if (p_reader_DDL != null) crt_table_DDL = p_reader_DDL.readLine();
+				else if(p_array_DDL.length>crt_table) crt_table_DDL = p_array_DDL[crt_table];
+				else crt_table_DDL = null;
 			}
+			/**
+			 * Initialized default listing directories and updates server, and trusted updated GID,
+			 * taking them from the old database
+			 */
 			DBAlter_Implementation_Sqlite4Java.setAppText(conn_dst, DD.APP_UPDATES_SERVERS,
 					DBAlter_Implementation_Sqlite4Java.getExactAppText(conn_src, DD.APP_UPDATES_SERVERS));
 			DBAlter_Implementation_Sqlite4Java.setAppText(conn_dst, DD.TRUSTED_UPDATES_GID,

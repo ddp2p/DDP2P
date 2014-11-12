@@ -64,9 +64,13 @@ public class D_Document extends ASNObj{
 		format = v[1];
 		document=v[2];
 	}
-	public D_Document(){
+	public D_Document() {
 		format = D_Document.DEFAULT_FORMAT;
 		document = ""; // "<html></html>";
+	}
+	public D_Document(String d) {
+		format = D_Document.TXT_FORMAT;
+		document = d; // "<html></html>";
 	}
 	@Override
 	public Encoder getEncoder() {

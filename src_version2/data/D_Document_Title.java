@@ -41,6 +41,12 @@ public class D_Document_Title extends ASNObj{
 	public D_Document_Title(){
 		title_document = new D_Document();
 	}
+	public D_Document_Title(D_Document doc) {
+		title_document = doc;
+	}
+	public D_Document_Title(String t) {
+		title_document = new D_Document(t);
+	}
 	
 	public String toString() {
 		return TD+title_document;

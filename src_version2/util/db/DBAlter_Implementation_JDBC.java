@@ -11,10 +11,10 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import table.SQLITE_MASTER;
+import util.DBAlter;
 import util.DBInterface;
 import util.P2PDDSQLException;
 import util.Util;
-
 import config.DD;
 
 public class DBAlter_Implementation_JDBC{
@@ -58,15 +58,34 @@ public class DBAlter_Implementation_JDBC{
 		return result.toArray(new String[0]);
 	}
 	
+	/**
+	 * Returns false on error.
+	 * 
+	 * The parameter passed as bufferReader has priority if not null
+	 * 
+	 * @param database_old
+	 * @param database_new
+	 * @param p_reader_DDL
+	 * @param p_array_DDL (may be null)
+	 * @return 
+	 * @throws IOException
+	 * @throws P2PDDSQLException
+	 */
 	public static boolean _copyData(File database_old, File database_new, BufferedReader DDL, String[]_DDL) throws IOException, P2PDDSQLException{//
 		DB_Implementation_JDBC_SQLite conn_src = null;
 		DB_Implementation_JDBC_SQLite conn_dst = null;
-		try{ 
+		try { 
 			//DBInterface conn_src = new DBInterface(database_old);
+			/**
+			 * Try to open old database. If not existing: fail!
+			 */
 			conn_src = new DB_Implementation_JDBC_SQLite();
 			conn_src.open(database_old.getAbsolutePath());
 			conn_src.open_and_keep(true);
 			
+			/**
+			 * Tries to open new database, If not existing: fail!s
+			 */
 			DBInterface db_dst = new DBInterface(database_new);
 			conn_dst = (DB_Implementation_JDBC_SQLite)db_dst.getImplementation();
 			conn_dst.open_and_keep(true);
@@ -86,16 +105,40 @@ public class DBAlter_Implementation_JDBC{
 //				return false;
 //			}
 	    	PreparedStatement st;
+			/**
+			 * Parse the DDL from the received bufferReader or array of Strings.
+			 * crt_table is the index of current table in DDL
+			 */
 			int crt_table = 0;
+			/**
+			 * The DDL line describing the current table (read either from the reader or from the array parameters)
+			 */
 			String table_DDL = null;
-			if(DDL!=null) table_DDL = DDL.readLine();
-			else if((_DDL!=null) && (_DDL.length>0)) table_DDL = _DDL[crt_table];
-			for(;;) {
-				if(table_DDL==null) break;
+			if (DDL != null) table_DDL = DDL.readLine();
+			else if ((_DDL != null) && (_DDL.length > 0)) table_DDL = _DDL[crt_table];
+			for (;;) {
+				/**
+				 * Handling the table at index/line crt_table
+				 */
+				if (table_DDL == null) {
+					if ( DBAlter.DEBUG) System.out.println("DBAlter: copyData: end of DDL at line = "+crt_table);
+					break;
+				}
 				table_DDL = table_DDL.trim();
-				if(table_DDL.length()==0) continue; // skip empty lines
+				if (table_DDL.length() == 0) {
+					continue; // skip empty lines
+				}
+				
+				/**
+				 * split the DDL line into fields
+				 */
 				String []table__DDL = Util.trimmed(table_DDL.split(Pattern.quote(" ")));
+				
 				if(_DEBUG) System.out.println("DBAlter:_copyData: next table DDL= "+table__DDL[0]);
+				
+				/**
+				 * Select all attributes, in positional order, from the old table (in table__DDL[0]).
+				 */
 	    		st = conn_src.conn.prepareStatement("SELECT * FROM "+table__DDL[0]+";");
 				//ArrayList<ArrayList<Object>> olddb_all = conn_src.select("SELECT * FROM ?;", new String[]{table__DDL[0]});
 
@@ -103,31 +146,60 @@ public class DBAlter_Implementation_JDBC{
     			ResultSetMetaData md = rs.getMetaData();
     			int cols_src = md.getColumnCount(); 
 
+    			/**
+    			 * Number of attributes inserted from old. used to detect number of columns in old (elements in array of parameters to insert).
+    			 * Could be taken inside next loop (was there since the count was computed from result of query)
+    			 */
+				//int attributes_count_insert = olddb.columnCount();
+    			int attributes_count_insert = table__DDL.length - 2;
+    			if (cols_src != attributes_count_insert) {
+    				System.out.println("DB_Implement_JDBC: _copy: different nb of attributes in source and DDL: "+cols_src+" vs "+ attributes_count_insert);
+    			}
+    			/**
+    			 * intialized. could go in loop to make sure fields are null when needed.
+    			 * Using the number in DDL, since that is used in insert!
+    			 */
+    			String[] values_old = new String[attributes_count_insert];
+    			
     			while (rs.next()) {
     				if(_DEBUG) System.out.print(rs.getRow()+" ");
-	    		//for(ArrayList<Object> olddb : olddb_all){
-					int attributes_count_insert = table__DDL.length - 2;
-					String[] values_old = new String[attributes_count_insert];
 	
-    				for(int j=1; j<=cols_src; j++){
-					//for(int j=0; j<attributes_count_insert; j++){
+					/**
+					 * Also preparing the "values_old" array, to be passed as parameter to insert
+					 */
+    				for (int j = 1; j <= cols_src; j ++) {
+    					if (j > values_old.length) {
+    	    				System.out.println("DB_Implement_JDBC: _copy: different nb of attributes in source and DDL. Skip: "+j+" -> "+rs.getString(j));
+    						continue;
+    					}
+    					//for(int j=0; j<attributes_count_insert; j++){
 						values_old[j-1] = rs.getString(j); // Util.getString(olddb.get(j));
 					}
 					String[] attr_new = Arrays.copyOfRange(table__DDL, 2, table__DDL.length);
 					
-					try{
+					/**
+					 * Perform the actual insert
+					 */
+					try {
 						conn_dst._insert(table__DDL[1], attr_new, values_old, DEBUG);
-					}catch(Exception e){
+					} catch(Exception e){
 						e.printStackTrace();
 					}
 				}
-				crt_table++;
-				if(DDL != null) table_DDL = DDL.readLine();
+				/**
+				 * Read the next table's line in the DDL, and loop
+				 */
+				crt_table ++;
+				if (DDL != null) table_DDL = DDL.readLine();
 				else if(_DDL.length>crt_table) table_DDL = _DDL[crt_table];
 				else table_DDL = null;
-				if(DEBUG) System.out.println("DBAlter:_copyData: will next table DDL= "+table_DDL);
+				if (DEBUG) System.out.println("DBAlter:_copyData: will next table DDL= "+table_DDL);
 			}
 			if(_DEBUG) System.out.println("DBAlter:_copyData: done tables");
+			/**
+			 * Initialized default listing directories and updates server, and trusted updated GID,
+			 * taking them from the old database
+			 */
 			DD.setAppText(db_dst, DD.APP_UPDATES_SERVERS,
 					DD.getExactAppText(conn_src, DD.APP_UPDATES_SERVERS), DEBUG);
 			DD.setAppText(db_dst, DD.TRUSTED_UPDATES_GID,

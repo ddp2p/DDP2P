@@ -44,7 +44,7 @@ D_MOTION ::= SEQUENCE {
 public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payload<D_Motion>, util.Summary {
 	private static final String V0 = "V0";
 	private static final String V1 = "V1";  // In this version we removed creation date
-	private static boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final int DEFAULT_STATUS = 0;
 	private static final byte TAG = Encoder.TAG_SEQUENCE;
@@ -2483,6 +2483,36 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			this.getMotionText().setFormatString(editor_format);//BODY_FORMAT);
 			this.dirty_main = true;
 		}
+	}
+	public final static String sql_all_motions = 
+			"SELECT " + table.motion.motion_ID
+			+" FROM "+table.motion.TNAME+
+			" WHERE "+table.motion.organization_ID + "=? ";
+	/**
+	 * 
+	 * @param hide (if true, then skip hidden)
+	 * @param o_LID (organization LID)
+	 * @param crt_enhanced_LID (if nonull, then set filter)
+	 * @return
+	 */
+	public static java.util.ArrayList<java.util.ArrayList<Object>>
+	getAllMotions(boolean hide, String o_LID, String crt_enhanced_LID) {
+		ArrayList<ArrayList<Object>> moti;
+		if (Application.db == null) return new ArrayList<ArrayList<Object>>();
+		String sql = sql_all_motions;
+		if (hide)	sql	 +=	" AND "+table.motion.hidden+" != '1' ";
+		try {
+			if (crt_enhanced_LID != null) {
+				sql += " AND " + table.motion.enhances_ID+" = ?;";
+				moti = Application.db.select(sql, new String[]{o_LID, crt_enhanced_LID});
+			} else {
+				moti = Application.db.select(sql+";", new String[]{o_LID});
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return new ArrayList<ArrayList<Object>>();
+		}
+		return moti;
 	}
 
 }
