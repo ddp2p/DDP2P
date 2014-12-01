@@ -303,7 +303,7 @@ public class StartUpThread_GUI extends util.DDP2P_ServiceThread {
 	}
 	public static void initBroadcastGUI() {
 		if(DD.GUI) {
-			DDP2P_ServiceRunnable initQS = new DDP2P_ServiceRunnable("StartUp:InitQueues"){
+			DDP2P_ServiceRunnable initQS = new DDP2P_ServiceRunnable("StartUp:InitQueues", false, false, "StartUp:InitQueues"){
 				public void _run(){StartUpThread_GUI.initQueuesStatus();}
 			};
 			Application_GUI.eventQueue_invokeLater(initQS);

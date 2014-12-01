@@ -1177,7 +1177,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	@Override
 	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
 		//boolean DEBUG = true;
-		final int SELECT_ORG_ID = 0;
+		//final int SELECT_ORG_ID = 0;
 		//final int SELECT_METHODS = 1;
 		//final int SELECT_ORG_GIDH = 2;
 		//final int SELECT_ORG_CREAT_ID = 3;
@@ -1188,7 +1188,8 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		
 		
 		if (_table != null && !_table.contains(table.organization.TNAME)) {
-			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+				// daemon?
 				@Override
 				public void _run() {
 					((OrgsModel)ctx).fireTableDataChanged();
@@ -1198,17 +1199,18 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		}
 		
 		//ArrayList<ArrayList<Object>> orgs = db.select(sql_orgs, new String[]{},DEBUG);
-		ArrayList<ArrayList<Object>> orgs = D_Organization.getListOrgLIDs();
+		ArrayList<ArrayList<Object>> orgs = D_Organization.getAllOrganizations(); //.getListOrgLIDs();
 		if (orgs.size() == data.size()) {
 			boolean different = false;
 			for (int k = 0; k < data.size(); k++) {
-				if (data.get(k).getLID() != Util.lval(orgs.get(k).get(SELECT_ORG_ID))) {
+				if (data.get(k).getLID() != Util.lval(orgs.get(k).get(D_Organization.SELECT_ALL_ORG_LID))) {
 					different = true;
 					break;
 				}
 			}
 			if (! different) {
-				SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+				SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+					// daemon?
 					@Override
 					public void _run() {
 						((OrgsModel)ctx).fireTableDataChanged();
@@ -1232,7 +1234,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		Hashtable<Long, Integer> _rowByLID = new Hashtable<Long, Integer>();
 		for (int k = 0; k < orgs.size(); k ++) {
 				ArrayList<Object> o = orgs.get(k);
-				Object oLID = o.get(SELECT_ORG_ID);
+				Object oLID = o.get(D_Organization.SELECT_ALL_ORG_LID);
 				D_Organization org_crt = D_Organization.getOrgByLID_NoKeep(Util.getString(oLID), true);
 				if (org_crt == null) {
 					Util.printCallPath("Why fail: "+oLID);
@@ -1268,7 +1270,8 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			rowByID = _rowByID;
 			rowByLID = _rowByLID;
 			
-			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+				// daemon?
 				@Override
 				public void _run() {
 					((OrgsModel)ctx).fireTableDataChanged();
@@ -1287,7 +1290,8 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 //				}
 				
 				class O {int row_model; Orgs crt_view; O(int _row, Orgs _view){row_model = _row; crt_view = _view;}}
-				SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, new O(row_model,crt_view)) {
+				SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, new O(row_model,crt_view)) {
+					// daemon?
 					@Override
 					public void _run() {
 						O o = (O)ctx;
@@ -1337,6 +1341,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 
 	@Override
 	public Object getValueAt(int row, int col) {
+		boolean refresh = false;
 		Object result = null;
 		String orgID = this.getLIDstr(row);
 		switch (col) {
@@ -1434,26 +1439,28 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			*/
 			break;
 		case TABLE_COL_CONSTITUENTS_NB:
-			result = D_Constituent.getConstNBinOrganization(orgID);
+			D_Organization org = data.get(row);
+			result = org.getConstNBinOrganization_WithCache(refresh);
 			break;
 		case TABLE_COL_ACTIVITY: // number of votes + news
 		{
-			D_Organization org = data.get(row);
-			result = new Integer (""+(D_Vote.getOrgCount(org.getLIDstr_forced(), 0) + D_News.getCount(org.getLIDstr_forced(), 0)));
+			D_Organization org3 = data.get(row);
+			result = new Integer (""+(org3.getCountActivity_WithCache(0, refresh) + org3.getCountNews_WithCache(0, refresh)));
 		}
 			break;
 		case TABLE_COL_CONNECTION: // any activity in the last x days?
 		{
 			int DAYS_OLD2 = 10;
 			D_Organization org2 = data.get(row);
-			result = new Boolean ((D_Vote.getOrgCount(org2.getLIDstr_forced(), DAYS_OLD2) + D_News.getCount(org2.getLIDstr_forced(), DAYS_OLD2)) > 0);
+			result = new Boolean ((org2.getCountActivity_WithCache(DAYS_OLD2, refresh) + org2.getCountNews_WithCache(DAYS_OLD2, refresh)) > 0);
 		}
 		break;
 		case TABLE_COL_NEWS: // unread news?
 		{
 			int DAYS_OLD = 10;
-			D_Organization org = data.get(row);
-			result = new Integer(""+D_News.getCount(org.getLIDstr_forced(), -DAYS_OLD));
+			D_Organization org4 = data.get(row);
+			result = new Integer("" + org4.getCountNews_WithCache(-DAYS_OLD, refresh));
+			// result = new Integer(""+D_News.getCount(org.getLIDstr_forced(), -DAYS_OLD));
 		}
 //			String sql_news = "SELECT count(*) FROM "+table.news.TNAME+" AS n "+
 //			" WHERE n."+table.news.organization_ID+" = ? AND n."+table.news.arrival_date+">?;";
@@ -1487,12 +1494,32 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			if (DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
 			if ("".equals(_value)) _value = null;
 			if (DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
-			org.setNameMy(_value);
+			if (org.getOrgNameMy() == null && _value == null) break;
+			if (org.getOrgNameMy() == null && _value != null) {
+				int o = config.Application_GUI.ask(
+						__("Do you want to set local pseudonym?") + "\n" + _value, 
+						__("Changing local display"), JOptionPane.OK_CANCEL_OPTION);
+				if (o != 0) {
+					if (_DEBUG) System.out.println("MotionsModel: setValueAt name my opt = " + o);
+					break;
+				}
+			}
+			org.setOrgNameMy(_value);
 			break;
 		case TABLE_COL_CREATOR:
 			String creator = Util.getString(value);
 			if("".equals(creator)) creator = null;
 			//set_my_data(table.my_organization_data.creator, creator, row);
+			if (org.getCreatorNameMy() == null && creator == null) break;
+			if (org.getCreatorNameMy() == null && creator != null) {
+				int o = config.Application_GUI.ask(
+						__("Do you want to set local creator pseudonym?") + "\n" + creator, 
+						__("Changing local display"), JOptionPane.OK_CANCEL_OPTION);
+				if (o != 0) {
+					if (_DEBUG) System.out.println("MotionsModel: setValueAt creator my opt = " + o);
+					break;
+				}
+			}
 			org.setCreatorMy(creator);
 			break;
 		case TABLE_COL_CATEGORY:
@@ -1502,6 +1529,16 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			if (DEBUG) System.out.println("MotionsModel:setValueAt cat str: "+_value);
 			if ("".equals(_value)) _value = null;
 			if (DEBUG) System.out.println("MotionsModel:setValueAt cat nulled: "+_value);
+			if (org.getCategoryMy() == null && _value == null) break;
+			if (org.getCategoryMy() == null && _value != null) {
+				int o = config.Application_GUI.ask(
+						__("Do you want to set local creator pseudonym?") + "\n" + _value, 
+						__("Changing local display"), JOptionPane.OK_CANCEL_OPTION);
+				if (o != 0) {
+					if (_DEBUG) System.out.println("MotionsModel: setValueAt category my opt = " + o);
+					break;
+				}
+			}
 			org.setCategoryMy(_value);
 			break;
 			default:

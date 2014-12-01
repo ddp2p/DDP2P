@@ -390,8 +390,8 @@ class ConstituentsCustomAction extends DebateDecideAction {
 
        						dc = D_Constituent.getConstByConst_Keep(dc);
        						if (dc != null) {
-	       						dc.neighborhood_ID = Util.getStringID(can.n_data.neighborhoodID);
-	       						dc.global_neighborhood_ID = nGID;
+	       						dc.setNeighborhood_LID(Util.getStringID(can.n_data.neighborhoodID));
+	       						dc.setNeighborhoodGID(nGID);
 	       						//dc.organization_ID = ""+model.organizationID;
 	       						//dc.global_organization_ID = D_Organization.getGlobalOrgID(""+model.organizationID);
 	       						if (dc.getSK() == null) {
@@ -487,10 +487,10 @@ class ConstituentsCustomAction extends DebateDecideAction {
 				D_Constituent dc = D_Constituent.getConstByLID(cID, true, true);
     			if (dc != null) {
     				
-    				String peer_Slogan = dc.slogan;
+    				String peer_Slogan = dc.getSlogan();
     				String val=JOptionPane.showInputDialog(tree, __("Change My Constituent Slogan.\nPreviously: ")+Util.trimmed(peer_Slogan,DD.MAX_DISPLAYED_CONSTITUENT_SLOGAN), __("My Constituent Slogan"), JOptionPane.QUESTION_MESSAGE);
     				if((val!=null)&&(!"".equals(val))){
-    					dc.slogan = val;
+    					dc.setSlogan(val);
     					//dc.organization_ID = ""+model.organizationID;
     					//dc.global_organization_ID = D_Organization.getGlobalOrgID(""+model.organizationID);
     					if (dc.getSK() == null) {
@@ -677,21 +677,21 @@ class ConstituentsAddAction extends DebateDecideAction {
     		String organizationGID = model.getOrgGID();//D_Organization.getGlobalOrgID(organizationID+"");
     		
     		data.D_Constituent wbc = D_Constituent.getEmpty();
-    		wbc.weight = dialog.weight+"";
-    		wbc.email = dialog.emailEditor;
-    		wbc.external = true;
-    		wbc.forename = dialog.gnEditor;
-    		wbc.surname = dialog.snEditor;
+    		wbc.setWeight(dialog.weight+"");
+    		wbc.setEmail(dialog.emailEditor);
+    		wbc.setExternal(true);
+    		wbc.setForename(dialog.gnEditor);
+    		wbc.setSurname(dialog.snEditor);
     		wbc.setOrganization(organizationGID, organizationID);
     		//wbc.global_organization_ID = organizationGID;
-    		wbc.picture = byteArray;
-    		wbc.slogan = table.constituent.INIT_EXTERNAL_SLOGAN;
+    		wbc.setPicture(byteArray);
+    		wbc.setSlogan(table.constituent.INIT_EXTERNAL_SLOGAN);
     		wbc.setCreationDate(creation_date);
-    		wbc.hash_alg = table.constituent.CURRENT_HASH_CONSTITUENT_ALG;
+    		wbc.setHash_alg(table.constituent.CURRENT_HASH_CONSTITUENT_ALG);
     		wbc.languages = dialog.getLanguages();
-    		wbc.neighborhood=null;
-    		if(dialog.sign)wbc.submitter_ID=Util.getStringID(model.getConstituentIDMyself());
-       		if(dialog.sign)wbc.global_submitter_id = model.getConstituentGIDMyself();
+    		wbc.setNeighborhood(null);
+    		if(dialog.sign)wbc.setSubmitter_ID(Util.getStringID(model.getConstituentIDMyself()));
+       		if(dialog.sign)wbc.setSubmitterGID(model.getConstituentGIDMyself());
        		wbc.setArrivalDate();
        		wbc.sign();
        		String GID =  wbc.getGID();
@@ -1123,8 +1123,8 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	    			MainFrame.status.setMeConstituent(null);
 						
     	    		__ctx.id = id;
-    	    		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable("New Constituent Save Runnable", true, __ctx) {
-    	    			
+    	    		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable("New Constituent Save Runnable", false, false, __ctx) {
+    	    			// may be set daemon?
     	        		public void _run () {
     	           	    	ConstituentAddDataCtx __ctx = (ConstituentAddDataCtx) ctx;
     	        	    	//ConstituentAddData dialog = __ctx.dialog;
@@ -1211,21 +1211,21 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
 		String organizationGID = model.getOrgGID();//D_Organization.getGlobalOrgID(Util.getStringID(organizationID));
 		
 		data.D_Constituent wbc = D_Constituent.getEmpty();//new data.D_Constituent();
-		wbc.weight = dialog.weight+"";
+		wbc.setWeight(dialog.weight+"");
 		wbc._set_GID(gcd);
-		wbc.global_constituent_id_hash = gcdhash;
-		wbc.email = dialog.emailEditor;
-		wbc.external = false;
-		wbc.forename = dialog.gnEditor;
-		wbc.surname = dialog.snEditor;
+		wbc.setGIDH(gcdhash);
+		wbc.setEmail(dialog.emailEditor);
+		wbc.setExternal(false);
+		wbc.setForename(dialog.gnEditor);
+		wbc.setSurname(dialog.snEditor);
 		wbc.setOrganization(organizationGID, organizationID);
 		//wbc.global_organization_ID = organizationGID;
-		wbc.picture = byteArray;
-		wbc.slogan = table.constituent.INIT_SLOGAN;
+		wbc.setPicture(byteArray);
+		wbc.setSlogan(table.constituent.INIT_SLOGAN);
 		wbc.setCreationDate (creation_date);
-		wbc.hash_alg = table.constituent.CURRENT_HASH_CONSTITUENT_ALG;
+		wbc.setHash_alg(table.constituent.CURRENT_HASH_CONSTITUENT_ALG);
 		wbc.languages = dialog.getLanguages();
-		wbc.neighborhood=null;
+		wbc.setNeighborhood(null);
 		wbc.sign();
 		D_Constituent c = D_Constituent.getConstByGID_or_GIDH(wbc.getGID(), wbc.getGIDH(), true, true, true, null, organizationID);
 		if (c == null) {

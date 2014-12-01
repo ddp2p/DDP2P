@@ -45,35 +45,35 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public int version = 2;
 	
 	private String global_constituent_id;//Printable
-	public String global_constituent_id_hash;
-	public String global_submitter_id;//Printable
-	public String global_neighborhood_ID;
-	public String global_organization_ID;
+	private String global_constituent_id_hash;
+	private String global_submitter_id;//Printable
+	private String global_neighborhood_ID;
+	private String global_organization_ID;
 	
-	public String surname;//UTF8
-	public String forename;//UTF8
-	public String slogan;
-	public boolean external;
+	private String surname;//UTF8
+	private String forename;//UTF8
+	private String slogan;
+	private boolean external;
 	public String[] languages;
 	public D_FieldValue[] address;
-	public String email;//Printable
+	private String email;//Printable
 	private Calendar creation_date;
 	private String _creation_date;
-	public String weight;
-	public boolean revoked;
-	public byte[] picture;//OCT STR
-	public String hash_alg;//Printable
-	public byte[] signature; //OCT STR
-	public byte[] certificate; //OCT STR
+	private String weight;
+	private boolean revoked;
+	private byte[] picture;//OCT STR
+	private String hash_alg;//Printable
+	private byte[] signature; //OCT STR
+	private byte[] certificate; //OCT STR
 	
-	public D_Witness valid_support;
-	public D_Neighborhood[] neighborhood;
-	public D_Constituent submitter;
+	private D_Witness valid_support;
+	private D_Neighborhood[] neighborhood;
+	private D_Constituent submitter;
 
 	private String constituent_ID;
 	private long _constituent_ID;
-	public String submitter_ID;
-	public String neighborhood_ID;
+	private String submitter_ID;
+	private String neighborhood_ID;
 	private String organization_ID;
 	private long _organization_ID;
 	
@@ -183,6 +183,111 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		if (lID == null) throw new RuntimeException("LID="+lID);
 		init(lID, load_Globals);
 	}
+	/**
+	 * 
+	 * @param _forename
+	 * @param _surname
+	 * @param _email
+	 * @param oLID
+	 * @param external
+	 * @param _ciphersuit
+	 * @param _hash_alg
+	 * @param _ciphersize
+	 * @return
+	 */
+	public static D_Constituent createConstituent (
+			String _forename, String _surname, String _email, 
+			long oLID, boolean external, String _weight, String _slogan,
+			String _ciphersuit, String _hash_alg, int _ciphersize,
+			D_Neighborhood _parentNeighborhood,
+			D_Constituent _submitter) {
+		D_Constituent new_constituent = D_Constituent.getEmpty();
+		
+		new_constituent.setForename_dirty(_forename);
+		new_constituent.setSurname_dirty(_surname);
+		new_constituent.setEmail(_email);
+		new_constituent.setExternal_dirty(true);
+		new_constituent.setTemporary(false);
+		new_constituent.setWeight(_weight);
+		new_constituent.setSlogan(_slogan);
+		if (_parentNeighborhood != null) {
+			new_constituent.setNeighborhoodGID(_parentNeighborhood.getGID());
+			new_constituent.setNeighborhood_LID(_parentNeighborhood.getLIDstr());
+		}
+		if (_submitter != null) {
+			new_constituent.setSubmitter(_submitter);
+			new_constituent.setSubmitter_ID(_submitter.getLIDstr());
+			new_constituent.setSubmitterGID(_submitter.getGID());
+		}
+		String GID;
+		String gcdhash;
+		if (external) {
+			gcdhash = GID = new_constituent.makeExternalGID();
+			new_constituent.setGID(GID, gcdhash, oLID);
+			new_constituent.sign();
+			//D_Motion.DEBUG = true;
+			//String GID = new_constituent.getGID();
+		} else {
+		   	String now = Util.getGeneralizedTime();
+	    	
+	    	Cipher keys = null;
+	    	SK sk; //= ib.getKeys();
+//	    	keys = ib.getCipher();
+	    	
+	    	if (keys == null) {
+	    		
+	        	try {
+					keys = Cipher.mGetStoreCipher(
+							_ciphersuit,
+							_hash_alg,
+							_ciphersize,
+							"CST:"+_surname+"_"+_forename,
+							"Constituent",
+							_email, now);
+				} catch (P2PDDSQLException e) {
+					e.printStackTrace();
+				}
+	    		sk = keys.getSK();
+	    	}
+	    	
+			GID = Util.getKeyedIDPK(keys);
+			String sID = Util.getKeyedIDSK(keys);
+			gcdhash = D_Constituent.getGIDHashFromGID_NonExternalOnly(GID);
+			String type = Util.getKeyedIDType(keys);
+			new_constituent.sign();
+		}
+		
+		D_Constituent m = D_Constituent.getConstByGID_or_GIDH(GID, gcdhash, true, true, true, null, 
+				oLID, new_constituent);
+		if (m != new_constituent) {
+			m.loadRemote(null, null,new_constituent,  null, false);
+			new_constituent = (m);
+		}
+		
+		//new_motion.setBroadcasted(true); // if you sign it, you probably want to broadcast it...
+		new_constituent.setTemporary(false);
+		new_constituent.setArrivalDate();
+		long m_id = new_constituent.storeRequest_getID();
+		//new_motion.storeRequest();
+		new_constituent.releaseReference();
+		return new_constituent;
+	}
+	public void setForename_dirty(String _forename) {
+		this.setForename(_forename);
+		this.dirty_main = true;
+	}
+	public void setSurname_dirty(String _surname) {
+		this.setSurname(_surname);
+		this.dirty_main = true;
+	}
+	public void setExternal_dirty(boolean _ext) {
+		this.setExternal(_ext);
+		this.dirty_main = true;
+	}
+	public void setExternal(boolean _ext) {
+		this.external = _ext;
+		this.dirty_main = true;
+	}
 	private void init(String lID, boolean load_Globals) {
 		ArrayList<ArrayList<Object>> c;
 		try {
@@ -198,39 +303,39 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		constituent_ID = Util.getString(alk.get(table.constituent.CONST_COL_ID));
 		_constituent_ID = Util.lval(constituent_ID);
 		version = Util.ival(alk.get(table.constituent.CONST_COL_VERSION), 0);
-		submitter_ID = Util.getString(alk.get(table.constituent.CONST_COL_SUBMITTER));
-		if (submitter_ID != null)
-			global_submitter_id = D_Constituent.getGIDFromLID(getSubmitterLID());
+		setSubmitter_ID(Util.getString(alk.get(table.constituent.CONST_COL_SUBMITTER)));
+		if (getSubmitter_ID() != null)
+			setSubmitterGID(D_Constituent.getGIDFromLID(getSubmitterLID()));
 
 		organization_ID = Util.getString(alk.get(table.constituent.CONST_COL_ORG));
 		_organization_ID = Util.lval(organization_ID);
-		global_organization_ID = D_Organization.getGIDbyLID(_organization_ID);
+		setOrganizationGID(D_Organization.getGIDbyLID(_organization_ID));
 		
 		_set_GID(Util.getString(alk.get(table.constituent.CONST_COL_GID)));
-		global_constituent_id_hash = Util.getString(alk.get(table.constituent.CONST_COL_GID_HASH));
-		if (global_constituent_id_hash == null)
-			global_constituent_id_hash = D_Constituent.getGIDHashFromGID(getGID());
+		setGIDH(Util.getString(alk.get(table.constituent.CONST_COL_GID_HASH)));
+		if (getGIDH() == null)
+			setGIDH(D_Constituent.getGIDHashFromGID(getGID()));
 		
 		// this.setOrganization(global_organization_ID, _organization_ID);
 		
-		surname = Util.getString(alk.get(table.constituent.CONST_COL_SURNAME));
+		setSurname(Util.getString(alk.get(table.constituent.CONST_COL_SURNAME)));
 		//if(DEBUG) System.out.println("ConstituentHandling:load: surname:"+surname+" from="+alk.get(table.constituent.CONST_COL_SURNAME));		
-		forename = Util.getString(alk.get(table.constituent.CONST_COL_FORENAME));
-		weight = Util.getString(alk.get(table.constituent.CONST_COL_WEIGHT));
-		slogan = Util.getString(alk.get(table.constituent.CONST_COL_SLOGAN));
+		setForename(Util.getString(alk.get(table.constituent.CONST_COL_FORENAME)));
+		setWeight(Util.getString(alk.get(table.constituent.CONST_COL_WEIGHT)));
+		setSlogan(Util.getString(alk.get(table.constituent.CONST_COL_SLOGAN)));
 		if (DEBUG) System.out.println("D_Constituent:load: external="+alk.get(table.constituent.CONST_COL_EXTERNAL));
 		languages = D_OrgConcepts.stringArrayFromString(Util.getString(alk.get(table.constituent.CONST_COL_LANG)));
 		address = D_FieldValue.getFieldValues(constituent_ID);		
-		email = Util.getString(alk.get(table.constituent.CONST_COL_EMAIL));
+		setEmail(Util.getString(alk.get(table.constituent.CONST_COL_EMAIL)));
 		
 		setCreationDate(Util.getString(alk.get(table.constituent.CONST_COL_DATE_CREATION)));
 		setArrivalDate(Util.getString(alk.get(table.constituent.CONST_COL_DATE_ARRIVAL)));
 		setPreferencesDate(Util.getString(alk.get(table.constituent.CONST_COL_DATE_PREFERENCES)));
 		
-		global_neighborhood_ID = Util.getString(alk.get(table.constituent.CONST_COLs+0));
-		this.neighborhood_ID = Util.getString(alk.get(table.constituent.CONST_COL_NEIGH));
-		this.external = Util.stringInt2bool(alk.get(table.constituent.CONST_COL_EXTERNAL), false);
-		this.revoked = Util.stringInt2bool(alk.get(table.constituent.CONST_COL_REVOKED), false);
+		setNeighborhoodGID(Util.getString(alk.get(table.constituent.CONST_COLs+0)));
+		this.setNeighborhood_LID(Util.getString(alk.get(table.constituent.CONST_COL_NEIGH)));
+		this.setExternal(Util.stringInt2bool(alk.get(table.constituent.CONST_COL_EXTERNAL), false));
+		this.setRevoked(Util.stringInt2bool(alk.get(table.constituent.CONST_COL_REVOKED), false));
 		this.blocked = Util.stringInt2bool(alk.get(table.constituent.CONST_COL_BLOCKED),false);
 		this.requested = Util.stringInt2bool(alk.get(table.constituent.CONST_COL_REQUESTED),false);
 		this.source_peer_ID = Util.lval(alk.get(table.constituent.CONST_COL_PEER_TRANSMITTER_ID));
@@ -238,13 +343,13 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		this.hidden = Util.stringInt2bool(alk.get(table.constituent.CONST_COL_HIDDEN),false);
 		
 		//picture = strToBytes(Util.getString(alk.get(table.constituent.CONST_COL_PICTURE)));
-		picture = Util.byteSignatureFromString(Util.getString(alk.get(table.constituent.CONST_COL_PICTURE)));
-		hash_alg = Util.getString(alk.get(table.constituent.CONST_COL_HASH_ALG));
+		setPicture(Util.byteSignatureFromString(Util.getString(alk.get(table.constituent.CONST_COL_PICTURE))));
+		setHash_alg(Util.getString(alk.get(table.constituent.CONST_COL_HASH_ALG)));
 		String _sgn = Util.getString(alk.get(table.constituent.CONST_COL_SIGNATURE));
 		if ("".equals(_sgn)) _sgn = null;
-		signature = Util.byteSignatureFromString(_sgn);
+		setSignature(Util.byteSignatureFromString(_sgn));
 		//certificate = strToBytes(Util.getString(alk.get(table.constituent.CONST_COL_CERTIF)));
-		certificate = Util.byteSignatureFromString(Util.getString(alk.get(table.constituent.CONST_COL_CERTIF)));			
+		setCertificate(Util.byteSignatureFromString(Util.getString(alk.get(table.constituent.CONST_COL_CERTIF))));			
 		//c.hash = Util.hexToBytes(Util.getString(al.get(k).get(table.constituent.CONST_COL_HASH)).split(Pattern.quote(":")));
 		//c.cerReq = al.get(k).get(table.constituent.CONST_COL_CERREQ);
 		//c.cert_hash_alg = al.get(k).get(table.constituent.CONST_COL_CERT_HASH_ALG);
@@ -270,16 +375,16 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	}
 	
 	public long getSubmitterLID() {
-		return Util.lval(submitter_ID);
+		return Util.lval(getSubmitter_ID());
 	}
 	/**
 	 * EXPAND_NONE, EXPAND_ONE, EXPAND_ALL
 	 * @param _neighborhoods
 	 */
 	public void loadNeighborhoods (int _neighborhoods) {
-		if (_neighborhoods == EXPAND_NONE || ((global_neighborhood_ID == null) && (neighborhood_ID == null))) { neighborhood = null; return; }
+		if (_neighborhoods == EXPAND_NONE || ((getNeighborhoodGID() == null) && (getNeighborhood_LID() == null))) { setNeighborhood(null); return; }
 		try {
-			neighborhood = D_Neighborhood.getNeighborhoodHierarchy(global_neighborhood_ID, neighborhood_ID, _neighborhoods, this.getOrganizationID());
+			setNeighborhood(D_Neighborhood.getNeighborhoodHierarchy(getNeighborhoodGID(), getNeighborhood_LID(), _neighborhoods, this.getOrganizationLID()));
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
@@ -287,39 +392,39 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public String toString() {
 		String result="D_Constituent: [ #"+this.constituent_ID;
 		result += "\n version="+version;
-		result += "\n orgGID=["+organization_ID+","+this._organization_ID+"]="+global_organization_ID;
+		result += "\n orgGID=["+organization_ID+","+this._organization_ID+"]="+getOrganizationGID();
 		result += "\n costGID="+getGID();
-		result += "\n constGIDH="+global_constituent_id_hash;
-		result += "\n surname="+surname;
-		result += "\n forename="+forename;
+		result += "\n constGIDH="+getGIDH();
+		result += "\n surname="+getSurname();
+		result += "\n forename="+getForename();
 		result += "\n address="+Util.nullDiscrim(address, Util.concat(address,":"));
-		result += "\n email="+email;
+		result += "\n email="+getEmail();
 		result += "\n crea_date="+Encoder.getGeneralizedTime(creation_date);
-		result += "\n neigGID="+global_neighborhood_ID;
-		result += "\n picture="+Util.nullDiscrim(picture, Util.stringSignatureFromByte(picture));
-		result += "\n hash_alg="+hash_alg;
-		result += "\n certif="+Util.nullDiscrim(certificate, Util.stringSignatureFromByte(certificate));
+		result += "\n neigGID="+getNeighborhoodGID();
+		result += "\n picture="+Util.nullDiscrim(getPicture(), Util.stringSignatureFromByte(getPicture()));
+		result += "\n hash_alg="+getHash_alg();
+		result += "\n certif="+Util.nullDiscrim(getCertificate(), Util.stringSignatureFromByte(getCertificate()));
 		result += "\n lang="+Util.nullDiscrim(languages, Util.concat(languages,":"));
-		result += "\n submitterGID="+global_submitter_id;
-		result += "\n submitter="+submitter;
-		result += "\n slogan="+slogan;
-		result += "\n weight="+weight;
-		result += "\n external="+external;
-		result += "\n revoked="+revoked;
-		result += "\n signature="+Util.byteToHexDump(signature);
+		result += "\n submitterGID="+getSubmitterGID();
+		result += "\n submitter="+getSubmitter();
+		result += "\n slogan="+getSlogan();
+		result += "\n weight="+getWeight();
+		result += "\n external="+isExternal();
+		result += "\n revoked="+isRevoked();
+		result += "\n signature="+Util.byteToHexDump(getSignature());
 		result += "\n  row="+this.mydata.row;
 		result += "\n  name="+this.mydata.name;
 		result += "\n  submiter="+this.mydata.submitter;
 		result += "\n  category="+this.mydata.category;
-		if(neighborhood!=null) result += "\n neigh=["+Util.concat(neighborhood, "\n\n")+"]";
+		if(getNeighborhood()!=null) result += "\n neigh=["+Util.concat(getNeighborhood(), "\n\n")+"]";
 		return result+"]";
 	}
 	public String toSummaryString() {
 		String result="D_Constituent: [";
-		if (global_organization_ID != null) result += "\n orgGID="+global_organization_ID;
-		result += "\n surname="+surname+" [#"+this.mydata.row+" "+this.mydata.name+"]";
-		result += "\n forename="+forename;
-		if(neighborhood!=null) result += "\n neigh=["+Util.concatSummary(neighborhood, "\n\n", null)+"]";
+		if (getOrganizationGID() != null) result += "\n orgGID="+getOrganizationGID();
+		result += "\n surname="+getSurname()+" [#"+this.mydata.row+" "+this.mydata.name+"]";
+		result += "\n forename="+getForename();
+		if(getNeighborhood()!=null) result += "\n neigh=["+Util.concatSummary(getNeighborhood(), "\n\n", null)+"]";
 		return result+"]";
 	}
 
@@ -480,7 +585,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 				String gid = crt.getGID();
 				String gidh = crt.getGIDH();
 				long lid = crt.getLID();
-				Long organizationLID = crt.getOrganizationID();
+				Long organizationLID = crt.getOrganizationLID();
 				
 				loaded_consts.offerFirst(crt);
 				if (lid > 0) {
@@ -490,7 +595,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 					if (DEBUG) System.out.println("D_Constituent: register_loaded: no store lid="+lid+" crt="+crt.getGIDH());
 				}
 				if (gid != null) {
-					D_Constituent_Node.putConstByGID(gid, crt.getOrganizationID(), crt); //loaded_const_By_GID.put(gid, crt);
+					D_Constituent_Node.putConstByGID(gid, crt.getOrganizationLID(), crt); //loaded_const_By_GID.put(gid, crt);
 					if (DEBUG) System.out.println("D_Constituent: register_loaded: store gid="+gid);
 				} else {
 					if (DEBUG) System.out.println("D_Constituent: register_loaded: no store gid="+gid);
@@ -524,8 +629,8 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 					
 					D_Constituent removed = loaded_consts.removeTail();//remove(loaded_peers.size()-1);
 					loaded_const_By_LocalID.remove(new Long(removed.getLID())); 
-					D_Constituent_Node.remConstByGID(removed.getGID(), removed.getOrganizationID());//loaded_const_By_GID.remove(removed.getGID());
-					D_Constituent_Node.remConstByGIDH(removed.getGIDH(), removed.getOrganizationID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
+					D_Constituent_Node.remConstByGID(removed.getGID(), removed.getOrganizationLID());//loaded_const_By_GID.remove(removed.getGID());
+					D_Constituent_Node.remConstByGIDH(removed.getGIDH(), removed.getOrganizationLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 					if (DEBUG) System.out.println("D_Constituent: register_loaded: remove GIDH="+removed.getGIDH());
 					if (removed.component_node.message != null) current_space -= removed.component_node.message.length;				
 				}
@@ -693,7 +798,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		
 		if (crt != null) {
-			crt.setGID(GID, GIDhash, crt.getOrganizationID());
+			crt.setGID(GID, GIDhash, crt.getOrganizationLID());
 			
 			if (load_Globals && !crt.loaded_globals) {
 				crt.fillGlobals();
@@ -797,6 +902,21 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	 * @return
 	 */
 	static public D_Constituent getConstByGID_or_GIDH(String GID, String GIDH, boolean load_Globals, boolean create, boolean keep, D_Peer __peer, long p_oLID) {
+		return getConstByGID_or_GIDH(GID, GIDH, load_Globals, create, keep, __peer, p_oLID, null);
+	}
+	/**
+	 * Does not call storeRequest on creation.
+	 * Therefore If create, should also set keep!
+	 * @param GID
+	 * @param GIDH
+	 * @param oID
+	 * @param load_Globals
+	 * @param create
+	 * @param keep
+	 * @param __peer
+	 * @return
+	 */
+	static public D_Constituent getConstByGID_or_GIDH(String GID, String GIDH, boolean load_Globals, boolean create, boolean keep, D_Peer __peer, long p_oLID, D_Constituent storage) {
 		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("D_Constituent: getConstByGID_or_GIDH: "+GID+", GIDH="+GIDH+" glob="+load_Globals+" cre="+create+" _peer="+__peer);
 		if (create) {
@@ -821,7 +941,22 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			}
 
 			try {
-				crt = new D_Constituent(GID, GIDH, load_Globals, create, __peer, p_oLID);
+				try {
+					crt = new D_Constituent(GID, GIDH, load_Globals, create && (storage == null), __peer, p_oLID);
+				} catch (D_NoDataException e) {
+					if (! create || (storage == null)) throw e;
+					//if (storage != null) 
+					{
+						crt = storage;
+						crt.source_peer = __peer;
+						crt.setOrganization(null, p_oLID);
+						crt.setGID(GID, GIDH, p_oLID);
+						if (__peer != null) crt.source_peer_ID = __peer.getLID();
+						crt.dirty_main = true;
+						crt.setTemporary();
+					}
+				}
+				
 				if (DEBUG) System.out.println("D_Constituent: getConstByGID_or_GIDH: loaded crt="+crt);
 				if (keep) {
 					crt.inc_StatusLockWrite();
@@ -844,7 +979,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	 */
 	static public D_Constituent getConstByConst_Keep(D_Constituent constit) {
 		if (constit == null) return null;
-		D_Constituent result = D_Constituent.getConstByGID_or_GIDH(constit.getGID(), constit.getGIDH(), true, true, constit.getOrganizationID());
+		D_Constituent result = D_Constituent.getConstByGID_or_GIDH(constit.getGID(), constit.getGIDH(), true, true, constit.getOrganizationLID());
 		if (result == null) {
 			result = D_Constituent.getConstByLID(constit.getLID(), true, true);
 		}
@@ -869,7 +1004,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	
 	/** Storing */
 	public static D_Constituent_SaverThread saverThread = new D_Constituent_SaverThread();
-	private boolean dirty_any() {
+	public boolean dirty_any() {
 		return dirty_main || dirty_params || dirty_locals || dirty_mydata;
 	}
 	/**
@@ -887,7 +1022,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			return;
 		}
 
-		if (this.arrival_date == null && (this.signature != null && this.signature.length > 0)) {
+		if (this.arrival_date == null && (this.getSignature() != null && this.getSignature().length > 0)) {
 			this.arrival_date = Util.CalendargetInstance();
 			if (_DEBUG) System.out.println("D_Constituent: storeRequest: missing arrival_date");
 			Util.printCallPath("D_Constituent: storeRequest: Why no arrival time??");
@@ -978,7 +1113,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		if (this.dirty_params) {
 			this.dirty_params = false;
 			try {
-				D_FieldValue.store(sync, address, constituent_ID, this.getOrganizationID(), DD.ACCEPT_TEMPORARY_AND_NEW_CONSTITUENT_FIELDS, org);
+				D_FieldValue.store(sync, address, constituent_ID, this.getOrganizationLID(), DD.ACCEPT_TEMPORARY_AND_NEW_CONSTITUENT_FIELDS, org);
 			} catch (ExtraFieldException e) {
 				e.printStackTrace();
 			}
@@ -992,7 +1127,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	}
 	private long storeAct_main(boolean sync) throws P2PDDSQLException {
 		// Util.printCallPath("sync="+sync+" this="+this);
-		if (this.arrival_date == null && (this.signature != null && this.signature.length > 0)) {
+		if (this.arrival_date == null && (this.getSignature() != null && this.getSignature().length > 0)) {
 			this.arrival_date = Util.CalendargetInstance();
 			if (_DEBUG) System.out.println("D_Constituent: missing arrival_date");
 			Util.printCallPath("D_Constituent: storeRequest: Why no arrival time??");
@@ -1004,26 +1139,27 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 					table.constituent.CONST_COLs_NOID];
 		//params[table.constituent.CONST_COL_ID] = ;
 		params[table.constituent.CONST_COL_GID] = getGID();
-		params[table.constituent.CONST_COL_GID_HASH] = this.global_constituent_id_hash;
-		params[table.constituent.CONST_COL_SURNAME] = surname;
-		params[table.constituent.CONST_COL_FORENAME] = forename;
-		params[table.constituent.CONST_COL_SLOGAN] = slogan;
-		params[table.constituent.CONST_COL_EXTERNAL] = Util.bool2StringInt(external);
-		params[table.constituent.CONST_COL_REVOKED] = Util.bool2StringInt(revoked);
+		params[table.constituent.CONST_COL_GID_HASH] = this.getGIDH();
+		params[table.constituent.CONST_COL_SURNAME] = getSurname();
+		params[table.constituent.CONST_COL_FORENAME] = getForename();
+		params[table.constituent.CONST_COL_SLOGAN] = getSlogan();
+		params[table.constituent.CONST_COL_WEIGHT] = getWeight();
+		params[table.constituent.CONST_COL_EXTERNAL] = Util.bool2StringInt(isExternal());
+		params[table.constituent.CONST_COL_REVOKED] = Util.bool2StringInt(isRevoked());
 		params[table.constituent.CONST_COL_VERSION] = ""+version;
 		params[table.constituent.CONST_COL_LANG] = D_OrgConcepts.stringFromStringArray(languages);
-		params[table.constituent.CONST_COL_EMAIL] = email;
-		params[table.constituent.CONST_COL_PICTURE] = Util.stringSignatureFromByte(picture);
+		params[table.constituent.CONST_COL_EMAIL] = getEmail();
+		params[table.constituent.CONST_COL_PICTURE] = Util.stringSignatureFromByte(getPicture());
 		params[table.constituent.CONST_COL_DATE_CREATION] = _creation_date; //Encoder.getGeneralizedTime(creation_date);
 		params[table.constituent.CONST_COL_DATE_ARRIVAL] = getArrivalDateStr();
 		params[table.constituent.CONST_COL_DATE_PREFERENCES] = getPreferencesDateStr();
-		params[table.constituent.CONST_COL_NEIGH] = this.neighborhood_ID;
+		params[table.constituent.CONST_COL_NEIGH] = this.getNeighborhood_LID();
 		params[table.constituent.CONST_COL_PEER_TRANSMITTER_ID] = Util.getStringID(this.source_peer_ID);
-		params[table.constituent.CONST_COL_HASH_ALG] = hash_alg;
-		params[table.constituent.CONST_COL_SIGNATURE] = Util.stringSignatureFromByte(signature);
-		params[table.constituent.CONST_COL_CERTIF] = Util.stringSignatureFromByte(certificate);
+		params[table.constituent.CONST_COL_HASH_ALG] = getHash_alg();
+		params[table.constituent.CONST_COL_SIGNATURE] = Util.stringSignatureFromByte(getSignature());
+		params[table.constituent.CONST_COL_CERTIF] = Util.stringSignatureFromByte(getCertificate());
 		params[table.constituent.CONST_COL_ORG] = this.organization_ID;
-		params[table.constituent.CONST_COL_SUBMITTER] = submitter_ID;
+		params[table.constituent.CONST_COL_SUBMITTER] = getSubmitter_ID();
 		params[table.constituent.CONST_COL_OP] = "1";
 		params[table.constituent.CONST_COL_BLOCKED] = Util.bool2StringInt(blocked);
 		params[table.constituent.CONST_COL_REQUESTED] = Util.bool2StringInt(requested);
@@ -1032,6 +1168,14 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 
 		try {
 			if (this.constituent_ID == null) {
+				if (this.getOrganizationLIDstr() != null) {
+					D_Organization o = D_Organization.getOrgByLID_AttemptCacheOnly_NoKeep(this.getOrganizationLID(), false);
+					if (o != null) o.resetCache(); // removing cached memory of statistics about the constituent!
+				}
+//				if (this.getLIDstr() != null) {
+//					D_Constituent c = D_Constituent.getConstByLID_AttemptCacheOnly(this.getLID(), false);
+//					if (c != null) c.resetCache(); // removing cached memory of statistics about justifications!
+//				}
 					
 				setConstituentLID(Application.db.insert(sync, table.constituent.TNAME,
 						table.constituent.fields_constituents_no_ID_list, params, DEBUG));
@@ -1084,9 +1228,9 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			System.out.println("D_Constituent: storeRemoteThis: unknown organization: "+this.getOrgGID());
 			return -1;
 		}
-		if ( ( neighborhood != null) && ( neighborhood.length > 0 ) ) {
-			for (int k = 0; k < neighborhood.length; k ++) {
-				neighborhood[k].storeRemoteThis(this.getOrgGID(), this._organization_ID, this.getArrivalDateStr(), sol_rq, new_rq, __peer);
+		if ( ( getNeighborhood() != null) && ( getNeighborhood().length > 0 ) ) {
+			for (int k = 0; k < getNeighborhood().length; k ++) {
+				getNeighborhood()[k].storeRemoteThis(this.getOrgGID(), this._organization_ID, this.getArrivalDateStr(), sol_rq, new_rq, __peer);
 			}
 		}
 		D_Constituent c = D_Constituent
@@ -1095,7 +1239,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		c.storeRequest();
 		c.releaseReference();
 		result = c.getLID_force();
-		if(sol_rq!=null)sol_rq.cons.put(this.global_constituent_id_hash, DD.EMPTYDATE);
+		if(sol_rq!=null)sol_rq.cons.put(this.getGIDH(), DD.EMPTYDATE);
 		return result;
 //		if (this._constituent_ID <= 0) result = this.storeSynchronouslyNoException();
 //		else {
@@ -1184,10 +1328,10 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		this._constituent_ID = _constituentLID;
 		this.constituent_ID = Util.getStringID(_constituent_ID);
 	}
-	public long getOrganizationID() {
+	public long getOrganizationLID() {
 		return this._organization_ID;
 	}
-	public String getOrganizationIDStr() {
+	public String getOrganizationLIDstr() {
 		return this.organization_ID;
 	}
 	public PK getPK() {
@@ -1212,9 +1356,6 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public long getLID_force() {
 		if (this._constituent_ID > 0) return this._constituent_ID;
 		return this.storeSynchronouslyNoException();
-	}
-	public String getGIDH() {
-		return this.global_constituent_id_hash;
 	}
 	public String getGID() {
 		return global_constituent_id;
@@ -1277,7 +1418,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		
 		if ( (gID != null) && ! Util.equalStrings_null_or_not(oldGID, gID)) {		
-			if (oldGID != null) Util.printCallPath("Why: new GID="+gID+" vs oldGID="+oldGID);
+			if (DEBUG && oldGID != null) Util.printCallPath("Why: new GID="+gID+" vs oldGID="+oldGID);
 			if (oldGID != null) {
 				if (D_GIDH.isGID(oldGIDH) && !D_GIDH.isGID(gID)) {
 					// dead code: should never be here since we tested before
@@ -1307,9 +1448,9 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			if ( ! Util.equalStrings_null_or_not(oldGIDH, gIDH)) {		
 				if (oldGIDH != null) {
 					D_Constituent_Node.remConstByGIDH(this.getGIDH(), oID); //.loaded_const_By_GIDhash.remove(this.getGIDH());
-					Util.printCallPath("Why? change to ID="+gID+" IDH="+gIDH);
+					if (DEBUG) Util.printCallPath("Why? change to ID="+gID+" IDH="+gIDH);
 				}
-				this.global_constituent_id_hash = gIDH;
+				this.setGIDH(gIDH);
 				this.dirty_main = true;
 			}
 		}		
@@ -1537,27 +1678,27 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		//this.global_organization_ID = global_organization_id;
 		Encoder enc = new Encoder().initSequence();
 		if(version>=2) enc.addToSequence(new Encoder(version));
-		enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString));
+		enc.addToSequence(new Encoder(getOrganizationGID(),Encoder.TAG_PrintableString));
 		if(getGID()!=null)enc.addToSequence(new Encoder(getGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
-		if(surname!=null) enc.addToSequence(new Encoder(surname,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC1));
-		if(forename!=null) enc.addToSequence(new Encoder(forename,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC15));
+		if(getSurname()!=null) enc.addToSequence(new Encoder(getSurname(),Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC1));
+		if(getForename()!=null) enc.addToSequence(new Encoder(getForename(),Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC15));
 		if(address!=null) enc.addToSequence(Encoder.getEncoder(address).setASN1Type(DD.TAG_AC2));
-		if(email!=null) enc.addToSequence(new Encoder(email,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
+		if(getEmail()!=null) enc.addToSequence(new Encoder(getEmail(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
 		if(creation_date!=null) enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC4));
-		if(this.global_neighborhood_ID!=null)
-			enc.addToSequence(new Encoder(this.global_neighborhood_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC10));
+		if(this.getNeighborhoodGID()!=null)
+			enc.addToSequence(new Encoder(this.getNeighborhoodGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC10));
 		//if(neighborhood!=null) enc.addToSequence(Encoder.getEncoder(neighborhood).setASN1Type(DD.TAG_AC5));
-		if(picture!=null) enc.addToSequence(new Encoder(picture).setASN1Type(DD.TAG_AC6));
-		if(version<2) if(hash_alg!=null) enc.addToSequence(new Encoder(hash_alg,false));
+		if(getPicture()!=null) enc.addToSequence(new Encoder(getPicture()).setASN1Type(DD.TAG_AC6));
+		if(version<2) if(getHash_alg()!=null) enc.addToSequence(new Encoder(getHash_alg(),false));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC7));
 		//if(global_constituent_id_hash!=null)enc.addToSequence(new Encoder(global_constituent_id_hash,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC8));
-		if(version<2) if(certificate!=null) enc.addToSequence(new Encoder(certificate).setASN1Type(DD.TAG_AC9));
+		if(version<2) if(getCertificate()!=null) enc.addToSequence(new Encoder(getCertificate()).setASN1Type(DD.TAG_AC9));
 		if(languages!=null) enc.addToSequence(Encoder.getStringEncoder(languages,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC11));
-		if(version<2) if(global_submitter_id!=null)enc.addToSequence(new Encoder(global_submitter_id,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
-		if(slogan!=null) enc.addToSequence(new Encoder(slogan).setASN1Type(DD.TAG_AC13));
-		if(weight!=null) enc.addToSequence(new Encoder(weight).setASN1Type(DD.TAG_AC14));
-		enc.addToSequence(new Encoder(external));
-		if(!external && version>=2) enc.addToSequence(new Encoder(revoked));
+		if(version<2) if(getSubmitterGID()!=null)enc.addToSequence(new Encoder(getSubmitterGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
+		if(getSlogan()!=null) enc.addToSequence(new Encoder(getSlogan()).setASN1Type(DD.TAG_AC13));
+		if(getWeight()!=null) enc.addToSequence(new Encoder(getWeight()).setASN1Type(DD.TAG_AC14));
+		enc.addToSequence(new Encoder(isExternal()));
+		if(!isExternal() && version>=2) enc.addToSequence(new Encoder(isRevoked()));
 		return enc;
 	}
 	/**
@@ -1596,26 +1737,26 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		//this.global_organization_ID = global_organization_id;
 		Encoder enc = new Encoder().initSequence();
 		
-		enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString));
+		enc.addToSequence(new Encoder(getOrganizationGID(),Encoder.TAG_PrintableString));
 		//if(global_constituent_id!=null)enc.addToSequence(new Encoder(global_constituent_id,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
-		if(surname!=null) enc.addToSequence(new Encoder(surname,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC1));
-		if(forename!=null) enc.addToSequence(new Encoder(forename,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC15));
+		if(getSurname()!=null) enc.addToSequence(new Encoder(getSurname(),Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC1));
+		if(getForename()!=null) enc.addToSequence(new Encoder(getForename(),Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC15));
 		if(address!=null) enc.addToSequence(Encoder.getEncoder(address).setASN1Type(DD.TAG_AC2));
-		if(email!=null)enc.addToSequence(new Encoder(email,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
+		if(getEmail()!=null)enc.addToSequence(new Encoder(getEmail(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
 		//if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC4));
-		if(this.global_neighborhood_ID!=null)
-			enc.addToSequence(new Encoder(this.global_neighborhood_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC10));
+		if(this.getNeighborhoodGID()!=null)
+			enc.addToSequence(new Encoder(this.getNeighborhoodGID(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC10));
 		//if(neighborhood!=null) enc.addToSequence(Encoder.getEncoder(neighborhood).setASN1Type(DD.TAG_AC5));
-		if(picture!=null) enc.addToSequence(new Encoder(picture).setASN1Type(DD.TAG_AC6));
-		if(version<2)if(hash_alg!=null)enc.addToSequence(new Encoder(hash_alg,false));
+		if(getPicture()!=null) enc.addToSequence(new Encoder(getPicture()).setASN1Type(DD.TAG_AC6));
+		if(version<2)if(getHash_alg()!=null)enc.addToSequence(new Encoder(getHash_alg(),false));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC7));
 		//if(global_constituent_id_hash!=null)enc.addToSequence(new Encoder(global_constituent_id_hash,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC8));
-		if(version<2) if(certificate!=null) enc.addToSequence(new Encoder(certificate).setASN1Type(DD.TAG_AC9));
+		if(version<2) if(getCertificate()!=null) enc.addToSequence(new Encoder(getCertificate()).setASN1Type(DD.TAG_AC9));
 		if(languages!=null) enc.addToSequence(Encoder.getStringEncoder(languages,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC11));
 		//if(global_submitter_id!=null)enc.addToSequence(new Encoder(global_submitter_id,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
 		//if(slogan!=null)enc.addToSequence(new Encoder(slogan).setASN1Type(DD.TAG_AC13));
-		if(weight!=null) enc.addToSequence(new Encoder(weight).setASN1Type(DD.TAG_AC14)); // weight should be signed by authority/witnessed
-		enc.addToSequence(new Encoder(external));
+		if(getWeight()!=null) enc.addToSequence(new Encoder(getWeight()).setASN1Type(DD.TAG_AC14)); // weight should be signed by authority/witnessed
+		enc.addToSequence(new Encoder(isExternal()));
 		return enc;
 		//if(true)return enc;
 	}
@@ -1675,50 +1816,50 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		 * However, it is not that damaging when using compression, and can be stored without much overhead.
 		 * So it is left here for now.  Test if you comment out!
 		 */
-		if (global_organization_ID!=null) {
-			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_organization_ID);
+		if (getOrganizationGID()!=null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getOrganizationGID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString));
 		}
 		if (getGID()!=null) {
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getGID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
 		}
-		if (surname!=null) enc.addToSequence(new Encoder(surname,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC1));
-		if (forename!=null) enc.addToSequence(new Encoder(forename,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC15));
+		if (getSurname()!=null) enc.addToSequence(new Encoder(getSurname(),Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC1));
+		if (getForename()!=null) enc.addToSequence(new Encoder(getForename(),Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC15));
 		if (address!=null) enc.addToSequence(Encoder.getEncoder(address).setASN1Type(DD.TAG_AC2));
-		if (email!=null) enc.addToSequence(new Encoder(email,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
+		if (getEmail()!=null) enc.addToSequence(new Encoder(getEmail(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
 		if (creation_date!=null) enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC4));
-		if (global_neighborhood_ID != null) {
-			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_neighborhood_ID);
+		if (getNeighborhoodGID() != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getNeighborhoodGID());
 			enc.addToSequence(new Encoder(repl_GID, false).setASN1Type(DD.TAG_AC10));
 		}
 		
 		if (dependants != ASNObj.DEPENDANTS_NONE) {
-			if (neighborhood != null) enc.addToSequence(Encoder.getEncoder(neighborhood, dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC5));
+			if (getNeighborhood() != null) enc.addToSequence(Encoder.getEncoder(getNeighborhood(), dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC5));
 		}
 		
-		if (picture != null) enc.addToSequence(new Encoder(picture).setASN1Type(DD.TAG_AC6));
-		if (hash_alg != null)enc.addToSequence(new Encoder(hash_alg,false));
-		if (signature != null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC7));
-		if (false && global_constituent_id_hash != null) {
-			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_constituent_id_hash);
+		if (getPicture() != null) enc.addToSequence(new Encoder(getPicture()).setASN1Type(DD.TAG_AC6));
+		if (getHash_alg() != null)enc.addToSequence(new Encoder(getHash_alg(),false));
+		if (getSignature() != null)enc.addToSequence(new Encoder(getSignature()).setASN1Type(DD.TAG_AC7));
+		if (false && getGIDH() != null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getGIDH());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC8));
 		}
-		if (certificate!=null) enc.addToSequence(new Encoder(certificate).setASN1Type(DD.TAG_AC9));
+		if (getCertificate()!=null) enc.addToSequence(new Encoder(getCertificate()).setASN1Type(DD.TAG_AC9));
 		if (languages!=null) enc.addToSequence(Encoder.getStringEncoder(languages,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC11));
-		if (global_submitter_id!=null){
-			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_submitter_id);
+		if (getSubmitterGID()!=null){
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getSubmitterGID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC12));
 		}
-		if (slogan != null) enc.addToSequence(new Encoder(slogan).setASN1Type(DD.TAG_AC13));
-		if (weight != null) enc.addToSequence(new Encoder(weight).setASN1Type(DD.TAG_AC14));
-		if (valid_support != null) enc.addToSequence(valid_support.getEncoder().setASN1Type(DD.TAG_AC16));
+		if (getSlogan() != null) enc.addToSequence(new Encoder(getSlogan()).setASN1Type(DD.TAG_AC13));
+		if (getWeight() != null) enc.addToSequence(new Encoder(getWeight()).setASN1Type(DD.TAG_AC14));
+		if (getValid_support() != null) enc.addToSequence(getValid_support().getEncoder().setASN1Type(DD.TAG_AC16));
 		
 		if (dependants != ASNObj.DEPENDANTS_NONE) {
-			if (submitter != null) enc.addToSequence(submitter.getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC17));
+			if (getSubmitter() != null) enc.addToSequence(getSubmitter().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC17));
 		}
-		enc.addToSequence(new Encoder(external));
-		if (! external) enc.addToSequence(new Encoder(revoked));
+		enc.addToSequence(new Encoder(isExternal()));
+		if (! isExternal()) enc.addToSequence(new Encoder(isRevoked()));
 		enc.setASN1Type(D_Constituent.getASN1Type());
 		return enc;
 	}
@@ -1728,33 +1869,33 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		Decoder dec = decoder.getContent();
 		if(dec.getTypeByte()==Encoder.TAG_INTEGER) version = dec.getFirstObject(true).getInteger().intValue();
 		else version = 0;
-		if(dec.getTypeByte()==Encoder.TAG_PrintableString)global_organization_ID = dec.getFirstObject(true).getString();
+		if(dec.getTypeByte()==Encoder.TAG_PrintableString)setOrganizationGID(dec.getFirstObject(true).getString());
 		if(dec.getTypeByte()==DD.TAG_AC0) _set_GID(dec.getFirstObject(true).getString(DD.TAG_AC0));
-		if(dec.getTypeByte()==DD.TAG_AC1) surname = dec.getFirstObject(true).getString(DD.TAG_AC1);
-		if(dec.getTypeByte()==DD.TAG_AC15)forename = dec.getFirstObject(true).getString(DD.TAG_AC15);
+		if(dec.getTypeByte()==DD.TAG_AC1) setSurname(dec.getFirstObject(true).getString(DD.TAG_AC1));
+		if(dec.getTypeByte()==DD.TAG_AC15)setForename(dec.getFirstObject(true).getString(DD.TAG_AC15));
 		if(dec.getTypeByte()==DD.TAG_AC2) address = dec.getFirstObject(true).getSequenceOf(D_FieldValue.getASN1Type(),new D_FieldValue[]{},new D_FieldValue());
-		if(dec.getTypeByte()==DD.TAG_AC3) email = dec.getFirstObject(true).getString(DD.TAG_AC3);
+		if(dec.getTypeByte()==DD.TAG_AC3) setEmail(dec.getFirstObject(true).getString(DD.TAG_AC3));
 		if(dec.getTypeByte()==DD.TAG_AC4) setCreationDate(dec.getFirstObject(true).getGeneralizedTime(DD.TAG_AC4));
-		if(dec.getTypeByte()==DD.TAG_AC10)global_neighborhood_ID = dec.getFirstObject(true).getString(DD.TAG_AC10);
-		if(dec.getTypeByte()==DD.TAG_AC5) neighborhood = dec.getFirstObject(true).getSequenceOf(D_Neighborhood.getASN1Type(),new D_Neighborhood[]{}, D_Neighborhood.getEmpty());
-		if(dec.getTypeByte()==DD.TAG_AC6) picture = dec.getFirstObject(true).getBytes(DD.TAG_AC6);
-		if(dec.getTypeByte()==Encoder.TAG_PrintableString) hash_alg = dec.getFirstObject(true).getString(Encoder.TAG_PrintableString);
-		if(dec.getTypeByte()==DD.TAG_AC7)signature = dec.getFirstObject(true).getBytes(DD.TAG_AC7);
-		if(dec.getTypeByte()==DD.TAG_AC8)global_constituent_id_hash = dec.getFirstObject(true).getString(DD.TAG_AC8);
-		if(dec.getTypeByte()==DD.TAG_AC9)certificate = dec.getFirstObject(true).getBytes(DD.TAG_AC9);
+		if(dec.getTypeByte()==DD.TAG_AC10)setNeighborhoodGID(dec.getFirstObject(true).getString(DD.TAG_AC10));
+		if(dec.getTypeByte()==DD.TAG_AC5) setNeighborhood(dec.getFirstObject(true).getSequenceOf(D_Neighborhood.getASN1Type(),new D_Neighborhood[]{}, D_Neighborhood.getEmpty()));
+		if(dec.getTypeByte()==DD.TAG_AC6) setPicture(dec.getFirstObject(true).getBytes(DD.TAG_AC6));
+		if(dec.getTypeByte()==Encoder.TAG_PrintableString) setHash_alg(dec.getFirstObject(true).getString(Encoder.TAG_PrintableString));
+		if(dec.getTypeByte()==DD.TAG_AC7)setSignature(dec.getFirstObject(true).getBytes(DD.TAG_AC7));
+		if(dec.getTypeByte()==DD.TAG_AC8)setGIDH(dec.getFirstObject(true).getString(DD.TAG_AC8));
+		if(dec.getTypeByte()==DD.TAG_AC9)setCertificate(dec.getFirstObject(true).getBytes(DD.TAG_AC9));
 		if(dec.getTypeByte()==DD.TAG_AC11) languages = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_PrintableString);
-		if(dec.getTypeByte()==DD.TAG_AC12) global_submitter_id = dec.getFirstObject(true).getString(DD.TAG_AC12);
-		if(dec.getTypeByte()==DD.TAG_AC13) slogan = dec.getFirstObject(true).getString(DD.TAG_AC13);
-		if(dec.getTypeByte()==DD.TAG_AC14) weight = dec.getFirstObject(true).getString(DD.TAG_AC14);
-		if(dec.getTypeByte()==DD.TAG_AC16) valid_support = new D_Witness().decode(dec.getFirstObject(true));
-		if(dec.getTypeByte()==DD.TAG_AC17) submitter = new D_Constituent().decode(dec.getFirstObject(true));
-		external = dec.getFirstObject(true).getBoolean();
-		if(!external)
+		if(dec.getTypeByte()==DD.TAG_AC12) setSubmitterGID(dec.getFirstObject(true).getString(DD.TAG_AC12));
+		if(dec.getTypeByte()==DD.TAG_AC13) setSlogan(dec.getFirstObject(true).getString(DD.TAG_AC13));
+		if(dec.getTypeByte()==DD.TAG_AC14) setWeight(dec.getFirstObject(true).getString(DD.TAG_AC14));
+		if(dec.getTypeByte()==DD.TAG_AC16) setValid_support(new D_Witness().decode(dec.getFirstObject(true)));
+		if(dec.getTypeByte()==DD.TAG_AC17) setSubmitter(new D_Constituent().decode(dec.getFirstObject(true)));
+		setExternal(dec.getFirstObject(true).getBoolean());
+		if(!isExternal())
 			if(dec.getTypeByte()==Encoder.TAG_BOOLEAN)
-				revoked = dec.getFirstObject(true).getBoolean();
+				setRevoked(dec.getFirstObject(true).getBoolean());
 		try{
 			getGIDHashFromGID(false);
-		}catch(Exception e){global_constituent_id_hash = null;}
+		}catch(Exception e){setGIDH(null);}
 		return this;
 	}
 	public static byte getASN1Type() {
@@ -1825,12 +1966,12 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	 */
 	public String getGIDHashFromGID(boolean verbose){
 		if (DEBUG) System.out.println("D_Constituent: prepareGIDHash: start");
-		if ((global_constituent_id_hash == null) && (getGID() != null)) {
-			if (external) global_constituent_id_hash = getGID();
-			else global_constituent_id_hash = getGIDHashFromGID_NonExternalOnly(getGID(), verbose);
+		if ((getGIDH() == null) && (getGID() != null)) {
+			if (isExternal()) setGIDH(getGID());
+			else setGIDH(getGIDHashFromGID_NonExternalOnly(getGID(), verbose));
 		}	
-		if (DEBUG) System.out.println("D_Constituent: prepareGIDHash: got="+global_constituent_id_hash);
-		return global_constituent_id_hash;
+		if (DEBUG) System.out.println("D_Constituent: prepareGIDHash: got="+getGIDH());
+		return getGIDH();
 	}
 	/**
 	 * Adds "R:"/D_GIDH.d_ConsR in front of the hash of the GID, for non_external (verbose on error)
@@ -1877,15 +2018,15 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	private void fillGlobals() {
 		if (this.loaded_globals) return;
 		
-		if ((this.organization_ID != null ) && (this.global_organization_ID == null))
-			this.global_organization_ID = D_Organization.getGIDbyLID(this._organization_ID);
+		if ((this.organization_ID != null ) && (this.getOrganizationGID() == null))
+			this.setOrganizationGID(D_Organization.getGIDbyLID(this._organization_ID));
 		
 		this.loaded_globals = true;
 	}
 	public String getNameFull() {
-		if((this.forename==null)||(this.forename.trim().length()==0)) return surname;
-		if((this.surname==null)||(this.surname.trim().length()==0)) return surname;
-		return this.surname+", "+ this.forename;
+		if((this.getForename()==null)||(this.getForename().trim().length()==0)) return getSurname();
+		if((this.getSurname()==null)||(this.getSurname().trim().length()==0)) return getSurname();
+		return this.getSurname()+", "+ this.getForename();
 	}
 	public String getNameOrMy() {
 		String n = mydata.name;
@@ -1959,7 +2100,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	 */
 	public boolean isTemporary() {
 		return this.temporary 
-				|| ( (! this.external) && (this.signature == null || this.signature.length == 0) )
+				|| ( (! this.isExternal()) && (this.getSignature() == null || this.getSignature().length == 0) )
 				|| this.getGID() == null;
 	}
 	
@@ -2018,11 +2159,11 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			goid = D_Organization.getGIDbyLID(added_Org);
 			if (DEBUG) System.out.println("D_Constituent: setOrganization: recomputed GID="+goid);
 		}
-		if (! Util.equalStrings_null_or_not(goid, global_organization_ID)) {
-			if (DEBUG) System.out.println("D_Constituent: setOrganization: set goid old="+global_organization_ID);
-			if ((goid != null) && (global_organization_ID != null))
-				if (_DEBUG) System.out.println("D_Constituent: setOrganization: set goid="+goid+" old="+global_organization_ID);
-			this.global_organization_ID = goid;
+		if (! Util.equalStrings_null_or_not(goid, getOrganizationGID())) {
+			if (DEBUG) System.out.println("D_Constituent: setOrganization: set goid old="+getOrganizationGID());
+			if ((goid != null) && (getOrganizationGID() != null))
+				if (_DEBUG) System.out.println("D_Constituent: setOrganization: set goid="+goid+" old="+getOrganizationGID());
+			this.setOrganizationGID(goid);
 			this.dirty_main = true;
 		}
 		if (_organization_ID != added_Org) {
@@ -2044,7 +2185,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		if (c.isTemporary()) return -1;
 		if (c.getGID() == null) return -1;
 		
-		if (! c.external && (c.getSignature() != null) ) {
+		if (! c.isExternal() && (c.getSignature() != null) ) {
 			return 1;
 		} else {
 			return -1;
@@ -2063,7 +2204,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		if (c.isTemporary()) return -1;
 		if (c.getGID() == null) return -1;
 		
-		if (! c.external && (c.getSignature() != null) ) {
+		if (! c.isExternal() && (c.getSignature() != null) ) {
 			return 1;
 		} else {
 			return -1;
@@ -2078,8 +2219,8 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		keys = Cipher.getCipher(sk, pk);
 	}
 	public byte[] sign() {
-		if (this.external) {
-			if (this.global_submitter_id != null) {
+		if (this.isExternal()) {
+			if (this.getSubmitterGID() != null) {
 				SK sk = getSK();
 				if (sk != null)
 					return sign_with_ini(sk);
@@ -2088,10 +2229,10 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		} else {
 			SK sk = getSK();
 			if (sk == null) return null;
-			if(DEBUG) System.out.println("D_Constituent:sign: orgGID="+this.global_organization_ID);
+			if(DEBUG) System.out.println("D_Constituent:sign: orgGID="+this.getOrganizationGID());
 			byte[] msg=this.getSignableEncoder().getBytes();
 			if(DEBUG) System.out.println("D_Constituent:sign: msg["+msg.length+"]="+Util.byteToHex(msg));
-			return signature = Util.sign(msg, sk);
+			return setSignature(Util.sign(msg, sk));
 		}
 	}
 	public byte[] sign_with_ini(SK sk_ini) {
@@ -2101,10 +2242,10 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		if (wbc.isExternal()) {
 			gcdhash = gcd = wbc.makeExternalGID();
 			if (wbc.getGID() != null) {
-				present |= (null != D_Constituent_Node.remConstByGID(wbc.getGID(), wbc.getOrganizationID())); //.loaded_const_By_GID.remove(wbc.global_constituent_id));
+				present |= (null != D_Constituent_Node.remConstByGID(wbc.getGID(), wbc.getOrganizationLID())); //.loaded_const_By_GID.remove(wbc.global_constituent_id));
 			}
-			if (wbc.global_constituent_id_hash != null) {
-				present |= (null != D_Constituent_Node.remConstByGIDH(wbc.global_constituent_id_hash, wbc.getOrganizationID()));//.loaded_const_By_GIDhash.remove(wbc.global_constituent_id_hash));
+			if (wbc.getGIDH() != null) {
+				present |= (null != D_Constituent_Node.remConstByGIDH(wbc.getGIDH(), wbc.getOrganizationLID()));//.loaded_const_By_GIDhash.remove(wbc.global_constituent_id_hash));
 			}
 //			wbc._set_GID(gcd);
 //			wbc.global_constituent_id_hash = gcdhash;
@@ -2112,9 +2253,9 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 //				D_Constituent_Node.putConstByGID(wbc.set_GID(gcd), wbc.getOrganizationID(), wbc); //.loaded_const_By_GID.put(wbc.global_constituent_id = gcd, wbc);
 //				D_Constituent_Node.putConstByGIDH(wbc.global_constituent_id_hash = gcdhash, wbc.getOrganizationID(), wbc); //.loaded_const_By_GIDhash.put(wbc.global_constituent_id_hash = gcdhash, wbc);				
 //			}
-			wbc.setGID(gcd, gcd, wbc.getOrganizationID());
+			wbc.setGID(gcd, gcd, wbc.getOrganizationLID());
 		}
-		if ((sk_ini != null) || (! wbc.external)) {
+		if ((sk_ini != null) || (! wbc.isExternal())) {
 			byte[] msg = this.getSignableEncoder().getBytes();
 			if(DEBUG) System.out.println("WB_Constituents:sign: msg["+msg.length+"]="+Util.byteToHex(msg));
 			this.setSignature(Util.sign(msg, sk_ini));
@@ -2128,7 +2269,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		if(DEBUG) System.out.println("D_Constituents:verifySignature: orgGID="+getGID());
 		this.fillGlobals();
 		
-		if (external)
+		if (isExternal())
 			if (!(newGID = this.makeExternalGID()).equals(this.getGID())){
 				Util.printCallPath("WRONG EXTERNAL GID");
 				if(DEBUG) System.out.println("D_Constituent:verifySignature: WRONG HASH GID="+this.getGID()+" vs="+newGID);
@@ -2137,19 +2278,19 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			}
 		
 		String pk_ID = this.getGID();
-		if (external) {
-			pk_ID = this.global_submitter_id;
+		if (isExternal()) {
+			pk_ID = this.getSubmitterGID();
 			if (pk_ID == null) return true;
 		}
 		if (DEBUG) System.out.println("D_Constituent:verifySignature: pk="+pk_ID);
 		byte[] msg = getSignableEncoder().getBytes();
-		boolean result = util.Util.verifySignByID(msg, pk_ID, signature);
+		boolean result = util.Util.verifySignByID(msg, pk_ID, getSignature());
 		if (DEBUG) System.out.println("D_Constituents:verifySignature: result="+result);
 		return result;
 	}
 	public static D_Constituent integrateRemote(D_Constituent c, D_Peer __peer,
 			RequestData sol_rq, RequestData new_rq, boolean default_blocked, Calendar arrival_date) {
-		long oID = D_Organization.getLIDbyGID (c.global_organization_ID);
+		long oID = D_Organization.getLIDbyGID (c.getOrganizationGID());
 		if (oID <= 0) {
 			D_Organization o = D_Organization.insertTemporaryGID_org(c.getOrgGID(), c.getOrgGIDH_if_available(), __peer, default_blocked, null);
 			//c.setOrganization(o.getGID(), o.getLID());
@@ -2190,58 +2331,58 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		this.creation_date = remote.creation_date;
 		this._creation_date = remote._creation_date;
 		
-		if (! Util.equalStrings_null_or_not(global_organization_ID, remote.global_organization_ID)) {
-			long oID = D_Organization.getLIDbyGID(remote.global_organization_ID);
-			if (this.global_organization_ID != null && oID <= 0) {
-				D_Organization o = D_Organization.insertTemporaryGID_org(remote.global_organization_ID, null, __peer, default_blocked, null);
+		if (! Util.equalStrings_null_or_not(getOrganizationGID(), remote.getOrganizationGID())) {
+			long oID = D_Organization.getLIDbyGID(remote.getOrganizationGID());
+			if (this.getOrganizationGID() != null && oID <= 0) {
+				D_Organization o = D_Organization.insertTemporaryGID_org(remote.getOrganizationGID(), null, __peer, default_blocked, null);
 				this.setOrganization(o.getGID(), o.getLID_forced());
 				if (new_rq != null && o.isTemporary()) new_rq.orgs.add(o.getGIDH_or_guess());
 			} else
-				this.setOrganization(remote.global_organization_ID, oID);
+				this.setOrganization(remote.getOrganizationGID(), oID);
 		}
 		if (! Util.equalStrings_null_or_not(getGID(), remote.getGID())) {
-			if (remote.getGID() != null) this.setGID(remote.getGID(), remote.global_constituent_id_hash, this.getOrganizationID());
+			if (remote.getGID() != null) this.setGID(remote.getGID(), remote.getGIDH(), this.getOrganizationLID());
 			//if (r.global_constituent_id_hash != null) this.global_constituent_id_hash = r.global_constituent_id_hash;
 			this.constituent_ID = null;
 			this._constituent_ID = -1;
 		}
 		
-		if (! Util.equalStrings_null_or_not(global_submitter_id, remote.global_submitter_id)) {
-			this.global_submitter_id = remote.global_submitter_id;
-			long sID = D_Constituent.getLIDFromGID(remote.global_submitter_id, this._organization_ID);
-			if (this.global_submitter_id != null && sID <= 0) {
-				D_Constituent c = D_Constituent.insertTemporaryGID_org(remote.global_submitter_id, null, this.getOrganizationID(), __peer, default_blocked);
-				this.submitter = c; //r.submitter;
-				this.submitter_ID = c.getLIDstr_force(); //r.submitter_ID;
+		if (! Util.equalStrings_null_or_not(getSubmitterGID(), remote.getSubmitterGID())) {
+			this.setSubmitterGID(remote.getSubmitterGID());
+			long sID = D_Constituent.getLIDFromGID(remote.getSubmitterGID(), this._organization_ID);
+			if (this.getSubmitterGID() != null && sID <= 0) {
+				D_Constituent c = D_Constituent.insertTemporaryGID_org(remote.getSubmitterGID(), null, this.getOrganizationLID(), __peer, default_blocked);
+				this.setSubmitter(c); //r.submitter;
+				this.setSubmitter_ID(c.getLIDstr_force()); //r.submitter_ID;
 				if (new_rq != null && c.isTemporary()) new_rq.cons.put(c.getGIDH(), DD.EMPTYDATE);
 			}
 		}
-		if (! Util.equalStrings_null_or_not(this.global_neighborhood_ID, remote.global_neighborhood_ID)) {
-			this.global_neighborhood_ID = remote.global_neighborhood_ID;
+		if (! Util.equalStrings_null_or_not(this.getNeighborhoodGID(), remote.getNeighborhoodGID())) {
+			this.setNeighborhoodGID(remote.getNeighborhoodGID());
 			//this.neighborhood = null;// r.neighborhood;
 			//this.neighborhood_ID = r.neighborhood_ID;
 			D_Neighborhood n;
-			long nID = D_Neighborhood.getLIDFromGID(this.global_neighborhood_ID, this.getOrganizationID());
-			this.neighborhood_ID = Util.getStringID(nID);
-			if (this.global_neighborhood_ID != null && nID <= 0) {
-				n = D_Neighborhood.getNeighByGID(this.global_neighborhood_ID, true, true, false, __peer, this.getOrganizationID());
-				this.neighborhood_ID = Util.getStringID(n.getLID_force());
-				if (new_rq != null && n.isTemporary()) new_rq.neig.add(this.global_neighborhood_ID);
+			long nID = D_Neighborhood.getLIDFromGID(this.getNeighborhoodGID(), this.getOrganizationLID());
+			this.setNeighborhood_LID(Util.getStringID(nID));
+			if (this.getNeighborhoodGID() != null && nID <= 0) {
+				n = D_Neighborhood.getNeighByGID(this.getNeighborhoodGID(), true, true, false, __peer, this.getOrganizationLID());
+				this.setNeighborhood_LID(Util.getStringID(n.getLID_force()));
+				if (new_rq != null && n.isTemporary()) new_rq.neig.add(this.getNeighborhoodGID());
 			}
 			//this.setNeighborhoodIDs(global_neighborhood_ID, -1);
 		}
-		this.surname = remote.surname;
-		this.forename = remote.forename;
-		this.email = remote.email;
-		this.weight = remote.weight;
-		this.revoked |= remote.revoked;
-		this.slogan = remote.slogan;
-		this.external = remote.external;
+		this.setSurname(remote.getSurname());
+		this.setForename(remote.getForename());
+		this.setEmail(remote.getEmail());
+		this.setWeight(remote.getWeight());
+		this.setRevoked(this.isRevoked() | remote.isRevoked());
+		this.setSlogan(remote.getSlogan());
+		this.setExternal(remote.isExternal());
 		this.languages = remote.languages;
-		this.picture = remote.picture;
-		this.hash_alg = remote.hash_alg;
-		this.signature = remote.signature;
-		this.certificate = remote.certificate;
+		this.setPicture(remote.getPicture());
+		this.setHash_alg(remote.getHash_alg());
+		this.setSignature(remote.getSignature());
+		this.setCertificate(remote.getCertificate());
 		//if (r.valid_support != null) this.valid_support = r.valid_support;
 		//this.valid_support = null;
 		
@@ -2269,7 +2410,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	 */
 	public static boolean newer(D_Constituent one, D_Constituent two) {
 		assert (one != null && two != null);
-		if (two.revoked) return false;
+		if (two.isRevoked()) return false;
 		return newer(one.getCreationDate(), two.getCreationDate());
 	}
 	/**
@@ -2323,7 +2464,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		D_Constituent c = D_Constituent.getConstByGID_or_GIDH (null, hash, true, false, Util.Lval(orgID));
 		if (
 				(c == null) 
-				|| (c.getOrganizationID() != Util.lval(orgID)) 
+				|| (c.getOrganizationLID() != Util.lval(orgID)) 
 				|| (D_Constituent.newer(creation, c.getCreationDateStr()))
 				|| c.isTemporary()
 				) result = false;
@@ -2442,7 +2583,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		String GIDH, GID;
 		if (!D_Constituent_Node.loaded_consts.inListProbably(this)) return false;
 		long lID = this.getLID();
-		long oID = this.getOrganizationID();
+		long oID = this.getOrganizationLID();
 		if (lID > 0)
 			if ( null != D_Constituent_Node.loaded_const_By_LocalID.get(new Long(lID)) ) return true;
 		if ((GIDH = this.getGIDH()) != null)
@@ -2453,9 +2594,10 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			) return true;
 		return false;
 	}
-	public void setSignature(byte[] sign) {
+	public byte[] setSignature(byte[] sign) {
 		this.signature = sign;
 		this.dirty_main = true;
+		return sign;
 	}
 	/**
 	 * If any is not empty, this procedure tries to set the other.
@@ -2467,21 +2609,18 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			nGID = D_Neighborhood.getGIDFromLID(nLID);
 		}
 		if (nGID != null && nLID <= 0) {
-			nLID = D_Neighborhood.getLIDFromGID(nGID, this.getOrganizationID());
+			nLID = D_Neighborhood.getLIDFromGID(nGID, this.getOrganizationLID());
 		}
-		this.neighborhood_ID = Util.getStringID(nLID);
-		this.global_neighborhood_ID = nGID;
-		this.neighborhood = null;
+		this.setNeighborhood_LID(Util.getStringID(nLID));
+		this.setNeighborhoodGID(nGID);
+		this.setNeighborhood(null);
 		this.dirty_main = true;
 	}
 	public String getForename() {
 		return this.forename;
 	}
-	public String getSurName() {
-		return this.surname;
-	}
 	public D_Organization getOrganization() {
-		long oID = this.getOrganizationID();
+		long oID = this.getOrganizationLID();
 		if (oID <= 0) return null;
 		return D_Organization.getOrgByLID_NoKeep(oID, true);
 	}
@@ -2510,7 +2649,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		return list;
 	}
 	public String getOrgGID() {
-		return this.global_organization_ID;
+		return this.getOrganizationGID();
 	}
 	public static int getConstNBinNeighborhood(long n_ID) {
 		boolean DEBUG= false;
@@ -2584,6 +2723,10 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		return subneighborhoods;
 	}
+	/**
+	 * Compute how many of the fields are not neighborhood parts (i.e. <= 0)
+	 * @return
+	 */
 	public int getFieldValuesFixedNB() {
 		if (address == null) return 0;
 		D_Organization org = D_Organization.getOrgByLID_NoKeep(_organization_ID, true);
@@ -2595,6 +2738,33 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			if (fe.partNeigh <= 0) result ++;
 		}
 		return result;
+	}
+	public D_FieldValue[] getFieldValues() {
+		return address;
+	}
+	/**
+	 * 
+	 * @param field
+	 * @return
+	 */
+	public D_FieldValue getFieldValue(D_OrgParam field) {
+		return getFieldValue(getFieldValues(), field);
+	}
+	/**
+	 * 
+	 * @param field_values
+	 * @param field
+	 * @return
+	 */
+	public static D_FieldValue getFieldValue(D_FieldValue[] field_values, D_OrgParam field) {
+		if (field_values == null) return null;
+		if (field == null) return null;
+		for (int k = 0; k < field_values.length; k ++) {
+			if (field_values[k].field_extra_ID == field.field_LID) return field_values[k];
+			if (Util.equalStrings_null_or_not(field_values[k].field_extra_GID, field.global_field_extra_ID))
+				return field_values[k];
+		}
+		return null;
 	}
 	public static void delConstituent(long constituentID) {
 		boolean DEBUG = false;
@@ -2622,7 +2792,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		return this.email;
 	}
 	public String getSubmitterLIDstr() {
-		return this.submitter_ID;
+		return this.getSubmitter_ID();
 	}
 	public static ArrayList<Long> getOrphans(long o_ID) {
 		boolean DEBUG = false;
@@ -2657,12 +2827,17 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	    		}
 				return r;
 	}
+	public static final String sql_org_all_constituents = "SELECT count(*) FROM "+table.constituent.TNAME+
+		" WHERE "+table.constituent.organization_ID+" = ? AND "+table.constituent.op+" = ?;";
+	/**
+	 * 
+	 * @param orgID
+	 * @return
+	 */
 	public static Object getConstNBinOrganization(String orgID) {
 		Object result = null;
-		String sql_co = "SELECT count(*) FROM "+table.constituent.TNAME+
-		" WHERE "+table.constituent.organization_ID+" = ? AND "+table.constituent.op+" = ?;";
 		try {
-			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_co, new String[]{orgID, "1"});
+			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_org_all_constituents, new String[]{orgID, "1"});
 			if(orgs.size()>0) result = orgs.get(0).get(0);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -2739,7 +2914,199 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		//Application_GUI.ThreadsAccounting_ping("Dropped peer references for "+getName());
 	}
-	
+	public static final String sql_all_constituents =
+			"SELECT " + table.constituent.constituent_ID +
+			" FROM " + table.constituent.TNAME +
+			" WHERE " + table.constituent.organization_ID +"=?;";
+	public static final String sql_all_constituents_in_neigh =
+			"SELECT " + table.constituent.constituent_ID + 
+			" FROM " + table.constituent.TNAME +
+			" WHERE " + table.constituent.organization_ID +"=? " +
+					" AND " + table.constituent.neighborhood_ID + "=?;";
+	public static final String sql_all_constituents_in_root =
+			"SELECT " + table.constituent.constituent_ID + 
+			" FROM " + table.constituent.TNAME +
+			" WHERE " + table.constituent.organization_ID +"=? " +
+					" AND ( " + table.constituent.neighborhood_ID + " IS NULL  " +
+							" OR " + table.constituent.neighborhood_ID + "<= 0 ) ;";
+	/**
+	 * Get all constituents in a given neighborhood.
+	 * @param o_LID
+	 * @param n_LID
+	 * @return
+	 */
+	public static ArrayList<ArrayList<Object>> getAllConstituents(long o_LID, long n_LID, boolean all) {
+		try {
+			if (all)
+				return Application.db.select(sql_all_constituents,
+						new String[]{Util.getStringID(o_LID)});
+			else if (n_LID <= 0) {
+				return Application.db.select(sql_all_constituents_in_root,
+						new String[]{Util.getStringID(o_LID)});
+			} else {
+				return Application.db.select(sql_all_constituents_in_neigh,
+						new String[]{Util.getStringID(o_LID), Util.getStringID(n_LID)});
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return new ArrayList<ArrayList<Object>>();
+	}
+	public boolean isRevoked() {
+		return revoked;
+	}
+	public void setRevoked(boolean revoked) {
+		this.revoked = revoked;
+		this.dirty_main = true;
+	}
+	public void setEmail(String email) {
+		this.email = email;
+		this.dirty_main = true;
+	}
+	public void setSlogan(String slogan) {
+		this.slogan = slogan;
+		this.dirty_main = true;
+	}
+	public void setForename(String forename) {
+		this.forename = forename;
+		this.dirty_main = true;
+	}
+	public String getSurname() {
+		return surname;
+	}
+	public void setSurname(String surname) {
+		this.surname = surname;
+		this.dirty_main = true;
+	}
+	public int getWeightInt() {
+		return Util.ival(weight, 1);
+	}
+	public double getWeightDouble() {
+		return Util.dval(weight, 1.);
+	}
+	public String getWeight() {
+		return weight;
+	}
+	/**
+	 * Not checking limits for organization
+	 * @param weight
+	 * @return
+	 */
+	public boolean setWeight(String weight) {
+		this.weight = weight;
+		this.dirty_main = true;
+		return true;
+	}
+	/**
+	 * Checks organization limits. Fails if no org set, or limits not respected.
+	 * @param weight
+	 * @return
+	 */
+	public boolean setWeight(int weight) {
+		if (weight == 1) return this.setWeight(weight + "");
+		D_Organization org = this.getOrganization();
+		if (org == null) {
+			if (_DEBUG) System.out.println("D_Constituent: setWeight: null organization");
+			return false;
+		}
+		if (org.getWeightsMax() < weight) {
+			if (_DEBUG) System.out.println("D_Constituent: setWeight: weight exeeds max:"+org.getWeightsMax()+" < "+ weight);
+			return false;
+		}
+		if (! org.hasWeights() && (weight != 1)) {
+			if (_DEBUG) System.out.println("D_Constituent: setWeight: weights not allowed here: "+weight);
+			return false;
+		}
+		return this.setWeight(weight + "");
+	}
+	/**
+	 * Sets 1 on true and 0 on false
+	 * @param voter
+	 * @return
+	 */
+	public boolean setWeight(boolean voter) {
+		return setWeight(voter?1:0);
+	}
+	public byte[] getPicture() {
+		return picture;
+	}
+	public void setPicture(byte[] picture) {
+		this.picture = picture;
+		this.dirty_main = true;
+	}
+	public String getHash_alg() {
+		return hash_alg;
+	}
+	public void setHash_alg(String hash_alg) {
+		this.hash_alg = hash_alg;
+		this.dirty_main = true;
+	}
+	public byte[] getCertificate() {
+		return certificate;
+	}
+	public void setCertificate(byte[] certificate) {
+		this.certificate = certificate;
+		this.dirty_main = true;
+	}
+	public D_Witness getValid_support() {
+		return valid_support;
+	}
+	public void setValid_support(D_Witness valid_support) {
+		this.valid_support = valid_support;
+	}
+	public D_Neighborhood[] getNeighborhood() {
+		return neighborhood;
+	}
+	public void setNeighborhood(D_Neighborhood[] neighborhood) {
+		this.neighborhood = neighborhood;
+	}
+	public D_Constituent getSubmitter() {
+		return submitter;
+	}
+	/**
+	 * Just sets the object
+	 * @param submitter
+	 */
+	public void setSubmitter(D_Constituent submitter) {
+		this.submitter = submitter;
+	}
+	public String getSubmitter_ID() {
+		return submitter_ID;
+	}
+	public void setSubmitter_ID(String submitter_ID) {
+		this.submitter_ID = submitter_ID;
+	}
+	public String getNeighborhood_LID() {
+		return neighborhood_ID;
+	}
+	public void setNeighborhood_LID(String neighborhood_ID) {
+		this.neighborhood_ID = neighborhood_ID;
+		this.dirty_main = true;
+	}
+	public String getOrganizationGID() {
+		return global_organization_ID;
+	}
+	public void setOrganizationGID(String global_organization_ID) {
+		this.global_organization_ID = global_organization_ID;
+		this.dirty_main = true;
+	}
+	public String getNeighborhoodGID() {
+		return global_neighborhood_ID;
+	}
+	public void setNeighborhoodGID(String global_neighborhood_ID) {
+		this.global_neighborhood_ID = global_neighborhood_ID;
+		this.dirty_main = true;
+	}
+	public void setSubmitterGID(String global_submitter_id) {
+		this.global_submitter_id = global_submitter_id;
+		this.dirty_main = true;
+	}
+	public String getGIDH() {
+		return global_constituent_id_hash;
+	}
+	public void setGIDH(String global_constituent_id_hash) {
+		this.global_constituent_id_hash = global_constituent_id_hash;
+	}
 }
 
 class D_Constituent_SaverThread extends util.DDP2P_ServiceThread {

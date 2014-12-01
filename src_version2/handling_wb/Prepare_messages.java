@@ -214,12 +214,12 @@ public class Prepare_messages {
 					pm.raw = msg;
 					if(asn1.organization!=null)pm.org_ID_hash = asn1.organization.global_organization_IDhash; 
 					if(wbw.witnessing!=null){
-							pm.constituent_ID_hash.add(wbw.witnessing.global_constituent_id_hash); 
-							for(int i=0; i<wbw.witnessing.neighborhood.length; i++) {pm.neighborhood_ID.add(wbw.witnessing.neighborhood[i].getLIDstr());}
+							pm.constituent_ID_hash.add(wbw.witnessing.getGIDH()); 
+							for(int i=0; i<wbw.witnessing.getNeighborhood().length; i++) {pm.neighborhood_ID.add(wbw.witnessing.getNeighborhood()[i].getLIDstr());}
 					}
 					if(wbw.witnessed!=null){
-							pm.constituent_ID_hash.add(wbw.witnessed.global_constituent_id_hash); 
-							for(int i=0; i<wbw.witnessed.neighborhood.length; i++) {pm.neighborhood_ID.add(wbw.witnessed.neighborhood[i].getLIDstr());}
+							pm.constituent_ID_hash.add(wbw.witnessed.getGIDH()); 
+							for(int i=0; i<wbw.witnessed.getNeighborhood().length; i++) {pm.neighborhood_ID.add(wbw.witnessed.getNeighborhood()[i].getLIDstr());}
 					}
 					
 					Witnesses_msgs.add(pm);					
@@ -316,13 +316,13 @@ public class Prepare_messages {
 					
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
-					if(con.global_organization_ID !=null)pm.org_ID_hash = con.global_organization_ID;
+					if(con.getOrganizationGID() !=null)pm.org_ID_hash = con.getOrganizationGID();
 					//pm.motion_ID = ;
-					pm.constituent_ID_hash.add(con.global_constituent_id_hash);
-					if(con.neighborhood!=null){
-						for(int i=0; i<con.neighborhood.length; i++) 
+					pm.constituent_ID_hash.add(con.getGIDH());
+					if(con.getNeighborhood()!=null){
+						for(int i=0; i<con.getNeighborhood().length; i++) 
 						{
-							pm.neighborhood_ID.add(con.neighborhood[i].getLIDstr());
+							pm.neighborhood_ID.add(con.getNeighborhood()[i].getLIDstr());
 						}
 					}
 					
@@ -488,9 +488,9 @@ public class Prepare_messages {
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
 					if(asn1.organization!=null)pm.org_ID_hash = asn1.organization.global_organization_IDhash;
-					if(v.getMotion()!=null)pm.motion_ID = v.getMotion().getGID();
-					if(v.getConstituent()!=null)pm.constituent_ID_hash.add(v.getConstituent().global_constituent_id_hash);
-					if(v.getJustification()!=null)pm.justification_ID=v.getJustification().getGID();
+					if(v.getMotionFromObjOrLID()!=null)pm.motion_ID = v.getMotionFromObjOrLID().getGID();
+					if(v.getConstituent()!=null)pm.constituent_ID_hash.add(v.getConstituent().getGIDH());
+					if(v.getJustificationFromObjOrLID()!=null)pm.justification_ID=v.getJustificationFromObjOrLID().getGID();
 					//pm.neighborhood_ID = ;
 					
 					vote_msgs.add(pm);

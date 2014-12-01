@@ -175,6 +175,20 @@ public class HandlingMyself_Peer {
 		}
 		return null;
 	}
+	/**
+	 * - save in database
+	 * - save in Identity
+	 * - save in _myself
+	 * - trigger listener in DD.status
+	 * - announce_Directories of the change
+	 * 
+	 * - will warn if no instance set, and possible
+	 * 
+	 * @param me
+	 * @param saveInDB set to false when loading from DB
+	 * @param me_kept (is me already kept?)
+	 * @return true on success
+	 */
 	static public boolean setMyself( D_Peer me, boolean saveInDB, boolean me_kept) {
 		return setMyself(me, saveInDB, Identity.current_peer_ID, me_kept);
 	}
@@ -362,6 +376,18 @@ public class HandlingMyself_Peer {
 		if (DEBUG) System.out.println("HandlingMyself:createPeer_by_dialog: done");
 		return peer;
 	}
+	/**
+	 * Creates based on pi (with createPeerUnsigned_Keep(pi)), 
+	 * then sets it as myself (with setMyself()),
+	 *  updates the address (with updateAddress(peer)), and 
+	 *  saves it (and releases it).
+	 * 
+	 * Calls setMyself.
+	 * 
+	 * @param pi
+	 * @param saveIdentityInIB
+	 * @return
+	 */
 	public static D_Peer createMyselfPeer_w_Addresses(PeerInput pi, boolean saveIdentityInIB) {
 		if (DEBUG) System.out.println("HandlingMyself: createMyselfPeer_w_Addresses: start");
 		D_Peer peer = null;

@@ -40,6 +40,7 @@ import config.DD;
 import config.JustificationsListener;
 import config.MotionsListener;
 import data.D_Motion;
+import data.D_Motion.MotionChoiceSupport;
 import data.D_MotionChoice;
 import data.D_Organization;
 import util.DBInfo;
@@ -123,9 +124,11 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 					return;
 				}
 			} catch (Exception e) {e.printStackTrace();return;}
-		if((moti.getChoices()!=null) && (moti.getChoices().length>0)) choices = moti.getChoices();
+		
+		if ((moti.getChoices() != null) && (moti.getChoices().length > 0)) choices = moti.getChoices();
 		else choices = org.getDefaultMotionChoices();
-		if((choices == null) || (choices.length==0)) {
+		
+		if ((choices == null) || (choices.length == 0)) {
 			if(DEBUG) System.out.println("JBC:motion_update quit no choices="+Util.nullDiscrimArray(choices, " ; "));
 			return;
 		}
@@ -144,22 +147,29 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 	}
 	@Override
 	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
-		String sql_label = 
-			"SELECT count(*), sum(c."+table.constituent.weight+") " +
-			" FROM "+table.signature.TNAME+" AS s "+
-			" JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=s."+table.signature.constituent_ID+")"+
-			" WHERE s."+table.signature.choice+"=? AND s."+table.signature.motion_ID+"=?;";
+//		String sql_label = 
+//			"SELECT count(*), sum(c."+table.constituent.weight+") " +
+//			" FROM "+table.signature.TNAME+" AS s "+
+//			" JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=s."+table.signature.constituent_ID+")"+
+//			" WHERE s."+table.signature.choice+"=? AND s."+table.signature.motion_ID+"=?;";
 		if ((choices == null) || (choices.length == 0)) return;
-		for(int k =0; k<choices.length; k++) {
-			long val=0;
-			double sum=0.;
-			try {
-				ArrayList<ArrayList<Object>> l = Application.db.select(sql_label, new String[]{choices[k].short_name,motion_ID}, DEBUG);
-				if(l.size()>0){ val = Util.lval(l.get(0).get(0), -1); sum = Util.dval(l.get(0).get(1), 0.);}
+		for (int k = 0; k < choices.length; k ++) {
+			long val = 0;
+			double sum = 0.;
+//			try 
+			{
+				//ArrayList<ArrayList<Object>> l = Application.db.select(sql_label, new String[]{choices[k].short_name,motion_ID}, DEBUG);
+				MotionChoiceSupport l = D_Motion.getMotionChoiceSupport(motion_ID, choices[k].short_name);
+				val = l.getCnt();
+				sum = l.getWeight();
+//				if (l.size() > 0)
+//				{ val = Util.lval(l.get(0).get(0), -1); sum = Util.dval(l.get(0).get(1), 0.);}
+				
 				jl[k].setText(choices[k].name+" (#:"+val+" W:"+sum+")");
-			} catch (P2PDDSQLException e) {
-				e.printStackTrace();
 			}
+//			catch (P2PDDSQLException e) {
+//				e.printStackTrace();
+//			}
 		}
 	}
 

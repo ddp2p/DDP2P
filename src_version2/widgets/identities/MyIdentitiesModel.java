@@ -43,7 +43,7 @@ import widgets.components.TreeModelSupport;
 import widgets.org.Orgs;
 import static util.Util.__;
 
-class IdentityNode{
+class IdentityNode {
     protected static final boolean DEBUG = false;
 	String name = __("Root");
     String tip = __("Root Tip");

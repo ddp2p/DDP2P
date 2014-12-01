@@ -19,7 +19,9 @@
 /* ------------------------------------------------------------------------- */
 package widgets.components;
 
+import java.awt.Color;
 import java.awt.Component;
+
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.table.TableCellRenderer;
@@ -28,17 +30,24 @@ import data.D_Document_Title;
 
 public class DocumentTitleRenderer implements TableCellRenderer  {
 
+	public static boolean DEBUG = false;
+
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value,
 			boolean isSelected, boolean hasFocus, int row, int column) {
-		if(value instanceof String) {
+		if (value instanceof String) {
+			if (DEBUG) System.out.println("DocumentTitleRenderer: getTableCellRendererComponent: string:"+value);
 			String val = (String) value;
-			return new JLabel(val);
+			JLabel result = new JLabel(val);
+			result.setBackground(Color.GRAY);
+			result.setForeground(Color.GREEN);
+			return result;
 		}
 		
-		if(value instanceof D_Document_Title){
+		if (value instanceof D_Document_Title){
+			if (DEBUG) System.out.println("DocumentTitleRenderer: getTableCellRendererComponent: ddt="+value);
 			D_Document_Title dt = (D_Document_Title) value;
-			if(dt.title_document == null) return null;
+			if (dt.title_document == null) return null;
 			String val = dt.title_document.getDocumentString();
 			String fmt = dt.title_document.getFormatString();
 			if (fmt == null) {

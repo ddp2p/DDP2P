@@ -44,7 +44,7 @@ class D_OrgParam extends ASNObj{
 	public String label; //UTF8
 	public String label_lang; //Printa
 	public boolean can_be_provided_later;
-	public boolean certificated;
+	public boolean certificated; // redundant: all field are now certified
 	public int entry_size;
 	public int partNeigh;
 	public boolean required;

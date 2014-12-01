@@ -42,6 +42,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
@@ -318,38 +319,50 @@ public class Justifications extends JTable implements MouseListener, Justificati
 	void fireListener(int row, int col, boolean db_sync) {
 		if(DEBUG) System.out.println("Justifications:fireListener:choice="+getModel().crt_choice+"  row="+row);
 		String id;
-		if(row<0) id = null;
+		if (row < 0) id = null;
 		else id = Util.getString(this.getModel().getJustificationID(this.convertRowIndexToModel(row)));
 		fireListener(id, col, db_sync);
 		if(DEBUG) System.out.println("Justifications:fireListener:choice="+getModel().crt_choice+"  id="+id);
 	}
-	void fireListener(String id, int col, boolean db_sync) {
-   	   	if(DEBUG) System.out.println("Justifications: fire justID="+id);
+	/**
+	 * Announce all listeners
+	 * @param lid
+	 * @param col
+	 * @param db_sync
+	 */
+	void fireListener(String lid, int col, boolean db_sync) {
+   	   	if(DEBUG) System.out.println("Justifications: fire justID="+lid);
    	   	D_Justification just = null;
-   	   	if(id != null)
-   	   		just = D_Justification.getJustByLID(id, true, false);
-		for(JustificationsListener l: listeners){
+   	   	if (lid != null)
+   	   		just = D_Justification.getJustByLID(lid, true, false);
+		for ( JustificationsListener l: listeners){
 			if(DEBUG) System.out.println("Justifications:fireListener: l="+l);
-			try{
-				l.justUpdate(id, col, db_sync, just);
+			try {
+				l.justUpdate(lid, col, db_sync, just);
 			}catch(Exception e){e.printStackTrace();}
 		}
 	}
-	public void addListener(JustificationsListener l){
+	public void addListener(JustificationsListener l) {
 		listeners.add(l);
-		int row =this.getSelectedRow();
-		if(row>=0)
+		int row = this.getSelectedRow();
+		if (row >= 0)
 			l.justUpdate(Util.getString(this.getModel().getJustificationID(this.convertRowIndexToModel(row))),A_NON_FORCE_COL, false, null);
 	}
-	public void removeListener(JustificationsListener l){
+	public void removeListener(JustificationsListener l) {
 		listeners.remove(l);
 	}
 
+	/**
+	 * Should be called from Swing thread.
+	 * Sets the selection in all views.
+	 * @param just_id
+	 */
 	public void setCurrentJust(long just_id) {
    		if(DEBUG) System.out.println("Justifications:setCurrentJust: got id="+just_id);
+   		
 		getModel().setCurrentJust(just_id);
 	}
-	public long getConstituentIDMyself(){
+	public long getConstituentIDMyself() {
 		return getModel().getConstituentIDMyself();
 	}
 	public String getConstituentGIDMyself() {
@@ -429,8 +442,13 @@ public class Justifications extends JTable implements MouseListener, Justificati
     	aAction.putValue("row", new Integer(model_row));
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);    	
-    	
+       	
     	aAction = new JustificationsCustomAction(this, __("Delete Partial!"), delicon,__("Delete partial."), __("Delete partial"),KeyEvent.VK_P, JustificationsCustomAction.J_DEL_PARTIAL);
+    	aAction.putValue("row", new Integer(model_row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);    	
+       	
+    	aAction = new JustificationsCustomAction(this, __("Refresh Cache!"), delicon,__("Refresh Cache."), __("Refresh Cache"),KeyEvent.VK_F, JustificationsCustomAction.J_REFRESH);
     	aAction.putValue("row", new Integer(model_row));
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);    	
@@ -439,30 +457,55 @@ public class Justifications extends JTable implements MouseListener, Justificati
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
     	int row; //=this.getSelectedRow();
     	int col; //=this.getSelectedColumn();
-    	if(!evt.isPopupTrigger()) return;
+    	if (! evt.isPopupTrigger()) return;
     	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
-        row=this.rowAtPoint(point);
-        col=this.columnAtPoint(point);
+        row = this.rowAtPoint(point);
+        col = this.columnAtPoint(point);
         this.getSelectionModel().setSelectionInterval(row, row);
-        if(row>=0) row = this.convertRowIndexToModel(row);
+        if (row >= 0) row = this.convertRowIndexToModel(row);
     	JPopupMenu popup = getPopup(row,col);
-    	if(popup == null) return;
+    	if (popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
     /**
-     * called from DD.status backward/forward
+     * 
+     * @param justID
+     * @param col
+     * @param db_sync
+     * @param just
+     */
+	public void justificationSetCurrent(String justID, int col, boolean db_sync,
+			D_Justification just) {
+		justUpdate( justID, col, db_sync, just);
+		// The next call is worth issue only if the function is called from outside the status. 
+		// If redundant it should simply end due to lack of change (since the status is the listener and it check)
+		this.fireListener(justID, col, db_sync);
+	}
+    /**
+     * called from DD.status backward/forward.
+     * If need to call from outside the status.fireListener, you should use: justificationSetCurrent
      */
 	@Override
 	public void justUpdate(String justID, int col, boolean db_sync,
 			D_Justification just) {
-		if(justID==null) return;
+		if (justID == null) return;
 		int model_row = getModel().getRow(justID); //getRowByID(Util.lval(justID));
-		if(model_row<0) return;
-		int view_row = this.convertRowIndexToView(model_row);
-		this.setRowSelectionInterval(view_row, view_row);
-		
-		this.fireListener(justID, col, db_sync);
+		if (model_row < 0) return;
+		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("Set Selection of Justification"), false, false, Integer.valueOf(model_row)) {
+			// may be daemon
+			@Override
+			public void _run() {
+				try {
+					int model_row = (Integer)ctx;
+					int view_row = Justifications.this.convertRowIndexToView(model_row);
+					Justifications.this.setRowSelectionInterval(view_row, view_row);
+				}
+				catch (java.lang.ArrayIndexOutOfBoundsException e){}
+				catch (Exception e){e.printStackTrace();}
+			}
+			
+		});
 	}
 	@Override
 	public void forceJustificationEdit(String justID) {
@@ -478,6 +521,7 @@ class JustificationsCustomAction extends DebateDecideAction {
     public static final int J_DEL_PARTIAL = 4;
     public static final int J_ANSWER_THIS = 5;
 	public static final int J_REM_ANSWER = 6;
+	public static final int J_REFRESH = 7;
 	
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
@@ -511,13 +555,26 @@ class JustificationsCustomAction extends DebateDecideAction {
     	
     	if(DEBUG) System.out.println("JustificationsCAction: row = "+row);
     	//do_cmd(row, cmd);
-    	if(cmd == J_ANSWER_THIS) {
+    	if (cmd == J_ANSWER_THIS) {
     		model.setCrtAnswered(model.getJustificationID(row));
     	}
-        if(cmd == J_REM_ANSWER) {
+        if (cmd == J_REM_ANSWER) {
     		model.setCrtAnswered(null);        	
         }
-        if(cmd == J_DEL) {
+        if (cmd == J_REFRESH) {
+        	new util.DDP2P_ServiceThread(__("Justifications Refresh"), true, model) {
+
+				@Override
+				public void _run() {
+					JustificationsModel model = (JustificationsModel) ctx;
+					model.refreshCache();
+					model._update(null, null, true);
+				}
+        		
+        	}.start();
+    		//model.setCrtAnswered(null);        	
+        }
+        if (cmd == J_DEL) {
     		String _j_ID = model.getJustificationID(row);
     		if(_j_ID == null) return;
     		try {
@@ -546,34 +603,57 @@ class JustificationsCustomAction extends DebateDecideAction {
 				e1.printStackTrace();
 			}
     	}
-       	if(cmd == J_ANSWER) {
-        	if(DEBUG) System.out.println("JustificationsCAction: start ANSWER "+model.crt_choice);
+       	if (cmd == J_ANSWER) {
+        	if (DEBUG) System.out.println("JustificationsCAction: start ANSWER "+model.crt_choice);
     		long cID = tree.getConstituentIDMyself();
-    		if(cID<=0) return;
-        	long j_ID = Util.lval(model.getJustificationID(row), -1);
+    		if (cID <= 0) return;
+    		String jLIDstr = model.getJustificationID(row);
+        	long j_ID = Util.lval(jLIDstr, -1);
 
-        	D_Justification n_justification = D_Justification.getJustByLID(j_ID, true, true);
-        		
-        	D_Justification j = D_Justification.getEmpty();
-        	j.loadRemote(n_justification, null, null, null);
-        	j.changeToDefaultAnswer();
-        	//n_justification.motion_title.title_document.setDocumentString(_("Newly added justification"));
-        	j.setConstituentLIDstr(Util.getStringID(cID));
-        	j.setConstituentGID(tree.getConstituentGIDMyself());
-        	//n_justification.organization_ID = tree.getOrganizationID();
-        	//n_justification.creation_date = Util.CalendargetInstance();
-        	long nID;
-        	j.setTemporary(true);
-        	nID = j.storeLinkNewTemporary(); //storeVerified();
-        	j.releaseReference();
-        		
-        	if(DEBUG) System.out.println("JustificationsCAction: got id="+nID);
-        	if(model.crt_choice==null)tree.setCurrentJust(nID); // will be visible only if everything is visible
-        	if(DEBUG) System.out.println("JustificationsCAction: fire="+nID);
-        	tree.fireListener(Util.getStringID(nID), 0, false);
+        	//D_Justification.createAnswerTo(tree, jLIDstr);
+        	new util.DDP2P_ServiceThread(__("Answer Justification"), false, model.getJustificationID(row)) {
+    			@Override
+    			public void _run() {
+        			//Justifications tree = (Justifications) ctx;
+        			//JustificationsModel model = tree.getModel();
+    	        	long j_ID = Util.lval(ctx, -1);
+
+		        	D_Justification answered_justification = D_Justification.getJustByLID(j_ID, true, false);
+		        		
+		        	
+		        	D_Justification answering_justification = D_Justification.getAnsweringDefaultTemporaryStoredRegistered(answered_justification);
+		        			//D_Justification.getEmpty();
+		        	long nID = answering_justification.getLID();
+		        	/*
+		        	answering_justification.loadRemote(answered_justification, null, null, null);
+		        	answering_justification.changeToDefaultAnswer();
+		        	//answering_justification.setConstituentLIDstr(Util.getStringID(cID));
+		        	//answering_justification.setConstituentGID(tree.getConstituentGIDMyself());
+		        	
+		        	answering_justification.setTemporary(true);
+		        	answering_justification.setGID(null);
+		        	answering_justification.setLIDstr(null);
+		         	// nID = answering_justification.storeLinkNewTemporary(); //storeVerified();
+		        	nID = answering_justification.storeSynchronouslyNoException();
+		        	//answering_justification.releaseReference();
+		        	*/
+		        		
+		        	if (DEBUG) System.out.println("JustificationsCAction: got id="+nID+" for " + answering_justification);
+		        	SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("Select Answering"), false, false, Long.valueOf(nID)) {
+		        		public void _run () {
+		        			Long nID = (Long) ctx;
+		           			JustificationsModel model = tree.getModel();
+		        			if (model.crt_choice == null) tree.setCurrentJust(nID); // will be visible only if everything is visible
+		        		}
+		        	});
+		        	if (DEBUG) System.out.println("JustificationsCAction: fire=" + nID);
+		        	
+		        	tree.fireListener(Util.getStringID(nID), 0, false);
+        		}
+        	}.start();
         	//DD.tabbedPane.setSelectedComponent(DD.jscj);
         	MainFrame.tabbedPane.setSelectedIndex(MainFrame.TAB_JUSTS_);
-    	}
+       	}
     }
 }
 

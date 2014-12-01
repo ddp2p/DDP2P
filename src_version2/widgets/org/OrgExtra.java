@@ -375,8 +375,8 @@ class OrgExtraAddAction extends DebateDecideAction {
 					int cnt = model.getRowCount();
 		    		tree_sp.row = cnt - 1;
 		    		tree_sp.id = extra_ID;
-		    		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable("OrgExtra_SW", true, tree_sp) {
-
+		    		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable("OrgExtra_SW", false, false, tree_sp) {
+		    			// may be set daemon
 						@Override
 						public void _run() {
 							OrgExtra_SP tree_sp = (OrgExtra_SP) ctx;
@@ -516,7 +516,8 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 			org = null;
 			if (DEBUG) System.out.println ("OrgExtraModel: setCurrentOrg: null orgID="+_orgID);
 //			this.fireTableDataChanged();
-			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+				// daemon?
 				@Override
 				public void _run() {
 					((OrgExtraModel)ctx).fireTableDataChanged();
@@ -528,7 +529,8 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 		org = D_Organization.getOrgByLID_NoKeep (_orgID, true);
 		//this.fireTableDataChanged();
 		
-		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+			// daemon?
 			@Override
 			public void _run() {
 				((OrgExtraModel)ctx).fireTableDataChanged();

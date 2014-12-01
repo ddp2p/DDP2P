@@ -328,7 +328,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 					//con.load(constituent,D_Constituent.EXPAND_ALL);
 					con.loadNeighborhoods(D_Constituent.EXPAND_ALL);
 					asn1.constituent = con;
-					String org_id = con.getOrganizationIDStr();
+					String org_id = con.getOrganizationLIDstr();
 					ArrayList<Object> org_data = get_org_db_by_local(org_id);
 					asn1.organization = get_ASN_Organization_by_OrgID(org_data,org_id);
 					/*
@@ -350,8 +350,8 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 					//if(con.global_organization_ID !=null)pm.org_ID_hash = con.global_organization_ID;
 					//pm.motion_ID = ;
 					//pm.constituent_ID_hash.add(con.global_constituent_id_hash);
-					if(con.neighborhood!=null){
-						for(int i=0; i<con.neighborhood.length; i++) 
+					if(con.getNeighborhood()!=null){
+						for(int i=0; i<con.getNeighborhood().length; i++) 
 						{
 							//pm.neighborhood_ID.add(con.neighborhood[i].neighborhoodID);
 						}

@@ -16,6 +16,7 @@ import config.Application_GUI;
 import config.DD;
 import data.D_Motion.D_Motion_Node;
 import streaming.RequestData;
+import util.DBInterface;
 import util.DDP2P_DoubleLinkedList;
 import util.DDP2P_DoubleLinkedList_Node;
 import util.DDP2P_DoubleLinkedList_Node_Payload;
@@ -84,9 +85,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	boolean dirty_mydata = false;
 	boolean dirty_preferences = false;
 	boolean dirty_local = false;
-	
-	Object votes;
-	
+		
 	private static Object monitor_object_factory = new Object();
 	public static int MAX_LOADED_OBJECTS = 10000;
 	public static long MAX_OBJECTS_RAM = 10000000;
@@ -95,46 +94,46 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	
 	@Override
 	public String toSummaryString() {
-		return "D_Justification:" +
+		return "D_Justification["+getLIDstr()+"/"+isTemporary()+"]:" +
 				"\n hash_alg="+getHashAlg()+
 				"\n global_justificationID="+getGID()+
-				"\n global_motionID="+getMotionGID()+
-				"\n global_answerTo_ID="+getAnswerTo_GID()+
-				"\n global_constituent_ID="+getConstituentGID()+
-				"\n justification_title="+getJustificationTitle()+
-				"\n justification_text="+getJustificationText()+
-				//"\n author="+author+
+				"\n global_motionID=["+this.getMotionLIDstr()+"]"+getMotionGID()+
+				"\n global_answerTo_ID=["+this.getAnswerToLIDstr()+"]"+getAnswerTo_GID()+
+				"\n global_constituent_ID=["+this.getConstituentLIDstr()+"]"+getConstituentGID()+
+				"\n global_organization_ID=["+this.getOrganizationLIDstr()+"]"+this.getOrgGID()+
 				"\n last_reference_date="+Encoder.getGeneralizedTime(getLastReferenceDate())+
 				"\n creation_date="+Encoder.getGeneralizedTime(getCreationDate())+
 				"\n arrival_date="+Encoder.getGeneralizedTime(getArrivalDate())+
 				"\n signature="+Util.byteToHexDump(getSignature())+
-				"\n justification_ID="+getLIDstr()+
-				"\n motion_ID="+getMotionLIDstr()+
-				"\n answerTo_ID="+getAnswerToLIDstr()+
-				"\n constituent_ID="+getConstituentLIDstr()+
+				"\n justification_title="+getJustificationTitle()+
+				"\n justification_text="+getJustificationText()+
+				//"\n author="+author+
+//				"\n motion_ID="+getMotionLIDstr()+
+//				"\n answerTo_ID="+getAnswerToLIDstr()+
+//				"\n constituent_ID="+getConstituentLIDstr()+
 				"\n motion="+getMotion()+
 				"\n constituent="+getConstituent();
 	}
 	
 	@Override
 	public String toString() {
-		return "D_Justification:" +
+		return "D_Justification["+getLIDstr()+"/"+isTemporary()+"]:" +
 				"\n hash_alg="+getHashAlg()+
 				"\n global_justificationID="+getGID()+
-				"\n global_motionID="+getMotionGID()+
-				"\n global_answerTo_ID="+getAnswerTo_GID()+
-				"\n global_constituent_ID="+getConstituentGID()+
-				"\n justification_title="+getJustificationTitle()+
-				"\n justification_text="+getJustificationText()+
-				//"\n author="+author+
+				"\n global_motionID=["+this.getMotionLIDstr()+"]"+getMotionGID()+
+				"\n global_answerTo_ID=["+this.getAnswerToLIDstr()+"]"+getAnswerTo_GID()+
+				"\n global_constituent_ID=["+this.getConstituentLIDstr()+"]"+getConstituentGID()+
+				"\n global_organization_ID=["+this.getOrganizationLIDstr()+"]"+this.getOrgGID()+
 				"\n last_reference_date="+Encoder.getGeneralizedTime(getLastReferenceDate())+
 				"\n creation_date="+Encoder.getGeneralizedTime(getCreationDate())+
 				"\n arrival_date="+Encoder.getGeneralizedTime(getArrivalDate())+
 				"\n signature="+Util.byteToHexDump(getSignature())+
-				"\n justification_ID="+getLIDstr()+
-				"\n motion_ID="+getMotionLIDstr()+
-				"\n answerTo_ID="+getAnswerToLIDstr()+
-				"\n constituent_ID="+getConstituentLIDstr()+
+				"\n justification_title="+getJustificationTitle()+
+				"\n justification_text="+getJustificationText()+
+				//"\n author="+author+
+//				"\n motion_ID="+getMotionLIDstr()+
+//				"\n answerTo_ID="+getAnswerToLIDstr()+
+//				"\n constituent_ID="+getConstituentLIDstr()+
 				"\n motion="+getMotion()+
 				"\n constituent="+getConstituent();
 	}
@@ -406,11 +405,192 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		} catch (Exception e) {
 			//e.printStackTrace();
 			if (create) {
+				if (_DEBUG) System.out.println("D_Justification: <init>: create gid="+gID);
 				initNew(gID, __peer, p_oLID, p_mLID);
+				if (_DEBUG) System.out.println("D_Justification: <init>: got gid obj="+this);
 				return;
 			}
 			throw new P2PDDSQLException(e.getLocalizedMessage());
 		}
+	}
+	/**
+	 * This may be called with a justification that may or may not have been registered.
+	 * Even if it is new, still a new justification object is created and this is loaded in it.
+	 * 
+	 * Only global elements are set in it (with loadRemote).
+	 * The GID is recomputed.
+	 * 
+	 * Also sets temporary, broadcasted, and arrival_date.
+	 * 
+	 * Not recommended for parameters that are known to be really new.
+	 * @param _unknown
+	 * @return
+	 */
+	public static D_Justification createFinalJustification_FromUnknown(D_Justification _unknown) {
+		if (_DEBUG) System.out.println("D_Justification: createJustification_FromUnknown: start " + _unknown);
+
+		long oLID = _unknown.getOrganizationLID();
+		if (oLID <= 0 ) D_Organization.getLIDbyGID(_unknown.getOrgGID());
+		if (oLID <= 0 ) {
+			if (_DEBUG) System.out.println("D_Justification: createJustification_FromUnknown: why null org registering " + _unknown);
+			return null;
+		};
+		
+		long m_LID = _unknown.getMotionLID();
+		if (m_LID <= 0 ) D_Motion.getLIDFromGID(_unknown.getMotionGID(), oLID);
+		if (m_LID <= 0 ) {
+			if (_DEBUG) System.out.println("D_Justification: createJustification_FromUnknown: why null motion registering " + _unknown);
+			return null;
+		};
+		
+		
+		String GID = _unknown.getGID();
+		if (GID == null) GID = _unknown.make_ID();
+		
+		D_Justification m = D_Justification.getJustByGID(GID, true, true, true, null, oLID, m_LID, null);
+		if (m != _unknown) {
+			m.loadRemote(_unknown, null, null, null);
+			//_unknown = (m);
+		}
+		m.setTemporary(false);
+		
+		m.setBroadcasted(true); // if you sign it, you probably want to broadcast it...
+		m.setArrivalDate();
+		long j_id = m.storeRequest_getID();
+		//if (m.dirty_any()) m.storeRequest();
+		m.releaseReference();
+		
+		if (_DEBUG) System.out.println("D_Justification: createJustification_FromUnknown: obtained " + m);
+		return m;
+	}
+	/**
+	 * Get a justification for known motion.
+	 * Uses TXT document formats.
+	 * @param _motion
+	 * @param _title
+	 * @param _body
+	 * @return
+	 */
+	public static D_Justification createJustification(D_Motion _motion, String _title, String _body, D_Justification _answered) {
+		D_Justification new_justification = D_Justification.getEmpty();
+		
+		new_justification.setOrgGID(_motion.getOrganizationGID());
+		new_justification.setMotionGID(_motion.getGID());
+		if (_answered != null) {
+			new_justification.setAnswerTo_GID(_answered.getGID());
+			new_justification.setAnswerToLIDstr(_answered.getLIDstr());
+			new_justification.setAnswerTo(_answered);
+		}
+		
+		D_Document_Title title = new D_Document_Title();
+		title.title_document = new D_Document();
+		title.title_document.setDocumentString(_title);
+		title.title_document.setFormatString(D_Document.TXT_FORMAT);
+		new_justification.setJustificationTitle(title);
+		
+		if (_body != null) {
+			D_Document body_d = new D_Document();
+			body_d.setDocumentString(_body);
+			body_d.setFormatString(D_Document.TXT_FORMAT);
+			new_justification.setJustificationText(body_d);
+		}
+		
+		return createFinalJustificationFromNew(new_justification);
+	}
+	/**
+	 * Get a justification for known motion.
+	 * 
+	 * First extracts the object for motion and for answer_To. Then sets back LIDs and GIDs in _new (in case one was absent).
+	 * 
+	 * Recompute the GID, and then store it via loadRemote (if another object was returned at registration).
+	 * 
+	 * And by setting temporary, arrival time, and broadcasted.
+	 * 
+	 * @param _new
+	 * @return
+	 */
+	public static D_Justification createFinalJustificationFromNew(D_Justification _new) {
+		if (DEBUG) System.out.println("D_Justification: createJustification_FromNew: start " + _new);
+		long oLID = _new.getOrganizationLID();
+		D_Motion _motion = null;
+		if (_new.getMotionLIDstr() != null)
+			_motion = D_Motion.getMotiByLID(_new.getMotionLIDstr(), true, false);
+		if (_motion == null && _new.getMotionGID() != null) {
+			_motion = D_Motion.getMotiByGID(_new.getMotionGID(), true, false, oLID);
+		}
+		if (_motion == null) {
+			if (_DEBUG) System.out.println("D_Justification: createJustificationFromNew: why null motion registering " + _new);
+			return null;
+		}
+		long m_LID = _motion.getLID_force();
+		
+		if (oLID <= 0) oLID = _motion.getOrganizationLID();
+		if (oLID <= 0) {
+			if (_DEBUG) System.out.println("D_Justification: createJustification_FromUnknown: null org in " + _new);
+			return null;
+		}
+
+		
+		D_Justification _answered = null;
+		if (_new.getAnswerToLIDstr() != null)
+			_answered = D_Justification.getJustByLID(_new.getAnswerToLIDstr(), true, false);
+		if (_answered == null && _new.getAnswerTo_GID() != null) {
+			_answered = D_Justification.getJustByGID(_new.getAnswerTo_GID(), true, false, _new.getOrganizationLID(), m_LID);
+		}
+		
+		
+		//D_Justification new_justification = D_Justification.getEmpty();
+		
+		_new.setOrgGID(_motion.getOrganizationGID());
+		_new.setOrganizationLID(_motion.getOrganizationLID());
+		_new.setMotionGID(_motion.getGID());
+		_new.setMotionLID(_motion.getLID());
+		
+		if (_answered != null) {
+			_new.setAnswerTo_GID(_answered.getGID());
+			_new.setAnswerToLIDstr(_answered.getLIDstr());
+			_new.setAnswerTo(_answered);
+		}
+		
+		/*
+		D_Document_Title title = new D_Document_Title();
+		String _title = _new.getJustificationTitle().title_document.getDocumentUTFString();
+		title.title_document.setDocumentString(_title);
+		title.title_document = new D_Document();
+		title.title_document.setFormatString(_new.getJustificationTitle().title_document.getFormatString());//D_Document.TXT_FORMAT);
+		new_justification.setJustificationTitle(title);
+		
+		String _body = _new.getJustificationText().getDocumentUTFString();
+		if (_body != null) {
+			D_Document body_d = new D_Document();
+			body_d.setDocumentString(_body);
+			body_d.setFormatString(_new.getJustificationText().getFormatString()); //D_Document.TXT_FORMAT);
+			new_justification.setJustificationText(body_d);
+		}
+		*/
+		
+		_new.setTemporary(false);
+		_new.setGID(_new.make_ID());
+		
+		// D_Justification.DEBUG = true;
+		String GID = _new.getGID();
+		
+		D_Justification m = D_Justification.getJustByGID(GID, true, true, true, null, oLID, m_LID, _new);
+		if (m != _new) {
+			if (_DEBUG) System.out.println("D_Justification: createJustificationFromNew: why registering preexisting " + _new);
+			m.loadRemote(_new, null, null, null);
+			//new_justification = (m);
+		}
+		m.setTemporary(false);
+		
+		m.setBroadcasted(true); // if you sign it, you probably want to broadcast it...
+		m.setArrivalDate();
+		long j_id = m.storeRequest_getID();
+		//if (new_justification.dirty_any()) new_justification.storeRequest();
+		m.releaseReference();
+		
+		if (DEBUG) System.out.println("D_Justification: createJustification_FromNew: obtained " + m);
+		return m;
 	}
 	
 	void init(ArrayList<Object> o) throws P2PDDSQLException {
@@ -474,9 +654,9 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	{
 		if (this.global_justificationID != null)
 			assert(this.getGID().equals(gID));
-		this.setGID(gID);
 		this.setOrganizationLID(p_oLID);
 		this.setMotionLID(p_mLID);
+		this.setGID(gID);
 		if (__peer != null) this.setPeerSourceLID((__peer.getLID()));
 		this.dirty_main = true;
 		this.setTemporary(true);
@@ -518,7 +698,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	 * @param load_Globals 
 	 * @return
 	 */
-	static private D_Justification getJustByLID_AttemptCacheOnly (long ID, boolean load_Globals) {
+	static public D_Justification getJustByLID_AttemptCacheOnly (long ID, boolean load_Globals) {
 		if (ID <= 0) return null;
 		Long id = new Long(ID);
 		D_Justification crt = D_Justification_Node.loaded_By_LocalID.get(id);
@@ -538,7 +718,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	 * @param keep : if true, avoid releasing this until calling releaseReference()
 	 * @return
 	 */
-	static private D_Justification getJustByLID_AttemptCacheOnly(Long LID, boolean load_Globals, boolean keep) {
+	static public D_Justification getJustByLID_AttemptCacheOnly(Long LID, boolean load_Globals, boolean keep) {
 		if (LID == null) return null;
 		if (keep) {
 			synchronized (monitor_object_factory) {
@@ -664,8 +844,9 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 				if (crt != null) {			
 					crt.status_references ++;
 					if (crt.status_references > 1) {
-						System.out.println("D_Organization: getOrgByGIDhash_AttemptCacheOnly: "+crt.status_references);
-						Util.printCallPath("");
+						System.out.println("D_Justification: getOrgByGIDhash_AttemptCacheOnly: "+crt.status_references);
+						//Util.printCallPath("");
+						Util.printCallPathTop("Why references increase for justGID="+GID+" in ("+oID+")");
 					}
 				}
 				return crt;
@@ -695,11 +876,27 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		return crt;
 	}
 	*/
+	/**
+	 * 
+	 * @param GID
+	 * @param load_Globals
+	 * @param keep
+	 * @return
+	 */
 	@Deprecated
 	static public D_Justification getJustByGID(String GID, boolean load_Globals, boolean keep) {
 		System.out.println("Remove me setting orgID");
 		return getJustByGID(GID, load_Globals, false, keep, null, -1, -1, null);
 	}
+	/**
+	 * 
+	 * @param GID
+	 * @param load_Globals
+	 * @param keep
+	 * @param oID
+	 * @param mID
+	 * @return
+	 */
 	static public D_Justification getJustByGID(String GID, boolean load_Globals, boolean keep, Long oID, Long mID) {
 		return getJustByGID(GID, load_Globals, false, keep, null, oID, mID, null);
 	}
@@ -1246,32 +1443,90 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		}
 		return 0;
 	}
+	/**
+	 * Create an new object (with adapted text and body), store it, and reload it using its LID.
+	 * 
+	 * @param answered
+	 * @return
+	 */
+	public static D_Justification getAnsweringDefaultTemporaryStoredRegistered(D_Justification answered) {
+		D_Justification j = getAnsweringDefaultTemporaryStored(answered);
+		long a_ID = j.getLID();
+		return D_Justification.getJustByLID(a_ID, true, false);
+	}
+	/**
+	 * Copies title and body, prepending them with ("Answer To").
+	 * @param answered
+	 * @return
+	 */
+	public static D_Justification getAnsweringDefaultTemporaryStored(D_Justification answered) {
+		D_Justification answering = D_Justification.getEmpty();
+		
+		/**
+		 * Copy only formats.
+		 */
+		answering.getJustificationTitle().title_document.copy(answered.getJustificationTitle().title_document);
+		answering.getJustificationText().copy(answered.getJustificationText());
+		
+		answering.getJustificationTitle().title_document.setDocumentString(__("Answer To:")+" "+answered.getJustificationTitle().title_document.getDocumentUTFString());
+		answering.getJustificationText().setDocumentString(__("Answer To:")+" \n"+answered.getJustificationText().getDocumentUTFString());
+		
+		answering.setAnswerTo(answered);
+		answering.setRequested(false);
+		answering.setBlocked(false);
+		answering.setBroadcasted(false);
+		answering.setTemporary(true);
+		answering.setCreationDate(answering.setArrivalDate(Util.CalendargetInstance()));
+		
+		answering.setMotionAndOrganizationAllFromJustification(answered);
+		
+		long a_ID = answering.storeSynchronouslyNoException();
+		
+		return answering;
+		//return 
+	}
+	
 	public void changeToDefaultAnswer() {
 		this.setAnswerToLIDstr(getLIDstr());
 		this.setAnswerTo_GID(this.getGID());
 		this.setLIDstr(null);
 		this.setGID(null);
 		this.setSignature(null);
-		this.setConstituentLIDstr(null);
+		this.setConstituentLIDstr_Dirty(null);
 		this.setConstituentGID(null);
 		this.getJustificationTitle().title_document.setDocumentString(__("Answer To:")+" "+this.getJustificationTitle().title_document.getDocumentUTFString());
 		this.getJustificationText().setDocumentString(__("Answer To:")+" \n"+this.getJustificationText().getDocumentUTFString());
 		this.setCreationDate(this.setArrivalDate(Util.CalendargetInstance()));
 		this.setRequested(this.setBlocked(this.setBroadcasted(false)));
 	}
-	public void setEditable() {
+	/**
+	 * Sets the signature and the GID to null
+	 */
+	public boolean setEditable() {
+		if (! isEditable()) {
+			Util.printCallPath("Why allowing it?");
+			return false;
+		}
 		setSignature(null);
 		this.setGID(null);
+		this.setTemporary(true);
+		return true;
 	}
+	/**
+	 * Returns true if the GID is null;
+	 * Used to consider signature or temporary but that is inappropriate.
+	 * @return
+	 */
 	public boolean isEditable() {
-		if(getSignature() == null){
-			if(DEBUG) out.println("D_Justification:editable: no sign");
+		if (getGID() == null) {
+			if (DEBUG) out.println("D_Justification:editable: no GID");
 			return true;
 		}
-		if(getGID() == null){
-			if(DEBUG) out.println("D_Justification:editable: no GID");
-			return true;
-		}
+		return false;
+//		if (getSignature() == null) {
+//			if (DEBUG) out.println("D_Justification:editable: no sign");
+//			return true;
+//		}
 		/*
 		if(!verifySignature()) {
 			if(DEBUG) out.println("D_Justification:editable: not verifiable signature");
@@ -1284,7 +1539,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			return true;
 		}
 		*/
-		return false;
+		//return false;
 	}
 	
 	/**
@@ -1382,10 +1637,19 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		params[table.justification.J_BLOCKED] = Util.bool2StringInt(blocked);
 		params[table.justification.J_REQUESTED] = Util.bool2StringInt(requested);
 		params[table.justification.J_BROADCASTED] = Util.bool2StringInt(broadcasted);
-		params[table.justification.J_TEMPORARY] = Util.bool2StringInt(temporary);
+		params[table.justification.J_TEMPORARY] = Util.bool2StringInt(isTemporary());
 		params[table.justification.J_HIDDEN] = Util.bool2StringInt(hidden);
 		params[table.justification.J_PEER_SOURCE_ID] = Util.getStringID(peer_source_ID);
-		if(this.justification_ID == null) {
+		if (this.justification_ID == null) {
+			if (this.getMotionLID() > 0) {
+				//D_Justification.getJustByLID_AttemptCacheOnly(LID, false, false);
+				D_Motion m = D_Motion.getMotiByLID_AttemptCacheOnly(this.getMotionLID(), false, false);
+				if (m != null) m.resetCache(); // removing memory of statistics about justifications!
+			}
+			if (this.getOrganizationLIDstr() != null) {
+				D_Organization o = D_Organization.getOrgByLID_AttemptCacheOnly_NoKeep(this.getOrganizationLID(), false);
+				if (o != null) o.resetCache(); // removing cached memory of statistics about justifications!
+			}
 			if(DEBUG) System.out.println("WB_Justification:storeVerified:inserting");
 			result = Application.db.insert(table.justification.TNAME,
 					table.justification.fields_array,
@@ -1408,7 +1672,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	
 	/** Storing */
 	public static D_Justification_SaverThread saverThread = new D_Justification_SaverThread();
-	private boolean dirty_any() {
+	public boolean dirty_any() {
 		return dirty_main || dirty_local || dirty_preferences || dirty_mydata;
 	}
 	/**
@@ -1488,7 +1752,9 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	 * @return
 	 */
 	public long storeSynchronouslyNoException() {
-		//Util.printCallPath("Why store sync?");
+		if (DEBUG) System.out.println("D_Justification: storeSynchronouslyNoException: start");
+//		if (this.getLIDstr() == null)
+//			Util.printCallPath("Why store sync?");
 		try {
 			return storeAct();
 		} catch (P2PDDSQLException e) {
@@ -1537,6 +1803,11 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if(DEBUG) System.out.println("WB_Justification:sign:got this="+Util.byteToHexDump(getSignature()));
 		return getSignature();
 	}
+	/**
+	 * Computes the GIDH without assigning it.
+	 * First tries to fillGlobasl!
+	 * @return
+	 */
 	public String make_ID() {
 		fillGlobals();
 		// return this.global_witness_ID =  
@@ -1551,7 +1822,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		
 		String newGID = make_ID();
 		if(!newGID.equals(this.getGID())) {
-			Util.printCallPath("WB_Justification: WRONG EXTERNAL GID");
+			Util.printCallPath("WB_Justification: WRONG EXTERNAL GID [" + this.getLID()+"]: "+this.getTitleOrMy());
 			if(DEBUG) System.out.println("WB_Justification:verifySignature: WRONG HASH GID="+this.getGID()+" vs="+newGID);
 			if(DEBUG) System.out.println("WB_Justification:verifySignature: WRONG HASH GID result="+false);
 			return false;
@@ -1560,6 +1831,83 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		boolean result = Util.verifySignByID(this.getSignableEncoder().getBytes(), pk_ID, getSignature());
 		if(DEBUG) System.out.println("WB_Justification:verifySignature: result wGID="+result);
 		return result;
+	}
+	/**
+	 * Sets serving both in peer.served_orgs and in organization.broadcasted
+	 * has to sign the peer again because of served_orgs changes
+	 * @return
+	 */
+	public boolean toggleServing() {
+		D_Justification m = D_Justification.getJustByJust_Keep(this);
+		m.setBroadcasted(!m.isBroadcasted());
+		m.storeRequest();
+		m.releaseReference();
+		return m.isBroadcasted();
+	}
+	public Object getTitleOrMy() {
+		String n = mydata.name;
+		if (n != null) return n;
+		return getJustificationTitle();
+	}
+	public Object getCategoryOrMy() {
+		String n = mydata.category;
+		if (n != null) return n;
+		return null;//this.getCategory();
+	}
+	public Object getCreatorOrMy() {
+		String n = mydata.creator;
+		if (n != null) return n;
+		if (this.constituent_ID != null) this.constituent = D_Constituent.getConstByLID(constituent_ID, true, false);
+		if (this.constituent == null) return null;
+		return this.constituent.getNameOrMy();
+	}
+	public void setNameMy(String _name) {
+		this.mydata.name = _name;
+		this.setPreferencesDate();
+		this.dirty_mydata = true;
+	}
+	public String getNameMy() {
+		return this.mydata.name;
+	}
+	public void setCreatorMy(String _creat) {
+		this.mydata.creator = _creat;
+		this.setPreferencesDate();
+		this.dirty_mydata = true;
+	}
+	public String getCreatorMy() {
+		return this.mydata.creator;
+	}
+	public void setCategoryMy(String _cat) {
+		this.mydata.category = _cat;
+		this.setPreferencesDate();
+		this.dirty_mydata = true;
+	}
+	public String getCategoryMy() {
+		return this.mydata.category;
+	}
+
+	public long getProviderID() {
+		return this.peer_source_ID;
+	}
+	public D_Peer getProvider() {
+		if (peer_source_ID <= 0) return null;
+		return D_Peer.getPeerByLID(peer_source_ID, true, false);
+	}
+
+	public boolean isHidden() {
+		return this.hidden;
+	}
+	/**
+	 * sets dirty preferences
+	 * @param h
+	 * @return
+	 */
+	public boolean setHidden(boolean h) {
+		boolean old = this.hidden;
+		this.hidden = h;
+		this.setPreferencesDate();
+		this.dirty_preferences = true;
+		return old;
 	}
 	
 	public String getHashAlg() {
@@ -1575,6 +1923,11 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	public String getGID() {
 		return global_justificationID;
 	}
+	/**
+	 * Sets GID and registers saving
+	 * @param _global_justificationID
+	 * @return
+	 */
 	public String setGID(String _global_justificationID) {
 		assert(Util.equalStrings_or_one_null(_global_justificationID, this.global_justificationID));
 		if (Util.equalStrings_null_or_not(_global_justificationID, this.getGID())) return _global_justificationID;
@@ -1658,7 +2011,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if (m != null) return m.getOrganizationGID();
 
 		D_Constituent cs = D_Constituent.getConstByGID_or_GIDH(this.getConstituentGID(), null, true, false);
-		if (cs != null) c_oID = cs.getOrganizationID();
+		if (cs != null) c_oID = cs.getOrganizationLID();
 		if((c_oID>0)&&(oID>0)&&(c_oID!=oID)){
 			if(_DEBUG) System.out.println("D_Just:guess: "+c_oID+" vs "+oID);
 			return null;
@@ -1666,39 +2019,6 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if(DEBUG) System.out.println("D_Just:guess right: "+c_oID+" vs "+oID);
 		if(c_oID>0) oID=c_oID;
 		return D_Organization.getGIDbyLIDstr(Util.getStringID(oID));
-	}
-	/**
-	 * 
-	 * @param new_text
-	 * @param editor_format
-	 */
-	public void setJustificationText(String new_text, String editor_format) {
-		String old_text = this.getJustificationText().getDocumentString();
-		
-		String old_old_text = this.getJustificationText().getFormatString();
-
-		if (! Util.equalStrings_null_or_not(new_text, old_text)) {
-			this.getJustificationText().setDocumentString(new_text);
-			this.dirty_main = true;
-		}
-		if (! Util.equalStrings_null_or_not(editor_format, old_old_text)) {
-			this.getJustificationText().setFormatString(editor_format);//BODY_FORMAT);
-			this.dirty_main = true;
-		}
-	}
-	public D_Document_Title getJustificationTitle() {
-		return justification_title;
-	}
-	public void setJustificationTitle(D_Document_Title justification_title) {
-		this.justification_title = justification_title;
-		this.dirty_main = true;
-	}
-	public D_Document getJustificationText() {
-		return justification_text;
-	}
-	public void setJustificationText(D_Document justification_text) {
-		this.justification_text = justification_text;
-		this.dirty_main = true;
 	}
 	public Calendar getLastReferenceDate() {
 		return last_reference_date;
@@ -1749,32 +2069,116 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	public Calendar getArrivalDate() {
 		return arrival_date;
 	}
+	/**
+	 * Returns the new value
+	 * @return
+	 */
 	public Calendar setArrivalDate() {
 		return this.setArrivalDate(Util.CalendargetInstance());
 	}
+	/**
+	 * Returns the parameter
+	 * @param arrival_date
+	 * @return
+	 */
 	public Calendar setArrivalDate(Calendar arrival_date) {
 		this.arrival_date = arrival_date;
 		this.dirty_local = true;
 		return arrival_date;
 	}
+	/**
+	 * Only reads the motion object (only if available)
+	 * @return
+	 */
 	public D_Motion getMotion() {
 		return motion;
 	}
-	public void setMotion(D_Motion motion) {
+	/**
+	 * Only changes the motion object.
+	 * @param motion
+	 */
+	public void setMotionObj(D_Motion motion) {
 		this.motion = motion;
+	}
+	/**
+	 * Sets the motion object, its LID and its GID.
+	 * @param _motion
+	 */
+	public void setMotionAndOrganizationAll(D_Motion _motion) {
+		this.motion = _motion;
+		if (_motion != null) {
+			this.setMotionGID(_motion.getGID());
+			this.setMotionLID(_motion.getLID());
+			this.setOrganizationLIDstr(_motion.getOrganizationLIDstr());
+			this.setOrgGID(_motion.getOrganizationGID());
+		} else {
+			this.setMotionGID(null);
+			this.setMotionLID(-1);
+		}
+	}
+	/**
+	 * Harvests the motion and organization objects/LID/GID from the parameter.
+	 * @param _justification
+	 */
+	public void setMotionAndOrganizationAllFromJustification(D_Justification _justification) {
+		this.motion = _justification.getMotion();
+		if (motion != null) {
+			this.setMotionGID(motion.getGID());
+			this.setMotionLID(motion.getLID());
+			this.setOrganizationLIDstr(motion.getOrganizationLIDstr());
+			this.setOrgGID(motion.getOrganizationGID());
+		} else {
+			this.setMotionGID(_justification.getMotionGID());
+			this.setMotionLID(_justification.getMotionLID());
+			this.setOrganizationLIDstr(_justification.getOrganizationLIDstr());
+			this.setOrgGID(_justification.getOrgGID());
+		}
 	}
 	public D_Constituent getConstituent() {
 		return constituent;
 	}
-	public void setConstituent(D_Constituent constituent) {
+	/**
+	 * Just sets the object
+	 * @param constituent
+	 */
+	public void setConstituentObj(D_Constituent constituent) {
 		this.constituent = constituent;
+	}
+	/**
+	 *  Sets the object, GID and LID
+	 * @param constituent
+	 */
+	public void setConstituentAll(D_Constituent constituent) {
+		this.constituent = constituent;
+		if (constituent != null) {
+			this.setConstituentGID(constituent.getGID());
+			this.setConstituentLID_Dirty(constituent.getLID());
+		} else {
+			this.setConstituentGID(null);
+			this.setConstituentLID_Dirty(-1);
+		}
 	}
 	public D_Justification getAnswerTo() {
 		return answerTo;
 	}
+	/**
+	 * Sets the object, the LID and the GID
+	 * 
+	 * @param answerTo
+	 */
 	public void setAnswerTo(D_Justification answerTo) {
 		this.answerTo = answerTo;
-		this.dirty_main = true;
+		if (answerTo != null) {
+//			this.setAnswerTo_GID(answerTo.getAnswerTo_GID());
+//			this.setAnswerToLIDstr(answerTo.getAnswerToLIDstr());
+			this.setAnswerTo_GID(answerTo.getGID());
+			this.setAnswerToLIDstr(answerTo.getLIDstr());
+		} else {
+			this.setAnswerTo_GID(null);
+			this.setAnswerToLIDstr(null);
+		}
+		// dirty set if LID is new
+		//this.dirty_main = true;
 	}
 	public long getLID_force() {
 		if (this.justification_ID != null) return this.getLID();
@@ -1811,19 +2215,30 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		return answerTo_ID;
 	}
 	public void setAnswerToLIDstr(String answerTo_ID) {
-		this.answerTo_ID = answerTo_ID;
-		this.dirty_main = true;
+		if (! Util.equalStrings_null_or_not(this.answerTo_ID, answerTo_ID)) {
+			this.answerTo_ID = answerTo_ID;
+			this.dirty_main = true;
+		}
 	}
 	public String getConstituentLIDstr() {
 		return constituent_ID;
 	}
-	public void setConstituentLIDstr(String constituent_ID) {
-		this.constituent_ID = constituent_ID;
-		this.dirty_main = true;
+	/**
+	 * Setting dirty. It is preferable to use setConstituentAll.
+	 * @param constituent_ID
+	 */
+	public void setConstituentLIDstr_Dirty(String constituent_ID) {
+		if (! Util.equalStrings_and_not_null(this.constituent_ID, constituent_ID)) {
+			this.constituent_ID = constituent_ID;
+			this.dirty_main = true;
+		}
 	}
-	public void setConstituentLID(long _constituent_ID) {
-		this.constituent_ID = Util.getString(_constituent_ID);
-		this.dirty_main = true;
+	/**
+	 * Sets dirty. It is preferable to use setConstituentAll.
+	 * @param _constituent_ID
+	 */
+	public void setConstituentLID_Dirty(long _constituent_ID) {
+		setConstituentLIDstr_Dirty(Util.getString(_constituent_ID));
 	}
 	public String getOrganizationLIDstr() {
 		return organization_ID;
@@ -1874,6 +2289,12 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	}
 
 	public void setTemporary(boolean temporary) {
+		if (temporary != this.temporary) {
+			if (DEBUG) {
+				System.out.println("D_Justification: setTemporary: "+temporary);
+				//Util.printCallPath("");
+			}
+		} else return;
 		this.temporary = temporary;
 		this.dirty_local = true;
 	}
@@ -1916,7 +2337,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		return obj; 
 	}
 	/**
-	 * Tests newer
+	 * Tests newer & this temporary. Set temporary to false
 	 * @param r
 	 * @param sol_rq
 	 * @param new_rq
@@ -1959,7 +2380,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 				cID = D_Constituent.insertTemporaryGID(r.getConstituentGID(), r.getConstituentGIDH(), this.getOrganizationLID(), __peer, default_blocked_cons);
 				if (new_rq != null) new_rq.cons.put(r.getConstituentGIDH(), DD.EMPTYDATE);
 			}
-			this.setConstituentLID(cID);
+			this.setConstituentLID_Dirty(cID);
 			//this.constituent = r.constituent;
 		}
 		if (!Util.equalStrings_null_or_not(this.global_motionID, r.global_motionID)) {
@@ -1987,6 +2408,54 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		return true;
 	}
 
+	/**
+	 * Copies text, motion, org, answerTo.
+	 * Sets arrival and creation date.
+	 * 
+	 * Used in editors when starting a new justification resembling an older one.
+	 * @param r
+	 * @return
+	 */
+	public boolean loadDuplicatingInTemporary(D_Justification r) {
+		if (! this.isTemporary()) {
+			if (_DEBUG) System.out.println("D_Justification: loadRemote: this not temporary! quit: "+this);
+			return false;
+		}
+		// this.hash_alg = r.hash_alg;
+		this.justification_title = r.justification_title;
+		this.justification_text = r.justification_text;
+		if (! Util.equalStrings_null_or_not(this.global_organization_ID, r.global_organization_ID)) {
+			this.setOrgGID(r.getOrgGID());
+			long oID = r.getOrganizationLID();
+			if (oID <= 0)
+				oID = D_Organization.getLIDbyGIDorGIDH(r.getOrgGID(), r.getOrgGIDH());
+			this.setOrganizationLID(oID);
+		}
+		if (! Util.equalStrings_null_or_not(this.global_motionID, r.global_motionID)) {
+			this.setMotionGID(r.getMotionGID());
+			long mID = r.getMotionLID();
+			if (mID <= 0) 
+				mID = D_Motion.getLIDFromGID(r.getMotionGID(), this.getOrganizationLID());
+			this.setMotionLID(mID);
+		}
+		if (! Util.equalStrings_null_or_not(this.global_answerTo_ID, r.global_answerTo_ID)) {
+			this.setAnswerTo_GID(r.getAnswerTo_GID());
+			String aLID = r.getAnswerToLIDstr();
+			if (aLID == null) aLID = D_Justification.getLIDstrFromGID(r.getAnswerTo_GID(), this.getOrganizationLID(), this.getMotionLID());
+			this.setAnswerToLIDstr(aLID);
+			this.answerTo = r.answerTo;
+		}
+		this.dirty_main = true;
+		this.setCreationDate(this.setArrivalDate());
+		this.dirty_local = true;
+		return true;
+	}
+	/**
+	 * Counts the number of Justifications for a given motion.
+	 * Not cached!
+	 * @param motion_ID2
+	 * @return
+	 */
 	public static long getCountForMotion(long motion_ID2) {
 		String sql = "SELECT count(*) FROM "+table.justification.TNAME+" WHERE "+table.justification.motion_ID+"=?;";
 		ArrayList<ArrayList<Object>> count;
@@ -2000,29 +2469,94 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		return 0;
 	}
 
-	static final String sql_co = "SELECT count(*) FROM "+table.signature.TNAME+
-		" WHERE "+table.signature.justification_ID+" = ? AND "+table.signature.choice+" = ?;";
-	public long getVotersNb() {
-		try {
-			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_co, new String[]{this.getLIDstr(), "y"}, DEBUG);
-			if(orgs.size()>0) return Util.lval(orgs.get(0).get(0));
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
+	/**
+	 * Maps days_old into # news
+	 */
+	Hashtable<Integer, Long> countNews_memory = new Hashtable<Integer, Long>();
+	/**
+	 * With cache
+	 * 
+	 * @param days
+	 * @param refresh
+	 * @return
+	 */
+	public long getCountNews_WithCache(int days, boolean refresh) {
+		if (! refresh) {
+			Long r = countNews_memory.get(new Integer(days));
+			if (r != null) return r;
 		}
-		return 0;
+		long result = D_News.getCountJust(this, days);
+		countNews_memory.put(new Integer(days), new Long(result));
+		return result;
+	}
+	/**
+	 * Maps days_old into #signatures (days=0 for all)
+	 */
+	Hashtable<Integer, Long> activity_memory = new Hashtable<Integer, Long>();
+	/**
+	 * With cache (use days = 0 for all)
+	 * 
+	 * @param days (in arrival time)
+	 * @param refresh
+	 * @return
+	 */
+	public long getActivityNb_ByAge_WithCache(int days, boolean refresh) {
+		if (! refresh) {
+			Long r = activity_memory.get(new Integer(days));
+			if (r != null) return r;
+		}
+		long result = getActivityNb_ByAge(days);
+		activity_memory.put(new Integer(days), new Long(result));
+		return result;
+	}
+	/**
+	 * Maps days_old into #signatures (days=0 for all)
+	 */
+	Hashtable<String, Long> activity_memory_by_choice = new Hashtable<String, Long>();
+	/**
+	 * With cache (use days = 0 for all)
+	 * 
+	 * @param days (in arrival time)
+	 * @param refresh
+	 * @return
+	 */
+	public long getActivityNb_ByChoice_WithCache(String choice, boolean refresh) {
+		if (! refresh) {
+			Long r = activity_memory_by_choice.get(choice);
+			if (r != null) return r;
+		}
+		long result = getActivityNb_ByChoice(choice);
+		activity_memory_by_choice.put(choice, new Long(result));
+		return result;
+	}
+	public void setActivityNb_ByChoice(Long v, String choice) {
+		if (choice != null)
+			activity_memory_by_choice.put(choice, v);
+		activity_memory.put(Integer.valueOf(0), v);
 	}
 
-	static final String sql_ac = "SELECT count(*) FROM "+table.signature.TNAME+" AS s "+
-		" WHERE "+table.signature.justification_ID+" = ?;";
-	static final String sql_ac2 = "SELECT count(*) FROM "+table.signature.TNAME+" AS s "+
-	" WHERE s."+table.signature.justification_ID+" = ? AND s."+table.signature.arrival_date+">?;";
-	public long getActivity(int days) {
+	private static final String sql_signatures_count_all = "SELECT count(*) FROM "+table.signature.TNAME+
+			" WHERE "+table.signature.justification_ID+" = ?;";
+	private static final String sql_signatures_count_all_recent_only = "SELECT count(*) FROM "+table.signature.TNAME+
+			" WHERE "+table.signature.justification_ID+" = ? AND "+table.signature.arrival_date+">?;";
+	private static final String sql_signatures_count_with_choice_choice = 
+			"SELECT count(*) FROM "+table.signature.TNAME
+			+ " WHERE "+table.signature.choice+"=? AND " + table.signature.justification_ID + " =? "+";";
+	public long getActivityNb_All() {
+		return getActivityNb_ByAge(0);
+	}
+	/**
+	 * Without cache (use days = 0 for all)
+	 * @param days
+	 * @return
+	 */
+	public long getActivityNb_ByAge(int days) {
 		try {
 			ArrayList<ArrayList<Object>> orgs;
 			if (days == 0)
-				orgs = Application.db.select(sql_ac, new String[]{this.getLIDstr()});
+				orgs = Application.db.select(sql_signatures_count_all, new String[]{this.getLIDstr()});
 			else
-				orgs = Application.db.select(sql_ac2, new String[]{this.getLIDstr(), Util.getGeneralizedDate(days)});
+				orgs = Application.db.select(sql_signatures_count_all_recent_only, new String[]{this.getLIDstr(), Util.getGeneralizedDate(days)});
 			
 			if (orgs.size() > 0) return Util.lval(orgs.get(0).get(0));
 		} catch (P2PDDSQLException e) {
@@ -2031,105 +2565,338 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		return 0;
 	}
 	/**
-	 * Sets serving both in peer.served_orgs and in organization.broadcasted
-	 * has to sign the peer again because of served_orgs changes
+	 * No cache.
+	 * @param choice
 	 * @return
 	 */
-	public boolean toggleServing() {
-		D_Justification m = D_Justification.getJustByJust_Keep(this);
-		m.setBroadcasted(!m.isBroadcasted());
-		m.storeRequest();
-		m.releaseReference();
-		return m.isBroadcasted();
-	}
-	public Object getTitleOrMy() {
-		String n = mydata.name;
-		if (n != null) return n;
-		return getJustificationTitle();
-	}
-	public Object getCategoryOrMy() {
-		String n = mydata.category;
-		if (n != null) return n;
-		return null;//this.getCategory();
-	}
-	public Object getCreatorOrMy() {
-		String n = mydata.creator;
-		if (n != null) return n;
-		if (this.constituent_ID != null) this.constituent = D_Constituent.getConstByLID(constituent_ID, true, false);
-		if (this.constituent == null) return null;
-		return this.constituent.getNameOrMy();
-	}
-	public void setNameMy(String _name) {
-		this.mydata.name = _name;
-		this.setPreferencesDate();
-		this.dirty_mydata = true;
-	}
-	public void setCreatorMy(String _creat) {
-		this.mydata.creator = _creat;
-		this.setPreferencesDate();
-		this.dirty_mydata = true;
-	}
-	public void setCategoryMy(String _cat) {
-		this.mydata.category = _cat;
-		this.setPreferencesDate();
-		this.dirty_mydata = true;
+	public long getActivityNb_ByChoice(String choice) {
+		try {
+			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_signatures_count_with_choice_choice,
+					new String[]{choice, this.getLIDstr()}, DEBUG);
+			if (orgs.size() > 0) return Util.lval(orgs.get(0).get(0));
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return 0;
 	}
 
-	public Object getVotes() {
-		return votes;
+	/**
+	 * Number of signature with the support choice: D_Vote.DEFAULT_YES_COUNTED_LABEL
+	 * Not used (not cached)
+	 * @return
+	 */
+	public long getActivityNb_Support_Choice() {
+		try {
+			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_signatures_count_with_choice_choice,
+					new String[]{D_Vote.DEFAULT_YES_COUNTED_LABEL, this.getLIDstr()}, DEBUG);
+			if (orgs.size() > 0) return Util.lval(orgs.get(0).get(0));
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return 0;
 	}
-	public void setVotes(Object v) {
-		votes = v;
+	
+	/**
+	 * ForAllJustifications
+	 */
+	private static final String sql_no_choice_no_answer = 
+			"SELECT "
+			+ "j." + table.justification.justification_ID 
+			+ ", count(*) AS cnt "
+			+ ", max(s."+table.signature.justification_ID+") AS maxsignID "
+			+" FROM "+table.justification.TNAME+" AS j "
+			+" LEFT JOIN "+table.signature.TNAME+" AS s ON(s."+table.signature.justification_ID+"=j."+table.justification.justification_ID+")"+
+			" WHERE j."+table.justification.motion_ID + "=?"+
+			" GROUP BY j."+table.justification.justification_ID+
+			" ORDER BY cnt DESC"+
+			";";
+	private static final String sql_choice_no_answer = 
+			"SELECT "
+			+ "j."+table.justification.justification_ID 
+			+ ", count(*) AS cnt "
+			+" FROM "+table.justification.TNAME+" AS j "
+			+" JOIN "+table.signature.TNAME+" AS s ON(s."+table.signature.justification_ID+"=j."+table.justification.justification_ID+")"+
+			" WHERE s."+table.signature.choice+"=? AND j."+table.justification.motion_ID + "=?"+
+			" GROUP BY j."+table.justification.justification_ID+
+			" ORDER BY cnt DESC"+
+			";";
+	private static final String sql_no_choice_answer = 
+			"SELECT "
+			+ "j."+table.justification.justification_ID
+			+ ", count(*) AS cnt "
+			+ ", max(s."+table.signature.justification_ID+") AS maxsignID "
+			+" FROM "+table.justification.TNAME+" AS j "
+			+" LEFT JOIN "+table.signature.TNAME+" AS s ON(s."+table.signature.justification_ID+"=j."+table.justification.justification_ID+")"+
+			" WHERE j."+table.justification.motion_ID + "=? AND j."+table.justification.answerTo_ID+"=? "+
+			" GROUP BY j."+table.justification.justification_ID+
+			" ORDER BY cnt DESC"+
+			";";
+	private static final String sql_choice_answer = 
+			"SELECT "
+			+ "j."+table.justification.justification_ID
+			+ ", count(*) AS cnt "
+			+" FROM "+table.justification.TNAME+" AS j "
+			+" JOIN "+table.signature.TNAME+" AS s ON(s."+table.signature.justification_ID+"=j."+table.justification.justification_ID+")"+
+			" WHERE s."+table.signature.choice+"=? AND j."+table.justification.motion_ID + "=? AND j."+table.justification.answerTo_ID+"=? "+
+			" GROUP BY j."+table.justification.justification_ID+
+			" ORDER BY cnt DESC"+
+			";";
+	static final int SELECT_ALL_JUST_LID = 0;
+	static final int SELECT_ALL_JUST_CNT = 1; //7;
+	static final int SELECT_ALL_JUST_MAX_JUST_ID_FOR_SIGN = 2; //10;// only for: sql_no_choice_no_answer and sql_no_choice_answer
+	
+	/**
+	 * If provided crt_choice is null, then return all justifications for this motion.
+	 * If provided crt_answered_LID is not null, filter and get only those justifications answering it.
+	 * 
+	 * Returns an array of three columns. 
+	 * On first column (SELECT_ALL_JUST_LID), get the justification LID
+	 * On second column (SELECT_ALL_JUST_CNT), get the number of votes/results for this justification
+	 * On third column (SELECT_ALL_JUST_MAX_JUST_ID_FOR_SIGN), get the LID for justification (or NULL if no signature)
+	 * 
+	 * @param crt_motion_LID
+	 * @param crt_choice
+	 * @param crt_answered_LID
+	 * @return
+	 */
+	public static ArrayList<ArrayList<Object>> getAllJustifications (String crt_motion_LID, String crt_choice, String crt_answered_LID) {
+		ArrayList<ArrayList<Object>> justi = new ArrayList<ArrayList<Object>>();
+		// boolean DEBUG = true;
+		if (DEBUG) System.out.println("D_Justification: getAllJustifications: start");
+		try {
+			DBInterface db = Application.db;
+			if ((crt_choice == null) && (crt_answered_LID == null)) justi = db.select(sql_no_choice_no_answer, new String[]{crt_motion_LID}, DEBUG);
+			if ((crt_choice != null) && (crt_answered_LID == null)) justi = db.select(sql_choice_no_answer, new String[]{crt_choice, crt_motion_LID}, DEBUG);
+			if ((crt_choice == null) && (crt_answered_LID != null)) justi = db.select(sql_no_choice_answer, new String[]{crt_motion_LID, crt_answered_LID}, DEBUG);
+			if ((crt_choice != null) && (crt_answered_LID != null)) justi = db.select(sql_choice_answer, new String[]{crt_choice, crt_motion_LID, crt_answered_LID}, DEBUG);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return justi;
 	}
-	static final String sql_answer = 
-		"SELECT "+table.justification.justification_title+
-		","+table.justification.global_justification_ID+
-		","+table.justification.justification_ID+
-		" FROM "+table.justification.TNAME+
-		" WHERE "+table.justification.motion_ID+"=?;";
-
-	public static ArrayList<JustGIDItem> getAnswerToChoice(
-			String motionID) 
-		{
-			ArrayList<ArrayList<Object>> j;
-			ArrayList<JustGIDItem> r = new ArrayList<JustGIDItem>();
-			try {
-				j = Application.db.select(sql_answer, new String[]{motionID}, DEBUG);
-			} catch (P2PDDSQLException e) {
-				e.printStackTrace();
-				return r;
-			}
-			for (ArrayList<Object> _j :j){
-				String gid = Util.getString(_j.get(1));
-				String id = Util.getString(_j.get(2));
-				String name = Util.getString(_j.get(0));
-				r.add(new JustGIDItem(gid, id, name));
-			}
-			return r;
-	}
-
-	public long getProviderID() {
-		return this.peer_source_ID;
-	}
-	public D_Peer getProvider() {
-		if (peer_source_ID <= 0) return null;
-		return D_Peer.getPeerByLID(peer_source_ID, true, false);
-	}
-
-	public boolean isHidden() {
-		return this.hidden;
+	public static class JustificationSupportEntry {
+		private String justification_LID;
+		private int support_cnt;
+		public long getJustification_LID() {
+			return Util.lval(justification_LID);
+		}
+		public String getJustification_LIDstr() {
+			return justification_LID;
+		}
+		public void setJustification_LID(String justification_LID) {
+			this.justification_LID = justification_LID;
+		}
+		public String getSupportCntStr() {
+			return "" + support_cnt;
+		}
+		public int getSupportCnt() {
+			return support_cnt;
+		}
+		public void setSupportCnt(int support_cnt) {
+			this.support_cnt = support_cnt;
+		}
 	}
 	/**
-	 * sets dirty preferences
-	 * @param h
+	 * Returns a list with the count of support of type "choice" for each justification of the motion in parameter.
+	 * Choice type null means all signatures.
+	 * 
+	 * @param crt_motion_LID
+	 * @param crt_choice
+	 * @param crt_answered_LID
 	 * @return
 	 */
-	public boolean setHidden(boolean h) {
-		boolean old = this.hidden;
-		this.hidden = h;
-		this.setPreferencesDate();
-		this.dirty_preferences = true;
-		return old;
+	public static ArrayList<JustificationSupportEntry> getAllJustificationsCnt (String crt_motion_LID, String crt_choice, String crt_answered_LID) {
+
+		ArrayList<JustificationSupportEntry> justi = new ArrayList<JustificationSupportEntry>();
+		
+		ArrayList<ArrayList<Object>> js = getAllJustifications(crt_motion_LID, crt_choice, crt_answered_LID);
+		
+		for (ArrayList<Object> j: js) {
+			JustificationSupportEntry _j = new JustificationSupportEntry();
+			_j.setJustification_LID(Util.getString(j.get(SELECT_ALL_JUST_LID)));
+			_j.setSupportCnt(Util.ival(j.get(SELECT_ALL_JUST_CNT), 0));
+			if (j.size() > SELECT_ALL_JUST_MAX_JUST_ID_FOR_SIGN && j.get(SELECT_ALL_JUST_MAX_JUST_ID_FOR_SIGN) == null) {
+				_j.setSupportCnt(0);
+			}
+			justi.add(_j);
+		}
+		return justi;
+	}
+
+	Boolean __LastGIDValid = null;
+	public boolean isLastGIDChecked() {
+		return __LastGIDValid != null;//__isLastGIDChecked;
+	}
+	public Boolean getLastGIDValid() {
+		return __LastGIDValid;
+	}
+	public void setLastGIDValid(Boolean result) {
+		__LastGIDValid = result;
+	}
+	/**
+	 * Returns the last valid GID if available
+	 * @param refresh 
+	 * @return
+	 */
+	public Boolean getGIDValid_WithMemory(boolean refresh) {
+		Boolean result;
+		if (!refresh && isLastGIDChecked()) result = getLastGIDValid();
+		else {
+			//System.out.println("D_Motion: getSignValid_WithMemory: check GID");
+			String newGID = this.make_ID();
+			if (newGID == null) result = new Boolean(false);
+			else result = new Boolean(newGID.equals(this.getGID()));
+			setLastGIDValid((Boolean)result);
+		}
+		return result;
+	}
+	Boolean __LastSignValid = null;
+	public boolean isLastSignChecked() {
+		return __LastSignValid != null;//__isLastGIDChecked;
+	}
+	public Boolean getLastSignValid() {
+		return __LastSignValid;
+	}
+	public void setLastSignValid(Boolean result) {
+		__LastSignValid = result;
+	}
+	public Boolean getSignValid_WithMemory(boolean refresh) {
+		Boolean result;
+		if (! refresh && isLastSignChecked()) result = getLastSignValid();
+		else {
+			byte[] sgn = this.getSignature();
+			if (sgn == null) result = new Boolean(false);
+			//else result = new Boolean(sgn.length > 0);
+//			//System.out.println("D_Motion: getSignValid_WithMemory: check Sign");
+//			if ((getGID() == null) || (getConstituentGID() == null)) result = new Boolean(false);
+			else result = new Boolean(verifySignature());
+			
+			setLastSignValid((Boolean)result);
+		}
+		return result;
+	}
+
+	/**
+	 * Returns the title document raw
+	 * @return
+	 */
+	public String getJustificationTitleText() {
+		if (getJustificationTitle() == null) return null;
+		return this.getJustificationTitle().title_document.getDocumentUTFString();
+	}
+	/**
+	 * Returns the title format
+	 * @return
+	 */
+	public String getJustificationTitleFormat() {
+		if (getJustificationTitle() == null) return null;
+		return this.getJustificationTitle().title_document.getFormatString();
+	}
+	/**
+	 * sets dirty
+	 * @param new_text
+	 */
+	public void setJustificationTitleText(String new_text) {
+		if (! Util.equalStrings_null_or_not(new_text, this.getJustificationTitleText())) {
+			this.getJustificationTitle().title_document.setDocumentString(new_text);
+			this.dirty_main = true;
+		}
+	}
+	/**
+	 * sets dirty
+	 * @param new_text
+	 */
+	public void setJustificationTitleFormat(String new_text) {
+		if (! Util.equalStrings_null_or_not(new_text, this.getJustificationTitleFormat())) {
+			this.getJustificationTitle().title_document.setFormatString(new_text);
+			this.dirty_main = true;
+		}
+	}
+	/**
+	 * Returns the body document raw
+	 * @return
+	 */
+	public String getJustificationTextText() {
+		if (getJustificationText() == null) return null;
+		return this.getJustificationText().getDocumentUTFString();
+	}
+	/**
+	 * Returns the body format
+	 * @return
+	 */
+	public String getJustificationTextFormat() {
+		if (getJustificationText() == null) return null;
+		return this.getJustificationText().getFormatString();
+	}
+	/**
+	 * sets dirty
+	 * @param new_text
+	 */
+	public void setJustificationTextText(String new_text) {
+		if (! Util.equalStrings_null_or_not(new_text, this.getJustificationTextText())) {
+			this.getJustificationText().setDocumentString(new_text);
+			this.dirty_main = true;
+		}
+	}
+	/**
+	 * sets dirty
+	 * @param new_text
+	 */
+	public void setJustificationTextFormat(String new_text) {
+		if (! Util.equalStrings_null_or_not(new_text, this.getJustificationTextFormat())) {
+			this.getJustificationText().setFormatString(new_text);
+			this.dirty_main = true;
+		}
+	}
+	/**
+	 * MARKS DIRTY.
+	 * @param new_text
+	 * @param editor_format
+	 */
+	public void setJustificationTextAndFormat(String new_text, String editor_format) {
+		String old_text = this.getJustificationText().getDocumentString();
+		
+		String old_old_text = this.getJustificationText().getFormatString();
+
+		if (! Util.equalStrings_null_or_not(new_text, old_text)) {
+			this.getJustificationText().setDocumentString(new_text);
+			this.dirty_main = true;
+		}
+		if (! Util.equalStrings_null_or_not(editor_format, old_old_text)) {
+			this.getJustificationText().setFormatString(editor_format);//BODY_FORMAT);
+			this.dirty_main = true;
+		}
+	}
+	public D_Document_Title getJustificationTitle() {
+		return justification_title;
+	}
+	/**
+	 * Marks always the dirty flag
+	 * 
+	 * @param justification_title
+	 */
+	public void setJustificationTitle(D_Document_Title justification_title) {
+		this.justification_title = justification_title;
+		this.dirty_main = true;
+	}
+	public D_Document getJustificationText() {
+		return justification_text;
+	}
+	/**
+	 * Marks always the dirty flag
+	 * @param justification_text
+	 */
+	public void setJustificationText(D_Document justification_text) {
+		this.justification_text = justification_text;
+		this.dirty_main = true;
+	}
+
+	public void resetCache() {
+		__LastSignValid = null;
+		__LastGIDValid = null;
+		//supports_memory.clear(); //.remove(new Integer(_choice));
+		countNews_memory.clear();
+		activity_memory.clear();
 	}
 }
 

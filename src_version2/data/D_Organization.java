@@ -10,6 +10,7 @@ import hds.ResetOrgInfo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -451,7 +452,27 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (DEBUG) err.println("D_Organization: <init(gID_gIDH)>: org_gidh: "+gIDH);
 		init_ByGID(gID, gIDH, create, __peer);
 	}
-	
+	/**
+	 * 
+	 * @param _org_name
+	 * @return
+	 */
+	public static D_Organization createGrassrootOrganization(String _org_name) {
+		D_Organization new_org = D_Organization.getEmpty();
+		new_org.name = _org_name;
+		//new_org.concepts.name_motion=new String[]{name};
+		if (new_org.params == null)
+			new_org.params = new D_OrgParams();
+		new_org.params.certifMethods = table.organization._GRASSROOT;
+		new_org.setTemporary(false);
+		new_org.setCreationDate();
+		//D_Organization.DEBUG = true;
+		String GID = new_org.global_organization_IDhash = new_org.global_organization_ID = new_org.getOrgGIDandHashForGrassRoot(); // sign();
+		
+		//D_Organization org = D_Organization.getOrgByGID_or_GIDhash(GID, GID, true, true, true, null);
+		D_Organization.storeRemote(new_org, null);
+		return new_org;
+	}
 	/**
 	 * 
 	 * @param GID
@@ -492,7 +513,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @param load_Globals 
 	 * @return
 	 */
-	static private D_Organization getOrgByLID_AttemptCacheOnly_NoKeep(long ID, boolean load_Globals) {
+	static public D_Organization getOrgByLID_AttemptCacheOnly_NoKeep(long ID, boolean load_Globals) {
 		if (ID <= 0) return null;
 		Long id = new Long(ID);
 		D_Organization crt = D_Organization_Node.loaded_org_By_LocalID.get(id);
@@ -514,7 +535,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @param keep : if true, avoid releasing this until calling releaseReference()
 	 * @return
 	 */
-	static private D_Organization getOrgByLID_AttemptCacheOnly(Long LID, boolean load_Globals, boolean keep) {
+	static public D_Organization getOrgByLID_AttemptCacheOnly(Long LID, boolean load_Globals, boolean keep) {
 		if (LID == null) return null;
 		if (keep) {
 			synchronized(monitor_object_factory) {
@@ -533,9 +554,23 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		}
 	}
 
+	/**
+	 * This calls the version with "long LID"
+	 * @param ID
+	 * @param load_Globals
+	 * @param keep
+	 * @return
+	 */
 	static public D_Organization getOrgByLID(String ID, boolean load_Globals, boolean keep) {
 		return getOrgByLID(Util.lval(ID), load_Globals, keep);
 	}
+	/**
+	 * 
+	 * @param ID
+	 * @param load_Globals
+	 * @param keep
+	 * @return
+	 */
 	static public D_Organization getOrgByLID(long ID, boolean load_Globals, boolean keep) {
 		if (ID <= 0) {
 			if (DEBUG) Util.printCallPath("Why?");
@@ -1029,6 +1064,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.params.creation_time = Util.getCalendar(Util.getString(row.get(table.organization.ORG_COL_CREATION_DATE)), Util.CalendargetInstance());
 		this.reset_date = Util.getCalendar(Util.getString(row.get(table.organization.ORG_COL_RESET_DATE)), null);
 		this.params.certificate = Util.byteSignatureFromString(Util.getString(row.get(table.organization.ORG_COL_CERTIF_DATA),null));
+		this.params.mWeightsType = Util.ival(row.get(table.organization.ORG_COL_WEIGHTS_TYPE),table.organization.WEIGHTS_TYPE_DEFAULT);
+		this.params.mWeightsMax = Util.ival(row.get(table.organization.ORG_COL_WEIGHTS_MAX),table.organization.WEIGHTS_MAX_DEFAULT);
 		//String 
 		this.creator_ID = Util.getString(row.get(table.organization.ORG_COL_CREATOR_ID));
 		this.blocked = Util.stringInt2bool(row.get(table.organization.ORG_COL_BLOCK),false);
@@ -1749,6 +1786,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				p[table.organization.ORG_COL_SCORES] = D_OrgConcepts.stringFromStringArray(params.default_scoring_options);//, table.organization.ORG_SCORE_SEP,null);
 				p[table.organization.ORG_COL_CATEG] = params.category;
 				p[table.organization.ORG_COL_CERTIF_METHODS] = ""+params.certifMethods;
+				p[table.organization.ORG_COL_WEIGHTS_TYPE] = ""+params.mWeightsType;
+				p[table.organization.ORG_COL_WEIGHTS_MAX] = ""+params.mWeightsMax;
 				p[table.organization.ORG_COL_HASH_ALG] = params.hash_org_alg;
 				//p[table.organization.ORG_COL_HASH] = (params.hash_org!=null)?Util.byteToHex(params.hash_org, table.organization.ORG_HASH_BYTE_SEP):null;
 				p[table.organization.ORG_COL_CREATION_DATE] = getCreationDate_str();
@@ -1857,6 +1896,44 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return result;
 	}
 	/**
+	 * 
+	 * @return
+	 */
+	public D_OrgParam[] getNeighborhoodSubdivisionsDefault() {
+		D_OrgParam[] gop = getOrgParams();
+		if (gop == null) return new D_OrgParam[0];
+		int nb = getNumberOfNeighborhoods(gop);
+		
+		// first fill the result array with all neighborhoods without an order;
+		D_OrgParam[] result = new D_OrgParam[nb];
+		int j = 0;
+		for (int i = 0; i < gop.length; i++) {
+			if (gop[i].partNeigh > 0)
+				result[j ++] = gop[i];
+		}
+		
+		Arrays.sort(result, new Comparator<D_OrgParam>() {
+
+			@Override
+			public int compare(D_OrgParam o1, D_OrgParam o2) {
+				return o1.partNeigh - o2.partNeigh;
+			}
+			
+		});
+		
+		return result;
+	}
+	public int getNumberOfNeighborhoods(D_OrgParam[] gop) {
+		if (gop == null) return 0;
+		int result = 0;
+		for (int i = 0; i < gop.length; i ++) {
+			if (gop[i].partNeigh > 0) result ++;
+		}
+		return result;
+	}
+
+	/**
+	 * This is loading them.
 	 * 
 	 * @param orgID local organization ID
 	 * @param orgParam An OrgParam[] array
@@ -2114,22 +2191,37 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (DEBUG || DBG) System.out.println("D_Org:isIDavailable: 1:"+org.signature);
 		return 1;
 	}
+	/**
+	 * Creates choices by taking a set of String alternatives and setting their short names to numbers starting from 0
+	 * @param opts
+	 * @return
+	 */
 	public static D_MotionChoice[] getDefaultMotionChoices(String[] opts) {
 		D_MotionChoice[] result;
-		if(opts == null) return null;
+		if (opts == null) return null;
 		result = new D_MotionChoice[opts.length];
-		for(int k=0; k<result.length; k++) {
-			result[k]=new D_MotionChoice(opts[k], ""+k);
+		for (int k = 0; k < result.length; k ++) {
+			result[k] = new D_MotionChoice(opts[k], "" + k);
 		}
 		return result;		
 	}
+	/**
+	 * Returns custom options or in their absence
+	 * the default array of strings: __("Endorse"),__("Abstain"),__("Oppose")
+	 * with short names: 0, 1, 2, ...
+	 * @return
+	 */
 	public D_MotionChoice[] getDefaultMotionChoices() {
 		D_MotionChoice[] result;
 		String[] opts = this.params.default_scoring_options;
-		if(opts==null) opts = get_DEFAULT_OPTIONS();
+		if (opts == null) opts = get_DEFAULT_OPTIONS();
 		result = getDefaultMotionChoices(opts);
 		return result;
 	}
+	/**
+	 * Returns the array of strings: __("Endorse"),__("Abstain"),__("Oppose")
+	 * @return
+	 */
 	public static String[] get_DEFAULT_OPTIONS() {
 		String[] DEFAULT_OPTIONS = new String[]{__("Endorse"),__("Abstain"),__("Oppose")};
 		return DEFAULT_OPTIONS;
@@ -2750,23 +2842,6 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return org.getLIDstr_forced();
 	}
 	/**
-	 * TODO: Have to implement this
-	 * @return
-	 */
-	public boolean hasWeights() {
-		return true;
-	}
-	/**
-	 * TODO: Have to implement this
-	 * Returns null for no limit
-	 * @return
-	 */
-	public Comparable getMaxVotingWeight() {
-		// 
-		//return null;
-		return 1;
-	}
-	/**
 	 * Dirty: broadcasted, blocked, requested, preapproved, preferences_date
 	 */
 	public void storeLocalFlags() {
@@ -2849,9 +2924,67 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.blocked = blocked2;
 		dirty_main = true;
 	}
+	/**
+	 * Returns false if WEIGHTS_TYPE_NONE
+	 * @return
+	 */
+	public boolean hasWeights() {
+		if (this.getWeightsType() == table.organization.WEIGHTS_TYPE_NONE)
+			return false;
+		return true;
+	}
+	/**
+	 * table.organization.WEIGHTS_TYPE_NONE = 0
+	 * table.organization.WEIGHTS_TYPE_0_1 = 1
+	 * table.organization.WEIGHTS_TYPE_INT = 2
+	 * @return
+	 */
+	public int getWeightsType() {
+		if (this.params == null) return table.organization.WEIGHTS_TYPE_DEFAULT;
+		return this.params.mWeightsType;
+	}
+	/**
+	 * table.organization.WEIGHTS_TYPE_NONE = 0
+	 * table.organization.WEIGHTS_TYPE_0_1 = 1
+	 * table.organization.WEIGHTS_TYPE_INT = 2
+	 * 
+	 * @param weightsType
+	 */
+	public void setWeightsType(int weightsType) {
+		if (this.params == null) this.params = new D_OrgParams();
+		this.params.mWeightsType = weightsType;
+		dirty_main = true;
+	}
+	/**
+	 * A negative number -1 signals infinity (no limit)
+	 * 
+	 * @return
+	 */
+	public int getWeightsMax() {
+		if (this.params == null) return table.organization.WEIGHTS_MAX_DEFAULT;
+		return this.params.mWeightsMax;
+	}
+	/**
+	 * A negative number -1 signals infinity (no limit)
+	 * 
+	 * @param weightsMax
+	 */
+	public void setWeightsMax(int weightsMax) {
+		if (this.params == null) this.params = new D_OrgParams();
+		this.params.mWeightsMax = weightsMax;
+		dirty_main = true;
+	}
+	/**
+	 * The value that is disseminated
+	 * @return
+	 */
 	public boolean getBroadcastRule() {
 		return this.broadcast_rule;
 	}
+	/**
+	 * The value that is certified (requested by creator)
+	 * @param val
+	 */
 	public void setBroadcastRule(boolean val) {
 		this.broadcast_rule = val;
 		this.dirty_main = true;
@@ -2988,30 +3121,24 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public boolean hasCreatorID() {
 		return this.getCreatorLID() != null;
 	}
-	/**
-	 * Returns the org LIDs
-	 * @return
-	 */
-	public static ArrayList<ArrayList<Object>> getListOrgLIDs() {
-		final String sql_orgs = "SELECT "+
-				table.organization.organization_ID
-				//+","+table.organization.certification_methods+","
-				//+table.organization.global_organization_ID_hash+","+table.organization.creator_ID+
-				//  ","+table.organization.blocked+","+table.organization.broadcasted+","+table.organization.requested
-				+" FROM "+table.organization.TNAME+";";
-		try {
-			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_orgs, new String[]{},DEBUG);
-			return orgs;
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
 
+//	public String getNameOrMy() {
+//		if (getNameMy() != null) return getNameMy();
+//		return this.getOrgName();
+//	}
 	public String getOrgNameOrMy() {
 		String n = mydata.name;
 		if (n != null) return n;
 		return getOrgName();
+	}
+
+	public void setOrgNameMy(String _name) {
+		this.mydata.name = _name;
+		setPreferencesDate();
+		this.dirty_mydata = true;
+	}
+	public String getOrgNameMy() {
+		return this.mydata.name;
 	}
 	
 	/**
@@ -3053,12 +3180,6 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	public String getCategoryMy() {
 		return mydata.category;
-	}
-
-	public void setNameMy(String _name) {
-		this.mydata.name = _name;
-		setPreferencesDate();
-		this.dirty_mydata = true;
 	}
 
 	public void setCreatorMy(String creator2) {
@@ -3212,6 +3333,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			}
 		}
 	}
+	/**
+	 * Returning the preloaded params
+	 * @return
+	 */
 	public D_OrgParam[] getOrgParams() {
 		if (params == null) return null;
 		if (params.orgParam == null) return null;
@@ -3601,6 +3726,14 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return name == null;
 	}
 	public final static String sql_all_orgs = "SELECT "+table.organization.organization_ID+" FROM "+table.organization.TNAME+";";
+	/**
+	 * The index of organization LID in array returned by getAllOrganizations
+	 */
+	public final static int SELECT_ALL_ORG_LID = 0;
+	/**
+	 * 
+	 * @return
+	 */
 	public static java.util.ArrayList<java.util.ArrayList<Object>> getAllOrganizations() {
 		ArrayList<ArrayList<Object>> result;
 		try {
@@ -3613,6 +3746,91 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		}
 		return result;
 	}
+//	/**
+//	 * Returns the org LIDs
+//	 * @return
+//	 */
+//	public static ArrayList<ArrayList<Object>> getListOrgLIDs() {
+//		final String sql_orgs = "SELECT "+
+//				table.organization.organization_ID
+//				//+","+table.organization.certification_methods+","
+//				//+table.organization.global_organization_ID_hash+","+table.organization.creator_ID+
+//				//  ","+table.organization.blocked+","+table.organization.broadcasted+","+table.organization.requested
+//				+" FROM "+table.organization.TNAME+";";
+//		try {
+//			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_orgs, new String[]{},DEBUG);
+//			return orgs;
+//		} catch (P2PDDSQLException e) {
+//			e.printStackTrace();
+//		}
+//		return null;
+//	}
+
+	Hashtable<Integer, Long> countNews_memory = new Hashtable<Integer, Long>();
+	/**
+	 * With cache
+	 * 
+	 * @param days
+	 * @param refresh
+	 * @return
+	 */
+	public long getCountNews_WithCache(int days, boolean refresh) {
+		if (! refresh) {
+			Long r = countNews_memory.get(new Integer(days));
+			if (r != null) return r;
+		}
+		long result = D_News.getCount(this.getLIDstr_forced(), days);
+		countNews_memory.put(new Integer(days), new Long(result));
+		return result;
+	}
+	
+	Hashtable<Integer, Long> orgActivity_memory = new Hashtable<Integer, Long>();
+	/**
+	 * With cache
+	 * 
+	 * @param days
+	 * @param refresh
+	 * @return
+	 */
+	public long getCountActivity_WithCache(int days, boolean refresh) {
+		if (! refresh) {
+			Long r = orgActivity_memory.get(new Integer(days));
+			if (r != null) return r;
+		}
+		long result = D_Vote.getOrgCount(this.getLIDstr_forced(), days);
+		orgActivity_memory.put(new Integer(days), new Long(result));
+		return result;
+	}
+	
+	/**
+	 * A cache of the number of constituents in this organization
+	 */
+	Long orgConstituentsNB_memory = null;
+	/**
+	 * With cache
+	 * 
+	 * @param days
+	 * @param refresh
+	 * @return
+	 */
+	public Object getConstNBinOrganization_WithCache(boolean refresh) {
+		if (! refresh) {
+			Long r = orgConstituentsNB_memory;
+			if (r != null) return r;
+		}
+		Object result = D_Constituent.getConstNBinOrganization(this.getLIDstr_forced());
+		orgConstituentsNB_memory = Util.Lval(result);
+		return result;
+	}
+	/**
+	 * TODO
+	 * This does not yet have cached statistics.
+	 */
+	public void resetCache() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }
 
 class D_Organization_SaverThread extends util.DDP2P_ServiceThread {

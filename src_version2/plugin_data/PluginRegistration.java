@@ -133,7 +133,7 @@ public class PluginRegistration {
 		 * @param editor  TableCellEditor
 		 */
 		RegisterPlugins(String plugin_GID, String plugin_name, String plugin_info, String plugin_url, Object renderer, Object editor){
-			super("RegisterPlugins", true);
+			super("RegisterPlugins", false, false, null);
 			this.plugin_GID = plugin_GID;
 			this.plugin_name = plugin_name; 
 			this.plugin_info= plugin_info;

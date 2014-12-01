@@ -33,12 +33,17 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 public
-class D_OrgParams extends ASNObj{
+class D_OrgParams extends ASNObj {
 	public int certifMethods; //ENUM
 	public String hash_org_alg = table.organization.hash_org_alg_crt; //Printable
 	//public byte[] hash_org; //OCT STR
 	public Calendar creation_time;
 	public String creator_global_ID;
+	/**
+	 * 0 for all constituents having weight 0 or 1
+	 */
+	public int mWeightsType = table.organization.WEIGHTS_TYPE_DEFAULT;
+	public int mWeightsMax = table.organization.WEIGHTS_MAX_DEFAULT;
 	public String category; //UTF8
 	public byte[] certificate; //OCT STR
 	public String[] default_scoring_options; // SEQ OF UTF8
@@ -49,6 +54,8 @@ class D_OrgParams extends ASNObj{
 	public D_OrgParam[] orgParam; // SEQ of 
 	public String toString() {
 		return "Org Params: ["+
+		";\n     mWeightsType="+mWeightsType+
+		";\n     mWeightMax="+mWeightsMax+
 		";\n     certifMethods="+Util.nullDiscrim(certifMethods)+
 		";\n     hash_org_alg="+Util.nullDiscrim(hash_org_alg)+
 		//";\n hash_org="+((hash_org==null)?"NULL":"\""+Util.byteToHex(hash_org, ":")+"\"")+
@@ -87,13 +94,17 @@ class D_OrgParams extends ASNObj{
 		if(instructions_new_motions != null) enc.addToSequence(new Encoder(instructions_new_motions).setASN1Type(DD.TAG_AC6));
 		if(instructions_registration != null) enc.addToSequence(new Encoder(instructions_registration).setASN1Type(DD.TAG_AC7));
 		if(description != null) enc.addToSequence(new Encoder(description).setASN1Type(DD.TAG_AC10));
-		if(languages != null) enc.addToSequence(Encoder.getStringEncoder(languages, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC8));
-		if(orgParam!=null) {
+		if (languages != null) enc.addToSequence(Encoder.getStringEncoder(languages, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC8));
+		if (orgParam != null) {
 			D_OrgParam[] _orgParam = D_Organization.getNonEphemeral(orgParam);
 			enc.addToSequence(Encoder.getEncoder(_orgParam, dictionary_GIDs).setASN1Type(DD.TAG_AC9));
 		}
+		if (mWeightsType != table.organization.WEIGHTS_TYPE_DEFAULT)
+			enc.addToSequence(new Encoder(mWeightsType).setASN1Type(DD.TAG_AC11));
+		if (mWeightsMax != table.organization.WEIGHTS_MAX_DEFAULT)
+			enc.addToSequence(new Encoder(mWeightsMax).setASN1Type(DD.TAG_AC12));
 		//enc.addToSequence(new Encoder(hash_org));
-		if(ASNSyncRequest.DEBUG)System.out.println("Encoded OrgParams: "+this);
+		if (ASNSyncRequest.DEBUG)System.out.println("Encoded OrgParams: "+this);
 		return enc;
 	}
 	@Override
@@ -112,6 +123,8 @@ class D_OrgParams extends ASNObj{
 		if(dec.getTypeByte()==DD.TAG_AC10) description = dec.getFirstObject(true).getStringAnyType();
 		if(dec.getTypeByte()==DD.TAG_AC8) languages=dec.getFirstObject(true).getSequenceOf(Encoder.TAG_PrintableString);
 		if(dec.getTypeByte()==DD.TAG_AC9) orgParam = dec.getFirstObject(true).getSequenceOf(Encoder.TYPE_SEQUENCE, new D_OrgParam[]{}, new D_OrgParam());
+		if(dec.getTypeByte()==DD.TAG_AC11) mWeightsType = dec.getFirstObject(true).getInteger(DD.TAG_AC11).intValue();
+		if(dec.getTypeByte()==DD.TAG_AC12) mWeightsMax = dec.getFirstObject(true).getInteger(DD.TAG_AC12).intValue();
 		if(dec.getFirstObject(false)!=null) throw new ASN1DecoderFail("Extra Objects in decoder: "+decoder.dumpHex());
 		//hash_org= dec.getFirstObject(true).getBytes(Encoder.TAG_OCTET_STRING);
 		if(ASNSyncRequest.DEBUG)System.out.println("DEcoded OrgParams: "+this);

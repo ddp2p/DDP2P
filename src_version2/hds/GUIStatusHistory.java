@@ -238,7 +238,7 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		for(JustificationsListener l: just_listeners) {
 			if(DEBUG) System.out.println("GUIStatus: fireListener: l="+l);
 			try{
-				if(just==null) l.justUpdate(null, 0, sync, just);
+				if (just == null) l.justUpdate(null, 0, sync, just);
 				else l.justUpdate(just.getLIDstr(), 0, sync, just);
 			}catch(Exception e){e.printStackTrace();}
 		}
@@ -248,7 +248,7 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		if(just_listeners.contains(l)) return;
 		just_listeners.add(l);
 		D_Justification just = getSelectedJust();
-		if(just != null){
+		if (just != null) {
 			if(DEBUG) System.out.println("GUIStatus: addJusts Listener update "+l);
 			l.justUpdate(just.getLIDstr(), 0, false, just);
 		}

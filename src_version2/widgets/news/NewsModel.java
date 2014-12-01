@@ -483,7 +483,8 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 			}
 		}
 		
-		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+			// can be daemon
 			@Override
 			public void _run() {
 				((NewsModel)ctx).fireTableDataChanged();
@@ -498,7 +499,8 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 			//i.revalidate();
 			
 			class O {int row_model; NewsTable crt_view; O(int _row, NewsTable _view) {row_model = _row; crt_view = _view;}}
-			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, new O(row_model,crt_view)) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, new O(row_model,crt_view)) {
+				// daemon?
 				@Override
 				public void _run() {
 					O o = (O)ctx;

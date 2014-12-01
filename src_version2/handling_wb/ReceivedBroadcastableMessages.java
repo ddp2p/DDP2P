@@ -176,8 +176,8 @@ public class ReceivedBroadcastableMessages {
 					//goid = GOID_by_local(added_Org);
 					}
 					if(goid == null) {
-						goid = msg.constituent.global_organization_ID;
-						pm.constituent_ID_hash.add(msg.constituent.global_constituent_id_hash);
+						goid = msg.constituent.getOrganizationGID();
+						pm.constituent_ID_hash.add(msg.constituent.getGIDH());
 					}
 					if(goid==null){
 						if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage: So far : Total msg received:"+all_msg_received+" Total myInterest msg received:"+ all_myInterest_msg_received+" Total msg received not my interest:"+all_not_myInterest_msg_received);
@@ -185,7 +185,7 @@ public class ReceivedBroadcastableMessages {
 					}
 					if(added_Org<=0) added_Org = D_Organization.getLIDbyGID(goid);
 					if(added_Org<=0) added_Org = D_Organization.insertTemporaryGID_long(goid, __peer);
-					int result = D_Constituent.isGIDHash_available(msg.constituent.global_constituent_id_hash, added_Org, false);				
+					int result = D_Constituent.isGIDHash_available(msg.constituent.getGIDH(), added_Org, false);				
 					added_constituent = handle_constituent(pm,msg.constituent,goid,added_Org, __peer);
 					WirelessLog.RCV_logging(WirelessLog.const_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage: .");
@@ -286,15 +286,15 @@ public class ReceivedBroadcastableMessages {
 		long o_ID = -1; // vote.motion.getOrganizationLID();
 		
 		long motion_id = -1;
-		if (vote.getMotion() != null) {
+		if (vote.getMotionFromObjOrLID() != null) {
 			if (DEBUG) System.out.println("with MOTION");
-			if (DEBUG) System.out.println("MOTION Data : "+vote.getMotion());
-			if (o_ID <= 0) o_ID = D_Organization.getLIDbyGID(vote.getMotion().getGID()); //vote.motion.getOrganizationLID();
+			if (DEBUG) System.out.println("MOTION Data : "+vote.getMotionFromObjOrLID());
+			if (o_ID <= 0) o_ID = D_Organization.getLIDbyGID(vote.getMotionFromObjOrLID().getGID()); //vote.motion.getOrganizationLID();
 			RequestData sol_rq = new RequestData();
 			RequestData new_rq = new RequestData();
 			
-			D_Motion m = D_Motion.getMotiByGID(vote.getMotion().getGID(), true, true, true, __peer, o_ID, null);
-			m.loadRemote(vote.getMotion(), sol_rq, new_rq, __peer); //.store(sol_rq, new_rq);//pm should be passed
+			D_Motion m = D_Motion.getMotiByGID(vote.getMotionFromObjOrLID().getGID(), true, true, true, __peer, o_ID, null);
+			m.loadRemote(vote.getMotionFromObjOrLID(), sol_rq, new_rq, __peer); //.store(sol_rq, new_rq);//pm should be passed
 			motion_id = m.storeRequest_getID();
 			m.releaseReference();
 			
@@ -304,14 +304,14 @@ public class ReceivedBroadcastableMessages {
 			if (DEBUG) System.out.println("WITHOUT MOTION");
 		
 		long just_id = -1;
-		if(vote.getJustification()!=null) {
+		if(vote.getJustificationFromObjOrLID()!=null) {
 			if(DEBUG)System.out.println("with JUSTIFICATION");
-			if(DEBUG)System.out.println("JUST Data : "+vote.getJustification());
+			if(DEBUG)System.out.println("JUST Data : "+vote.getJustificationFromObjOrLID());
 			RequestData sol_rq = new RequestData();
 			RequestData new_rq = new RequestData();
 			try {
-				D_Justification j = D_Justification.getJustByGID(vote.getJustification().getGID(), true, true, true, __peer, o_ID, motion_id, vote.getJustification());
-				j.loadRemote(vote.getJustification(), sol_rq, new_rq, __peer);
+				D_Justification j = D_Justification.getJustByGID(vote.getJustificationFromObjOrLID().getGID(), true, true, true, __peer, o_ID, motion_id, vote.getJustificationFromObjOrLID());
+				j.loadRemote(vote.getJustificationFromObjOrLID(), sol_rq, new_rq, __peer);
 				just_id = j.storeRequest_getID();
 				j.releaseReference();
 				//just_id =  vote.justification.store(sol_rq, new_rq);//pm should be passed
@@ -358,8 +358,8 @@ public class ReceivedBroadcastableMessages {
 		String now = Util.getGeneralizedTime();
 		if(DEBUG)System.out.println("Org_id : "+added_Org);
 		if(DEBUG)System.out.println("Global_Org_id : "+goid);
-		if(DEBUG)System.out.println("handle_constituent: Neighborhood data : "+constituent.neighborhood[0]);
-		if(DEBUG)System.out.println("Reaceived : handle_constituent() : CON HASH : "+constituent.global_constituent_id_hash);
+		if(DEBUG)System.out.println("handle_constituent: Neighborhood data : "+constituent.getNeighborhood()[0]);
+		if(DEBUG)System.out.println("Reaceived : handle_constituent() : CON HASH : "+constituent.getGIDH());
 		constituent.setArrivalDate(now);
 		constituent.setOrganization(goid, added_Org);
 		System.out.println("ReceivedBroadcasted : handle_constituent: should handle new received and detect references, in org");

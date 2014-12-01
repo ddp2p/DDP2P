@@ -128,6 +128,10 @@ public class D_Document extends ASNObj{
 	public void setDocumentString(String string) {
 		document = string;
 	}
+	/**
+	 * Returns the document body without format type (assumed UTF8)
+	 * @return
+	 */
 	public String getDocumentUTFString() {
 		return document;
 	}
@@ -174,6 +178,14 @@ public class D_Document extends ASNObj{
 			setDocumentString(string);
 			setFormatString(D_Document.HTM_BODY_FORMAT);
 		}
+	}
+	/**
+	 * Copy the data from doc.
+	 * @param doc
+	 */
+	public void copy(D_Document doc) {
+		this.format = doc.format;
+		this.document = doc.document;
 	}
 }
 

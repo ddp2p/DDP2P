@@ -308,31 +308,31 @@ public class ConstituentHandling {
 			if (DEBUG) System.out.println("ConstituentHandling: integrateNewData constituents k="+k);
 			
 			String submit_ID;
-			if (constituents[k].constituent.external) {
+			if (constituents[k].constituent.isExternal()) {
 				if (DEBUG) System.out.println("ConstituentHandling: integrateNewData constituents external");
-				if (constituents[k].constituent.submitter_ID !=null) submit_ID = constituents[k].constituent.submitter_ID;
-				else submit_ID = D_Constituent.getLIDstrFromGID(constituents[k].constituent.global_submitter_id, Util.Lval(org_local_ID));
+				if (constituents[k].constituent.getSubmitter_ID() !=null) submit_ID = constituents[k].constituent.getSubmitter_ID();
+				else submit_ID = D_Constituent.getLIDstrFromGID(constituents[k].constituent.getSubmitterGID(), Util.Lval(org_local_ID));
 				if (submit_ID == null) {
-					submit_ID = ""+D_Constituent.insertTemporaryGID(constituents[k].constituent.global_submitter_id, null, Util.lval(org_local_ID), peer, default_blocked);
-					new_rq.cons.put(constituents[k].constituent.global_submitter_id, DD.EMPTYDATE);
+					submit_ID = ""+D_Constituent.insertTemporaryGID(constituents[k].constituent.getSubmitterGID(), null, Util.lval(org_local_ID), peer, default_blocked);
+					new_rq.cons.put(constituents[k].constituent.getSubmitterGID(), DD.EMPTYDATE);
 					if (DEBUG) System.out.println("ConstituentHandling: integrateNewData inserted tmp ID="+submit_ID);
 				} else {
-					sol_rq.cons.put(constituents[k].constituent.global_submitter_id, DD.EMPTYDATE);
+					sol_rq.cons.put(constituents[k].constituent.getSubmitterGID(), DD.EMPTYDATE);
 				}
-				constituents[k].constituent.submitter_ID = submit_ID;
+				constituents[k].constituent.setSubmitter_ID(submit_ID);
 			}			
 			String neighborhood_ID;
-			if (constituents[k].constituent.neighborhood_ID != null) neighborhood_ID = constituents[k].constituent.neighborhood_ID;
-			else neighborhood_ID = D_Neighborhood.getLIDstrFromGID(constituents[k].constituent.global_neighborhood_ID, Util.lval(org_local_ID));
+			if (constituents[k].constituent.getNeighborhood_LID() != null) neighborhood_ID = constituents[k].constituent.getNeighborhood_LID();
+			else neighborhood_ID = D_Neighborhood.getLIDstrFromGID(constituents[k].constituent.getNeighborhoodGID(), Util.lval(org_local_ID));
 			
-			if ((neighborhood_ID == null) && (constituents[k].constituent.global_neighborhood_ID != null)) {
+			if ((neighborhood_ID == null) && (constituents[k].constituent.getNeighborhoodGID() != null)) {
 				neighborhood_ID = Util.getStringID(D_Neighborhood
-						.insertTemporaryGID(constituents[k].constituent.global_neighborhood_ID, Util.lval(org_local_ID), peer, default_blocked));
-				new_rq.neig.add(constituents[k].constituent.global_neighborhood_ID);
+						.insertTemporaryGID(constituents[k].constituent.getNeighborhoodGID(), Util.lval(org_local_ID), peer, default_blocked));
+				new_rq.neig.add(constituents[k].constituent.getNeighborhoodGID());
 			} else {
 				//rq.neig.remove(constituents[k].constituent.global_neighborhood_ID);
 			}
-			constituents[k].constituent.neighborhood_ID = neighborhood_ID;
+			constituents[k].constituent.setNeighborhood_LID(neighborhood_ID);
 
 			result |= integrateNewConstituentOPData(sol_rq, new_rq, constituents[k],
 					orgGID, org_local_ID, arrival_time, orgData, peer);

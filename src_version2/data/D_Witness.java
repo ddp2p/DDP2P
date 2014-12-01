@@ -318,7 +318,7 @@ class D_Witness extends ASNObj implements Summary {
 		if (witness != null) {
 			witnessing_global_constituentID = witness.getGID(); //Util.getString(w.get(table.witness.WIT_FIELDS+2));
 			global_organization_ID = witness.getOrgGID(); //Util.getString(w.get(table.witness.WIT_FIELDS+3));
-			organization_ID = witness.getOrganizationIDStr(); //Util.getString(w.get(table.witness.WIT_FIELDS+4));
+			organization_ID = witness.getOrganizationLIDstr(); //Util.getString(w.get(table.witness.WIT_FIELDS+4));
 		}
 		if (DEBUG) System.out.println("D_Witness:init: done: ");
 	}
@@ -1031,7 +1031,7 @@ class D_Witness extends ASNObj implements Summary {
     		long myself_LID = myself.getLID();
     		String myself_GID = myself.getGID();
     		//long organizationID = Util.lval(myself.organization_ID);
-    		String organizationGID = myself.global_organization_ID;
+    		String organizationGID = myself.getOrganizationGID();
     		
     		ArrayList<ArrayList<Object>> sel;
     		String sql="select "+table.witness.witness_ID+" from "+table.witness.TNAME+" where " +

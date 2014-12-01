@@ -140,24 +140,76 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			throw new P2PDDSQLException(e.getLocalizedMessage());
 		}
 	}
-	String sql = "SELECT  "+Util.setDatabaseAlias(table.neighborhood.fields_neighborhoods, "n")
+	public static D_Neighborhood createNeighborhood(D_Organization organization, String _name, String _division, String _subdivisions) {
+		D_Neighborhood result = D_Neighborhood.getEmpty();
+		String subdivisions[] = null;
+		if (_subdivisions != null ) {
+			subdivisions = _subdivisions.split(Pattern.quote(":"));
+		}
+		result = D_Neighborhood.createNeighborhood(organization, null, _name, _division, subdivisions);
+		return result;
+	}
+	/**
+	 * Can also add picture, address, boundary.
+	 * @param org
+	 * @param parent
+	 * @param _name
+	 * @param division
+	 * @param subdivisions
+	 * @return
+	 */
+	public static D_Neighborhood createNeighborhood(D_Organization org, D_Neighborhood parent, String _name, String division, String[] subdivisions) {
+		D_Neighborhood neigh = D_Neighborhood.getEmpty();
+		if (parent != null) {
+			neigh.setParent_GID(parent.getGID());
+			neigh.setName_division(getHead(parent.getNames_subdivisions()));
+			neigh.setName_division_lang(parent.getName_division_lang());
+			neigh.setName_division_charset(parent.getName_division_charset());
+			
+			neigh.setNames_subdivisions(getTail(parent.getNames_subdivisions()));
+			neigh.setNames_subdivisions_lang(parent.getName_subdivision_lang());
+			neigh.setNames_subdivisions_charset(parent.getName_subdivision_charset());
+			
+			neigh.setName_lang(parent.getName_lang());
+			neigh.setName_charset(parent.getName_charset());
+		}
+		neigh.setBroadcasted(true);
+		neigh.setName(_name);
+		neigh.setName_division(division);
+		neigh.setNames_subdivisions(subdivisions);
+		neigh.make_ID();
+		neigh.setTemporary(false);
+		return neigh;
+	}
+	public static String getHead(String[] names_subs) {
+		if (names_subs == null || names_subs.length <= 0) return null;
+		return names_subs[0];
+	}
+	public static String[] getTail(String[] names_subs) {
+		if (names_subs == null || names_subs.length <= 1) return null;
+		String[] r = new String[names_subs.length - 1];
+		for (int k = 0; k < r.length ; k ++)
+			r[k] = names_subs[k];
+		return r;
+	}
+	static final String sql_neighborhood = "SELECT  "+Util.setDatabaseAlias(table.neighborhood.fields_neighborhoods, "n")
 		+ ", p."+table.neighborhood.global_neighborhood_ID
 		+ " FROM "+table.neighborhood.TNAME+" AS n "
 		+ " LEFT JOIN "+table.neighborhood.TNAME+" AS p ON(n."+table.neighborhood.parent_nID+"=p."+table.neighborhood.neighborhood_ID+") "
 		;
-	String cond_ID = sql+" WHERE n."+table.neighborhood.neighborhood_ID+"=?;";
-	String cond_GID = sql+" WHERE n."+table.neighborhood.global_neighborhood_ID+"=?;";
+	static final String sql_neighborhood_cond_ID = sql_neighborhood+" WHERE n."+table.neighborhood.neighborhood_ID+"=?;";
+	static final String sql_neighborhood_cond_GID = sql_neighborhood+" WHERE n."+table.neighborhood.global_neighborhood_ID+"=?;";
 
 	private void init(Long lID) throws Exception {
 		ArrayList<ArrayList<Object>> a;
-		a = Application.db.select(cond_ID, new String[]{Util.getStringID(lID)});
+		a = Application.db.select(sql_neighborhood_cond_ID, new String[]{Util.getStringID(lID)});
 		if (a.size() == 0) throw new Exception("D_Neighborhood:init:None for lID="+lID);
 		init(a.get(0));
 		if(DEBUG) System.out.println("D_Neighborhood: init: got="+this);//result);
 	}
 	private void init(String gID) throws Exception {
 		ArrayList<ArrayList<Object>> a;
-		a = Application.db.select(cond_GID, new String[]{gID});
+		a = Application.db.select(sql_neighborhood_cond_GID, new String[]{gID});
 		if (a.size() == 0) throw new Exception("D_Neighborhood:init:None for GID="+gID);
 		init(a.get(0));
 		if(DEBUG) System.out.println("D_Neighborhood: init: got="+this);//result);
@@ -2241,7 +2293,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	private static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
+	public static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
 //		String sql = 
 //			"SELECT "+table.neighborhood.neighborhood_ID+
 //			" FROM "+table.neighborhood.TNAME+
@@ -2299,29 +2351,69 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public String getNames_subdivisions_str() {
 		return D_Neighborhood.concatSubdivisions(this.getNames_subdivisions());
 	}
-	private String getName_division_lang() {
+	public String getName_division_lang() {
 		return name_division_lang;
 	}
-	private void setName_division_lang(String name_division_lang) {
+	public void setName_division_lang(String name_division_lang) {
 		this.name_division_lang = name_division_lang;
 	}
-	private String getName_division_charset() {
+	public String getName_division_charset() {
 		return name_division_charset;
 	}
-	private void setName_division_charset(String name_division_charset) {
+	public void setName_division_charset(String name_division_charset) {
 		this.name_division_charset = name_division_charset;
 	}
-	private String getName_subdivision_lang() {
+	public String getName_subdivision_lang() {
 		return name_subdivision_lang;
 	}
-	private void setName_subdivision_lang(String name_subdivision_lang) {
+	public void setName_subdivision_lang(String name_subdivision_lang) {
 		this.name_subdivision_lang = name_subdivision_lang;
 	}
-	private String getName_subdivision_charset() {
+	public String getName_subdivision_charset() {
 		return name_subdivision_charset;
 	}
-	private void setName_subdivision_charset(String name_subdivision_charset) {
+	public void setName_subdivision_charset(String name_subdivision_charset) {
 		this.name_subdivision_charset = name_subdivision_charset;
+	}
+	public static final String sql_all_root_neighborhoods =
+			"SELECT " + table.neighborhood.neighborhood_ID +
+			" FROM " + table.neighborhood.TNAME +
+			" WHERE " + table.neighborhood.organization_ID +"=?" +
+					" AND ( " + table.neighborhood.parent_nID + " IS NULL OR " +
+					table.neighborhood.parent_nID + " < '1' ) ;";
+	public static final String sql_all_neighborhoods_in_neigh =
+			"SELECT " + table.neighborhood.neighborhood_ID + 
+			" FROM " + table.neighborhood.TNAME +
+			" WHERE " + table.neighborhood.organization_ID +"=? " +
+					" AND " + table.neighborhood.parent_nID + "=?;";
+	public static final String sql_all_neighborhoods =
+			"SELECT " + table.neighborhood.neighborhood_ID + 
+			" FROM " + table.neighborhood.TNAME +
+			" WHERE " + table.neighborhood.organization_ID +"=?;";
+	/**
+	 * Get all neighborhoods in a given neighborhood (root for null).
+	 * @param o_LID
+	 * @param n_LID
+	 * @param all (if all is set, then return all the neighborhoods known in this organization.)
+	 * @return
+	 */
+	public static ArrayList<ArrayList<Object>> getAllNeighborhoods(long o_LID, long n_LID, boolean all) {
+		try {
+			if (all) {
+				return Application.db.select(sql_all_neighborhoods,
+						new String[]{Util.getStringID(o_LID)});
+			}
+			if (n_LID <= 0) {
+				return Application.db.select(sql_all_root_neighborhoods,
+						new String[]{Util.getStringID(o_LID)});
+			} else {
+				return Application.db.select(sql_all_neighborhoods_in_neigh,
+						new String[]{Util.getStringID(o_LID), Util.getStringID(n_LID)});
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return new ArrayList<ArrayList<Object>>();
 	}
 }
 class D_Neighborhood_SaverThread extends util.DDP2P_ServiceThread {

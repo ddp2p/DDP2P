@@ -54,6 +54,7 @@ final class TemporaryMotionsEditor implements MotionsListener {
 			}
 			motions.removeListener(motions.tmpeditor);
 			motions.addListener(me);
+			motions.showSelected();
 		}
 	}
 

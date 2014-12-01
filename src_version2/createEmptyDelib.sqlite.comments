@@ -272,6 +272,8 @@ CREATE TABLE organization ( # organizations -> organization
 	creator_ID INTEGER,
 	description TEXT, 
 	certification_methods INTEGER  DEFAULT (0), ## 0-dictator 1-grassroot 2-expression 
+	weights_type INTEGER DEFAULT (0), # 0 (1), 1 (ints), 2(floats)
+	weights_max INTEGER DEFAULT (1),
 	category TEXT, 
 	certificate BLOB, 		# if creator is certified by higher authority (?) not yet used
 	signature TEXT,      # signature with orgGID, or grassroot orgGID
@@ -291,9 +293,6 @@ CREATE TABLE organization ( # organizations -> organization
 	name_organization TEXT, 
 	"motions_excluding" INTEGER   DEFAULT (0),
 	"plugins_excluding" INTEGER   DEFAULT (0),
-	hash_org_alg TEXT, 		# I forgot what this does
-	hash_org BLOB,  		# forgot what this does, to :(
-	"hash_orgID" TEXT, ##  hash of the global_org_ID (not clear what the use is)
 	blocked TEXT  DEFAULT (0),  # do not stored data received for this
 	requested TEXT DEFAULT (0),                      # request data about this item, in filters
 	broadcasted TEXT DEFAULT (0),        # send data for this
@@ -306,6 +305,9 @@ CREATE TABLE organization ( # organizations -> organization
 	"arrival_date" TIMESTAMP, # arrival_time -> arrival_date
 	"reset_date" TEXT, # when data was unblocked
 	"preferences_date" TEXT,
+        "hash_orgID" TEXT, ##  hash of the global_org_ID (not clear what the use is)
+        hash_org_alg TEXT,              # I forgot what this does
+        hash_org BLOB,                  # forgot what this does, to :(
  	FOREIGN KEY(creator_ID) REFERENCES peer(peer_ID),
  	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
 );

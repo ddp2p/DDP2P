@@ -2528,7 +2528,7 @@ public class Util {
 			return Util.getProcessOutput(cmd_names, concats, null, null, ctx);
 		}
 		public static BufferedReader getProcessOutput(String[] cmd_names, boolean concats, String[] env, File dir, Object ctx) throws IOException {
-			boolean DEBUG = true;
+			// boolean DEBUG = true;
 			String cmd = concat(cmd_names, "\" \"");
 			String result = null;
 			synchronized(scripts_monitor){

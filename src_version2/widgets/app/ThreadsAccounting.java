@@ -61,7 +61,7 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 		info.state = CREATION;
 		synchronized (monitor_running) {
 			if ((old_info = running.get(crt)) != null) {
-				System.out.println("ThreadsAccounting:register Already existing: "+old_info);
+				System.out.println("ThreadsAccounting:register Already existing: "+old_info+" vs "+info);
 				Util.printCallPath("ThreadsAccounting:register "+crt);
 				old_info._last_ping_date = info._creation_date;
 				old_info.last_ping_date = info.creation_date;

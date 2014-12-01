@@ -11,8 +11,14 @@ class CipherSuit {
 	public String cipher;
 	public int ciphersize;
 	public String hash_alg;
-	public CipherSuit(){
+	
+	public CipherSuit() {
 		
+	}
+	public CipherSuit(String _cipher, String _hash_alg, int _ciphersize) {
+		cipher = _cipher;
+		hash_alg = _hash_alg;
+		ciphersize = _ciphersize;
 	}
 	/**
 	 * Initialized to defaults

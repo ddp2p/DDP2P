@@ -39,7 +39,7 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 				+"Version: "+version+"\n"
 					+"Date: "+d+"\n"
 					+"Verified: "+((verified!=null)?verified.getNameFull():null)+"\n"
-					+"Verified: GID="+((verified!=null)?verified.global_constituent_id_hash:null)+"\n"
+					+"Verified: GID="+((verified!=null)?verified.getGIDH():null)+"\n"
 					+"Verifier: "+((verifier!=null)?verifier.component_basic_data.name:null)+"\n"
 					+"Verifier: email="+((verifier!=null)?verifier.component_basic_data.emails:null)+"\n"
 				;
@@ -87,7 +87,7 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 		return this;
 	}
 	public String getEmailSubject() {
-		return __("DirectDemocracyP2P:")+Util.trimmed(verified.forename, 10)+" "+Util.trimmed(verified.surname, 10)+" -- " +__("Identity verification");
+		return __("DirectDemocracyP2P:")+Util.trimmed(verified.getForename(), 10)+" "+Util.trimmed(verified.getSurname(), 10)+" -- " +__("Identity verification");
 	}
 
 
@@ -102,7 +102,7 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 			//email it!
 			return;
 		}
-		Long oID = this.verified.getOrganizationID();
+		Long oID = this.verified.getOrganizationLID();
 		if ( oID <= 0 ) oID = D_Organization.getLIDbyGID(verified.getGID());
 		D_Constituent mine = D_Constituent.getConstByGID_or_GIDH(verified.getGID(), null, true, false, oID);
 				//new D_Constituent(verified.global_constituent_id,
@@ -113,10 +113,10 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 			return;
 		}
 		if((!mine.getGID().equals(this.verified.getGID()))||
-				(!mine.global_constituent_id_hash.equals(this.verified.global_constituent_id_hash))) {
+				(!mine.getGIDH().equals(this.verified.getGIDH()))) {
 			Application_GUI.warning(__("Inconsistent Global Identifiers:")+
 					"\n GIDs match: "+mine.getGID().equals(this.verified.getGID())+
-				"\n GIDshash =: "+mine.global_constituent_id_hash.equals(this.verified.global_constituent_id_hash)+
+				"\n GIDshash =: "+mine.getGIDH().equals(this.verified.getGIDH())+
 					"\n"+this,
 					__("Identity Verification"));
 			return;
@@ -180,14 +180,14 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 
 	@Override
 	public String get_To() {
-		if((verified==null)||(verified.email==null)){
+		if((verified==null)||(verified.getEmail()==null)){
 			Application_GUI.warning(__("No emails set in this constituent!"), __("Destination email absent"));
 			return Application_GUI.input(__("Can you enter the destination email?"), __("Destination"),
 					Application_GUI.QUESTION_MESSAGE);
 			//return "unknown@unknown";
 		}
 		return Application_GUI.input(__("Enter an email that you personally know for this claimed identity?")+
-				"\n"+__("The claimed email is:")+" "+verified.email, __("Destination"),
+				"\n"+__("The claimed email is:")+" "+verified.getEmail(), __("Destination"),
 				Application_GUI.QUESTION_MESSAGE);
 		// return verified.email;
 	}
@@ -226,7 +226,7 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 		String g = __("Dear")+" "+verified.getNameFull()+"\r\n"+
 					__("I want to verify that this constituent data belongs to you.")+"\r\n"+
 					__("Name:")+" \""+verified.getNameFull()+"\"\r\n"+
-					__("GID:")+" \""+verified.global_constituent_id_hash+"\"\r\n"+
+					__("GID:")+" \""+verified.getGIDH()+"\"\r\n"+
 					__("R:")+" \""+r+"\"\r\n"+
 					__("Please drag the attached image to your agent, to perfom the test.")+"\r\n"+
 				"\r\n\t"+__("Sincerely,")+" "+verifier.component_basic_data.name;

@@ -37,7 +37,8 @@ public class RunnableCmd extends util.DDP2P_ServiceRunnable{
 	 * @param label_widget
 	 */
 	public RunnableCmd(String text, Object label_widget) {
-		super("Runnable Cmd", false, label_widget);
+		// set as anonymous since it may be running on the Swing Thread
+		super("Runnable Cmd", false, false, label_widget);
 		crtProcessLabel = (JLabel) label_widget;
 		cmd = text;
 	}

@@ -87,6 +87,7 @@ public class DBInterface implements DB_Implementation {
 	Hashtable <DBListener, ArrayList<String>>hash_listeners=new Hashtable<DBListener, ArrayList<String>>();
 	Hashtable<String,ArrayList<DBListener>> hash_tables=new Hashtable<String,ArrayList<DBListener>>();
 	public static final int MAX_SELECT = 10000;
+	//static final boolean DEBUG = true;
 	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
     String filename = Application.DELIBERATION_FILE;

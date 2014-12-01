@@ -217,7 +217,9 @@ public class ConstituentsAdd extends JDialog {
 			
 		}
 		*/
-		cad.weight = Util.ival(weight.getValue(), 0);
+		if (weight != null) { // && org.hasWeights()) {
+			cad.weight = "" + Util.ival(weight.getValue(), 0);
+		}
 		return cad;
 	}
 	
@@ -396,7 +398,7 @@ public class ConstituentsAdd extends JDialog {
 			SpinnerModel weight_model =
 			        new SpinnerNumberModel(1, //initial value
 			                               0, //min
-			                               org.getMaxVotingWeight(), //max
+			                               org.getWeightsMax(), //max
 			                               1); // step
 			weight = new JSpinner(weight_model);
 			

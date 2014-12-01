@@ -130,6 +130,47 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			throw new P2PDDSQLException(e.getLocalizedMessage());
 		}
 	}
+	/**
+	 *  Motion.getOrganizationLID()
+	 * @param _title
+	 * @param _body
+	 * @return
+	 */
+	public static D_Motion createMotion (String _title, String _body, long oLID) {
+		D_Motion new_motion = D_Motion.getEmpty();
+		
+		D_Document_Title title = new D_Document_Title();
+		title.title_document = new D_Document();
+		title.title_document.setDocumentString(_title);
+		title.title_document.setFormatString(D_Document.TXT_FORMAT);
+		new_motion.setMotionTitle(title);
+		
+		if (_body != null) {
+			D_Document body_d = new D_Document();
+			body_d.setDocumentString(_body);
+			body_d.setFormatString(D_Document.TXT_FORMAT);
+			new_motion.setMotionText(body_d);
+		}
+		
+		new_motion.setTemporary(false);
+		new_motion.__setGID(new_motion.make_ID());
+		//D_Motion.DEBUG = true;
+		String GID = new_motion.getGID();
+		
+		D_Motion m = D_Motion.getMotiByGID(GID, true, true, true, null, oLID, new_motion);
+		if (m != new_motion) {
+			m.loadRemote(new_motion, null, null, null);
+			new_motion = (m);
+		}
+		new_motion.setTemporary(false);
+		
+		new_motion.setBroadcasted(true); // if you sign it, you probably want to broadcast it...
+		new_motion.setArrivalDate();
+		long m_id = new_motion.storeRequest_getID();
+		//new_motion.storeRequest();
+		new_motion.releaseReference();
+		return new_motion;
+	}
 	String sql_motions = "SELECT  "+Util.setDatabaseAlias(table.motion.fields, "n")
 		+ ", p."+table.motion.global_motion_ID
 		+ " FROM "+table.motion.TNAME+" AS n "
@@ -514,7 +555,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 * @param load_Globals 
 	 * @return
 	 */
-	static private D_Motion getMotiByLID_AttemptCacheOnly (long ID, boolean load_Globals) {
+	static public D_Motion getMotiByLID_AttemptCacheOnly (long ID, boolean load_Globals) {
 		if (ID <= 0) return null;
 		Long id = new Long(ID);
 		D_Motion crt = D_Motion_Node.loaded_By_LocalID.get(id);
@@ -534,7 +575,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 * @param keep : if true, avoid releasing this until calling releaseReference()
 	 * @return
 	 */
-	static private D_Motion getMotiByLID_AttemptCacheOnly(Long LID, boolean load_Globals, boolean keep) {
+	static public D_Motion getMotiByLID_AttemptCacheOnly(Long LID, boolean load_Globals, boolean keep) {
 		if (LID == null) return null;
 		if (keep) {
 			synchronized (monitor_object_factory) {
@@ -552,10 +593,23 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			return getMotiByLID_AttemptCacheOnly(LID.longValue(), load_Globals);
 		}
 	}
-
+	/**
+	 * This is Calling the version with "long LID".
+	 * @param LID
+	 * @param load_Globals
+	 * @param keep
+	 * @return
+	 */
 	static public D_Motion getMotiByLID(String LID, boolean load_Globals, boolean keep) {
 		return getMotiByLID(Util.Lval(LID), load_Globals, keep);
 	}
+	/**
+	 * 
+	 * @param LID
+	 * @param load_Globals
+	 * @param keep
+	 * @return
+	 */
 	static public D_Motion getMotiByLID(Long LID, boolean load_Globals, boolean keep) {
 		// boolean DEBUG = true;
 		if (DEBUG) System.out.println("D_Motion: getMotiByLID: "+LID+" glob="+load_Globals);
@@ -1905,11 +1959,13 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		__setGID(global_motion_ID);
 	}
 	/**
-	 * Just sets the GID
+	 * Just sets the GID,
+	 * and also resets the verification that the GID is valid
 	 * @param global_motion_ID
 	 */
 	public void __setGID(String global_motion_ID) {
 		this.global_motionID = global_motion_ID;
+		this.__LastGIDValid = null;
 	}
 	/**
 	 * If already loaded adjusts adding indexes for GID
@@ -2033,6 +2089,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public byte[] setSignature(byte[] signature) {
 		if (signature != this.signature) {
 			this.signature = signature;
+			this.__LastSignValid = null;
 			this.dirty_main = true;
 		}
 		return signature;
@@ -2232,6 +2289,11 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		}
 		return 0;
 	}
+	/**
+	 * Not using cache
+	 * @param organization_ID2
+	 * @return
+	 */
 	public static long getCount(long organization_ID2) {
 		String sql = "SELECT count(*) FROM "+table.motion.TNAME+" WHERE "+table.motion.organization_ID+"=?;";
 		ArrayList<ArrayList<Object>> count;
@@ -2328,36 +2390,35 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		}
 	}
 	/**
-	 * Returns the value stored in the field "choice" for a support vote (typically "0").
-	 * Obtained now from the static constant D_Vote.DEFAULT_YES_COUNTED_LABEL.
+	 * Maps days_old into # votes
+	 */
+	Hashtable<Integer, Long> activity_memory = new Hashtable<Integer, Long>();
+	/**
+	 * With cache
+	 * 
+	 * @param days
+	 * @param refresh
 	 * @return
 	 */
-	public String getSupportChoice() {
-		return D_Vote.DEFAULT_YES_COUNTED_LABEL;
-	}
-	static final String sql_co = "SELECT count(*) FROM "+table.signature.TNAME+
-		" WHERE "+table.signature.motion_ID+" = ? AND "+table.signature.choice+" = ?;";
-	public Object getSupport(int i) {
-		Object result = null;
-		try {
-			ArrayList<ArrayList<Object>> orgs =
-					Application.db.select(sql_co, new String[]{this.getLIDstr(), this.getSupportChoice()});
-			if (orgs.size() > 0) result = orgs.get(0).get(0);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
+	public long getActivity_WithCache(int days, boolean refresh) {
+		if (! refresh) {
+			Long r = activity_memory.get(new Integer(days));
+			if (r != null) return r;
 		}
+		long result = getActivity(days);
+		activity_memory.put(new Integer(days), new Long(result));
 		return result;
 	}
-	static final String sql_ac = "SELECT count(*) FROM "+table.signature.TNAME+" AS s "+
-		" WHERE "+table.signature.motion_ID+" = ?;";
-	static final String sql_ac_cr = "SELECT count(*) FROM "+table.signature.TNAME+" AS s "+
+	static final String sql_activity_count = "SELECT count(*) FROM "+table.signature.TNAME+" AS s "+
+			" WHERE "+table.signature.motion_ID+" = ?;";
+	static final String sql_activity_count_creationdate = "SELECT count(*) FROM "+table.signature.TNAME+" AS s "+
 			" WHERE s."+table.signature.motion_ID+" = ? AND s."+table.signature.creation_date+">?;";
 	public long getActivity(int days) {
 		long result = 0;
 		try {
 			ArrayList<ArrayList<Object>> orgs;
-			if (days == 0) orgs = Application.db.select(sql_ac, new String[]{this.getLIDstr()});
-			else orgs = Application.db.select(sql_ac_cr, new String[]{this.getLIDstr(), Util.getGeneralizedDate(days)});
+			if (days == 0) orgs = Application.db.select(sql_activity_count, new String[]{this.getLIDstr()});
+			else orgs = Application.db.select(sql_activity_count_creationdate, new String[]{this.getLIDstr(), Util.getGeneralizedDate(days)});
 			
 			if (orgs.size() > 0) result = Util.lval(orgs.get(0).get(0), 0);
 			else result = new Integer("0");
@@ -2367,12 +2428,38 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		}
 		return result;
 	}
+	/**
+	 * Maps days_old into #news
+	 */
+	Hashtable<Integer, Long> countNews_memory = new Hashtable<Integer, Long>();
+	/**
+	 * negative parameter is used for search by arrival date while positive is for search by creation date
+	 * With cache
+	 * 
+	 * @param days
+	 * @param refresh
+	 * @return
+	 */
+	public long getCountNews_WithCache(int days, boolean refresh) {
+		if (! refresh) {
+			Long r = countNews_memory.get(new Integer(days));
+			if (r != null) return r;
+		}
+		long result = getCountNews(days);
+		countNews_memory.put(new Integer(days), new Long(result));
+		return result;
+	}
 	static final String sql_new = "SELECT count(*) FROM "+table.news.TNAME+" AS n "+
 		" WHERE "+table.news.motion_ID+" = ?;";
 	static final String sql_new_cr = "SELECT count(*) FROM "+table.news.TNAME+" AS n "+
 			" WHERE n."+table.news.motion_ID+" = ? AND n."+table.news.creation_date+">?;";
 	static final String sql_new_ar = "SELECT count(*) FROM "+table.news.TNAME+" AS n "+
 			" WHERE n."+table.news.motion_ID+" = ? AND n."+table.news.arrival_date+">?;";
+	/**
+	 * negative parameter is used for search by arrival date while positive is for search by creation date
+	 * @param days
+	 * @return
+	 */
 	public long getCountNews(int days) {
 		long result = 0;
 		try {
@@ -2407,15 +2494,24 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public String getPreferencesDateStr() {
 		return Encoder.getGeneralizedTime(this.preferences_date);
 	}
+	public String getNameMy() {
+		return this.mydata.name;
+	}
 	public void setNameMy(String _name) {
 		this.mydata.name = _name;
 		this.setPreferencesDate();
 		this.dirty_mydata = true;
 	}
+	public String getCreatorMy() {
+		return this.mydata.creator;
+	}
 	public void setCreatorMy(String _creat) {
 		this.mydata.creator = _creat;
 		this.setPreferencesDate();
 		this.dirty_mydata = true;
+	}
+	public String getCategoryMy() {
+		return this.mydata.category;
 	}
 	public void setCategoryMy(String _cat) {
 		this.mydata.category = _cat;
@@ -2484,10 +2580,152 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			this.dirty_main = true;
 		}
 	}
+	/**
+	 * Returns the value stored in the field "choice" for a support vote (typically "0").
+	 * Obtained now from the static constant D_Vote.DEFAULT_YES_COUNTED_LABEL.
+	 * @return
+	 */
+	public String getSupportChoice() {
+		return D_Vote.DEFAULT_YES_COUNTED_LABEL;
+	}
+	/**
+	 * Gets the custom or organization-wide motions
+	 * @return
+	 */
+	public D_MotionChoice[] getActualChoices() {
+		D_MotionChoice[] _choices;
+		if ((this.getChoices() != null) && (this.getChoices().length > 0)) _choices = this.getChoices();
+		else _choices = this.getOrganization().getDefaultMotionChoices();
+		return _choices;
+	}
+	
+	/**
+	 * Returns the first choice, considered a support choice!
+	 * @return
+	 */
+	public D_MotionChoice getActualSupportChoice() {
+		D_MotionChoice[] _choices;
+		if ((this.getChoices() != null) && (this.getChoices().length > 0)) _choices = this.getChoices();
+		else _choices = this.getOrganization().getDefaultMotionChoices();
+		return _choices[Util.ival(this.getSupportChoice(),0)];
+	}
+
+	public static final String sql_motion_choice_support = 
+			"SELECT count(*), sum(c."+table.constituent.weight+") " +
+			" FROM "+table.signature.TNAME+" AS s "+
+			" JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=s."+table.signature.constituent_ID+")"+
+			" WHERE s."+table.signature.choice+"=? AND s."+table.signature.motion_ID+"=?;";
+	
+	/**
+	 * Class holding the number of voters and the sum of their weights,
+	 * for voting a motion with a given choice.
+	 * Use by getMotionChoiceSupport()
+	 * @author msilaghi
+	 *
+	 */
+	public static class MotionChoiceSupport {
+		public MotionChoiceSupport() {
+		}
+		public MotionChoiceSupport(int _cnt) {
+			setCnt(_cnt);
+		}
+		public MotionChoiceSupport(int _cnt, double _w) {
+			setCnt(_cnt);
+			setWeight(_w);
+		}
+		public int getCnt() {
+			return cnt;
+		}
+		public void setCnt(int cnt) {
+			this.cnt = cnt;
+		}
+		public double getWeight() {
+			return weight;
+		}
+		public void setWeight(double weight) {
+			this.weight = weight;
+		}
+		private int cnt = 0;
+		private double weight = 0.;
+	}
+	/**
+	 * Without cache
+	 * 
+	 * @param motion_LID
+	 * @param short_name
+	 * @return
+	 */
+	public static MotionChoiceSupport getMotionChoiceSupport(String motion_LID, String short_name) {
+		MotionChoiceSupport result = new MotionChoiceSupport();
+		try {
+			ArrayList<ArrayList<Object>> l =
+					Application.db.select(sql_motion_choice_support,
+							new String[]{short_name, motion_LID}, DEBUG);
+			if (l.size() > 0) {
+				result.setCnt(Util.ival(l.get(0).get(0), 0));
+				result.setWeight(Util.dval(l.get(0).get(1), 0.));
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
+	/**
+	 * Maps choice to MotionChoiceSupport (count,weight)
+	 */
+	Hashtable<Integer, MotionChoiceSupport> supports_memory = new Hashtable<Integer, MotionChoiceSupport>();
+
+	/**
+	 * With cache
+	 * 
+	 * @param _choice
+	 * @param refresh
+	 * @return
+	 */
+	public MotionChoiceSupport getMotionSupport_WithCache(int _choice, boolean refresh) {
+		if (! refresh) {
+			MotionChoiceSupport r = supports_memory.get(new Integer(_choice));
+			if (r != null) return r;
+		}
+		MotionChoiceSupport result = getMotionChoiceSupport(this.getLIDstr(), _choice+""); //this.getSupportChoice());
+		supports_memory.put(new Integer(_choice), result);
+		return result;
+	}
+//	static final String sql_co = "SELECT count(*) FROM "+table.signature.TNAME+
+//			" WHERE "+table.signature.motion_ID+" = ? AND "+table.signature.choice+" = ?;";
+//	/**
+//	 * Get number of supporting people, with memory
+//	 * @param i
+//	 * @param refresh
+//	 * @return
+//	 */
+//	public Object getSupport(int i, boolean refresh) {
+//		if (! refresh) {
+//			MotionChoiceSupport r = supports_memory.get(new Integer(i));
+//			if (r != null) return r.getCnt();
+//		}
+//		Object result = null;
+//		try {
+//			ArrayList<ArrayList<Object>> orgs =
+//					Application.db.select(sql_co, new String[]{this.getLIDstr(), i+""});//this.getSupportChoice()});
+//			if (orgs.size() > 0) result = orgs.get(0).get(0);
+//		} catch (P2PDDSQLException e) {
+//			e.printStackTrace();
+//		}
+//		supports_memory.put(new Integer(i), new MotionChoiceSupport(Util.ival(result,0)));
+//		return result;
+//	}
+	/**
+	 * Query to get all motions for an organization;
+	 */
 	public final static String sql_all_motions = 
 			"SELECT " + table.motion.motion_ID
 			+" FROM "+table.motion.TNAME+
 			" WHERE "+table.motion.organization_ID + "=? ";
+	/**
+	 * The index of the motion LID in the result of getAllMotions()
+	 */
+	public static final int SELECT_ALL_MOTI_LID = 0;
 	/**
 	 * 
 	 * @param hide (if true, then skip hidden)
@@ -2496,7 +2734,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 * @return
 	 */
 	public static java.util.ArrayList<java.util.ArrayList<Object>>
-	getAllMotions(boolean hide, String o_LID, String crt_enhanced_LID) {
+	getAllMotions(String o_LID, boolean hide, String crt_enhanced_LID) {
 		ArrayList<ArrayList<Object>> moti;
 		if (Application.db == null) return new ArrayList<ArrayList<Object>>();
 		String sql = sql_all_motions;
@@ -2513,6 +2751,132 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			return new ArrayList<ArrayList<Object>>();
 		}
 		return moti;
+	}
+	//boolean __isLastGIDChecked = false;
+	Boolean __LastGIDValid = null;
+	public boolean isLastGIDChecked() {
+		return __LastGIDValid != null;//__isLastGIDChecked;
+	}
+	public Boolean getLastGIDValid() {
+		return __LastGIDValid;
+	}
+	public void setLastGIDValid(Boolean result) {
+		__LastGIDValid = result;
+	}
+	/**
+	 * Returns the last valid GID if available
+	 * @param refresh 
+	 * @return
+	 */
+	public Boolean getGIDValid_WithMemory(boolean refresh) {
+		Boolean result;
+		if (!refresh && isLastGIDChecked()) result = getLastGIDValid();
+		else {
+			//System.out.println("D_Motion: getSignValid_WithMemory: check GID");
+			String newGID = make_ID();
+			if (newGID == null) result = new Boolean(false);
+			else result = new Boolean(newGID.equals(getGID()));
+			setLastGIDValid((Boolean)result);
+		}
+		return result;
+	}
+	Boolean __LastSignValid = null;
+	public boolean isLastSignChecked() {
+		return __LastSignValid != null;//__isLastGIDChecked;
+	}
+	public Boolean getLastSignValid() {
+		return __LastSignValid;
+	}
+	public void setLastSignValid(Boolean result) {
+		__LastSignValid = result;
+	}
+	public Boolean getSignValid_WithMemory(boolean refresh) {
+		Boolean result;
+		if (!refresh && isLastSignChecked()) result = getLastSignValid();
+		else {
+			//System.out.println("D_Motion: getSignValid_WithMemory: check Sign");
+			if ((getGID() == null) || (getConstituentGID() == null)) result = new Boolean(false);
+			else result = new Boolean(verifySignature());
+			
+			setLastSignValid((Boolean)result);
+		}
+		return result;
+	}
+	static final String sql_list_of_justifications_for_motion = 
+			"SELECT "+table.justification.justification_title+
+			","+table.justification.global_justification_ID+
+			","+table.justification.justification_ID+
+			" FROM "+table.justification.TNAME+
+			" WHERE "+table.justification.motion_ID+"=?;";
+
+	/**
+		 * Get the list of all justifications for a given motion
+		 * 
+		 * Not cached
+		 * @param motionLID
+		 * @return
+		 */
+	public static ArrayList<JustGIDItem> getJustificationsListForMotion(String motionLID) 
+	{
+		ArrayList<ArrayList<Object>> j;
+		ArrayList<JustGIDItem> r = new ArrayList<JustGIDItem>();
+		try {
+			j = Application.db.select(sql_list_of_justifications_for_motion, new String[]{motionLID}, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return r;
+		}
+		for (ArrayList<Object> _j :j){
+			String gid = Util.getString(_j.get(1));
+			String id = Util.getString(_j.get(2));
+			String name = Util.getString(_j.get(0));
+			r.add(new JustGIDItem(gid, id, name));
+		}
+		return r;
+	}
+	ArrayList<JustGIDItem> justifications_memory = null;
+	/**
+	 * Get the list of all justifications for this motion.
+	 * Cached
+	 * @return
+	 */
+	public ArrayList<JustGIDItem> getJustificationsListForMotion() {
+		if (justifications_memory != null) return justifications_memory;
+		return justifications_memory = getJustificationsListForMotion(this.getLIDstr());
+	}
+	Calendar lastCacheResetTime = Util.CalendargetInstance();
+	/**
+	 * This resets when now is age after lastCacheResetTime
+	 * @param now
+	 * @param age_milliseconds (use -1 for one day)
+	 */
+	public void resetCacheWhenOld(Calendar now, long age_milliseconds) {
+		if (age_milliseconds < 0) age_milliseconds = 1000*24*60*60; // one day is milliseconds
+		if (now == null) now = Util.CalendargetInstance();
+		/**
+		 * Only one thread can compare with a given resetTime
+		 */
+		synchronized(lastCacheResetTime) {
+			if (now.getTimeInMillis() - lastCacheResetTime.getTimeInMillis() < age_milliseconds) return;
+			resetCache();
+		}
+	}
+	/**
+	 * Call this to force re-reading from the disk statistics at the next time they are requested.
+	 * To be used on insertion/delete of new votes/justifications/news related to this motion.
+	 * Should also be used at least once each day, since some statistics (recentness) are based on days.
+	 */
+	public void resetCache() {
+		__LastSignValid = null;
+		__LastGIDValid = null;
+		supports_memory.clear(); //.remove(new Integer(_choice));
+		countNews_memory.clear();
+		activity_memory.clear();
+		justifications_memory = null;
+		/**
+		 * Last reset day, to enable resetting if too old
+		 */
+		lastCacheResetTime = Util.CalendargetInstance();
 	}
 
 }

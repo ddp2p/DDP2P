@@ -4,6 +4,9 @@ import config.Application_GUI;
 
 abstract public class DDP2P_ServiceThread extends Thread {
 	public Object ctx = null;
+	Object getContext() {
+		return ctx;
+	}
 	public DDP2P_ServiceThread (String name, boolean daemon) {
 		if (name != null) this.setName(name);
 		this.setDaemon(daemon);

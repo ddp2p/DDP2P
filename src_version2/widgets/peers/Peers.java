@@ -20,6 +20,7 @@
 package widgets.peers;
 import hds.ASNPluginInfo;
 import hds.PeerInput;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -2438,6 +2439,16 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			if (DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
 			if ("".equals(_value)) _value = null;
 			if (DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
+			if (peer.getNameMy() == null && _value == null) break;
+			if (peer.getNameMy() == null && _value != null) {
+				int o = config.Application_GUI.ask(
+						__("Do you want to set local pseudonym?") + "\n" + _value, 
+						__("Changing local display"), JOptionPane.OK_CANCEL_OPTION);
+				if (o != 0) {
+					if (_DEBUG) System.out.println("MotionsModel: setValueAt name my opt = " + o);
+					break;
+				}
+			}
 			D_Peer.setName_My(peer, _value);
 			break;
 		case TABLE_COL_BROADCASTED:
@@ -2471,6 +2482,16 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			if ("".equals(_value)) _value = null;
 			if (DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
 			//set_data(table.peer.category, SELECT_COL_CATEG, Util.getString(value), row);
+			if (peer.getCategoryMy() == null && _value == null) break;
+			if (peer.getCategoryMy() == null && _value != null) {
+				int o = config.Application_GUI.ask(
+						__("Do you want to set local pseudocategory?") + "\n" + _value, 
+						__("Changing local display"), JOptionPane.OK_CANCEL_OPTION);
+				if (o != 0) {
+					if (_DEBUG) System.out.println("MotionsModel: setValueAt name my opt = " + o);
+					break;
+				}
+			}
 			D_Peer.setCategory(peer, _value);
 			break;
 		case TABLE_COL_HIDDEN:
@@ -2512,6 +2533,16 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			if (DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
 			if ("".equals(_value)) _value = null;
 			if (DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
+			if (peer.getSloganMy() == null && _value == null) break;
+			if (peer.getSloganMy() == null && _value != null) {
+				int o = config.Application_GUI.ask(
+						__("Do you want to set local pseudoslogan?") + "\n" + _value, 
+						__("Changing local display"), JOptionPane.OK_CANCEL_OPTION);
+				if (o != 0) {
+					if (_DEBUG) System.out.println("MotionsModel: setValueAt name my opt = " + o);
+					break;
+				}
+			}
 			D_Peer.setSlogan_My(peer, _value);
 			break;
 		}
@@ -2575,7 +2606,8 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 		if(DEBUG) System.out.println("Peers:update:peers start");
 		
 		if (a_table != null && !a_table.contains(table.peer.TNAME)) {
-			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+				// daemon?
 				@Override
 				public void _run() {
 					((PeersModel)ctx).fireTableDataChanged();
@@ -2635,7 +2667,8 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 				}
 			}
 			if (! different) {
-				SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+				SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+					// daemon?
 					@Override
 					public void _run() {
 						((PeersModel)ctx).fireTableDataChanged();
@@ -2658,7 +2691,8 @@ class PeersModel extends AbstractTableModel implements TableModel, DBListener {
 			__rowByPeerID = _rowByPeerID;
 		}
 		
-		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+			// daemon?
 			@Override
 			public void _run() {
 				((PeersModel)ctx).fireTableDataChanged();

@@ -272,6 +272,8 @@ CREATE TABLE organization (
 	creator_ID INTEGER,
 	description TEXT, 
 	certification_methods INTEGER  DEFAULT (0), 
+	weights_type INTEGER DEFAULT (0), 
+	weights_max INTEGER DEFAULT (1),
 	category TEXT, 
 	certificate BLOB, 		
 	signature TEXT,      
@@ -291,9 +293,6 @@ CREATE TABLE organization (
 	name_organization TEXT, 
 	"motions_excluding" INTEGER   DEFAULT (0),
 	"plugins_excluding" INTEGER   DEFAULT (0),
-	hash_org_alg TEXT, 		
-	hash_org BLOB,  		
-	"hash_orgID" TEXT, 
 	blocked TEXT  DEFAULT (0),  
 	requested TEXT DEFAULT (0),                      
 	broadcasted TEXT DEFAULT (0),        
@@ -306,6 +305,9 @@ CREATE TABLE organization (
 	"arrival_date" TIMESTAMP, 
 	"reset_date" TEXT, 
 	"preferences_date" TEXT,
+        "hash_orgID" TEXT, 
+        hash_org_alg TEXT,              
+        hash_org BLOB,                  
  	FOREIGN KEY(creator_ID) REFERENCES peer(peer_ID),
  	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
 );

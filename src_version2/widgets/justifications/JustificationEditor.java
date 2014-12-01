@@ -48,6 +48,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
@@ -125,12 +126,12 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 
 	JustGIDItem[] combo_answerTo = new JustGIDItem[]{};
 	private boolean enabled = false;
-	private String justID = null;
+	//private String justID = null;
 	
 	boolean m_editable = false;
 	//private int max_general_fields;
 	JTabbedPane tabbedPane = new JTabbedPane();
-	public D_Justification just; // data about the current organization
+	public D_Justification justificationEdited; // data about the current organization
 	//public D_Vote signature;
 	private int mode = ALL;
 	private boolean SUBMIT = true;
@@ -224,28 +225,60 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		//this.setFillsViewportHeight(true);
 		return scrollPane;
 	}
-	public void setJust(String _justID, boolean force){
-		if(DEBUG) out.println("JustEditor:setJust: force="+force);
-		if((justID !=null) && (justID.equals(_justID)) && !force){
-			if(DEBUG) out.println("JustEditor:setJust: justID="+justID);
+	/**
+	 * Sets the justification, and if different from the current one, then it updates the GUI
+	 * 
+	 * @param _justID
+	 * @param force
+	 */
+	public void setJustification(String _justID, boolean force) {
+		D_Justification justification_new = D_Justification.getJustByLID(_justID, true, false);
+		if (justification_new == null && _justID != null) {
+			if (_DEBUG) out.println("JustEditor: setJust: force="+force+" inexisting jID="+_justID);
 			return;
 		}
-		if((justID==null) && (_justID==null)){
-			if(DEBUG) out.println("JustEditor:setJust: _justID="+justID);
+		setJustification(justification_new, force);
+	}
+	/**
+	 * Sets the justification, and if different from the current one, then it updates the GUI
+	 * @param justification_new
+	 * @param force
+	 */
+	public void setJustification(D_Justification justification_new, boolean force) {
+		String justID = this.getJustificationLIDstr();
+		String _justID = null;
+		if (justification_new != null) _justID = justification_new.getLIDstr();
+		
+		if (DEBUG) out.println("JustEditor: setJustification: force="+force);
+		if ((justID != null) && (justID.equals(_justID)) && !force){
+			if (DEBUG) out.println("JustEditor:setJust: justID="+justID);
 			return;
 		}
-		if(_justID==null) {
-			if(DEBUG) out.println("JustEditor:setJust: _ justID null "+force);
+		if ((justID == null) && (_justID == null)) {
+			if (DEBUG) out.println("JustEditor: setJustification: _justID="+justID);
+			return;
+		}
+		if (_justID == null) {
+			if (DEBUG) out.println("JustEditor: setJustification: _ justID null "+force);
 			disable_it(); return;
 		}
-		justID = _justID;
-		if(!force && enabled){
-			if(DEBUG) out.println("JustEditor:setJust: !force="+force);
+		//justID = _justID;
+		//this.setJustification(justification, force, _motionEditor);
+		this.justificationEdited = justification_new;
+		if (! force && enabled) {
+			if (DEBUG) out.println("JustEditor: setJustification: !force="+force);
 			disable_it();
 		}
 		update_it(force);
 		//if(this.extraFields!=null)	this.extraFields.setCurrent(_justID);
-		if(DEBUG) out.println("JustificationEditor:setJust: exit");
+		if (DEBUG) out.println("JustificationEditor: setJustification: exit");
+	}
+	public String getJustificationLIDstr() {
+		if (this.justificationEdited == null) {
+			if (DEBUG) out.println("JustificationEditor: getJustificationLIDstr: exit null");
+			return null;
+		}
+		return this.justificationEdited.getLIDstr();
 	}
 	/**
 	 * Is this org editable?
@@ -253,34 +286,44 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	 */
 	private boolean editable() {
 		if(DEBUG) out.println("JustEditor:editable: start");
-		if(just == null){
+		if(justificationEdited == null){
 			if(DEBUG) out.println("JustEditor:editable: no just");
 			return false;
 		}
-		if(just.isEditable()) {
+		if(justificationEdited.isEditable()) {
 			if(DEBUG) out.println("JustEditor:editable");
 			return true;			
 		}
-		if(DEBUG) out.println("JustEditor:editable: exit "+just);
+		if(DEBUG) out.println("JustEditor:editable: exit "+justificationEdited);
 		return false;
 	}
 	/**
-	 * Will reload org from database
-	 * returns whether to edit
+	 * Will reload justification from database.
+	 * Fails when setting a volatile one!
+	 * 
+	 * After reloading, a motion object is piggy-backed in justificationEdited
+	 * 
+	 * returns whether to edit (based on DD.EDIT_RELEASED_JUST, editable, and force)
 	 */
-	private boolean reloadJust(boolean force){
-		if(DEBUG) out.println("JustEditor:reloadJust: start force="+force+" justID="+justID);
-		if(justID==null) {
-			just = null;
+	private boolean reloadJust(boolean force) {
+		String justID = this.getJustificationLIDstr();
+		if (justID == null) {
+			if (_DEBUG) out.println("JustEditor: reloadJust: got unsaved just ="+justificationEdited);
+//			Util.printCallPath("Why doing this?");
+//			justificationEdited = null;
 			return true;
 		}
+		if(DEBUG) out.println("JustEditor: reloadJust: start force="+force+" justID="+justID);
 		try {
-			just = D_Justification.getJustByLID(justID, true, false);
-			if (just.getMotionLIDstr() != null) {
-				long _jID = Util.lval(just.getMotionLIDstr(), -1);
-				if (_jID > 0) just.setMotion(D_Motion.getMotiByLID(_jID, true, false));
+			justificationEdited = D_Justification.getJustByLID(justID, true, false);
+			if (justificationEdited.getMotionLIDstr() != null) {
+				long _mID = Util.lval(justificationEdited.getMotionLIDstr(), -1);
+				/**
+				 * Here do not set motionAll to not disturb signature
+				 */
+				if (_mID > 0) justificationEdited.setMotionObj(D_Motion.getMotiByLID(_mID, true, false));
 			}
-			if(DEBUG) out.println("JustEditor:reloadJust: got just ="+just);
+			if(DEBUG) out.println("JustEditor:reloadJust: got just ="+justificationEdited);
 		} catch (Exception e) {
 			e.printStackTrace();
 			disable_it();
@@ -293,12 +336,18 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		if (DEBUG) out.println("JustEditor:reloadJust: exit");
 		return true;
 	}
+	/**
+	 * Whether to force the reloading of the justification.
+	 * Not used
+	 * @param force
+	 * @return
+	 */
 	private boolean update_it(boolean force) {
 		if (DEBUG) out.println("JustEditor:updateit: start");
 		if (reloadJust(force))
 			enable_it();
 		//else return false; // further processing changes arrival_date by handling creator and default_scoring fields
-		if (just == null) {
+		if (justificationEdited == null) {
 			if(DEBUG) out.println("JustEditor:updateit: quit null just");
 			return false;
 		}
@@ -307,7 +356,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		Calendar creation_date = Util.CalendargetInstance();
 		String constituent_ID = Util.getStringID(this.getConstituentIDMyself());
 		String constituent_GID = this.getConstituentGIDMyself();
-		String signature_ID = MotionEditor.findMyVote(just.getMotionLIDstr(), constituent_ID);
+		String signature_ID = MotionEditor.findMyVote(justificationEdited.getMotionLIDstr(), constituent_ID);
 		D_Vote _sign;
 		try {
 			long _s_ID = Util.lval(signature_ID, -1);
@@ -316,21 +365,21 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			} else {
 				_sign = new D_Vote();
 				//_sign.motion = moti;
-				_sign.setMotionLID(just.getMotionLIDstr());
-				_sign.setMotionGID(just.getMotionGID());
+				_sign.setMotionLID(justificationEdited.getMotionLIDstr());
+				_sign.setMotionGID(justificationEdited.getMotionGID());
 				_sign.setJustificationLID(null);
 				_sign.setConstituentLID(constituent_ID);
 				_sign.setConstituentGID(constituent_GID);
-				_sign.setOrganizationLID(this.just.getOrganizationLIDstr());
-				_sign.setOrganizationGID(this.just.getOrgGID());
+				_sign.setOrganizationLID(this.justificationEdited.getOrganizationLIDstr());
+				_sign.setOrganizationGID(this.justificationEdited.getOrgGID());
 				_sign.setCreationDate(creation_date);
 			}
-			vEditor.setSignature(_sign, motionEditor);
+			vEditor.setSignature(_sign, motionEditor, justificationEdited);
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		
-		return update_fields();
+		return update_justification_GUI_fields();
 	}
 	private long getConstituentIDMyself() {
 		return GUI_Swing.constituents.tree.getModel().getConstituentIDMyself();
@@ -338,29 +387,33 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	private String getConstituentGIDMyself() {
 		return GUI_Swing.constituents.tree.getModel().getConstituentGIDMyself();
 	}
+	/**
+	 * Used to load a justification in the GUI
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
-	private boolean update_fields(){
-		if(requested!=null) {
+	private boolean update_justification_GUI_fields(){
+		if (requested != null) {
 			requested.removeItemListener(this);
-			requested.setSelected(just.isRequested());
+			requested.setSelected(justificationEdited.isRequested());
 			requested.addItemListener(this);
 		}
-		if(blocked!=null) {
+		if (blocked != null) {
 			blocked.removeItemListener(this);
-			blocked.setSelected(just.isBlocked());
+			blocked.setSelected(justificationEdited.isBlocked());
 			blocked.addItemListener(this);
 		}
-		if(broadcasted!=null) {
+		if (broadcasted != null) {
 			broadcasted.removeItemListener(this);
-			broadcasted.setSelected(just.isBroadcasted());
+			broadcasted.setSelected(justificationEdited.isBroadcasted());
 			broadcasted.addItemListener(this);
 		}
-		if(date_field!=null) {
+		if (date_field != null) {
 			date_field.getDocument().removeDocumentListener(this);
-			date_field.setText(Encoder.getGeneralizedTime(just.getCreationDate()));
+			date_field.setText(Encoder.getGeneralizedTime(justificationEdited.getCreationDate()));
 			date_field.getDocument().addDocumentListener(this);
 		}
-		vEditor.loadJustificationChoices(just.getMotionLIDstr());
+		vEditor.loadJustificationChoices(justificationEdited.getMotionLIDstr());
 		
 		if(just_answer_field != null) {
 			//just_answer_field.setSelected("1".equals(Util.getString(org.get(table.organization.ORG_COL_REQUEST))));
@@ -369,7 +422,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			JustGIDItem sel=null;
 			for(JustGIDItem i : vEditor.combo_answerTo){
 				just_answer_field.addItem(i);
-				if((i.id!=null)&&i.id.equals(just.getAnswerToLIDstr())){ sel = i;}
+				if((i.id!=null)&&i.id.equals(justificationEdited.getAnswerToLIDstr())){ sel = i;}
 			}
 			if(sel!=null)just_answer_field.setSelectedItem(sel);
 			just_answer_field.addItemListener(this);
@@ -398,12 +451,12 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		*/
 		if(just_body_field != null) {
 			this.just_body_field.removeListener(this);
-			this.just_body_field.setText(just.getJustificationText().getDocumentString());
+			this.just_body_field.setText(justificationEdited.getJustificationText().getDocumentString());
 			this.just_body_field.addListener(this);
 		}
 		if(just_title_field != null) {
 			this.just_title_field.getDocument().removeDocumentListener(this);
-			this.just_title_field.setText(just.getJustificationTitle().title_document.getDocumentString());
+			this.just_title_field.setText(justificationEdited.getJustificationTitle().title_document.getDocumentString());
 			this.just_title_field.getDocument().addDocumentListener(this);
 		}
 		//update_signature(false);
@@ -709,13 +762,13 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	 * @param data
 	 */
 	public void setMode(String _NEW_FORMAT, String data){
-		this.just.getJustificationText().setDocumentString(data);
-		this.just.getJustificationText().setFormatString(_NEW_FORMAT);
+		this.justificationEdited.getJustificationText().setDocumentString(data);
+		this.justificationEdited.getJustificationText().setFormatString(_NEW_FORMAT);
 		
 		this.just_body_field.removeListener(this);
 		just_body_field.getComponent().setVisible(false);
-		this.just_body_field.setType(just.getJustificationText().getFormatString());
-		this.just_body_field.setText(just.getJustificationText().getDocumentString());
+		this.just_body_field.setType(justificationEdited.getJustificationText().getFormatString());
+		this.just_body_field.setText(justificationEdited.getJustificationText().getDocumentString());
 		
 		just_body_field.getComponent().setVisible(true);
 	    //this.panel_body.removeAll();
@@ -730,7 +783,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	 */
 	public void switchMode(String _NEW_FORMAT){
 		String data = "";
-		data = this.just.getJustificationText().convertTo(_NEW_FORMAT);
+		data = this.justificationEdited.getJustificationText().convertTo(_NEW_FORMAT);
 		if(data==null) return;
 		setMode(_NEW_FORMAT, data);
 	}
@@ -739,12 +792,12 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	public void justUpdate(String justID, int col, boolean db_sync, D_Justification just) {
 		if(DEBUG) System.out.println("JustEditor: justUpdate: id="+justID+" col: "+col+" set_sync="+db_sync);
 		if(db_sync) return;
-		this.setJust(justID, false);
+		this.setJustification(justID, false);
 	}
 	@Override
 	public void forceJustificationEdit(String justID) {
 		if(DEBUG)System.out.println("JustEditor: forceEdit");
-		this.setJust(justID, true);
+		this.setJustification(justID, true);
 	}
 	@Override
 	public void changedUpdate(DocumentEvent evt) {
@@ -779,26 +832,26 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		
 		if(this.broadcasted == source) {
 			boolean val = broadcasted.isSelected();
-			D_Justification _m = D_Justification.getJustByLID(this.justID, true, true);
+			D_Justification _m = this.getJustificationKeep(); //D_Justification.getJustByLID(this.justID, true, true);
 			_m.setBroadcasted(val);
 			_m.storeRequest();
 			_m.releaseReference();
 		}
 		if(this.blocked == source) {
 			boolean val = blocked.isSelected();
-			D_Justification _m = D_Justification.getJustByLID(this.justID, true, true);
+			D_Justification _m = this.getJustificationKeep(); //D_Justification.getJustByLID(this.justID, true, true);
 			_m.setBlocked(val);
 			_m.storeRequest();
 			_m.releaseReference();
 		}
 		if(this.requested == source) {
 			boolean val = requested.isSelected();
-			D_Justification _m = D_Justification.getJustByLID(this.justID, true, true);
+			D_Justification _m = this.getJustificationKeep(); //D_Justification.getJustByLID(this.justID, true, true);
 			_m.setRequested(val);
 			_m.storeRequest();
 			_m.releaseReference();
 		}
-		if(!enabled) return;
+		if (!enabled) return;
 		//String currentTime = Util.getGeneralizedTime();
 		/*
 		if(mode == CHOICE) {
@@ -815,45 +868,45 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		if ((this.just_body_field == source) || (this.just_body_field.getDocumentSource() == source)) {
 			if (DEBUG) out.println("JustEditor:handleFieldEvent: just body");
 			String new_text = this.just_body_field.getText();
-			String old_text = this.just.getJustificationText().getDocumentString();
+			String old_text = this.justificationEdited.getJustificationText().getDocumentString();
 			
 			String editor_format = this.just_body_field.getFormatString();
-			String old_old_text = this.just.getJustificationText().getFormatString();
+			String old_old_text = this.justificationEdited.getJustificationText().getFormatString();
 			
 			if (Util.equalStrings_null_or_not(new_text, old_text)
 					&& Util.equalStrings_null_or_not(editor_format, old_old_text)) {
 				return;
 			}
 			
-			this.just = D_Justification.getJustByJust_Keep(just);
-			this.just.setJustificationText(new_text, editor_format);
-			this.just.setCreationDate(Util.getCalendar(creationTime));
-			this.just.setEditable();
-			this.just.storeRequest();
-			this.just.releaseReference();
+			this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
+			this.justificationEdited.setJustificationTextAndFormat(new_text, editor_format);
+			this.justificationEdited.setCreationDate(Util.getCalendar(creationTime));
+			this.justificationEdited.setEditable();
+			if (this.justificationEdited.dirty_any()) this.justificationEdited.storeRequest();
+			this.justificationEdited.releaseReference();
 			return;			
 		}
 		if (this.setTxtMode == source) {
 			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setText");
 			
-			this.just = D_Justification.getJustByJust_Keep(just);
+			this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
 			switchMode(D_Document.TXT_BODY_FORMAT);
-			this.just.setCreationDate(Util.getCalendar(creationTime));
-			this.just.setEditable();
-			this.just.storeRequest();
-			this.just.releaseReference();
+			this.justificationEdited.setCreationDate(Util.getCalendar(creationTime));
+			this.justificationEdited.setEditable();
+			this.justificationEdited.storeRequest();
+			this.justificationEdited.releaseReference();
 			
 			if(DEBUG) System.out.println("MotionEditor:handleFieldEvent: done");
 
 		}
 		if(this.setHTMMode==source) {
 			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setHTM");
-			this.just = D_Justification.getJustByJust_Keep(just);
+			this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
 			switchMode(D_Document.HTM_BODY_FORMAT);
-			this.just.setCreationDate(Util.getCalendar(creationTime));
-			this.just.setEditable();
-			this.just.storeRequest();
-			this.just.releaseReference();
+			this.justificationEdited.setCreationDate(Util.getCalendar(creationTime));
+			this.justificationEdited.setEditable();
+			this.justificationEdited.storeRequest();
+			this.justificationEdited.releaseReference();
 			
 			if(DEBUG) System.out.println("MotionEditor:handleFieldEvent: done");
 
@@ -897,12 +950,12 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	            			String data = Util.stringSignatureFromByte(bin);
 	            			if(DEBUG) System.out.println("DocumentEditor: handle: txt size="+data.length());
 	            			
-	            			this.just = D_Justification.getJustByJust_Keep(just);
+	            			this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
 	            			setMode(D_Document.PDF_BODY_FORMAT, data);
-	            			this.just.setCreationDate(Util.getCalendar(creationTime));
-	            			this.just.setEditable();
-	            			this.just.storeRequest();
-	            			this.just.releaseReference();
+	            			this.justificationEdited.setCreationDate(Util.getCalendar(creationTime));
+	            			this.justificationEdited.setEditable();
+	            			this.justificationEdited.storeRequest();
+	            			this.justificationEdited.releaseReference();
 	            			
 	            			if(DEBUG) System.out.println("DocumentEditor: handle: done");
 
@@ -919,12 +972,12 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	            				BufferedReader bri = new BufferedReader(new FileReader(file));
 								String data = Util.readAll(bri);
 								
-		            			this.just = D_Justification.getJustByJust_Keep(just);
+		            			this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
 								setMode(D_Document.HTM_BODY_FORMAT, data);
-		            			this.just.setCreationDate(Util.getCalendar(creationTime));
-		            			this.just.setEditable();
-		            			this.just.storeRequest();
-		            			this.just.releaseReference();
+		            			this.justificationEdited.setCreationDate(Util.getCalendar(creationTime));
+		            			this.justificationEdited.setEditable();
+		            			this.justificationEdited.storeRequest();
+		            			this.justificationEdited.releaseReference();
 								
 								if(DEBUG) System.out.println("DocumentEditor: handle: done");
 
@@ -938,12 +991,12 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		            				BufferedReader bri = new BufferedReader(new FileReader(file));
 									String data = Util.readAll(bri);
 									
-			            			this.just = D_Justification.getJustByJust_Keep(just);
+			            			this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
 									setMode(D_Document.TXT_BODY_FORMAT, data);
-			            			this.just.setCreationDate(Util.getCalendar(creationTime));
-			            			this.just.setEditable();
-			            			this.just.storeRequest();
-			            			this.just.releaseReference();
+			            			this.justificationEdited.setCreationDate(Util.getCalendar(creationTime));
+			            			this.justificationEdited.setEditable();
+			            			this.justificationEdited.storeRequest();
+			            			this.justificationEdited.releaseReference();
 									
 			            			if(DEBUG) System.out.println("DocumentEditor: handle: done");
 	
@@ -962,13 +1015,13 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			if(DEBUG) out.println("JustificationEditor:handleFieldEvent: just title");
 			String new_text = this.just_title_field.getText();
 			
-			this.just = D_Justification.getJustByJust_Keep(just);
-			this.just.getJustificationTitle().title_document.setDocumentString(new_text);
-			this.just.getJustificationTitle().title_document.setFormatString(TITLE_FORMAT);
-			this.just.setCreationDate(Util.getCalendar(creationTime));
-			this.just.setEditable();
-			this.just.storeRequest();
-			this.just.releaseReference();
+			this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
+			this.justificationEdited.setJustificationTitleText(new_text);
+			this.justificationEdited.setJustificationTitleFormat(TITLE_FORMAT);
+			this.justificationEdited.setCreationDate(Util.getCalendar(creationTime));
+			this.justificationEdited.setEditable();
+			if (this.justificationEdited.dirty_any()) this.justificationEdited.storeRequest();
+			this.justificationEdited.releaseReference();
 			return;			
 		}
 
@@ -978,21 +1031,21 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			Calendar cal = Util.getCalendar(new_text);
 			if(cal == null) return;
 			
-			this.just = D_Justification.getJustByJust_Keep(just);
-			this.just.setCreationDate(cal);
-			this.just.setEditable();
-			this.just.storeRequest();
-			this.just.releaseReference();
+			this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
+			this.justificationEdited.setCreationDate(cal);
+			this.justificationEdited.setEditable();
+			this.justificationEdited.storeRequest();
+			this.justificationEdited.releaseReference();
 			return;			
 		}
 		if(this.dategen_field==source) {
 			
-			this.just = D_Justification.getJustByJust_Keep(just);
-			this.just.setCreationDate(Util.CalendargetInstance());
-			this.date_field.setText(Encoder.getGeneralizedTime(this.just.getCreationDate()));
-			this.just.setEditable();
-			this.just.storeRequest();
-			this.just.releaseReference();
+			this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
+			this.justificationEdited.setCreationDate(Util.CalendargetInstance());
+			this.date_field.setText(Encoder.getGeneralizedTime(this.justificationEdited.getCreationDate()));
+			this.justificationEdited.setEditable();
+			this.justificationEdited.storeRequest();
+			this.justificationEdited.releaseReference();
 			return;			
 		}
 		if(just_answer_field==source) {
@@ -1009,20 +1062,43 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 					else id = Util.getStringID(Util.lval(selected.id));
 				}
 				
-				this.just = D_Justification.getJustByJust_Keep(just);
-				just.setAnswerToLIDstr(id);
-				this.just.setCreationDate(Util.getCalendar(creationTime));
-				this.just.setEditable();
-				this.just.storeRequest();
-				this.just.releaseReference();
+				this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
+				justificationEdited.setAnswerToLIDstr(id);
+				this.justificationEdited.setCreationDate(Util.getCalendar(creationTime));
+				this.justificationEdited.setEditable();
+				this.justificationEdited.storeRequest();
+				this.justificationEdited.releaseReference();
 			} catch (NumberFormatException e) {
 				e.printStackTrace();
 			}
 			return;
 		}
-		if((just.getLIDstr()!=null)&&(motionEditor!=null)) motionEditor.setNewJustificationID(just.getLIDstr());
+		if((justificationEdited.getLIDstr()!=null)&&(motionEditor!=null)) motionEditor.setNewJustificationID(justificationEdited.getLIDstr());
 		if(DEBUG) out.println("JustEditor:handleFieldEvent: exit");
 		if(DEBUG) out.println("*****************");
+	}
+	/**
+	 * If GID nut no LID (remote temporary not saved, exit).
+	 * If no LID, save that get kept
+	 * @return
+	 */
+	private D_Justification getJustificationKeep() {
+		if (justificationEdited == null) {
+			if (_DEBUG) out.println("JustEditor: getJustificationKeep: exit null edited object");
+			return null;
+		}
+		if (justificationEdited.getLIDstr() == null) {
+			if (justificationEdited.getGID() != null) {
+				if (_DEBUG) out.println("JustEditor: getJustificationKeep: exit no LID but LID");
+				return null;
+			}
+			//long jID = 
+			justificationEdited.storeSynchronouslyNoException();
+		}
+		D_Justification j = //D_Justification.getJustByLID(this.justID, true, true);
+				D_Justification.getJustByJust_Keep(justificationEdited);
+		justificationEdited = j;
+		return justificationEdited;
 	}
 	/**
 	 * Called by Motion Editor
@@ -1030,29 +1106,65 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	 * @param force
 	 * @param _motionEditor
 	 */
-	public void setJustification(D_Justification justification, boolean force, MotionEditor _motionEditor) {
-		if(DEBUG) out.println("JustEditor:setJustification: got ="+justification);
+	public void setJustificationAndMotionEditor(D_Justification justification, boolean force, MotionEditor _motionEditor) {
+		if (DEBUG) out.println("JustEditor: setJustificationAndMotionEditor: got ="+justification);
 		motionEditor = _motionEditor;
-		if(justification.getLIDstr()==null){
-			this.just = justification;
-			this.justID = null;
-			update_fields();
-			if(force||just.isEditable()) enable_it(); else disable_it();
+		if (justification.getLIDstr() == null) {
+			if (DEBUG) out.println("JustEditor: setJustificationAndMotionEditor: set empty just ="+justification);
+			this.justificationEdited = justification;
+			//this.justID = null;
+			update_justification_GUI_fields();
+			if (force||justificationEdited.isEditable()) enable_it(); else disable_it();
+		} else {
+			if (DEBUG) out.println("JustEditor: setJustificationAndMotionEditor: got ="+justification);
+			this.setJustification(justification.getLIDstr(), force);
 		}
-		else this.setJust(justification.getLIDstr(), force);
 	}
 	public void setVoteEditor(VoteEditor _vEditor) {
+		if (DEBUG) out.println("JustEditor: setVoteEditor: got ="+  _vEditor);
 		vEditor = _vEditor;
 	}
 	public D_Motion getMotion() {
 		if (motionEditor != null) return motionEditor.getMotion();
-		if (just != null)return just.getMotion();
+		if (justificationEdited != null)return justificationEdited.getMotion();
 		return null;
 	}
-	public void make_new() {
-		if (just==null) just = D_Justification.getEmpty();
-		if (just.isEditable()) return;
-		just.setEditable();
-		just.setLIDstr(null);
+	/**
+	 * Old: Takes the existing justification, setting its LID to null and its date to current
+	 * New: Sets an empty justification, but does not store it yet
+	 * @param motion
+	 */
+	public void make_new(D_Motion motion) {
+		if (DEBUG) out.println("JustEditor: make_new: got motion =" + motion);
+		D_Justification old_just = justificationEdited; //if (just == null) 
+		D_Justification proposed_just= D_Justification.getEmpty();
+		
+		boolean load_existing = false;
+		if (old_just != null && old_just.getLIDstr() == null) load_existing = true;
+		else {
+			if (0 == Application_GUI.ask(__("Do you want a new justification rather than to reuse the old one?"), __("New Justification"), 
+					JOptionPane.YES_NO_OPTION)) {
+				if (DEBUG) out.println("JustEditor: make_new: keep empty");
+			} else {
+				if (DEBUG) out.println("JustEditor: make_new: loadDuplicate");
+				if (old_just != null) load_existing = true;
+			}
+		}
+		if (load_existing)
+			proposed_just.loadDuplicatingInTemporary(old_just);
+		proposed_just.setMotionAndOrganizationAll(motion);
+		//justificationEdited.setOrganizationLIDstr(motion.getOrganizationLIDstr());
+		proposed_just.setConstituentAll(null);
+		//justificationEdited.setLIDstr(null);
+		//justificationEdited.setGID(null);
+		proposed_just.setCreationDate(Util.CalendargetInstance());
+		if ( ! proposed_just.isEditable()) {
+			if (DEBUG) out.println("JustEditor: make_new: setting editable");
+			proposed_just.setEditable();
+		}
+		justificationEdited = proposed_just;
+		if (DEBUG) out.println("JustEditor: make_new: exit");
+		update_justification_GUI_fields();
+		//this.update_it(false);
 	}
 }

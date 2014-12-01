@@ -354,8 +354,8 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					//if(con.global_organization_ID !=null)pm.org_ID_hash = con.global_organization_ID;
 					//pm.motion_ID = ;
 					//pm.constituent_ID_hash.add(con.global_constituent_id_hash);
-					if(con.neighborhood!=null){
-						for(int i=0; i<con.neighborhood.length; i++) 
+					if(con.getNeighborhood()!=null){
+						for(int i=0; i<con.getNeighborhood().length; i++) 
 						{
 							//pm.neighborhood_ID.add(con.neighborhood[i].neighborhoodID);
 						}

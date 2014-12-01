@@ -38,7 +38,7 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 				+"Version: "+version+"\n"
 				+"Date: "+d+"\n"
 					+"Verified: "+((verified!=null)?verified.getNameFull():null)+"\n"
-					+"Verified: GID="+((verified!=null)?verified.global_constituent_id_hash:null)+"\n"
+					+"Verified: GID="+((verified!=null)?verified.getGIDH():null)+"\n"
 					+"Verifier: "+((verifier!=null)?verifier.component_basic_data.name:null)+"\n"
 					+"Verifier: email="+((verifier!=null)?verifier.component_basic_data.emails:null)+"\n"
 				+"Signature: "+Util.byteToHexDump(signature, 20)+"\n"
@@ -63,8 +63,8 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 		if(this.verified.getLIDstr() == null) {
 			this.verified.setConstituentLID(D_Constituent.getLIDFromGID_or_GIDH(
 					verified.getGID(),
-					verified.global_constituent_id_hash,
-					verified.getOrganizationID()));
+					verified.getGIDH(),
+					verified.getOrganizationLID()));
 		}
 		String _my_r = null;
 		if(this.verified.getLIDstr() != null) {
@@ -87,7 +87,7 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 			Application_GUI.warning(__("Failed verification of:")+this, __("Constituent Verification"));
 		}
 		// start witness dialog
-		Long oID = this.verified.getOrganizationID();
+		Long oID = this.verified.getOrganizationLID();
 		if ( oID <= 0 ) oID = D_Organization.getLIDbyGID(verified.getGID());
 		D_Constituent c = 
 				D_Constituent.getConstByGID_or_GIDH(this.verified.getGID(), null, true, false, oID);
@@ -231,18 +231,18 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 
 	@Override
 	public String get_From() {
-		if((verified==null)||(verified.email==null)){
+		if((verified==null)||(verified.getEmail()==null)){
 			Application_GUI.warning(__("No emails set in this constituent!"), __("Your email absent"));
 			return Application_GUI.input(__("Can you enter the sender email?"), __("Sender"),
 					Application_GUI.QUESTION_MESSAGE);
 			//return "unknown@unknown";
 		}
-		return verified.email;
+		return verified.getEmail();
 	}
 
 	@Override
 	public String get_Subject() {
-		return __("DirectDemocracyP2P:Re:")+Util.trimmed(verified.forename, 10)+" "+Util.trimmed(verified.surname, 10)+" -- " +__("Identity verification");
+		return __("DirectDemocracyP2P:Re:")+Util.trimmed(verified.getForename(), 10)+" "+Util.trimmed(verified.getSurname(), 10)+" -- " +__("Identity verification");
 	}
 
 	@Override
@@ -273,7 +273,7 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 		String g = __("Dear")+" "+verifier.component_basic_data.name+"\r\n"+
 				__("I answer to verification of this constituent.")+"\r\n"+
 				__("Name:")+" \""+verified.getNameFull()+"\"\r\n"+
-				__("GID:")+" \""+verified.global_constituent_id_hash+"\"\r\n"+
+				__("GID:")+" \""+verified.getGIDH()+"\"\r\n"+
 				__("R:")+" \""+r+"\"\r\n"+
 				__("Please drag the attached image to your agent, to finalize the test.")+"\r\n"+
 			"\r\n\t"+__("Sincerely,")+" "+verified.getNameFull();

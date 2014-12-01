@@ -390,6 +390,37 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		init_ByGID(gID, gIDH, create, __peer);
 	}
 	/**
+	 * Best is if this should be called from a worker thread.
+	 * 
+	 * @param name
+	 * @param email
+	 * @param slogan
+	 * @param _cipher //Cipher.RSA;
+	 * @param _hash //Cipher.SHA256; 
+	 * @param _keysize //2048; 
+	 * @return
+	 */
+	public static D_Peer createPeerAndSetMyself(String name, String email, String slogan, String _cipher, String _hash, int _keysize) {
+		PeerInput pi = new PeerInput();
+		pi.name = name; 
+		pi.email = email;
+		pi.slogan = slogan; 
+		 
+		/*
+		 * ciphersuite did not initialize, add a new ciphersuit class
+		 */
+		
+		CipherSuit cs = new CipherSuit();
+		cs.cipher = _cipher; //Cipher.RSA; 
+		cs.hash_alg = _hash;//Cipher.SHA256; 
+		cs.ciphersize = _keysize;//2048; 
+		pi.cipherSuite = cs;
+		
+		D_Peer peer = HandlingMyself_Peer.createMyselfPeer_w_Addresses(pi, true);
+		
+		return peer;
+	}
+	/**
 	 * Set all "loaded" markers to true.
 	 * The only one actually used is loaded_served_orgs, but all seems to be discardable.
 	 */
@@ -4166,12 +4197,16 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		peer.setSlogan_My(slogan);
 		peer.releaseReference();
 	}
+
 	public void setSlogan_My(String slogan) {
 		assertReferenced();
 		this.component_preferences.my_slogan = slogan;
 		setPreferencesDate();
 		this.dirty_my_data = true;
 		this.storeRequest();
+	}
+	public String getSloganMy() {
+		return this.component_preferences.my_slogan;
 	}
 	/**
 	 * keeps and then storeRequest
@@ -4205,6 +4240,9 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		peer.setCategory_setDirty(value);
 		if (peer.dirty_any()) peer.storeRequest();
 		peer.releaseReference();
+	}
+	public String getCategoryMy() {
+		return this.component_preferences.category;
 	}
 	public void setCategory_setDirty(String cat) {
 		assertReferenced();
@@ -5273,7 +5311,6 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		this.status_references--;
 		Application_GUI.ThreadsAccounting_ping("Dropped peer status references for "+getName());
 	}
-
 
 }
 class D_Peer_SaverThread extends util.DDP2P_ServiceThread {

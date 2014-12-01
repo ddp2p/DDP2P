@@ -85,13 +85,11 @@ class D_Vote extends ASNObj{
 	private String justification_ID;
 	private String motion_ID;
 	private String organization_ID;
+	private boolean dirty_main;
 
 	public static D_Vote getEmpty() {return new D_Vote();}
 	public D_Vote() {}
-	public D_Vote(long _vote_ID) throws P2PDDSQLException {
-		if(_vote_ID<=0) return;
-		setLID(Util.getStringID(_vote_ID));
-		String sql = 
+	public final static String sql_get_vote_by_LID = 
 			"SELECT "+Util.setDatabaseAlias(table.signature.fields,"v")+
 			//", c."+table.constituent.global_constituent_ID+
 			//", m."+table.motion.organization_ID+
@@ -106,14 +104,14 @@ class D_Vote extends ASNObj{
 			//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
 			" WHERE v."+table.signature.signature_ID+"=?;"
 			;
-		ArrayList<ArrayList<Object>> v = Application.db.select(sql, new String[]{getLIDstr()}, DEBUG);
+	public D_Vote(long _vote_LID) throws P2PDDSQLException {
+		if(_vote_LID<=0) return;
+		setLID(Util.getStringID(_vote_LID));
+		ArrayList<ArrayList<Object>> v = Application.db.select(sql_get_vote_by_LID, new String[]{getLIDstr()}, DEBUG);
 		if(v.size() == 0) return;
 		init(v.get(0));
 	}
-	public D_Vote(String vote_GID) throws P2PDDSQLException {
-		if(vote_GID == null) return;
-		this.setGID(vote_GID);
-		String sql = 
+	public final static String sql_get_vote_by_GID = 
 			"SELECT "+Util.setDatabaseAlias(table.signature.fields,"v")+
 			//", c."+table.constituent.global_constituent_ID+
 			//", m."+table.motion.organization_ID+
@@ -128,8 +126,16 @@ class D_Vote extends ASNObj{
 			//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
 			" WHERE v."+table.signature.global_signature_ID+"=?;"
 			;
-		ArrayList<ArrayList<Object>> v = Application.db.select(sql, new String[]{vote_GID}, DEBUG);
-		if(v.size() == 0) return;
+	/**
+	 * Tries to get a saved vote.
+	 * @param vote_GID
+	 * @throws P2PDDSQLException
+	 */
+	public D_Vote(String vote_GID) throws P2PDDSQLException {
+		if(vote_GID == null) return;
+		this.setGID(vote_GID);
+		ArrayList<ArrayList<Object>> v = Application.db.select(sql_get_vote_by_GID, new String[]{vote_GID}, DEBUG);
+		if (v.size() == 0) return;
 		init(v.get(0));
 	}
 	public final static String sql_vote_for_motionID_from_constituent = 
@@ -313,27 +319,42 @@ class D_Vote extends ASNObj{
 		this.setLID(Util.getString(o.get(table.signature.S_ID)));
 		
 		this.setMotion(D_Motion.getMotiByLID(getMotionLIDstr(), true, false));
+		this.setMotionGID(getMotionFromObjOrLID().getGID()); //Util.getString(o.get(table.signature.S_FIELDS+1));
+
 		this.setConstituent(D_Constituent.getConstByLID(getConstituentLIDstr(), true, false));
-		this.setJustification(D_Justification.getJustByLID(getJustificationLIDstr(), true, false));
-		this.setOrganizationLID(getMotion().getOrganizationLIDstr()); //Util.getString(o.get(table.signature.S_FIELDS+0));
-		this.setOrganizationGID(getMotion().getOrganizationGID()); //D_Organization.getGIDbyLIDstr(organization_ID);//Util.getString(o.get(table.signature.S_FIELDS+3));
-		this.setMotionGID(getMotion().getGID()); //Util.getString(o.get(table.signature.S_FIELDS+1));
 		this.setConstituentGID(getConstituent().getGID()); //D_Constituent.getGIDFromLID(constituent_ID);
-		if (getJustification() != null)
-			this.setJustificationGID(getJustification().getGID()); //D_Justification.getGlobalID(justification_ID); //Util.getString(o.get(table.signature.S_FIELDS+2));
+		
+		this.setJustificationAll(D_Justification.getJustByLID(getJustificationLIDstr(), true, false));
+//		if (getJustification() != null)
+//			this.setJustificationGID(getJustification().getGID()); //D_Justification.getGlobalID(justification_ID); //Util.getString(o.get(table.signature.S_FIELDS+2));
+
+		this.setOrganizationLID(getMotionFromObjOrLID().getOrganizationLIDstr()); //Util.getString(o.get(table.signature.S_FIELDS+0));
+		this.setOrganizationGID(getMotionFromObjOrLID().getOrganizationGID()); //D_Organization.getGIDbyLIDstr(organization_ID);//Util.getString(o.get(table.signature.S_FIELDS+3));
+
 		//this.organization_ID = Util.getString(o.get(table.signature.S_FIELDS+4));
 		//this.choices = WB_Choice.getChoices(motionID);
 	}
+	/**
+	 * Gets constituent/motion/justif objects based on LIDs and justif GID).
+	 * Used in loadVotes from the adhoc broadcast queues
+	 * @param v
+	 * @throws Exception
+	 */
 	public void init_all(ArrayList<Object> v) throws Exception {
-		if(DEBUG)System.out.println("D_Vote:init_all: start");
-		try{
+		if (DEBUG) System.out.println("D_Vote:init_all: start");
+		try {
 			init(v);
-		}catch(Exception e){e.printStackTrace();}
-		if(DEBUG)System.out.println("D_Vote:init_all: contained objects");
-		if(getConstituentLIDstr()!=null)this.setConstituent(D_Constituent.getConstByLID(Util.lval(this.getConstituentLIDstr()), true, false));
+		} catch(Exception e){e.printStackTrace();}
+		if (DEBUG) System.out.println("D_Vote:init_all: contained objects");
+		if (getConstituentLIDstr() != null)
+			this.setConstituent(D_Constituent.getConstByLID(Util.lval(this.getConstituentLIDstr()), true, false));
 		//if(global_motion_ID!=null) this.motion =  D_Motion.getMotiByGID(this.global_motion_ID, true, false, Util.lval(this.organization_ID));
-		if(getMotionLIDstr()!=null) this.setMotion(D_Motion.getMotiByLID(this.getMotionLIDstr(), true, false));
-		if(getJustificationGID()!=null && getJustification() == null) this.setJustification(D_Justification.getJustByGID(this.getJustificationGID(), true, false, Util.lval(getOrganizationLIDstr()), Util.lval(this.getMotionLIDstr())));
+		if (getMotionLIDstr()!=null)
+			this.setMotion(D_Motion.getMotiByLID(this.getMotionLIDstr(), true, false));
+		if (getJustificationLIDstr() != null && getJustificationFromObjOrLID() == null)
+			this.setJustificationAll(D_Justification.getJustByLID(this.getJustificationLIDstr(), true, false));
+		if (getJustificationGID() != null && getJustificationFromObjOrLID() == null)
+			this.setJustification(D_Justification.getJustByGID(this.getJustificationGID(), true, false, Util.lval(getOrganizationLIDstr()), Util.lval(this.getMotionLIDstr())));
 		if(DEBUG)System.out.println("D_Vote:init_all: done");
 	}
 
@@ -430,8 +451,8 @@ class D_Vote extends ASNObj{
 			if (dependants > 0) new_dependants = dependants - 1;
 				
 			if (getConstituent() != null) enc.addToSequence(getConstituent().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC9));
-			if (getMotion() != null) enc.addToSequence(getMotion().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC10));
-			if (getJustification() != null) enc.addToSequence(getJustification().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC11));
+			if (getMotionFromObjOrLID() != null) enc.addToSequence(getMotionFromObjOrLID().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC10));
+			if (getJustificationFromObjOrLID() != null) enc.addToSequence(getJustificationFromObjOrLID().getEncoder(dictionary_GIDs, new_dependants).setASN1Type(DD.TAG_AC11));
 		}
 		/**
 		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
@@ -487,8 +508,8 @@ class D_Vote extends ASNObj{
 				"\n organization_ID="+getOrganizationLIDstr()+
 				
 				"\n voter="+getConstituent()+
-				"\n motion="+getMotion()+
-				"\n justification="+getJustification();
+				"\n motion="+getMotionFromObjOrLID()+
+				"\n justification="+getJustificationFromObjOrLID();
 	}
 	public void sign() {
 		sign(this.getConstituentGID());
@@ -805,8 +826,20 @@ class D_Vote extends ASNObj{
 		params[table.signature.S_FORMAT] = this.format;
 		params[table.signature.S_CREATION] = Encoder.getGeneralizedTime(this.getCreationDate());
 		params[table.signature.S_ARRIVAL] = Encoder.getGeneralizedTime(arrival_date);
-		if(this.getLIDstr() == null) {
-			if(DEBUG) System.out.println("WB_Vote:storeVerified:inserting");
+		if (this.getLIDstr() == null) {
+			if (this.getJustificationLID() > 0) {
+				D_Justification j = D_Justification.getJustByLID_AttemptCacheOnly(this.getJustificationLID(), false, false);
+				if (j != null) j.resetCache(); // removing cached memory of statistics about signatures!
+			}
+			if (this.getMotionLIDstr() != null) {
+				D_Motion m = D_Motion.getMotiByLID_AttemptCacheOnly(this.getMotionLID(), false, false);
+				if (m != null) m.resetCache(); // removing cached memory of statistics about justifications!
+			}
+			if (this.getOrganizationLIDstr() != null) {
+				D_Organization o = D_Organization.getOrgByLID_AttemptCacheOnly_NoKeep(this.getOrganizationLID(), false);
+				if (o != null) o.resetCache(); // removing cached memory of statistics about justifications!
+			}
+			if (DEBUG) System.out.println("WB_Vote:storeVerified:inserting");
 			result = Application.db.insert(table.signature.TNAME,
 					table.signature.fields_array,
 					params,
@@ -843,11 +876,11 @@ class D_Vote extends ASNObj{
 				if((this.getSignature()!=null) && (getGID() != null)) {
 					if(pm != null) {
 						if(pm.raw == null)pm.raw = dm.encode();
-						if(pm.motion_ID == null)pm.motion_ID=this.getMotion().getGID();
-						if(this.getConstituent().global_constituent_id_hash != null)pm.constituent_ID_hash.add(this.getConstituent().global_constituent_id_hash);
-						if(this.getJustification()!=null)
-							if(this.getJustification().getGID() != null)
-						pm.justification_ID = this.getJustification().getGID();
+						if(pm.motion_ID == null)pm.motion_ID=this.getMotionFromObjOrLID().getGID();
+						if(this.getConstituent().getGIDH() != null)pm.constituent_ID_hash.add(this.getConstituent().getGIDH());
+						if(this.getJustificationFromObjOrLID()!=null)
+							if(this.getJustificationFromObjOrLID().getGID() != null)
+						pm.justification_ID = this.getJustificationFromObjOrLID().getGID();
 						if(this.getOrganizationGID() !=null)pm.org_ID_hash = this.getOrganizationGID();
 					
 						BroadcastClient.msgs.registerRecent(pm, BroadcastQueueHandled.VOTE);
@@ -1174,15 +1207,50 @@ class D_Vote extends ASNObj{
 	public String getJustificationLIDstr() {
 		return justification_ID;
 	}
-	public void setJustificationLID(String justification_ID) {
-		this.justification_ID = justification_ID;
+	public long getJustificationLID() {
+		return Util.lval(justification_ID);
+	}
+	public void setJustificationLID(String justification_LID) {
+		this.justification_ID = justification_LID;
+	}
+	public void setJustificationLID_Dirty(String justification_LID) {
+		if (! Util.equalStrings_null_or_not(this.justification_ID, justification_LID)) {
+			this.justification_ID = justification_LID;
+			this.dirty_main = true;
+		}
+	}
+	/**
+	 * Sets both to the parameter value, and cleans the object
+	 * @param justification_LID
+	 * @param justification_GID
+	 */
+	public void setJustificationLID_Dirty(String justification_LID, String justification_GID) {
+		this.justification = null;
+		if (! Util.equalStrings_null_or_not(this.justification_ID, justification_LID)) {
+			this.justification_ID = justification_LID;
+			this.dirty_main = true;
+		}
+		if (! Util.equalStrings_null_or_not(this.global_justification_ID, justification_GID)) {
+			this.global_justification_ID = justification_GID;
+			this.dirty_main = true;
+		}
 	}
 	public String getJustificationGID() {
 		return global_justification_ID;
 	}
+	/**
+	 * No dirty flag
+	 * @param global_justification_ID
+	 */
 	public void setJustificationGID(String global_justification_ID) {
 		this.global_justification_ID = global_justification_ID;
 	}
+//	public void setJustificationGID_Dirty(String global_justification_ID) {
+//		if (! Util.equalStrings_null_or_not(this.global_justification_ID, global_justification_ID)) {
+//			this.global_justification_ID = global_justification_ID;
+//			this.dirty_main = true;
+//		}
+//	}
 	public Calendar getCreationDate() {
 		return creation_date;
 	}
@@ -1247,11 +1315,21 @@ class D_Vote extends ASNObj{
 	public String getMotionLIDstr() {
 		return motion_ID;
 	}
+	public long getMotionLID() {
+		return Util.lval(motion_ID);
+	}
 	public void setMotionLID(String motion_ID) {
 		this.motion_ID = motion_ID;
 	}
 	public String getOrganizationLIDstr() {
 		return organization_ID;
+	}
+	/**
+	 * Converts from string
+	 * @return
+	 */
+	public long getOrganizationLID() {
+		return Util.lval(organization_ID);
 	}
 	public void setOrganizationLID(String organization_ID) {
 		this.organization_ID = organization_ID;
@@ -1265,23 +1343,61 @@ class D_Vote extends ASNObj{
 	public void setConstituent(D_Constituent constituent) {
 		this.constituent = constituent;
 	}
-	public D_Motion getMotion() {
+	/**
+	 * Tries first the loaded object. If absent, reloads from LID.
+	 * @return
+	 */
+	public D_Motion getMotionFromObjOrLID() {
 		String mLID = this.getMotionLIDstr();
 		if ((this.motion == null) && (mLID != null))
 			this.motion = D_Motion.getMotiByLID(mLID, true, false);
 		return motion;
 	}
+	/**
+	 * Based only on object (can return null)
+	 * @return
+	 */
+	public D_Motion getMotion() {
+		return motion;
+	}
 	public void setMotion(D_Motion motion) {
 		this.motion = motion;
 	}
-	public D_Justification getJustification() {
+	/**
+	 * Forces to obtain the justification either from the object or from LID
+	 * @return
+	 */
+	public D_Justification getJustificationFromObjOrLID() {
 		String jLID = this.getJustificationLIDstr();
 		if ((this.justification == null) && (jLID != null))
 			this.justification = D_Justification.getJustByLID(jLID, true, false);
 		return justification;
 	}
+	/**
+	 * Returns only the object (maybe null if unset)
+	 * @return
+	 */
+	public D_Justification getJustificationFromObj() {
+		return justification;
+	}
 	public D_Justification setJustification(D_Justification justification) {
 		this.justification = justification;
+		return justification;
+	}
+	/**
+	 * Sets the object, GID and LID
+	 * @param justification
+	 * @return
+	 */
+	public D_Justification setJustificationAll(D_Justification justification) {
+		this.justification = justification;
+		if (justification != null) {
+			this.setJustificationGID(justification.getGID());
+			this.setJustificationLID_Dirty(justification.getLIDstr());
+		} else {
+			this.setJustificationGID(null);
+			this.setJustificationLID_Dirty(null);
+		}
 		return justification;
 	}
 

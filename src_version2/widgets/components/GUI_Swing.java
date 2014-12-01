@@ -12,6 +12,7 @@ import java.io.StringReader;
 import javax.swing.Icon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.parser.ParserDelegator;
 
@@ -27,6 +28,7 @@ import data.D_Organization;
 import data.D_Peer;
 import util.DDP2P_ServiceRunnable;
 import util.P2PDDSQLException;
+import util.Util;
 import widgets.app.ControlPane;
 import widgets.app.JFrameDropCatch;
 import widgets.app.MainFrame;
@@ -41,6 +43,7 @@ import widgets.updates.UpdatesPanel;
 
 public class GUI_Swing implements Vendor_GUI_Dialogs {
 
+	public static boolean DEBUG = true;
 	//public static RegistrationServer rs; // Song's server
 	public static ControlPane controlPane;
 	public static ConstituentsPanel constituents;
@@ -60,54 +63,80 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 				__("You can change the path from the control panel of the app, or may move scripts there.")+
 						"\n"+__("Do you want to change now the scripts path?"),
 				options, options[0], null);
+		if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: opt="+q+" dir="+dir);
 		switch (q) {
 		case 0:
 		{
-			final JFileChooser fc = new JFileChooser();
-			fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			int returnVal = fc.showOpenDialog(MainFrame.frame);
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-	            File file = fc.getSelectedFile();
-	            try {
-					dir = file.getCanonicalPath();
-					switch (DD.OS) {
-					case DD.LINUX:
-					case DD.MAC:
-						DD.setAppText(DD.APP_LINUX_SCRIPTS_PATH, dir);
-						break;
-					case DD.WINDOWS:
-						DD.setAppText(DD.APP_WINDOWS_SCRIPTS_PATH, dir);
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				} catch (P2PDDSQLException e) {
-					e.printStackTrace();
+			if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: scripts opt="+q);
+
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable("Scripts Folder", false, false, dir) {
+				@Override
+				public void _run() {
+					String dir = (String) this.ctx;
+					final JFileChooser fc = new JFileChooser();
+					fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+					if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: scripts browse");
+					int returnVal = fc.showOpenDialog(MainFrame.frame);
+					if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: scripts val =" + returnVal);
+					if (returnVal == JFileChooser.APPROVE_OPTION) {
+			            File file = fc.getSelectedFile();
+			            try {
+							dir = file.getCanonicalPath();
+							switch (DD.OS) {
+							case DD.LINUX:
+							case DD.MAC:
+								DD.setAppText(DD.APP_LINUX_SCRIPTS_PATH, dir);
+								break;
+							case DD.WINDOWS:
+								DD.setAppText(DD.APP_WINDOWS_SCRIPTS_PATH, dir);
+							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						} catch (P2PDDSQLException e) {
+							e.printStackTrace();
+						}
+			        } else {
+			        }
 				}
-	        } else {
-	        }
+			});
 		}
 		break;
 		case 1:
 		{
-			String version = null;
-			final JFileChooser fc = new JFileChooser();
-			fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			int returnVal = fc.showOpenDialog(MainFrame.frame);
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-	            File file = fc.getSelectedFile();
-	            try {
-					version = file.getCanonicalPath();
-					tools.Directories.setCrtPathsInDB(version);
+			if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: base opt="+q);
+			//if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: base browse "+MainFrame.frame);
+			//Util.printCallPath("");
+
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable("Scripts Folder", false, false, null) {
+				@Override
+				public void _run() {
+					String version = null;
+					final JFileChooser fc = new JFileChooser();
+					fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+					if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: base browse");
+					int returnVal = fc.showOpenDialog(MainFrame.frame);
+					if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: base val =" + returnVal);
+					if (returnVal == JFileChooser.APPROVE_OPTION) {
+			            File file = fc.getSelectedFile();
+			            try {
+							version = file.getCanonicalPath();
+							tools.Directories.setCrtPathsInDB(version);
+							
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+			        } else {
+			        }
 					
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-	        } else {
-	        }
+				}});
 		}
 		break;
-		case 2:	break;
-		case 3:  System.exit(-1); break;
+		case 2:
+			if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: alone opt="+q);
+			break;
+		case 3:
+			if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: exiting opt="+q);
+			System.exit(-1); break;
 		}
 	}
 
@@ -326,7 +355,8 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 
 	@Override
 	public void update_broadcast_client_sockets(Long msg_cnter) {
-		Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("BroadcastClient:setText1", true, msg_cnter){
+		Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("BroadcastClient:setText1", false, false, msg_cnter){
+			// may be set daemon
 			public void _run() {
 				if (ctx != null)
 					MainFrame.client_sockets_cntr.setText(""+ctx);

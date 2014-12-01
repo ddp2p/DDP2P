@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Hashtable;
 
 import javax.swing.Icon;
+import javax.swing.JOptionPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
@@ -40,6 +41,7 @@ import data.D_Constituent;
 import data.D_Document;
 import data.D_Document_Title;
 import data.D_Justification;
+import data.D_Justification.JustificationSupportEntry;
 import data.D_Motion;
 import data.D_News;
 import data.D_Peer;
@@ -50,6 +52,7 @@ import util.DBListener;
 import util.Util;
 import widgets.app.DDIcons;
 import widgets.components.GUI_Swing;
+import widgets.motions.MotionsModel;
 
 @SuppressWarnings("serial")
 public class JustificationsModel extends AbstractTableModel implements TableModel, DBListener, MotionsListener {
@@ -339,9 +342,43 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 	public int getRowCount() {
 		return _justifications.length;
 	}
+	public void refreshCache() {
+		final boolean refresh = true;
+		for (int row = 0; row < getRowCount(); row ++) {
+//			_getValueAt(row, TABLE_COL_RECENT, true);
+//			_getValueAt(row, TABLE_COL_ACTIVITY, true);
+//			_getValueAt(row, TABLE_COL_GID_VALID, true);
+//			_getValueAt(row, TABLE_COL_SIGN_VALID, true);
+//			_getValueAt(row, TABLE_COL_VOTERS_NB, true);
+			D_Justification j = this.getJustification(row);
+			
+			j.getGIDValid_WithMemory(refresh);
+			j.getSignValid_WithMemory(refresh);
+			j.getActivityNb_ByAge_WithCache(0, refresh);
+			j.getCountNews_WithCache(0, refresh);
+			j.getActivityNb_ByAge_WithCache(RECENT_DAYS_OLD, refresh);
+			j.getCountNews_WithCache(RECENT_DAYS_OLD, refresh);
+			if (this.crt_choice != null)
+				j.getActivityNb_ByChoice_WithCache(this.crt_choice, refresh);
+			//else j.getActivityNb_ByAge_WithCache(0, refresh);
+		}
+		SwingUtilities.invokeLater (new util.DDP2P_ServiceRunnable(__("Refresh Justifications"), false, false, this) {
+			// may be daemon
+			@Override
+			public void _run() {
+				JustificationsModel m = (JustificationsModel) this.getContext();
+				m.fireTableDataChanged();
+			}
+			
+		});
+	}
 	@Override
 	public Object getValueAt(int row, int col) {
+		return _getValueAt(row, col, false);
+	}
+	public Object _getValueAt(int row, int col, boolean refresh) {
 		Object result = null;
+		//boolean refresh = false;
 		D_Justification j = this.getJustification(row); //D_Justification.getJustByLID(justID, true, false);
 		if (j == null) return null;
 		//String justID = j.getLIDstr(); //Util.getString(this._justifications[row]);
@@ -387,14 +424,10 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 //			else result = new Boolean(j.isTemporary() || !newGID.equals(j.getGID()));
 		}
 		if (col == TABLE_COL_GID_VALID) {
-			String newGID = j.make_ID();
-			if (newGID == null) result = new Boolean(false);
-			else result = new Boolean(newGID.equals(j.getGID()));
+			result = j.getGIDValid_WithMemory(refresh);
 		}
 		if (col == TABLE_COL_SIGN_VALID) {
-			byte[] sgn = j.getSignature();
-			if (sgn == null) result = new Boolean(false);
-			else result = new Boolean(sgn.length>0);
+			result = j.getSignValid_WithMemory(refresh);
 		}
 		/*
 		if (col == TABLE_COL_CATEGORY) {
@@ -420,15 +453,19 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		}
 		*/
 		if (col == TABLE_COL_VOTERS_NB) {
-			return j.getVotes();			
+			//return j.getVotes_Cached();
+			if (this.crt_choice != null)
+				return j.getActivityNb_ByChoice_WithCache(this.crt_choice, refresh);
+			else
+				return j.getActivityNb_ByAge_WithCache(0, refresh);
 		}
 			
 		if (col == TABLE_COL_ACTIVITY) { // number of all votes + news
-			result = new Integer(""+j.getActivity(0)+ D_News.getCountJust(j, 0));
+			result = new Integer(""+j.getActivityNb_ByAge_WithCache(0, refresh)+ j.getCountNews_WithCache(0, refresh));
 		}
 			
 		if (col == TABLE_COL_RECENT) { // any activity in the last x days?
-			result = new Boolean((j.getActivity(RECENT_DAYS_OLD)+ D_News.getCountJust(j, RECENT_DAYS_OLD)) > 0);
+			result = new Boolean((j.getActivityNb_ByAge_WithCache(RECENT_DAYS_OLD, refresh)+ j.getCountNews_WithCache(RECENT_DAYS_OLD, refresh)) > 0);
 
 //			try {
 //				ArrayList<ArrayList<Object>> orgs = db.select(sql_ac2, new String[]{motID,Util.getGeneralizedDate(RECENT_DAYS_OLD)});
@@ -507,20 +544,25 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 						e.printStackTrace();
 					}
 					*/
+	/**
+	 * Should be called from the swing thread.
+	 * Sets the selection in all views.
+	 * @param just_id
+	 */
 	public void setCurrentJust(long just_id) {
 		if(DEBUG) System.out.println("JustificationsModel:setCurrent: choice="+crt_choice+"  id="+just_id);
-		if(just_id<0) {
-			for(Justifications o: tables){
+		if (just_id < 0) {
+			for (Justifications o: tables) {
 				ListSelectionModel selectionModel = o.getSelectionModel();
 				selectionModel.setSelectionInterval(-1, -1);
 				o.fireListener(-1, 0, false);
 			}	
-			if(DEBUG) System.out.println("JustificationsModel:setCurrent: choice="+crt_choice+"  Done -1");
+			if (DEBUG) System.out.println("JustificationsModel:setCurrent: choice="+crt_choice+"  Done -1");
 			return;
 		}
 		int k = this.findModelRow(just_id);
-		if(k>=0) {
-			for(Justifications o: tables){
+		if (k >= 0) {
+			for (Justifications o: tables) {
 				int tk = o.convertRowIndexToView(k);
 				o.setRowSelectionAllowed(true);
 				ListSelectionModel selectionModel = o.getSelectionModel();
@@ -530,11 +572,12 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 				//o.setEditingRow(k);
 				//o.setRowSelectionInterval(k, k);
 				o.fireListener(k, 0, false);
-				if(DEBUG) System.out.println("JustificationsModel:setCurentJust: choice="+crt_choice+" fireListener: k="+k);
+				if (DEBUG) System.out.println("JustificationsModel:setCurentJust: choice="+crt_choice+" fireListener: k="+k);
 			}
 		}
-		if(DEBUG) System.out.println("JustificationsModel:setCurrent:choice="+crt_choice+"  Done");
+		if (DEBUG) System.out.println("JustificationsModel:setCurrent:choice="+crt_choice+"  Done");
 	}
+/*
 	private static String sql_no_choice_no_answer = 
 		"SELECT "
 		+ "j." + table.justification.justification_ID 
@@ -608,11 +651,6 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		" GROUP BY j."+table.justification.justification_ID+
 		" ORDER BY cnt DESC"+
 		";";
-	public String getJustificationID(int row) {
-		Object[] __justifications = _justifications;
-		if ((row < 0) || (row >= __justifications.length)) return null;
-		return Util.getString(__justifications[row]);
-	}
 	
 	static final int SELECT_ID = 0;
 //		final int SELECT_CREATION_DATE = 1;
@@ -625,9 +663,17 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 //		final int SELECT_ARRIVAL_DATE = 8;
 //		final int SELECT_PREFERENCES_DATE = 9;
 	static final int SELECT_MAX_JUST_ID_FOR_SIGN = 2; //10;// only for: sql_no_choice_no_answer
-	
+	*/
+	public String getJustificationID(int row) {
+		Object[] __justifications = _justifications;
+		if ((row < 0) || (row >= __justifications.length)) return null;
+		return Util.getString(__justifications[row]);
+	}
 	@Override
 	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
+		_update(_table, info, false);
+	}
+	public void _update(ArrayList<String> _table, Hashtable<String, DBInfo> info, boolean refreshVotes) {
 		//boolean DEBUG=true;
 		if(DEBUG) System.out.println("\nwidgets.justifications.JustificationsModel: update table= "+_table+": info= "+info);
 		if (crt_motionID == null) {
@@ -635,8 +681,9 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			return;
 		}
 		
-		if (_table != null && !_table.contains(table.justification.TNAME)) {
-			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+		if (_table != null && !_table.contains(table.justification.TNAME) && !refreshVotes) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+				// daemon?
 				@Override
 				public void _run() {
 					((JustificationsModel)ctx).fireTableDataChanged();
@@ -650,24 +697,30 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		Object[] _t__votes;
 		Hashtable<String, Integer> _t_rowByID;
 		
-		try {
-			ArrayList<ArrayList<Object>> justi=null;
-			if ((crt_choice == null) && (crt_answered == null)) justi = db.select(sql_no_choice_no_answer, new String[]{crt_motionID}, DEBUG);
-			if ((crt_choice != null) && (crt_answered == null)) justi = db.select(sql_choice_no_answer, new String[]{crt_choice, crt_motionID}, DEBUG);
-			if ((crt_choice == null) && (crt_answered != null)) justi = db.select(sql_no_choice_answer, new String[]{crt_motionID, crt_answered}, DEBUG);
-			if ((crt_choice != null) && (crt_answered != null)) justi = db.select(sql_choice_answer, new String[]{crt_choice, crt_motionID, crt_answered}, DEBUG);
+//		try
+		{
+//			ArrayList<ArrayList<Object>> justi=null;
+//			if ((crt_choice == null) && (crt_answered == null)) justi = db.select(sql_no_choice_no_answer, new String[]{crt_motionID}, DEBUG);
+//			if ((crt_choice != null) && (crt_answered == null)) justi = db.select(sql_choice_no_answer, new String[]{crt_choice, crt_motionID}, DEBUG);
+//			if ((crt_choice == null) && (crt_answered != null)) justi = db.select(sql_no_choice_answer, new String[]{crt_motionID, crt_answered}, DEBUG);
+//			if ((crt_choice != null) && (crt_answered != null)) justi = db.select(sql_choice_answer, new String[]{crt_choice, crt_motionID, crt_answered}, DEBUG);
 
-			if (justi.size() == _justification.length) {
+			ArrayList<JustificationSupportEntry> justificationSupportLists =
+					D_Justification.getAllJustificationsCnt(crt_motionID, crt_choice, crt_answered);
+
+			if (justificationSupportLists.size() == _justification.length && ! refreshVotes) {
 				boolean different = false;
 				for (int k = 0; k < _justification.length; k++) {
 					//Util.lval(_justifications[k]);
-					if (_justification[k].getLID() != Util.lval(justi.get(k).get(SELECT_ID))) {
+					if (_justification[k].getLID() != justificationSupportLists.get(k).getJustification_LID()) //Util.lval(justi.get(k).get(SELECT_ID)))
+					{
 						different = true;
 						break;
 					}
 				}
 				if (! different) {
-					SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+					SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+						// daemon?
 						@Override
 						public void _run() {
 							((JustificationsModel)ctx).fireTableDataChanged();
@@ -678,10 +731,9 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			}
 			
 			
-			
-			_t__justifications = new Object[justi.size()];
-			_t__justification = new D_Justification[justi.size()];
-			_t__votes = new Object[justi.size()];
+			_t__justifications = new Object[justificationSupportLists.size()];
+			_t__justification = new D_Justification[justificationSupportLists.size()];
+			_t__votes = new Object[justificationSupportLists.size()];
 			//_meth = new Object[orgs.size()];
 //			_hash = new Object[justi.size()];
 //			_crea = new Object[justi.size()];
@@ -694,8 +746,9 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 //			_req = new boolean[justi.size()];
 			_t_rowByID = new Hashtable<String, Integer>();
 			for (int k = 0; k < _t__justifications.length; k ++) {
-				ArrayList<Object> j = justi.get(k);
-				_t__justifications[k] = j.get(SELECT_ID);
+				//ArrayList<Object> 
+				JustificationSupportEntry justifSupportEntry = justificationSupportLists.get(k);
+				_t__justifications[k] = justifSupportEntry.getJustification_LIDstr(); //.get(SELECT_ID);
 				_t__justification[k] = D_Justification.getJustByLID(Util.Lval(_t__justifications[k]), true, false);
 				_t_rowByID.put(Util.getString(_t__justifications[k]), new Integer(k));
 				//_meth[k] = orgs.get(k).get(SELECT_CREATION_DATE);
@@ -705,23 +758,24 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 //				_blo[k] = Util.stringInt2bool(j.get(SELECT_BLOCKED), false);
 //				_bro[k] = Util.stringInt2bool(j.get(SELECT_BROADCAST), false);
 //				_req[k] = Util.stringInt2bool(j.get(SELECT_REQUESTED), false);
-				_t__votes[k] = j.get(SELECT_CNT);
-				if (Util.stringInt2bool(_t__votes[k], false))
-					if (
-							(j.size() > SELECT_MAX_JUST_ID_FOR_SIGN)
-							&& (j.get(SELECT_MAX_JUST_ID_FOR_SIGN) == null)
-						) _t__votes[k] = "0"; 
+				_t__votes[k] = justifSupportEntry.getSupportCntStr();//.get(SELECT_CNT);
+//				if (Util.stringInt2bool(_t__votes[k], false))
+//					if (
+//							(j.size() > SELECT_MAX_JUST_ID_FOR_SIGN)
+//							&& (j.get(SELECT_MAX_JUST_ID_FOR_SIGN) == null)
+//						) _t__votes[k] = "0"; 
 //				_crea_date[k] = j.get(SELECT_CREATION_DATE);
 //				_arrival_date[k] = j.get(SELECT_ARRIVAL_DATE);
 //				_preferences_date[k] = j.get(SELECT_PREFERENCES_DATE);
 				
-				_t__justification[k].setVotes(_t__votes[k]);
+				_t__justification[k].setActivityNb_ByChoice(Util.Lval(_t__votes[k]), this.crt_choice);
 			}
 			if (DEBUG) System.out.println("widgets.org.Justifications: A total of: "+_t__justifications.length);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-			return;
 		}
+//		catch (P2PDDSQLException e) {
+//			e.printStackTrace();
+//			return;
+//		}
 
 		Object old_sel[] = new Object[tables.size()];
 		synchronized (this) {
@@ -742,7 +796,8 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			this.rowByID = _t_rowByID;
 		}
 		
-		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, this) {
+		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
+			// daemon?
 			@Override
 			public void _run() {
 				((JustificationsModel)ctx).fireTableDataChanged();
@@ -761,7 +816,8 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 //			}
 			
 			class O {int row_model; Justifications crt_view; O(int _row, Justifications _view){row_model = _row; crt_view = _view;}}
-			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), true, false, new O(row_model,crt_view)) {
+			SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, new O(row_model,crt_view)) {
+				// daemon?
 				@Override
 				public void _run() {
 					O o = (O)ctx;
@@ -805,20 +861,40 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 						value = __value.title_document.getDocumentUTFString();
 				}
 			}
-			if (DEBUG) System.out.println("MotionsModel:setValueAt name obj: "+value);
+			if (DEBUG) System.out.println("JustificationsModel: setValueAt name obj: "+value);
 			_value = Util.getString(value);
-			if (DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
+			if (DEBUG) System.out.println("JustificationsModel: setValueAt name str: "+_value);
 			if ("".equals(_value)) _value = null;
-			if (DEBUG) System.out.println("MotionsModel:setValueAt name nulled: "+_value);
+			if (DEBUG) System.out.println("JustificationsModel: setValueAt name nulled: "+_value);
+			if (_m.getNameMy() == null && _value == null) return;
+			if (_m.getNameMy() == null && _value != null) {
+				int o = config.Application_GUI.ask(
+						__("Do you want to set local pseudotitle?") + "\n" + _value, 
+						__("Changing local display"), JOptionPane.OK_CANCEL_OPTION);
+				if (o != 0) {
+					if (_DEBUG) System.out.println("JustificationsModel: setValueAt name my opt = " + o);
+					return;
+				}
+			}
 			_m.setNameMy(_value);
 			//set_my_data(table.my_justification_data.name, Util.getString(value), row);
 		}
 		if (col == TABLE_COL_CREATOR) {
-			if (DEBUG) System.out.println("MotionsModel:setValueAt cre obj: "+value);
+			if (DEBUG) System.out.println("JustificationsModel: setValueAt cre obj: "+value);
 			_value = Util.getString(value);
-			if (DEBUG) System.out.println("MotionsModel:setValueAt cre str: "+_value);
+			if (DEBUG) System.out.println("JustificationsModel: setValueAt cre str: "+_value);
 			if ("".equals(_value)) _value = null;
-			if (DEBUG) System.out.println("MotionsModel:setValueAt cre nulled: "+_value);
+			if (DEBUG) System.out.println("JustificationsModel: setValueAt cre nulled: "+_value);
+			if (_m.getCreatorMy() == null && _value == null) return;
+			if (_m.getCreatorMy() == null && _value != null) {
+				int o = config.Application_GUI.ask(
+						__("Do you want to set local pseudocreator?") + "\n" + _value, 
+						__("Changing local display"), JOptionPane.OK_CANCEL_OPTION);
+				if (o != 0) {
+					if (_DEBUG) System.out.println("JustificationsModel: setValueAt name my opt = " + o);
+					return;
+				}
+			}
 			_m.setCreatorMy(_value);
 			//set_my_data(table.my_justification_data.creator, Util.getString(value), row);
 		}

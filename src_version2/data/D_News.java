@@ -25,6 +25,7 @@ import hds.ASNSyncPayload;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Hashtable;
 
 import streaming.ConstituentHandling;
 import streaming.MotionHandling;
@@ -522,15 +523,27 @@ class D_News extends ASNObj{
 		params[table.news.N_BLOCKED] = Util.bool2StringInt(blocked);
 		params[table.news.N_REQUESTED] = Util.bool2StringInt(requested);
 		params[table.news.N_BROADCASTED] = Util.bool2StringInt(broadcasted);
-		if(this.news_ID == null) {
-			if(DEBUG) System.out.println("WB_Motion:storeVerified:inserting");
+		if (this.news_ID == null) {
+			if (this.getJustificationLID() > 0) {
+				D_Justification j = D_Justification.getJustByLID_AttemptCacheOnly(this.getJustificationLID(), false);
+				if (j != null) j.resetCache(); // removing cached memory of statistics about signatures!
+			}
+			if (this.getMotionLIDstr() != null) {
+				D_Motion m = D_Motion.getMotiByLID_AttemptCacheOnly(this.getMotionLID(), false);
+				if (m != null) m.resetCache(); // removing cached memory of statistics about justifications!
+			}
+			if (this.getOrganizationLIDstr() != null) {
+				D_Organization o = D_Organization.getOrgByLID_AttemptCacheOnly_NoKeep(this.getOrganizationLID(), false);
+				if (o != null) o.resetCache(); // removing cached memory of statistics about justifications!
+			}
+			if (DEBUG) System.out.println("WB_Motion:storeVerified:inserting");
 			result = Application.db.insert(table.news.TNAME,
 					table.news.fields_array,
 					params,
 					DEBUG
 					);
 			news_ID=""+result;
-		}else{
+		} else {
 			if(DEBUG) System.out.println("WB_Motion:storeVerified:updating");
 			params[table.news.N_ID] = news_ID;
 			Application.db.update(table.news.TNAME,
@@ -544,6 +557,26 @@ class D_News extends ASNObj{
 		//Application.db.delete(table.news_choice.TNAME, new String[]{table.news_choice.news_ID}, new String[]{result+""}, DEBUG);
 		//WB_Choice.save(choices, enhanced_newsID);
 		return result;
+	}
+	public long getMotionLID() {
+		return Util.lval(this.motion_ID);
+	}
+	public long getOrganizationLID() {
+		return Util.lval(this.organization_ID);
+	}
+	public String getOrganizationLIDstr() {
+		return this.organization_ID;
+	}
+	public String getMotionLIDstr() {
+		return this.motion_ID;
+	}
+	/**
+	 * News currently not oriented towards justifications
+	 * @return
+	 */
+	private long getJustificationLID() {
+		return -1;
+		//return this.justification_ID;
 	}
 	/**
 	 * update signature
@@ -650,8 +683,11 @@ class D_News extends ASNObj{
 	static final String sql_new_arriv = "SELECT count(*) FROM "+table.news.TNAME+" AS n "+
 			" WHERE n."+table.news.organization_ID+" = ? AND n."+table.news.arrival_date+">?;";
 	/**
-	 * negative days for the latest arrived days, and positive for latest creation days.
-	 * null days for all
+	 * Negative days for the latest arrived days, and positive for latest creation days.
+	 * Use "null" days for all!
+	 * 
+	 * Query is for a given organization.
+	 * 
 	 * @param orgID
 	 * @param days
 	 * @return

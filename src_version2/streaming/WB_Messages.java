@@ -209,7 +209,7 @@ public class WB_Messages extends ASNObj{
 					}else
 						c = D_Constituent.getConstByGID_or_GIDH(gid, gidh, true, false, false, null, p_oLID);
 					if (c == null || ! c.readyToSend()) continue;
-					if (!OrgHandling.serving(asr, c.getOrganizationIDStr())) continue;
+					if (!OrgHandling.serving(asr, c.getOrganizationLIDstr())) continue;
 					result.cons.add(c);
 				} catch(Exception e) {
 					if (DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested const: "+gid_or_hash);
@@ -467,7 +467,7 @@ public class WB_Messages extends ASNObj{
 		}
 		for (D_Constituent c: r.cons) {
 			if (DEBUG) System.out.println("WB_Messages: store: handle const: "+c);
-			rq = missing_sr.get(c.global_organization_ID);
+			rq = missing_sr.get(c.getOrganizationGID());
 			if (rq==null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
@@ -479,14 +479,14 @@ public class WB_Messages extends ASNObj{
 			}
 			long lid = _c.getLID();
 			rq.update(sol_rq, new_rq);
-			missing_sr.put(c.global_organization_ID, rq);			
+			missing_sr.put(c.getOrganizationGID(), rq);			
 			
-			obtained = obtained_sr.get(c.global_organization_ID);
+			obtained = obtained_sr.get(c.getOrganizationGID());
 			if(obtained==null) obtained = new RequestData();
 			obtained.cons.put(c.getGID(), DD.EMPTYDATE);
-			obtained.cons.put(c.global_constituent_id_hash, DD.EMPTYDATE);
-			obtained_sr.put(c.global_organization_ID, obtained);
-			orgs.add(c.global_organization_ID);
+			obtained.cons.put(c.getGIDH(), DD.EMPTYDATE);
+			obtained_sr.put(c.getOrganizationGID(), obtained);
+			orgs.add(c.getOrganizationGID());
 			//orgs.add(c.global_organization_ID_hash);
 		}
 		for (D_Neighborhood n: r.neig) {

@@ -172,9 +172,9 @@ public class RandomNetworkSimulation extends Thread{
 				
 				long p_oLID = D_Organization.getLIDbyGID(global_organization_id);
 				D_Constituent _c = D_Constituent.getConstByGID_or_GIDH(gcd, null, true, true, true, null, p_oLID);
-				_c.surname = "Neighborhood_"+n;
-				_c.forename = forename;
-				_c.global_organization_ID = global_organization_id;
+				_c.setSurname("Neighborhood_"+n);
+				_c.setForename(forename);
+				_c.setOrganizationGID(global_organization_id);
 				_c.setCreationDate(Util.CalendargetInstance());
 				
 
@@ -184,7 +184,7 @@ public class RandomNetworkSimulation extends Thread{
 				//sk[n][c] = cipher.getSK();
 				_c.setGID(gcd, null, p_oLID); //Util.getKeyedIDPK(cipher);
 				if(_c.getGID() != null){
-					_c.global_constituent_id_hash = D_Constituent.getGIDHashFromGID(_c.getGID());
+					_c.setGIDH(D_Constituent.getGIDHashFromGID(_c.getGID()));
 				}else{
 					Application_GUI.warning(("NULL Random Net???"), ("Null const"));
 				}
@@ -205,7 +205,7 @@ public class RandomNetworkSimulation extends Thread{
 					//d_n.storeVerified(false);
 				}
 				if(d_n!=null)
-					_c.global_neighborhood_ID = d_n.getGID();
+					_c.setNeighborhoodGID(d_n.getGID());
 				
 				//_c.sign(sk[n][c], global_organization_id);
 				_c.setSK(sk[n][c]);

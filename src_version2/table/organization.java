@@ -22,6 +22,12 @@ package table;
 import util.Util;
 
 public class organization {
+	public static final int WEIGHTS_TYPE_NONE = 0;
+	public static final int WEIGHTS_TYPE_0_1 = 1;
+	public static final int WEIGHTS_TYPE_INT = 2;
+	public static final int WEIGHTS_TYPE_DEFAULT = WEIGHTS_TYPE_NONE;
+	public static final int WEIGHTS_MAX_DEFAULT = 1;
+
 	public static final String Gs_global_organization_ID = "global_organization_IDs_served";
 	 public static final String organization_ID = "organization_ID";
 	 public static final String global_organization_ID = "global_organization_ID";
@@ -61,6 +67,8 @@ public class organization {
 	 public static final String preferences_date = "preferences_date";
 	 public static final String temporary = "temporary";
 	 public static final String hidden = "hidden";
+	 public static final String weights_type = "weights_type";
+	 public static final String weights_max = "weights_max";
 	 public static final String first_provider_peer = "peer_source_ID";
 	 public static final String TNAME = "organization";	
 	 public static final String field_list_noID = " "+util.Util.trimInterFieldSpaces(
@@ -71,7 +79,7 @@ public class organization {
 			plugins_excluding+","+description+","+ 			creator_ID+","+ 	    global_organization_ID_hash+"," +signature+","+				
 			requested+","+		  blocked+","+		  		broadcasted+","+			specific_requests+","	+reset_date+","+
 			signature_initiator+","+broadcast_rule+","+     preapproved+","+            preferences_date+","+   first_provider_peer+","+
-			hidden)+" ";
+			hidden+","+			weights_type+","+			weights_max)+" ";
 	 public static final String field_list = field_list_noID + "," + organization_ID;
 	 //hash_org+"," +
 	public static final int _GRASSROOT = 0;
@@ -126,7 +134,9 @@ public class organization {
 	public static final int ORG_COL_PREFERENCES_DATE = 33;
 	public static final int ORG_COL_FIRST_PROVIDER_PEER = 34;
 	public static final int ORG_COL_HIDDEN = 35;
-	public static final int ORG_COL_ID = 36;
+	public static final int ORG_COL_WEIGHTS_TYPE = 36;
+	public static final int ORG_COL_WEIGHTS_MAX = 37;
+	public static final int ORG_COL_ID = 38;
 	public static final String[] fields_noID = Util.trimmed(field_list_noID.split(","));
 	public static final int FIELDS_NOID = fields_noID.length;
 	public static final String[] fields = Util.trimmed(field_list.split(","));

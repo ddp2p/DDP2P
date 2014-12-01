@@ -354,7 +354,7 @@ public class OrgHandling {
 		if(DEBUG) out.println("**************");
 		return result;
 	}
-	
+	/*
 	@Deprecated
 	static D_Organization _signableOrgData(String ofi_orgID, String local_id, ArrayList<Object> row) throws P2PDDSQLException {
 			if(DEBUG) out.println("\n****************\nOrgHandling:signOrgData: start organization orgID="+ofi_orgID);
@@ -393,13 +393,6 @@ public class OrgHandling {
 		od.params.orgParam = D_Organization.getOrgParams(local_id);
 		
 		od.concepts = new D_OrgConcepts();
-		/*
-		int languages=1;
-		if(od.params.languages!=null) {
-			languages = od.params.languages.length;
-			if(languages < 1) languages =1;
-		}
-		*/
 		od.concepts.name_organization = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(table.organization.ORG_COL_NAME_ORG),null));
 		//new String[languages];
 		od.concepts.name_forum = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(table.organization.ORG_COL_NAME_FORUM),null));
@@ -414,7 +407,7 @@ public class OrgHandling {
 		if(DEBUG) out.println("**************");
 		return od;
 	}	
-	
+	*/
 		/*
 		od.constituents = ConstituentHandling.getConstituentsModifs(local_id, last_sync_date);
 		

@@ -150,7 +150,7 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 		jt.expandPath(new TreePath(new Object[]{root}));
 		for (Object o: data)	jt.expandPath(new TreePath(new Object[]{root, o}));
 		jt.addMouseListener(this);
-		EventQueue.invokeLater(new DDP2P_ServiceRunnable(this) {
+		EventQueue.invokeLater(new DDP2P_ServiceRunnable("PeerInstanceContacts", false, false, this) {
 			public void _run() {
 				PeerInstanceContacts pic = (PeerInstanceContacts)ctx;
 				String now = Util.getGeneralizedTime();

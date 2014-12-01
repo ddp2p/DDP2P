@@ -160,7 +160,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 				return;
 			}
 		}
-		Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("ClientUpdates: _run: STATUS") {
+		Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("ClientUpdates: _run: STATUS", false, false, "ClientUpdates: _run: STATUS") {
 			public void _run() {
 				Application_GUI.clientUpdates_Stop();
 			}
@@ -175,7 +175,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 		synchronized (monitor) {
 			ClientUpdates.cnt_clients--;
 			if (ClientUpdates.cnt_clients == 0) {
-				Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("ClientUpdates: _run: STATUS2") {
+				Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("ClientUpdates: _run: STATUS2", false, false, "ClientUpdates: _run: STATUS2") {
 					public void _run() {
 						Application_GUI.clientUpdates_Start();
 					}

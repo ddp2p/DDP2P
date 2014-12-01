@@ -40,7 +40,7 @@ import static util.Util.__;
 
 public class Identity {
 	private static final boolean _DEBUG = true;
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	public static final String DEFAULT_PREFERRED_LANG = "en_US:ro_RO";
 	public static final String DEFAULT_AUTHORSHIP_LANG = "en:US";
 	public static final String DEFAULT_AUTHORSHIP_CHARSET = "latin";
@@ -314,7 +314,7 @@ public class Identity {
 	 */
 	public static Identity getCurrentIdentity() throws P2PDDSQLException{
 		if(current_identity != null) return current_identity;
-		return _getDefaultIdentity();
+		return current_identity = _getDefaultIdentity();
 	}
 	public static Identity addIdentity(boolean default_id) throws P2PDDSQLException {
 		Identity result = new Identity();
@@ -348,13 +348,18 @@ public class Identity {
     	result.identity_id = Util.getStringID(a);
     	return result;
 	}
+	final static String sql_get_default_identity = "SELECT i."+table.identity.constituent_ID+", i."+table.identity.organization_ID
+    			+ ", i."+table.identity.identity_ID +", i."+table.identity.authorship_lang +", i."+table.identity.authorship_charset +
+    			" FROM "+table.identity.TNAME+" AS i" +
+    			" WHERE i."+table.identity.default_id+"==1 LIMIT 1;";
 	/**
-	 * Builds an Identity for the default in the identities table
+	 * Builds an Identity for the default in the identities table.
+	 * If no default exists, it creates one if allowed by DD.APP_stop_automatic_creation_of_default_identity
 	 * @return default identity in identities table or null if none exists
 	 * @throws P2PDDSQLException
 	 */
 	private static Identity _getDefaultIdentity() throws P2PDDSQLException{
-		if(DEBUG) System.out.println("Identity:getDefaultIdentity");
+		if (DEBUG) System.out.println("Identity:getDefaultIdentity");
     	Identity result = new Identity();
     	ArrayList<ArrayList<Object>> id;
     	/*
@@ -365,16 +370,12 @@ public class Identity {
     			" LEFT JOIN "+table.organization.TNAME+" AS o ON (o."+table.organization.organization_ID+" == i."+table.identity.organization_ID+")" +
     			" WHERE i."+table.identity.default_id+"==1 LIMIT 1;";
     	*/
-    	String sql = "SELECT i."+table.identity.constituent_ID+", i."+table.identity.organization_ID
-    			+ ", i."+table.identity.identity_ID +", i."+table.identity.authorship_lang +", i."+table.identity.authorship_charset +
-    			" FROM "+table.identity.TNAME+" AS i" +
-    			" WHERE i."+table.identity.default_id+"==1 LIMIT 1;";
-    	id=Application.db.select(
-    			sql,
+    	id = Application.db.select(
+    			sql_get_default_identity,
     			new String[]{}, DEBUG);
-    	if (id.size()==0) {
+    	if (id.size() == 0) {
     		if (DEBUG) System.err.println("No default identity found!");
-    		if (!DD.getAppBoolean(DD.APP_stop_automatic_creation_of_default_identity))
+    		if (! DD.getAppBoolean(DD.APP_stop_automatic_creation_of_default_identity))
     			return addIdentity(true);
     		return null;
     	}
@@ -387,7 +388,7 @@ public class Identity {
 		//if(DEBUG) System.out.println("Identity:getDefaultIdentity: id="+Util.getString(id.get(0).get(2)));
 		result.authorship_lang = Util.getString(id.get(0).get(3));
     	result.authorship_charset = Util.getString(id.get(0).get(4));
-		if(DEBUG) System.out.println("Identity:getDefaultIdentity: result="+result);
+		if (DEBUG) System.out.println("Identity:getDefaultIdentity: result="+result);
     	return result;
     }
 	/**
@@ -518,42 +519,73 @@ public class Identity {
 	   	if(DEBUG) System.err.println("Identity:setCurrentOrg: Done");
 		return result;
 	}
-	/**
-	 * For each org there is a constituent set as current
-	 * @param _constituentID
-	 * @param _organizationID
-	 * @throws P2PDDSQLException
-	 */
-	public static void setCurrentConstituentForOrg(long _constituentID,
-			long _organizationID) throws P2PDDSQLException {
-    	if(DEBUG) System.err.println("Identity:setCurrentConstituent: "+_constituentID+" org="+_organizationID);
-		if(Identity.current_identity==null) return;
-		if(Identity.current_identity.identity_id==null) return;
-		//long old_constituent = setCurrentOrg(_organizationID);
-		//if(old_constituent == _constituentID) return;
-		
-		Application.db.update(table.identity.TNAME,
-				new String[]{table.identity.organization_ID, table.identity.constituent_ID},
-				new String[]{table.identity.identity_ID},
-				new String[]{""+_organizationID, ""+_constituentID, Identity.current_identity.identity_id},
-				DEBUG);
-		
-		if(_constituentID<0) {
-			Application.db.delete(table.identity_ids.TNAME,
-					new String[]{table.identity_ids.identity_ID,table.identity_ids.organization_ID},
-					new String[]{Identity.current_identity.identity_id, ""+_organizationID}, DEBUG);
-	    	if(DEBUG) System.err.println("Identity:setCurrentConstituent: cancelling myself Done");
-			return;
-		}
-		
-		String sql = 
+	static final String sql_identity_for_org = 
 			"SELECT "+table.identity_ids.identity_ids_ID+","+table.identity_ids.constituent_ID+
 			" FROM "+table.identity_ids.TNAME+
 			" WHERE "+
 			//+"=? AND "+//""+_constituentID,
 			table.identity_ids.identity_ID+"=? AND "+
 			table.identity_ids.organization_ID+"=?;";
-		ArrayList<ArrayList<Object>> i = Application.db.select(sql, new String[]{Identity.current_identity.identity_id, ""+_organizationID}, DEBUG);
+//	final static String sql_identity_for_org_ID = 
+//			"SELECT "+table.identity_ids.identity_ids_ID+","+table.identity_ids.constituent_ID+
+//			" FROM "+table.identity_ids.TNAME+
+//			" WHERE "+
+//			//+"=? AND "+//""+_constituentID,
+//			table.identity_ids.identity_ID+"=? AND "+
+//			table.identity_ids.organization_ID+"=?;";
+	/**
+	 * For each org there is a constituent set as current.
+	 * Inefficient implementation. Try first updating, 
+	 * Then delete empty ones, then check value, 
+	 * then insert if absent, then update again.
+	 * 
+	 * @param _constituentID
+	 * @param _organizationID
+	 * @throws P2PDDSQLException
+	 */
+	public static boolean setCurrentConstituentForOrg(long _constituentID,
+			long _organizationID) throws P2PDDSQLException {
+    	if (DEBUG) System.err.println("Identity:setCurrentConstituent: "+_constituentID+" org="+_organizationID);
+    	getCurrentIdentity(); // to load current Identity in not yet done ...
+		if (Identity.current_identity == null) {
+		  	if (DEBUG) System.err.println("Identity:setCurrentConstituent: No identity object");
+			return false;
+		}
+		if (Identity.current_identity.identity_id == null) {
+		  	if (DEBUG) System.err.println("Identity:setCurrentConstituent: No identity LID");
+			return false;
+		}
+		//long old_constituent = setCurrentOrg(_organizationID);
+		//if(old_constituent == _constituentID) return;
+		
+		/**
+		 * Update constituent LID as the new one, if it was already here
+		 */
+		Application.db.update(table.identity.TNAME,
+				new String[]{table.identity.organization_ID, table.identity.constituent_ID},
+				new String[]{table.identity.identity_ID},
+				new String[]{""+_organizationID, ""+_constituentID, Identity.current_identity.identity_id},
+				DEBUG);
+		
+		/**
+		 * Delete entry for this org if there is no constituent
+		 */
+		if (_constituentID < 0) {
+			Application.db.delete(table.identity_ids.TNAME,
+					new String[]{table.identity_ids.identity_ID,table.identity_ids.organization_ID},
+					new String[]{Identity.current_identity.identity_id, ""+_organizationID}, DEBUG);
+	    	if (DEBUG) System.err.println("Identity:setCurrentConstituent: cancelling myself Done");
+			return true;
+		}
+		
+		/**
+		 * Check if it is stored
+		 */
+		ArrayList<ArrayList<Object>> i =
+				Application.db.select(sql_identity_for_org, new String[]{Identity.current_identity.identity_id, ""+_organizationID}, DEBUG);
+		/**
+		 * Insert if not stored
+		 */
 		if (i.size() == 0) {
 			Application.db.insert(table.identity_ids.TNAME,
 					new String[]{table.identity_ids.constituent_ID, table.identity_ids.organization_ID, table.identity_ids.identity_ID},
@@ -561,12 +593,14 @@ public class Identity {
 					DEBUG);
 		} else {
 			long old_constituent = -1;
-			try{
-				old_constituent=new Integer(Util.getString(i.get(0).get(1))).longValue();
-			}catch(Exception e){e.printStackTrace();}
-			if(old_constituent == _constituentID) return;
+			try {
+				old_constituent = new Integer(Util.getString(i.get(0).get(1))).longValue();
+			} catch(Exception e){e.printStackTrace();}
+			if (old_constituent == _constituentID) return true;
 			
-			
+			/**
+			 * If still not the right value, try again updating (should not be here)
+			 */
 			String ID = Util.getString(i.get(0).get(0));
 			Application.db.update(table.identity_ids.TNAME,
 					new String[]{table.identity_ids.constituent_ID, table.identity_ids.organization_ID},
@@ -574,6 +608,7 @@ public class Identity {
 					new String[]{""+_constituentID, ""+_organizationID, ID}, DEBUG);
 		}
     	if(DEBUG) System.err.println("Identity:setCurrentConstituent: Done");
+    	return true;
 	}
 	/**
 	 * Returns the default constituentID in identity-ids for this org
@@ -583,25 +618,19 @@ public class Identity {
 	 * @throws P2PDDSQLException
 	 */
 	public static long getDefaultConstituentIDForOrg(long _organizationID) throws P2PDDSQLException {
-    	if(DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: begin");
-    	if(DEBUG) Util.printCallPath("Defaul ID for ORG");
-		if(Identity.current_identity==null){
-	    	if(_DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: no current Done");
+    	if (DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: begin");
+    	if (DEBUG) Util.printCallPath("Defaul ID for ORG");
+    	getCurrentIdentity(); // to load current Identity in not yet done ...
+		if (Identity.current_identity == null){
+	    	if(_DEBUG) System.err.println("Identity: getDefaultConstituentIDForOrg: no current obj Done");
 			return -1;
 		}
 		if(Identity.current_identity.identity_id==null){
 	    	if(DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: no current identity ID Done");
 			return -1;
 		}
-		String sql = 
-			"SELECT "+table.identity_ids.identity_ids_ID+","+table.identity_ids.constituent_ID+
-			" FROM "+table.identity_ids.TNAME+
-			" WHERE "+
-			//+"=? AND "+//""+_constituentID,
-			table.identity_ids.identity_ID+"=? AND "+
-			table.identity_ids.organization_ID+"=?;";
 		ArrayList<ArrayList<Object>> i = 
-			Application.db.select(sql, new String[]{Identity.current_identity.identity_id,  ""+_organizationID}, DEBUG);
+			Application.db.select(sql_identity_for_org, new String[]{Identity.current_identity.identity_id,  ""+_organizationID}, DEBUG);
 		if (i.size() == 0){
 	    	if(DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: no current identity_ids ID Done");
 			return -1;

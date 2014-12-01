@@ -25,6 +25,7 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -46,6 +47,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.JViewport;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
@@ -174,8 +176,8 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 		};
 		
 		//getTableHeader().setDefaultRenderer(rend);
-		for(int col_index = 0; col_index < getModel().getColumnCount(); col_index++) {
-			if(getModel().getIcon(col_index) != null)
+		for (int col_index = 0; col_index < getModel().getColumnCount(); col_index ++) {
+			if (getModel().getIcon(col_index) != null)
 				getTableHeader().getColumnModel().getColumn(col_index).setHeaderRenderer(rend);
 		}
 		
@@ -188,10 +190,11 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 //     			this.fireListener(row, A_NON_FORCE_COL);
 //    		}
 //    	}catch(Exception e){e.printStackTrace();}
-		if(DEBUG) System.out.println("Motions: init: End");
+		if (DEBUG) System.out.println("Motions: init: End");
 	}
-	public JScrollPane getScrollPane(){
-        JScrollPane scrollPane = new JScrollPane(this);
+	JScrollPane scrollPane = null;
+	public JScrollPane getScrollPane() {
+        scrollPane = new JScrollPane(this);
 		this.setFillsViewportHeight(true);
 		return scrollPane;
 	}
@@ -346,6 +349,11 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 		}
 		if (DEBUG) System.out.println("\n************\nMotions:fireListener: Done");
 	}
+	/**
+	 * Received view_row
+	 * @param table_row
+	 * @param col
+	 */
 	void fireListener(int table_row, int col) {
 		if (DEBUG) System.out.println("Motions:fireListener2: row="+table_row);
 		String motion_ID;
@@ -387,18 +395,18 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 	@Override
 	public void mouseClicked(MouseEvent evt) {
 		// boolean DEBUG = true;
-    	int row; //=this.getSelectedRow();
+    	int view_row; //=this.getSelectedRow();
     	int col; //=this.getSelectedColumn();
     	//if(!evt.isPopupTrigger()) return;
     	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
-        row = this.rowAtPoint(point);
+        view_row = this.rowAtPoint(point);
         col = this.columnAtPoint(point);
-        if ((row < 0) || (col < 0 )) return;
+        if ((view_row < 0) || (col < 0 )) return;
         
-		if (DEBUG) System.out.println("Motions: mouseClicked: row=" + row);
+		if (DEBUG) System.out.println("Motions: mouseClicked: row=" + view_row);
     	MotionsModel model = (MotionsModel)getModel();
- 		int model_row = convertRowIndexToModel(row);
+ 		int model_row = convertRowIndexToModel(view_row);
  		if (DEBUG) System.out.println("Motions: mouseClicked: model_row="+model_row);
    	   	if (model_row >= 0) {
    	   		long motID = model.getMotionID(model_row); //Util.getString(model._motions[model_row]);
@@ -409,7 +417,7 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
    	   		} catch(Exception e){};
    	   	}
         
-        fireListener(row,col);
+        fireListener(view_row,col);
 	}
 	@Override
 	public void mouseEntered(MouseEvent arg0) {
@@ -489,8 +497,13 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
     	aAction.putValue("row", new Integer(model_row));
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);    	
-    	
+       	
     	aAction = new MotionCustomAction(this, __("Adjust Column Size!"), delicon,__("Adjust Column Size."), __("Adjust Column Size"),KeyEvent.VK_C, MotionCustomAction.M_REDRAW);
+    	aAction.putValue("row", new Integer(model_row));
+    	menuItem = new JMenuItem(aAction);
+    	popup.add(menuItem);    	
+       	
+    	aAction = new MotionCustomAction(this, __("Refresh Cache!"), delicon,__("Refresh Cache."), __("Refresh Cache"),KeyEvent.VK_F, MotionCustomAction.M_REFRESH);
     	aAction.putValue("row", new Integer(model_row));
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);    	
@@ -586,6 +599,25 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 		// TODO Auto-generated method stub
 		
 	}
+	public void showSelected() {
+		if (DEBUG) System.out.println("Motions.showSelected");
+		if (!(this.getParent() instanceof JViewport)) {
+			if (_DEBUG) System.out.println("Motions.showSelected bad parent");
+			return;
+		}
+		int row = this.getSelectedRow();
+		if (row <= 0) {
+			if (DEBUG) System.out.println("Motions.showSelected no row: "+row);
+			return;
+		}
+		JViewport viewport = (JViewport) this.getParent();
+		Point pt = viewport.getViewPosition();
+	    Rectangle rect = this.getCellRect(row, 0, true);
+	    //rect.setLocation(rect.x-pt.x, rect.y-pt.y);
+		this.scrollRectToVisible(rect);
+		//if (scrollPane != null) scrollPane.scrollRectToVisible(rect);
+		if (DEBUG) System.out.println("Motions.showSelected: done rect="+rect+" vs pt="+pt);
+	}
 }
 @SuppressWarnings("serial")
 class MotionCustomAction extends DebateDecideAction {
@@ -600,6 +632,7 @@ class MotionCustomAction extends DebateDecideAction {
 	public static final int M_TOGGLE_HIDE = 9;
 	public static final int M_REDRAW = 10;
 	public static final int M_EXPORT = 11;
+	public static final int M_REFRESH = 12;
 	
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
@@ -675,6 +708,18 @@ class MotionCustomAction extends DebateDecideAction {
     	if (cmd == M_REDRAW){
     		if (DEBUG) System.out.println("Motions:MotionCustomAction: Redraw: start");
     		tree.initColumnSizes();
+    	}
+    	if (cmd == M_REFRESH){
+    		if (DEBUG) System.out.println("Motions:MotionCustomAction: Redraw: start");
+    		new util.DDP2P_ServiceThread(__("Motions Refresh"), true, tree) {
+
+				@Override
+				public void _run() {
+					Motions tree = (Motions) ctx; //getContext();
+		    		tree.getModel().refresh();
+				}
+    			
+    		}.start();
     	}
         if (cmd == M_DEL) {
     		if (DEBUG) System.out.println("Motions:MotionCustomAction: Del: start");
@@ -785,7 +830,7 @@ class MotionCustomAction extends DebateDecideAction {
 			}
 			D_Motion enhanced = motion.getEnhancedMotion();
 			D_Constituent cons = vote.getConstituent();
-			D_Justification just = vote.getJustification();
+			D_Justification just = vote.getJustificationFromObjOrLID();
 			D_Organization org = motion.getOrganization();//D_Organization.getOrgByLID(m.getOrganizationLIDstr(), true, false);
 			
 			filterUpdates.setFileFilter(new widgets.components.StegoFilterKey());
@@ -811,18 +856,18 @@ class MotionCustomAction extends DebateDecideAction {
 				if (cons != null) {
 					cons.loadNeighborhoods(D_Constituent.EXPAND_ALL);
 					dsk.constit.add(cons);
-					if (cons.neighborhood != null) {
-						for (int k = 0; k < cons.neighborhood.length; k++) {
-							dsk.neigh.add(cons.neighborhood[k]);
+					if (cons.getNeighborhood() != null) {
+						for (int k = 0; k < cons.getNeighborhood().length; k++) {
+							dsk.neigh.add(cons.getNeighborhood()[k]);
 						}
 					}
 				}
 				if (declared_motion_author != null) {
 					declared_motion_author.loadNeighborhoods(D_Constituent.EXPAND_ALL);
 					dsk.constit.add(declared_motion_author);
-					if (declared_motion_author.neighborhood != null) {
-						for (int k = 0; k < declared_motion_author.neighborhood.length; k++) {
-							dsk.neigh.add(declared_motion_author.neighborhood[k]);
+					if (declared_motion_author.getNeighborhood() != null) {
+						for (int k = 0; k < declared_motion_author.getNeighborhood().length; k++) {
+							dsk.neigh.add(declared_motion_author.getNeighborhood()[k]);
 						}
 					}
 				}

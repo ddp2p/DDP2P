@@ -176,7 +176,7 @@ public class ASNSyncPayload extends ASNObj{
 				// the next must be commented since ORG_GID is compressed (or eliminated in the objec's encoder)
 				// but should certainly not change cached objects!
 				//c.constituent.global_organization_ID = null; 
-				if (!STREAMING_SEND_NEIGHBORHOOD_IN_CONSTITUENT) c.constituent.neighborhood = null;
+				if (!STREAMING_SEND_NEIGHBORHOOD_IN_CONSTITUENT) c.constituent.setNeighborhood(null);
 				prepareConstDictionary(c.constituent);
 			}
 		if(o.neighborhoods != null)
@@ -244,7 +244,7 @@ public class ASNSyncPayload extends ASNObj{
 			for(data.ASNConstituentOP c : o.constituents) {
 				if(c.constituent==null) continue;
 				expandConstDictionariesAtDecoding(c.constituent);
-				c.constituent.global_organization_ID = o.global_organization_ID;
+				c.constituent.setOrganizationGID(o.global_organization_ID);
 				//c.constituent.neighborhood = ;// cannot reconstruct
 			}
 		if(o.neighborhoods != null)
@@ -495,8 +495,8 @@ public class ASNSyncPayload extends ASNObj{
 		//v.global_vote_ID = null;
 		//if(v.global_vote_ID!=null) v.global_vote_ID = addToDictionaryGetIdxS(dictionary_GIDs, v.global_vote_ID);
 		if(v.getConstituent()!=null) ASNSyncPayload.prepareConstDictionary(v.getConstituent(), dictionary_GIDs);
-		if(v.getMotion()!=null) ASNSyncPayload.prepareMotiDictionary(v.getMotion(), dictionary_GIDs);
-		if(v.getJustification()!=null) ASNSyncPayload.prepareJustDictionary(v.getJustification(), dictionary_GIDs);
+		if(v.getMotionFromObjOrLID()!=null) ASNSyncPayload.prepareMotiDictionary(v.getMotionFromObjOrLID(), dictionary_GIDs);
+		if(v.getJustificationFromObjOrLID()!=null) ASNSyncPayload.prepareJustDictionary(v.getJustificationFromObjOrLID(), dictionary_GIDs);
 	}
 	private void prepareVoteDictionary(D_Vote v) {
 		prepareVoteDictionary(v, dictionary_GIDs);
@@ -512,8 +512,8 @@ public class ASNSyncPayload extends ASNObj{
 		//v.global_vote_ID = v.make_ID();
 		//if(v.global_vote_ID!=null) v.global_vote_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_vote_ID));
 		if(v.getConstituent()!=null) ASNSyncPayload.expandConstDictionariesAtDecoding(v.getConstituent(), dictionary_GIDs);
-		if(v.getMotion()!=null) ASNSyncPayload.expandMotiDictionariesAtDecoding(v.getMotion(), dictionary_GIDs);
-		if(v.getJustification()!=null) ASNSyncPayload.expandJustDictionariesAtDecoding(v.getJustification(), dictionary_GIDs);
+		if(v.getMotionFromObjOrLID()!=null) ASNSyncPayload.expandMotiDictionariesAtDecoding(v.getMotionFromObjOrLID(), dictionary_GIDs);
+		if(v.getJustificationFromObjOrLID()!=null) ASNSyncPayload.expandJustDictionariesAtDecoding(v.getJustificationFromObjOrLID(), dictionary_GIDs);
 	}
 	/**
 	 * TODO, just as with the Translations with Votes
@@ -656,19 +656,19 @@ public class ASNSyncPayload extends ASNObj{
 	public static void prepareConstDictionary(D_Constituent c, ArrayList<String> dictionary_GIDs) {
 		if(c==null)return;
 		//if(c.global_constituent_id!=null) c.global_constituent_id_hash=null;
-		if(c.global_organization_ID!=null) //c.global_organization_ID = 
-			addToDictionaryGetIdxS(dictionary_GIDs, c.global_organization_ID);
-		if(c.global_neighborhood_ID!=null) //c.global_neighborhood_ID = 
-			addToDictionaryGetIdxS(dictionary_GIDs, c.global_neighborhood_ID);
+		if(c.getOrganizationGID()!=null) //c.global_organization_ID = 
+			addToDictionaryGetIdxS(dictionary_GIDs, c.getOrganizationGID());
+		if(c.getNeighborhoodGID()!=null) //c.global_neighborhood_ID = 
+			addToDictionaryGetIdxS(dictionary_GIDs, c.getNeighborhoodGID());
 		if(c.getGID()!=null) //c.global_constituent_id =
 			addToDictionaryGetIdxS(dictionary_GIDs, c.getGID());
 		//if(c.global_constituent_id_hash!=null) c.global_constituent_id_hash = addToDictionaryGetIdxS(dictionary_GIDs, c.global_constituent_id_hash);
-		if(c.global_submitter_id!=null) //c.global_submitter_id = 
-			addToDictionaryGetIdxS(dictionary_GIDs, c.global_submitter_id);
+		if(c.getSubmitterGID()!=null) //c.global_submitter_id = 
+			addToDictionaryGetIdxS(dictionary_GIDs, c.getSubmitterGID());
 		if(c.address!=null) for(int k =0; k<c.address.length; k++) prepareValueDictionaries(c.address[k], dictionary_GIDs);
 		
-		if(c.neighborhood!=null) for(int k=0; k<c.neighborhood.length; k++) prepareNeigDictionary(c.neighborhood[k], dictionary_GIDs);
-		if(c.submitter!=null) prepareConstDictionary(c.submitter, dictionary_GIDs);
+		if(c.getNeighborhood()!=null) for(int k=0; k<c.getNeighborhood().length; k++) prepareNeigDictionary(c.getNeighborhood()[k], dictionary_GIDs);
+		if(c.getSubmitter()!=null) prepareConstDictionary(c.getSubmitter(), dictionary_GIDs);
 		if(DEBUG)System.out.println("ASNSyncPayload:Prepared: "+c);
 	}
 	private void prepareConstDictionary(D_Constituent c) {
@@ -687,16 +687,16 @@ public class ASNSyncPayload extends ASNObj{
 			D_Constituent c, ArrayList<String> dictionary_GIDs) {
 		if(DEBUG)System.out.println("ASNSyncPayload:Expanding: "+c);
 		if(c==null) return;
-		if(c.global_organization_ID!=null) c.global_organization_ID = getDictionaryValueOrKeep(dictionary_GIDs, (c.global_organization_ID));
-		if(c.global_neighborhood_ID!=null) c.global_neighborhood_ID = getDictionaryValueOrKeep(dictionary_GIDs, (c.global_neighborhood_ID));
+		if(c.getOrganizationGID()!=null) c.setOrganizationGID(getDictionaryValueOrKeep(dictionary_GIDs, (c.getOrganizationGID())));
+		if(c.getNeighborhoodGID()!=null) c.setNeighborhoodGID(getDictionaryValueOrKeep(dictionary_GIDs, (c.getNeighborhoodGID())));
 		if(c.getGID()!=null) c._set_GID(getDictionaryValueOrKeep(dictionary_GIDs, (c.getGID())));
-		if(c.global_constituent_id_hash!=null) c.global_constituent_id_hash = getDictionaryValueOrKeep(dictionary_GIDs, (c.global_constituent_id_hash));
-		if(c.global_submitter_id!=null) c.global_submitter_id = getDictionaryValueOrKeep(dictionary_GIDs, (c.global_submitter_id));
+		if(c.getGIDH()!=null) c.setGIDH(getDictionaryValueOrKeep(dictionary_GIDs, (c.getGIDH())));
+		if(c.getSubmitterGID()!=null) c.setSubmitterGID(getDictionaryValueOrKeep(dictionary_GIDs, (c.getSubmitterGID())));
 		if(c.address!=null) for(int k =0; k<c.address.length; k++) expandValuedictionaries(c.address[k], dictionary_GIDs);
-		if(c.getGID()!=null)c.global_constituent_id_hash=D_Constituent.getGIDHashFromGID(c.getGID());
+		if(c.getGID()!=null)c.setGIDH(D_Constituent.getGIDHashFromGID(c.getGID()));
 		
-		if(c.neighborhood!=null) for(int k=0; k<c.neighborhood.length; k++) expandNeigDictionariesAtDecoding(c.neighborhood[k], dictionary_GIDs);
-		if(c.submitter!=null) expandConstDictionariesAtDecoding(c.submitter, dictionary_GIDs);
+		if(c.getNeighborhood()!=null) for(int k=0; k<c.getNeighborhood().length; k++) expandNeigDictionariesAtDecoding(c.getNeighborhood()[k], dictionary_GIDs);
+		if(c.getSubmitter()!=null) expandConstDictionariesAtDecoding(c.getSubmitter(), dictionary_GIDs);
 	}
 
 	private static void prepareValueDictionaries(D_FieldValue v, ArrayList<String> dictionary_GIDs) {

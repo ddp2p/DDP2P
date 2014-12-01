@@ -380,7 +380,7 @@ class ConstituentsIDNode extends ConstituentsBranch {
 		int identities_size = 0;
 		D_Organization org = null;
 		
-		org = D_Organization.getOrgByLID_NoKeep(c.getOrganizationID(), true);
+		org = D_Organization.getOrgByLID_NoKeep(c.getOrganizationLID(), true);
 		
 		if (c.address != null) {
 			if (DEBUG) System.out.println("ConstituentsModel: populate: addresses #"+c.address.length);
@@ -435,9 +435,9 @@ class ConstituentsIDNode extends ConstituentsBranch {
     		if (s_ID > 0) {
     			D_Constituent wc = D_Constituent.getConstByLID(subm_ID, true, false);
     			wc.loadNeighborhoods(D_Constituent.EXPAND_ONE);
-    			data.value = wc.surname+", "+wc.forename+" <"+wc.email+">";
-    			if ((wc.neighborhood!=null) && (wc.neighborhood.length>0))
-    				data.value += "("+wc.neighborhood[0].getName_division()+":"+wc.neighborhood[0].getName()+")";
+    			data.value = wc.getSurname()+", "+wc.getForename()+" <"+wc.getEmail()+">";
+    			if ((wc.getNeighborhood()!=null) && (wc.getNeighborhood().length>0))
+    				data.value += "("+wc.getNeighborhood()[0].getName_division()+":"+wc.getNeighborhood()[0].getName()+")";
     		} else {
     			data.value = "-";
     		}
@@ -1455,7 +1455,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		D_Constituent cons = null;
 		if (lid > 0) cons = D_Constituent.getConstByLID(lid, true, false);
 		if (cons == null) return __("None");
-		return cons.getSurName();
+		return cons.getSurname();
 	}
 //		ArrayList<ArrayList<Object>> c;
 //		try {
@@ -1559,11 +1559,11 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		}
 		c.loadNeighborhoods(D_Constituent.EXPAND_ALL);
 		
-		if ((c.neighborhood==null) || (c.neighborhood.length == 0)) {
+		if ((c.getNeighborhood()==null) || (c.getNeighborhood().length == 0)) {
 			if(DEBUG) System.err.println("ConstituentsModel:expandConstituentID root constituent="+c);
 			return null;
 		}
-		ConstituentsAddressNode n = expandNeighborhoodID(tree, root, c.neighborhood);
+		ConstituentsAddressNode n = expandNeighborhoodID(tree, root, c.getNeighborhood());
 		if(census)runCensus();
 		if(n!=null){
 			cin = n.getChildByConstituentID(new Integer(constituentID).longValue());
@@ -1746,9 +1746,9 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		ArrayList<ArrayList<Object>> fields_neighborhood, subneighborhoods;
 		//, neighborhood_branch_objects;
 		organizationID = _organizationID;
-		if(organizationID<=0) return;
+		if (organizationID <= 0) return;
 		crt_org = org;
-		if(crt_org==null)
+		if (crt_org == null)
 			try {
 				crt_org = D_Organization.getOrgByLID_NoKeep(organizationID, true);
 			} catch (Exception e) {
@@ -1872,7 +1872,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 			}
 			String name, forename, slogan, email;
 			if (DEBUG) System.err.println("ConstituentsModel: populateOrphans got const="+c.getNameOrMy());
-			name = Util.getString(c.getSurName(),__("Unknown Yet"));
+			name = Util.getString(c.getSurname(),__("Unknown Yet"));
 			forename = c.getForename(); //Util.getString(identities_i.get(1));
 			//constituentID = c.getConstituentIDstr(); //""+Util.lval(identities_i.get(2), -1);
 			boolean external = c.isExternal(); //"1".equals(Util.getString(identities_i.get(3)));
@@ -2063,7 +2063,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
     	if(DEBUG) System.err.println("ConstitentsModel:valueForPathChanged: exit");
     }
 	public boolean setCurrentConstituent(long _constituentID, ConstituentsTree tree) {
-    	if(DEBUG) System.err.println("ConstitentsModel:setCurrentConstituent: set "+_constituentID);
+    	if (DEBUG) System.err.println("ConstitentsModel:setCurrentConstituent: set "+_constituentID);
 		try {
 			/*
 			SK sk = DD.getConstituentSK(_constituentID);
@@ -2083,12 +2083,12 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 			return false;
 		}
 		tree.preparePopup();
-    	if(DEBUG) System.err.println("ConstitentsModel:setCurrentConstituent: Done");
+    	if (DEBUG) System.err.println("ConstitentsModel:setCurrentConstituent: Done");
     	return true;
 	}
 	@Override
 	public void update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
-		if(this.automatic_refresh){
+		if (this.automatic_refresh) {
 			//JTree tree = Application.constituents.tree;
 			try {
 				//this.refresh(trees.toArray(new JTree[0]), root);
