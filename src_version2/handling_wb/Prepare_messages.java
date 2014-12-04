@@ -489,7 +489,7 @@ public class Prepare_messages {
 					pm.raw = msg;
 					if(asn1.organization!=null)pm.org_ID_hash = asn1.organization.global_organization_IDhash;
 					if(v.getMotionFromObjOrLID()!=null)pm.motion_ID = v.getMotionFromObjOrLID().getGID();
-					if(v.getConstituent()!=null)pm.constituent_ID_hash.add(v.getConstituent().getGIDH());
+					if(v.getConstituent_force()!=null)pm.constituent_ID_hash.add(v.getConstituent_force().getGIDH());
 					if(v.getJustificationFromObjOrLID()!=null)pm.justification_ID=v.getJustificationFromObjOrLID().getGID();
 					//pm.neighborhood_ID = ;
 					

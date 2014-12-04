@@ -284,7 +284,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		"\n constituent="+getConstituent()+
 		"\n global_constituent_ID="+getConstituentGID()+
 		"\n global_enhanced_motionID="+getEnhancedMotionGID()+
-		"\n global_organization_ID="+getOrganizationGID()+
+		"\n global_organization_ID="+getOrganizationGID_force()+
 		"\n status="+getStatus()+
 		"\n choices="+Util.concat(getChoices(), "::")+
 		"\n creation_date="+Encoder.getGeneralizedTime(getCreationDate())+
@@ -1502,7 +1502,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		D_MotionChoice.save(getChoices(), getLIDstr(), sync);
 		
 		if ((this.getSignature() != null) && (getGID() != null))
-			ClientSync.payload_recent.add(streaming.RequestData.MOTI, this.getGID(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
+			ClientSync.payload_recent.add(streaming.RequestData.MOTI, this.getGID(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID_force()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 	}
 	private void storeAct_my() {
 		//boolean DEBUG = true;
@@ -1657,7 +1657,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			this.setLIDstr(null);
 		}
 		if (! Util.equalStrings_null_or_not(this.global_organization_ID, r.global_organization_ID)) {
-			this.setOrganizationGID(r.getOrganizationGID());
+			this.setOrganizationGID(r.getOrganizationGID_force());
 //			long oID = D_Organization.getLIDbyGIDorGIDH(r.getOrganizationGID(), r.getOrganizationGIDH());
 //			if (oID <= 0) {
 //				oID = D_Organization.insertTemporaryGID(r.getOrganizationGID(), r.getOrganizationGIDH(), default_blocked_org, __peer);
@@ -1853,7 +1853,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	
 	public boolean readyToSend() {
 		if(this.getGID() == null) return false;
-		if(this.getOrganizationGID() == null) return false;
+		if(this.getOrganizationGID_force() == null) return false;
 		return true;
 	}
 	public void setEditable() {
@@ -2138,7 +2138,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	}
 	// set others
 	public String getOrganizationGIDH() {
-		if (global_organization_ID != null) return D_Organization.getOrgGIDHashGuess(getOrganizationGID());
+		if (global_organization_ID != null) return D_Organization.getOrgGIDHashGuess(getOrganizationGID_force());
 		if (this.organization != null) return organization.getGIDH_or_guess();
 		return null;
 	}
@@ -2146,7 +2146,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 * fillGlobals first if not yet done
 	 * @return
 	 */
-	public String getOrganizationGID() {
+	public String getOrganizationGID_force() {
 		if (! this.loaded_globals) this.fillGlobals();
 		return global_organization_ID;
 	}
@@ -2165,6 +2165,10 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public long getOrganizationLID() {
 		return Util.lval(organization_ID);
 	}
+	/**
+	 * No force (just current lid)
+	 * @return
+	 */
 	public String getOrganizationLIDstr() {
 		return organization_ID;
 	}
@@ -2645,6 +2649,9 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		public void setWeight(double weight) {
 			this.weight = weight;
 		}
+		public String toString() {
+			return "MCS[cnt="+cnt+" w="+weight+"]";
+		}
 		private int cnt = 0;
 		private double weight = 0.;
 	}
@@ -2656,6 +2663,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 * @return
 	 */
 	public static MotionChoiceSupport getMotionChoiceSupport(String motion_LID, String short_name) {
+		//boolean DEBUG = true;
+		if (DEBUG) System.out.println("D_Motion: getMotionChoiceSupport: mLID="+motion_LID+" ch="+short_name);
 		MotionChoiceSupport result = new MotionChoiceSupport();
 		try {
 			ArrayList<ArrayList<Object>> l =
@@ -2668,6 +2677,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
+		if (DEBUG) System.out.println("D_Motion: getMotionChoiceSupport: result="+result);
 		return result;
 	}
 	/**
@@ -2683,12 +2693,18 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 * @return
 	 */
 	public MotionChoiceSupport getMotionSupport_WithCache(int _choice, boolean refresh) {
+		//boolean DEBUG = true;
+		if (DEBUG) System.out.println("D_Motion: getMotionChoiceSupport: mLID="+this.getLID()+" ch="+_choice);
 		if (! refresh) {
 			MotionChoiceSupport r = supports_memory.get(new Integer(_choice));
-			if (r != null) return r;
+			if (r != null){
+				if (DEBUG) System.out.println("D_Motion: getMotionChoiceSupport: r="+r);
+				return r;
+			}
 		}
 		MotionChoiceSupport result = getMotionChoiceSupport(this.getLIDstr(), _choice+""); //this.getSupportChoice());
-		supports_memory.put(new Integer(_choice), result);
+		supports_memory.put(Integer.valueOf(_choice), result);
+		if (DEBUG) System.out.println("D_Motion: getMotionChoiceSupport: result="+result);
 		return result;
 	}
 //	static final String sql_co = "SELECT count(*) FROM "+table.signature.TNAME+
@@ -2877,6 +2893,15 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		 * Last reset day, to enable resetting if too old
 		 */
 		lastCacheResetTime = Util.CalendargetInstance();
+	}
+	/**
+	 * Checks that LID and GID are not null
+	 * @return
+	 */
+	public boolean realized() {
+		if (this.getGID() == null) return false;
+		if (this.getLIDstr() == null) return false;
+		return true;
 	}
 
 }

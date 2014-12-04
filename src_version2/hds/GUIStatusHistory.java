@@ -384,6 +384,9 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		//	if(DEBUG) System.out.println("GUIStatusHistory: setOrgs removed to crt="+crt);
 		pushStack();
 		//if(DEBUG) System.out.println("GUIStatusHistory: setOrgs set to="+((org==null)?null:org.name));
+		history.get(crt).setSelectedConstituent(null);
+		history.get(crt).setSelectedJust(null);
+		history.get(crt).setSelectedMot(null);
 		history.get(crt).setSelectedOrg(org);
 		printCrt("Org");
 		this.fireOrgListeners();
@@ -400,6 +403,7 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		cleanForward();
 		pushStack();
 		if(DEBUG) System.out.println("GUIStatusHistory: setMots set to="+((mot==null)?null:mot.getMotionTitle()));
+		history.get(crt).setSelectedJust(null);
 		history.get(crt).setSelectedMot(mot);
 		printCrt("Mot");
 		this.fireMotListeners();

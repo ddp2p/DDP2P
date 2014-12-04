@@ -531,11 +531,20 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 		getModel().connectWidget();
 	    MainFrame.status.addOrgStatusListener(getModel());
 	    MainFrame.status.addMotionStatusListener(this);
+	    if (_medit != null && _medit instanceof MotionEditor) {
+	    	MotionEditor me = (MotionEditor) _medit;
+	    	MainFrame.status.addConstituentMeStatusListener(me);
+	    }
+	    //MainFrame.status.addMotionStatusListener(this);
 	}
 	public void disconnectWidget() {
 		getModel().disconnectWidget();
 		MainFrame.status.removeOrgListener(this.getModel());
 		MainFrame.status.removeMotListener(this);
+	    if (_medit != null && _medit instanceof MotionEditor) {
+	    	MotionEditor me = (MotionEditor) _medit;
+	    	MainFrame.status.removeConstituentMeListener(me);
+	    }
 	}
 	public Component getComboPanel() {
 		//boolean DEBUG = true;
@@ -829,7 +838,7 @@ class MotionCustomAction extends DebateDecideAction {
 				return;
 			}
 			D_Motion enhanced = motion.getEnhancedMotion();
-			D_Constituent cons = vote.getConstituent();
+			D_Constituent cons = vote.getConstituent_force();
 			D_Justification just = vote.getJustificationFromObjOrLID();
 			D_Organization org = motion.getOrganization();//D_Organization.getOrgByLID(m.getOrganizationLIDstr(), true, false);
 			

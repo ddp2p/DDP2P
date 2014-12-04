@@ -675,9 +675,9 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 	}
 	public void _update(ArrayList<String> _table, Hashtable<String, DBInfo> info, boolean refreshVotes) {
 		//boolean DEBUG=true;
-		if(DEBUG) System.out.println("\nwidgets.justifications.JustificationsModel: update table= "+_table+": info= "+info);
+		if(DEBUG) System.out.println("\nwidgets.justifications.JustificationsModel: update: start table= "+_table+": info= "+info);
 		if (crt_motionID == null) {
-			if(DEBUG) System.out.println("\nwidgets.justifications.JustificationsModel: null crt_motion_id");
+			if(DEBUG) System.out.println("\nwidgets.justifications.JustificationsModel: _update: null crt_motion_id");
 			return;
 		}
 		
@@ -689,6 +689,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 					((JustificationsModel)ctx).fireTableDataChanged();
 				}
 			});
+			if (DEBUG) System.out.println("\nwidgets.justifications.JustificationsModel: quit after refresh "+refreshVotes);
 			return;
 		}
 		
@@ -726,6 +727,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 							((JustificationsModel)ctx).fireTableDataChanged();
 						}
 					});
+					if (DEBUG) System.out.println("\nwidgets.justifications.JustificationsModel: quit after non-different "+_justification.length);
 					return;
 				}
 			}
@@ -748,6 +750,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			for (int k = 0; k < _t__justifications.length; k ++) {
 				//ArrayList<Object> 
 				JustificationSupportEntry justifSupportEntry = justificationSupportLists.get(k);
+				if (DEBUG) System.out.println("widgets.org.Justifications: selected row: [" + k +"] " + justifSupportEntry);
 				_t__justifications[k] = justifSupportEntry.getJustification_LIDstr(); //.get(SELECT_ID);
 				_t__justification[k] = D_Justification.getJustByLID(Util.Lval(_t__justifications[k]), true, false);
 				_t_rowByID.put(Util.getString(_t__justifications[k]), new Integer(k));
@@ -832,7 +835,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			
 			crt_view.fireListener(row_model, Justifications.A_NON_FORCE_COL, true); // no need to tell listeners of an update (except if telling the cause)
 		}		
-		if(DEBUG) System.out.println("widgets.org.Justifications: Done");
+		if (DEBUG) System.out.println("widgets.org.Justifications: Done");
 	}
 
 	private int findModelRow(Object id) {

@@ -206,7 +206,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		new_constituent.setForename_dirty(_forename);
 		new_constituent.setSurname_dirty(_surname);
 		new_constituent.setEmail(_email);
-		new_constituent.setExternal_dirty(true);
+		new_constituent.setExternal_dirty(external);
 		new_constituent.setTemporary(false);
 		new_constituent.setWeight(_weight);
 		new_constituent.setSlogan(_slogan);
@@ -1476,6 +1476,16 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	private void reloadMessage() {
 		if (this.loaded_globals) this.component_node.message = this.encode(); //crt.encoder.getBytes();
 	}
+	public void setSK(SK sk) {
+		PK pk = null;
+		if (sk == null) return;
+		keys = Cipher.getCipher(sk, pk);
+		//this.testedSK = true;
+	}
+	/**
+	 * Set to show that this was tested (unsuccessfully?) for existence of the sk in the database
+	 */
+	public boolean testedSK = false;
 	/**
 	 * Gets the SK from cache or DB.
 	 * Assumes cache loaded (should be loaded when importing keys)!
@@ -1483,10 +1493,16 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	 */
 	public SK getSK() {
 		SK sk = null;
+		if (keys != null) sk = keys.getSK();
+		if (sk != null) return sk;
+		if (testedSK) return null;
+
 		PK pk = null;
+		if (keys != null) pk = keys.getPK();
+		
 		String key_gID;
 		
-		if (!this.isExternal()) {
+		if (! this.isExternal()) {
 			key_gID = this.getGID();
 			if (key_gID == null) {
 				this.fillGlobals();
@@ -1501,11 +1517,6 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 
 		if (key_gID == null) return null;
-		if (keys != null) {
-			sk = keys.getSK();
-			pk = keys.getPK();
-		}
-		if (sk != null) return sk;
 		/*
 		if (keys != null) {
 			//System.out.println("D_Peer:getSK: has to load SK keys when importing keys");
@@ -1515,6 +1526,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		*/
 		
 		sk = Util.getStoredSK(key_gID, this.getGIDH());
+		this.testedSK = true;
 		if (sk == null) return null;
 		keys = Cipher.getCipher(sk, pk);
 		//if (keys == null) return sk;
@@ -1532,6 +1544,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		if (this.isExternal()) return;
 		String gID = this.getGID();
 		SK sk = Util.getStoredSK(gID, this.getGIDH());
+		testedSK = true;
 		PK pk = null;
 		if (sk == null) return;
 		keys = Cipher.getCipher(sk, pk);
@@ -2212,11 +2225,6 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	}
 	public byte[] getSignature() {
 		return this.signature;
-	}
-	public void setSK(SK sk) {
-		PK pk = null;
-		if (sk == null) return;
-		keys = Cipher.getCipher(sk, pk);
 	}
 	public byte[] sign() {
 		if (this.isExternal()) {
@@ -3106,6 +3114,15 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	}
 	public void setGIDH(String global_constituent_id_hash) {
 		this.global_constituent_id_hash = global_constituent_id_hash;
+	}
+	/**
+	 * Checks that LID and GID are not null
+	 * @return
+	 */
+	public boolean realized() {
+		if (this.getGID() == null) return false;
+		if (this.getLIDstr() == null) return false;
+		return true;
 	}
 }
 

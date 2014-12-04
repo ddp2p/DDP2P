@@ -505,7 +505,7 @@ CREATE TABLE my_justification_data (
 );
 CREATE TABLE signature ( # signatures -> signature
 	signature_ID INTEGER PRIMARY KEY, 
-	global_signature_ID TEXT UNIQUE ON CONFLICT FAIL, 
+	global_signature_ID TEXT NOT NULL UNIQUE ON CONFLICT FAIL, 
 	hash_signature_alg TEXT, 
 	hash_signature BLOB, 
 	constituent_ID INTEGER, 

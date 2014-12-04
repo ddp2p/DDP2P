@@ -211,11 +211,11 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 		vote.setOrganizationGID(D_Organization.getGIDbyLIDstr(vote.getOrganizationLIDstr()));
 		vote.setConstituentLID(""+constituent_ID);
 		vote.setConstituentGID(D_Constituent.getGIDFromLID(vote.getConstituentLIDstr()));
-		vote.setConstituent(D_Constituent.getConstByLID(constituent_ID, true, false));
+		vote.setConstituentObjOnly(D_Constituent.getConstByLID(constituent_ID, true, false));
 		if(DEBUG)System.out.println("CONS ID : "+vote.getConstituentLIDstr());
-		if(DEBUG)System.out.println("CONS data : "+vote.getConstituent());
+		if(DEBUG)System.out.println("CONS data : "+vote.getConstituent_force());
 		vote.setMotionLID(""+motion_ID);
-		vote.setMotion(D_Motion.getMotiByLID(motion_ID, true, false));
+		vote.setMotionObjOnly(D_Motion.getMotiByLID(motion_ID, true, false));
 		vote.setMotionGID(vote.getMotionFromObjOrLID().getGID());
 		vote.setCreationDate(creation_date);
 		vote.setArrivalDate(creation_date);
@@ -244,7 +244,7 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 			vote.setJustificationLID(""+just_id);
 			vote.setJustificationGID(D_Justification.getGIDFromLID(vote.getJustificationLIDstr()));
 			vote.setJustification(D_Justification.getJustByLID(just_id, true, false));
-			vote.setGID(vote.make_ID());
+			vote.setGID();
 			vote.setSignature(vote.sign(sk));
 			added_vote = vote.storeVerified();
 			if(DEBUG)System.out.println("Fill_database : vote() : END CASE 0 : "+vote.getGID());
@@ -351,21 +351,21 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 			doc2.setFormatString(justification_title);
 			D_Document_Title doc3 = new D_Document_Title();
 			doc3.title_document = doc2;
-			jus.setJustificationText(doc1);
+			jus.setJustificationBody(doc1);
 			jus.setJustificationTitle(doc3);
 			if(DEBUG)System.out.println("add_justification : org_id"+jus.getOrganizationLIDstr());
 			if(add_answerTo){ 
 				 ans_id = select_random_justification(motion_id,constituent_id,org_id);
 				 jus.setAnswerToLIDstr(""+ans_id);
-				 jus.setAnswerTo(D_Justification.getJustByLID(ans_id, true, false));
+				 jus.setAnswerTo_SetAll(D_Justification.getJustByLID(ans_id, true, false));
 				 jus.setAnswerTo_GID(jus.getAnswerTo().getGID());  //getJustificationGlobalID(jus.answerTo_ID);
 			}
 			else {
 				jus.setAnswerToLIDstr(null);
-				jus.setAnswerTo(null);
+				jus.setAnswerTo_SetAll(null);
 				jus.setAnswerTo_GID(null);
 			}
-			jus.setGID(jus.make_ID());
+			jus.setGID();
 			jus.setSignature(jus.sign(sk));
 			
 			D_Justification j = D_Justification.getJustByGID(jus.getGID(), true, true, jus.getOrganizationLID(), jus.getMotionLID());

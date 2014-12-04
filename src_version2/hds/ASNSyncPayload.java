@@ -468,7 +468,7 @@ public class ASNSyncPayload extends ASNObj{
 		if(j.getOrgGID()!=null) j.setOrgGID(getDictionaryValueOrKeep(dictionary_GIDs, (j.getOrgGID())));
 		if(j.getConstituentGID()!=null) j.setConstituentGID(getDictionaryValueOrKeep(dictionary_GIDs, (j.getConstituentGID())));
 		if(j.getMotionGID()!=null) j.setMotionGID(getDictionaryValueOrKeep(dictionary_GIDs, (j.getMotionGID())));
-		if(j.getGID()!=null) j.setGID(getDictionaryValueOrKeep(dictionary_GIDs, (j.getGID())));
+		if(j.getGID()!=null) j.setGID(getDictionaryValueOrKeep(dictionary_GIDs, (j.getGID()))); // removed registration
 		if(j.getAnswerTo_GID()!=null) j.setAnswerTo_GID(getDictionaryValueOrKeep(dictionary_GIDs, (j.getAnswerTo_GID())));
 		
 		if(j.getConstituent()!=null) expandConstDictionariesAtDecoding(j.getConstituent(), dictionary_GIDs);
@@ -494,7 +494,7 @@ public class ASNSyncPayload extends ASNObj{
 				addToDictionaryGetIdxS(dictionary_GIDs, v.getJustificationGID());
 		//v.global_vote_ID = null;
 		//if(v.global_vote_ID!=null) v.global_vote_ID = addToDictionaryGetIdxS(dictionary_GIDs, v.global_vote_ID);
-		if(v.getConstituent()!=null) ASNSyncPayload.prepareConstDictionary(v.getConstituent(), dictionary_GIDs);
+		if(v.getConstituent_force()!=null) ASNSyncPayload.prepareConstDictionary(v.getConstituent_force(), dictionary_GIDs);
 		if(v.getMotionFromObjOrLID()!=null) ASNSyncPayload.prepareMotiDictionary(v.getMotionFromObjOrLID(), dictionary_GIDs);
 		if(v.getJustificationFromObjOrLID()!=null) ASNSyncPayload.prepareJustDictionary(v.getJustificationFromObjOrLID(), dictionary_GIDs);
 	}
@@ -511,7 +511,7 @@ public class ASNSyncPayload extends ASNObj{
 		if(v.getJustificationGID()!=null) v.setJustificationGID(getDictionaryValueOrKeep(dictionary_GIDs,(v.getJustificationGID())));
 		//v.global_vote_ID = v.make_ID();
 		//if(v.global_vote_ID!=null) v.global_vote_ID = getDictionaryValueOrKeep(dictionary_GIDs,(v.global_vote_ID));
-		if(v.getConstituent()!=null) ASNSyncPayload.expandConstDictionariesAtDecoding(v.getConstituent(), dictionary_GIDs);
+		if(v.getConstituent_force()!=null) ASNSyncPayload.expandConstDictionariesAtDecoding(v.getConstituent_force(), dictionary_GIDs);
 		if(v.getMotionFromObjOrLID()!=null) ASNSyncPayload.expandMotiDictionariesAtDecoding(v.getMotionFromObjOrLID(), dictionary_GIDs);
 		if(v.getJustificationFromObjOrLID()!=null) ASNSyncPayload.expandJustDictionariesAtDecoding(v.getJustificationFromObjOrLID(), dictionary_GIDs);
 	}
@@ -552,8 +552,8 @@ public class ASNSyncPayload extends ASNObj{
 	}
 
 	public static void prepareMotiDictionary(D_Motion m, ArrayList<String> dictionary_GIDs) {
-		if (m.getOrganizationGID()!=null) //m.setOrganizationGID(
-				addToDictionaryGetIdxS(dictionary_GIDs, m.getOrganizationGID());
+		if (m.getOrganizationGID_force()!=null) //m.setOrganizationGID(
+				addToDictionaryGetIdxS(dictionary_GIDs, m.getOrganizationGID_force());
 		if (m.getConstituentGID()!=null) //m.setConstituentGID(
 			addToDictionaryGetIdxS(dictionary_GIDs, m.getConstituentGID()); //);
 		if (m.getGID() != null) //m.setGID(
@@ -571,7 +571,7 @@ public class ASNSyncPayload extends ASNObj{
 	}
 	public static void expandMotiDictionariesAtDecoding(D_Motion m, ArrayList<String> dictionary_GIDs) {
 		if(DEBUG)System.out.println("ASNSyncPayload:Expanding: "+m);
-		if(m.getOrganizationGID()!=null) m.setOrganizationGID(getDictionaryValueOrKeep(dictionary_GIDs, (m.getOrganizationGID())));
+		if(m.getOrganizationGID_force()!=null) m.setOrganizationGID(getDictionaryValueOrKeep(dictionary_GIDs, (m.getOrganizationGID_force())));
 		if(m.getConstituentGID()!=null) m.setConstituentGID(getDictionaryValueOrKeep(dictionary_GIDs, (m.getConstituentGID())));
 		if(m.getGID()!=null) m.setGID(getDictionaryValueOrKeep(dictionary_GIDs, (m.getGID())));
 		if(m.getEnhancedMotionGID()!=null) m.setEnhancedMotionGID(getDictionaryValueOrKeep(dictionary_GIDs, (m.getEnhancedMotionGID())));

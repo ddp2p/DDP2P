@@ -54,6 +54,7 @@ final class TemporaryMotionsEditor implements MotionsListener {
 			}
 			motions.removeListener(motions.tmpeditor);
 			motions.addListener(me);
+	    	MainFrame.status.addConstituentMeStatusListener(me);
 			motions.showSelected();
 		}
 	}
@@ -86,6 +87,7 @@ final class TemporaryMotionsEditor implements MotionsListener {
 				MainFrame.tabbedPane.setTabComponentAt(MainFrame.TAB_MOTS_, motions.motion_panel);
 			motions.removeListener(motions.tmpeditor);
 			motions.addListener(me);
+	    	MainFrame.status.addConstituentMeStatusListener(me);
 		}
 		
 	}

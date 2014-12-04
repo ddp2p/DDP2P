@@ -192,14 +192,14 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			if(DEBUG)System.out.println("VEditor:initMotionOrg: null motion");
 			return false;
 		}
-		if((mot.getOrganization() == null) && (mot.getOrganizationGID() == null) && (mot.getOrganizationLIDstr() == null)){
+		if((mot.getOrganization() == null) && (mot.getOrganizationGID_force() == null) && (mot.getOrganizationLIDstr() == null)){
 			if(DEBUG)System.out.println("VEditor:initMotionOrg: null org motion: "+mot);
 			return false;
 		}
 		try {
 			long _oid = Util.lval(mot.getOrganizationLIDstr(),-1);
 			if(_oid>0) mot.setOrganization(D_Organization.getOrgByLID_NoKeep(_oid, true));
-			else mot.setOrganization(D_Organization.getOrgByGID_or_GIDhash_NoCreate(mot.getOrganizationGID(), null, true, false));
+			else mot.setOrganization(D_Organization.getOrgByGID_or_GIDhash_NoCreate(mot.getOrganizationGID_force(), null, true, false));
 			return true;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -217,7 +217,10 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		}
 		*/
 	
-	
+	/**
+	 * 
+	 * @return
+	 */
 	D_Motion getMotion() {
 		if (motionEditor != null) return motionEditor.getMotion();
 		if (justificationEditor != null) return justificationEditor.getMotion();
@@ -434,14 +437,14 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			if (motionEditor != null) {
 				if (DEBUG) out.println("VoteEditor:handleFieldEvent: choice newjust_radio, in motioneditor");
 				motionEditor.enableNewJustification(true);
-				signature.setJustificationLID(motionEditor.getNewJustificationID());
-				signature.setJustificationGID(null);
+				//signature.setJustificationLID(motionEditor.getNewJustificationID());
+				//signature.setJustificationGID(null);
 			} else {
 				if (DEBUG) out.println("VoteEditor:handleFieldEvent: choice newjust_radio, in justeditor");
 				this.justificationEditor.make_new(getMotion());
 				this.enable_just();
-				signature.setJustificationLID(this.justificationEditor.justificationEdited.getLIDstr()); // namely set to null
-				signature.setJustificationGID(null);
+				//signature.setJustificationLID(this.justificationEditor.justificationEdited.getLIDstr()); // namely set to null
+				//signature.setJustificationGID(null);
 			}
 			return;
 		}
@@ -464,6 +467,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			} else {
 				this.disable_just();
 			}
+			/*
 			try {
 				signature.setJustificationLID(null);
 				signature.setJustificationGID(null);
@@ -473,6 +477,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}	
+			*/
 		}
 		if (just_old_just_field == source) {
 			if(DEBUG) out.println("VoteEditor:handleFieldEvent: choice old_just_combo");
@@ -659,6 +664,13 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		}
 		if (DEBUG) out.println("VoteEditor: submitAnonymously: myself exists");
 		
+		if (! Util.equalStrings_null_or_not(signature.getConstituentGID(), c_myself_GID)) {
+			signature = new D_Vote();
+			signature.setMotionAndOrganizationAll(getMotion());
+			signature.setCreationDate();
+			if (_DEBUG) out.println("VoteEditor: generateVoteAndFinalizeJustificationAndBroadcastMotion: new vote: myself = "+signature);
+		}
+		
 		try {
 			D_Justification justification = null;
 			if (signature.getChoice() == null) {
@@ -754,8 +766,8 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 			
 			signature.setConstituentGID(c_myself_GID); //this.getMotion().getConstituentGID();
 			signature.setConstituentLID(Util.getStringID(c_myself_LID));//this.getMotion().getConstituentLIDstr();
-			signature.setConstituent(c_myself);
-			signature.setGID(signature.make_ID());
+			signature.setConstituentObjOnly(c_myself);
+			signature.setGID();
 			
 			D_Vote old_signature = new D_Vote(signature.getGID());
 			if (old_signature.getLIDstr() != null) {
@@ -934,7 +946,8 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		}
 }
 	public void setSignature(D_Vote _signature, MotionEditor _motionEditor, D_Justification _justif) {
-		if (DEBUG) System.out.println("VoteEditor: setSignature: start");
+		if (DEBUG) System.out.println("VoteEditor: setSignature: start "+_signature);
+		// Util.printCallPath("");
 		motionEditor = _motionEditor;
 		if (_justif != null) crt_selected_justification = _justif;
 		signature = _signature;
@@ -947,7 +960,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 	 */
 	@SuppressWarnings("unchecked")
 	private void update_signature_GUI_fields(boolean _choices) {
-		//boolean DEBUG = true;
+		// boolean DEBUG = true;
 		if (DEBUG) System.out.println("VoteEditor: update_signature: start");
 		if (signature == null) {
 			if(DEBUG)System.out.println("VoteEditor: update_signature: null sign="+signature);
@@ -980,7 +993,7 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 		}
 		if (j_ID > 0) {
 			D_Justification _just = getJustification();
-			if(DEBUG)System.out.println("VoteEditor: update_signature: just="+_just);
+			if (DEBUG) System.out.println("VoteEditor: update_signature: just="+_just);
 			if ((_just!=null)&&(_just.isEditable())&&(signature.getConstituentLIDstr().equals(_just.getConstituentLIDstr()))) {
 				this.vote_newjust_field.setSelected(true);
 				this.just_old_just_field.setEnabled(false);
@@ -996,8 +1009,11 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 
 		if (_choices) {
 			loadJustificationChoices(signature.getMotionLIDstr());
+		} else {
+			if (DEBUG) System.out.println("VoteEditor: update_signature: no choices");
 		}
 
+		//D_Justification changed = null;
 		if (just_old_just_field != null) {
 			this.just_old_just_field.removeItemListener(this);
 			just_old_just_field.removeAllItems();
@@ -1009,10 +1025,14 @@ public class VoteEditor  extends JPanel  implements DocumentListener, ItemListen
 				}
 				
 				if (osel == null && this.crt_selected_justification != null) {
-					if ((i.id != null) && i.id.equals(crt_selected_justification.getLIDstr())) { osel = i;}
+					if ((i.id != null) && i.id.equals(crt_selected_justification.getLIDstr())) {
+						osel = i;
+						//changed = crt_selected_justification;
+					}
 				}
 			}
 			if (osel != null) just_old_just_field.setSelectedItem(osel);
+			else crt_selected_justification = null;
 			just_old_just_field.addItemListener(this);
 		}
 	}

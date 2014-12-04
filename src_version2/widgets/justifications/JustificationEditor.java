@@ -62,8 +62,11 @@ import javax.swing.event.DocumentListener;
 import ASN1.Encoder;
 import util.P2PDDSQLException;
 import config.Application_GUI;
+import config.ConstituentListener;
 import config.DD;
 import config.JustificationsListener;
+import config.MotionsListener;
+import data.D_Constituent;
 import data.D_Document;
 import data.D_Justification;
 import data.D_Motion;
@@ -98,7 +101,7 @@ import widgets.motions.VoteEditor;
 import static java.lang.System.out;
 import static util.Util.__;
 @SuppressWarnings("serial")
-public class JustificationEditor extends JPanel  implements JustificationsListener, DocumentListener, ItemListener, ActionListener {
+public class JustificationEditor extends JPanel  implements JustificationsListener, DocumentListener, ItemListener, ActionListener, MotionsListener, ConstituentListener {
 	
 	private static final int TITLE_LEN = 20;
 	private static final int TEXT_LEN_ROWS = 10;
@@ -132,19 +135,26 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	//private int max_general_fields;
 	JTabbedPane tabbedPane = new JTabbedPane();
 	public D_Justification justificationEdited; // data about the current organization
+	public D_Motion motionCurrent = null; // data about the current organization
 	//public D_Vote signature;
 	private int mode = ALL;
 	private boolean SUBMIT = true;
 	private MotionEditor motionEditor;
 	private VoteEditor vEditor;
 	JPanel panel_body = new JPanel();
+	private D_Constituent constituentCurrent;
 
-	
+	/**
+	 * Disables all GUI fields. sets the flag enabled=false
+	 */
 	public void disable_it() {
 		enabled  = false;
 		if(DEBUG)System.out.println("JustificationEditor:Disabling");
 		disable_just();
 	}
+	/**
+	 * Disables all GUI fields. sets the flag enabled=false
+	 */
 	public void disable_just() {
 		enabled = false;
 		if(this.just_title_field!=null) this.just_title_field.setEnabled(false);
@@ -156,11 +166,19 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		if(this.setTxtMode!=null) this.setTxtMode.setEnabled(false);
 		if(this.setHTMMode!=null) this.setHTMMode.setEnabled(false);
 	}
+	/**
+	 * Enables all GUI fields. sets the flag enabled=true
+	 * 
+	 */
 	public void enable_it() {
 		enabled  = true;
 		if(DEBUG)System.out.println("JustificationEditor:Enabling");
 		enable_just();
 	}
+	/**
+	 * Enables all GUI fields. sets the flag enabled=true
+	 * 
+	 */
 	public void enable_just() {
 		enabled = true;
 		if(this.just_title_field!=null) this.just_title_field.setEnabled(true);
@@ -172,11 +190,15 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		if(this.setTxtMode!=null) this.setTxtMode.setEnabled(true);
 		if(this.setHTMMode!=null) this.setHTMMode.setEnabled(true);
 	}
-	public JustificationEditor(int _mode){
+	/**
+	 * If _mode is ONLY then adds a generakPanel([0]), else nothing.
+	 * @param _mode
+	 */
+	public JustificationEditor(int _mode) {
 		mode  = _mode;
 		//this.setLayout(new GridBagLayout());
-		int y[] = new int[]{0};
-		switch(mode){
+		int y[] = new int[]{Util.ival(D_Vote.DEFAULT_YES_COUNTED_LABEL, 0)};
+		switch(mode) {
 		case ONLY:
 			SUBMIT = false;
 			this.add(makeGeneralPanel(y));//this
@@ -235,6 +257,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		D_Justification justification_new = D_Justification.getJustByLID(_justID, true, false);
 		if (justification_new == null && _justID != null) {
 			if (_DEBUG) out.println("JustEditor: setJust: force="+force+" inexisting jID="+_justID);
+			//update_it(false);
 			return;
 		}
 		setJustification(justification_new, force);
@@ -251,15 +274,19 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		
 		if (DEBUG) out.println("JustEditor: setJustification: force="+force);
 		if ((justID != null) && (justID.equals(_justID)) && !force){
-			if (DEBUG) out.println("JustEditor:setJust: justID="+justID);
+			if (DEBUG) out.println("JustEditor:setJust: same justID="+justID);
 			return;
 		}
 		if ((justID == null) && (_justID == null)) {
+			this.justificationEdited = justification_new;
 			if (DEBUG) out.println("JustEditor: setJustification: _justID="+justID);
+			update_it(false);
 			return;
 		}
 		if (_justID == null) {
 			if (DEBUG) out.println("JustEditor: setJustification: _ justID null "+force);
+			this.justificationEdited = justification_new;
+			update_it(false);
 			disable_it(); return;
 		}
 		//justID = _justID;
@@ -285,16 +312,16 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	 * @return
 	 */
 	private boolean editable() {
-		if(DEBUG) out.println("JustEditor:editable: start");
-		if(justificationEdited == null){
-			if(DEBUG) out.println("JustEditor:editable: no just");
+		if (DEBUG) out.println("JustEditor:editable: start");
+		if (justificationEdited == null) {
+			if (DEBUG) out.println("JustEditor:editable: no just");
 			return false;
 		}
-		if(justificationEdited.isEditable()) {
+		if (justificationEdited.isEditable()) {
 			if(DEBUG) out.println("JustEditor:editable");
 			return true;			
 		}
-		if(DEBUG) out.println("JustEditor:editable: exit "+justificationEdited);
+		if (DEBUG) out.println("JustEditor:editable: exit "+justificationEdited);
 		return false;
 	}
 	/**
@@ -308,7 +335,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	private boolean reloadJust(boolean force) {
 		String justID = this.getJustificationLIDstr();
 		if (justID == null) {
-			if (_DEBUG) out.println("JustEditor: reloadJust: got unsaved just ="+justificationEdited);
+			if (DEBUG) out.println("JustEditor: reloadJust: got unsaved just ="+justificationEdited);
 //			Util.printCallPath("Why doing this?");
 //			justificationEdited = null;
 			return true;
@@ -337,7 +364,12 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		return true;
 	}
 	/**
-	 * Whether to force the reloading of the justification.
+	 * Calls the update of the justification GUI fields.
+	 * Gets the last signature for the motion in this justification 
+	 * (or creates an empty one with motion/org from the crt justification, constituent as crt constit),
+	 * and sets it in the signature editor;
+	 * 
+	 * parameter force tells whether to force the reloading of the justification (based on justification LID).
 	 * Not used
 	 * @param force
 	 * @return
@@ -348,14 +380,20 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			enable_it();
 		//else return false; // further processing changes arrival_date by handling creator and default_scoring fields
 		if (justificationEdited == null) {
-			if(DEBUG) out.println("JustEditor:updateit: quit null just");
+			if (_DEBUG) out.println("JustEditor:updateit: quit null just");
 			return false;
 		}
 		m_editable = editable(); // editable?
 		
+		setSignatureForConstituentAndMotion();
+		
+		return update_justification_GUI_fields();
+	}
+	public void setSignatureForConstituentAndMotion() {
 		Calendar creation_date = Util.CalendargetInstance();
 		String constituent_ID = Util.getStringID(this.getConstituentIDMyself());
 		String constituent_GID = this.getConstituentGIDMyself();
+		if (justificationEdited == null) return;
 		String signature_ID = MotionEditor.findMyVote(justificationEdited.getMotionLIDstr(), constituent_ID);
 		D_Vote _sign;
 		try {
@@ -378,14 +416,28 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
-		
-		return update_justification_GUI_fields();
 	}
+	/**
+	 * Try first to extract it from the constituents widget.
+	 * If not , try to extract the answer from the field constituentCurrent
+	 * @return
+	 */
 	private long getConstituentIDMyself() {
-		return GUI_Swing.constituents.tree.getModel().getConstituentIDMyself();
+		if (GUI_Swing.constituents != null && GUI_Swing.constituents.tree != null)
+			return GUI_Swing.constituents.tree.getModel().getConstituentIDMyself();
+		if (constituentCurrent != null) return constituentCurrent.getLID();
+		return -1;
 	}
+	/**
+	 * Try first to extract it from the constituents widget.
+	 * If not , try to extract the answer from the field constituentCurrent
+	 * @return
+	 */
 	private String getConstituentGIDMyself() {
-		return GUI_Swing.constituents.tree.getModel().getConstituentGIDMyself();
+		if (GUI_Swing.constituents != null && GUI_Swing.constituents.tree != null)
+			return GUI_Swing.constituents.tree.getModel().getConstituentGIDMyself();
+		if (constituentCurrent != null) return constituentCurrent.getGID();
+		return null;
 	}
 	/**
 	 * Used to load a justification in the GUI
@@ -451,7 +503,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		*/
 		if(just_body_field != null) {
 			this.just_body_field.removeListener(this);
-			this.just_body_field.setText(justificationEdited.getJustificationText().getDocumentString());
+			this.just_body_field.setText(justificationEdited.getJustificationBody().getDocumentString());
 			this.just_body_field.addListener(this);
 		}
 		if(just_title_field != null) {
@@ -762,13 +814,13 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	 * @param data
 	 */
 	public void setMode(String _NEW_FORMAT, String data){
-		this.justificationEdited.getJustificationText().setDocumentString(data);
-		this.justificationEdited.getJustificationText().setFormatString(_NEW_FORMAT);
+		this.justificationEdited.getJustificationBody().setDocumentString(data);
+		this.justificationEdited.getJustificationBody().setFormatString(_NEW_FORMAT);
 		
 		this.just_body_field.removeListener(this);
 		just_body_field.getComponent().setVisible(false);
-		this.just_body_field.setType(justificationEdited.getJustificationText().getFormatString());
-		this.just_body_field.setText(justificationEdited.getJustificationText().getDocumentString());
+		this.just_body_field.setType(justificationEdited.getJustificationBody().getFormatString());
+		this.just_body_field.setText(justificationEdited.getJustificationBody().getDocumentString());
 		
 		just_body_field.getComponent().setVisible(true);
 	    //this.panel_body.removeAll();
@@ -783,20 +835,70 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	 */
 	public void switchMode(String _NEW_FORMAT){
 		String data = "";
-		data = this.justificationEdited.getJustificationText().convertTo(_NEW_FORMAT);
-		if(data==null) return;
+		data = this.justificationEdited.getJustificationBody().convertTo(_NEW_FORMAT);
+		if (data == null) return;
 		setMode(_NEW_FORMAT, data);
+	}
+	@Override
+	public void constituentUpdate(D_Constituent c, boolean me, boolean selected) {
+		if (c != null && constituentCurrent != null)
+			if (c.getLID() == constituentCurrent.getLID()) return;
+		this.constituentCurrent = c;
+		setSignatureForConstituentAndMotion();
+	}
+	@Override
+	public void motion_update(String motID, int col, D_Motion d_motion) {
+		if(DEBUG) System.out.println("JustEditor: motion_update: id="+motID+" col: "+col+" motObj="+d_motion);
+		if (motID != null && d_motion == null)
+			d_motion = D_Motion.getMotiByLID(motID, true, false);
+		this.motionCurrent = d_motion;
+		if (justificationEdited != null && d_motion != null && justificationEdited.getMotionLID() == d_motion.getLID()) {
+			if (_DEBUG) System.out.println("JustEditor: motion_update: already had same motion!");
+			return;
+		}
+		this.justificationEdited = null;
+		if (this.motionCurrent == null) {
+			this.disable_it();
+			if (_DEBUG) System.out.println("JustEditor: motion_update: null motion!");
+			return;
+		}
+		// prepares an empty justification
+		this.make_new(motionCurrent);
+		// updates GUI and sets signature in VoteEditor
+		update_it(false);
+	}
+	@Override
+	public void motion_forceEdit(String motID) {
+		if(DEBUG) System.out.println("JustEditor: motion_update: id="+motID+" force");
+		D_Motion d_motion = null;
+		if (motID != null)
+			d_motion = D_Motion.getMotiByLID(motID, true, false);
+		this.motionCurrent = d_motion;
+		if (justificationEdited != null && d_motion != null && justificationEdited.getMotionLID() == d_motion.getLID()) {
+			if (_DEBUG) System.out.println("JustEditor: motion_update: already had same motion!");
+			return;
+		}
+		this.justificationEdited = null;
+		if (this.motionCurrent == null) {
+			this.disable_it();
+			if (_DEBUG) System.out.println("JustEditor: motion_update: null motion!");
+			return;
+		}
+		// prepares an empty justification
+		this.make_new(motionCurrent);
+		// updates GUI and sets signature in VoteEditor
+		update_it(false);
 	}
 
 	@Override
 	public void justUpdate(String justID, int col, boolean db_sync, D_Justification just) {
-		if(DEBUG) System.out.println("JustEditor: justUpdate: id="+justID+" col: "+col+" set_sync="+db_sync);
-		if(db_sync) return;
+		if (DEBUG) System.out.println("JustEditor: justUpdate: id="+justID+" col: "+col+" set_sync="+db_sync);
+		if (db_sync) return;
 		this.setJustification(justID, false);
 	}
 	@Override
 	public void forceJustificationEdit(String justID) {
-		if(DEBUG)System.out.println("JustEditor: forceEdit");
+		if (DEBUG) System.out.println("JustEditor: forceEdit");
 		this.setJustification(justID, true);
 	}
 	@Override
@@ -868,10 +970,10 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		if ((this.just_body_field == source) || (this.just_body_field.getDocumentSource() == source)) {
 			if (DEBUG) out.println("JustEditor:handleFieldEvent: just body");
 			String new_text = this.just_body_field.getText();
-			String old_text = this.justificationEdited.getJustificationText().getDocumentString();
+			String old_text = this.justificationEdited.getJustificationBody().getDocumentString();
 			
 			String editor_format = this.just_body_field.getFormatString();
-			String old_old_text = this.justificationEdited.getJustificationText().getFormatString();
+			String old_old_text = this.justificationEdited.getJustificationBody().getFormatString();
 			
 			if (Util.equalStrings_null_or_not(new_text, old_text)
 					&& Util.equalStrings_null_or_not(editor_format, old_old_text)) {
@@ -879,7 +981,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			}
 			
 			this.justificationEdited = D_Justification.getJustByJust_Keep(justificationEdited);
-			this.justificationEdited.setJustificationTextAndFormat(new_text, editor_format);
+			this.justificationEdited.setJustificationBodyTextAndFormat(new_text, editor_format);
 			this.justificationEdited.setCreationDate(Util.getCalendar(creationTime));
 			this.justificationEdited.setEditable();
 			if (this.justificationEdited.dirty_any()) this.justificationEdited.storeRequest();
@@ -1132,17 +1234,24 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 	/**
 	 * Old: Takes the existing justification, setting its LID to null and its date to current
 	 * New: Sets an empty justification, but does not store it yet
+	 * 
+	 * If an old non-empty justification existed, asks the user on whether to copy its data with loadDuplicatingInTemporary().
+	 * 
 	 * @param motion
 	 */
 	public void make_new(D_Motion motion) {
+		//boolean DEBUG = true;
 		if (DEBUG) out.println("JustEditor: make_new: got motion =" + motion);
 		D_Justification old_just = justificationEdited; //if (just == null) 
-		D_Justification proposed_just= D_Justification.getEmpty();
+		D_Justification proposed_just = D_Justification.getEmpty();
 		
 		boolean load_existing = false;
 		if (old_just != null && old_just.getLIDstr() == null) load_existing = true;
 		else {
-			if (0 == Application_GUI.ask(__("Do you want a new justification rather than to reuse the old one?"), __("New Justification"), 
+			if (justificationEdited == null ||
+					0 == Application_GUI.ask(
+					__("Do you want a new justification rather than to reuse the old one?"),
+					__("New Justification"), 
 					JOptionPane.YES_NO_OPTION)) {
 				if (DEBUG) out.println("JustEditor: make_new: keep empty");
 			} else {
@@ -1163,7 +1272,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			proposed_just.setEditable();
 		}
 		justificationEdited = proposed_just;
-		if (DEBUG) out.println("JustEditor: make_new: exit");
+		if (DEBUG) out.println("JustEditor: make_new: exit getting: "+justificationEdited);
 		update_justification_GUI_fields();
 		//this.update_it(false);
 	}

@@ -688,6 +688,7 @@ public class MainFrame {
 			Dimension minimumSize;
 			edit_scroll = new JScrollPane(_medit);
 			result = new JSplitPane(JSplitPane.VERTICAL_SPLIT, motion_scroll, edit_scroll);
+			result.setDividerLocation(.5);
 			result.setResizeWeight(0.5);
 			
 			minimumSize = new Dimension(0, 100);
@@ -785,10 +786,33 @@ public class MainFrame {
 		c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=5.0;c.weightx=10;c.anchor=GridBagConstraints.CENTER;c.insets=new java.awt.Insets(0,0,0,0);
 		motion_panel.add(_jedit,c);
 		*/
-		JSplitPane motion_panel = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+		JSplitPane justification_panel = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
 				justifications.getScrollPane(),
 				new JScrollPane(_jedit));
-		return motion_panel;
+		justification_panel.setDividerLocation(.5);
+		justification_panel.setResizeWeight(0.5);
+//		class JSplitPane3 extends JSplitPane {
+//		   public void paint(Graphics g) {
+//		        super.paint(g);
+//		        if (!isPainted) {
+//		            if (hasProportionalLocation) {
+//		                super.setDividerLocation(proportionalLocation);
+//		            }
+//		            isPainted = true;
+//		        }
+//		    }
+//		}
+//		justification_panel.addComponentListener(new ComponentAdapter() {
+//	        @Override
+//	        public void componentShown(ComponentEvent componentEvent) {
+//	          // Set the divider location to 20%.
+//	          // This works because we know the pane is visible.
+//	        	justification_panel.setDividerLocation(.5);
+//	          // Stop listening for "shown" events.
+//	        	justification_panel.removeComponentListener(this);
+//	        }
+//	      });
+		return justification_panel;
 	}
 
 	public static JSplitPane makeWLanPanel(WLAN_widget wlan_widget) {

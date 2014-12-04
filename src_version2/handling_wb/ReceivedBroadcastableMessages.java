@@ -235,7 +235,7 @@ public class ReceivedBroadcastableMessages {
 						long added_Org = handle_org(pm, msg.organization);
 						//System.exit(1);
 						if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:ORG ID : "+added_Org);
-						long added_cons =  handle_constituent(pm, msg.vote.getConstituent(),msg.organization.global_organization_ID,added_Org, __peer);
+						long added_cons =  handle_constituent(pm, msg.vote.getConstituent_force(),msg.organization.global_organization_ID,added_Org, __peer);
 						if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:CONS ID : "+added_cons);
 					}
 					//else{System.out.println("ReceivedBroacastableMessage:integrateMessage ms.organization is null");}

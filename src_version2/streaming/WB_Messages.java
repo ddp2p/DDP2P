@@ -542,7 +542,7 @@ public class WB_Messages extends ASNObj{
 		for(D_Motion m: r.moti) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle moti: "+m);
 			if(DEBUG) System.out.println("WB_Messages: store: handle moti: "+m.getGID()+" "+m.getMotionTitle());
-			rq = missing_sr.get(m.getOrganizationGID());
+			rq = missing_sr.get(m.getOrganizationGID_force());
 			if (rq == null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
@@ -568,7 +568,7 @@ public class WB_Messages extends ASNObj{
 			missing_sr.put(m.getOrganizationGIDH(), rq);			
 			
 			obtained = obtained_sr.get(m.getOrganizationGIDH());
-			if (obtained == null) obtained_sr.get(m.getOrganizationGID());
+			if (obtained == null) obtained_sr.get(m.getOrganizationGID_force());
 			if (obtained == null) obtained = new RequestData();
 			
 			obtained.moti.add(m.getGIDH());
@@ -576,8 +576,8 @@ public class WB_Messages extends ASNObj{
 			obtained_sr.put(m.getOrganizationGIDH(), obtained);
 			orgs.add(m.getOrganizationGIDH());
 
-			obtained_sr.put(m.getOrganizationGID(), obtained);
-			orgs.add(m.getOrganizationGID());
+			obtained_sr.put(m.getOrganizationGID_force(), obtained);
+			orgs.add(m.getOrganizationGID_force());
 
 			if(DEBUG) System.out.println("WB_Messages: store: handled moti: "+m.getGID()+" "+m.getMotionTitle());
 		}

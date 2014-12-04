@@ -694,4 +694,34 @@ public class Identity {
 	public static String getAgentWideEmails() {
 		return emails;
 	}
+	public static D_Constituent getCrtConstituent(String organization_LID) {
+		long oLID = Util.lval(organization_LID, -1);
+		return getCrtConstituent(oLID);
+	}
+
+	public static D_Constituent getCrtConstituent(long oLID) {
+    	if (oLID <= 0) return null;
+//		D_Organization org;
+//    	org = D_Organization.getOrgByLID(oLID, true, false);
+//    	if (org == null) return null;
+    	
+    	long constituent_LID = -1;
+    	D_Constituent constituent = null;
+    	try {
+    		Identity crt_identity = Identity.getCurrentIdentity();
+    		if (crt_identity == null) {
+    			//Log.d(TAG, "No identity");
+    		} else 
+    			constituent_LID = config.Identity.getDefaultConstituentIDForOrg(oLID);
+		} catch (P2PDDSQLException e1) {
+			e1.printStackTrace();
+		}
+    	
+    	if (constituent_LID > 0) {
+    		constituent = D_Constituent.getConstByLID(constituent_LID, true, false);
+    		//Log.d(TAG, "Got const: "+constituent);
+    	}
+    	return constituent;
+	}
+
 }

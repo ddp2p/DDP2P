@@ -60,12 +60,9 @@ import widgets.components.DebateDecideAction;
 //import widgets.org.ColorRenderer;
 import widgets.components.DocumentTitleRenderer;
 import widgets.justifications.JustificationsModel;
-import widgets.motions.Motions;
-import widgets.motions.MotionsModel;
 import config.Application;
 import config.JustificationsListener;
 //import config.DDIcons;
-import config.Identity;
 import data.D_Document_Title;
 import data.D_Justification;
 
@@ -105,18 +102,35 @@ public class Justifications extends JTable implements MouseListener, Justificati
 		init();
 		//getModel().setCrtChoice(null);
 	}
+	/**
+	 * Connecting this widget to the status.
+	 * This will be told about motions and justification changes.
+	 * 
+	 * If an editor is incorporated, it will also be announced of changes in justifications and motions.
+	 */
 	public void connectWidget() {
 		getModel().connectWidget();
 		
 		MainFrame.status.addMotionStatusListener(this.getModel());
-    	if (_jedit != null) MainFrame.status.addJustificationStatusListener(_jedit);
+    	if (_jedit != null) {
+    		MainFrame.status.addMotionStatusListener(_jedit);
+    		MainFrame.status.addJustificationStatusListener(_jedit);
+    		MainFrame.status.addConstituentMeStatusListener(_jedit);
+    	}
     	MainFrame.status.addJustificationStatusListener(this);
 	}
+	/**
+	 * Disconnect listeners from status (for this model, and any editor)
+	 */
 	public void disconnectWidget() {
 		getModel().disconnectWidget();
 
 		MainFrame.status.removeMotListener(this.getModel());
-    	if(_jedit != null) MainFrame.status.removeJustificationListener(_jedit);
+    	if (_jedit != null) {
+    	 	MainFrame.status.removeConstituentMeListener(_jedit);
+    		MainFrame.status.removeMotListener(_jedit);
+    		MainFrame.status.removeJustificationListener(_jedit);
+    	}
     	MainFrame.status.removeJustificationListener(this);
 	}
 	JustificationEditor _jedit = null;
