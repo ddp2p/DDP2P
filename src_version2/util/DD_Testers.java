@@ -24,6 +24,7 @@ import hds.Server;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -38,10 +39,11 @@ import config.Application;
 import config.Application_GUI;
 import config.DD;
 import config.Identity;
-import data.D_TesterDefinition;
+import data.D_Tester;
 import data.D_UpdatesKeysInfo;
 class TesterSaverThread extends Thread {
 	DD_Testers ds;
+
 	TesterSaverThread(DD_Testers ds){
 		this.ds = ds;
 	}
@@ -53,10 +55,10 @@ class TesterSaverThread extends Thread {
 		}
 	}
 	public void _run() throws P2PDDSQLException{
-    	for(D_TesterDefinition d : ds.testers) {
+    	for (D_Tester d : ds.testers) {
     		d.store();
     		D_UpdatesKeysInfo uki = new D_UpdatesKeysInfo(d);
-			if(uki.existsInDB()) uki.store("update"); 
+			if (uki.existsInDB()) uki.store("update"); 
 			else uki.store("insert");
     	}
 	}
@@ -66,13 +68,17 @@ public class DD_Testers extends ASNObj implements StegoStructure {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	int version = 0;
-	ArrayList<D_TesterDefinition> testers = new ArrayList<D_TesterDefinition>();
+	ArrayList<D_Tester> testers = new ArrayList<D_Tester>();
 	
+
+	public boolean empty() {
+		return testers == null || testers.size() == 0;
+	}
 	@Override
 	public void save() {
 		if(DEBUG) System.out.println("DD_Testers:save");
 		new TesterSaverThread(this).start();
-    	if(true){
+    	if (true) {
     		Application_GUI.warning(__("Adding testers:")+" \n"+this.toString(), __("Import"));
     		//return;
     	}
@@ -83,6 +89,7 @@ public class DD_Testers extends ASNObj implements StegoStructure {
 		if(DEBUG)System.out.println("DD_Testers:decode "+asn1.length);
 		decode(new Decoder(asn1));
 		if(DEBUG)System.out.println("DD_Testers:decoded");
+		if (empty()) throw new ASN1.ASNLenRuntimeException("Empty DD_Testers");
 	}
 
 	@Override
@@ -101,16 +108,16 @@ public class DD_Testers extends ASNObj implements StegoStructure {
 	}
 
 	public void add(String name, String email, String public_key, String description, String url){
-		D_TesterDefinition d = new D_TesterDefinition();
+		D_Tester d = new D_Tester();
 		d.name = name;
 		d.email = email;
-		d.public_key = public_key;
+		d.testerGID = public_key;
 		d.description = description;
 		d.url = url;
 		testers.add(d);
 		if(DEBUG) System.out.println("DD_Testers:added:"+d);
 	}
-	public void add(D_TesterDefinition t){
+	public void add(D_Tester t){
 		testers.add(t);
 	}
 	/**
@@ -136,24 +143,28 @@ public class DD_Testers extends ASNObj implements StegoStructure {
 		if(DEBUG) System.out.println("DD_Testers:get_sign=:"+DD.STEGO_SIGN_TESTERS);
 		return DD.STEGO_SIGN_TESTERS;
 	}
+	public static BigInteger getASN1Tag() {
+		return new BigInteger(DD.STEGO_SIGN_TESTERS+"");
+	}
 
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(version));
 		enc.addToSequence(Encoder.getEncoder(testers));
-		enc.setASN1Type(getASN1Type());
+		//enc.setASN1Type(getASN1Type());
+		enc.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, getASN1Tag());
 		return enc;
 	}
-	public static byte getASN1Type() {
-		return DD.TAG_AC18;
-	}
+//	public static byte getASN1Type() {
+//		return DD.TAG_AC18;
+//	}
 
 	@Override
 	public DD_Testers decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();
 		version = d.getFirstObject(true).getInteger().intValue();
-		testers = d.getFirstObject(true).getSequenceOfAL(D_TesterDefinition.getASNType(), new D_TesterDefinition());
+		testers = d.getFirstObject(true).getSequenceOfAL(D_Tester.getASNType(), new D_Tester());
 		return this;
 	}
 	/**
@@ -168,16 +179,16 @@ public class DD_Testers extends ASNObj implements StegoStructure {
 		try {
 			Application.db = new DBInterface(args[0]);
 			DD_Testers testers = new DD_Testers();
-			ArrayList<D_TesterDefinition> tds;
+			ArrayList<D_Tester> tds;
 			if(args.length == 2) {
-				tds = D_TesterDefinition.retrieveTesterDefinitions();
+				tds = D_Tester.retrieveTesterDefinitions();
 			}else{
 				long id = Long.parseLong(args[2]);
-				tds = new ArrayList<D_TesterDefinition>();
-				D_TesterDefinition t = new D_TesterDefinition(id);
+				tds = new ArrayList<D_Tester>();
+				D_Tester t = D_Tester.getTesterInfoByLID(id);
 				tds.add(t);
 			}
-			for (D_TesterDefinition t : tds) {
+			for (D_Tester t : tds) {
 				testers.add(t);
 				System.out.println("Saving: "+t);
 			}

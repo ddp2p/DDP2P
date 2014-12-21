@@ -22,12 +22,16 @@ package widgets.motions;
 import static util.Util.__;
 import hds.ClientSync;
 
+import java.awt.Color;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 
 import javax.swing.Icon;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
@@ -54,10 +58,13 @@ import util.DBListener;
 import util.Util;
 import widgets.app.DDIcons;
 import widgets.app.MainFrame;
+import widgets.components.DDP2PColoredItem;
 import widgets.components.GUI_Swing;
+import widgets.components.DDP2PColoredItem.DDP2PColorPair;
+import widgets.justifications.JustificationsModel;
 
 @SuppressWarnings("serial")
-public class MotionsModel extends AbstractTableModel implements TableModel, DBListener, OrgListener {
+public class MotionsModel extends AbstractTableModel implements TableModel, DBListener, OrgListener, DDP2PColoredItem {
 	public static final int TABLE_COL_NAME = 0;
 	public static final int TABLE_COL_CREATOR = 1; // certified by trusted?
 	public static final int TABLE_COL_CATEGORY = 2; // certified by trusted?
@@ -128,6 +135,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	private String crt_orgID;
 	private D_Constituent constituent;
 	private D_Organization organization;
+	private D_Motion crt_motion;
 	public Icon getIcon(int column) {
 		switch (column) {
 			case TABLE_COL_HIDDEN: 
@@ -662,6 +670,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 				o.fireListener(K, 0);
 			}
 		}
+		this.setCurrentMotion(Util.getStringID(motion_id), null);
 		if (DEBUG) System.out.println("MotionsModel:setCurrent: Done");
 		
 	}
@@ -1291,5 +1300,80 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 		Integer row = rowByID.get(Util.Lval(motID));
 		if ( row == null ) return -1;
 		return row.intValue();
+	}
+//	@Override
+//	public Color getForeground(JTable table, Object value, boolean isSelected,
+//			boolean hasFocus, int row, int column) {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+//	@Override
+//	public Color getBackground(JTable table, Object value, boolean isSelected,
+//			boolean hasFocus, int row, int column) {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+	@Override
+	public DDP2PColorPair getColors(JTable table, Object value,
+			boolean isSelected, boolean hasFocus, int row_view, int column_view,
+			Component component) {
+		// backgrounds often do not work... (if implementing interface rather than extending default renderer)
+		boolean crt_is_answered = false, crt_is_answering = false;
+		if (DEBUG) System.out.println("MotionsModel: getColors: r="+row_view+" c="+column_view+" o="+value);
+		int m_row = table.convertRowIndexToModel(row_view);
+		int m_col = table.convertColumnIndexToModel(column_view);
+		if (m_col == MotionsModel.TABLE_COL_NAME) {
+			D_Motion crt = this.getMotion(m_row);
+			if (crt != null && this.crt_motion != null) {
+				if (crt.getLID() == crt_motion.getEnhancedMotionLID()) {
+					crt_is_answered = true;
+				}
+				if (crt.getEnhancedMotionLID() == crt_motion.getLID()) {
+					crt_is_answering = true;
+				}
+			}
+		}
+		DDP2PColorPair result;
+		if (value instanceof String) {
+			if (crt_is_answered) result = new DDP2PColorPair(Color.RED.brighter(), Color.WHITE, widgets.app.DDIcons.getAnsweredImageIcon("justs"));
+			else if (crt_is_answering) result = new DDP2PColorPair(Color.BLUE.brighter(), Color.WHITE, widgets.app.DDIcons.getAnsweringImageIcon("justs"));
+			else result = new DDP2PColorPair(Color.GREEN.darker(), Color.WHITE, null);//widgets.app.DDIcons.getJusImageIcon("justs"));
+		} else {
+			if (crt_is_answered) result = new DDP2PColorPair(Color.RED.darker(), Color.WHITE, widgets.app.DDIcons.getAnsweredImageIcon("justs"));
+			else if (crt_is_answering) result = new DDP2PColorPair(Color.BLUE.darker(), Color.WHITE, widgets.app.DDIcons.getAnsweringImageIcon("justs"));
+			else result = new DDP2PColorPair(Color.BLACK, Color.WHITE, null); //widgets.app.DDIcons.getJusImageIcon("justs"));
+		}
+		if (DEBUG) System.out.println("JustificationsModel: getColors: answered="+crt_is_answered+" ing="+crt_is_answering+ " r="+result);
+		if (isSelected) {
+			if (component != null && component instanceof JLabel) {
+				JLabel c = (JLabel) component;
+				result.setBackground(c.getBackground());
+				result.setForeground(c.getForeground());
+			} else {
+				result.setBackground(Color.BLUE);
+			}
+		}
+		return result;
+	}
+	public void setCurrentMotion(String motID, D_Motion d_motion) {
+		if (d_motion != null || motID == null) {
+			crt_motion = d_motion;
+		} else {
+			D_Motion m = D_Motion.getMotiByLID(motID, true, false);
+			crt_motion = m;
+		}
+    	SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("Motion Answering Colors"), false, false, this) {
+    		public void _run () {
+    			MotionsModel jm = (MotionsModel) ctx;
+    			if (jm.getRowCount() > 100) {
+    				jm.fireTableDataChanged();
+    				return;
+    			}
+				for (int crt_row = 0; crt_row < jm.getRowCount(); crt_row ++ ) {
+					jm.fireTableCellUpdated(crt_row, MotionsModel.TABLE_COL_NAME);
+				}
+    		}
+    	});
+		return;
 	}
 }

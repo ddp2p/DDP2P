@@ -19,6 +19,8 @@
 /* ------------------------------------------------------------------------- */
 package util;
 
+import java.math.BigInteger;
+
 import ASN1.ASN1DecoderFail;
 
 public interface StegoStructure{

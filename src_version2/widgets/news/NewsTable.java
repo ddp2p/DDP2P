@@ -88,7 +88,7 @@ public class NewsTable extends JTable implements MouseListener {
 		this.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
 		
     	try{
-    		if (Identity.getCurrentIdentity().identity_id!=null) {
+    		if (Identity.getCurrentConstituentIdentity().identity_id!=null) {
     			//long id = new Integer(Identity.current.identity_id).longValue();
     			long orgID = Identity.getDefaultOrgID();
     			this.setCurrent(orgID);

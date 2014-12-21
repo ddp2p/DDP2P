@@ -101,8 +101,8 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
     private String getLabelText() {
     	String result;
     	if (organization == null) return __("No current organization!");
-    	if (organization.name == null) return __("Incomplete organization data!");
-    	result = __("Current Organization:")+" \""+organization.name+"\"";
+    	if (organization.getName() == null) return __("Incomplete organization data!");
+    	result = __("Current Organization:")+" \""+organization.getName()+"\"";
     	result += " || " + __("I am :")+" "+tree.getModel().getConstituentMyselfName();
 		return result;
 	}

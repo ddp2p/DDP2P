@@ -1,3 +1,22 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2014 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package data;
 
 import static java.lang.System.out;
@@ -112,10 +131,22 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			throw new P2PDDSQLException(e.getLocalizedMessage());
 		}
 	}
+	/**
+	 * 
+	 * @param gID
+	 * @param load_Globals
+	 * @param create
+	 * @param __peer
+	 * @param p_oLID
+	 * @param ma
+	 * @throws P2PDDSQLException
+	 */
 	private D_Motion(String gID, boolean load_Globals, boolean create,
-			D_Peer __peer, long p_oLID) throws P2PDDSQLException {
+			D_Peer __peer, long p_oLID, ArrayList<ArrayList<Object>> ma) throws P2PDDSQLException {
 		try {
-			init(gID);
+			if (ma != null && ma.size() > 0) init(ma.get(0));
+			else init(gID);
+			
 			if (load_Globals) this.fillGlobals();
 		} catch (Exception e) {
 			//e.printStackTrace();
@@ -171,13 +202,13 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		new_motion.releaseReference();
 		return new_motion;
 	}
-	String sql_motions = "SELECT  "+Util.setDatabaseAlias(table.motion.fields, "n")
+	final static String sql_motions = "SELECT  "+Util.setDatabaseAlias(table.motion.fields, "n")
 		+ ", p."+table.motion.global_motion_ID
 		+ " FROM "+table.motion.TNAME+" AS n "
 		+ " LEFT JOIN "+table.motion.TNAME+" AS p ON(n."+table.motion.enhances_ID+"=p."+table.motion.motion_ID+") "
 		;
-	String cond_ID = sql_motions+" WHERE n."+table.motion.motion_ID+"=?;";
-	String cond_GID = sql_motions+" WHERE n."+table.motion.global_motion_ID+"=?;";
+	final static String cond_ID = sql_motions+" WHERE n."+table.motion.motion_ID+"=?;";
+	final static String cond_GID = sql_motions+" WHERE n."+table.motion.global_motion_ID+"=?;";
 
 	private void init(Long lID) throws Exception {
 		ArrayList<ArrayList<Object>> a;
@@ -186,11 +217,26 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		init (a.get(0));
 		if(DEBUG) System.out.println("D_Motion: init: got="+this);//result);
 	}
-	private void init(String gID) throws Exception {
+	public static ArrayList<ArrayList<Object>> getMotionArrayByGID(String gID) {
 		ArrayList<ArrayList<Object>> a;
-		a = Application.db.select(cond_GID, new String[]{gID});
-		if (a.size() == 0) throw new Exception("D_Motion:init:None for GID="+gID);
-		init (a.get(0));
+		try {
+			a = Application.db.select(cond_GID, new String[]{gID});
+			return a;
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return new ArrayList<ArrayList<Object>>();
+	}
+	/**
+	 * 
+	 * @param gID
+	 * @throws Exception
+	 */
+	private void init(String gID) throws Exception {
+		ArrayList<ArrayList<Object>> db_data;
+		db_data = Application.db.select(cond_GID, new String[]{gID});
+		if (db_data.size() == 0) throw new Exception("D_Motion:init:None for GID="+gID);
+		init (db_data.get(0));
 		if(DEBUG) System.out.println("D_Motion: init: got="+this);//result);
 	}
 	
@@ -532,8 +578,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 					}
 				}
 				if (removed.getLIDstr() != null) loaded_By_LocalID.remove(new Long(removed.getLID())); 
-				if (removed.getGID() != null) D_Motion_Node.remConstByGID(removed.getGID(), removed.getLID()); //loaded_const_By_GID.remove(removed.getGID());
-				if (removed.getGIDH() != null) D_Motion_Node.remConstByGIDH(removed.getGIDH(), removed.getLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
+				if (removed.getGID() != null) D_Motion_Node.remConstByGID(removed.getGID(), removed.getOrganizationLID()); //loaded_const_By_GID.remove(removed.getGID());
+				if (removed.getGIDH() != null) D_Motion_Node.remConstByGIDH(removed.getGIDH(), removed.getOrganizationLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 				if (DEBUG) System.out.println("D_Motion: drop_loaded: remove GIDH="+removed.getGIDH());
 				return result;
 			}
@@ -772,6 +818,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 * Does not call storeRequest on creation.
 	 * Therefore If create, should also set keep!
 	 * 
+	 * Storage used only if GID is not found on the disk.
+	 * 
 	 * @param GID
 	 * @param load_Globals
 	 * @param create
@@ -807,10 +855,12 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			}
 
 			try {
-				if (storage == null)
-					crt = new D_Motion(GID, load_Globals, create, __peer, p_oLID);
+				ArrayList<ArrayList<Object>> ma = D_Motion.getMotionArrayByGID(GID);
+				if (storage == null || ma.size() > 0)
+					crt = new D_Motion(GID, load_Globals, create, __peer, p_oLID, ma);
 				else {
 					D_Motion_Node.dropLoaded(storage, true);
+					//if (ma.size() > 0) storage.init(ma.get(0));
 					crt = storage.initNew(GID, __peer, p_oLID);
 				}
 				if (DEBUG) System.out.println("D_Motion: getMotiByGID: loaded crt="+crt);
@@ -2182,6 +2232,9 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public String getEnhancedMotionLIDstr() {
 		return enhanced_motionID;
 	}
+	public long getEnhancedMotionLID() {
+		return Util.lval(enhanced_motionID);
+	}
 	public void setEnhancedMotionLIDstr(String enhanced_motionID) {
 		this.enhanced_motionID = enhanced_motionID;
 		this.dirty_main = true;
@@ -2907,8 +2960,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 }
 
 class D_Motion_SaverThread extends util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000; // ms to sleep
-	private static final long SAVER_SLEEP_ON_ERROR = 2000;
+	// private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	/**
 	 * The next monitor is needed to ensure that two D_Motion_SaverThreadWorker are not concurrently modifying the database,
@@ -2960,7 +3012,7 @@ class D_Motion_SaverThread extends util.DDP2P_ServiceThread {
 			synchronized(this) {
 				try {
 					//System.out.println("D_Motion_SaverThread: _run: will sleep");
-					wait(SAVER_SLEEP);
+					wait(SaverThreadsConstants.SAVER_SLEEP_BETWEEN_MOTION_MSEC);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -2970,8 +3022,6 @@ class D_Motion_SaverThread extends util.DDP2P_ServiceThread {
 }
 
 class D_Motion_SaverThreadWorker extends util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000;
-	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	//public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
@@ -2979,6 +3029,7 @@ class D_Motion_SaverThreadWorker extends util.DDP2P_ServiceThread {
 		super("D_Motion Saver Worker", false);
 		//start ();
 	}
+	@SuppressWarnings("unused")
 	public void _run() {
 		if (DEBUG) System.out.println("D_Motion_SaverThreadWorker: wait to start");
 		synchronized(D_Motion_SaverThread.saver_thread_monitor) {
@@ -2999,7 +3050,7 @@ class D_Motion_SaverThreadWorker extends util.DDP2P_ServiceThread {
 				else D_Motion.need_saving_remove(de);//, de.instance);
 				if (DEBUG) System.out.println("D_Motion_SaverThreadWorker: loop removed need_saving flag");
 				// try 3 times to save
-				for (int k = 0; k < 3; k++) {
+				for (int k = 0; k < 3; k ++) {
 					try {
 						if (DEBUG) System.out.println("D_Motion_SaverThreadWorker: loop will try saving k="+k);
 						de.storeAct();
@@ -3010,7 +3061,7 @@ class D_Motion_SaverThreadWorker extends util.DDP2P_ServiceThread {
 						synchronized(this) {
 							try {
 								if (DEBUG) System.out.println("D_Motion_SaverThreadWorker: sleep");
-								wait(SAVER_SLEEP_ON_ERROR);
+								wait(SaverThreadsConstants.SAVER_SLEEP_WORKER_MOTION_ON_ERROR);
 								if (DEBUG) System.out.println("D_Motion_SaverThreadWorker: waked error");
 							} catch (InterruptedException e2) {
 								e2.printStackTrace();
@@ -3023,17 +3074,17 @@ class D_Motion_SaverThreadWorker extends util.DDP2P_ServiceThread {
 				if (DEBUG) System.out.println("D_Motion_SaverThreadWorker: idle ...");
 			}
 		}
-		/*
-		synchronized(this) {
-			try {
-				if (DEBUG) System.out.println("D_Motion_Saver: sleep");
-				wait(SAVER_SLEEP);
-				if (DEBUG) System.out.println("D_Motion_Saver: waked");
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+		if (SaverThreadsConstants.SAVER_SLEEP_WORKER_BETWEEN_MOTION_MSEC >= 0) {
+			synchronized(this) {
+				try {
+					if (DEBUG) System.out.println("D_Motion_Saver: sleep");
+					wait(SaverThreadsConstants.SAVER_SLEEP_WORKER_BETWEEN_MOTION_MSEC);
+					if (DEBUG) System.out.println("D_Motion_Saver: waked");
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
-		*/
 	}
 }
 

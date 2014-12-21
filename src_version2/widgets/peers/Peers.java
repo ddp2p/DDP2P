@@ -1594,7 +1594,7 @@ class PeersRowAction extends DebateDecideAction {
     				me_peer.releaseReference();
     				return;
     			}
-				HandlingMyself_Peer.setMyself(me_peer, true, true); // kept
+				HandlingMyself_Peer.setMyself_currentIdentity_announceDirs(me_peer, true, true); // kept
 				HandlingMyself_Peer.updateAddress(me_peer);
 				me_peer.sign(me_peer.getSK());
 				me_peer.storeRequest();

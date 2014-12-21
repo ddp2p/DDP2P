@@ -37,12 +37,23 @@ public
 class Decoder {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
+	/**
+	 * The buffer with encoded data
+	 */
 	byte[] data;
+	/**
+	 * The offset in data where the current decoder head is positioned
+	 */
 	int offset;
+	/**
+	 * The length of the current component being decoded, after which null is returned even if "data" has more data
+	 */
 	int length;
-	public String toString(){
+	
+	public String toString() {
 		byte[] val=new byte[length];
 		Encoder.copyBytes(val, 0, data, length, offset);
+
 		return Util.byteToHex(val, " ");
 	}
 	/**
@@ -70,62 +81,76 @@ class Decoder {
 		System.out.println(name+dumpHex());
 	}
 	public void init(byte[] data, int offset,int length) {
-		if(data==null) throw new RuntimeException("parameter data should not be null");
+		if (data == null) throw new RuntimeException("parameter data should not be null");
 		this.data = data;
 		this.offset = offset;
 		this.length = length;
 	}
 	public byte type(){
-		if(length<=0) return 0;
+		if (length <= 0) return 0;
 		return data[offset];
 	}
 	public byte getTypeByte(){
 		return type();
 	}
-	public int tagVal(){
-		if(length<=0) return 0;
+	/**
+	 * Returns the tag, 0x1f in case there are more bytes!
+	 * @return
+	 */
+	public int tagVal() {
+		if (length <= 0) return 0;
 		return data[offset]&0x1f;
 	}
 	public int typeClass(){
 		if(length<=0) return 0;
 		return (data[offset]&0xc0)>>6;
 	}
-	public int typePC(){
-		if(length<=0) return 0;
+	public int typePC() {
+		if (length <= 0) return 0;
 		return (data[offset]&0x20)>>5;
 	}
+	/**
+	 * Can use tagVal() if it is less than 31;
+	 * @return
+	 */
+	public BigInteger getTagValueBN() {
+		int len = typeLen();
+		if (len == 1) {
+			return new BigInteger(""+tagVal());
+		}
+		assert(this.tagVal() == 0x1f);
+		//byte[] tag = new byte[len -1];
+		//BigInteger bn128 = Util.BN128;
+		return Util.fromBase128(data, offset + 1, offset + length);
+	}
 	public int typeLen(){
-		if(length<=0) return 0;
-		if(tagVal() != 0x1f) return 1; 
-		int k=offset+1;
-		int len=2;
-		while((k<length+offset) && (gs(data[k])>127)) {len++; k++;}
+		if (length <= 0) return 0;
+		if (tagVal() != 0x1f) return 1; 
+		int k = offset+1;
+		int len = 2;
+		while ((k < length+offset) && (Util.getUnsignedShort(data[k]) > 127)) {len++; k++;}
 		if (len > length) return 0;
 		return len;
 	}
-	public static short gs(byte val) {
-		if(val >= 0) return val;
-		return (short)(val+256);
-	}
 	public int contentLength() {
 		//System.err.println("in ContentLength: length="+length);
-		if(length<2){
+		if (length < 2) {
 			//System.err.println("in ContentLength: 2>length="+length);
 			return 0;
 		}
-		int tlen=typeLen();
+		int tlen = typeLen();
 		//System.err.println("in ContentLength: tlen="+tlen);
-		if(tlen<1){
+		if (tlen < 1) {
 			return 0;
 		}
-		if(gs(data[offset+tlen])<128){
+		if (Util.getUnsignedShort(data[offset+tlen]) < 128) {
 			//System.err.println("in ContentLength: len_len=="+data[offset+tlen]+" off="+offset);
 			return data[offset+tlen];
 		}
 		//System.err.println("Len_len="+data[offset+tlen]+" gs="+gs(data[offset+tlen]));
-		int len_len=gs(data[offset+tlen])-128;
+		int len_len=Util.getUnsignedShort(data[offset+tlen])-128;
 		//System.err.println("actual Len_len="+len_len);
-		if(length<len_len+tlen+1){
+		if (length < len_len+tlen+1){
 			//System.err.println("in ContentLength: length<1_tlen+len_len="+len_len);
 			return 0;
 		}
@@ -142,8 +167,8 @@ class Decoder {
 		int tlen = typeLen();
 		//System.err.println(tlen+"=tlen +length byte="+data[offset+tlen]);
 		if(length<2) return 0;
-		if(gs(data[offset+tlen])<128) return 1;
-		return 1+gs(data[offset+tlen])-128;
+		if(Util.getUnsignedShort(data[offset+tlen])<128) return 1;
+		return 1+Util.getUnsignedShort(data[offset+tlen])-128;
 	}
 	/**
 	 * 
@@ -267,21 +292,22 @@ class Decoder {
 	 * @return A new Decoder Object for the first in list
 	 */
 	public Decoder getFirstObject(boolean extract) {
-		if(length<=0) return null;
+		if (length <= 0) return null;
 		int tlen = typeLen();
 		int llen = lenLen();
 		int cLen = contentLength();
 		//System.out.println("Decoder: lens="+tlen+"+"+llen+"+"+cLen+"<="+length +" off="+offset);
-		int new_len = tlen+llen+cLen;
-		if(new_len>length) throw new RuntimeException("ASN1:Decoding:Invalid object length ["+new_len+"]: Too long given available data:"+length);
+		int new_len = tlen + llen + cLen;
+		if (new_len > length || new_len < 0) throw new ASNLenRuntimeException("ASN1:Decoding:Invalid object length ["+new_len+"]: Too long given available data:"+length);
 		int old_offset = offset;
-		if(extract){
+		if (extract) {
 			offset += new_len;
 			length -= new_len;
 			//System.out.println("Decoder: remains lens="+tlen+"+"+llen+"+"+cLen+"<="+length +" off="+offset);
+			if (offset < 0 || length < 0) throw new ASNLenRuntimeException("Arrive at negative offset after extracting " + new_len+"/"+length);
 		}
 		//System.out.println("Decoder: extracts lens="+new_len+"<="+length +" off="+old_offset+"/"+data.length);
-		return new Decoder(data,old_offset,new_len);
+		return new Decoder(data, old_offset, new_len);
 	}
 	/**
 	 * 
@@ -290,16 +316,17 @@ class Decoder {
 	 * @throws ASN1DecoderFail 
 	 */
 	public Decoder getFirstObject(boolean extract, byte type) throws ASN1DecoderFail {
-		if(length<=0) return null;
+		if (length <= 0) return null;
 		byte found = getTypeByte();
-		if((found!=type)&&(getTypeByte()!=Encoder.TAG_NULL))
+		if ((found != type)&&(getTypeByte()!=Encoder.TAG_NULL))
 			throw new ASN1DecoderFail("No type: "+type+" but "+found+" in "+this.dumpHex());
 		int new_len = typeLen()+lenLen()+contentLength();
-		if(new_len>length) throw new ASNLenRuntimeException("Too long");
+		if(new_len > length || new_len < 0) throw new ASNLenRuntimeException("Too long");
 		int old_offset = offset;
 		if(extract){
 			offset += new_len;
 			length -= new_len;
+			if (offset < 0 || length < 0) throw new ASNLenRuntimeException("Arrive at negative offset after extracting " + new_len+"/"+length);
 		}
 		return new Decoder(data,old_offset,new_len);
 	}
@@ -312,15 +339,18 @@ class Decoder {
 	 * 
 	 */
 	public Decoder getContent() throws ASN1DecoderFail {
-		//System.err.println("getContent: Length: "+length);
-		if(length<=0) throw new ASNLenRuntimeException("Container length 0");
+		if (DEBUG) System.err.println("getContent: Length: "+length);
+		if (length <= 0) throw new ASNLenRuntimeException("Container length 0");
 		int new_len;
 		new_len = contentLength();
-		//System.err.println("getContent: new_Length: "+new_len);
+		if (DEBUG) System.err.println("getContent: new_Length: "+new_len);
 		int new_off = typeLen()+lenLen();
 		//System.err.println("getContent: new offset: "+new_off);
+		if(new_off>length) throw new ASN1DecoderFail("Content "+new_off+":"+new_len+" exceeds container "+length);
+		if(new_off<0) throw new ASN1DecoderFail("Content "+new_off+":"+new_len+" has negative offset in container length "+length);
 		if(new_off+new_len>length) throw new ASN1DecoderFail("Content "+new_off+":"+new_len+" exceeds container "+length);
 		if(new_len>length) throw new ASN1DecoderFail("Too long");
+		if(new_len < 0) throw new ASN1DecoderFail("Negative length");
 		return new Decoder(data,offset+new_off,new_len);
 	}
 	public boolean getBoolean() {
@@ -409,13 +439,13 @@ class Decoder {
 		byte[] b_value = new byte[contentLength()];
 		Encoder.copyBytes(b_value, 0, data, contentLength(),offset+typeLen()+lenLen());
 		int len=2;
-		for(int k=1;k<b_value.length; k++) if(b_value[k]>=0) len++;
+		for(int k=1; k < b_value.length; k++) if (b_value[k]>=0) len++;
 		int[] value = new int[len];
 		value[0] = get_u32(b_value[0])/40;
 		value[1] = get_u32(b_value[0])%40;
 		for(int k=2, crt=1; k<value.length; k++) {
 			value[k]=0;
-			while(b_value[crt]<0) {
+			while (b_value[crt] < 0) {
 				value[k] <<= 7;
 				value[k] += b_value[crt++]+128;//get_u32(b_value[crt++])-128;
 			}
@@ -429,26 +459,29 @@ class Decoder {
 		if(data[offset]!=type) throw new ASN1DecoderFail("OCTET STR: "+type+" != "+data[offset]);
 		byte[] b_value = new byte[contentLength()];
 		Encoder.copyBytes(b_value, 0, data, contentLength(),offset+typeLen()+lenLen());
-		int len=2;
-		for(int k=1;k<b_value.length; k++) if(b_value[k]>=0) len++;
+		int len = 2;
+		for (int k = 1; k < b_value.length; k ++) if (b_value[k] >= 0) len ++;
 		BigInteger[] value = new BigInteger[len];
-		int value0 = get_u32(b_value[0])/40;
-		int value1 = get_u32(b_value[0])%40;
-		if(value0 > 2) {
-			value1 += 40*(value0-2);
-			value0 =2;
+		int value0 = get_u32(b_value[0]) / 40;
+		int value1 = get_u32(b_value[0]) % 40;
+		if (value0 > 2) {
+			value1 += 40 * (value0 - 2);
+			value0 = 2;
 		}
 		value[0] = new BigInteger(""+value0);
 		value[1] = new BigInteger(""+value1);
-		for(int k=2, crt=1; k<value.length; k++) {
-			value[k]=BigInteger.ZERO;
-			while(b_value[crt]<0) {
+		for (int k = 2, crt = 1; k < value.length; k ++) {
+			//value[k] = Util.fromBase128(b_value, k, this.offset + this.length);
+			
+			value[k] = BigInteger.ZERO;
+			while (b_value[crt] < 0) {
 				value[k] = value[k].shiftLeft(7);
-				value[k] = value[k].or(new BigInteger(""+(b_value[crt++]+128)));//get_u32(b_value[crt++])-128;
+				value[k] = value[k].or(new BigInteger("" + (b_value[crt ++] + 128))); //get_u32(b_value[crt++])-128;
 			}
 			value[k] = value[k].shiftLeft(7);
-			value[k] = value[k].or(new BigInteger(""+(b_value[crt++])));//get_u32(b_value[crt++]);
+			value[k] = value[k].or(new BigInteger("" + (b_value[crt ++]))); //get_u32(b_value[crt++]);
 			continue;
+			
 		}
 		return value;
 	}
@@ -668,9 +701,33 @@ class Decoder {
 	        System.out.println("Compared: "+m1+" vs "+m2);
 	        //Assert.assertEquals(m1, m2);
 	}
-    public static void main(String[]args){
+	public static void encodeDecodeBNTAG(String nb) throws ASN1DecoderFail {
+		byte msg[];
+		Encoder enc = new Encoder().initSequence();
+		enc.addToSequence (new Encoder(new BigInteger("1")));
+		
+		msg = enc.getBytes();
+		if (DEBUG) System.out.println("BN: "+Util.byteToHex(msg));
+
+		enc.setASN1Type(Encoder.CLASS_CONTEXT, Encoder.PC_CONSTRUCTED, new BigInteger(nb,16));
+		
+		msg = enc.getBytes();
+		if (DEBUG) System.out.println("BN: "+Util.byteToHex(msg));
+		
+		Decoder dec = new Decoder(msg);
+		System.out.println("BN: decoder "+dec);
+
+		System.out.println("BN: decoder tag: "+dec.getTagValueBN());
+		
+		Decoder d = dec.getContent();
+		System.out.println("BN: dec con "+d);
+
+		System.out.println("BN: integer "+d.getFirstObject(true).getInteger());
+	}
+    public static void main(String[]args) {
     	try {
-			encodeDecodeCalendar();
+    		encodeDecodeBNTAG(args[0]);
+			//encodeDecodeCalendar();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();
 		}

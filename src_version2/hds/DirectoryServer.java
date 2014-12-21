@@ -36,6 +36,7 @@ import java.util.Enumeration;
 
 import util.P2PDDSQLException;
 import config.Application;
+import config.DD;
 import data.D_Peer;
 import util.DBInterface;
 import util.Util;
@@ -55,7 +56,7 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 	static final int MAX_DR_DA = 100000;
 	static final int MAX_LEN = 100000;
 	public static final String ADDR_SEP = ",";
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final boolean VERIFY_SIGNATURES = false;
 	private static final long REMOTE_DATE_THRESHOLD_MILLIS = 60*60*1000; // 1 hour
@@ -63,13 +64,18 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 	 * Monitor for opening the db database (it can be open from two place: server and widget)
 	 */
 	private static final Object db_monitor = new Object();
+	
+	public static final ArrayList<String> mAcceptedIPs = new ArrayList<String>();
+	public static final ArrayList<String> mAcceptedGIDH_Addresses = new ArrayList<String>();
+	public static final ArrayList<String> mAcceptedGIDH_Clients = new ArrayList<String>();
+	
 	public DatagramSocket udp_socket;
 	DirectoryServerUDP dsu;
 	public static DBInterface db_dir = null;
 	ServerSocket ss = null;
 	public static DBInterface getDirDB(String dbfile) {
 		synchronized (db_monitor) {
-			if (db_dir==null) {
+			if (db_dir == null) {
 					try {
 						db_dir = new DBInterface(dbfile);
 						ArrayList<ArrayList<Object>> a = db_dir._select("SELECT * FROM "+table.registered.TNAME+" LIMIT 1", new String[]{}, DEBUG);
@@ -149,20 +155,32 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 	}
 	static Object monitor_handleAnnouncement = new Object();
 	public static ArrayList<byte[]> recently_sent_challenges = new ArrayList<byte[]>();
-	public static DirectoryAnnouncement_Answer handleAnnouncement(
+	/**
+	 *  if (DirectoryServer.VERIFY_SIGNATURES is true) verify signatures and return null on failure!
+	 *  call _monitored_handleAnnouncement (to integrate it, otherwise)
+	 * @param da
+	 * @param detected_sa
+	 * @param db
+	 * @param storeNAT
+	 * @param TCP_not_UDP
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public static DirectoryAnnouncement_Answer handleAnnouncement (
 			DirectoryAnnouncement da, 
 			Address detected_sa, 
 			DBInterface db, 
 			boolean storeNAT,
-			boolean TCP) throws P2PDDSQLException{
+			boolean TCP_not_UDP) throws P2PDDSQLException {
+		
 		if (DirectoryServer.VERIFY_SIGNATURES) {
-			da.globalID = getGlobalPeerID(da);
-			if(da.globalID == null) return null; // packet telling I need globalID
-			if(unknownChallenge(da.challenge)&&remoteDate(da.date)) return null; // packet offering challenge
-			if(!da.verifySignature()) return null; // packet for signature failure
+			da.setGID(getGlobalPeerID(da));
+			if (da.getGID() == null) return null; // packet telling I need globalID
+			if (unknownChallenge(da.challenge) && remoteDate(da.date)) return null; // packet offering challenge
+			if (!da.verifySignature()) return null; // packet for signature failure
 		}
 		synchronized (monitor_handleAnnouncement) {
-			return _monitored_handleAnnouncement(da, detected_sa, db, storeNAT, TCP);
+			return _monitored_handleAnnouncement(da, detected_sa, db, storeNAT, TCP_not_UDP);
 		}
 	}
 	/**
@@ -191,8 +209,8 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 	 * @return
 	 */
 	private static String getGlobalPeerID(DirectoryAnnouncement da) {
-		if(da.globalID !=null) return da.globalID;
-		D_DirectoryEntry e = DirectoryServerCache.getEntry(da.globalID, da.globalIDhash);
+		if (da.getGID() != null) return da.getGID();
+		D_DirectoryEntry e = DirectoryServerCache.getEntry(da.getGID(), da.getGIDH());
 		return e.globalID;
 	}
 	/**
@@ -208,16 +226,42 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 			DirectoryAnnouncement da,
 			Address detected_sa,
 			DBInterface db,
-			boolean storeNAT, boolean TCP_UDP) throws P2PDDSQLException {
-		if (DEBUG) System.out.println("DirectoryServer:_monitored_handleAnnouncement:Got announcement: "+da);
+			boolean storeNAT, boolean TCP_not_UDP) throws P2PDDSQLException {
+		
+		if (DEBUG) System.out.println("DirectoryServer: _monitored_handleAnnouncement: Got announcement: "+da);
 		if (da.address._addresses == null) {
-			if (DEBUG) System.out.println("DirectoryServer:_monitored_handleAnnouncement:Got empty announcement: "+da
+			if (DEBUG) System.out.println("DirectoryServer: _monitored_handleAnnouncement: Got empty announcement: "+da
 					+" detected="+detected_sa);
 		}
+
+		String globalID = da.getGID();
+		String globalIDhash = da.getGIDH(); 
+		String instance = da.instance;
+		
+		// only use old NAT is current message is TCP
+		if (TCP_not_UDP) {
+			D_DirectoryEntry old_entry = DirectoryServerCache.getEntry(globalID, globalIDhash, instance);
+			if (old_entry != null) {
+				Address old_detected_NAT = old_entry.getNATAddress();
+				if (detected_sa == null) detected_sa = old_detected_NAT;
+				else {
+					if (old_detected_NAT != null) {
+						if (Address.sameDomain(detected_sa, old_detected_NAT)) {
+							detected_sa = old_detected_NAT;
+						} else {
+							if (DEBUG) System.out.println("DirectoryServer: _monitored_handleAnnouncement: diff NATS: n="+detected_sa+" o="+old_detected_NAT);							
+						}
+					}
+				}
+			}
+		}
+		
 		if (detected_sa != null)
 			da.address._addresses = prependAddress(da.address._addresses, detected_sa);
-
-		DirectoryServerCache.loadAndSetEntry(da, TCP_UDP);
+		DirectoryServerCache.loadAndSetEntry(da, TCP_not_UDP);
+		if (DEBUG)
+			System.out.println("DirectoryServer: _monitored_handleAnnouncement: loaded="+
+				DirectoryServerCache.getEntry(globalID, globalIDhash, instance));							
 		
 		//byte[] answer = 
 		return new DirectoryAnnouncement_Answer(Util.getString(detected_sa));
@@ -242,22 +286,25 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 	}
 	private static byte[] _monitor_handleAnnouncement(DirectoryAnnouncement da, String detected_sa, DBInterface db, boolean storeNAT) throws P2PDDSQLException{
 		if(DEBUG)System.out.println("Got announcement: "+da);
-		if(da.globalID!=null)
+		if(da.getGID()!=null)
 			db.deleteNoSyncNULL(table.registered.TNAME,
 					new String[]{table.registered.global_peer_ID,table.registered.instance},
-					new String[]{da.globalID, da.instance},DEBUG);
+					new String[]{da.getGID(), da.instance},DEBUG);
 		else
 			db.deleteNoSyncNULL(table.registered.TNAME,
 					new String[]{table.registered.global_peer_ID_hash,table.registered.instance},
-					new String[]{da.globalIDhash, da.instance},DEBUG);
+					new String[]{da.getGIDH(), da.instance},DEBUG);
 		String adr = da.address.addresses();
 						//da.address.domain+":"+da.address.port+ADDR_SEP+detected_sa,
 		if(storeNAT) adr = Address.joinAddresses(detected_sa, adr);
 			
 		String params[] = new String[table.registered.fields_noID_list.length];
-		params[table.registered.REG_GID] = da.globalID;
-		params[table.registered.REG_GID_HASH] = da.globalIDhash;
+		params[table.registered.REG_GID] = da.getGID();
+		params[table.registered.REG_GID_HASH] = da.getGIDH();
 		params[table.registered.REG_INSTANCE] = da.instance;
+		params[table.registered.REG_BRANCH] = da.branch;
+		params[table.registered.REG_AGENT_VERSION] = Util.getVersion(da.agent_version);
+		params[table.registered.REG_NAME] = da.name;
 		params[table.registered.REG_CERT] = (da.certificate.length==0)?null:Util.stringSignatureFromByte(da.certificate);
 		params[table.registered.REG_ADDR] = adr;
 		params[table.registered.REG_SIGN] = (da.signature.length==0)?null:Util.stringSignatureFromByte(da.signature);
@@ -294,7 +341,7 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 		*/
 	}
 	/**
-	 * 
+	 * Just creates an Address object with "isa" as its host address, -1 for tcp port and "port" as UDP post
 	 * @param isa
 	 * @param port
 	 * @return
@@ -324,30 +371,70 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 				break;
 			}
 			//out.println("DirServ: *******");
-			try{
+			try {
 				Socket client = ss.accept();
 				//out.println("DirServ: Accepted... from: "+client.getRemoteSocketAddress());
-				byte buffer[]=new byte[DirectoryServer.MAX_DR];
-				int peek=client.getInputStream().read(buffer);
+				InetSocketAddress risa = null;
+				try {
+					//InetAddress risa = ((InetSocketAddress) client.getRemoteSocketAddress()).getAddress();
+					risa = (InetSocketAddress) client.getRemoteSocketAddress();
+					if (DirectoryServer.mAcceptedIPs.size() > 0) {
+						boolean accepted = false;
+						for ( String ip : DirectoryServer.mAcceptedIPs) {
+							InetAddress _isa = new InetSocketAddress(ip, 45000).getAddress();
+							if (DEBUG) out.print("(TCP: "+risa+")");
+							if (risa.getAddress().equals(_isa)) {
+								if (DEBUG) out.print("(TCP: from accepted "+_isa+")");
+								accepted = true;
+								break;
+							} else {
+								if (_DEBUG) out.print("(TCP: not from "+_isa+" but "+risa+")");
+							}
+						}
+						if (! accepted) return;
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				byte buffer[] = new byte[DirectoryServer.MAX_DR];
+				int peek = client.getInputStream().read(buffer);
+				if (peek < 0) {
+					out.println("DirServTCP: got no bytes from: "+risa);
+					client.close();
+					continue;
+				} else {
+					out.println("DirServTCP: __run got bytes from: "+risa);
+				}
 				//out.println("DirServ: Got ASN1 dump: "+Util.byteToHexDump(buffer,peek));
-				Decoder test=new Decoder(buffer,0,peek);
-				//out.println("DirServ: Decoded ASN1: class="+test.typeClass()+" val="+test.tagVal());
+				Decoder test = new Decoder(buffer, 0, peek);
+				//out.println("DirServTCP: __run got decoder: "+test);
+				
+				out.println("DirServTCP: __run: Decoded ASN1: class="+test.typeClass()+" val="+test.tagVal()+" blen="+buffer.length);
 				DirMessage m; // recording msgs
-				if (test.typeClass()==Encoder.CLASS_APPLICATION && test.tagVal()==DirectoryAnnouncement.TAG) {
+				if (test.typeClass() == Encoder.CLASS_APPLICATION && test.tagVal()==DirectoryAnnouncement.TAG) {
 					//out.println("DirServ: Detected directory announcement");
 					InetSocketAddress isa= (InetSocketAddress)client.getRemoteSocketAddress();
 					DirectoryAnnouncement da = new DirectoryAnnouncement(buffer,peek,client.getInputStream());
 					out.println("DirServTCP: got announcement: "+da+"\n from: "+isa);
 					
+					// here should first get the old detected address (probably from UDP) and keep it if has same IP
+					
+					// this stores the message in the announcement_storage for this GID, and the GID - IP relation in its hashtable
 					recordAnnouncementMessage(isa, da, null, DirMessage.TCP, DirMessage.ANNOUNCEMENT);
 					
+					// creates an address object from the socket and reported udp port
 					Address detected_sa = detectUDP_Address(isa, da.address.udp_port);
 					out.println("DirServTCP: got announcement: detected = "+detected_sa);
+					
 					//Address detected_sa = new Address(_detected_sa);
 					detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
-					out.println("DirServTCP: got announcement: detected tuned = "+detected_sa);
+					
+					out.println("DirServTCP: got announcement: detected tuned = " + detected_sa);
 					if (da.address.udp_port <= 0) detected_sa = null;
-					DirectoryAnnouncement_Answer daa = handleAnnouncement(da, detected_sa, db_dir, false, true);
+					
+					boolean storeNAT;
+					boolean TCP;
+					DirectoryAnnouncement_Answer daa = handleAnnouncement(da, detected_sa, db_dir, storeNAT = false, TCP = true);
 					byte[] answer = new byte[0];
 					if (daa != null) answer = daa.encode();
 					//byte[] answer = new D_DAAnswer(detected_sa).encode();
@@ -355,16 +442,20 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 					
 					recordAnnouncementMessage(isa, da, daa, DirMessage.TCP, DirMessage.ANN_ANSWER);
 				} else {
-					boolean DEBUG = true;
-					if(DEBUG)out.println("Received directory request");
+					//boolean DEBUG = true;
+					if (DEBUG) out.println("DSTCP: Potential directory request");
 					// handling terms here
 					DirectoryRequest dr = new DirectoryRequest(buffer,peek,client.getInputStream());
+					if (dr.empty()) {
+						out.println("DirServTCP:__run: potential message detected empty = "+risa+" dr="+dr);
+						continue;
+					}
 					//boolean acceptedTerms = areTermsAccepted(dr);
-					InetSocketAddress isa= (InetSocketAddress)client.getRemoteSocketAddress();
+					InetSocketAddress isa = (InetSocketAddress)client.getRemoteSocketAddress();
 					if(DEBUG)out.println("Received directory request: "+dr);
 
 					recordRequestMessage(isa, dr, null, DirMessage.TCP, DirMessage.REQUEST);
-					if(DEBUG)out.println("DirServ: Looking for: "+
+					if (DEBUG) out.println("DirServ: Looking for: "+
 							D_Peer.getGIDHashFromGID(dr.globalID)+"\n  by "+
 							D_Peer.getGIDHashFromGID(dr.initiator_globalID));//+"\n  with source udp="+dr.UDP_port);
 
@@ -433,7 +524,7 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 //			System.out.println("terms!=null -------------------------");
 		
 		DirectoryMessageStorage.addNoPingMsg(dr.initiator_globalID/*dr.globalID*/, m); //GID??
-		if(DirMessage.REQUEST_ANSWER.equals(msg_type)) {
+		if (DirMessage.REQUEST_ANSWER.equals(msg_type)) {
 			m.msg = da;
 			m.respondTerms = null;//da.terms;
 			// only one service offered (address of the requested peer (registered peer) )
@@ -466,6 +557,14 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 
 		}
 	}
+	/**
+	 * Create an announcement message and enqueue it as the last message received from this GID (with crt timestamp, instance, IP)
+	 * @param isa
+	 * @param da
+	 * @param daa
+	 * @param transport
+	 * @param msg_type
+	 */
 	public static void recordAnnouncementMessage(InetSocketAddress isa,
 			DirectoryAnnouncement da, DirectoryAnnouncement_Answer daa, 
 			String transport, String msg_type) {
@@ -474,14 +573,15 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 		m = new DirMessage(null);
 		if (DirMessage.ANNOUNCEMENT.equals(msg_type)) {
 			m.msg = da;
-		}else m.msg = daa;
-		m.sourceIP=isa.toString();
-		m.sourceGID=da.globalID;
-		m.sourceInstance= da.instance; //?? set or not
+		} else m.msg = daa;
+		m.sourceIP = isa.toString();
+		m.sourceGID = da.getGID();
+		m.sourceInstance = da.instance; //?? set or not
 		m.MsgType = transport+":"+msg_type;//+DirMessage.ANN_ANSWER;
 		m.timestamp = m.getCurrentDateAndTime(); 
-		DirectoryMessageStorage.addAnnouncementMsg(da.globalID, m); //GID??
+		DirectoryMessageStorage.addAnnouncementMsg(da.getGID(), m); //GID??
 	}
+	
 	public static void recordPingMessage(InetSocketAddress risa, ASNUDPPing aup, String transport, String type) {
 		DirMessage m;
 		// recording UDP EmptyPing message (to open the nat)
@@ -489,7 +589,7 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 		m.sourceIP=risa.toString();
 		m.MsgType = transport+":"+type;
 		m.timestamp = m.getCurrentDateAndTime(); 
-		if(DirMessage.PING.equals(type)) {
+		if (DirMessage.PING.equals(type)) {
 			m.sourceGID = aup.initiator_globalID;
 			//m.sourceInstance = aup.instance();
 			m.peerGID = aup.peer_globalID;
@@ -625,6 +725,10 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 		if (! termsMatch) {
 			e.instance_terms = de.instance_terms;
 		} else {
+			if (e.branch == null)
+				e.branch = de.branch;
+			if (e.agent_version == null)
+				e.agent_version = Util.getVersion(de.agent_version);
 			if (de.addresses != null) {
 				for (int k = 0; k < de.addresses.length; k++) {
 					e.addresses.add(de.addresses[k]);
@@ -807,10 +911,10 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 	}
 	public static void main(String[] args) {
 		try {
-			if(args.length>0) Application.DIRECTORY_FILE = args[0];
-			try{
-				if(args.length>1) DirectoryServer.PORT = Integer.parseInt(args[1]);
-			}catch(Exception e){e.printStackTrace();}
+			if (args.length > 0) Application.DIRECTORY_FILE = args[0];
+			try {
+				if (args.length > 1) DirectoryServer.PORT = Integer.parseInt(args[1]);
+			} catch(Exception e){e.printStackTrace();}
 			DirectoryServer ds = new DirectoryServer(DirectoryServer.PORT);
 			ds.start();
 		}catch(Exception e) {
@@ -825,15 +929,14 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 	 * @param detected_sa
 	 * @return
 	 */
-	public static Address addr_NAT_detection(DirectoryAnnouncement da,
-			Address detected_sa) {
-		if(detected_sa == null) return null;
+	public static Address addr_NAT_detection(DirectoryAnnouncement da, Address detected_sa) {
+		if (detected_sa == null) return null;
 		Address[] addr = da.address._addresses;
 		if ((da == null) || (da.address == null) || (da.address._addresses == null))
 			return detected_sa;
-		for (int k =0; k<addr.length; k++) {
+		for (int k = 0; k < addr.length; k ++) {
 			Address a = addr[k];
-			if(a.domain.equals(detected_sa.domain) && a.udp_port==detected_sa.udp_port)
+			if (a.domain.equals(detected_sa.domain) && a.udp_port == detected_sa.udp_port)
 				return null; // not NAT
 		}
 		detected_sa.pure_protocol = Address.NAT;

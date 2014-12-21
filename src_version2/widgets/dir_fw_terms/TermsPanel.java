@@ -43,7 +43,7 @@ import config.Application_GUI;
 import config.DD;
 import config.PeerListener;
 import data.D_Peer;
-import data.D_TermsInfo;
+import data.D_DirectoryServerPreapprovedTermsInfo;
 import util.DBInterface;
 import util.Util;
 import table.directory_forwarding_terms;
@@ -392,7 +392,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
     	}	
 		for(int k=0; k<t.size(); k++) {
 			ArrayList<Object> e = t.get(k);
-			D_TermsInfo ti = new D_TermsInfo(e);
+			D_DirectoryServerPreapprovedTermsInfo ti = new D_DirectoryServerPreapprovedTermsInfo(e);
 			ti.peer_ID = peerID2;
 			ti.dir_addr = dir_domain;
 			ti.dir_tcp_port = dir_port;

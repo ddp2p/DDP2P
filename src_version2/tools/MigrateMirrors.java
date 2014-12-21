@@ -12,9 +12,9 @@ import table.updatesKeys;
 import table.application;
 import data.D_MirrorInfo;
 import data.D_ReleaseQuality;
-import data.D_TesterInfo;
+import data.D_SoftwareUpdatesReleaseInfoByTester;
 import data.D_UpdatesKeysInfo;
-import data. D_TesterDefinition;
+import data. D_Tester;
 import util.P2PDDSQLException;
 import util.Util;
 
@@ -94,7 +94,7 @@ public class MigrateMirrors {
 				
 			try {
 				if(DEBUG) System.out.println("D_MirrorInfo: <init>: testerInfo reconstr");
-				mi.testerInfo = D_TesterInfo.reconstructArrayFromString(Util.getString(_u.get(table.updates.F_TESTER_INFO)));
+				mi.testerInfo = D_SoftwareUpdatesReleaseInfoByTester.reconstructArrayFromString(Util.getString(_u.get(table.updates.F_TESTER_INFO)));
 				if(DEBUG) System.out.println("D_MirrorInfo: <init>: reconstructed");
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -135,17 +135,18 @@ public class MigrateMirrors {
 			ti.reference =Util.stringInt2bool(_u.get(table.updatesKeys.F_REFERENCE),false);
 			ti.expected_test_thresholds = Util.getString(_u.get(table.updatesKeys.F_EXPECTED_TEST_THRESHOLDS));
 			
-			D_TesterDefinition td = D_TesterDefinition.retrieveTesterDefinition(ti.public_key);
-			try{
-				if(td!=null){
+			//.retrieveTesterDefinition_ByGID(ti.public_key);
+			D_Tester td = D_Tester.getTesterInfoByGID(ti.public_key, false, null, null);
+			try {
+				if (td != null) {
 					ti.tester_ID = td.tester_ID;
 					ti.description = td.description;
 					ti.email = td.email;
 					ti.url = td.url;
 					ti.store("update");
 			// how to use other fields, example  ...
-				}else ti.store("insert");
-			} catch(P2PDDSQLException e){
+				} else ti.store("insert");
+			} catch(P2PDDSQLException e) {
 				e.printStackTrace();
 				System.err.println("MigrateMirror: mi.store() <migrate>: error handled");
 			}

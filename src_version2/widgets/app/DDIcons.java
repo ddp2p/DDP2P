@@ -332,6 +332,12 @@ public class DDIcons {
 		if(_II_JUS == null) Util.printCallPath("null");
 		return _II_JUS;
 	}
+	public static Icon getAnsweredImageIcon(String descr) {
+		return getJusImageIcon(descr);
+	}
+	public static Icon getAnsweringImageIcon(String descr) {
+		return getBalanceImageIcon(descr);
+	}
 	private static ImageIcon _II_SIG = null;
 	public static ImageIcon getSigImageIcon(String descr){
 		if(_II_SIG == null) _II_SIG= getImageIconFromResource(I_SIGNATURE20, descr);

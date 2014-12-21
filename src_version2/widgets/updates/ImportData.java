@@ -36,7 +36,7 @@ import widgets.components.DebateDecideAction;
 import config.Application;
 import config.Identity;
 import data.D_MirrorInfo;
-import data.D_TesterDefinition;
+import data.D_Tester;
 import data.D_UpdatesKeysInfo;
 import util.P2PDDSQLException;
 import widgets.updatesKeys.UpdatesKeysTable;
@@ -55,14 +55,14 @@ public class ImportData {
 			//boolean DEBUG = true;
 		BufferedReader in =null;
 		try{in = new BufferedReader(new FileReader(f));} catch(IOException e){}
-		ArrayList<D_TesterDefinition> testerDef = new ArrayList<D_TesterDefinition>();
+		ArrayList<D_Tester> testerDef = new ArrayList<D_Tester>();
 		D_MirrorInfo result = new D_MirrorInfo();
 	//	ArrayList<Downloadable> datas = new ArrayList<Downloadable>();
 		//String inputLine = "";
 		String tmp_inputLine = null;
 		int line = 0;
 		try {
-			D_TesterDefinition t=null;
+			D_Tester t=null;
 			while ((tmp_inputLine = in.readLine()) != null && !tmp_inputLine.equals(STOP) ) {
 				//inputLine += tmp_inputLine;
 				if(DEBUG)System.out.println("ImportUpdatesMirror gets: "+tmp_inputLine);
@@ -75,11 +75,11 @@ public class ImportData {
 				case 2: result.url = tmp_inputLine; line++; break;
 				case 3: if(tmp_inputLine.equals(STOP)) continue ;
 					    if(tmp_inputLine.equals(TESTERINFO_START)){
-					       t= new D_TesterDefinition();	
+					       t= new D_Tester();	
 					       line++;break;	
 					    } else continue;
 				case 4: t.name = tmp_inputLine; line++; break;
-				case 5: t.public_key = tmp_inputLine; line++; break;
+				case 5: t.testerGID = tmp_inputLine; line++; break;
 				case 6: t.email = tmp_inputLine; line++; break;
 				case 7: t.url = tmp_inputLine; line++; break;
 				case 8: if(tmp_inputLine.equals("DESC")){ t.description="";line++; break;} else continue;
@@ -92,8 +92,8 @@ public class ImportData {
 				    			testerDef.add(t);
 				    			D_UpdatesKeysInfo ukeys = new D_UpdatesKeysInfo();
 				    			ukeys.original_tester_name = t.name;
-				    			ukeys.public_key = t.public_key;
-				    			ukeys.public_key_hash = Util.getGIDhashFromGID(t.public_key, false);
+				    			ukeys.public_key = t.testerGID;
+				    			ukeys.public_key_hash = Util.getGIDhashFromGID(t.testerGID, false);
 				    			ukeys.email=t.email;
 				    			ukeys.url=t.url;
 				    			ukeys.description = t.description;
@@ -105,7 +105,7 @@ public class ImportData {
 			             }
 				}//switch
 			}// loop
-			if(testerDef.size()!=0)result.testerDef = testerDef.toArray(new D_TesterDefinition[0]);
+			if(testerDef.size()!=0)result.testerDef = testerDef.toArray(new D_Tester[0]);
 			
 			if(result.existsInDB(Application.db)) result.store(D_MirrorInfo.action_update); 
 			else result.store(D_MirrorInfo.action_insert);

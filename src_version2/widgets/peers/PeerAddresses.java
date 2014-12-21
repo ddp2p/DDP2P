@@ -181,8 +181,8 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		return adr;
 	}
 	int getDirectoriesLen() {
-		if (Identity.listing_directories_string == null) return 0;
-		return Identity.listing_directories_string.size();
+		if (Identity.getListing_directories_string() == null) return 0;
+		return Identity.getListing_directories_string().size();
 	}
 	int getSocketsLen() {
 		if (Identity.my_server_domains == null) return 0;
@@ -320,12 +320,12 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 	}
 	private Address getAddress_Dirs(int row) {
 		if (_DEBUG) {
-			System.out.println("PeerAddresses: getAddress_Dirs: row="+row+" /"+Identity.listing_directories_addr.size());
-			for (Address a : Identity.listing_directories_addr) {
+			System.out.println("PeerAddresses: getAddress_Dirs: row="+row+" /"+Identity.getListing_directories_addr().size());
+			for (Address a : Identity.getListing_directories_addr()) {
 				System.out.println("PeerAddresses: getAddress_Dirs: ad="+a.toLongString());
 			}
 		}
-		Address a = Identity.listing_directories_addr.get(row);
+		Address a = Identity.getListing_directories_addr().get(row);
 		
 		a.setDirType();
 		return a;
@@ -337,11 +337,11 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		case TABLE_COL_TYPE:
 			return Address.DIR;
 		case TABLE_COL_DOMAIN:
-			return new Address(Identity.listing_directories_string.get(row)).domain;
+			return new Address(Identity.getListing_directories_string().get(row)).domain;
 		case TABLE_COL_UDP:
-			return new Integer(new Address(Identity.listing_directories_string.get(row)).udp_port);
+			return new Integer(new Address(Identity.getListing_directories_string().get(row)).udp_port);
 		case TABLE_COL_TCP:
-			return new Integer(new Address(Identity.listing_directories_string.get(row)).tcp_port);
+			return new Integer(new Address(Identity.getListing_directories_string().get(row)).tcp_port);
 		case TABLE_COL_CERTIFIED:
 			return Boolean.FALSE;
 		case TABLE_COL_PRIORITY:

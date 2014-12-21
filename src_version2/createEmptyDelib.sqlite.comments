@@ -129,8 +129,35 @@ CREATE TABLE tester (
 	"signature" TEXT,			# signature of the data about the tester		
 	"creation_date" TEXT,			# date when the tester data was created
 	"preference_date" TEXT,			# preference: date of the preference data
+	"peer_source_LID" INTEGER,		# peer sending the GID
 # deprecated attributes
-	"name"	TEXT
+	"name"	TEXT,
+	FOREIGN KEY (peer_source_LID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE "recommendation_of_tester" ( 	# the latest data received from neighbor peers
+    "recommendation_ID" INTEGER PRIMARY KEY,
+    "senderPeerLID" INTEGER  NOT NULL,          # the peer from which the dat sis received
+    "testerLID" TEXT  NOT NULL,			# the tester about which we got recommendations 
+    "weight" TEXT,				# score received for tester from sender
+    "address" TEXT,				# tester address (url for downloading capsule with full data)
+    "creation_date" TEXT,			# date set by the sender for the weight (for ordering)
+    "signature" TEXT,				# signature of the whole package with this date from this peer
+						# (only stored with the item for the tester with the smallest LID)
+						# (assumes that the items are concatenated ordered by testerGID, ascending)
+    "arrival_date" TEXT,			# arrival date
+    FOREIGN KEY (senderPeerLID) REFERENCES peer(peer_ID),
+    FOREIGN KEY (testerLID) REFERENCES tester(tester_ID)
+);
+
+CREATE TABLE "tester_introducer" ( 	# the history of tesrter creation history received from neighbor peers
+    "tester_introducer_ID" INTEGER PRIMARY KEY,
+    "testerLID" TEXT  NOT NULL,			# the tester about which we store his/her creation history 
+    "introducer_peer_LID" TEXT  NOT NULL,          # the peer who has introduced the tester in the recommendation (LID or GID or HGID??).
+    "weight" TEXT,				# the initial weight given by the creator peer
+    "creation_date" TEXT,			# date set by the creator when introduced the tester first time
+    "signature" TEXT,				# signature of date,weght and tester_GID (from tester table if exist??)
+    FOREIGN KEY (testerLID) REFERENCES tester(tester_ID),
+    FOREIGN KEY (introducer_peer_LID) REFERENCES peer(peer_ID)
 );
 
 CREATE TABLE peer (
@@ -171,6 +198,14 @@ CREATE TABLE peer (
     "preferences_date" TEXT,	  	  	#preferences
     FOREIGN KEY (first_provider_peer) REFERENCES peer(peer_ID),
     FOREIGN KEY (GID_key) REFERENCES public_keys(pk_ID)
+);
+CREATE TABLE peer_scheduled_message (
+	"message_ID" INTEGER PRIMARY KEY,
+	"peer_ID" INTEGER NOT NULL,
+    "message" TEXT, # 64-based encoding
+	"message_type" INTEGER, # 0 -recommendation of testers, 1-plugin messages, ..
+	"creation_date" TEXT,
+	FOREIGN KEY (peer_ID) REFERENCES peer(peer_ID)
 );
 #CREATE TABLE peer_instance (
 #   "peer_instance_ID" INTEGER PRIMARY KEY
@@ -276,6 +311,7 @@ CREATE TABLE organization ( # organizations -> organization
 	weights_max INTEGER DEFAULT (1),
 	category TEXT, 
 	certificate BLOB, 		# if creator is certified by higher authority (?) not yet used
+	icon BLOB,
 	signature TEXT,      # signature with orgGID, or grassroot orgGID
 	signature_initiator TEXT,
 	broadcast_rule TEXT DEFAULT (1), # set to 1 if by default this org should not be broadcasted
@@ -291,6 +327,7 @@ CREATE TABLE organization ( # organizations -> organization
 	name_justification TEXT, 
 	name_motion TEXT, 
 	name_organization TEXT, 
+	name_constituent TEXT,
 	"motions_excluding" INTEGER   DEFAULT (0),
 	"plugins_excluding" INTEGER   DEFAULT (0),
 	blocked TEXT  DEFAULT (0),  # do not stored data received for this

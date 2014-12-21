@@ -7,7 +7,7 @@ import javax.swing.JMenuItem;
 import javax.swing.ImageIcon;
 import util.Util;
 import config.Application;
-import data.D_SubscriberInfo;
+import data.D_DirectoryServerSubscriberInfo;
 /*import data.D_TesterDefinition;
 import data.D_UpdatesKeysInfo;
 */
@@ -77,7 +77,7 @@ public class DirCustomAction extends DebateDecideAction {
     	}
     	if(cmd == M_ADD) {
     		try {
-    			D_SubscriberInfo s = new D_SubscriberInfo(model.db);
+    			D_DirectoryServerSubscriberInfo s = new D_DirectoryServerSubscriberInfo(model.db);
     			s.storeNoSync("insert");
 //				model.db.insert(table.Subscriber.TNAME,
 //						new String[]{},

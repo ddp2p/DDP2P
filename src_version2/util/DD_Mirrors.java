@@ -24,6 +24,7 @@ import hds.Server;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -38,7 +39,7 @@ import config.Application;
 import config.Application_GUI;
 import config.DD;
 import config.Identity;
-import data.D_TesterDefinition;
+import data.D_Tester;
 import data.D_MirrorInfo;
 class MirrorsSaverThread extends Thread {
 	DD_Mirrors ds;
@@ -65,6 +66,10 @@ public class DD_Mirrors extends ASNObj implements StegoStructure {
 	int version = 0;
 	ArrayList<D_MirrorInfo> mirrors = new ArrayList<D_MirrorInfo>();
 	
+
+	public boolean empty() {
+		return mirrors == null || mirrors.size() == 0;
+	}
 	@Override
 	public void save() {
 		if(DEBUG) System.out.println("DD_Mirrors:save");
@@ -80,6 +85,7 @@ public class DD_Mirrors extends ASNObj implements StegoStructure {
 		if(DEBUG)System.out.println("DD_Testers:decode "+asn1.length);
 		decode(new Decoder(asn1));
 		if(DEBUG)System.out.println("DD_Testers:decoded");
+		if (empty()) throw new ASN1.ASNLenRuntimeException("Empty mirrors");
 	}
 
 	@Override
@@ -130,18 +136,22 @@ public class DD_Mirrors extends ASNObj implements StegoStructure {
 		if(DEBUG) System.out.println("DD_Mirrors:get_sign=:"+DD.STEGO_SIGN_MIRRORS);
 		return DD.STEGO_SIGN_MIRRORS;
 	}
+	public static BigInteger getASN1Tag() {
+		return new BigInteger(DD.STEGO_SIGN_MIRRORS+"");
+	}
 
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(version));
 		enc.addToSequence(Encoder.getEncoder(mirrors));
-		enc.setASN1Type(getASN1Type());
+		//enc.setASN1Type(getASN1Type());
+		enc.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, getASN1Tag());
 		return enc;
 	}
-	public static byte getASN1Type() {
-		return DD.TAG_AC11;
-	}
+//	public static byte getASN1Type() {
+//		return DD.TAG_AC11;
+//	}
 
 	@Override
 	public DD_Mirrors decode(Decoder dec) throws ASN1DecoderFail {

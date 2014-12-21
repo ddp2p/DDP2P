@@ -27,12 +27,17 @@ public abstract class ASNObj{
 	public static final int DEPENDANTS_NONE = 0;
 	public static final int DEPENDANTS_ALL = -1;
 	public abstract Encoder getEncoder();
-	public byte[] encode(){
+	public byte[] encode() {
 		//System.out.println("will encode: " +this);
 		return getEncoder().getBytes();
 	}
 	public abstract Object decode(Decoder dec) throws ASN1DecoderFail;
 	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {Util.printCallPath("getEncoder: you need to implement getEncoder(dictionaries) for objects of type: "+this); return getEncoder();}
+	/**
+	 * Must be implemented whenever this object is encoded in a sequence (array/list)
+	 * @return
+	 * @throws CloneNotSupportedException
+	 */
 	public ASNObj instance() throws CloneNotSupportedException{return (ASNObj) clone();}
 	/**
 	 * 

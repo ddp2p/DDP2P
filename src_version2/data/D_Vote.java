@@ -76,7 +76,7 @@ class D_Vote extends ASNObj{
 	private Calendar creation_date;
 	private byte[] signature; //OCT STR
 	private Calendar arrival_date;
-	
+
 	private D_Constituent constituent;
 	private D_Motion motion;
 	private D_Justification justification;
@@ -270,11 +270,6 @@ class D_Vote extends ASNObj{
 
 	/**
 			"SELECT "+Util.setDatabaseAlias(table.signature.fields,"v")+
-			", c."+table.constituent.global_constituent_ID+
-			", m."+table.motion.global_motion_ID+
-			", j."+table.justification.global_justification_ID+
-			", o."+table.organization.global_organization_ID+
-			", o."+table.organization.organization_ID+
 			" FROM "+table.signature.TNAME+" AS v "+
 			" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=v."+table.signature.constituent_ID+")"+
 			" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=v."+table.signature.motion_ID+")"+
@@ -350,11 +345,6 @@ class D_Vote extends ASNObj{
 	}
 	/**
 			"SELECT "+Util.setDatabaseAlias(table.signature.fields,"v")+
-			", c."+table.constituent.global_constituent_ID+
-			", m."+table.motion.global_motion_ID+
-			", j."+table.justification.global_justification_ID+
-			", o."+table.organization.global_organization_ID+
-			", o."+table.organization.organization_ID+
 			" FROM "+table.signature.TNAME+" AS v "+
 			" LEFT JOIN "+table.constituent.TNAME+" AS c ON(c."+table.constituent.constituent_ID+"=v."+table.signature.constituent_ID+")"+
 			" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=v."+table.signature.motion_ID+")"+
@@ -416,7 +406,11 @@ class D_Vote extends ASNObj{
 			this.setJustificationAll(D_Justification.getJustByGID(this.getJustificationGID(), true, false, Util.lval(getOrganizationLIDstr()), Util.lval(this.getMotionLIDstr())));
 		if(DEBUG)System.out.println("D_Vote:init_all: done");
 	}
-
+	public String getConstituentNameOrMy() {
+		D_Constituent c = this.getConstituent_force();
+		if (c == null) return null;
+		return c.getNameOrMy();
+	}
 	public Encoder getSignableEncoder() {
 		Encoder enc = new Encoder().initSequence();
 		if(getVersion()!=null)enc.addToSequence(new Encoder(getVersion(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
@@ -1656,5 +1650,79 @@ class D_Vote extends ASNObj{
 		}
 		return justification;
 	}
-
+	final public static String sql_VotersByMotion =
+			"SELECT "+table.signature.fields+" FROM "+table.signature.TNAME+" WHERE "+table.signature.motion_ID+"=?;";
+	/**
+	 * Returns the fields ordered as per their definition in table.signature
+	 * @param motionID
+	 * @param offset (use <=0 to not use)
+	 * @param limit (use <=0 to not use)
+	 * @return
+	 */
+	public static ArrayList<ArrayList<Object>> getListOfVoters(long motionID, int offset, int limit) {
+		try {
+			String sql = sql_VotersByMotion;
+			if (limit > 0) sql += " LIMIT "+limit;
+			if (offset > 0) sql += " OFFSET "+offset;			
+			
+			return Application.db.select(sql+";", new String[]{Util.getStringID(motionID)}, DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return new ArrayList<ArrayList<Object>>();
+	}
+	final public static String sql_VotersByNoJustification =
+			"SELECT "+table.signature.fields+" FROM "+table.signature.TNAME+
+			" WHERE "+table.signature.motion_ID+"=? AND ( "+table.signature.justification_ID+
+			" IS NULL OR "+table.justification.justification_ID+" <= 0 )";
+	final public static String sql_VotersByMotionAndJustification =
+			"SELECT "+table.signature.fields+" FROM "+table.signature.TNAME+
+			" WHERE "+table.signature.motion_ID+"=? AND "+table.signature.justification_ID+"=?";
+	final public static String sql_VotersByJustification =
+			"SELECT "+table.signature.fields+" FROM "+table.signature.TNAME+
+			" WHERE "+table.signature.justification_ID+"=?";
+	/**
+	 * Returns the fields ordered as per their definition in table.signature
+	 * @param motionID
+	 * @param justificationID
+	 * @param offset
+	 * @param limit
+	 * @return
+	 */
+	public static ArrayList<ArrayList<Object>> getListOfVoters(long motionID, long justificationID, int offset, int limit) {
+		try {
+			if (justificationID <= 0) {
+				String sql = sql_VotersByNoJustification;
+				if (limit > 0) sql += " LIMIT "+limit;
+				if (offset > 0) sql += " OFFSET "+offset;			
+				return Application.db.select(sql+";", new String[]{Util.getStringID(motionID)}, DEBUG);
+			}
+			if (motionID <= 0) {
+				String sql = sql_VotersByJustification;
+				if (limit > 0) sql += " LIMIT "+limit;
+				if (offset > 0) sql += " OFFSET "+offset;			
+				return Application.db.select(sql+";", new String[]{Util.getStringID(justificationID)}, DEBUG);
+			}
+			{
+				String sql = sql_VotersByMotionAndJustification;
+				if (limit > 0) sql += " LIMIT "+limit;
+				if (offset > 0) sql += " OFFSET "+offset;			
+				return Application.db.select(sql+";", new String[]{Util.getStringID(motionID), Util.getStringID(justificationID)}, DEBUG);
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return new ArrayList<ArrayList<Object>>();
+	}
+	public static ArrayList<D_Vote> getVotes(ArrayList<ArrayList<Object>> v) {
+		ArrayList<D_Vote> r = new ArrayList<D_Vote> ();
+		for (ArrayList<Object> vote : v) {
+			try {
+				r.add(new D_Vote(vote));
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return r;
+	}
 }

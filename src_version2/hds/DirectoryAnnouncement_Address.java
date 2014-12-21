@@ -31,7 +31,7 @@ import ASN1.Decoder;
 import ASN1.Encoder;
 /**
  * DirectoryAnnouncement_Address = SEQUENCE {
- * 		addresses UTF8String,
+ * 		addresses SEQUENCE OF UTF8String,
  * 		udp_port INTEGER
  * }
  * @author msilaghi
@@ -39,7 +39,7 @@ import ASN1.Encoder;
  */
 public class DirectoryAnnouncement_Address extends ASNObj{
 		private static final int V1 = 1;
-		private static final boolean DEBUG = false;
+		public static boolean DEBUG = false;
 		int version = 2; // version of address
 		int address_version = Address.V2;
 		public Address[] _addresses;
@@ -58,6 +58,10 @@ public class DirectoryAnnouncement_Address extends ASNObj{
 		public String addresses() {
 			//return Util.concat(_addresses, DirectoryServer.ADDR_SEP, null);
 			return Address.joinAddresses(_addresses);
+		}
+		public String addresses(Address[] __address) {
+			//return Util.concat(_addresses, DirectoryServer.ADDR_SEP, null);
+			return Address.joinAddresses(__address);
 		}
 		/*
 		 * This is avoided as it needs joining which is unsafe
@@ -124,8 +128,19 @@ public class DirectoryAnnouncement_Address extends ASNObj{
 		public Encoder getEncoder_1() {
 			String adr1 = addresses();
 			if (DEBUG) System.out.println("DAA:enc1:adr="+adr1);
-			if(_addresses!=null)for (Address a : _addresses) a.set_version_structure (Address.V1);
-			String adr_1 = addresses();
+			
+			Address[] __address = null;
+			if (_addresses != null) {
+				__address = new Address[_addresses.length];
+				for (int k = 0; k < _addresses.length; k ++) {
+					Address a = _addresses[k];
+					__address[k] = new Address(a);
+					__address[k].set_version_structure (Address.V1); //Address.V2;
+				}
+			}
+			
+			//if (_addresses != null) for (Address a : _addresses) a.set_version_structure (Address.V1);
+			String adr_1 = addresses(__address);
 			if (DEBUG) System.out.println("DAA:enc1:adr="+adr_1);
 			
 			Encoder enc = new Encoder()
@@ -137,24 +152,35 @@ public class DirectoryAnnouncement_Address extends ASNObj{
 			return enc;
 		}
 		/**
-DirectoryAnnouncement_Address = SEQUENCE [AC10] IMPLICIT { -- V2
-	version INTEGER,
-	address_version INTEGER
- 	addresses SEQUENCE OF Address,
-}
+		DirectoryAnnouncement_Address = SEQUENCE [AC10] IMPLICIT { -- V2
+			version INTEGER,
+			address_version INTEGER
+		 	addresses SEQUENCE OF Address, -- each address is set at version address_version
+		}
 		 * @author msilaghi
 		 *
 		 */
 		public Encoder getEncoder_2() {
-			if (_addresses != null) for (Address a : _addresses) a.set_version_structure (address_version); //Address.V2;
+			Address[] __address = null;
+			if (_addresses != null) {
+				__address = new Address[_addresses.length];
+				for (int k = 0; k < _addresses.length; k ++) {
+					Address a = _addresses[k];
+					__address[k] = new Address(a);
+					__address[k].set_version_structure (address_version); //Address.V2;
+				}
+			}
 			Encoder enc = new Encoder()
 			.initSequence()
 			.addToSequence(new Encoder(version))
 			.addToSequence(new Encoder(address_version))
-			.addToSequence(Encoder.getEncoder(_addresses));
+			.addToSequence(Encoder.getEncoder(__address));
 			;
-			if (udp_port > 0)
+			if (DEBUG && __address != null) System.out.println("DAA:enc2:add _address:"+__address.length);
+			if (udp_port > 0) {
 				enc.addToSequence(new Encoder(udp_port).setASN1Type(DD.TAG_AP1));
+				if (DEBUG) System.out.println("DAA:enc2:add udpport");
+			}
 			enc.setASN1Type(getASN1Tag());
 			return enc;
 		}
@@ -191,10 +217,12 @@ DirectoryAnnouncement_Address = SEQUENCE [AC10] IMPLICIT { -- V2
 		}
 		public DirectoryAnnouncement_Address decode_2(Decoder d) throws ASN1DecoderFail {
 			this.address_version = d.getFirstObject(true).getInteger().intValue();
+			if (DEBUG) System.out.println("DAA:dec2: got: "+address_version);
 			_addresses = d.getFirstObject(true).getSequenceOf(Address.getASN1Type(), new Address[]{}, new Address());
 			udp_port = -1;
 			if (d.isFirstObjectTagByte(DD.TAG_AP1))
 				udp_port = d.getFirstObject(true).getInteger(DD.TAG_AP1).intValue();
+			else if (DEBUG) System.out.println("DAA:dec2: no udp port");
 			return this;
 		}
 }

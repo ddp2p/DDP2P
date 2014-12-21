@@ -296,7 +296,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 		m_editable = editable(); // editable?
 
 		try {
-			if (organization_ID > 0) org_label.setText(D_Organization.getOrgByLID_NoKeep(organization_ID, true).name);
+			if (organization_ID > 0) org_label.setText(D_Organization.getOrgByLID_NoKeep(organization_ID, true).getName());
 			else org_label.setText("");
 			if (motion_ID > 0) mot_label.setText(D_Motion.getMotiByLID(motion_ID, true, false).getMotionTitle().title_document.getDocumentUTFString());
 			else mot_label.setText("");

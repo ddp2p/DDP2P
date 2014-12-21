@@ -2,6 +2,7 @@ package util;
 
 import static util.Util.__;
 
+import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -13,11 +14,14 @@ import ASN1.Encoder;
 import config.Application_GUI;
 import config.DD;
 public class DD_DirectoryServer extends ASNObj implements StegoStructure {
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	int version = 0;
 	ArrayList<DirectoryAddress> dirs = new ArrayList<DirectoryAddress>();
 	
+	public boolean empty() {
+		return dirs.size() == 0;
+	}
 	@Override
 	public void save() {
 		if(DEBUG) System.out.println("DD_DirServ:save");
@@ -37,6 +41,7 @@ public class DD_DirectoryServer extends ASNObj implements StegoStructure {
 	public void setBytes(byte[] asn1) throws ASN1DecoderFail {
 		if(DEBUG)System.out.println("DD_DirectoryServer:decode "+asn1.length);
 		decode(new Decoder(asn1));
+		if (empty()) throw new ASN1.ASNLenRuntimeException("Empty DirectoryServers!");
 		if(DEBUG)System.out.println("DD_DirectoryServer:decoded");
 	}
 
@@ -117,12 +122,16 @@ public class DD_DirectoryServer extends ASNObj implements StegoStructure {
 		if(DEBUG) System.out.println("DD_DirServ:get_sign=:"+DD.STEGO_SIGN_DIRECTORY_SERVER);
 		return DD.STEGO_SIGN_DIRECTORY_SERVER;
 	}
+	public static BigInteger getASN1Tag() {
+		return new BigInteger(DD.STEGO_SIGN_DIRECTORY_SERVER+"");
+	}
 
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(version));
 		enc.addToSequence(Encoder.getEncoder(dirs));
+		enc.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, getASN1Tag());
 		return enc;
 	}
 

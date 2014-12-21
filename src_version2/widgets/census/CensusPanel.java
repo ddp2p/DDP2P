@@ -89,8 +89,8 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		return scrollPane;
 	}
     private String getLabelText() {
-    	if((organization == null) || (organization.name == null)) return __("No current organization!");
-		return __("Current Organization:")+" "+organization.name;
+    	if((organization == null) || (organization.getName() == null)) return __("No current organization!");
+		return __("Current Organization:")+" "+organization.getName();
 	}
     
     /**

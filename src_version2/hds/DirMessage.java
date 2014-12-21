@@ -1,11 +1,16 @@
 package hds; 
 
 
-import data.D_TermsInfo;
+import data.D_DirectoryServerPreapprovedTermsInfo;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+/**
+ * Here we store the last message from each source, with source socket, source GID, instance, type of message, request, address 
+ * @author msilaghi
+ *
+ */
 public class DirMessage {
 	final static String UDP = "UDP";
 	final static String TCP = "TCP";
@@ -29,6 +34,7 @@ public class DirMessage {
 	public String status; // finding agreement on terms and register the requested peer in table register???
 	public String peerAddress; // address of the peer that has to be contacted
 	public String peerGID; // GID of peer that has to be contacted
+	
 	public DirMessage(Object _msg) {
 		msg = _msg;
 	}

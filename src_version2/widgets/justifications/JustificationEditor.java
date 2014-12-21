@@ -104,7 +104,7 @@ import static util.Util.__;
 public class JustificationEditor extends JPanel  implements JustificationsListener, DocumentListener, ItemListener, ActionListener, MotionsListener, ConstituentListener {
 	
 	private static final int TITLE_LEN = 20;
-	private static final int TEXT_LEN_ROWS = 10;
+	static final int TEXT_LEN_ROWS = 10;
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final String BODY_FORMAT = "TXT";
@@ -537,16 +537,16 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		c.gridx = 1;
 		c.anchor = GridBagConstraints.WEST;
 		just_body_field = new DocumentEditor();
+		just_body_field.init(TEXT_LEN_ROWS);
+		just_body_field.addListener(this);
+		p.add(panel_body, c);
+		panel_body.add(just_body_field.getComponent());
 		//just_body_field.setLineWrap(true);
 		//just_body_field.setWrapStyleWord(true);
 		//just_body_field.setAutoscrolls(true);
 		//just_body_field.setRows(TEXT_LEN_ROWS);
-		just_body_field.init(TEXT_LEN_ROWS);
 		//result.setMaximumSize(new java.awt.Dimension(300,100));
-		just_body_field.addListener(this);
 		//p.add(just_body_field, c);
-		p.add(panel_body, c);
-		panel_body.add(just_body_field.getComponent());
 		
 		c.anchor = GridBagConstraints.EAST;
 		c.gridx = 0; c.gridy = y++;		
@@ -626,8 +626,9 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
     	p1.add(p,BorderLayout.NORTH);
     	p2.setLayout(new GridBagLayout());
     	GridBagConstraints t = new GridBagConstraints();
+		int yt = 0;
 		t.fill = GridBagConstraints.NONE;
-		t.gridx = 0; t.gridy = 0;
+		t.gridx = 0; t.gridy = yt++;
 		t.anchor = GridBagConstraints.WEST;
     	
 		int y = _y[0];
@@ -653,6 +654,25 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		//title_field.addActionListener(this); //name_field.addFocusListener(this);
 */
 		
+		JPanel p_ans = new JPanel();
+		//c.anchor = GridBagConstraints.EAST;
+		//c.anchor = GridBagConstraints.WEST;
+		//c.gridx = 0; c.gridy = y++;		
+		TranslatedLabel label_answer_just = new TranslatedLabel("Answer To");
+		//p.add(label_answer_just, c);
+		p_ans.add(label_answer_just);
+		
+		//c.gridx = 0; c.gridy = y++;		
+		//c.anchor = GridBagConstraints.WEST;
+		//c.fill = GridBagConstraints.BOTH;
+		//p.add(just_answer_field = new JComboBox(combo_answerTo),c);
+		p_ans.add(just_answer_field = new JComboBox(combo_answerTo));
+		just_answer_field.addItemListener(this);
+		t.gridx = 0; t.gridy = yt++;
+		p2.add(p_ans,t);
+		//p.add(just_answer_field = new JTextField(TITLE_LEN),c);
+		//just_answer_field.getDocument().addDocumentListener(this);
+		
 		//c.anchor = GridBagConstraints.EAST;
 		//c.gridx = 0; c.gridy = y++;		
 		//TranslatedLabel label_just_body = new TranslatedLabel("Justification");
@@ -668,7 +688,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		//result.setMaximumSize(new java.awt.Dimension(300,100));
 		just_body_field.addListener(this);
 		//p.add(just_body_field, c);
-		t.gridx = 0; t.gridy = 1;
+		t.gridx = 0; t.gridy = yt++;
 		t.anchor = GridBagConstraints.WEST;
 		t.fill = GridBagConstraints.BOTH;
 		p2.add(panel_body,t);//, c);
@@ -684,21 +704,10 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 		
 		just_body_field.setType(D_Document.DEFAULT_FORMAT);
 		just_body_field.getComponent(D_Document.DEFAULT_EDITOR).setVisible(true);
-		
-		
-		c.anchor = GridBagConstraints.EAST;
-		c.anchor = GridBagConstraints.WEST;
-		c.gridx = 0; c.gridy = y++;		
-		TranslatedLabel label_answer_just = new TranslatedLabel("Answer To");
-		p.add(label_answer_just, c);
-		//c.gridx = 1;
-		c.gridx = 0; c.gridy = y++;		
-		c.anchor = GridBagConstraints.WEST;
-		c.fill = GridBagConstraints.BOTH;
-		p.add(just_answer_field = new JComboBox(combo_answerTo),c);
-		//p.add(just_answer_field = new JTextField(TITLE_LEN),c);
-		//just_answer_field.getDocument().addDocumentListener(this);
-		just_answer_field.addItemListener(this);
+
+		/**
+		 * Here was the answer field
+		 */
 		
 		String creation_date = Util.getGeneralizedTime();
 		date_field = new JTextField(creation_date);
@@ -853,7 +862,7 @@ public class JustificationEditor extends JPanel  implements JustificationsListen
 			d_motion = D_Motion.getMotiByLID(motID, true, false);
 		this.motionCurrent = d_motion;
 		if (justificationEdited != null && d_motion != null && justificationEdited.getMotionLID() == d_motion.getLID()) {
-			if (_DEBUG) System.out.println("JustEditor: motion_update: already had same motion!");
+			if (DEBUG) System.out.println("JustEditor: motion_update: already had same motion!");
 			return;
 		}
 		this.justificationEdited = null;

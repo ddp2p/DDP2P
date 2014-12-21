@@ -149,10 +149,10 @@ public class MyIdentitiesModel extends TreeModelSupport implements TreeModel {
     	MyIdentitiesModel model = (MyIdentitiesModel)tree.getModel();
     	Identity newID = new Identity();
     	String orgID =  Util.getString(sel.get(0));
-    	if (orgID != null) newID.globalOrgID = D_Organization.getGIDbyLIDstr(orgID); //Util.getString(sel.get(0));
+    	if (orgID != null) newID.organizationGID = D_Organization.getGIDbyLIDstr(orgID); //Util.getString(sel.get(0));
        	String consID = Util.getString(sel.get(1));
     	//D_Constituent cons = D_Constituent.getConstByLID(cID, true, false);
-       	if (consID != null) newID.globalID = D_Constituent.getGIDFromLID(consID); // cons.getGID(); //Util.getString(sel.get(1));
+       	if (consID != null) newID.setConstituentGID(D_Constituent.getGIDFromLID(consID)); // cons.getGID(); //Util.getString(sel.get(1));
        	newID.identity_id=Util.getString(sel.get(2));
     	newID.authorship_lang = Util.getString(sel.get(3));
     	newID.authorship_charset = Util.getString(sel.get(4));
@@ -170,7 +170,7 @@ public class MyIdentitiesModel extends TreeModelSupport implements TreeModel {
     			ao.setCurrent(id);
     		}catch(Exception e){e.printStackTrace();}
     	}
-    	Identity.setCurrentIdentity(newID);
+    	Identity.setCurrentConstituentIdentity(newID);
     }
 	/* Returns the child of parent at index index in the parent's child array.*/
     public Object	getChild(Object parent, int index) {	

@@ -35,6 +35,7 @@ import util.P2PDDSQLException;
 
 import config.Application;
 import config.DD;
+import data.D_Constituent;
 
 public class UpdateNewsTable {
 	private static final boolean DEBUG = false;
@@ -100,8 +101,9 @@ public class UpdateNewsTable {
 			String news = Util.getBString(tab.rows[i][3]);
 			String type = Util.getBString(tab.rows[i][4]);
 			String signature = Util.getBString(tab.rows[i][5]);
-			long constituentID = UpdateMessages.getonly_constituent_ID(global_constituentID);
-			if(constituentID<0) continue;
+			long constituentID = //UpdateMessages.get_constituent_LID_ByGID(global_constituentID);
+					D_Constituent.getLIDFromGID(global_constituentID, -1L);
+			if (constituentID < 0) continue;
 			long news_ID = UpdateMessages.get_news_ID(global_news_ID, constituentID, -1,  date, news, type, signature);
 		}
 	}

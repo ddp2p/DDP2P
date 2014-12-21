@@ -24,7 +24,9 @@ import hds.DirectoryServerCache.D_DirectoryEntry;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 
 import util.P2PDDSQLException;
@@ -37,7 +39,7 @@ import ASN1.Encoder;
 
 //TODO: Make it a concurrent server for announcements and let it iterative for pings
 public class DirectoryServerUDP extends util.DDP2P_ServiceThread {
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	DirectoryServer ds;
 	boolean turnOff=false;
@@ -78,12 +80,34 @@ public class DirectoryServerUDP extends util.DDP2P_ServiceThread {
 				continue;
 			}
 			DirMessage m;
-			InetSocketAddress risa = (InetSocketAddress)dp.getSocketAddress();
-			if (DEBUG) out.print("(UDP: "+risa+")");
+			InetSocketAddress risa = null;
+			try {
+				risa = (InetSocketAddress)dp.getSocketAddress();
+				// "50.88.84.239"
+				if (DirectoryServer.mAcceptedIPs.size() > 0) {
+					boolean accepted = false;
+					for ( String ip : DirectoryServer.mAcceptedIPs) {
+						InetAddress _isa = new InetSocketAddress(ip, 45000).getAddress();
+						if (DEBUG) out.print("(UDP: "+risa+")");
+						if (risa.getAddress().equals(_isa)) {
+							if (DEBUG) out.print("(UDP: from accepted "+_isa+")");
+							accepted = true;
+							break;
+						} else {
+							if (_DEBUG) out.print("(UDP: not from "+_isa+" but "+risa+")");
+						}
+					}
+					if (! accepted) return;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			if (risa == null) continue;
+			
 			Decoder dec=new Decoder(buffer,0,dp.getLength());
 			if (dec.getTypeByte() == DD.MSGTYPE_EmptyPing){
-				if(DEBUG) out.println("DS UDP EmptyPing");
-				if(_DEBUG) out.print("^"+dp.getSocketAddress()+"^");
+				if (DEBUG) out.println("DS UDP EmptyPing");
+				if (_DEBUG) out.print("^"+dp.getSocketAddress()+"^");
 				DirectoryServer.recordPingMessage(risa, null, DirMessage.UDP, DirMessage.EMPTY_PING);
 				continue;
 			}

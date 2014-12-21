@@ -18,7 +18,7 @@ import data.D_Organization;
 import data.D_Peer;
 
 public class DD_IdentityVerification_Request extends ASNObj implements StegoStructure, DD_EmailableAttachment {
-	public static final byte IDENTITY_VERIFICATION = DD.TYPE_DD_IDENTITY_VERIFICATION;
+	//public static final byte IDENTITY_VERIFICATION = DD.TYPE_DD_IDENTITY_VERIFICATION;
 	private static final boolean DEBUG = false;
 	public static final int R_SIZE = 300;
 	//String C; // GID of verified person
@@ -45,9 +45,9 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 				;
 	}
 
-	public byte getASN1Type() {
-		return IDENTITY_VERIFICATION;
-	}
+//	public byte getASN1Type() {
+//		return IDENTITY_VERIFICATION;
+//	}
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
@@ -61,7 +61,8 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 		enc.addToSequence(new Encoder(r));
 		enc.addToSequence(new Encoder(d));
 		if(verifier != null) enc.addToSequence(verifier.getEncoder());
-		enc.setASN1Type(getASN1Type());
+		//enc.setASN1Type(getASN1Type());
+		enc.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, getASN1Tag());
 		return enc;
 	}
 
@@ -177,6 +178,9 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 		if(DEBUG)System.out.println("DD_IdentityVerification: short");
 		return DD.STEGO_SIGN_CONSTITUENT_VERIF_REQUEST;
 	}
+	public static BigInteger getASN1Tag() {
+		return new BigInteger(DD.STEGO_SIGN_CONSTITUENT_VERIF_REQUEST+"");
+	}
 
 	@Override
 	public String get_To() {
@@ -231,6 +235,5 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 					__("Please drag the attached image to your agent, to perfom the test.")+"\r\n"+
 				"\r\n\t"+__("Sincerely,")+" "+verifier.component_basic_data.name;
 		return g;
-	}
-	
+	}	
 }

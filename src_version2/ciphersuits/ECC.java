@@ -479,10 +479,19 @@ class ECC extends ASNObj {
 		if (Q != null) 
 			System.out.println("P+Q = "+P+" + "+Q+" = "+P.add(P,Q));
 	}
+	/**
+	 * Transforms key size (e.g. 119) into a curveID local to DDP2P (a position in a list of known standards).
+	 * If the input is not a known key_size, then it is used directly as curveID.
+	 * 
+	 * Currently 224 is sometimes commented out (not well tested).
+	 * 
+	 * @param curve_ID
+	 * @return
+	 */
 	public static int getCurveID(int curve_ID) {
 		switch(curve_ID) {
 		case 119: return ECDSA.P_119;
-		//case 224: return ECDSA.P_224;
+		case 224: return ECDSA.P_224;
 		case 256: return ECDSA.P_256;
 		case 384: return ECDSA.P_384;
 		case 521: return ECDSA.P_521;

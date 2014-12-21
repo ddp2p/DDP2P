@@ -18,20 +18,16 @@
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 /* ------------------------------------------------------------------------- */
  package widgets.app;
-import handling_wb.BroadcastQueues;
 import hds.ClientSync;
-import hds.Connections;
 import hds.PeerInput;
 import hds.Server;
 import hds.UDPServer;
-import hds.UDPServerThread;
 
 import java.awt.BorderLayout;
 import java.awt.Insets;
 import java.awt.Font;
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.GridLayout;
 import java.awt.GridBagLayout;
@@ -41,22 +37,18 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.math.BigInteger;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
-import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
@@ -73,7 +65,7 @@ import javax.swing.filechooser.FileFilter;
 import java.awt.Color;
 
 import ASN1.ASN1DecoderFail;
-import ASN1.Encoder;
+import ASN1.Decoder;
 import ciphersuits.Cipher;
 import ciphersuits.PK;
 import ciphersuits.SK;
@@ -87,10 +79,8 @@ import data.HandlingMyself_Peer;
 import streaming.OrgHandling;
 import updates.ClientUpdates;
 import util.BMP;
-import util.DDP2P_ServiceThread;
 import util.DD_Address;
 import util.DD_DirectoryServer;
-import util.DD_IdentityVerification_Request;
 import util.DirectoryAddress;
 import util.EmbedInMedia;
 import util.P2PDDSQLException;
@@ -100,7 +90,6 @@ import widgets.dir_management.DirPanel;
 import widgets.components.TranslatedLabel;
 import widgets.components.UpdatesFilterKey;
 import widgets.threads.ThreadsView;
-import widgets.updates.UpdatesTable;
 import wireless.Broadcasting_Probabilities;
 import static util.Util.__;
 
@@ -335,10 +324,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    	widgets.updatesKeys.UpdatesKeysModel.DEBUG = val;
 	    	widgets.updates.UpdatesModel.DEBUG = val;
 	    	widgets.updates.UpdatesTable.DEBUG = val;
-	    	data.D_TesterInfo.DEBUG = val;
+	    	data.D_SoftwareUpdatesReleaseInfoByTester.DEBUG = val;
 	    	data.D_UpdatesKeysInfo.DEBUG = val;
 	    	data.D_MirrorInfo.DEBUG = val;
-	    	data.D_TesterDefinition.DEBUG = val;
+	    	data.D_Tester.DEBUG = val;
 	    } else if (source == this.m_dbgUpdates) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	updates.ClientUpdates.DEBUG = val;
@@ -1389,7 +1378,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			}else if("convert".equals(e.getActionCommand())){
 				try{GIF_Convert.main(null);}catch(Exception eee){}
 			}else if("linuxScriptsPath".equals(e.getActionCommand())){
-				if(DEBUG)System.out.println("ControlPane: scripts: "+Identity.current_peer_ID.globalID);
+				if(DEBUG)System.out.println("ControlPane: scripts: "+Identity.current_peer_ID.getPeerGID());
 				String SEP = ",";
 				String previous = Application.getCurrentLinuxPathsString(SEP);
 				System.out.println("Previous linux path: "+previous);
@@ -1420,7 +1409,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 					if(_DEBUG) System.out.println("ControlPane: Application.LINUX_INSTALLATION_DIR ="+ Application.LINUX_INSTALLATION_VERSION_BASE_DIR);
 				}
 			}else if("windowsScriptsPath".equals(e.getActionCommand())){
-				if(DEBUG)System.out.println("ControlPane: scripts Win: "+Identity.current_peer_ID.globalID);
+				if(DEBUG)System.out.println("ControlPane: scripts Win: "+Identity.current_peer_ID.getPeerGID());
 				String SEP = ",";
 				String previous = Application.getCurrentWindowsPathsString();
 				System.out.println("Previous windows path: "+previous);
@@ -1682,51 +1671,64 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 						Application_GUI.warning(__("Failed to parse text file: "+file), __("Failed to parse address!"));
 						return;
 					}
-					if((selected!=null)&&(selected.length>0)) selected[0] = _selected;
-				}else if("gif".equals(Util.getExtension(file))){
-						if(DEBUG)System.err.println("ControlPane:actionImport: Got: gif");
+					if ((selected != null) && (selected.length > 0)) selected[0] = _selected;
+				} else if ("gif".equals(Util.getExtension(file))) {
+						if (DEBUG) System.err.println("ControlPane:actionImport: Got: gif");
 						FileInputStream fis=new FileInputStream(file);
 						boolean found = false;
 						byte[] b = new byte[(int) file.length()];  
 						fis.read(b);
 				    	fis.close();
-				    	int i=0;
-						while (i<b.length){
-							if(b[i]==(byte) 0x3B) {
-								found = true;
-								i++;
-								break;
-							}
-							i++;
-						}
-						if(i>=b.length){
-							JOptionPane.showMessageDialog(parent,
-										__("Cannot Extract address in: ")+file+__("No valid data in the picture!"),
-										__("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
-									return;
-						}
-						byte[] addBy = new byte[b.length-i]; 
-						System.arraycopy(b,i,addBy,0,b.length-i);
-						// System.out.println("Got bytes ("+addBy.length+") to write: "+Util.byteToHex(addBy, " "));
-						
+				    	int i = 0;
 						int _selected = -1;
-						for(int k=0; k<adr.length; k++) {
-							try {
-								adr[k].setBytes(addBy);
-								_selected = k;
-								break;
-							} catch (ASN1DecoderFail e1) {
-								if(EmbedInMedia.DEBUG){
-									e1.printStackTrace();
-									Application_GUI.warning(__("Failed to parse gif file: "+file+"\n"+e1.getMessage()), __("Failed to parse address!"));
+						if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif len="+b.length);
+						do {
+							while (i < b.length) {
+								if (b[i] == (byte) 0x3B) {
+									found = true;
+									i ++;
+									break;
+								}
+								i++;
+							}
+							if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif position="+i);
+							if (! found || i >= b.length) {
+								JOptionPane.showMessageDialog(parent,
+											__("Cannot Extract address in: ")+file+__("No valid data in the picture!"),
+											__("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
+										return;
+							}
+							byte[] addBy = new byte[b.length-i]; 
+							System.arraycopy(b,i,addBy,0,b.length-i);
+							// System.out.println("Got bytes ("+addBy.length+") to write: "+Util.byteToHex(addBy, " "));
+							
+							for (int k = 0; k < adr.length; k ++) {
+								if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif try adr#="+k+"/"+adr.length);
+								try {
+									if (! new BigInteger(""+adr[k].getSignShort()).equals(new Decoder(addBy).getTagValueBN())) {
+										if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif not ASN1 tag of ="+adr[k].getClass());
+										continue;
+									}
+									adr[k].setBytes(addBy);
+									_selected = k;
+									if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif success adr#="+k+"/"+adr.length+" val="+adr[k]);
+									break;
+								} catch (Exception e1) { // ASN1DecoderFail | ASN1.ASNLenRuntimeException | 
+									if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif failed adr#="+k+"/"+adr.length);
+									if (EmbedInMedia.DEBUG){
+										e1.printStackTrace();
+										Application_GUI.warning(__("Failed to parse gif file: "+file+"\n"+"at : "+i+"/"+b.length+"\n"+e1.getMessage()+"\nstego="+adr[k]), __("Failed to parse address!"));
+									}
 								}
 							}
-						}
-						if(_selected == -1){
+						} while (i < b.length && _selected < 0);
+						if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif done at i#="+i+" adr="+_selected+" val="+adr[_selected]);
+						if (_selected == -1) {
 							Application_GUI.warning(__("Failed to parse file: "+file+"\n"), __("Failed to parse address!"));
 							return;							
 						}
-						if((selected!=null)&&(selected.length>0)) selected[0] = _selected;
+						if ((selected != null) && (selected.length > 0))
+							selected[0] = _selected;
 				}
 				else
 				if("ddb".equals(Util.getExtension(file))){
@@ -1926,13 +1928,13 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    }		
 	}
 	public static void changeMyPeerSlogan(Component win) throws P2PDDSQLException {
-		if(Identity.current_peer_ID.globalID==null){
+		if(Identity.current_peer_ID.getPeerGID()==null){
 			JOptionPane.showMessageDialog(win,
 					__("You are not yet a peer.\n Start your server first!"),
 					__("Peer Init"), Application_GUI.WARNING_MESSAGE);
 			return;
 		}
-		if (HandlingMyself_Peer.DEBUG) System.out.println("HandlingMyself_Peer:chgSlogan:peer_ID: "+Identity.current_peer_ID.globalID);
+		if (HandlingMyself_Peer.DEBUG) System.out.println("HandlingMyself_Peer:chgSlogan:peer_ID: "+Identity.current_peer_ID.getPeerGID());
 		String peer_Slogan = HandlingMyself_Peer.getMyPeerSlogan();//Identity.current_peer_ID.slogan;
 		String val = JOptionPane.showInputDialog(win, __("Change Peer Slogan.\nPreviously: ")+peer_Slogan, __("Peer Slogan"), Application_GUI.QUESTION_MESSAGE);
 		if ((val != null) && (!"".equals(val))) {
@@ -1961,13 +1963,13 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		return val;
 	}
 	public static void changeMyPeerEmails(Component win) throws P2PDDSQLException {
-		if(Identity.current_peer_ID.globalID==null){
+		if(Identity.current_peer_ID.getPeerGID()==null){
 			JOptionPane.showMessageDialog(win,
 					__("You are not yet a peer.\n Start your server first!"),
 					__("Peer Init"), Application_GUI.WARNING_MESSAGE);
 			return;
 		}
-		if(D_Peer.DEBUG)System.out.println("peer_ID: "+Identity.current_peer_ID.globalID);
+		if(D_Peer.DEBUG)System.out.println("peer_ID: "+Identity.current_peer_ID.getPeerGID());
 		//String peer_Slogan = Identity.current_peer_ID.slogan;
 		String val = ControlPane.queryEmails(win);
 		if ((val!=null) && (!"".equals(val))) {
@@ -1996,8 +1998,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		return val;
 	}
 	public static void changeMyPeerName(Component win) throws P2PDDSQLException {
-		if (D_Peer.DEBUG) System.out.println("HandlingMyself_Peer: peer_ID: "+Identity.current_peer_ID.globalID);
-		if (Identity.current_peer_ID.globalID == null) {
+		if (D_Peer.DEBUG) System.out.println("HandlingMyself_Peer: peer_ID: "+Identity.current_peer_ID.getPeerGID());
+		if (Identity.current_peer_ID.getPeerGID() == null) {
 				JOptionPane.showMessageDialog(win,
 					__("You are not yet a peer.\n Start your server first!"),
 					__("Peer Init"), JOptionPane.WARNING_MESSAGE);

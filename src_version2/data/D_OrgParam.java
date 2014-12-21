@@ -59,7 +59,7 @@ class D_OrgParam extends ASNObj{
 	public String version = V0;
 	public String tmp;
 	public boolean dirty;
-	
+	/*
 	public D_OrgParam(D_FieldExtra e){
 		can_be_provided_later = e.can_be_provided_later;
 		certificated = e.certificated;
@@ -77,7 +77,8 @@ class D_OrgParam extends ASNObj{
 		tip = e.tip;
 		tip_lang = e.tip_lang;
 	}
-	
+	*/
+
 	public D_OrgParam() {}
 	public D_OrgParam(String local_fe_ID) throws P2PDDSQLException {
 		String psql = "SELECT "+table.field_extra.org_field_extra +

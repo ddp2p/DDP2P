@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -71,11 +72,12 @@ import ciphersuits.PK;
 import ciphersuits.SK;
 import data.D_Constituent;
 import ASN1.ASN1DecoderFail;
+import ASN1.Decoder;
 import ASN1.Encoder;
 
 public class DD {
 	public static final String BRANCH = "B";//FIT_HDSSL_SILAGHI";
-	public static final String VERSION = "0.10.07";
+	public static final String VERSION = "0.10.08";
 	public static final boolean ONLY_IP4 = false;
 
 	private static final String PK_Developer = "MIIEGgwDUlNBYAEwAgMBAAECggQASKs9x2VEQH1SRxRwO43yt6HXCTnOmPJVUjN8bQQUTVBdFXhQsTpnTP1yLe/qFlA0jnIzheHT4WEcsU874N800iPMWHCjpCowQwwTj9SQLTmfbfhL8z0a7Dw6ZJQ+DnYoPVhx3JHL57CK3YeVYclZCoHetZ5PEIpcAwxaPmnL3GQaOgJiVHb6CLMi+hNHLxsjQZwTYTeoUOXQKgyTcRDE6xCvw8+q0U6/Uan3KCx/KmtdRQMEtGAXSPANv12kle84Dv8AdJxT1CJGsXm0+N6+wbbvkL77kMr+79sCR/8drZmOnrbjveQpab2pSh0vO//XqslrDRbzhniGSpqFW+YNTOixWAsCp35hNPbAx5xqPXg6DEIrysGslDGo4gC3Ew5mN/JkOQA+pd6uIzC4EgbfWqJKMvrtOQN67hJR7Ysxn7cLDXGvmhK1s7oSJcnOmhWljSZ6joviVwAWKgzdm1gMBhn5+VdgwoEE7g5Inw0dH9UmgufloNiBQMM9m2igdQPaLRuVttrAEcs55F/Z5NFtJquTeQFBLAGux3MVxrYCgivRaoAzAkUMhGOA+00KU3oh3Bds0U8GYCMuYYrwSAWTZf0Z9lvUwJv8HtLJvI6p1p53oGzIW9bo20d0PMz7XrzNDOLEME9PaXKLo6vMCAxXIj19nm/bE1HBY7e7HErKMX3M7LC2xZ8PH7wsnl5M3y0ZZ6c9quwhvz/dWcUAQ5963LtDZ6bOenAGVGBjdWLhHK8/2p9Vgu1ZNA1WWHWnafExsT5GxuwZQ/PMk8YtmxqEkgGy2+xVT19oUK+yO1ok+xRUjvSRZ0IbWUEcOfQ5FvLNmMdV/NSebB6vjQwM5DGCE1YDhix+Qghr558KokVz7BPVrGVe1pUxfPo2XPwHReF8es+vr16lvwXrVEmQNG8KrX1tN5Z5I29+ZVcR6ti4t90RXY6H6lmLtU3P/PSmfOrBQraNHVvDm9y1hnSP9+EhJzuWFaS8v4+7OnodIWuZsYd2WYQp4YcDJ+7grV3s1vvacujzxCOwx5/gosLxOau45bvKqhsFrZ+le6IRNAG7T6ZwC9wesqCGBJlIwS50DlAb/KhPyDIvf+7EH1iwckG4fBtixaK9co8FHnuddn/cEIc6fkWDEzr2Cu3HyxeMeDrcGRvjTRr78Wp/ptvRoOYElOLkxrkmanetjOCMqRl1DJvl53SQKePraRx2DpRemK/TMQ3+5TQkFjjEsI2P455Th0z6vF+JzpetZ3j1NUqx+iEZ2ArMhdDk7dE/4qcn2xwLz5nNMvHSnO2N0T9tCLi96CqZm/HTqGa6jTxFhJOP11sFCCQ9jkKhxvxubs0sww75dnqXQeffpxyolcht3KHwfwwHU0hBLTUxMg==";
@@ -160,8 +162,8 @@ public class DD {
 	 * TYPES OF IMAGES
 	 * should never go over 30 for the type value in one byte
 	 */
-	public static final byte TYPE_DD_IDENTITY_VERIFICATION = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)30);
-	public static final byte TYPE_DD_IDENTITY_VERIFICATION_ANSWER = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)29);
+	//public static final byte TYPE_DD_IDENTITY_VERIFICATION = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)30);
+	//public static final byte TYPE_DD_IDENTITY_VERIFICATION_ANSWER = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)29);
 	/**
 	 * SIGN of images
 	 */
@@ -188,27 +190,6 @@ public class DD {
 		}
 		return  (byte)((classASN1<<6)+(PCASN1<<5)+tag_number);
 	}
-	public static ArrayList<StegoStructure> available_stego_structure =
-			new ArrayList<StegoStructure>(Arrays.asList(_getInitialStegoStructureInstances()));
-			//new ArrayList<StegoStructure>();
-	
-	private static StegoStructure[] _getInitialStegoStructureInstances() {
-		DD_Address data1 = new DD_Address();
-		DD_IdentityVerification_Request data2 = new DD_IdentityVerification_Request();
-		DD_IdentityVerification_Answer data3 = new DD_IdentityVerification_Answer();
-		DD_DirectoryServer data4 = new DD_DirectoryServer();
-		DD_Testers data5 = new DD_Testers();
-		DD_Mirrors data6 = new DD_Mirrors();
-		DD_SK data7 = new DD_SK();
-		return new StegoStructure[]{data1, data2, data3, data4, data5, data6, data7};
-	}
-	/**
-	 * Function used to query available StegoStructures.
-	 * @return
-	 */
-	public static StegoStructure[] getAvailableStegoStructureInstances(){
-		return available_stego_structure.toArray(new StegoStructure[0]);
-	}
 	/**
 	 * Function used to register a StegoStructure for enabling its encoding at 
 	 * drag and drop
@@ -220,11 +201,88 @@ public class DD {
 			new ArrayList<StegoStructure>(Arrays.asList(_getInitialStegoStructureInstances()));
 		available_stego_structure.add(ss);
 	}
+	/**
+	 * Currently final. If allowing plugins to register structures, then should not be final.
+	 * Could have been initialized with registerStegoStructure().
+	 */
+	
+	public static ArrayList<StegoStructure> available_stego_structure =
+			new ArrayList<StegoStructure>(Arrays.asList(_getInitialStegoStructureInstances()));
+			//new ArrayList<StegoStructure>();
+	
+	/**
+	 * This builds a list with installed StegoStructures.
+	 * Hard-coded are:
+	 *   DD_Address,
+	 *   DD_IdentityVerification_Request, 
+	 *   DD_IdentityVerification_Answer,
+	 *   DD_DirectoryServer, 
+	 *   DD_Testers, 
+	 *   DD_Mirrors, 
+	 *   DD_SK
+	 * @return
+	 */
+	private static StegoStructure[] _getInitialStegoStructureInstances() {
+		DD_Address data1 = new DD_Address();
+		DD_IdentityVerification_Request data2 = new DD_IdentityVerification_Request();
+		DD_IdentityVerification_Answer data3 = new DD_IdentityVerification_Answer();
+		DD_DirectoryServer data4 = new DD_DirectoryServer();
+		DD_Testers data5 = new DD_Testers();
+		DD_Mirrors data6 = new DD_Mirrors();
+		DD_SK data7 = new DD_SK();
+		return new StegoStructure[]{data1, data2, data3, data4, data5, data6, data7};
+	}
+	/**
+	 * Tries to infer the type
+	 * @param ASN1TAG
+	 * @return
+	 */
+	public static StegoStructure getStegoStructure(BigInteger ASN1TAG) {
+		for (StegoStructure ss : getAvailableStegoStructureInstances()) {
+			if (ASN1TAG.equals (new BigInteger(""+ss.getSignShort()))) {
+				try {
+					return (StegoStructure) ss.getClass().newInstance();
+				} catch (InstantiationException | IllegalAccessException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return null;
+	}
+	/**
+	 * Tries one by one
+	 * @param ASN1TAG
+	 * @return
+	 */
+	public static StegoStructure _getStegoStructure(BigInteger ASN1TAG) {
+		if (ASN1TAG == null) {
+			if (_DEBUG) System.out.println("DD: getStegoStructure: null parameter");
+			return null;
+		}
+		if (ASN1TAG.equals(DD_Address.getASN1Tag())) return new DD_Address();
+		if (ASN1TAG.equals(DD_IdentityVerification_Request.getASN1Tag())) return new DD_IdentityVerification_Request();
+		if (ASN1TAG.equals(DD_IdentityVerification_Answer.getASN1Tag())) return new DD_IdentityVerification_Answer();
+		if (ASN1TAG.equals(DD_DirectoryServer.getASN1Tag())) return new DD_DirectoryServer();
+		if (ASN1TAG.equals(DD_Testers.getASN1Tag())) return new DD_Testers();
+		if (ASN1TAG.equals(DD_Mirrors.getASN1Tag())) return new DD_Mirrors();
+		if (ASN1TAG.equals(DD_SK.getASN1Tag())) return new DD_SK();
+		return null;
+	}
+	public static StegoStructure getStegoStructure(Decoder dec) {
+		return getStegoStructure(dec.getTagValueBN());
+	}
+	/**
+	 * Function used to query available StegoStructures.
+	 * @return
+	 */
+	public static StegoStructure[] getAvailableStegoStructureInstances(){
+		return available_stego_structure.toArray(new StegoStructure[0]);
+	}
 	public static short[] getAvailableStegoStructureISignatures() {
 		StegoStructure[] a = getAvailableStegoStructureInstances();
-		if(a==null) return new short[0];
+		if (a == null) return new short[0];
 		short []r = new short[a.length];
-		for(int k =0 ; k<a.length; k++)
+		for (int k = 0 ; k < a.length; k++)
 			r[k] = a[k].getSignShort();
 		return r;
 	}
@@ -570,7 +628,17 @@ public class DD {
     	}
 		return true;
 	}
+	public static void load_listing_directories_noexception() {
+		try {
+			load_listing_directories();
+		} catch (NumberFormatException | UnknownHostException
+				| util.P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
 	public static void load_listing_directories() throws P2PDDSQLException, NumberFormatException, UnknownHostException{
+		Identity.setListing_directories_loaded(true);
+		
 		DirectoryAddress dirs[] = DirectoryAddress.getActiveDirectoryAddresses();
 		if ((dirs == null) || (dirs.length == 0)) {
 			// Only reinit dirs if there is no directory (even inactive) 
@@ -616,18 +684,18 @@ public class DD {
     	}
     	String dirs[] = ld.split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_SEP));
     	*/
-    	Identity.listing_directories_string.clear();
-    	Identity.listing_directories_inet.clear(); // just added
-    	Identity.listing_directories_addr.clear();
+    	Identity.getListing_directories_string().clear();
+    	Identity.getListing_directories_inet().clear(); // just added
+    	Identity.getListing_directories_addr().clear();
     	for (int k=0; k<dirs.length; k++) {
     		//String[] d=dirs[k].split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_ELEM_SEP));
     		try{
         		Address adr = new Address(dirs[k]);
         		InetSocketAddress isa = new InetSocketAddress(InetAddress.getByName(adr.getIP()),adr.getTCPPort());
         		adr.inetSockAddr = isa;
-        		Identity.listing_directories_addr.add(adr);
-        		Identity.listing_directories_string.add(dirs[k].toString());
-    			Identity.listing_directories_inet.add(isa);
+        		Identity.getListing_directories_addr().add(adr);
+        		Identity.getListing_directories_string().add(dirs[k].toString());
+    			Identity.getListing_directories_inet().add(isa);
     		} catch (Exception e) {
     			Application_GUI.warning(__("Error for")+" "+dirs[k]+"\nLoad Error: "+e.getMessage(), __("Error installing directories"));
     			e.printStackTrace();
@@ -682,6 +750,14 @@ public class DD {
 	 */
 	static public boolean setAppText(String field, String value) throws P2PDDSQLException{
 		return setAppText(field,value,false);
+	}
+	static public boolean setAppTextNoException(String field, String value) {
+		try {
+			return setAppText(field,value);
+		} catch (util.P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return false;
 	}
 	public static boolean setAppText(String field, String value,
 			boolean debug) throws P2PDDSQLException {
@@ -741,6 +817,14 @@ public class DD {
 		String result = getExactAppText(field);
    		if("".equals(result)) result = null;
    		return result;
+	}
+	static public String getAppTextNoException(String field) {
+		try {
+			return getAppText(field);
+		} catch (util.P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 	/**
 	 * Exact value needed for exact comparison with new valued to preclude reinsertion
@@ -1096,6 +1180,18 @@ public class DD {
 	 * That is possible only when ACCEPT_ORGANIZATIONS_WITH_NULL_NAME is FALSE
 	 */
 	public static final boolean ACCEPT_ORGANIZATIONS_WITH_NULL_NAME = false;
+	/**
+	 * To store in the application table the date of the last made recommendation of testers
+	 */
+	public static final String APP_LAST_RECOMMENDATION_OF_TESTERS = "APP_LAST_RECOMMENDATION_OF_TESTERS";
+	/**
+	 * Set this one to true to stop the recommendation of testers
+	 */
+	public static final String APP_STOP_RECOMMENDATION_OF_TESTERS = "STOP_RECOMMENDATION_OF_TESTERS";
+	public static final String APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS = "APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS";
+	public static int MAX_ORG_ICON_LENGTH = 20000;
+	public static int MAX_CONSTITUENT_ICON_LENGTH = 20000; 
+	public static int MAX_PEER_ICON_LENGTH = 20000;
 	
 	public static boolean RELEASE = true;
 	/** dir_IP: (GID: ()addresses) */
@@ -1120,6 +1216,13 @@ public class DD {
 		}catch(Exception e){}
 		return false;
 		*/
+	}
+	/**
+		 * Returns the current version as an array of ints: DD.VERSION_INTS
+		 * @return
+		 */
+	public static int[] getMyVersion() {
+		return VERSION_INTS;
 	}
 	/**
 	 * String explain[] = new String[1];

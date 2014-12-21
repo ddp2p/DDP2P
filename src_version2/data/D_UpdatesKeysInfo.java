@@ -37,6 +37,12 @@ import ASN1.ASN1DecoderFail;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
+/**
+ * Is it really Deprecated?
+ * @author msilaghi
+ *
+ */
+@Deprecated
 public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 	private static final boolean _DEBUG = true;
 	public static boolean DEBUG = false;
@@ -90,10 +96,10 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 		}
 		if(u.size()>0) init(u.get(0));
 	}
-	public D_UpdatesKeysInfo(D_TesterDefinition d) {
+	public D_UpdatesKeysInfo(D_Tester d) {
 		this.original_tester_name = d.name;
-		this.public_key = d.public_key;
-		this.public_key_hash = Util.getGIDhash(d.public_key);
+		this.public_key = d.testerGID;
+		this.public_key_hash = Util.getGIDhash(d.testerGID);
 	}
 	public boolean existsInDB() {
 		D_UpdatesKeysInfo old = new D_UpdatesKeysInfo(public_key);
@@ -166,7 +172,7 @@ public class D_UpdatesKeysInfo extends ASN1.ASNObj{
 		System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
 
 		for(int i=0; i<a.testers_data.length; i++ ){
-			D_TesterSignedData tsd = new D_TesterSignedData(a, i);
+			D_SoftwareUpdatesReleaseInfoDataSignedByTester tsd = new D_SoftwareUpdatesReleaseInfoDataSignedByTester(a, i);
 		//	System.out.println("a.testers_data["+i+"].public_key_hash" + a.testers_data[i].public_key_hash);
 		//	System.out.println("a.testers_data["+i+"].signature" + Util.stringSignatureFromByte(a.testers_data[i].signature));
 			PK pk = getKey(a.testers_data[i].public_key_hash);

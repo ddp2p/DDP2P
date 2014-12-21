@@ -847,7 +847,7 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 		
 		D_Organization od = D_Organization.getEmpty(); //.getOrgByGID(gID, true, true);
 		od.global_organization_ID = gID;
-		od.name = name;
+		od.setName(name);
 		od.setLastSyncDate(_creation_date);
 		od.creator = get_peer_by_ID(p_ID); 
 		od.params = new D_OrgParams();

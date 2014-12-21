@@ -27,7 +27,7 @@ import util.P2PDDSQLException;
 import config.Application;
 
 import data.D_MirrorInfo;
-import data.D_TesterInfo;
+import data.D_SoftwareUpdatesReleaseInfoByTester;
 import data.D_ReleaseQuality;
 
 import util.DBInfo;
@@ -48,7 +48,7 @@ public class QualitiesModel extends AbstractTableModel implements TableModel{
 	
 	D_ReleaseQuality[] releaseQoT ; // It should be part of D_MirrorInfo
 
-	D_TesterInfo[] data;
+	D_SoftwareUpdatesReleaseInfoByTester[] data;
 	JPanel cellContent;
 	
 	public QualitiesModel(D_MirrorInfo u) { // constructor with dataSource -> DBInterface _db
@@ -105,7 +105,7 @@ public class QualitiesModel extends AbstractTableModel implements TableModel{
     	}
     	return p; 
     }
-    public int sumQoT(D_TesterInfo t){
+    public int sumQoT(D_SoftwareUpdatesReleaseInfoByTester t){
     	int sum=0;
     	if(t.tester_QoT!= null)
     		for(int i=0; i< t.tester_QoT.length;i++)
@@ -117,7 +117,7 @@ public class QualitiesModel extends AbstractTableModel implements TableModel{
 	public Object getValueAt(int rowIndex, int columnIndex) {// a cell
 		if((rowIndex<0) || (rowIndex>=data.length)) return null;
 		if((columnIndex<0) || (columnIndex>this.getColumnCount())) return null;
-		D_TesterInfo crt=null;
+		D_SoftwareUpdatesReleaseInfoByTester crt=null;
 		crt = data[rowIndex];
 		//System.out.println("RowInfo (crt): "+ rowIndex +"  "+ crt.name);
 		if( crt==null) return null;

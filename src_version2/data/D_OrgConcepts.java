@@ -36,6 +36,7 @@ class D_OrgConcepts extends ASNObj {
 	public String[] name_justification;
 	public String[] name_motion;
 	public String[] name_organization;
+	public String[] name_constituent;
 	@Override
 	public Encoder getEncoder() {
 		if(ASNSyncRequest.DEBUG)System.out.println("Encoding OrgData: "+this);
@@ -44,6 +45,7 @@ class D_OrgConcepts extends ASNObj {
 		if(name_justification!=null)enc.addToSequence(Encoder.getStringEncoder(name_justification,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC1));
 		if(name_motion!=null)enc.addToSequence(Encoder.getStringEncoder(name_motion,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC2));
 		if(name_organization!=null)enc.addToSequence(Encoder.getStringEncoder(name_organization,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC3));
+		if(name_constituent!=null)enc.addToSequence(Encoder.getStringEncoder(name_constituent,Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC4));
 		return enc;
 	}
 	@Override
@@ -53,6 +55,7 @@ class D_OrgConcepts extends ASNObj {
 		if(dec.getTypeByte()==DD.TAG_AC1)name_justification = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_UTF8String);
 		if(dec.getTypeByte()==DD.TAG_AC2)name_motion = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_UTF8String);
 		if(dec.getTypeByte()==DD.TAG_AC3)name_organization = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_UTF8String);
+		if(dec.getTypeByte()==DD.TAG_AC4)name_constituent = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_UTF8String);
 		return this;
 	}
 	public String toString() {
@@ -60,6 +63,7 @@ class D_OrgConcepts extends ASNObj {
 		";\n   name_forum="+Util.nullDiscrim(name_forum,Util.concat(name_forum, "; "))+
 		";\n   name_justification="+Util.nullDiscrim(name_justification,Util.concat(name_justification, "; "))+
 		";\n   name_motion="+Util.nullDiscrim(name_motion,Util.concat(name_motion, "; "))+
+		";\n   name_constituent="+Util.nullDiscrim(name_constituent,Util.concat(name_constituent, "; "))+
 		";\n   name_organization="+Util.nullDiscrim(name_organization,Util.concat(name_organization, "; "))+
 		 "\n  ]"
 		;
@@ -106,7 +110,15 @@ class D_OrgConcepts extends ASNObj {
 			e.printStackTrace();
 			result = null;
 		}
-		if(DEBUG) System.err.println("OrgConcepts:stringArrayFromString: got \""+Util.concat(result, "::"));
+		if(DEBUG) System.err.println("OrgConcepts: stringArrayFromString: got \""+Util.concat(result, "::"));
 		return result;
+	}
+	/**
+	 * TODO
+	 * should probably construct a full object and get the deep clone of all its data....
+	 * @return
+	 */
+	public D_OrgConcepts getClone() {
+		return this;
 	}
 }

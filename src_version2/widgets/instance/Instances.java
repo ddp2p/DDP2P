@@ -65,6 +65,7 @@ import widgets.components.XTableColumnModel;
 import widgets.peers.Peers;
 import config.Application;
 import config.Application_GUI;
+import config.Identity;
 import config.PeerListener;
 import data.D_Peer;
 import data.D_PeerInstance;
@@ -465,8 +466,8 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 		String instance = data.get(row).peer_instance;
 		try {
 			currentPeer.setCurrentInstance(instance);
-			HandlingMyself_Peer.setMyself(currentPeer, true, false); // not kept
 			HandlingMyself_Peer.updateAddress(currentPeer);
+			HandlingMyself_Peer.setMyself(currentPeer, true, Identity.current_peer_ID, false, true); // not kept
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

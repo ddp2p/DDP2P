@@ -13,6 +13,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.Insets;
+import java.awt.Panel;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -75,6 +76,7 @@ import widgets.directories.Directories;
 import widgets.identities.MyIdentitiesTest;
 import widgets.instance.Instances;
 import widgets.justifications.JustificationEditor;
+import widgets.justifications.JustificationViewer;
 import widgets.justifications.Justifications;
 import widgets.justifications.JustificationsByChoicePanel;
 import widgets.keys.Keys;
@@ -314,9 +316,9 @@ public class MainFrame {
 				if (DD.DEBUG) System.out.println("DD.tabsChanged: motions index done");
 	    	}
 	    	
-	    	if(MainFrame.TAB_JUSTS_ == index) {
-	    		if(!_justs) {
-	    			if(_saved_justs==null) {
+	    	if (MainFrame.TAB_JUSTS_ == index) {
+	    		if (!_justs) {
+	    			if (_saved_justs==null) {
 		    			_saved_justs = new widgets.justifications.Justifications();
 		    			MainFrame.tabbedPane.setComponentAt(index, _saved_justs.getComboPanel());
 	    			}
@@ -325,45 +327,45 @@ public class MainFrame {
 		    		}
 	    			_justs = true;
 	    		}
-	    	}else{
-	    		if(_justs){
+	    	} else {
+	    		if (_justs) {
 	    			_justs = false;
-		    		if(_justs_reload || _justs_disconnect) {
+		    		if (_justs_reload || _justs_disconnect) {
 		    			_saved_justs.disconnectWidget();
 		    		}
-	    			if(_justs_reload) {
+	    			if (_justs_reload) {
 	    				MainFrame.tabbedPane.setComponentAt(MainFrame.TAB_JUSTS_, MainFrame.JunkPanelJusts);
 	    				_saved_justs = null;
 	    			}
 	    		}
 	    	}
 	    	
-	    	if(MainFrame.TAB_JBC_ == index) {
-	    		if(!_debate) {
-	    			if(_saved_debate==null) {
+	    	if (MainFrame.TAB_JBC_ == index) {
+	    		if (!_debate) {
+	    			if (_saved_debate==null) {
 		    			_saved_debate = new widgets.justifications.JustificationsByChoicePanel();
 		    			MainFrame.tabbedPane.setComponentAt(index, _saved_debate.getComboPanel());
 	    			}
-		    		if(_debate_reload || _debate_disconnect) {
+		    		if (_debate_reload || _debate_disconnect) {
 		    			_saved_debate.connectWidget(); // after getPanel()
 		    		}
 	    			_debate = true;
 	    		}
-	    	}else{
-	    		if(_debate){
+	    	} else {
+	    		if (_debate) {
 	    			_debate = false;
-		    		if(_debate_reload || _debate_disconnect) {
+		    		if (_debate_reload || _debate_disconnect) {
 		    			_saved_debate.disconnectWidget();
 		    		}
-	    			if(_debate_reload) {
+	    			if (_debate_reload) {
 	    				MainFrame.tabbedPane.setComponentAt(MainFrame.TAB_JBC_, MainFrame.JunkPanelJBC);
 	    				_saved_debate = null;
 	    			}
 	    		}
 	    	}
 	    	
-	    	if(MainFrame.TAB_NEWS_ == index) {
-	    		if(!_news) {
+	    	if (MainFrame.TAB_NEWS_ == index) {
+	    		if (!_news) {
 	    			if(_saved_news==null) {
 		    			_saved_news = new widgets.news.NewsTable();
 		    			MainFrame.tabbedPane.setComponentAt(index, _saved_news.getComboPanel());
@@ -773,7 +775,28 @@ public class MainFrame {
 		return new JSplitPane(JSplitPane.VERTICAL_SPLIT, _news, _nedit);
 	}
 
-	public static Component makeJustificationPanel( JustificationEditor _jedit, Justifications justifications) {
+	public static Component makeJBCViewPanel( Panel _jedit, JustificationsByChoicePanel jbc) {
+		JSplitPane justification_panel = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+				jbc, //.getScrollPane(),
+				new JScrollPane(_jedit));
+		justification_panel.setDividerLocation(.7);
+		justification_panel.setResizeWeight(0.7);
+		return justification_panel; //justifications;
+	}
+	public static Component makeJustificationPanel( JustificationEditor _jedit,  JustificationViewer _jview, Justifications justifications) {
+
+		JPanel vpanel = _jedit;
+		if (Justifications.USING_VIEWER) {
+			vpanel = new JPanel();
+			if (_jedit != null) vpanel.add(_jedit);
+			if (_jview != null) vpanel.add(_jview);
+		}
+		JSplitPane justification_panel = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+				justifications.getScrollPane(),
+				new JScrollPane(vpanel));
+		justification_panel.setDividerLocation(.5);
+		justification_panel.setResizeWeight(0.5);
+		return justification_panel;
 		/*
 		int y = 0;
 		JPanel motion_panel = new JPanel();
@@ -786,11 +809,6 @@ public class MainFrame {
 		c.fill=GridBagConstraints.BOTH;c.gridx=0;c.gridy=y++;c.weighty=5.0;c.weightx=10;c.anchor=GridBagConstraints.CENTER;c.insets=new java.awt.Insets(0,0,0,0);
 		motion_panel.add(_jedit,c);
 		*/
-		JSplitPane justification_panel = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-				justifications.getScrollPane(),
-				new JScrollPane(_jedit));
-		justification_panel.setDividerLocation(.5);
-		justification_panel.setResizeWeight(0.5);
 //		class JSplitPane3 extends JSplitPane {
 //		   public void paint(Graphics g) {
 //		        super.paint(g);
@@ -812,7 +830,6 @@ public class MainFrame {
 //	        	justification_panel.removeComponentListener(this);
 //	        }
 //	      });
-		return justification_panel;
 	}
 
 	public static JSplitPane makeWLanPanel(WLAN_widget wlan_widget) {
@@ -1468,7 +1485,7 @@ public class MainFrame {
 			//boolean DEBUG = true;
 			ArrayList<String> potentialDatabases = new ArrayList<String>();
 			String dfname = Application.DELIBERATION_FILE;
-			String guID ="";
+			String pGID = null;
 			String controlIP = null;
 			boolean askIdentityFirst = false;
 			
@@ -1476,7 +1493,7 @@ public class MainFrame {
 			while ((c = GetOpt.getopt(args, "d:p:ciC:h")) != GetOpt.END) {
 				switch (c) {
 				case 'h':
-					System.out.println("java -cp DD.jar:... config.DD "
+					System.out.println("java -cp DD.jar:... widgets.app.MainFrame "
 							+ "\n\t -c          Console mode"
 							+ "\n\t -C IP       The IP address from which one can remote control"
 							+ "\n\t -p GID      Load the peer with this GID as current peer"
@@ -1495,7 +1512,7 @@ public class MainFrame {
 					break;
 				case 'p':
 					System.out.println("peer= "+GetOpt.optarg);
-					guID = GetOpt.optarg;
+					pGID = GetOpt.optarg;
 					break;
 				case 'd':
 					System.out.println("db+="+GetOpt.optarg);
@@ -1604,7 +1621,8 @@ public class MainFrame {
 				}
 			}
 			if (DD.DEBUG) System.err.println(__("DD: main: Got DB fin")+Application.db);
-			Identity.init_Identity();
+			// Quit if no peer found!
+			Identity.init_Identity(true, true, false); // used to announce dirs here
 	
 			StartUp.detect_OS_and_store_in_DD_OS_var();
 			StartUp.fill_install_paths_all_OSs_from_DB(); // to be done before importing!!!
@@ -1663,25 +1681,40 @@ public class MainFrame {
 			//Application.DB_PATH = new File(Application.DELIBERATION_FILE).getParent();
 			//Application.db_dir = load_Directory_DB(Application.DB_PATH);
 			
-			Identity peer_ID = Identity.current_peer_ID;//getDefaultIdentity();
+			//Identity peer_ID = Identity.current_peer_ID;//getDefaultIdentity();
 	    	if (DD.DEBUG) System.err.println("DD:main: identity");
-			Identity id = Identity.getCurrentIdentity();
-			if (guID != null) {
+	    	/**
+	    	 * Should not quit since the peer GID may have been passed as parameter
+	    	 */
+			Identity peer_identity_id = Identity.getCurrentPeerIdentity_NoQuitOnFailure();
+			if (pGID != null && !"".equals(pGID.trim())) {
 				//guID = args[1];
-				Identity.setCurrentIdentity(guID); // current_identity.globalID = ;
+				Identity.setCurrentPeerIdentity(pGID); // current_identity.globalID = ;
 			} else {
-				if (id != null) guID = id.globalID;
+				if (peer_identity_id != null) pGID = peer_identity_id.getPeerGID();
 			}
-			if (DD.DEBUG) System.out.println("My ID: "+guID);
+			if (DD.DEBUG) System.out.println("MainFrame: run: My peer GID: "+pGID);
 	
-			if (DD.DEBUG) System.out.println("DD:run: init languages");		
+			if (DD.DEBUG) System.out.println("MainFrame: run: init languages");		
 			
+			Identity const_identity_id = null;
+			const_identity_id = Identity.getCurrentConstituentIdentity();
 	    	DDTranslation.preferred_languages = get_preferred_languages();
-	    	DDTranslation.constituentID = UpdateMessages.getonly_constituent_ID(guID);
-	    	DDTranslation.organizationID = UpdateMessages.getonly_organizationID(id.globalOrgID, null);
+	    	if (const_identity_id != null) {
+	    		DDTranslation.organizationID = D_Organization.getLIDbyGID(const_identity_id.organizationGID);
+	    		//UpdateMessages.getonly_organizationID(peer_identity_id.organizationGID, null);
+	    		DDTranslation.constituentID = D_Constituent.getLIDFromGID(const_identity_id.getConstituentGID(), DDTranslation.organizationID);
+		    	DDTranslation.authorship_charset = const_identity_id.authorship_charset;
+		    	if (const_identity_id.authorship_lang != null)
+		    		DDTranslation.authorship_lang = new Language(const_identity_id.authorship_lang);
+	    	}
+	    	if (DDTranslation.authorship_charset == null)
+		    	DDTranslation.authorship_charset = DD.get_authorship_charset();//"latin";
+	    	
+	    	if (DDTranslation.authorship_lang == null)
+		    	DDTranslation.authorship_lang = DD.get_authorship_lang();//new Language("ro","RO");
+	    	
 	    	DDTranslation.preferred_charsets = DD.get_preferred_charsets();//new String[]{"latin"};
-	    	DDTranslation.authorship_charset = DD.get_authorship_charset();//"latin";
-	    	DDTranslation.authorship_lang = DD.get_authorship_lang();//new Language("ro","RO");
 	    	
 			try {
 				DD.load_listing_directories();

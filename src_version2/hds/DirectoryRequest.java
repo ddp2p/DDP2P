@@ -17,7 +17,7 @@ import table.directory_forwarding_terms;
 import table.directory_tokens;
 import util.P2PDDSQLException;
 import config.Application;
-import data.D_TermsInfo;
+import data.D_DirectoryServerPreapprovedTermsInfo;
 
 class DirectoryRequestPerInstance extends ASNObj {
 	String instance;
@@ -59,11 +59,11 @@ public class DirectoryRequest extends ASNObj{
 	private static final int V1 = 1;
 	private static final int V2 = 2;
 	private static final int V3 = 3;
-	private static boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static boolean _DEBUG = true;
 	private static int MAX_VERSION_SUPPORTED = V3;
 	public int version = V2; //MAX_VERSION_SUPPORTED;
-	public int[] agent_version = Util.getMyVersion();
+	public int[] agent_version = DD.getMyVersion();
 	public String branch = DD.BRANCH;
 	public String globalID;
 	public String globalIDhash; // or this, or GID
@@ -329,7 +329,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 	public DirectoryRequest(byte[]_buffer, int peek, InputStream is) throws Exception {
 		assert(DirectoryServer.MAX_DR_DA>=peek);
 		//System.out.println("DirectoryRequest(byte[]_buffer..: decode and encode")
-		Decoder dec=new Decoder(_buffer);
+		Decoder dec = new Decoder(_buffer);
 		if(dec.contentLength()>DirectoryServer.MAX_DR_DA) throw new Exception("Max buffer DirectoryServer.MAX_DR_DA="+DirectoryServer.MAX_DR_DA+
 				" is smaller than request legth: "+dec.contentLength());
 		/** useless complication to use shared buffer, since it synchronizes requests and can be used in attacks
@@ -513,7 +513,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		DIR_Terms_Preaccepted[] dir_terms = new DIR_Terms_Preaccepted[u.size()];
 		int i=0; 
 		for(ArrayList<Object> _u :u){
-			D_TermsInfo ui = new D_TermsInfo(_u);
+			D_DirectoryServerPreapprovedTermsInfo ui = new D_DirectoryServerPreapprovedTermsInfo(_u);
 			dir_terms[i] = new DIR_Terms_Preaccepted();
 			if(ui.topic){
 				ArrayList<Object> record = directory_tokens.searchForToken(Util.lval(this.peer_ID, -1), ui.peer_instance_ID,
@@ -591,7 +591,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		                                 //dir_address.domain, dir_address.tcp_port+"");
 		
 		for(ArrayList<Object> _u :u){
-			D_TermsInfo ui = new D_TermsInfo(_u);
+			D_DirectoryServerPreapprovedTermsInfo ui = new D_DirectoryServerPreapprovedTermsInfo(_u);
 			DIR_Terms_Preaccepted dir_terms_i = new DIR_Terms_Preaccepted();
 			if (ui.topic) {
 				if (record != null)
@@ -639,28 +639,28 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		return false;
 	}
 	void read(byte[]buffer, int peek, InputStream is)  throws Exception{
-		if(DEBUG)out.println("dirRequest read: ["+peek+"]="+ Util.byteToHexDump(buffer, peek));
-		int bytes=peek;
-		if(peek==0){
-			bytes=is.read(buffer);
+		if (DEBUG) out.println("dirRequest read: ["+peek+"]="+ Util.byteToHexDump(buffer, peek));
+		int bytes = peek;
+		if (peek <= 0) {
+			bytes = is.read(buffer);
 			out.println("dirRequest reread: ["+bytes+"]="+ Util.byteToHexDump(buffer, " "));
 		}
 		int content_length, type_length, len_length, request_length;
-		if (bytes<1){
-			out.println("dirRequest exiting: bytes<1 ="+bytes);
+		if (bytes < 1) {
+			out.println("dirRequest exiting: bytes < 1 ="+bytes+", peek="+peek+" buflen="+buffer.length);
 			return;
 		}
 		Decoder asn = new Decoder(buffer);
-		if(asn.type()!=Encoder.TYPE_SEQUENCE){
+		if (asn.type() != Encoder.TYPE_SEQUENCE) {
 			out.println("dirRequest exiting, not sequence: ="+asn.type());
 			return;
 		}
-		do{
+		do {
 			type_length = asn.typeLen();
-			if(type_length <=0) {
-				out.println("dirRequest reread type ="+type_length);
-				if(bytes == DirectoryServer.MAX_DR_DA) throw new Exception("Buffer Type exceeded!");
-				if(is.available()<=0)  throw new Exception("Data not available for type!");
+			if (type_length <= 0) {
+				out.println("dirRequest reread type =" + type_length);
+				if (bytes == DirectoryServer.MAX_DR_DA) throw new Exception("Buffer Type exceeded!");
+				if (is.available() <= 0)  throw new Exception("Data not available for type!");
 				bytes += is.read(buffer, bytes, DirectoryServer.MAX_DR_DA-bytes);
 			}
 		}while(type_length <= 0);
@@ -674,26 +674,29 @@ DirectoryRequest ::= SEQUENCE { -- V3
 				bytes += is.read(buffer, bytes, DirectoryServer.MAX_DR_DA-bytes);
 			}
 		}while(len_length <= 0);
-		if(DEBUG)out.println(" dirRequest len len ="+len_length);
+		if (DEBUG) out.println(" dirRequest len len ="+len_length);
 		content_length = asn.contentLength();
 		request_length = content_length + type_length + len_length;
-		if(DEBUG)out.println(" dirRequest req_len ="+request_length);
-		if(request_length > DirectoryServer.MAX_LEN){
+		if (DEBUG) out.println(" dirRequest req_len ="+request_length);
+		if (request_length > DirectoryServer.MAX_LEN) {
 			throw new Exception("Buffer Content exceeded!");
 		}
 		byte[] buffer_all = buffer;
-		if(bytes < request_length) {
+		if (bytes < request_length) {
 			buffer_all = new byte[request_length];
 			Encoder.copyBytes(buffer_all, 0, buffer, bytes);
-			do{
+			do {
 				//if(is.available()<=0)  throw new Exception("Data not available for length!");;
 				bytes += is.read(buffer_all,bytes,request_length - bytes);
-			}while(bytes < request_length);
+			} while(bytes < request_length);
 		}
 		Decoder dr = new Decoder(buffer_all);
 		decode(dr);
 	}
 	public static byte getASN1Tag() {
 		return Encoder.TAG_SEQUENCE;
+	}
+	public boolean empty() {
+		return this.initiator_globalID == null && this.initiator_globalIDhash == null;
 	}
 }

@@ -44,12 +44,14 @@ public class organization {
 	 public static final String signature = "signature";   // a signature of OrgData (authoritarian) or a hash of OrgData 
 	 public static final String signature_initiator = "signature_initiator";   // a signature of OrgData (authoritarian) or a hash of OrgData 
 	 public static final String crl = "crl";
+	 public static final String icon = "icon";
 	 public static final String crl_date = "crl_date";
 	 public static final String default_scoring_options = "default_scoring_options";
 	 public static final String instructions_new_motions = "instructions_new_motions";
 	 public static final String instructions_registration = "instructions_registration";
 	 public static final String languages = "languages";
 	 public static final String name_forum = "name_forum";
+	 public static final String name_constituent = "name_constituent";
 	 public static final String name_justification = "name_justification";
 	 public static final String name_motion = "name_motion";
 	 public static final String name_organization = "name_organization";
@@ -79,7 +81,7 @@ public class organization {
 			plugins_excluding+","+description+","+ 			creator_ID+","+ 	    global_organization_ID_hash+"," +signature+","+				
 			requested+","+		  blocked+","+		  		broadcasted+","+			specific_requests+","	+reset_date+","+
 			signature_initiator+","+broadcast_rule+","+     preapproved+","+            preferences_date+","+   first_provider_peer+","+
-			hidden+","+			weights_type+","+			weights_max)+" ";
+			hidden+","+			weights_type+","+			weights_max+","+			icon+","+      		name_constituent)+" ";
 	 public static final String field_list = field_list_noID + "," + organization_ID;
 	 //hash_org+"," +
 	public static final int _GRASSROOT = 0;
@@ -136,7 +138,9 @@ public class organization {
 	public static final int ORG_COL_HIDDEN = 35;
 	public static final int ORG_COL_WEIGHTS_TYPE = 36;
 	public static final int ORG_COL_WEIGHTS_MAX = 37;
-	public static final int ORG_COL_ID = 38;
+	public static final int ORG_COL_ICON = 38;
+	public static final int ORG_COL_NAME_CONS = 39;
+	public static final int ORG_COL_ID = 40;
 	public static final String[] fields_noID = Util.trimmed(field_list_noID.split(","));
 	public static final int FIELDS_NOID = fields_noID.length;
 	public static final String[] fields = Util.trimmed(field_list.split(","));

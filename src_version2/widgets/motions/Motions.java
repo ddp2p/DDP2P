@@ -67,6 +67,7 @@ import widgets.app.DDIcons;
 import widgets.app.MainFrame;
 import widgets.app.Util_GUI;
 import widgets.components.BulletRenderer;
+import widgets.components.ColoredDocumentTitleRenderer;
 import widgets.components.DebateDecideAction;
 //import widgets.org.ColorRenderer;
 import widgets.components.DocumentTitleRenderer;
@@ -94,7 +95,7 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 	public static final int A_NON_FORCE_COL = 4;
 	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	private DocumentTitleRenderer titleRenderer;
+	private ColoredDocumentTitleRenderer titleRenderer;
 	BulletRenderer hotRenderer;
 	DefaultTableCellRenderer centerRenderer;
 	public Motions(DBInterface _db) {
@@ -124,7 +125,7 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 		addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
 		//colorRenderer = new ColorRenderer(getModel());
-		titleRenderer = new DocumentTitleRenderer();
+		titleRenderer = new ColoredDocumentTitleRenderer(this.getModel());
 		centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment( JLabel.CENTER );
 		hotRenderer = new BulletRenderer(
@@ -595,9 +596,10 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 	}
 	@Override
 	public void motion_update(String motID, int col, D_Motion d_motion) {
-		if(motID==null) return;
+		getModel().setCurrentMotion(motID, d_motion);
+		if (motID == null) return;
 		int model_row = getModel().getRow(motID);
-		if(model_row<0) return;
+		if (model_row < 0) return;
 		int view_row = this.convertRowIndexToView(model_row);
 		this.setRowSelectionInterval(view_row, view_row);
 		

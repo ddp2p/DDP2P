@@ -58,13 +58,13 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	public static final int MAX_THREADS = 6;
-	private static final int UDP_BUFFER_LENGTH = 1000000;
+	public static final int UDP_BUFFER_LENGTH = 1000000;
 	public static final Object directoryAnnouncementLock = new Object();
 	private static final boolean ANNOUNCE_TCP = false;
 	public static boolean DEBUG_DIR = false;
 	public static DirectoryAnnouncement directoryAnnouncement = null;
 	private byte[] buffer;
-	public static DatagramSocket ds;
+	private static DatagramSocket ds;
 	Hashtable<String, UDPMessage> sentMessages = new Hashtable<String, UDPMessage>();
 	Hashtable<String, UDPMessage> recvMessages = new Hashtable<String, UDPMessage>();
 	// Set of peers to which a sync was sent
@@ -186,7 +186,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		if(MTU >= msg.length) {
 			DatagramPacket dp= new DatagramPacket(msg, msg.length);
 			dp.setSocketAddress(sa);
-			ds.send(dp);
+			getUDPSocket().send(dp);
 			if(DEBUG) System.out.println("Sent message in one fragment to "+sa);
 			return;
 		}
@@ -211,7 +211,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		if(DEBUG)System.out.println("Sending to: "+sa+" msgID="+umsg.msgID+" msg["+msg.length+"]="+Util.byteToHexDump(msg));
 		for(int k=0; k < frags; k++) {
 			UDPFragment uf = new UDPFragment();
-			uf.senderID = Identity.current_peer_ID.globalID;
+			uf.senderID = Identity.current_peer_ID.getPeerGID();
 			uf.destinationID = destGID;
 			uf.msgType = type;
 			uf.msgID = umsg.msgID;
@@ -241,7 +241,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			byte[]frag = uf.encode();
 			DatagramPacket dp= new DatagramPacket(frag, frag.length);
 			dp.setSocketAddress(sa);
-			ds.send(dp);
+			getUDPSocket().send(dp);
 			if(DEBUG)System.out.println("Sent UDPFragment: "+uf+" to "+sa);
 			if(DEBUG)System.out.println("Sent UDPFragment: "+uf.sequence+"/"+uf.fragments+" to "+sa+" of "+uf.msgID);
 		}
@@ -411,7 +411,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			if(DEBUG)System.out.println("Sending NAck: "+uf);
 			byte[] ack = uf.encode();
 			DatagramPacket dp = new DatagramPacket(ack, ack.length,sa);
-			this.ds.send(dp);
+			this.getUDPSocket().send(dp);
 			if(DEBUG)System.out.println("Sending NAck: "+uf.msgID);
 			return;
 		}
@@ -470,7 +470,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 				byte[]fragb = uf.encode();
 				DatagramPacket dp = new DatagramPacket(fragb, fragb.length);
 				dp.setSocketAddress(umsg.sa);
-				ds.send(dp);
+				getUDPSocket().send(dp);
 				if(DEBUG)System.out.println("Sent UDPFragment: "+uf+" to "+umsg.sa);
 				if(DEBUG)System.out.println("ReSent UDPFragment: "+uf.sequence+"/"+uf.fragments+" ID="+umsg.msgID+" to "+umsg.sa);
 			}
@@ -502,7 +502,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		try {
 			dp = new DatagramPacket(ack, ack.length, umsg.sa);
 			if(DEBUG) out.println("userver: UDPServer Reclaim sent to "+umsg.sa+" recl=: "+ uf);
-			this.ds.send(dp);
+			this.getUDPSocket().send(dp);
 			if(DEBUG) out.println("userver: UDPServer Reclaim sent to "+umsg.sa+" recl=: "+ umsg.received+"/"+umsg.fragment.length+" of "+umsg.msgID);
 		} catch (SocketException e1) {
 			e1.printStackTrace();
@@ -662,7 +662,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	    	}
 	    }
 	    DatagramPacket dp = new DatagramPacket(umsg.ack, umsg.ack.length,sa);
-	    this.ds.send(dp);
+	    this.getUDPSocket().send(dp);
 	    if(DEBUG)System.out.println("getFragments: Sent ack: "+frag.sequence+"/"+umsg.received+" umsgID="+umsg.msgID+" to: "+sa);
 	    return result;
 	}
@@ -677,8 +677,8 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		try {
 			if(DEBUG) System.out.println("UDPServer:<init>: start, connected port:"+_port);
 			try_connect(_port);
-			ds.setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
-			Identity.udp_server_port = ds.getLocalPort();
+			getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
+			Identity.udp_server_port = getUDPSocket().getLocalPort();
 			Application.aus = this;
 			if(DEBUG)System.out.println("UDP Local port obtained is: "+Identity.udp_server_port);
 			//Server.detectDomain(Identity.udp_server_port);
@@ -697,6 +697,11 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			e.printStackTrace();
 		}
 	}
+	/**
+	 * Sets Identity.udp_server_port with the final port
+	 * @param id
+	 * @throws P2PDDSQLException
+	 */
 	public UDPServer(Identity id) throws P2PDDSQLException{
 		super("UDP Server", false);
 		//boolean DEBUG = true;
@@ -705,8 +710,8 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			if (DEBUG) System.out.println("UDPServer:<init>: start, try connect");
 			try_connect(_port);
 			if (DEBUG) System.out.println("UDPServer:<init>: start, connected");
-			ds.setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
-			Identity.udp_server_port = ds.getLocalPort();
+			getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
+			Identity.udp_server_port = getUDPSocket().getLocalPort();
 			Application.aus = this;
 			if (DEBUG) System.out.println("UDPServer:<init>: Local port obtained is: "+Identity.udp_server_port);
 			//Server.detectDomain(Identity.udp_server_port);
@@ -746,7 +751,10 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			if ((UDPServer.directoryAnnouncement == null) 
 					|| (UDPServer.directoryAnnouncement.address.udp_port != Identity.udp_server_port)) {
 				da = new DirectoryAnnouncement();
-				da.globalID = HandlingMyself_Peer.getMyPeerGID();//Identity.current_peer_ID.globalID;
+				da.branch = DD.BRANCH;
+				da.agent_version = DD.getMyVersion();
+				da.name = data.HandlingMyself_Peer.getMyPeerName();
+				da.setGID(HandlingMyself_Peer.getMyPeerGID());//Identity.current_peer_ID.globalID;
 				da.instance = HandlingMyself_Peer.getMyPeerInstance();//Identity.current_peer_ID.instance;
 				//da.address.domain=Identity.domain.toString().split("/")[1];
 				da.address.setAddresses(Identity.current_server_addresses_list());
@@ -771,14 +779,14 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			e.printStackTrace();
 		}
 		UDPServer.directoryAnnouncement = null;
-		announceMyselfToDirectories(ds);
+		announceMyselfToDirectories(getUDPSocket());
 	}
 	/**
 	 * This uses a precomputed announcement if exists and has the same udp_port.
 	 * else use: announceMyselfToDirectoriesReset() to redetect addresses
 	 */
 	public static void announceMyselfToDirectories() {
-		announceMyselfToDirectories(ds);
+		announceMyselfToDirectories(getUDPSocket());
 	}
 	/**
 	 * Send to each directory in the list Identity.listing_directories_inet!
@@ -813,7 +821,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	public void pingDirectories(){
 		UDPEmptyPing uep = new UDPEmptyPing();
 		byte[]msg = uep.encode();
-		__broadcastObjectToDirectoriesByUDP(msg, uep, ds);
+		__broadcastObjectToDirectoriesByUDP(msg, uep, getUDPSocket());
 	}
 	/*
 	public static void ___announceMyselfToDirectories(DirectoryAnnouncement da, DatagramSocket ds) {
@@ -821,40 +829,64 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		__announceMyselfToDirectories(msg, da, ds);
 	}
 	*/
+	/**
+	 * Address adr should have set its inetSockAddr, branch and version
+	 * @param da
+	 * @param ds
+	 * @param adr
+	 * @return
+	 */
+	public static boolean _announceMyselfToDirectories(DirectoryAnnouncement da, DatagramSocket ds, Address adr) {
+		if (DEBUG) System.out.println("UDPServer: announceToDir: "+adr);
+		//da.setTarget(adr);
+		//Address adr = new Address(a);
+		InetSocketAddress dir = adr.inetSockAddr;
+		if (dir == null) return false;
+		String address=null;
+		try {
+			address = adr.ipPort();
+			da.setAddressVersionForDestination(adr);
+			//System.out.println("UDPServer:_announceMy.. da="+da);
+			byte msg[] = da.encode();
+			if (DEBUG) out.println("Server:announceMyselfToDirectories: sent length: "+msg.length);
+			
+			if (DEBUG) {
+				Decoder d = new Decoder(msg);
+				DirectoryAnnouncement _da = new DirectoryAnnouncement(d);
+				if (DEBUG) out.println("Server:announceMyselfToDirectories: actually sent length: "+_da);
+			}
+			DatagramPacket dp = new DatagramPacket(msg, msg.length);
+			dp.setSocketAddress(dir);
+			ds.send(dp);
+			if (DEBUG_DIR) out.println("UDPServer:__announceMyselfToDirectories: sent: "+
+			da+"\n"+Util.byteToHexDump(msg, " ")+" to "+dp.getSocketAddress());
+			String sgn= "P";
+			if (da instanceof DirectoryAnnouncement) sgn = "*";
+			if (DEBUG) out.println("UDPServer:__announceMyselfToDirectories: sent: announcement to "+dp.getSocketAddress()+" "+sgn);
+			return true;
+		} catch (Exception e) {
+			DD.directories_failed.add(dir);
+			if (DEBUG_DIR) err.println("UDPServer: "+__("Error announcing myself to directory:")+dir);
+			if (Application.directory_status != null) {
+				Application.directory_status.setUDPOn(address, new Boolean(false));
+			} else {
+				System.out.println("UDPServer: __announceMyselfToDirs: UDP success no display");
+			}
+			return false;
+		}
+	}
+	/**
+	 * Sending to all directories in "listing_directories_addr" (to be loaded with DD.load_listing_directories).
+	 * @param da
+	 * @param ds
+	 */
 	public static void _announceMyselfToDirectories(DirectoryAnnouncement da, DatagramSocket ds) {
 		//boolean DEBUG = true;
 		//boolean DEBUG_DIR = true;
 		//byte msg[]=da.encode();
 		//__announceMyselfToDirectories(msg, da, ds);
-		for (Address adr : Identity.listing_directories_addr) {
-			if (DEBUG) System.out.println("UDPServer: announceToDir: "+adr);
-			//da.setTarget(adr);
-			//Address adr = new Address(a);
-			InetSocketAddress dir = adr.inetSockAddr;
-			if (dir == null) continue;
-			String address=null;
-			try {
-				address = adr.ipPort();
-				da.setAddressVersionForDestination(adr);
-				//System.out.println("UDPServer:_announceMy.. da="+da);
-				byte msg[] = da.encode();
-				DatagramPacket dp = new DatagramPacket(msg, msg.length);
-				dp.setSocketAddress(dir);
-				ds.send(dp);
-				if (DEBUG_DIR) out.println("UDPServer:__announceMyselfToDirectories: sent: "+
-				da+"\n"+Util.byteToHexDump(msg, " ")+" to "+dp.getSocketAddress());
-				String sgn= "P";
-				if (da instanceof DirectoryAnnouncement) sgn = "*";
-				if (DEBUG) out.println("UDPServer:__announceMyselfToDirectories: sent: announcement to "+dp.getSocketAddress()+" "+sgn);
-			} catch (Exception e) {
-				DD.directories_failed.add(dir);
-				if (DEBUG_DIR) err.println("UDPServer: "+__("Error announcing myself to directory:")+dir);
-				if (Application.directory_status != null) {
-					Application.directory_status.setUDPOn(address, new Boolean(false));
-				} else {
-					System.out.println("UDPServer: __announceMyselfToDirs: UDP success no display");
-				}
-			}
+		for (Address adr : Identity.getListing_directories_addr()) {
+			_announceMyselfToDirectories(da, ds, adr);
 		}
 	}
 	/**
@@ -870,7 +902,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 //				new AnnouncingThread(Da).start();
 //			}
 //		}		
-		for (Address adr : Identity.listing_directories_addr) {
+		for (Address adr : Identity.getListing_directories_addr()) {
 			if (DEBUG) System.out.println("UDPServer: __broadcastObjectToDirectoriesByUDP: "+adr);
 			//da.setTarget(adr);
 			//Address adr = new Address(a);
@@ -909,10 +941,10 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	 */
 	public void try_connect(int port) throws SocketException {
 		try {
-			ds = new DatagramSocket(port);
+			setUDPSocket(new DatagramSocket(port));
 		} catch (SocketException e) {
-			ds = new DatagramSocket();
-			if(DEBUG)System.out.println("Got UDP port: "+ds.getLocalPort());
+			setUDPSocket(new DatagramSocket());
+			if(DEBUG)System.out.println("Got UDP port: "+getUDPSocket().getLocalPort());
 		}
 		
 	}
@@ -925,7 +957,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	public Object lock_reply=new Object();
 	public void turnOff(){
 		turnOff = true;
-		try{ds.close();}catch(Exception e){}
+		try{getUDPSocket().close();}catch(Exception e){}
 		this.interrupt();
 	}
 	synchronized void wait_if_needed() throws InterruptedException{
@@ -942,7 +974,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		}
 	}
 	public void send(DatagramPacket dp) throws IOException{
-		ds.send(dp);
+		getUDPSocket().send(dp);
 	}
 	public void _run() {
 		//this.setName("UDP Server");
@@ -1004,9 +1036,9 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 				buffer = new byte[UDP_BUFFER_LENGTH];
 				DatagramPacket pak = new DatagramPacket(buffer, UDP_BUFFER_LENGTH);
 				// calling the DatagramPacket receive call
-				ds.setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER); // might have changed
+				getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER); // might have changed
 				Application_GUI.ThreadsAccounting_ping("Accepting");
-				ds.receive(pak);
+				getUDPSocket().receive(pak);
 				
 				if (DEBUG) out.println("userver: ************ UDPServer accepted from "+pak.getSocketAddress()+", will launch!");
 				if (this.isInterrupted()) continue;
@@ -1061,11 +1093,12 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		try {
 			System.out.println("UDPServThread: main: start");
 			Application.db = new DBInterface(target);
-			Identity.init_Identity();
+			// quit when no peer found
+			Identity.init_Identity(true, true, false);
 			System.out.println("UDPServThread: main: inited IDs");
 			Identity id = HandlingMyself_Peer.loadIdentity(null);
 			D_Peer me = HandlingMyself_Peer.getPeer(id);
-			HandlingMyself_Peer.setMyself(me, false, false); // me not kept
+			HandlingMyself_Peer.setMyself_currentIdentity_announceDirs(me, false, false); // me not kept
 			HandlingMyself_Peer.get_myself_with_wait(); // just tests by exit
 			System.out.println("UDPServThread: main: got myself");
 			//String last_sync_date = Encoder.getGeneralizedTime(Util.getCalendar("00000000000000.000Z"));
@@ -1121,7 +1154,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 				
 				Application.db = new DBInterface(source);
 				Identity.current_peer_ID = null;
-				Identity.current_peer_ID = Identity.initMyCurrentPeerIdentity();
+				Identity.current_peer_ID = Identity.getCurrentPeerIdentity_QuitOnFailure();
 				SK sk = HandlingMyself_Peer.getMyPeerSK();
 
 				sa = UpdateMessages.buildAnswer(asr , peerID);
@@ -1135,7 +1168,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 
 				Application.db = new DBInterface(target);
 				Identity.current_peer_ID = null;
-				Identity.current_peer_ID = Identity.initMyCurrentPeerIdentity();
+				Identity.current_peer_ID = Identity.initMyCurrentPeerIdentity_fromDB(true);
 
 				sa = null;
 				SyncAnswer ra = null;
@@ -1188,6 +1221,12 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	}
 	public static boolean isRunning() {
 		return Application.aus != null;
+	}
+	public static DatagramSocket getUDPSocket() {
+		return ds;
+	}
+	public static void setUDPSocket(DatagramSocket ds) {
+		UDPServer.ds = ds;
 	}
 }
 class AnnouncingThread extends util.DDP2P_ServiceThread {

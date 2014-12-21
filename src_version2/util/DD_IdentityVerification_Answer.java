@@ -21,7 +21,7 @@ import ASN1.Encoder;
 import static util.Util.__;
 
 public class DD_IdentityVerification_Answer extends ASNObj implements StegoStructure, DD_EmailableAttachment{
-	public static final byte IDENTITY_VERIFICATION = DD.TYPE_DD_IDENTITY_VERIFICATION_ANSWER;
+	//public static final byte IDENTITY_VERIFICATION = DD.TYPE_DD_IDENTITY_VERIFICATION_ANSWER;
 	private static final boolean DEBUG = false;
 	public static final int R_PRIM_SIZE = 300;
 	static String V0 = "0";
@@ -101,8 +101,13 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 		if(DEBUG)System.out.println("DD_IdentityVerification_A:decode");
 		try{
 			decode(new Decoder(asn1));
-		}catch(Exception e){
-			e.printStackTrace();
+		}
+		catch(ASN1.ASN1DecoderFail | ASN1.ASNLenRuntimeException e) {
+			throw e;
+		} catch(Exception e) {
+			//if (DEBUG) 
+				e.printStackTrace();
+			throw e;
 		}
 		if(DEBUG)System.out.println("DD_IdentityVerification_A:decoded");
 	}
@@ -134,10 +139,13 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 		if(DEBUG)System.out.println("DD_IdentityVerification_Answer: short");
 		return DD.STEGO_SIGN_CONSTITUENT_VERIF_ANSWER;
 	}
-
-	public byte getASN1Type() {
-		return IDENTITY_VERIFICATION;
+	public static BigInteger getASN1Tag() {
+		return new BigInteger(DD.STEGO_SIGN_CONSTITUENT_VERIF_ANSWER+"");
 	}
+
+//	public byte getASN1Type() {
+//		return IDENTITY_VERIFICATION;
+//	}
 
 	@Override
 	public Encoder getEncoder() {
@@ -155,7 +163,8 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 		enc.addToSequence(new Encoder(r_prim));
 		enc.addToSequence(new Encoder(signature));
 		if(verifier != null) enc.addToSequence(verifier.getEncoder());
-		enc.setASN1Type(getASN1Type());
+		//enc.setASN1Type(getASN1Type());
+		enc.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, getASN1Tag());
 		return enc;
 	}
 
@@ -312,4 +321,5 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 			e.printStackTrace();
 		}
 	}
+
 }

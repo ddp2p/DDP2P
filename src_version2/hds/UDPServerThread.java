@@ -102,7 +102,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 		
 		msg = pak.getData();
 		//msg_len = msg.length;
-		Decoder dec = new Decoder(pak.getData(),pak.getOffset(),pak.getLength());
+		Decoder dec = new Decoder(pak.getData(), pak.getOffset(), pak.getLength());
 		
 
 		// Fragment
@@ -115,7 +115,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				frag.decode(dec);
 				if (DEBUG) System.out.println("UDPServer:run: receives fragment "+frag.sequence+"/"+frag.fragments+" from:"+pak.getSocketAddress());
 				if (frag.fragments > DD.UDP_MAX_FRAGMENTS) {
-					if(_DEBUG)System.out.println("UDPServer:run: Too Many Fragments: "+frag);
+					if (_DEBUG) System.out.println("UDPServer:run: Too Many Fragments: "+frag);
 					return;
 				}
 				if ((frag.data!=null) && (frag.data.length > DD.UDP_MAX_FRAGMENT_LENGTH)) {
@@ -648,7 +648,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 		DatagramPacket reqDP = new DatagramPacket(buf, buf.length);
 		reqDP.setSocketAddress(next_dest);
 		try {
-			us.ds.send(reqDP);
+			us.getUDPSocket().send(reqDP);
 			if(DEBUG)System.out.println("UDPServer:run: ping returned to initiator: "+next_dest+" ping="+aup);
 		} catch (IOException e) {
 			e.printStackTrace();

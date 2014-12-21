@@ -144,8 +144,8 @@ public class PrivateOrgPanel extends JPanel implements  OrgListener{
     }
     private String getLabelText() {
     	String result;
-    	if((organization  == null) || (organization.name == null)) return __("No current organization!");
-    	result = __("Current Organization:")+" \""+organization.name+"\"";
+    	if((organization  == null) || (organization.getName() == null)) return __("No current organization!");
+    	result = __("Current Organization:")+" \""+organization.getName()+"\"";
     	//result += " || " + _("I am :")+" "+tree.getModel().getConstituentMyselfName();
 		return result;
 	}

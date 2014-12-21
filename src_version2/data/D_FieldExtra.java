@@ -49,7 +49,7 @@ import ASN1.Encoder;
  oid OID
 }
  */
-
+/*
 public class D_FieldExtra extends ASNObj{
 
 	private static final boolean DEBUG = false;
@@ -114,3 +114,4 @@ public class D_FieldExtra extends ASNObj{
 	}
 
 }
+*/

@@ -114,14 +114,46 @@ class ECDSA_PK extends PK {
 				+ " curve="+curve+"\n"
 				+ "]";
 	}
-
+	/**
+	 * Decodes from ASN1
+	 * @param d
+	 * @throws ASN1DecoderFail
+	 */
 	public ECDSA_PK(Decoder d) throws ASN1DecoderFail {
 		decode(d);
 		if (DEBUG) System.out.println("ECCPK="+this);
 	}
+	/**
+	 * Get the public key for curve curve_ID, with public key point _y=m*_x
+	 * @param curve_ID
+	 * @param y
+	 */
 	public ECDSA_PK(int curve_ID, EC_Point y) {
 		init(curve_ID, y);
 	}
+	/**
+	 * Get the public key for curve curve_ID, with public key point (_x,_y)
+	 * @param curve_ID
+	 * @param _x
+	 * @param _y
+	 */
+	public ECDSA_PK(int curve_ID, BigInteger _Qx, BigInteger _Qy) {
+		/**
+		 * No need to set the curve now since it is set in init.
+		 */
+		EC_Point y = new EC_Point(_Qx, _Qy, null);
+		init(curve_ID, y);
+	}
+	/**
+	 * Get the public key for curve eCC_curve_ID/_curve (unprocessed -- as they are provided),
+	 *  with base point _x of order _n, and public key point _y=m*_x
+	 * (for unknown ms).
+	 * @param eCC_curve_ID
+	 * @param _curve
+	 * @param _x
+	 * @param _y
+	 * @param _n
+	 */
 	public ECDSA_PK(int eCC_curve_ID, ECC _curve, EC_Point _x, EC_Point _y, BigInteger _n) {
 		ECC_curve_ID = eCC_curve_ID;
 		curve = _curve;
@@ -129,6 +161,12 @@ class ECDSA_PK extends PK {
 		y = _y;
 		n = _n;
 	}
+	/**
+	 * Identifies and load the curve with the proper ID (verified with ECC.getCurveID).
+	 * Then it loads the curve itself, and sets it in y.
+	 * @param curve_ID
+	 * @param y
+	 */
 	void init(int curve_ID, EC_Point y) {
 		ECC_curve_ID = ECC.getCurveID(curve_ID);
 		ECS ecs = ECS.getECS(curve_ID);
@@ -497,6 +535,11 @@ class ECDSA_SK extends SK{
 	
 }
 
+/**
+ * A class for standard elliptic curves.
+ * @author msilaghi
+ *
+ */
 class ECS {
 	static
 	class ECSDesc {
@@ -607,7 +650,13 @@ class ECS {
 	EC_Point g;
 	BigInteger n;
 	int curve_ID;
-	
+	/**
+	 * Construct a curve with the values provided as parameters.
+	 * @param ID
+	 * @param curve
+	 * @param g
+	 * @param n
+	 */
 	public ECS(int ID, ECC curve, EC_Point g, BigInteger n) {
 		this.curve_ID = ID;
 		this.curve = curve;
@@ -615,8 +664,16 @@ class ECS {
 		g._curve = curve;
 		this.n = n;
 	}
+	/**
+	 * Gets a standard curve with the provided ID
+	 * @param ID
+	 * @return
+	 */
 	public static ECS getECS(int ID) {
 		ECS ecs;
+		/**
+		 * First converts nonstandard IDs (e.g., key sizes) into the curve IDs, repeating the work of procedure: ECC.getCurveID
+		 */
 		switch(ID) {
 		case 119: ID = ECDSA.P_119; break;
 		case 224: ID = ECDSA.P_224; break;
@@ -624,7 +681,9 @@ class ECS {
 		case 384: ID = ECDSA.P_384; break;
 		case 521: ID = ECDSA.P_521; break;
 		}
-		switch(ID) {
+		
+		switch (ID) {
+		// First Handle some IDs not in the list of standards!
 		case ECDSA.Curve25519:
 			ecs = curves.get(new Integer(ID));
 			if(ecs == null) {
@@ -642,6 +701,10 @@ class ECS {
 			}
 			return ecs;
 			default:
+				
+				/**
+				 * In the end, get the curve from the list of standards!s
+				 */
 				BigInteger p, a, b, n;
 				EC_Point x;
 				ECC ec;
@@ -676,8 +739,8 @@ class ECS {
 		return null;
 	}
 	private static boolean verifySummarilyPrimality(BigInteger p) {
-		for(int a=2;a<4;a++){
-			if(!new BigInteger(""+a).modPow(p.subtract(BigInteger.ONE), p).equals(BigInteger.ONE)){
+		for (int a = 2; a < 4; a ++) {
+			if (! new BigInteger(""+a).modPow(p.subtract(BigInteger.ONE), p).equals(BigInteger.ONE)) {
 				System.out.println("Primality fails at "+a+" for "+p);
 				return false;
 			}

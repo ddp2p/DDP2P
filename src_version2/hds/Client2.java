@@ -828,7 +828,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 				aup.senderIsPeer=false;
 				aup.senderIsInitiator=true;
 				aup.initiator_domain = Identity.get_a_server_domain();//client.getInetAddress().getHostAddress();
-				aup.initiator_globalID=Identity.current_peer_ID.globalID; //dr.initiator_globalID;
+				aup.initiator_globalID=Identity.current_peer_ID.getPeerGID(); //dr.initiator_globalID;
 				aup.initiator_port = Identity.udp_server_port;//dr.UDP_port;
 				aup.peer_globalID=global_peer_ID;
 				aup.peer_domain=sad.ad.domain;//;

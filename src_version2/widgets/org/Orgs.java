@@ -206,7 +206,7 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 		this.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
 		
    		try{
-   			if (Identity.getCurrentIdentity().identity_id!=null) {
+   			if (Identity.getCurrentConstituentIdentity().identity_id!=null) {
     			//long id = new Integer(Identity.current.identity_id).longValue();
     			long orgID = Identity.getDefaultOrgID();
     			if(DEBUG) System.out.println("Orgs:init: crt orgID="+orgID);
@@ -391,8 +391,11 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 			model_row = this.convertRowIndexToModel(row);
 			
 			ArrayList<D_Organization> _data = model.data;
-			if ((model_row>=0) && (model_row < _data.size()))
-				orgID = Util.getString(_data.get(model_row).getLIDstr_forced());
+			if ((model_row >= 0) && (model_row < _data.size())) {
+				D_Organization org = _data.get(model_row);
+				if (org != null)
+					orgID = Util.getString(org.getLIDstr_forced());
+			}
 		}
 		long _orgID = Util.lval(orgID,-1);
 		if ((old_org_signature != null) && !DD.ORG_UPDATES_ON_ANY_ORG_DATABASE_CHANGE) {
@@ -872,7 +875,9 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	 */
 	public String getLIDstr(int model_row) {
 		if ((model_row < 0) || (model_row >= data.size())) return null;
-		return data.get(model_row).getLIDstr_forced();
+		D_Organization org = data.get(model_row);
+		if (org == null) return null;
+		return org.getLIDstr_forced();
 	}
 	public Long getLID(int row) {
 		if ((row < 0) || (row >= data.size())) return null;
@@ -942,7 +947,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 				//		" ON(p."+table.peer.peer_ID+"=po."+table.peer_org.peer_ID+") "+
 				" WHERE po."+table.peer_org.peer_ID +" = ? AND po."+table.peer_org.organization_ID+" = ?;";
 		
-		String global_peer_ID = Identity.current_peer_ID.globalID;
+		String global_peer_ID = Identity.current_peer_ID.getPeerGID();
 		D_Peer myself = D_Peer.getPeerByGID_or_GIDhash(global_peer_ID, null, true, false, false, null);
 		if (myself == null) return result;
 		//String pID = table.peer.getLocalPeerID(global_peer_ID);

@@ -51,6 +51,7 @@ class D_OrgParams extends ASNObj {
 	public String instructions_registration; //UTF8
 	public String description; //UTF8
 	public String[] languages; // SEQ of Printable
+	public byte[] icon;
 	public D_OrgParam[] orgParam; // SEQ of 
 	public String toString() {
 		return "Org Params: ["+
@@ -63,6 +64,7 @@ class D_OrgParams extends ASNObj {
 		";\n     creator="+Util.trimmed(creator_global_ID)+
 		";\n     category="+Util.nullDiscrim(category)+
 		";\n     certificate="+Util.nullDiscrim(Util.byteToHex(certificate, ":"))+
+		";\n     icon="+Util.nullDiscrim(Util.trimmed(Util.byteToHex(icon, ":")))+
 		";\n     default_scoring_options=["+Util.nullDiscrim(Util.concat(default_scoring_options, ","))+"]"+
 		";\n     instructions_new_motions="+Util.nullDiscrim(instructions_new_motions)+
 		";\n     instructions_registration="+Util.nullDiscrim(instructions_registration)+
@@ -103,13 +105,14 @@ class D_OrgParams extends ASNObj {
 			enc.addToSequence(new Encoder(mWeightsType).setASN1Type(DD.TAG_AC11));
 		if (mWeightsMax != table.organization.WEIGHTS_MAX_DEFAULT)
 			enc.addToSequence(new Encoder(mWeightsMax).setASN1Type(DD.TAG_AC12));
+		if (icon != null) enc.addToSequence(new Encoder(icon).setASN1Type(DD.TAG_AC14));
 		//enc.addToSequence(new Encoder(hash_org));
 		if (ASNSyncRequest.DEBUG)System.out.println("Encoded OrgParams: "+this);
 		return enc;
 	}
 	@Override
 	public D_OrgParams decode(Decoder decoder) throws ASN1DecoderFail {
-		if(ASNSyncRequest.DEBUG)System.out.println("DEcoding OrgParams: "+this);
+		if (ASNSyncRequest.DEBUG) System.out.println("DEcoding OrgParams: "+this);
 		Decoder dec = decoder.getContent();
 		certifMethods = dec.getFirstObject(true).getInteger().intValue();
 		if(dec.getTypeByte()==DD.TAG_AC0) hash_org_alg = dec.getFirstObject(true).getStringAnyType();
@@ -125,9 +128,21 @@ class D_OrgParams extends ASNObj {
 		if(dec.getTypeByte()==DD.TAG_AC9) orgParam = dec.getFirstObject(true).getSequenceOf(Encoder.TYPE_SEQUENCE, new D_OrgParam[]{}, new D_OrgParam());
 		if(dec.getTypeByte()==DD.TAG_AC11) mWeightsType = dec.getFirstObject(true).getInteger(DD.TAG_AC11).intValue();
 		if(dec.getTypeByte()==DD.TAG_AC12) mWeightsMax = dec.getFirstObject(true).getInteger(DD.TAG_AC12).intValue();
-		if(dec.getFirstObject(false)!=null) throw new ASN1DecoderFail("Extra Objects in decoder: "+decoder.dumpHex());
+		if(dec.getTypeByte()==DD.TAG_AC4) certificate= dec.getFirstObject(true).getBytesAnyType();
+		if(dec.getFirstObject(false) != null) {
+			if (ASNSyncRequest.DEBUG)  System.out.println("DEcoding OrgParams: Extra objects!");
+			//throw new ASN1DecoderFail("Extra Objects in decoder: "+decoder.dumpHex());
+		}
 		//hash_org= dec.getFirstObject(true).getBytes(Encoder.TAG_OCTET_STRING);
 		if(ASNSyncRequest.DEBUG)System.out.println("DEcoded OrgParams: "+this);
+		return this;
+	}
+	/**
+	 * TODO
+	 * should probably construct a full object and get the deep clone of all its data....
+	 * @return
+	 */
+	public D_OrgParams getClone() {
 		return this;
 	}
 }

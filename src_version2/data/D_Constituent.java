@@ -1,3 +1,22 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2014 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package data;
 
 import handling_wb.PreparedMessage;
@@ -108,6 +127,11 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public static int MAX_LOADED_CONSTS = 10000;
 	public static long MAX_CONSTS_RAM = 10000000;
 	private static final int MIN_CONSTS_RAM = 2;
+	
+	public static final int LOCALIZATION_NAME_EUROPE = 1;
+	public static final int LOCALIZATION_NAME_US_F_S = 2;
+	public static final int LOCALIZATION_NAME_US_S_F = 0;
+	public static int LOCALIZATION_NAME = LOCALIZATION_NAME_US_S_F;
 	D_Constituent_Node component_node = new D_Constituent_Node(null, null);
 	
 	/**
@@ -663,8 +687,8 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 					}
 				}
 				if (removed.getLIDstr() != null) loaded_const_By_LocalID.remove(new Long(removed.getLID())); 
-				if (removed.getGID() != null) D_Constituent_Node.remConstByGID(removed.getGID(), removed.getLID()); //loaded_const_By_GID.remove(removed.getGID());
-				if (removed.getGIDH() != null) D_Constituent_Node.remConstByGIDH(removed.getGIDH(), removed.getLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
+				if (removed.getGID() != null) D_Constituent_Node.remConstByGID(removed.getGID(), removed.getOrganizationLID()); //loaded_const_By_GID.remove(removed.getGID());
+				if (removed.getGIDH() != null) D_Constituent_Node.remConstByGIDH(removed.getGIDH(), removed.getOrganizationLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 				if (DEBUG) System.out.println("D_Constituent: drop_loaded: remove GIDH="+removed.getGIDH());
 				return result;
 			}
@@ -1902,6 +1926,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		if(dec.getTypeByte()==DD.TAG_AC14) setWeight(dec.getFirstObject(true).getString(DD.TAG_AC14));
 		if(dec.getTypeByte()==DD.TAG_AC16) setValid_support(new D_Witness().decode(dec.getFirstObject(true)));
 		if(dec.getTypeByte()==DD.TAG_AC17) setSubmitter(new D_Constituent().decode(dec.getFirstObject(true)));
+		if(dec.getFirstObject(false) == null) throw new ASN1.ASNLenRuntimeException("No external found");
 		setExternal(dec.getFirstObject(true).getBoolean());
 		if(!isExternal())
 			if(dec.getTypeByte()==Encoder.TAG_BOOLEAN)
@@ -2036,11 +2061,24 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		
 		this.loaded_globals = true;
 	}
+	/**
+	 * Returns full name (surname, forname).
+	 * Returns Surname Forename  (if LOCALIZATION_NAME =LOCALIZATION_NAME_EUROPE)
+	 * Returns Forename Surname (if LOCALIZATION_NAME =LOCALIZATION_NAME_US_F_S)
+	 * @return
+	 */
 	public String getNameFull() {
-		if((this.getForename()==null)||(this.getForename().trim().length()==0)) return getSurname();
-		if((this.getSurname()==null)||(this.getSurname().trim().length()==0)) return getSurname();
+		if ((this.getForename()==null)||(this.getForename().trim().length()==0)) return getSurname();
+		if ((this.getSurname()==null)||(this.getSurname().trim().length()==0)) return getSurname();
+
+		if (LOCALIZATION_NAME == LOCALIZATION_NAME_EUROPE) return this.getSurname()+" "+this.getForename();
+		if (LOCALIZATION_NAME == LOCALIZATION_NAME_US_F_S) return this.getForename()+" "+this.getSurname();
 		return this.getSurname()+", "+ this.getForename();
 	}
+	/**
+	 * If I did not set a pseudonym, returns the full name (surname, forename).
+	 * @return
+	 */
 	public String getNameOrMy() {
 		String n = mydata.name;
 		if (n != null) return n;
@@ -3038,9 +3076,16 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public byte[] getPicture() {
 		return picture;
 	}
-	public void setPicture(byte[] picture) {
+	/**
+	 * Returns false if the image is larger than DD.MAX_CONSTITUENT_ICON_LENGTH
+	 * @param picture
+	 * @return
+	 */
+	public boolean setPicture(byte[] picture) {
+		if (picture != null && picture.length > DD.MAX_CONSTITUENT_ICON_LENGTH) return false;
 		this.picture = picture;
 		this.dirty_main = true;
+		return true;
 	}
 	public String getHash_alg() {
 		return hash_alg;
@@ -3125,11 +3170,9 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		return true;
 	}
 }
-
 class D_Constituent_SaverThread extends util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000; // ms to sleep
-	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
+	//public static final long SAVER_SLEEP_CONSTITUENT_ON_ERROR = 2000; // this is the single one used of this type
 	/**
 	 * The next monitor is needed to ensure that two D_Constituent_SaverThreadWorker are not concurrently modifying the cache and database,
 	 * and no thread is started when it is not needed (since one is already running).
@@ -3178,7 +3221,7 @@ class D_Constituent_SaverThread extends util.DDP2P_ServiceThread {
 			*/
 			synchronized(this) {
 				try {
-					wait(SAVER_SLEEP);
+					wait(SaverThreadsConstants.SAVER_SLEEP_BEETWEEN_CONSTITUENT_MSEC);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -3188,8 +3231,6 @@ class D_Constituent_SaverThread extends util.DDP2P_ServiceThread {
 }
 
 class D_Constituent_SaverThreadWorker extends util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000;
-	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	//public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
@@ -3227,7 +3268,7 @@ class D_Constituent_SaverThreadWorker extends util.DDP2P_ServiceThread {
 						synchronized(this) {
 							try {
 								if (DEBUG) System.out.println("D_Constituent_Saver: sleep");
-								wait(SAVER_SLEEP_ON_ERROR);
+								wait(SaverThreadsConstants.SAVER_SLEEP_WORKER_CONSTITUENT_ON_ERROR);
 								if (DEBUG) System.out.println("D_Constituent_Saver: waked error");
 							} catch (InterruptedException e2) {
 								e2.printStackTrace();
@@ -3240,13 +3281,15 @@ class D_Constituent_SaverThreadWorker extends util.DDP2P_ServiceThread {
 				if (DEBUG) System.out.println("D_Constituent_Saver: idle ...");
 			}
 		}
-		synchronized(this) {
-			try {
-				if (DEBUG) System.out.println("D_Constituent_Saver: sleep");
-				wait(SAVER_SLEEP);
-				if (DEBUG) System.out.println("D_Constituent_Saver: waked");
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+		if (SaverThreadsConstants.SAVER_SLEEP_WORKER_BETWEEN_CONSTITUENT_MSEC >= 0) {
+			synchronized(this) {
+				try {
+					if (DEBUG) System.out.println("D_Constituent_Saver: sleep");
+					wait(SaverThreadsConstants.SAVER_SLEEP_WORKER_BETWEEN_CONSTITUENT_MSEC);
+					if (DEBUG) System.out.println("D_Constituent_Saver: waked");
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}

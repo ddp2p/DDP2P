@@ -129,8 +129,35 @@ CREATE TABLE tester (
 	"signature" TEXT,			
 	"creation_date" TEXT,			
 	"preference_date" TEXT,			
+	"peer_source_LID" INTEGER,		
 
-	"name"	TEXT
+	"name"	TEXT,
+	FOREIGN KEY (peer_source_LID) REFERENCES peer(peer_ID)
+);
+CREATE TABLE "recommendation_of_tester" ( 	
+    "recommendation_ID" INTEGER PRIMARY KEY,
+    "senderPeerLID" INTEGER  NOT NULL,          
+    "testerLID" TEXT  NOT NULL,			
+    "weight" TEXT,				
+    "address" TEXT,				
+    "creation_date" TEXT,			
+    "signature" TEXT,				
+						
+						
+    "arrival_date" TEXT,			
+    FOREIGN KEY (senderPeerLID) REFERENCES peer(peer_ID),
+    FOREIGN KEY (testerLID) REFERENCES tester(tester_ID)
+);
+
+CREATE TABLE "tester_introducer" ( 	
+    "tester_introducer_ID" INTEGER PRIMARY KEY,
+    "testerLID" TEXT  NOT NULL,			
+    "introducer_peer_LID" TEXT  NOT NULL,          
+    "weight" TEXT,				
+    "creation_date" TEXT,			
+    "signature" TEXT,				
+    FOREIGN KEY (testerLID) REFERENCES tester(tester_ID),
+    FOREIGN KEY (introducer_peer_LID) REFERENCES peer(peer_ID)
 );
 
 CREATE TABLE peer (
@@ -171,6 +198,14 @@ CREATE TABLE peer (
     "preferences_date" TEXT,	  	  	
     FOREIGN KEY (first_provider_peer) REFERENCES peer(peer_ID),
     FOREIGN KEY (GID_key) REFERENCES public_keys(pk_ID)
+);
+CREATE TABLE peer_scheduled_message (
+	"message_ID" INTEGER PRIMARY KEY,
+	"peer_ID" INTEGER NOT NULL,
+    "message" TEXT, 
+	"message_type" INTEGER, 
+	"creation_date" TEXT,
+	FOREIGN KEY (peer_ID) REFERENCES peer(peer_ID)
 );
 
 
@@ -276,6 +311,7 @@ CREATE TABLE organization (
 	weights_max INTEGER DEFAULT (1),
 	category TEXT, 
 	certificate BLOB, 		
+	icon BLOB,
 	signature TEXT,      
 	signature_initiator TEXT,
 	broadcast_rule TEXT DEFAULT (1), 
@@ -291,6 +327,7 @@ CREATE TABLE organization (
 	name_justification TEXT, 
 	name_motion TEXT, 
 	name_organization TEXT, 
+	name_constituent TEXT,
 	"motions_excluding" INTEGER   DEFAULT (0),
 	"plugins_excluding" INTEGER   DEFAULT (0),
 	blocked TEXT  DEFAULT (0),  
@@ -505,7 +542,7 @@ CREATE TABLE my_justification_data (
 );
 CREATE TABLE signature ( 
 	signature_ID INTEGER PRIMARY KEY, 
-	global_signature_ID TEXT UNIQUE ON CONFLICT FAIL, 
+	global_signature_ID TEXT NOT NULL UNIQUE ON CONFLICT FAIL, 
 	hash_signature_alg TEXT, 
 	hash_signature BLOB, 
 	constituent_ID INTEGER, 

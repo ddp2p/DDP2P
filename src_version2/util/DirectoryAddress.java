@@ -17,7 +17,7 @@ import config.DD;
  *
  */
 public class DirectoryAddress extends ASNObj{
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	public String version = "0";
 	public String pure_protocol;
 	public String agent_version;
@@ -128,6 +128,7 @@ public class DirectoryAddress extends ASNObj{
 		return result;
 	}
 	public void store() {
+		if (DEBUG) System.out.println("DirectoryAddress: store: start LID="+directory_address_ID);
 		String param[] = null;
 		if (this.directory_address_ID <= 0) 
 			param = new String[table.directory_address.FIELDS_NOID];
@@ -151,15 +152,16 @@ public class DirectoryAddress extends ASNObj{
 		param[table.directory_address.DA_DATE_SIGNATURE] = Encoder.getGeneralizedTime(creation);
 		try {
 			if (this.directory_address_ID <= 0) {
+				if (DEBUG) System.out.println("DirectoryAddress: store: inserting");
 				this.directory_address_ID = Application.db.insert(table.directory_address.TNAME, 
 						table.directory_address.fields_noID_list,
-						param);
+						param, DEBUG);
 			} else {
 				param[table.directory_address.DA_DIRECTORY_ADDR_ID] = directory_address_ID + "";
 				Application.db.update(table.directory_address.TNAME, 
 						table.directory_address.fields_noID_list,
 						new String[]{table.directory_address.directory_address_ID},
-						param);
+						param, DEBUG);
 			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -256,7 +258,7 @@ public class DirectoryAddress extends ASNObj{
 		DD_DirectoryServer ds = new DD_DirectoryServer();
 		ds.parseAddress(val);
 		//System.out.println("DirectoryAddress: reset: val = "+ds);
-		ds.save();
+		if (!ds.empty()) ds.save();
 	}
 
 }

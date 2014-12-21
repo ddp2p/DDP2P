@@ -298,7 +298,7 @@ public class Server extends util.DDP2P_ServiceThread {
 	public static int TIMEOUT_UDP_NAT_BORER = 2000;
 	public static final long TIMEOUT_UDP_Reclaim = 2000;
 	public static final int TIMEOUT_UDP_Announcement_Diviser = 30;
-	public static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	public static final boolean _DEBUG = true;
 	Object lock = new Object();
 	//static InetSocketAddress serv_sock_addr;
@@ -640,6 +640,84 @@ public class Server extends util.DDP2P_ServiceThread {
 	}
 	*/
 	/**
+	 * If "preferred" is true, on success add this directory's index as the "Identity.preferred_directory_idx".
+	 * 
+	 * On failure exceptions adds this to "DD.directories_failed"
+	 * @param da
+	 * @param adr (should have set inetSockAddr)
+	 * @param preferred
+	 * @return 
+	 * return Returns true on success.
+	 */
+	public static boolean announceMyselfToDirectory(DirectoryAnnouncement da, Address adr, boolean preferred) {
+		String dir_address = null;
+		InetSocketAddress dir = adr.inetSockAddr;
+		da.setAddressVersionForDestination(adr);
+		if (dir == null) {
+			if (_DEBUG) out.println("Server:announceMyselfToDirectories: quit announce to null adr.inetSockAddr : "+adr);
+			return false;
+		}
+		if (DEBUG) out.println("Server:announceMyselfToDirectories: announce to: "+dir);
+		try {
+			
+			//dir_address = dir.getAddress().getHostAddress()+DD.APP_LISTING_DIRECTORIES_ELEM_SEP+dir.getPort();
+			dir_address = adr.ipPort();
+			//s.setSoTimeout(TIMEOUT_Client_wait_Dir);
+			byte msg[] = da.encode();
+			if (DEBUG) out.println("Server:announceMyselfToDirectories: sent length: "+msg.length);
+			
+			if (DEBUG) {
+				Decoder d = new Decoder(msg);
+				DirectoryAnnouncement _da = new DirectoryAnnouncement(d);
+				if (DEBUG) out.println("Server:announceMyselfToDirectories: actually sent length: "+_da);
+			}
+			if (DEBUG) out.println("Server:announceMyselfToDirectories: sent: "+da);//+"\n"+Util.byteToHex(msg," "));
+			
+			Socket s = new Socket();
+			s.setSoTimeout(TIMEOUT_Client_wait_Dir);
+			s.connect(dir, TIMEOUT_Client_wait_Dir);
+			
+			s.getOutputStream().write(msg);
+			byte answer[] = new byte[200];
+			if (DEBUG) out.println("Server:announceMyselfToDirectories: Waiting answer!");
+			int alen = s.getInputStream().read(answer);
+			if (DEBUG) out.println("Server:announceMyselfToDirectories: Got answer: "+Util.byteToHex(answer, 0, alen, " "));
+			Decoder answer_dec = new Decoder(answer);
+			try {
+				DirectoryAnnouncement_Answer ans = new DirectoryAnnouncement_Answer(answer_dec);
+				if (DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+ans);
+				//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+answer_dec.getContent().getFirstObject(true).getBoolean());
+				//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: ");
+			} catch(Exception e){
+				//if(DD.DEBUG_TODO)
+					e.printStackTrace();}
+			//D_DAAnswer ans = new D_DAAnswer(answer_dec);
+			//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+ans);
+			s.close();
+			if (preferred) {
+				Identity.preferred_directory_idx = Identity.getListing_directories_inet().indexOf(dir);
+				//first = false;
+			}
+			if (Application.directory_status != null) {
+				Application.directory_status.setTCPOn(dir_address, new Boolean(true), null);
+			} else {
+				System.out.println("Server:announceMyselfToDirs:Tcp success, no display");
+			}
+			return true;
+		} catch (Exception e) {
+			//Application.warning(_("Error announcing myself to directory:")+dir, _("Announcing Myself to Directory"));
+
+			try {DD.directories_failed.add(dir);} catch(Exception e2) {e2.printStackTrace();}
+			if (Application.directory_status != null)
+				Application.directory_status.setTCPOn(dir_address, new Boolean(false), e);
+			if (DEBUG) err.println("Server: "+__("Announcing myself to directory:")+dir+" "+e.getLocalizedMessage());
+			if (DEBUG) err.println("Server: "+__("Error announcing myself to directory:")+dir);
+			if (DEBUG || DD.DEBUG_TODO) e.printStackTrace();
+			//e.printStackTrace();
+		}
+		return false;
+	}
+	/**
 	 * TCP Send to each directory in the list:
 	 * Identity.listing_directories_addr
 	 * sets address version separately for each destinations.
@@ -652,59 +730,10 @@ public class Server extends util.DDP2P_ServiceThread {
 		//boolean DEBUG = true;
 		if(DEBUG) out.println("Server:announceMyselfToDirectories:");
 		boolean first = true; // flag to mark the first successful dir
-		String dir_address=null;
 		//for(InetSocketAddress dir : Identity.listing_directories_inet ) {
-		for (Address adr : Identity.listing_directories_addr) {
-			InetSocketAddress dir = adr.inetSockAddr;
-			da.setAddressVersionForDestination(adr);
-			if (dir == null) continue;
-			if(DEBUG) out.println("Server:announceMyselfToDirectories: announce to: "+dir);
-			try{
-				//dir_address = dir.getAddress().getHostAddress()+DD.APP_LISTING_DIRECTORIES_ELEM_SEP+dir.getPort();
-				dir_address = adr.ipPort();
-				Socket s = new Socket();
-				s.setSoTimeout(TIMEOUT_Client_wait_Dir);
-				s.connect(dir, TIMEOUT_Client_wait_Dir);
-				//s.setSoTimeout(TIMEOUT_Client_wait_Dir);
-				byte msg[]=da.encode();
-				s.getOutputStream().write(msg);
-				if(DEBUG) out.println("Server:announceMyselfToDirectories: sent: "+da);//+"\n"+Util.byteToHex(msg," "));
-				byte answer[] = new byte[200];
-				if(DEBUG) out.println("Server:announceMyselfToDirectories: Waiting answer!");
-				int alen=s.getInputStream().read(answer);
-				if(DEBUG) out.println("Server:announceMyselfToDirectories: Got answer: "+Util.byteToHex(answer, 0, alen, " "));
-				Decoder answer_dec=new Decoder(answer);
-				try{
-					DirectoryAnnouncement_Answer ans = new DirectoryAnnouncement_Answer(answer_dec);
-					if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+ans);
-					//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+answer_dec.getContent().getFirstObject(true).getBoolean());
-					//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: ");
-				}catch(Exception e){
-					//if(DD.DEBUG_TODO)
-						e.printStackTrace();}
-				//D_DAAnswer ans = new D_DAAnswer(answer_dec);
-				//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+ans);
-				s.close();
-				if (first) {
-					Identity.preferred_directory_idx = Identity.listing_directories_inet.indexOf(dir);
-					first = false;
-				}
-				if (Application.directory_status != null) {
-					Application.directory_status.setTCPOn(dir_address, new Boolean(true), null);
-				}else{
-					System.out.println("Server:announceMyselfToDirs:Tcp success, no display");
-				}
-			} catch (Exception e) {
-				//Application.warning(_("Error announcing myself to directory:")+dir, _("Announcing Myself to Directory"));
-
-				try {DD.directories_failed.add(dir);} catch(Exception e2) {e2.printStackTrace();}
-				if (Application.directory_status != null)
-					Application.directory_status.setTCPOn(dir_address, new Boolean(false), e);
-				if (DEBUG) err.println("Server: "+__("Announcing myself to directory:")+dir+" "+e.getLocalizedMessage());
-				if (DEBUG) err.println("Server: "+__("Error announcing myself to directory:")+dir);
-				if (DEBUG || DD.DEBUG_TODO)e.printStackTrace();
-				//e.printStackTrace();
-			}
+		for (Address adr : Identity.getListing_directories_addr()) {
+			if (announceMyselfToDirectory(da, adr, first))
+				first = false;
 		}
 		if (DEBUG) out.println("Server:announceMyselfToDirectories: Done!");
 	}
@@ -766,8 +795,8 @@ public class Server extends util.DDP2P_ServiceThread {
 		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
-		Identity id = Identity.getCurrentIdentity();
-		if (id!=null) guID = id.globalID;
+		Identity id = Identity.getCurrentConstituentIdentity();
+		if (id != null) guID = id.getPeerGID();
 		//id.globalOrgID = "humanitas";
 		if(arg.length>1) {
 			guID = arg[1];
@@ -782,15 +811,15 @@ public class Server extends util.DDP2P_ServiceThread {
 			}
 		}
 		try {
-			Identity.listing_directories_inet.add(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),20046));
-			Identity.listing_directories_string.add("127.0.0.1:20046");
+			Identity.getListing_directories_inet().add(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),20046));
+			Identity.getListing_directories_string().add("127.0.0.1:20046");
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
 		if (data_server_on_start) {
 			//Identity id = new Identity();
 			//id.globalID = guID;
-			Identity id2 = Identity.initMyCurrentPeerIdentity();
+			Identity id2 = Identity.getCurrentPeerIdentity_QuitOnFailure();
 			Application.as = new Server(id2);
 			Application.as.start();
 			//server.setID(id);

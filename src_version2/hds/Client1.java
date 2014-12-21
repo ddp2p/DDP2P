@@ -313,7 +313,7 @@ class Client1 extends util.DDP2P_ServiceThread implements IClient {
 				aup.senderIsPeer=false;
 				aup.senderIsInitiator=true;
 				aup.initiator_domain = Identity.get_a_server_domain();//client.getInetAddress().getHostAddress();
-				aup.initiator_globalID=Identity.current_peer_ID.globalID; //dr.initiator_globalID;
+				aup.initiator_globalID=Identity.current_peer_ID.getPeerGID(); //dr.initiator_globalID;
 				aup.initiator_port = Identity.udp_server_port;//dr.UDP_port;
 				aup.peer_globalID=global_peer_ID;
 				aup.peer_domain=sad.ad.domain;//;
@@ -399,8 +399,8 @@ class Client1 extends util.DDP2P_ServiceThread implements IClient {
 			socket.connect(sock_addr, Server.TIMEOUT_Client_wait_Dir);
 			DirectoryRequest dr = new DirectoryRequest(
 				    global_peer_ID,
-				    Identity.current_peer_ID.globalID,
-				    Identity.current_peer_ID.instance,
+				    Identity.current_peer_ID.getPeerGID(),
+				    Identity.current_peer_ID.peerInstance,
 				    Identity.udp_server_port,
 				     peer_ID, 
 					new Address(dir_address));

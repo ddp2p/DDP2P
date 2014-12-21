@@ -27,7 +27,7 @@ import util.P2PDDSQLException;
 import config.Application;
 
 import data.D_UpdatesKeysInfo;
-import data.D_TesterDefinition;
+import data.D_Tester;
 
 
 import util.DBInfo;
@@ -234,7 +234,10 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 		TableJButton bb =(TableJButton)e.getSource();
 		D_UpdatesKeysInfo uKey =data.get(bb.rowNo);
 //	    TesterInfoPanel testerPanel= new TesterInfoPanel(D_TesterDefinition.retrieveTesterDefinition(uKey.original_tester_name, uKey.public_key ));
- 		TesterInfoPanel testerPanel= new TesterInfoPanel(D_TesterDefinition.retrieveTesterDefinition(uKey.public_key ));
+ 		TesterInfoPanel testerPanel = new TesterInfoPanel(
+ 				//D_Tester.retrieveTesterDefinition_ByGID(uKey.public_key )
+ 				D_Tester.getTesterInfoByGID(uKey.public_key, false, null, null)
+ 				);
 //		QualitesTable q = new QualitesTable(data.get(bb.rowNo));
 		JPanel p = new JPanel(new BorderLayout());
 //		p.add(q.getScrollPane());

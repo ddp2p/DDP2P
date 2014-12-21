@@ -186,7 +186,7 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 	@Override
 	public void orgUpdate(String orgID, int col, D_Organization org) {
 		String text;
-		if(org != null) text = org.name;
+		if(org != null) text = org.getName();
 		else text = "";
 		organization.setText(text);
 	}

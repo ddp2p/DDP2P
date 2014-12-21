@@ -5,11 +5,12 @@ import hds.UDPServer;
 import java.util.ArrayList;
 import config.Application;
 import config.Application_GUI;
+import data.D_Peer;
 import data.HandlingMyself_Peer;
 
 public
 class DirectoriesSaverThread extends util.DDP2P_ServiceThread {
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	DD_DirectoryServer ds;
 	ArrayList<DirectoryAddress> dirs;
 	public DirectoriesSaverThread(DD_DirectoryServer ds) {
@@ -36,19 +37,26 @@ class DirectoriesSaverThread extends util.DDP2P_ServiceThread {
 	public void __run() throws P2PDDSQLException {
 		DirectoryAddress[] old_ad = DirectoryAddress.getDirectoryAddresses();
     	for (DirectoryAddress d : dirs) {
+    		int old_ID;
     		String new_dir = d.toString();
     		if (DEBUG) System.out.println("DirectoriesSaverThread: __run newdir="+new_dir+" old="+Util.concat(old_ad, "\",\""));
-			if (Util.contains(old_ad, d) < 0) {
-	    		if (DEBUG) System.out.println("DirectoriesSaverThread: __run not contained");
+			if ((old_ID = Util.contains(old_ad, d)) < 0) {
+	    		if (DEBUG) System.out.println("DirectoriesSaverThread: __run not contained old ="+old_ID);
 				d.store();
 			} else {
-	    		if (DEBUG) System.out.println("DirectoriesSaverThread: __run contained");
+	    		d.directory_address_ID = old_ad[old_ID].directory_address_ID;
+	    		if (DEBUG) System.out.println("DirectoriesSaverThread: __run contained old ="+old_ID);
+				d.store();
 	    		Application_GUI.warning(__("Already known directory:")+new_dir, __("Added directory"));
 	    	}
     	}
 		if (Application.as != null) {
-			HandlingMyself_Peer.updateAddress(HandlingMyself_Peer.get_myself_with_wait());
-			UDPServer.announceMyselfToDirectories();
+			//HandlingMyself_Peer.updateAddress(HandlingMyself_Peer.get_myself_with_wait());
+			D_Peer myself = HandlingMyself_Peer.get_myself_or_null();
+			if (myself != null) {
+				HandlingMyself_Peer.updateAddress(myself);
+				UDPServer.announceMyselfToDirectories();
+			}
 		}
 	}
 	/*

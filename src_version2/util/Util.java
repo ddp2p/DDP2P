@@ -286,7 +286,8 @@ public class Util {
 		return result;
 	}
 	/**
-	 * concatenate the ints in the array
+	 * concatenate the ints in the array.
+	 * Default is returned if array is null or 0 length
 	 * @param array
 	 * @param sep
 	 * @param def
@@ -519,6 +520,15 @@ public class Util {
 			return _default;
 		}
 	}
+	public static Float Fval(Object obj, Float _default){
+		if (obj == null) return _default;
+		if (obj instanceof Float) return (Float)obj;
+		try {
+			return Float.parseFloat(obj.toString());
+		} catch(Exception e){
+			return _default;
+		}
+	}
     /**
      * Get the int value from this Object (converted via a string)
      * @param obj
@@ -526,8 +536,13 @@ public class Util {
      * @return
      */
 	public static int ival(Object obj, int _default){
-		if(obj == null) return _default;
-		return Integer.parseInt(obj.toString());
+		if (obj == null) return _default;
+		try {
+			return Integer.parseInt(obj.toString());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return _default;
 	}
     /**
      * Get the String value from this Object (converted via a string)
@@ -798,7 +813,7 @@ public class Util {
 		if(DEBUG)System.out.println("Util:verifySign: start");
 		if (senderPK==null) return false;
 		if (data==null) return false;
-		byte[]message = data.encode();
+		byte [] message = data.encode();
 		if(DEBUG)System.out.println("Util:verifySign: msg["+message.length+"]"+Util.byteToHexDump(message));
 		return senderPK.verify_unpad_hash(signature, message);
 		//return true;
@@ -2071,6 +2086,14 @@ public class Util {
 		return result;
 	}
 	/**
+	 * Concatenates with a dot
+	 * @param version
+	 * @return
+	 */
+	public static String getVersion(int[] version) {
+		return Util.concat(version, ".", null);
+	}
+	/**
 	 * Assumes parameter is a dot separated sequence of ints
 	 * @param version
 	 * @return
@@ -2174,16 +2197,13 @@ public class Util {
 			if (DEBUG) System.out.println("Util: newer: "+result);
 			return result;
 		}
-	public static int[] getMyVersion() {
-		return DD.VERSION_INTS;
-	}
-	/**
+		/**
 	 * Get a row in a table (returned by select)
 	 * @param table
 	 * @param i
 	 * @return
 	 */
-	public static ArrayList<Object> getColumn(ArrayList<ArrayList<Object>> table,
+	public static ArrayList<Object> getColumnInDBselectResult(ArrayList<ArrayList<Object>> table,
 			int i) {
 		ArrayList<Object> result = new ArrayList<Object>();
 		for(ArrayList<Object> r: table){
@@ -2315,10 +2335,109 @@ public class Util {
 	public static String cleanInnerSpaces(String s) {
 		return Util.concat(s.split(" "), "");
 	}
-	public static String toString16(BigInteger i){
-		if(i==null) return null;
+	public static String toString16(BigInteger i) {
+		if (i == null) return null;
 		return i.toString(16);
 	}
+	/**
+	 * 
+	 * @param val
+	 * @return
+	 */
+	public static short getUnsignedShort(byte val) {
+		if (val >= 0) return val;
+		return (short)(val + 256);
+	}
+	public final static BigInteger BN128 = new BigInteger("128");
+	public final static BigInteger BN127 = new BigInteger("127");
+
+	/**
+	 * Convert to base 128 (bigendian), using shifts.
+	 * @param val
+	 * @return
+	 */
+	public static ArrayList<Integer> base128(BigInteger val) {
+		ArrayList<Integer> result = new ArrayList<Integer> ();
+		int part = val.and(BN127).intValue();
+		val = val.shiftRight(7);
+		result.add(0, new Integer(part));
+		while (! val.equals(BigInteger.ZERO)) {
+			part=val.and(BN127).intValue();
+			val = val.shiftRight(7);
+			part += 128;
+			result.add(0, new Integer(part));
+		};
+		return result;
+	}
+	/**
+	 * This is based on bit shifting
+	 * @param val
+	 * @return
+	 */
+	public static byte[] toBase_128(BigInteger val) {
+		ArrayList<Integer> al = base128(val);
+		byte[] result = new byte[al.size()];
+		for(int k = 0; k < result.length; k++) result[k] = al.get(k).byteValue();;
+		return result;
+	}
+	/**
+	 * Returns bigendian base 128 (Util.BN128), less efficient
+	 * @param i
+	 * @return
+	 */
+	/*
+	public static byte[] toBase128 (BigInteger i) {
+		ArrayList<Byte> result = new ArrayList<Byte>();
+		do {
+			BigInteger bn[] = i.divideAndRemainder(BN128);
+			i = bn[0];
+			// adds remainder in front (obtaining big-endian)
+			result.add(0, bn[1].byteValue());
+		} while (i.compareTo(BigInteger.ZERO) > 0);
+		
+		byte[] r = new byte[result.size()];
+		for (int k = 0; k < r.length ; k ++) r[k] = result.get(k);
+		return r;
+	}
+	*/
+	/**
+	 * Decodes from base 128 under the assumption that it is bigendian, terminated by a byte smaller than 128,
+	 * all other bytes being OR-ed with 128.
+	 * @param b128
+	 * @param offset
+	 * @param limit
+	 * @return
+	 */
+	public static BigInteger fromBase128(byte[] b128, int offset, int limit) {
+		BigInteger result = BigInteger.ZERO;
+		int k = offset;
+		while ((k < limit) && ((b128[k] & 0x80) != 0)) {
+			// result = result.multiply(Util.BN128).add(new BigInteger("" + (Util.getUnsignedShort(b128[k]) - 128)));
+			result = result.shiftLeft(7).or(new BigInteger(""+(b128[k] & 0x7f)));
+			//len++;
+			k++;
+		}
+		if (k < limit) {
+			// result = result.multiply(Util.BN128).add(new BigInteger("" + Util.getUnsignedShort(b128[k])));
+			if ((b128[k] & 0x80) != 0) {if (_DEBUG) System.out.println("Util: fromBase_128: last byte > 127"); Util.printCallPath("");}
+			result = result.shiftLeft(7).or(new BigInteger(""+(b128[k]))); // here  & 0x7f would be redundant
+		}
+		return result;
+		
+	}
+//	public static BigInteger fromBase_128(byte[] b128, int offset, int limit) {
+//		BigInteger result = BigInteger.ZERO;
+//		int k = offset;
+//		while ((k < limit) && (Util.getUnsignedShort(b128[k]) >= 128)) {
+//			result = result.multiply(Util.BN128).add(new BigInteger("" + (Util.getUnsignedShort(b128[k]) - 128)));
+//			//len++;
+//			k++;
+//		}
+//		if (k < limit)
+//			result = result.multiply(Util.BN128).add(new BigInteger("" + Util.getUnsignedShort(b128[k])));
+//		return result;
+//		
+//	}
 	public static boolean isUpperCase(byte b) {
 		return (b >= 'A') && (b <= 'Z');
 	}
@@ -2637,6 +2756,17 @@ public class Util {
 				result += "["+a+sep+sr.get(a)+"]";
 			}
 			return result;
+		}
+		public static String readAll(URL url) {
+			if (url == null) return null;
+			try {
+				BufferedReader in = new BufferedReader(
+				        new InputStreamReader(url.openStream()));
+				return readAll(in);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return null;
 		}
 }
 class GetHostName extends Thread{

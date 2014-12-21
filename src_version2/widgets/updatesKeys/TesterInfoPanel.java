@@ -24,14 +24,14 @@ import javax.swing.JFrame;
 
 import config.Application;
 import util.DBInterface;
-import data.D_TesterDefinition;
+import data.D_Tester;
 import widgets.updatesKeys.*;
 
 public class TesterInfoPanel extends JPanel implements ActionListener {
 	
-	private D_TesterDefinition tester;
+	private D_Tester tester;
 
-    public TesterInfoPanel(D_TesterDefinition t) {
+    public TesterInfoPanel(D_Tester t) {
     	super (new BorderLayout());
     	tester = t;
     	init();
@@ -73,7 +73,7 @@ public class TesterInfoPanel extends JPanel implements ActionListener {
 		labelConstraints.gridx = 0; labelConstraints.gridy = 1;
 		bodyPanel2.add(publicKeyL, labelConstraints);	
 		//JTextArea publicKeyTxt = new JTextArea(tester.public_key);
-		JTextField publicKeyTxt = new JTextField(tester.public_key);
+		JTextField publicKeyTxt = new JTextField(tester.testerGID);
 		publicKeyTxt.setBackground(new Color(224,224,224));
 		////publicKeyTxt.setLineWrap(true);
 	    //publicKeyTxt.setColumns(15);

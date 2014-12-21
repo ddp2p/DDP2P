@@ -196,14 +196,15 @@ public class ConstituentHandling {
 		if(ofi==null){
 			constit = Application.db.select(sql_no_filter, new String[]{last_sync_date, maxDate}, DEBUG);			
 		}else{
-			long orgID = UpdateMessages.getonly_organizationID(ofi.orgGID, ofi.orgGID_hash);
+			long orgID = D_Organization.getLIDbyGIDorGIDH(ofi.orgGID, ofi.orgGID_hash);
+					//UpdateMessages.getonly_organizationID(ofi.orgGID, ofi.orgGID_hash);
 			constit = Application.db.select(sql_filter, new String[]{""+orgID, last_sync_date, maxDate}, DEBUG);
 		}
 		for (ArrayList<Object> a : constit) {
 				orgs.add(Util.getString(a.get(3)));
 		}
-		if(constit.size()<=limitConstituentLow) result = maxDate; //null;
-		else{
+		if (constit.size() <= limitConstituentLow) result = maxDate; //null;
+		else {
 			result = Util.getString(constit.get(limitConstituentLow-1).get(0));
 			if(DD.WARN_BROADCAST_LIMITS_REACHED) System.out.println("ConstituentHandling: getConstOPsDate: limits reached: "+limitConstituentLow+" date="+result);
 		}
@@ -246,7 +247,8 @@ public class ConstituentHandling {
 			constit = Application.db.select(sql_no_filter, new String[]{last_sync_date}, DEBUG);			
 		} else {
 			if (DEBUG) System.out.println("ConstituentHandling: getConstituentOPsDate':  ofi");
-			long orgID = UpdateMessages.getonly_organizationID(ofi.orgGID, ofi.orgGID_hash);
+			long orgID = D_Organization.getLIDbyGIDorGIDH(ofi.orgGID, ofi.orgGID_hash);
+			//UpdateMessages.getonly_organizationID(ofi.orgGID, ofi.orgGID_hash);
 			constit = Application.db.select(sql_filter, new String[]{""+orgID, last_sync_date}, DEBUG);
 		}
 		/*

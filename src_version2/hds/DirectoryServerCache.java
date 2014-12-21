@@ -72,14 +72,14 @@ class DirectoryServerCache{
 	 * @param da
 	 * @return
 	 */
-	public static D_DirectoryEntry loadAndSetEntry(DirectoryAnnouncement da, boolean TCP) {
+	public static D_DirectoryEntry loadAndSetEntry(DirectoryAnnouncement da, boolean TCP_or_UDP) {
 		if (DEBUG) System.out.println("DSCache: loadAndSetEntry: start "+da);
-		String globalID = da.globalID;
-		String globalIDhash = da.globalIDhash; 
+		String globalID = da.getGID();
+		String globalIDhash = da.getGIDH(); 
 		String instance = da.instance;
 		D_DirectoryEntry e = getEntry(globalID, globalIDhash);
 		if (instance == null) {
-			e.load(da, TCP);
+			e.load(da, TCP_or_UDP);
 			if (DEBUG) System.out.println("DSCache: loadAndSetEntry: loaded root "+e);
 			D_Directory_Storage.register_loaded(e);
 			return e;
@@ -89,7 +89,7 @@ class DirectoryServerCache{
 		if (crt == null) {
 			crt = new D_DirectoryEntry();
 			crt.parent = e;
-			crt.load(da, TCP);
+			crt.load(da, TCP_or_UDP);
 			if (DEBUG) System.out.println("DSCache: loadAndSetEntry: loaded new instance "+crt);
 //			 crt.globalID = globalID;
 //			 crt.globalIDhash = globalIDhash;
@@ -101,7 +101,7 @@ class DirectoryServerCache{
 			/**
 			 * May need a way to update the fact that memory is taken
 			 */
-			crt.load(da, TCP);
+			crt.load(da, TCP_or_UDP);
 			if (DEBUG) System.out.println("DSCache: loadAndSetEntry: loaded instance "+crt);
 		}
 		return crt;
@@ -167,6 +167,9 @@ class DirectoryServerCache{
 		public String globalID;
 		public String globalIDhash;
 		public String instance;
+		public String branch;
+		public String agent_version;
+		public String name;
 		public byte[] certificate;
 		public Address[] addresses;
 		public byte[] signature;
@@ -177,6 +180,21 @@ class DirectoryServerCache{
 		/** is this a parent node? */
 		boolean root;
 		public DIR_Terms_Requested[] instance_terms;
+		/**
+		 * @return
+		 * Returns the first address with pureProtocol set to Address.NAT
+		 * Normally there should be only one!
+		 * 
+		 * Else returns null.
+		 */
+		public Address getNATAddress() {
+			if (addresses == null) return null;
+			for (Address a : addresses) {
+				if (Util.equalStrings_null_or_not(a.getPureProtocol(), Address.NAT))
+					return a;
+			}
+			return null;
+		}
 		/**
 		 * Pre-Initialized
 		 */
@@ -311,7 +329,10 @@ class DirectoryServerCache{
 			r += "\n\t"+"GID="+globalID;
 			r += "\n\t"+"GIDH="+globalIDhash;
 			r += "\n\t"+"inst="+instance;
-			r += "\n\t"+"cert="+certificate;
+			r += "\n\t"+"branch="+branch;
+			r += "\n\t"+"agent_version="+agent_version;
+			r += "\n\t"+"name="+name;
+			r += "\n\t"+"cert="+Util.byteToHexDump(certificate, 20);
 			r += "\n\t"+"addr="+Util.concat(addresses, "\n\t\t", "NULL");
 			r += "\n\t"+"sign="+Util.byteToHexDump(signature);
 			r += "\n\t"+"time="+Encoder.getGeneralizedTime(timestamp);
@@ -406,6 +427,9 @@ class DirectoryServerCache{
 			params[table.registered.REG_GID] = globalID;
 			params[table.registered.REG_GID_HASH] = globalIDhash;
 			params[table.registered.REG_INSTANCE] = instance;
+			params[table.registered.REG_BRANCH] = branch;
+			params[table.registered.REG_AGENT_VERSION] = agent_version;
+			params[table.registered.REG_NAME] = name;
 			params[table.registered.REG_CERT] = (certificate.length == 0)?null:Util.stringSignatureFromByte(certificate);
 			
 //			Encoder enc = new Encoder().initSequence();
@@ -435,6 +459,9 @@ class DirectoryServerCache{
 			params[table.registered.REG_GID] = globalID;
 			params[table.registered.REG_GID_HASH] = globalIDhash;
 			params[table.registered.REG_INSTANCE] = instance;
+			params[table.registered.REG_BRANCH] = branch;
+			params[table.registered.REG_AGENT_VERSION] = agent_version;
+			params[table.registered.REG_NAME] = name;
 			params[table.registered.REG_CERT] = (certificate.length==0)?null:Util.stringSignatureFromByte(certificate);
 
 //			Encoder enc = new Encoder().initSequence();
@@ -463,6 +490,9 @@ class DirectoryServerCache{
 			if (n.globalID != null) globalID = n.globalID;
 			if (n.globalIDhash != null) globalIDhash = n.globalIDhash;
 			instance = n.instance;
+			branch = n.branch;
+			agent_version = n.agent_version;
+			name = n.name;
 			certificate = n.certificate;
 			addresses = n.addresses;
 			signature = n.signature;
@@ -495,7 +525,7 @@ class DirectoryServerCache{
 				return;
 			}
 			D_DirectoryEntry c = instances.get(da.instance);
-			if(c != null) {
+			if (c != null) {
 				c.load(da, tCP);
 				return;
 			}
@@ -513,21 +543,34 @@ class DirectoryServerCache{
 			if (DEBUG) System.out.println("DSCache: load: start "+da);
 			
 			boolean need_saving = false;
-			if (da.globalID!=null) {
-				if(!Util.equalStrings_null_or_not(globalID, da.globalID)) {
+			if (da.getGID()!=null) {
+				if(!Util.equalStrings_null_or_not(globalID, da.getGID())) {
 					need_saving = true;
-					globalID = da.globalID;
+					globalID = da.getGID();
 				}
 			}
-			if (da.globalIDhash != null) {
-				if (!Util.equalStrings_null_or_not(globalIDhash, da.globalIDhash)) {
+			if (da.getGIDH() != null) {
+				if (!Util.equalStrings_null_or_not(globalIDhash, da.getGIDH())) {
 					need_saving = true;
-					globalIDhash = da.globalIDhash;
+					globalIDhash = da.getGIDH();
 				}
 			}
 			if (!Util.equalStrings_null_or_not(instance, da.instance)) {
 				need_saving = true;
 				instance = da.instance;
+			}
+			if (!Util.equalStrings_null_or_not(branch, da.branch)) {
+				need_saving = true;
+				branch = da.branch;
+			}
+			String da_agent_version = Util.getVersion(da.agent_version);
+			if (!Util.equalStrings_null_or_not(agent_version, da_agent_version)) {
+				need_saving = true;
+				agent_version = da_agent_version;
+			}
+			if (!Util.equalStrings_null_or_not(name, da.name)) {
+				need_saving = true;
+				name = da.name;
 			}
 			if (!Util.equalBytes_null_or_not(certificate, da.certificate)) {
 				need_saving = true;
@@ -650,6 +693,9 @@ class DirectoryServerCache{
 			this.globalID = Util.getString(d.get(table.registered.REG_GID));
 			this.globalIDhash = Util.getString(d.get(table.registered.REG_GID_HASH));
 			this.instance = Util.getString(d.get(table.registered.REG_INSTANCE));
+			this.branch = Util.getString(d.get(table.registered.REG_BRANCH));
+			this.agent_version = Util.getString(d.get(table.registered.REG_AGENT_VERSION));
+			this.name = Util.getString(d.get(table.registered.REG_NAME));
 			this.signature = Util.byteSignatureFromString(Util.getString(d.get(table.registered.REG_SIGN)));
 			this.timestamp = Util.getCalendar(Util.getString(d.get(table.registered.REG_TIME)));
 			this.known = true;
@@ -678,8 +724,7 @@ class DirectoryServerCache{
 		@Override
 		public DDP2P_DoubleLinkedList_Node<D_DirectoryEntry> get_DDP2P_DoubleLinkedList_Node() {
 			return ddl_node;
-		}
-		
+		}		
 	}
 	/**
 	 * Linked List nodes of directory entries

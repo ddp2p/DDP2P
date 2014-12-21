@@ -21,12 +21,16 @@ package widgets.justifications;
 
 import static util.Util.__;
 
+import java.awt.Color;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 
 import javax.swing.Icon;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
@@ -51,12 +55,13 @@ import util.DBInterface;
 import util.DBListener;
 import util.Util;
 import widgets.app.DDIcons;
+import widgets.components.DDP2PColoredItem;
 import widgets.components.GUI_Swing;
 import widgets.motions.MotionsModel;
 
 @SuppressWarnings("serial")
-public class JustificationsModel extends AbstractTableModel implements TableModel, DBListener, MotionsListener {
-	public  int TABLE_COL_NAME = -2;
+public class JustificationsModel extends AbstractTableModel implements TableModel, DBListener, MotionsListener, DDP2PColoredItem {
+	public  int TABLE_COL_TITLE = -2;
 	public  int TABLE_COL_CREATOR = -2; // certified by trusted?
 	public  int TABLE_COL_VOTERS_NB = -2;
 	//public static final int TABLE_COL_VOTES = 0;
@@ -119,7 +124,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		int crt = 0;
 		boolean d = false;//DEBUG;
 		ArrayList<String> cols = new ArrayList<String>();
-		if(show_name){ cols.add(__("Title")); if(d)System.out.println("n="+crt); TABLE_COL_NAME = crt++;}
+		if(show_name){ cols.add(__("Title")); if(d)System.out.println("n="+crt); TABLE_COL_TITLE = crt++;}
 		if(show_voters){ cols.add(__("Voters")); if(d)System.out.println("V="+crt); TABLE_COL_VOTERS_NB = crt++;}
 		if(show_creator){ cols.add(__("Initiator")); if(d)System.out.println("I="+crt); TABLE_COL_CREATOR = crt++;}
 		if(show_provider){ cols.add(__("Provider")); if(d)System.out.println("P="+crt); TABLE_COL_PROVIDER = crt++;}
@@ -143,7 +148,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		return this.getColumnCount();
 	}
 	public String columnToolTipsEntry(int realIndex) {
-		if(realIndex == TABLE_COL_NAME) return __("Short title of the justification!");
+		if(realIndex == TABLE_COL_TITLE) return __("Short title of the justification!");
 		if(realIndex == TABLE_COL_CREATOR) return __("Initiator of this version of the justification!");
 		if(realIndex == TABLE_COL_VOTERS_NB) return __("Number of constituents refering this justification with the first choice!");
 		if(realIndex == TABLE_COL_CREATION_DATE) return __("Creation Date!");
@@ -194,7 +199,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 
 		//if (DEBUG) System.out.println("Justification: getIcon: col? = "+column);
 		//Util.printCallPath("");
-		if (column == TABLE_COL_NAME) return null;
+		if (column == TABLE_COL_TITLE) return null;
 		if (column == TABLE_COL_PREFERENCES_DATE) return null;
 		return null;
 	}
@@ -203,6 +208,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 	private String crt_motionID;
 	public String crt_choice=null;
 	public String crt_answered=null;
+	D_Justification crt_justification;
 
 	public JustificationsModel(DBInterface _db) {
 		db = _db;
@@ -265,36 +271,41 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		update(null, null);
 		if(DEBUG) System.out.println("\n************\nJustificationsModel:setCrtMotion: Done");
 	}
-	D_Justification getJustification(int row) {
+	/**
+	 * Gets the justification at this model row
+	 * @param model_row
+	 * @return
+	 */
+	D_Justification getJustification(int model_row) {
 		D_Justification[] __justification = this._justification;
-		if (row < 0) return null;
-		if (row >= __justification.length) return null;
+		if (model_row < 0) return null;
+		if (model_row >= __justification.length) return null;
 		if (__justification != null)
-			return __justification[row];
-		return __justification[row] = D_Justification.getJustByLID(Util.lval(this.getJustificationID(row)), true, false);
+			return __justification[model_row];
+		return __justification[model_row] = D_Justification.getJustByLID(Util.lval(this.getJustificationID(model_row)), true, false);
 	}
-	public boolean isBlocked(int row) {
-		D_Justification j = this.getJustification(row);
+	public boolean isBlocked(int model_row) {
+		D_Justification j = this.getJustification(model_row);
 		if (j == null) return false;
 		return j.isBlocked();
 	}
-	public boolean isBroadcasted(int row) {
-		D_Justification j = this.getJustification(row);
+	public boolean isBroadcasted(int model_row) {
+		D_Justification j = this.getJustification(model_row);
 		if (j == null) return false;
 		return j.isBroadcasted();
 	}
-	public boolean isRequested(int row) {
-		D_Justification j = this.getJustification(row);
+	public boolean isRequested(int model_row) {
+		D_Justification j = this.getJustification(model_row);
 		if (j == null) return false;
 		return j.isRequested();
 	}
-	public boolean isServing(int row) {
-		if(DEBUG) System.out.println("\n************\nJustificationsModel:isServing: row="+row);
-		return isBroadcasted(row);
+	public boolean isServing(int model_row) {
+		if(DEBUG) System.out.println("\n************\nJustificationsModel:isServing: row="+model_row);
+		return isBroadcasted(model_row);
 	}
-	public boolean toggleServing(int row) {
-		if(DEBUG) System.out.println("\n************\nJustificationModel:Model:toggleServing: row="+row);
-		D_Justification m = this.getJustification(row);
+	public boolean toggleServing(int model_row) {
+		if(DEBUG) System.out.println("\n************\nJustificationModel:Model:toggleServing: row="+model_row);
+		D_Justification m = this.getJustification(model_row);
 		if (m != null) return m.toggleServing();
 		return false;
 	}
@@ -394,7 +405,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			result = j.getPreferencesDateStr();
 			if(DEBUG) System.out.println("JustifModel:getValueAt:date="+result+" row="+row);
 		}
-		if (col == TABLE_COL_NAME) {
+		if (col == TABLE_COL_TITLE) {
 			result = j.getTitleOrMy();
 		}
 		if (col == TABLE_COL_CREATOR) {
@@ -504,7 +515,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		return result;
 	}
 	public boolean isCellEditable(int row, int col) {
-		if (col == TABLE_COL_NAME) return true;
+		if (col == TABLE_COL_TITLE) return true;
 		if (col == TABLE_COL_CREATOR) return true;
 		if (col == TABLE_COL_CATEGORY) return true;
 		if (col == TABLE_COL_TMP) return true;
@@ -547,6 +558,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 	/**
 	 * Should be called from the swing thread.
 	 * Sets the selection in all views.
+	 * and fires listerenrs!
 	 * @param just_id
 	 */
 	public void setCurrentJust(long just_id) {
@@ -575,6 +587,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 				if (DEBUG) System.out.println("JustificationsModel:setCurentJust: choice="+crt_choice+" fireListener: k="+k);
 			}
 		}
+		this.setCurrentJustification(Util.getStringID(just_id), null);
 		if (DEBUG) System.out.println("JustificationsModel:setCurrent:choice="+crt_choice+"  Done");
 	}
 /*
@@ -855,7 +868,7 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 
 		String _value;
 		
-		if (col == TABLE_COL_NAME) {
+		if (col == TABLE_COL_TITLE) {
 			if (value instanceof D_Document_Title){
 				D_Document_Title __value = (D_Document_Title) value;
 				if (__value.title_document != null)  {
@@ -1061,5 +1074,84 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 		Integer row = rowByID.get(justID);
 		if(row==null) return -1;
 		return row.intValue();
+	}
+//	@Override
+//	public Color getForeground(JTable table, Object value, boolean isSelected,
+//			boolean hasFocus, int row, int column) {
+//		return getColors(table, value, isSelected, hasFocus, row, column, null).getForeground();
+//	}
+//	@Override
+//	public Color getBackground(JTable table, Object value, boolean isSelected,
+//			boolean hasFocus, int row, int column) {
+//		return getColors(table, value, isSelected, hasFocus, row, column, null).getBackground();
+//	}
+	@Override
+	public DDP2PColorPair getColors(JTable table, Object value,
+			boolean isSelected, boolean hasFocus, int row_view, int column_view, Component component) {
+		// backgrounds often do not work... (if implementing interface rather than extending default renderer)
+		boolean crt_is_answered = false, crt_is_answering = false;
+		if (DEBUG) System.out.println("JustificationsModel: getColors: r="+row_view+" c="+column_view+" o="+value);
+		int m_row = table.convertRowIndexToModel(row_view);
+		int m_col = table.convertColumnIndexToModel(column_view);
+		if (m_col == this.TABLE_COL_TITLE) {
+			D_Justification crt = this.getJustification(m_row);
+			if (crt != null && this.crt_justification != null) {
+				if (crt.getLID() == crt_justification.getAnswerToLID()) {
+					crt_is_answered = true;
+				}
+				if (crt.getAnswerToLID() == crt_justification.getLID()) {
+					crt_is_answering = true;
+				}
+			}
+		}
+		DDP2PColorPair result;
+		if (value instanceof String) {
+			if (crt_is_answered) result = new DDP2PColorPair(Color.RED.brighter(), Color.WHITE, widgets.app.DDIcons.getAnsweredImageIcon("justs"));
+			else if (crt_is_answering) result = new DDP2PColorPair(Color.BLUE.brighter(), Color.YELLOW, widgets.app.DDIcons.getAnsweringImageIcon("justs"));
+			else result = new DDP2PColorPair(Color.GREEN.darker(), Color.WHITE, null);//widgets.app.DDIcons.getJusImageIcon("justs"));
+		} else {
+			if (crt_is_answered) result = new DDP2PColorPair(Color.RED.darker(), Color.WHITE, widgets.app.DDIcons.getAnsweredImageIcon("justs"));
+			else if (crt_is_answering) result = new DDP2PColorPair(Color.BLUE.darker(), Color.YELLOW, widgets.app.DDIcons.getAnsweringImageIcon("justs"));
+			else result = new DDP2PColorPair(Color.BLACK, Color.WHITE, null); //widgets.app.DDIcons.getJusImageIcon("justs"));
+		}
+		if (DEBUG) System.out.println("JustificationsModel: getColors: answered="+crt_is_answered+" ing="+crt_is_answering+ " r="+result);
+		if (isSelected) {
+			if (component != null && component instanceof JLabel) {
+				JLabel c = (JLabel) component;
+				result.setBackground(c.getBackground());
+				result.setForeground(c.getForeground());
+			} else {
+				result.setBackground(Color.BLUE);
+			}
+		}
+		return result;
+	}
+	/**
+	 * Sets member field crt_justification to be used in redrawing title colors
+	 * @param justID
+	 * @param just
+	 */
+	public void setCurrentJustification(String justID, D_Justification just) {
+		if (just != null || justID == null) {
+			crt_justification = just;
+		} else {
+			D_Justification j = D_Justification.getJustByLID(justID, true, false);
+			crt_justification = j;
+		}
+    	SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("Justification Answering Colors"), false, false, this) {
+    		public void _run () {
+    			try {
+	    			JustificationsModel jm = (JustificationsModel) ctx;
+	    			if (jm.getRowCount() > 100) {
+	    				jm.fireTableDataChanged();
+	    				return;
+	    			}
+					for (int crt_row = 0; crt_row < jm.getRowCount(); crt_row ++ ) {
+						jm.fireTableCellUpdated(crt_row, jm.TABLE_COL_TITLE);
+					}
+    			} catch (java.lang.ArrayIndexOutOfBoundsException e){}
+    		}
+    	});
+		return;
 	}
 }

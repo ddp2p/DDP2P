@@ -2,6 +2,7 @@ package util;
 
 import static util.Util.__;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -121,6 +122,22 @@ public class DD_SK extends ASNObj implements StegoStructure {
 	public ArrayList<D_Translations> tran = new ArrayList<D_Translations>();
 	private byte[] signature;
 	
+	public boolean empty() {
+		return sk.size() == 0 
+				&& peer.size() == 0
+				&& org.size() == 0
+				&& neigh.size() == 0
+				&& constit.size() == 0
+				&& witn.size() == 0
+				&& moti.size() == 0
+				&& just.size() == 0
+				&& vote.size() == 0
+				&& news.size() == 0
+				&& tran.size() == 0
+				&& sender == null;
+		// return false;
+	}
+	
 	public String toString() {
 		String result = "";
 		result += "SK[: sk="+Util.concat(sk, ";;;", "NULL");
@@ -151,6 +168,7 @@ public class DD_SK extends ASNObj implements StegoStructure {
 	public void setBytes(byte[] asn1) throws ASN1DecoderFail {
 		if(DEBUG)System.out.println("DD_Testers:decode "+asn1.length);
 		decode(new Decoder(asn1));
+		if (this.empty()) throw new ASN1.ASNLenRuntimeException("Empty object!");
 		if(DEBUG)System.out.println("DD_Testers:decoded");
 	}
 
@@ -192,6 +210,9 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		if(DEBUG) System.out.println("DD_SK: get_sign=:"+DD.STEGO_SK);
 		return DD.STEGO_SK;
 	}
+	public static BigInteger getASN1Tag() {
+		return new BigInteger(DD.STEGO_SK+"");
+	}
 
 	/**
 	 * sender has its own signature, so needs not be signed. Its PK has to match anyhow.
@@ -218,7 +239,8 @@ public class DD_SK extends ASNObj implements StegoStructure {
 	public Encoder getEncoder() {
 		Encoder enc = getSignEncoder();
 		if (sender != null) enc.addToSequence(sender.getEncoder().setASN1Type(DD.TAG_AP1));
-		if (signature != null) enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AP2));		
+		if (signature != null) enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AP2));	
+		enc.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, getASN1Tag());
 		return enc;
 	}
 	@Override

@@ -30,7 +30,7 @@ import java.util.Hashtable;
 import util.Util;
 
 public 
-class Encoder{
+class Encoder {
 	public static final byte PC_PRIMITIVE=0;
 	public static final byte PC_CONSTRUCTED=1;
 	public static final byte CLASS_UNIVERSAL=0;
@@ -69,26 +69,41 @@ class Encoder{
 	public static final byte TYPE_SEQUENCE=16+(1<<5);
 	public static final byte TYPE_SET=17+(1<<5);
 
-	static final BigInteger BN127 = new BigInteger(""+127);
 	private static final boolean DEBUG = false;
 	public static final long CALENDAR_DISPLACEMENT = 1000000000;
 	
-	int bytes=0;
-	byte[] header_type=new byte[0];
-	byte[] header_length=new byte[0];
-	Encoder prefix_data=null;
-	byte[] data=new byte[0];
+	/**
+	 * Number of bytes used by this encoder (the length of the result)
+	 */
+	int bytes = 0;
+	/**
+	 * the bytes of type and tag (initially length 0)
+	 */
+	byte[] header_type = new byte[0];
+	/**
+	 *  the bytes of "length" (initially length 0)
+	 */
+	byte[] header_length = new byte[0];
+	/**
+	 * data to be added to this.
+	 */
+	Encoder prefix_data = null;
+	/**
+	 * The actual data payload (originally length 0)
+	 */
+	byte[] data = new byte[0];
+	
 	public static void copyBytes(byte[] results, int offset, byte[]src, int length){
-		copyBytes(results, offset, src,length,0);
+		copyBytes(results, offset, src, length,0);
 	}
-	public static void copyBytes(byte[] results, int offset, byte[]src, int length, int src_offset){
-		if(results.length<length+offset)
+	public static void copyBytes(byte[] results, int offset, byte[]src, int length, int src_offset) {
+		if (results.length < length + offset)
 			System.err.println("Destination too short: "+results.length+" vs "+offset+"+"+length);
-		if(src.length<length+src_offset)
+		if (src.length < length + src_offset)
 			System.err.println("Source too short: "+src.length+" vs "+src_offset+"+"+length);
 		
-		for(int k=0; k<length; k++) {
-			results[k+offset] = src[src_offset+k];
+		for (int k = 0; k < length; k ++) {
+			results[k + offset] = src[src_offset + k];
 		}
 	}
 	public static String getGeneralizedTime(long utime){
@@ -117,8 +132,8 @@ class Encoder{
 		if(prefix_data!=null){
 			offset = prefix_data.getBytes(results, offset);
 		}
-		copyBytes(results,offset,data,data.length);
 		assert(bytes == offset+data.length-start);
+		copyBytes(results,offset,data,data.length);
 		return offset+data.length;
 	}
 	public Encoder initSequence(){
@@ -144,7 +159,7 @@ class Encoder{
 		//System.err.println("set len="+bytes);
 		//this.bytes = bytes;
 		int old_len_len = this.header_length.length;
-		if(len.compareTo(BN127) <= 0){
+		if(len.compareTo(Util.BN127) <= 0){
 			header_length = new byte[]{(byte)bytes};
 		}else{
 			byte[] len_bytes = len.toByteArray();
@@ -160,29 +175,29 @@ class Encoder{
 	 * Else, one byte with (128+length) and the bytes needed to represent length (and sign).
 	 * 
 	 * Difference in length is added to "bytes"
-	 * @param bytes
+	 * @param _bytes_len
 	 */
-	void setASN1Length(int bytes){
+	void setASN1Length(int _bytes_len) {
 		int old_len_len = this.header_length.length;
 		//System.err.println("set len="+bytes);
 		//this.bytes = bytes;
-		if(bytes<=127){
-			header_length = new byte[]{(byte)bytes};
-		}else{
-			BigInteger len = new BigInteger(bytes+"");
+		if (_bytes_len <= 127) {
+			header_length = new byte[]{(byte) _bytes_len};
+		} else {
+			BigInteger len = new BigInteger(_bytes_len + "");
 			byte[] len_bytes = len.toByteArray();
-			header_length=new byte[1+len_bytes.length];
-			header_length[0]=(byte)(len_bytes.length+128);
-			copyBytes(header_length,1,len_bytes,len_bytes.length);
+			header_length = new byte[1 + len_bytes.length];
+			header_length[0] = (byte)(len_bytes.length | 0x80); // +128
+			copyBytes(header_length, 1, len_bytes, len_bytes.length);
 		}		
 		//System.err.println("set bytes="+bytes+"+"+header_length.length +"-"+ old_len_len);
 		this.bytes += header_length.length - old_len_len;
 	}
 	void incrementASN1Length(int inc){
 		//System.err.println("inc="+inc);
-		BigInteger len=contentLength();//new BigInteger(header_length);
+		BigInteger len = contentLength();//new BigInteger(header_length);
 		//System.err.println("old_len="+len);
-		len=len.add(new BigInteger(""+inc));
+		len = len.add(new BigInteger(""+inc));
 		//System.err.println("new_len="+len);
 		setASN1Length(len.intValue());
 	}
@@ -255,16 +270,29 @@ class Encoder{
 	 * @param tag_number a big integer
 	 * @return returns this
 	 */
-	public Encoder setASN1Type(int classASN1, int PCASN1, BigInteger tag_number){
-		int old_len_len = this.header_type.length;
+	public Encoder setASN1Type(int classASN1, int PCASN1, BigInteger tag_number) {
+		if (DEBUG) System.out.println("Encoder: setASN1Type: BN"+tag_number+" bytes="+bytes);
+		if (new BigInteger("31").compareTo(tag_number) > 0) return this.setASN1Type(classASN1, PCASN1, tag_number.byteValue());
+		
+		// if the tag is 31 or bigger
+		int old_header_type_len = this.header_type.length;
+		if (DEBUG) System.out.println("Encoder: setASN1Type: BN old_len_len=" + old_header_type_len);
 		int tag = (classASN1<<6)+(PCASN1<<5)+0x1f;
-		String nb=tag_number.toString(128);
-		int tag_len=nb.length();
-		header_type=new byte[tag_len+1];
-		header_type[0]=(byte)tag;
-		for(int k=0; k<tag_len; k++) header_type[k+1]=(byte) (nb.charAt(k)&0x80);
-		header_type[tag_len-1] = (byte) nb.charAt(tag_len-1);
-		bytes += header_type.length - old_len_len;
+		if (DEBUG) System.out.println("Encoder: setASN1Type: BN tag="+tag);
+		byte[] nb = Util.toBase_128(tag_number); //String nb = tag_number.toString(128);
+		if (DEBUG) System.out.println("Encoder: setASN1Type: BN tag_128="+Util.byteToHex(nb));
+		int tag_len = nb.length;
+		if (DEBUG) System.out.println("Encoder: setASN1Type: BN tag_len=" + tag_len);
+		header_type = new byte[tag_len+1];
+		header_type[0] = (byte) tag;
+		for (int k = 0; k < tag_len - 1; k ++) {
+			header_type[k+1] = (byte) (nb[k] | 0x80);
+			if (DEBUG) System.out.println("Encoder: setASN1Type: BN tag_len=" + header_type[k+1]);
+		}
+		header_type[tag_len] = (byte) nb[tag_len-1];
+		if (DEBUG) System.out.println("Encoder: setASN1Type: BN tag_len=" + header_type[tag_len-1]);
+		
+		bytes += header_type.length - old_header_type_len;
 		return this;
 	}
 	protected void setPrefix(Encoder prefix){
@@ -295,7 +323,7 @@ class Encoder{
 	 * @param asn1_data
 	 * @return
 	 */
-	public Encoder addToSequence(byte[] asn1_data){
+	public Encoder addToSequence(byte[] asn1_data) {
 		return addToSequence(asn1_data, 0, asn1_data.length);
 	}
 	/**
@@ -312,19 +340,19 @@ class Encoder{
 	public Encoder addToSequence(byte[] asn1_data, int offset, int length){
 		//System.err.println("addASN1ToASN1Sequence_1: "+bytes+"+"+length);
 		//System.err.println("addASN1ToASN1Sequence_2: "+this+"+"+Util.byteToHex(asn1_data," "));
-		if(data.length==0) {
-			data=new byte[length];
+		if (data.length == 0) {
+			data = new byte[length];
 			copyBytes(data, 0, asn1_data, length, offset);
 			this.incrementASN1Length(length);
 			bytes += length;
 			//System.err.println("addASN1ToASN1Sequence_r: "+bytes+"+"+length);
 		} else {
-			Encoder e=new Encoder();
+			Encoder e = new Encoder();
 			e.data = data;
 			e.prefix_data = prefix_data;
 			e.bytes = bytes-header_length.length-header_type.length;
 			prefix_data = e;
-			data=new byte[0];
+			data = new byte[0];
 			addToSequence(asn1_data, offset, length);
 			//System.err.println("addASN1ToASN1Sequence_r2: "+bytes+"+"+length);
 		}
@@ -367,7 +395,7 @@ class Encoder{
 		bytes=2+data.length;
 	}
 	public Encoder(byte b){
-		data=new byte[]{b};
+		data = new byte[]{b};
 		setASN1Type(Encoder.TAG_INTEGER);
 		setASN1Length(1);
 		bytes=2+data.length;
@@ -415,44 +443,27 @@ class Encoder{
 	 */
 	public Encoder(int[] oid){
 		int len = oid.length-1;
-		if(len<0){
-			if(DEBUG)Util.printCallPath("Wrong oid length: min 2!");
+		if (len < 0) {
+			if (DEBUG) Util.printCallPath("Wrong oid length: min 2!");
 			return;
 		}
-		for(int k=2;k<oid.length; k++){
-			if(oid[k]>127) len += new BigInteger(oid[k]+"").toString(128).length()-1;
+		for (int k = 2; k < oid.length; k ++){
+			if (oid[k] > 127) {
+				int l = Util.base128(new BigInteger(oid[k]+"")).size();
+				len += l - 1;
+			}
 		}
 		data = new byte[len];
 		data[0]=(byte)(40*oid[0]+oid[1]);
 		int coff = 1;
-		for(int k=2;k<oid.length; k++) {
-			byte[] b=base_128(new BigInteger(oid[k]+""));
-			for(int j=0;j<b.length;j++,coff++) data[coff]=(byte)(b[j] | (byte)((j<b.length-1)?0x80:0));
+		for (int k = 2; k < oid.length; k ++) {
+			byte[] b = Util.toBase_128(new BigInteger(oid[k]+""));
+			for(int j = 0; j < b.length; j ++, coff ++) data[coff]=(byte)(b[j] | (byte)((j<b.length-1)?0x80:0));
 		}
 		setASN1Type(Encoder.TAG_OID);
 		setASN1Length(data.length);
 		bytes+=data.length;
-		assert(bytes==2+data.length);
-	}
-	static BigInteger mask127 = new BigInteger("127");
-	static ArrayList<Integer> base128(BigInteger val) {
-		ArrayList<Integer> result = new ArrayList<Integer> ();
-		int part = val.and(mask127).intValue();
-		val = val.shiftRight(7);
-		result.add(0, new Integer(part));
-		while(!val.equals(BigInteger.ZERO)) {
-			part=val.and(mask127).intValue();
-			val = val.shiftRight(7);
-			part += 128;
-			result.add(0, new Integer(part));
-		};
-		return result;
-	}
-	static byte[] base_128(BigInteger val) {
-		ArrayList<Integer> al = base128(val);
-		byte[] result = new byte[al.size()];
-		for(int k=0; k<result.length; k++) result[k] = al.get(k).byteValue();;
-		return result;
+		assert(bytes == this.header_type.length + this.header_length.length + data.length);
 	}
 	/**
 	 * This is for encoding OIDs
@@ -461,14 +472,14 @@ class Encoder{
 	public Encoder(BigInteger[] oid) {
 		ArrayList<Integer> result = new ArrayList<Integer>();
 		BigInteger first = oid[0].multiply(new BigInteger("40")).add(oid[1]);
-		result.addAll(base128(first));
-		for(int k=2; k<oid.length; k++) result.addAll(base128(oid[k]));
+		result.addAll(Util.base128(first));
+		for(int k=2; k<oid.length; k++) result.addAll(Util.base128(oid[k]));
 		data = new byte[result.size()];
 		for(int k=0; k<data.length; k++) data[k] = result.get(k).byteValue();		
 		setASN1Type(Encoder.TAG_OID);
 		setASN1Length(data.length);
 		bytes+=data.length;
-		assert(bytes==2+data.length);
+		assert(bytes == this.header_type.length + this.header_length.length + data.length);
 	}
 	public Encoder(double r){
 		data = Double.toHexString(r).getBytes();
@@ -499,17 +510,17 @@ class Encoder{
 	 * @param padding_bits
 	 */
 	public Encoder(byte padding_bits, byte[] s){
-		if(s==null){
+		if (s == null) {
 			this.setNull();
 			return;
 		}
-		data=new byte[s.length+1];
+		data = new byte[s.length+1];
 		data[0] = padding_bits;
 		Encoder.copyBytes(data, 1, s, s.length);
 		setASN1Type(Encoder.TAG_BIT_STRING);
 		setASN1Length(data.length);
-		bytes+=data.length;
-		assert(bytes==2+data.length);
+		bytes += data.length;
+		assert(bytes == this.header_type.length + this.header_length.length + data.length);
 	}
 	/**
 	 * Create a BIT_STRING like padded Encoder
@@ -517,17 +528,17 @@ class Encoder{
 	 * @param padding_bits
 	 */
 	public Encoder( byte padding_bits, byte[] s,byte type){
-		if(s==null){
+		if (s == null) {
 			this.setNull();
 			return;
 		}
-		data=new byte[s.length+1];
+		data = new byte[s.length+1];
 		data[0] = padding_bits;
 		Encoder.copyBytes(data, 1, s, s.length);
 		setASN1Type(type);//Encoder.TAG_BIT_STRING);
 		setASN1Length(data.length);
-		bytes+=data.length;
-		assert(bytes==2+data.length);
+		bytes += data.length;
+		assert(bytes == this.header_type.length + this.header_length.length + data.length);
 	}
 	/**
 	 * Factory for BIT_STRING
@@ -544,15 +555,15 @@ class Encoder{
 	 * @param s
 	 */
 	public Encoder(byte[] s, byte type){
-		if(s==null){
+		if (s == null) {
 			this.setNull();
 			return;
 		}
-		data=s;
+		data = s;
 		setASN1Type(type);
 		setASN1Length(data.length);
-		bytes=2+data.length;
-		assert(bytes==2+data.length);
+		bytes += data.length;
+		assert(bytes == this.header_type.length + this.header_length.length + data.length);
 	}
 	/**
 	 * Returns NULLOCTETSTRING,
@@ -561,15 +572,15 @@ class Encoder{
 	 * @param s
 	 */
 	public Encoder(byte[] s){
-		if(s==null){
+		if (s == null) {
 			this.setNull();
 			return;
 		}
-		data=s;
+		data = s;
 		setASN1Type(Encoder.TAG_OCTET_STRING);
 		setASN1Length(data.length);
-		bytes+=data.length;
-		assert(bytes==this.header_type.length+this.header_length.length+data.length);
+		bytes += data.length;
+		assert(bytes == this.header_type.length + this.header_length.length + data.length);
 	}
 	/**
 	 * Create string

@@ -31,7 +31,7 @@ import config.DD;
 import ciphersuits.PK;
 import ciphersuits.SK;
 import data.D_ReleaseQuality;
-import data.D_TesterInfo;
+import data.D_SoftwareUpdatesReleaseInfoByTester;
 import util.Base64Coder;
 import util.Util;
 import ASN1.ASN1DecoderFail;
@@ -47,7 +47,7 @@ public class VersionInfo extends ASN1.ASNObj{
 	public Downloadable[] data;
 	//public byte[] signature;   // signature of one one tester (main?) should be removed
 	//public String trusted_public_key;
-	public D_TesterInfo testers_data[];
+	public D_SoftwareUpdatesReleaseInfoByTester testers_data[];
 	public D_ReleaseQuality releaseQD[];
 	//public byte[][] signatures;
 	@Override
@@ -118,7 +118,7 @@ public class VersionInfo extends ASN1.ASNObj{
 			releaseQD = d_qd.getSequenceOf(D_ReleaseQuality.getASNType(), new D_ReleaseQuality[0], new D_ReleaseQuality());
 		d_qd = d.getFirstObject(true);
 		if((d_qd!=null)&&(d_qd.getTypeByte()==DD.TAG_AC13))
-			testers_data = d_qd.getSequenceOf(D_TesterInfo.getASNType(), new D_TesterInfo[0], new D_TesterInfo());
+			testers_data = d_qd.getSequenceOf(D_SoftwareUpdatesReleaseInfoByTester.getASNType(), new D_SoftwareUpdatesReleaseInfoByTester[0], new D_SoftwareUpdatesReleaseInfoByTester());
 		return this;
 	}
 	public String toString(){
@@ -180,7 +180,7 @@ public class VersionInfo extends ASN1.ASNObj{
 		result += ClientUpdates.TESTERS+"\r\n";
 		result += this.testers_data.length+"\r\n";
 		result += getBase64(this.releaseQD)+"\r\n";
-		for(D_TesterInfo t: this.testers_data) result+=t.toTXT();
+		for(D_SoftwareUpdatesReleaseInfoByTester t: this.testers_data) result+=t.toTXT();
 		result += ClientUpdates.STOP+"\r\n";
 		//if(this.trusted_public_key!=null) result += this.trusted_public_key+"\r\n";
 		return result;

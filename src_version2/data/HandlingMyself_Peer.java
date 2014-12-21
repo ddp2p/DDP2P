@@ -82,8 +82,8 @@ public class HandlingMyself_Peer {
 	}
 	*/
 	/**
-	 * If param null, use Identity.current_peer_ID
-	 * Loads the identity from the database application fields.
+	 * If param null, use Identity.current_peer_ID (initialized if null)
+	 * Loads the identity from the database application fields into: peerGID, peerInstance, peerGIDH.
 	 * @param id
 	 * @return
 	 */
@@ -94,13 +94,13 @@ public class HandlingMyself_Peer {
 		try {
 			String GID = DD.getAppText(DD.APP_my_global_peer_ID);
 			String instance = DD.getAppText(DD.APP_my_peer_instance);
-			id.globalID = GID;
-			id.instance = instance;
+			id.setPeerGID(GID);
+			id.peerInstance = instance;
 			//id.name = DD.getAppText(DD.APP_my_peer_name);
 			//id.slogan = DD.getAppText(DD.APP_my_peer_slogan);
-			id.globalIDH = DD.getAppText(DD.APP_my_global_peer_ID_hash);
+			id.peerGIDH = DD.getAppText(DD.APP_my_global_peer_ID_hash);
 			if (DEBUG)
-				System.out.println("HandlingMyself_Peer: loadIdentity: found GID="+GID+"\n\t inst="+instance+"\n\t GIDH="+id.globalIDH+"\n\t ID="+id);
+				System.out.println("HandlingMyself_Peer: loadIdentity: found GID="+GID+"\n\t inst="+instance+"\n\t GIDH="+id.peerGIDH+"\n\t ID="+id);
 		} catch (P2PDDSQLException e) {}
 		if (DEBUG) out.println("HandlingMyself: loadIdentity: done="+id);
 		return id;
@@ -110,11 +110,11 @@ public class HandlingMyself_Peer {
 		if (my_ID == null){
 			return null;
 		}
-		my_ID.globalID = me.getGID();
-		my_ID.globalIDH = me.getGIDH_force();
+		my_ID.setPeerGID(me.getGID());
+		my_ID.peerGIDH = me.getGIDH_force();
 		my_ID.name = me.getName();
 		my_ID.slogan = me.getSlogan();
-		my_ID.instance = me.getInstance();
+		my_ID.peerInstance = me.getInstance();
 		Identity.setAgentWideEmails(me.getEmail());
 		if (DD.WARN_ON_IDENTITY_CHANGED_DETECTION) {
 			if (me.getName() != null) Application_GUI.warning(__("Now you are:")+" \""+me.getName()+"\"", __("Peer Changed!"));
@@ -189,28 +189,28 @@ public class HandlingMyself_Peer {
 	 * @param me_kept (is me already kept?)
 	 * @return true on success
 	 */
-	static public boolean setMyself( D_Peer me, boolean saveInDB, boolean me_kept) {
-		return setMyself(me, saveInDB, Identity.current_peer_ID, me_kept);
+	static public boolean setMyself_currentIdentity_announceDirs( D_Peer me, boolean saveInDB, boolean me_kept) {
+		return setMyself_announceDirs(me, saveInDB, Identity.current_peer_ID, me_kept);
 	}
 //	static public boolean setMyself( D_Peer me, boolean saveInDB) {
 //		return setMyself(me, saveInDB, Identity.current_peer_ID);
 //	}
-	/**
-	 * - save in database
-	 * - save in Identity
-	 * - save in _myself
-	 * - trigger listener in DD.status
-	 * - announce_Directories of the change
-	 * 
-	 * - will warn if no instance set, and possible
-	 *  
-	 * @param me
-	 * @param saveInDB set to false when loading from DB
-	 * @return true on success
-	 */
-	static public boolean setMyself( D_Peer me, boolean saveInDB, Identity my_ID) {
-		return setMyself (me, saveInDB, my_ID, false);
-	}
+//	/**
+//	 * - save in database
+//	 * - save in Identity
+//	 * - save in _myself
+//	 * - trigger listener in DD.status
+//	 * - announce_Directories of the change
+//	 * 
+//	 * - will warn if no instance set, and possible
+//	 *  
+//	 * @param me
+//	 * @param saveInDB set to false when loading from DB
+//	 * @return true on success
+//	 */
+//	static public boolean setMyself_announceDirs_NoYetKept( D_Peer me, boolean saveInDB, Identity my_ID) {
+//		return setMyself_announceDirs (me, saveInDB, my_ID, false);
+//	}
 	/**
 	 * - save in database
 	 * - save in Identity
@@ -226,7 +226,27 @@ public class HandlingMyself_Peer {
 	 * @param kept (is me already kept)
 	 * @return  true on success
 	 */
-	static public boolean setMyself( D_Peer me, boolean saveInDB, Identity my_ID, boolean kept) {
+	static public boolean setMyself_announceDirs( D_Peer me, boolean saveInDB, Identity my_ID, boolean kept) {
+		return setMyself(me, saveInDB, my_ID, kept, true);
+	}
+	/**
+	 * - save in database
+	 * - save in Identity
+	 * - save in _myself
+	 * - trigger listener in DD.status
+	 * - announce_Directories of the change
+	 * 
+	 * - will warn if no instance set, and possible
+	 * 
+	 * @param me
+	 * @param saveInDB
+	 * @param my_ID
+	 * @param kept
+	 * @param announce_it
+	 * @return
+	 */
+	static public boolean setMyself( D_Peer me, boolean saveInDB, Identity my_ID, boolean kept,
+			boolean announce_it) {
 		if (DEBUG) System.out.println("HandlingMyself: setMyself: start");
 		if (me == null) {
 			if (DEBUG) System.out.println("HandlingMyself: setMyself: exit null");
@@ -273,7 +293,8 @@ public class HandlingMyself_Peer {
 			synchronized (DD.status_monitor) {
 				Application_GUI.setMePeer(me);
 			}
-			if (FINAL) UDPServer.announceMyselfToDirectories();
+			if (announce_it)
+				if (FINAL) UDPServer.announceMyselfToDirectories();
 			if (DEBUG) System.out.println("HandlingMyself:setMyself: done");
 			return true;
 		}
@@ -286,16 +307,16 @@ public class HandlingMyself_Peer {
 	 */
 	static public D_Peer getPeer(Identity id) {
 		if (DEBUG) out.println("HandlingMyself: getPeer: start="+id);
-		if (id.globalID == null) {
+		if (id.getPeerGID() == null) {
 			if (DEBUG) out.println("HandlingMyself: getPeer: exit null GID");
 			return null;
 		}
-		D_Peer me = D_Peer.getPeerByGID_or_GIDhash(id.globalID, null, true, false, false, null);
+		D_Peer me = D_Peer.getPeerByGID_or_GIDhash(id.getPeerGID(), null, true, false, false, null);
 		if (me == null) {
 			if (DEBUG) out.println("HandlingMyself: getPeer: exit peer myself not found");
 			return null;
 		}
-		me.setCurrentInstance(id.instance);
+		me.setCurrentInstance(id.peerInstance);
 		if (DEBUG) out.println("HandlingMyself: getPeer: done");
 		return me;
 	}
@@ -394,7 +415,7 @@ public class HandlingMyself_Peer {
 		try {
 			peer = HandlingMyself_Peer.createPeerUnsigned_Keep(pi);
 			if (peer != null) {
-				HandlingMyself_Peer.setMyself(peer, saveIdentityInIB, true); //kept
+				HandlingMyself_Peer.setMyself_currentIdentity_announceDirs(peer, saveIdentityInIB, true); //kept
 				HandlingMyself_Peer.updateAddress(peer);
 				if (peer.dirty_any()) peer.storeRequest();
 				peer.releaseReference();
@@ -416,7 +437,7 @@ public class HandlingMyself_Peer {
 			peer = HandlingMyself_Peer.createPeer_by_dialog_Keep();
 			if (DEBUG) System.out.println("HandlingMyself_Peer:createMyselfPeer_by_dialog_w_Addresses: got:"+peer);
 			if (peer != null) {
-				HandlingMyself_Peer.setMyself(peer, saveIdentityInIB, my_ID, true); //kept
+				HandlingMyself_Peer.setMyself_announceDirs(peer, saveIdentityInIB, my_ID, true); //kept
 				HandlingMyself_Peer.updateAddress(peer);
 				peer.sign();
 				peer.storeRequest();
@@ -436,7 +457,7 @@ public class HandlingMyself_Peer {
 			peer = HandlingMyself_Peer.createPeer_by_dialog_inited_Keep(pi);
 			if (DEBUG) System.out.println("HandlingMyself_Peer:createMyselfPeer_by_dialog_w_Addresses: got:"+peer);
 			if (peer != null) {
-				HandlingMyself_Peer.setMyself(peer, saveIdentityInIB, my_ID, true); //kept
+				HandlingMyself_Peer.setMyself_announceDirs(peer, saveIdentityInIB, my_ID, true); //kept
 				HandlingMyself_Peer.updateAddress(peer);
 				peer.sign();
 				peer.storeRequest();
@@ -542,7 +563,7 @@ public class HandlingMyself_Peer {
 		String creation_date = Encoder.getGeneralizedTime(_creation_date);
 		
 		// try to detect domains
-		if ((Identity.listing_directories_string.size() == 0) &&
+		if ((Identity.getListing_directories_string().size() == 0) &&
 				((addresses == null)
 						|| (addresses.size() == 0)
 						//|| (addresses.split(Pattern.quote(DirectoryServer.ADDR_SEP)).length == 0)
@@ -557,7 +578,7 @@ public class HandlingMyself_Peer {
 		}
 		
 		if ((addresses != null)
-			&& (Identity.listing_directories_string.size() == 0)) {
+			&& (Identity.getListing_directories_string().size() == 0)) {
 			if (DEBUG) out.println("HandlingMyself: updateAddress: addresses");
 			//String address[] = addresses.split(Pattern.quote(DirectoryServer.ADDR_SEP));
 			
@@ -597,9 +618,9 @@ public class HandlingMyself_Peer {
 		}
 		if (DEBUG) out.println("HandlingMyself: updateAddress: added sock addresses");
 		
-		if (Identity.listing_directories_string.size() > 0) {
+		if (Identity.getListing_directories_string().size() > 0) {
 			int i = 0;
-			for (String dir : Identity.listing_directories_string) {
+			for (String dir : Identity.getListing_directories_string()) {
 				if (DEBUG) out.println("HandlingMyself: updateAddress: add dir="+dir);
 				Address d  = new Address(dir);
 				String address_dir = d.getStringAddress(); //dir;//.getHostName()+":"+dir.getPort();

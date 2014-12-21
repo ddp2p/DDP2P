@@ -15,7 +15,7 @@ import javax.swing.DefaultCellEditor;
 import util.P2PDDSQLException;
 
 import config.Application;
-import data.D_SubscriberInfo;
+import data.D_DirectoryServerSubscriberInfo;
 import util.DBInfo;
 import util.DBInterface;
 import util.DBListener;
@@ -36,7 +36,7 @@ public class ConnPeerModel extends AbstractTableModel implements TableModel, DBL
 	HashSet<Object> tables = new HashSet<Object>();
 	ConnPeerTable connPeerTable;
 	String columnNames[]={__("Peer IP"),__("Status")};
-	ArrayList<D_SubscriberInfo> data = new ArrayList<D_SubscriberInfo>();
+	ArrayList<D_DirectoryServerSubscriberInfo> data = new ArrayList<D_DirectoryServerSubscriberInfo>();
 	private DirPanel panel;
 	
 	public ConnPeerModel(DBInterface _db, DirPanel _panel) { // constructor with dataSource -> DBInterface _db

@@ -47,7 +47,7 @@ public class D_MirrorInfo extends ASN1.ASNObj implements Summary{
 	public static final String action_update = "update";
 	public static final String action_insert = "insert";
 	public static  boolean DEBUG = false;
-	public D_TesterDefinition[] testerDef;     // dragged (optional) it should be read from a mirror 
+	public D_Tester[] testerDef;     // dragged (optional) it should be read from a mirror 
 	public String public_key;			  // dragged as part of the url (need to be parsed from the url)
 	public String url;                    // dragged
 	public String original_mirror_name;   // dragged
@@ -55,7 +55,7 @@ public class D_MirrorInfo extends ASN1.ASNObj implements Summary{
 	public String last_version;
 	public String last_version_branch;
 	public byte[] last_version_info;  // serializable versionInfo object, obtained form mirror
-	public D_TesterInfo[] testerInfo;     // data type can be ArrayList<TesterInfo>
+	public D_SoftwareUpdatesReleaseInfoByTester[] testerInfo;     // data type can be ArrayList<TesterInfo>
 	public boolean used;
 	public D_ReleaseQuality[] releaseQoT; // empty when dragged
 	public long mirror_ID = -1;
@@ -128,7 +128,7 @@ public class D_MirrorInfo extends ASN1.ASNObj implements Summary{
 		used = Util.stringInt2bool(_u.get(table.mirror.F_USED), false);
 		try {
 			if(DEBUG) System.out.println("D_MirrorInfo: <init>: testerInfo reconstr");
-			testerInfo = D_TesterInfo.reconstructArrayFromString(Util.getString(_u.get(table.mirror.F_TESTER_INFO)));
+			testerInfo = D_SoftwareUpdatesReleaseInfoByTester.reconstructArrayFromString(Util.getString(_u.get(table.mirror.F_TESTER_INFO)));
 			if(DEBUG) System.out.println("D_MirrorInfo: <init>: reconstructed");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -264,7 +264,7 @@ public class D_MirrorInfo extends ASN1.ASNObj implements Summary{
 		params[table.mirror.F_LAST_VERSION_BRANCH] = this.last_version_branch;
 		if(this.used)params[table.mirror.F_USED] = "1"; else params[table.mirror.F_USED] = "0";
 		params[table.mirror.F_RELEASE_QOT] = D_ReleaseQuality.encodeArray(this.releaseQoT);
-		params[table.mirror.F_TESTER_INFO] = D_TesterInfo.encodeArray(this.testerInfo);
+		params[table.mirror.F_TESTER_INFO] = D_SoftwareUpdatesReleaseInfoByTester.encodeArray(this.testerInfo);
 		params[table.mirror.F_LAST_CONTACT] = Encoder.getGeneralizedTime(this.last_contact_date);
 		params[table.mirror.F_ACTIVITY] = this.activity;
 		if(this.last_version_info!=null)params[table.mirror.F_LAST_VERSION_INFO] = new String(util.Base64Coder.encode(this.last_version_info));
@@ -302,7 +302,7 @@ public class D_MirrorInfo extends ASN1.ASNObj implements Summary{
 			HashSet<String> testers= new HashSet<String>();
 			for(String url:available.keySet()) {
 				VersionInfo vi = available.get(url);
-				for(D_TesterInfo a : vi.testers_data) {
+				for(D_SoftwareUpdatesReleaseInfoByTester a : vi.testers_data) {
 					testers.add(a.public_key_hash);
 				}
 			}

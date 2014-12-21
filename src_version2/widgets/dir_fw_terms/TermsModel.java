@@ -15,7 +15,7 @@ import javax.swing.JComboBox;
 import util.P2PDDSQLException;
 import config.Application;
 import config.Application_GUI;
-import data.D_TermsInfo;
+import data.D_DirectoryServerPreapprovedTermsInfo;
 import util.DBInfo;
 import util.DBInterface;
 import util.DBListener;
@@ -48,7 +48,7 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 	HashSet<Object> tables = new HashSet<Object>();
 	String columnNames[]={__("Priority"),__("Topic"),__("AD"),__("Plaintext"),__("Payment"), __("Service"),  __("Priority Type")};
 
-	ArrayList<D_TermsInfo> data = new ArrayList<D_TermsInfo>(); // rows of type D_TermInfo -> Bean
+	ArrayList<D_DirectoryServerPreapprovedTermsInfo> data = new ArrayList<D_DirectoryServerPreapprovedTermsInfo>(); // rows of type D_TermInfo -> Bean
 	private TermsPanel panel;
 	
 	public TermsModel(DBInterface _db, TermsPanel _panel) { // constructor with dataSource -> DBInterface _db
@@ -134,7 +134,7 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 	public Object getValueAt(int rowIndex, int columnIndex) {// a cell
 		if((rowIndex<0) || (rowIndex>=data.size())) return null;
 		if((columnIndex<0) || (columnIndex>this.getColumnCount())) return null;
-		D_TermsInfo crt = data.get(rowIndex);
+		D_DirectoryServerPreapprovedTermsInfo crt = data.get(rowIndex);
 		if(crt==null) return null;
 		switch(columnIndex){
 		case TABLE_COL_TOPIC:
@@ -160,7 +160,7 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 		if(DEBUG) System.out.println("TermsModel:setValueAt: r="+row +", c="+col+" val="+aValue);
 		if((row<0) || (row>=data.size())) return;
 		if((col<0) || (col>this.getColumnCount())) return;
-		D_TermsInfo crt = data.get(row);
+		D_DirectoryServerPreapprovedTermsInfo crt = data.get(row);
 		if(DEBUG) System.out.println("TermsModel:setValueAt: old crt="+crt);
 		switch(col) {
 		case TABLE_COL_TOPIC:
@@ -320,9 +320,9 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 			}
 		}
 		}
-		data = new ArrayList<D_TermsInfo>();
+		data = new ArrayList<D_DirectoryServerPreapprovedTermsInfo>();
 		for(ArrayList<Object> _u :u){
-			D_TermsInfo ui = new D_TermsInfo(_u);
+			D_DirectoryServerPreapprovedTermsInfo ui = new D_DirectoryServerPreapprovedTermsInfo(_u);
 			if(DEBUG) System.out.println("TermsModel: update: add: "+ui);
 			data.add(ui); // add a new item to data list (rows)
 		}
@@ -339,7 +339,7 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 		}	
 	}
 	public void swap(int r1 ,int r2) throws P2PDDSQLException{
-		D_TermsInfo temp;
+		D_DirectoryServerPreapprovedTermsInfo temp;
 		temp = data.get(r1);
 		data.set(r1, data.get(r2));
 		data.set(r2, temp);

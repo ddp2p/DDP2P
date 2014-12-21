@@ -76,15 +76,25 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 		MainFrame.status.removeMotListener(this);
 		Application.db.delListener(this);
 	}
+	JustificationViewer _jedit = null;
+	//JPanel
+	Component just_panel = null;
 	public Component getComboPanel() {
-		JustificationsByChoicePanel _jbc = this; //new JustificationsByChoicePanel();
+		if (just_panel != null) return just_panel;
+		if (DEBUG) System.out.println("createAndShowGUI: added jbc");
+    	if (_jedit == null) _jedit = new JustificationViewer();
+		if (DEBUG) System.out.println("createAndShowGUI: added justif editor");
+    	just_panel = MainFrame.makeJBCViewPanel(_jedit, this);
+
+    	JustificationsByChoicePanel _jbc = this; //new JustificationsByChoicePanel();
     	//_jbc.addListener(_jedit);
     	_jbc.addListener(MainFrame.status);
  		//DD.status.addMotionStatusListener(_jbc);
      	//javax.swing.JScrollPane jbc = new javax.swing.JScrollPane(_jbc);
 		//tabbedPane.addTab("JBC", _jbc);
 		if(DEBUG) System.out.println("createAndShowGUI: added jbc");
-		return _jbc;
+		if (_jedit != null) MainFrame.status.addJustificationStatusListener(_jedit);
+		return just_panel; //_jbc;
 	}
 	private void enrollDB(){
 		Hashtable<String,DBSelector[]> h = new Hashtable<String,DBSelector[]>();
@@ -115,7 +125,7 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 		motion_ID = motID;
 		enrollDB();
 			
-		if((org == null) || (!moti.getOrganizationLIDstr().equals(org.getLIDstr())))
+		if ((org == null) || (!moti.getOrganizationLIDstr().equals(org.getLIDstr())))
 			try {
 				long _orgID = Util.lval(moti.getOrganizationLIDstr(),-1);
 				if(_orgID > 0) org = D_Organization.getOrgByLID_NoKeep(_orgID, true);
@@ -173,7 +183,7 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 		}
 	}
 
-
+	final static ArrayList<Justifications> linkedJBC = new ArrayList<Justifications>();
 	private void update_layout() {
 		if(DEBUG) System.out.println("JBC:update_layout");
 		if(choices.length==1) {
@@ -196,7 +206,7 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 		_modelRoot = new org.jdesktop.swingx.MultiSplitLayout.Split();
 		_modelRoot.setChildren(children);
 		
-		for(int k=2; k<choices.length; k++) {
+		for (int k=2; k<choices.length; k++) {
 			children = 
 				Arrays.asList(_modelRoot,
 						new org.jdesktop.swingx.MultiSplitLayout.Divider(), 
@@ -214,11 +224,28 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 		j = new Justifications[choices.length];
 		js = new JScrollPane[choices.length];
 		jl = new JLabel[choices.length];
+
+		/**
+		 * Remove listener for justifications
+		 */
+		for (Justifications justif : linkedJBC) {
+			MainFrame.status.removeJustificationListener(justif);
+		}
+		linkedJBC.clear();
+		
 		for (int k = 0; k < choices.length; k ++){
 			Justifications jus;
 			jus = new Justifications(300);
 			j[k] = jus;
 			JustificationsModel model = jus.getModel();
+			
+			/**
+			 * Keep track of added justifications
+			 */
+			MainFrame.status.addJustificationStatusListener(jus);
+			linkedJBC.add(jus);
+			
+			
 			D_MotionChoice choice = choices[k];
 			String short_name = (choice == null) ? (__("Choice") + "_" + k) : choice.short_name;
 			model.setCrtChoice(short_name);
@@ -240,17 +267,28 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 		js = new JScrollPane[1];
 		jl = new JLabel[1];
 		j[0] = new Justifications(300);
+		linkedJBC.add(j[0]);
 		js[0] = j[0].getScrollPane();
-		jl[0]=new JLabel();
+		jl[0] = new JLabel();
 		jl[0].setPreferredSize(new Dimension(0,TOTALS_HEIGHT));
 		this.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, jl[0],js[0]));
 	}
 
 	private void clean() {
-		if(DEBUG) System.out.println("JBC:clean");
-		if(multiSplitPane!=null) this.remove(multiSplitPane);
+		if (DEBUG) System.out.println("JBC:clean");
+		
+		/**
+		 * Remove listener for justifications
+		 */
+		for (Justifications justif : linkedJBC) {
+			MainFrame.status.removeJustificationListener(justif);
+		}
+		linkedJBC.clear();
+		
+		
+		if (multiSplitPane!=null) this.remove(multiSplitPane);
 		try{
-			for(Component comp : j) this.remove(comp);
+			for (Component comp : j) this.remove(comp);
 		}catch(Exception e){if(DD.DEBUG_TODO)e.printStackTrace();}
 		j = new Justifications[0];
 		choices = new D_MotionChoice[0];

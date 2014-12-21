@@ -18,7 +18,7 @@ import javax.swing.DefaultCellEditor;
 import util.P2PDDSQLException;
 
 import config.Application;
-import data.D_SubscriberInfo;
+import data.D_DirectoryServerSubscriberInfo;
 import util.DBInfo;
 import util.DBInterface;
 import util.DBListener;

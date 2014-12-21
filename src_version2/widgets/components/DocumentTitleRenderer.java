@@ -28,6 +28,11 @@ import javax.swing.table.TableCellRenderer;
 
 import data.D_Document_Title;
 
+/**
+ * Sets Strings to Green on Gray
+ * @author msilaghi
+ *
+ */
 public class DocumentTitleRenderer implements TableCellRenderer  {
 
 	public static boolean DEBUG = false;

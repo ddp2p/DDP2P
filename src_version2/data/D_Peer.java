@@ -1,3 +1,23 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2014 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package data;
 
 import static util.Util.__;
@@ -21,17 +41,15 @@ import plugin_data.D_PluginInfo;
 import config.Application;
 import config.Application_GUI;
 import config.DD;
-import config.Identity;
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 import streaming.RequestData;
 import streaming.UpdatePeersTable;
-import table.peer_address;
 import table.peer_org;
+import table.peer_scheduled_message;
 import util.CreatorGIDItem;
-import util.DBInterface;
 import util.DD_Address;
 import util.DDP2P_DoubleLinkedList;
 import util.DDP2P_DoubleLinkedList_Node;
@@ -111,6 +129,14 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			this.picture = picture;
 			this.version = version;
 		}
+	}
+	public static class D_Peer_Local_Agent_Messages_Scheduled {
+		/**
+		 * already encoded as string base 64
+		 */
+		public String recommendationOfTestersBundle;
+		public long recommendationOfTestersBundleLID = -1;
+		public boolean recommendationOfTestersBundle_Loaded;	
 	}
 	public static class D_Peer_Local_Agent_State {
 		//local_agent_state
@@ -256,6 +282,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public boolean dirty_served_orgs_inferred = false;
 	public boolean dirty_instances = false;
 	public boolean dirty_my_data = false;
+	private boolean dirty_tester_recommendation;
 
 	public Object dirty_main_monitor = new Object();
 	public Object dirty_addresses_monitor = new Object();
@@ -302,6 +329,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	Hashtable <String, D_PeerInstance> inst_by_ID = new Hashtable <String, D_PeerInstance>();
 	//public D_PeerInstance instance_null;
 	
+	public D_Peer_Local_Agent_Messages_Scheduled component_messages = new D_Peer_Local_Agent_Messages_Scheduled();
 	public D_Peer_Preferences component_preferences = new D_Peer_Preferences(false);
 	public D_Peer_Local_Agent_State component_local_agent_state = new D_Peer_Local_Agent_State();
 
@@ -595,9 +623,70 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		}
 		this.loaded_local_preferences = true;
 		
+		// call getTesterRecommendationBundleASN1Base64 it only when needed
+		//getTesterRecommendationBundleASN1Base64();
 		//experience = Util.getString(p.get(table.peer.PEER_COL_EXPERIENCE));
 		//exp_avg = Util.getString(p.get(table.peer.PEER_COL_EXP_AVG));
+		
 		if (this.dirty_any()) this.storeRequest();
+	}
+	/**Run sql query, and get the bundle and its message ID
+	 * 
+	 */
+	private static final String sql_load_ScheduledRecommendedTestersMessages = 
+			"SELECT "+table.peer_scheduled_message.fields_peer_scheduled_message 
+			+ " FROM "+table.peer_scheduled_message.TNAME
+			+ " WHERE "+table.peer_scheduled_message.peer_ID+"=?" 
+			+ " AND "+table.peer_scheduled_message.message_type+"=? " +
+					" ORDER BY "+table.peer_scheduled_message.creation_date+" DESC;";
+	/**
+	 * This should be called from the sender module.
+	 * Returns the Bundle encodes with ASN1 and then with base64.
+	 * 
+	 * Also clears the message assuming it was sent!
+	 * 
+	 */
+	public String getTesterRecommendationBundleASN1Base64() {
+		if (this.component_messages.recommendationOfTestersBundle_Loaded) return this.component_messages.recommendationOfTestersBundle;
+		ArrayList<ArrayList<Object>> obj;
+		try {
+			obj = Application.db.select(sql_load_ScheduledRecommendedTestersMessages, 
+					new String[] {this.peer_ID, ""+peer_scheduled_message.MESSAGE_TYPE_RECOMMENDATION_OF_TESTERS},
+					DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return this.component_messages.recommendationOfTestersBundle;
+		}
+		if (obj.size() == 0) {
+			this.component_messages.recommendationOfTestersBundleLID = -1;
+			this.component_messages.recommendationOfTestersBundle = null;
+			this.component_messages.recommendationOfTestersBundle_Loaded = true;
+			return this.component_messages.recommendationOfTestersBundle; // no changes or maybe set to (ID = -1, msg=null)??
+		}
+		
+		if (obj.size() > 1) {
+			// some inconsistency in the table Should discard old ones
+			if (_DEBUG) System.out.println("D_Peer: loadTesterRecommendation: more than one waiting testers message for peer:"+peer_ID+" #"+ obj.size());
+		}
+			
+		//if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllTestersLIDs: got="+result.size());//result);
+		this.component_messages.recommendationOfTestersBundleLID = Util.lval(obj.get(0).get(table.peer_scheduled_message.F_ID), -1);
+		this.component_messages.recommendationOfTestersBundle = Util.getString(obj.get(0).get(table.peer_scheduled_message.F_MESSAGE));
+		this.component_messages.recommendationOfTestersBundle_Loaded = true;
+		String result = this.component_messages.recommendationOfTestersBundle;
+		
+		/**
+		 * we assume that the message was sent when this is called
+		 */
+		clearMessageTesterRecommendation();
+		return result;
+	}
+	/**
+	 * This removes the message to testers (to be called after a confirmation of delivery or when sent (if confirmation not implemented.
+	 */
+	void clearMessageTesterRecommendation() {
+		this.component_messages.recommendationOfTestersBundle = null;
+		this.dirty_tester_recommendation = true;
 	}
 	private final static String sql_peer_org_inf = 
 				"SELECT " + table.peer_org_inferred.fields
@@ -1506,6 +1595,10 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			if (DEBUG) System.err.println("D_Peer: _storeAct: dirty_addresses");
 			storeAddresses();
 		}
+		if (dirty_tester_recommendation) {
+			if (DEBUG) System.err.println("D_Peer: _storeAct: dirty_rec_tester");
+			storeTesterRecommendation();
+		}
 		if (dirty_any())
 			if (DEBUG) System.err.println("D_Peer: _storeAct: still dirty: m:"+
 					dirty_main+", i:"+dirty_instances+", o:"+dirty_served_orgs+
@@ -1515,7 +1608,55 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (DEBUG) System.err.println("D_Peer: _storeAct: exit done: "+getLIDstr());
 		return getLID();
 	}
+	
+	/**
+	 * Store a TesterRecommendation if present
+	 */
+	private void storeTesterRecommendation() {
+		dirty_tester_recommendation = false;
+		if (this.component_messages.recommendationOfTestersBundle == null) {
+			if (this.component_messages.recommendationOfTestersBundleLID > 0) {
+				try {
+					Application.db.delete(true, table.peer_scheduled_message.TNAME,
+							new String[] {table.peer_scheduled_message.peer_ID, table.peer_scheduled_message.message_type},
+							new String[]{this.peer_ID+"", peer_scheduled_message.MESSAGE_TYPE_RECOMMENDATION_OF_TESTERS+""}, DEBUG);
+					this.component_messages.recommendationOfTestersBundleLID = -1;
+				} catch (P2PDDSQLException e) {
+					e.printStackTrace();
+				}
+			}
+		   return;
+		}
+		
+		boolean update = this.component_messages.recommendationOfTestersBundleLID > 0;
+		
+		String params[] = new String[update?table.peer_scheduled_message.F_FIELDS:table.peer_scheduled_message.F_FIELDS_NOID];
 
+		params[table.peer_scheduled_message.F_PEER_LID] = this.peer_ID;
+		params[table.peer_scheduled_message.F_MESSAGE_TYPE] = Util.getString(peer_scheduled_message.MESSAGE_TYPE_RECOMMENDATION_OF_TESTERS);
+		params[table.peer_scheduled_message.F_MESSAGE] = this.component_messages.recommendationOfTestersBundle;
+		
+		try {
+			if (update) {
+				params[table.peer_scheduled_message.F_ID] = Util.getStringID(this.component_messages.recommendationOfTestersBundleLID);
+				Application.db.update(table.peer_scheduled_message.TNAME,
+						table.peer_scheduled_message._fields_peer_scheduled_message_no_ID,
+						new String[]{table.peer_scheduled_message.message_ID},
+						params,
+						DEBUG);
+			}
+			else {	
+				this.component_messages.recommendationOfTestersBundleLID = 
+						Application.db.insert(table.peer_scheduled_message.TNAME,
+								table.peer_scheduled_message._fields_peer_scheduled_message_no_ID,
+								params,
+								DEBUG);
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		
+	}
 	private void storeBasicComponent() throws P2PDDSQLException {
 		if(DEBUG) System.out.println("\n\n***********\nD_Peer: doSave: "+this);
 
@@ -1928,6 +2069,8 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (dirty_served_orgs_inferred) return true;
 		if (dirty_instances) return true;
 		if (dirty_my_data) return true;
+		if (dirty_tester_recommendation) return true;
+
 		return false;
 	}
 	public boolean dirty_all() {
@@ -1937,7 +2080,8 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				&& (dirty_served_orgs)
 				&& (dirty_served_orgs_inferred)
 				&& (dirty_instances)
-				&& (dirty_my_data))
+				&& (dirty_my_data)
+				&& (dirty_tester_recommendation))
 			return true;
 		return false;
 	}
@@ -1948,6 +2092,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		dirty_served_orgs_inferred = dirty;
 		dirty_instances = dirty;
 		dirty_my_data = dirty;
+		dirty_tester_recommendation = dirty;
 	}
 	public D_PeerInstance getPeerInstanceOrig(String inst) {
 		return _instances_orig.get(Util.getStringNonNullUnique(inst));
@@ -2321,6 +2466,22 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		this.component_basic_data.emails = _email;
 		this.dirty_main = true;
 	}
+	
+	public byte[] getIcon() {
+		return this.component_basic_data.picture;
+	}
+	/**
+	 * Returns false if the image is larger than DD.MAX_PEER_ICON_LENGTH
+	 * Sets dirty_main flag and asserts reference
+	 * @param _email
+	 */
+	public boolean setIcon(byte[] icon) {
+		if (icon != null && icon.length > DD.MAX_PEER_ICON_LENGTH) return false;
+		assertReferenced();
+		this.component_basic_data.picture = icon;
+		this.dirty_main = true;
+		return true;
+	}
 	/**
 	 * Sets Keep, and then storeRequest, releasing reference
 	 * @param peer
@@ -2659,6 +2820,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			if (signature_alg != null)enc.addToSequence(Encoder.getStringEncoder(signature_alg, Encoder.TAG_PrintableString));
 		if ((served_orgs != null) && (served_orgs.length > 0))
 			enc.addToSequence(Encoder.getEncoder(this.served_orgs, dictionary_GIDs).setASN1Type(DD.TAG_AC12));
+		if (component_basic_data.picture != null) enc.addToSequence(new Encoder(component_basic_data.picture, DD.TAG_AC13));
 		enc.addToSequence(new Encoder(getSignature()));
 		enc.setASN1Type(TAG);
 		return enc;
@@ -2719,9 +2881,10 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		} else {
 			served_orgs = new D_PeerOrgs[0];
 		}
+		if (content.getTypeByte() == DD.TAG_AC13)component_basic_data.picture = content.getFirstObject(true).getBytes(DD.TAG_AC13);else component_basic_data.picture = null;
 		if(content.getTypeByte() == Encoder.TAG_OCTET_STRING) 
 			setSignature(content.getFirstObject(true).getBytes());
-		if (DEBUG){
+		if (DEBUG) {
 			System.out.println("D_Peer:decode: name="+getName()+" e="+getEmail()+" sign="+getSignature());
 			Util.printCallPath("");
 		}
@@ -3047,6 +3210,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			enc.addToSequence(Encoder.getEncoder(this.served_orgs).setASN1Type(DD.TAG_AC12));
 			served_orgs = old;
 		}
+		if (component_basic_data.picture != null) enc.addToSequence(new Encoder(component_basic_data.picture, DD.TAG_AC13));
 		//enc.addToSequence(new Encoder(component_basic_data.signature));
 		//enc.setASN1Type(TAG);
 		return enc;
@@ -5311,11 +5475,34 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		this.status_references--;
 		Application_GUI.ThreadsAccounting_ping("Dropped peer status references for "+getName());
 	}
+	/**
+	 * Store in database.
+	 * When building a reply, send it and set it to null;
+	 * 
+	 * Sets the dirty_flag (caller should call store)
+	 * @param bundle
+	 */
+	public void sendTesterRecommendationBundle(
+			D_RecommendationOfTestersBundle bundle) {
+		component_messages.recommendationOfTestersBundle = Util.stringSignatureFromByte(bundle.encode());
+		this.dirty_tester_recommendation = true;
+	}
+	/**
+	 * This returns the bundle and sets it to null, flagging dirty.
+	 * Called should then call store.
+	 * @return
+	 */
+	public String getTesterRecommendationBundle() {
+		if (component_messages.recommendationOfTestersBundle == null) return null;
+		String result = component_messages.recommendationOfTestersBundle;
+		component_messages.recommendationOfTestersBundle = null;
+		this.dirty_tester_recommendation = true;
+		return result;
+	}
 
 }
 class D_Peer_SaverThread extends util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000;
-	private static final long SAVER_SLEEP_ON_ERROR = 2000;
+	//private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	/**
 	 * The next monitor is needed to ensure that two D_Peer_SaverThreadWorker are not concurrently modifying the database,
@@ -5364,7 +5551,7 @@ class D_Peer_SaverThread extends util.DDP2P_ServiceThread {
 			*/
 			synchronized(this) {
 				try {
-					wait(SAVER_SLEEP);
+					wait(SaverThreadsConstants.SAVER_SLEEP_BETWEEN_PEER_MSEC);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -5374,8 +5561,6 @@ class D_Peer_SaverThread extends util.DDP2P_ServiceThread {
 }
 
 class D_Peer_SaverThreadWorker extends util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000;
-	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	//public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
@@ -5399,7 +5584,7 @@ class D_Peer_SaverThreadWorker extends util.DDP2P_ServiceThread {
 						e.printStackTrace();
 						synchronized(this) {
 							try {
-								wait(SAVER_SLEEP_ON_ERROR);
+								wait(SaverThreadsConstants.SAVER_SLEEP_WORKER_PEERS_ON_ERROR_MSEC);
 							} catch (InterruptedException e2) {
 								e2.printStackTrace();
 							}
@@ -5411,11 +5596,13 @@ class D_Peer_SaverThreadWorker extends util.DDP2P_ServiceThread {
 				//System.out.println("D_Peer_Saver: idle ...");
 			}
 		}
-		synchronized(this) {
-			try {
-				wait(SAVER_SLEEP);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+		if (SaverThreadsConstants.SAVER_SLEEP_WORKER_BETWEEN_PEERS_MSEC >= 0) {
+			synchronized(this) {
+				try {
+					wait(SaverThreadsConstants.SAVER_SLEEP_WORKER_BETWEEN_PEERS_MSEC);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}

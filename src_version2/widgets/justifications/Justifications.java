@@ -56,9 +56,8 @@ import util.Util;
 import widgets.app.DDIcons;
 import widgets.app.MainFrame;
 import widgets.components.BulletRenderer;
+import widgets.components.ColoredDocumentTitleRenderer;
 import widgets.components.DebateDecideAction;
-//import widgets.org.ColorRenderer;
-import widgets.components.DocumentTitleRenderer;
 import widgets.justifications.JustificationsModel;
 import config.Application;
 import config.JustificationsListener;
@@ -66,7 +65,11 @@ import config.JustificationsListener;
 import data.D_Document_Title;
 import data.D_Justification;
 
-
+/**
+ * Lists justifications satisfying a filter (associated with a type of choice, and answering some existing justification.
+ * @author msilaghi
+ *
+ */
 @SuppressWarnings("serial")
 public class Justifications extends JTable implements MouseListener, JustificationsListener  {
 	private int DIM_X = 1000;
@@ -74,7 +77,8 @@ public class Justifications extends JTable implements MouseListener, Justificati
 	public static final int A_NON_FORCE_COL = 4;
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
-	private DocumentTitleRenderer titleRenderer;
+	public static final boolean USING_VIEWER = false;
+	private ColoredDocumentTitleRenderer titleRenderer;
 	DefaultTableCellRenderer centerRenderer;
 	BulletRenderer hotRenderer;
 	public Justifications(int dim_x) {
@@ -112,6 +116,8 @@ public class Justifications extends JTable implements MouseListener, Justificati
 		getModel().connectWidget();
 		
 		MainFrame.status.addMotionStatusListener(this.getModel());
+    	if (_jview != null)
+    		MainFrame.status.addJustificationStatusListener(_jview);
     	if (_jedit != null) {
     		MainFrame.status.addMotionStatusListener(_jedit);
     		MainFrame.status.addJustificationStatusListener(_jedit);
@@ -126,6 +132,8 @@ public class Justifications extends JTable implements MouseListener, Justificati
 		getModel().disconnectWidget();
 
 		MainFrame.status.removeMotListener(this.getModel());
+    	if (_jview != null)
+    		MainFrame.status.removeJustificationListener(_jview);
     	if (_jedit != null) {
     	 	MainFrame.status.removeConstituentMeListener(_jedit);
     		MainFrame.status.removeMotListener(_jedit);
@@ -134,14 +142,23 @@ public class Justifications extends JTable implements MouseListener, Justificati
     	MainFrame.status.removeJustificationListener(this);
 	}
 	JustificationEditor _jedit = null;
+	JustificationViewer _jview = null;
 	//JPanel
 	Component just_panel = null;
 	public Component getComboPanel() {
 		if (just_panel != null) return just_panel;
 		if (DEBUG) System.out.println("createAndShowGUI: added justif");
     	if (_jedit == null) _jedit = new JustificationEditor();
+		if (USING_VIEWER) 
+			if (_jview == null) _jview = new JustificationViewer();
 		if (DEBUG) System.out.println("createAndShowGUI: added justif editor");
-    	just_panel = MainFrame.makeJustificationPanel(_jedit, this);
+    	just_panel = MainFrame.makeJustificationPanel(_jedit, _jview, this);
+    	
+		if (USING_VIEWER) {
+	    	_jedit.setVisible(false);
+	    	_jview.setVisible(false);
+		}
+		
     	//javax.swing.JScrollPane jscj = new javax.swing.JScrollPane(just_panel);
 		//tabbedPane.addTab("Justifications", jscj);
     	//JScrollPane just = justifications.getScrollPane();
@@ -149,7 +166,9 @@ public class Justifications extends JTable implements MouseListener, Justificati
 		//tabbedPane.addTab("Justification", _jedit.getScrollPane());
 		if(DEBUG) System.out.println("createAndShowGUI: justif pane");
 		this.addListener(MainFrame.status);
-		MainFrame.status.addJustificationStatusListener(_jedit);
+		if (_jedit != null) MainFrame.status.addMotionStatusListener(_jedit);
+		if (_jedit != null) MainFrame.status.addJustificationStatusListener(_jedit);
+		if (_jview != null) MainFrame.status.addJustificationStatusListener(_jview);
     	return just_panel;//jscj;
 	}
 	void init() {
@@ -157,7 +176,7 @@ public class Justifications extends JTable implements MouseListener, Justificati
 		addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
 		//colorRenderer = new ColorRenderer(getModel());
-		titleRenderer = new DocumentTitleRenderer();
+		titleRenderer = new ColoredDocumentTitleRenderer(getModel());
 		centerRenderer = new DefaultTableCellRenderer();
 		hotRenderer = new BulletRenderer(
 				DDIcons.getHotImageIcon("Hot"), DDIcons.getHotGImageIcon("Hot"),
@@ -190,7 +209,7 @@ public class Justifications extends JTable implements MouseListener, Justificati
 		TableRowSorter<JustificationsModel> sorter = new TableRowSorter<JustificationsModel>();
 		this.setRowSorter(sorter);
 		sorter.setModel(getModel());
-		sorter.setComparator(getModel().TABLE_COL_NAME, documentTitleComparator);
+		sorter.setComparator(getModel().TABLE_COL_TITLE, documentTitleComparator);
 		this.getRowSorter().toggleSortOrder(getModel().TABLE_COL_ARRIVAL_DATE);
 		this.getRowSorter().toggleSortOrder(getModel().TABLE_COL_ARRIVAL_DATE);
 
@@ -241,10 +260,9 @@ public class Justifications extends JTable implements MouseListener, Justificati
 
     DefaultTableCellRenderer defaultTableCellRenderer = new DefaultTableCellRenderer();
 	public TableCellRenderer getCellRenderer(int row, int column) {
-		if ((column == getModel().TABLE_COL_NAME)) return titleRenderer;
+		if ((column == getModel().TABLE_COL_TITLE)) return titleRenderer;
 		if ((column == getModel().TABLE_COL_VOTERS_NB)) return centerRenderer;
 
-		
 		if (column == getModel().TABLE_COL_RECENT) //return super.getCellRenderer(row, column);
 			return hotRenderer;
 		if (column == getModel().TABLE_COL_BROADCASTED) return super.getCellRenderer(row, column);
@@ -501,24 +519,58 @@ public class Justifications extends JTable implements MouseListener, Justificati
      * If need to call from outside the status.fireListener, you should use: justificationSetCurrent
      */
 	@Override
-	public void justUpdate(String justID, int col, boolean db_sync,
-			D_Justification just) {
-		if (justID == null) return;
-		int model_row = getModel().getRow(justID); //getRowByID(Util.lval(justID));
-		if (model_row < 0) return;
+	public void justUpdate(String justID, int col, boolean db_sync, D_Justification just) {
+		//boolean DEBUG = true;
+		//Util.printCallPath("");
+		getModel().setCurrentJustification(justID, just);
+				
+		int model_row = -1;
+		if (justID == null) {
+			if (DEBUG) System.out.println("Justifications: justUpdate: null justID at ch="+this.getModel().crt_choice);
+			if (USING_VIEWER) {
+				if (_jedit != null) _jedit.setVisible(false);
+				if (_jview != null) _jview.setVisible(false);
+			}
+			// return;
+		} else {
+			model_row = getModel().getRow(justID); //getRowByID(Util.lval(justID));
+		
+			if (model_row < 0) {
+				if (DEBUG) System.out.println("Justifications: justUpdate: negative model_row at ch="+this.getModel().crt_choice);
+				if (USING_VIEWER) {
+					if (_jedit != null) _jedit.setVisible(false);
+					if (_jview != null) _jview.setVisible(false);
+				}
+				// return;
+			}
+		}
+		if (DEBUG) System.out.println("Justifications: justUpdate: selecting at m_r="+model_row+" ch="+this.getModel().crt_choice);
 		SwingUtilities.invokeLater(new util.DDP2P_ServiceRunnable(__("Set Selection of Justification"), false, false, Integer.valueOf(model_row)) {
 			// may be daemon
 			@Override
 			public void _run() {
 				try {
-					int model_row = (Integer)ctx;
-					int view_row = Justifications.this.convertRowIndexToView(model_row);
-					Justifications.this.setRowSelectionInterval(view_row, view_row);
+					if (USING_VIEWER) {
+						D_Justification crt = Justifications.this.getModel().crt_justification;
+						if (crt != null && crt.getGID() == null) {
+							if (_jview != null) _jview.setVisible(false);
+							if (_jedit != null) _jedit.setVisible(true);
+						} else {
+							if (_jedit != null) _jedit.setVisible(false);
+							if (_jview != null) _jview.setVisible(true);
+						}
+					}
+					int view_row = -1;
+					int model_row = (Integer) ctx;
+					if (model_row >= 0)
+						view_row = Justifications.this.convertRowIndexToView(model_row);
+					//if (true) System.out.println("Justifications: justUpdate: setting at m_r="+model_row+" v_r="+view_row);
+					if (view_row < 0) Justifications.this.clearSelection();
+					else Justifications.this.setRowSelectionInterval(view_row, view_row);
 				}
 				catch (java.lang.ArrayIndexOutOfBoundsException e){}
 				catch (Exception e){e.printStackTrace();}
 			}
-			
 		});
 	}
 	@Override

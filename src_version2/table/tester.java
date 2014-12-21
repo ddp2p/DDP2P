@@ -48,6 +48,7 @@ public class tester {
 	public static final String signature = "signature";
 	public static final String creation_date = "creation_date";
 	public static final String preference_date = "preference_date";
+	public static final String peer_source_LID = "peer_source_LID";
 	
 	public static final String fields_tester_no_ID = 
 			original_tester_name+","+
@@ -68,7 +69,8 @@ public class tester {
 			data_version+","+
 			signature+","+
 			creation_date+","+
-			preference_date
+			preference_date+","+
+			peer_source_LID
 			;
 //	+","+		last_contact_date+","+	activity;
 	public static final String[] _fields_tester_no_ID = Util.trimmed(fields_tester_no_ID.split(Pattern.quote(",")));
@@ -94,6 +96,7 @@ public class tester {
 	public static final int F_SIGNATURE = 16;
 	public static final int F_CREATION_DATE = 17;
 	public static final int F_PREFERENCE_DATE = 18;
-	public static final int F_ID = 19;
+	public static final int F_PEER_SOURCE_LID = 19;
+	public static final int F_ID = 20;
 	
 }

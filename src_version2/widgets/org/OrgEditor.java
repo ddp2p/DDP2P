@@ -431,7 +431,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		
 		
 		name_field.getDocument().removeDocumentListener(this);
-		name_field.setText(organization.getOrgName()); // Util.getString(org.get(table.organization.ORG_COL_NAME)));
+		name_field.setText(organization.getName()); // Util.getString(org.get(table.organization.ORG_COL_NAME)));
 		name_field.getDocument().addDocumentListener(this);
 		
 		//String certif_method = Util.getString(org.get(table.organization.ORG_COL_CERTIF_METHODS));
@@ -1407,7 +1407,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				return;
 			}
 			try {
-				String name = organization.getOrgName(); //Util.getString(org.get(table.organization.ORG_COL_NAME));
+				String name = organization.getName(); //Util.getString(org.get(table.organization.ORG_COL_NAME));
 				if ((name == null) || ("".equals(name.trim()))) {
 					Application_GUI.warning(__("You need to select a name for you organization"), __("Missing Name"));
 					return;						
@@ -1551,7 +1551,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 
 				D_Organization org = organization; //D_Organization.getOrgByLID(this.orgID, true);
 				//D_Organization[] org = new D_Organization[1]; 
-				if ((org == null) || (org.name == null) || ("".equals(org.name.trim()))) {
+				if ((org == null) || (org.getName() == null) || ("".equals(org.getName().trim()))) {
 					Application_GUI.warning(__("You need to select a name for you organization"), __("Missing Name"));
 					return;						
 				}
@@ -1624,7 +1624,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				String gid=null;
 				//SK sk_ini=null;
 				D_Organization orgData = organization; //D_Organization.getOrgByLID(this.orgID, true);
-				if ((orgData == null) || (orgData.name == null) || ("".equals(orgData.name.trim()))){
+				if ((orgData == null) || (orgData.getName() == null) || ("".equals(orgData.getName().trim()))){
 					Application_GUI.warning(__("You need to select a name for you organization"), __("Missing Name"));
 					return;						
 				}

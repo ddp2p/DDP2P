@@ -55,8 +55,8 @@ import config.Application;
 import config.Application_GUI;
 import config.DD;
 import data.D_ReleaseQuality;
-import data.D_TesterInfo;
-import data.D_TesterSignedData;
+import data.D_SoftwareUpdatesReleaseInfoByTester;
+import data.D_SoftwareUpdatesReleaseInfoDataSignedByTester;
 import data.D_MirrorInfo;
 import data.D_UpdatesKeysInfo;
 import data.HandlingMyself_Peer;
@@ -780,10 +780,10 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 
 				break;
 			}
-			ArrayList<D_TesterInfo> testers = new ArrayList<D_TesterInfo>();
+			ArrayList<D_SoftwareUpdatesReleaseInfoByTester> testers = new ArrayList<D_SoftwareUpdatesReleaseInfoByTester>();
 			line = 0;
 			int crt_tester = 0;
-			D_TesterInfo crt_tester_info = new D_TesterInfo();
+			D_SoftwareUpdatesReleaseInfoByTester crt_tester_info = new D_SoftwareUpdatesReleaseInfoByTester();
 			int[]indexes = null;
 			while ((tmp_inputLine = in.readLine()) != null) {
 				String name;
@@ -794,11 +794,11 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 				String sign;
 				if(DEBUG)System.out.println("ClientUpdates gets: "+tmp_inputLine+" #tester line= "+line+" crt tester="+crt_tester);
 				tmp_inputLine = tmp_inputLine.trim();
-				if(line%6==0){ crt_tester_info = new D_TesterInfo(); name = tmp_inputLine; crt_tester_info.name=name; line++;}
+				if(line%6==0){ crt_tester_info = new D_SoftwareUpdatesReleaseInfoByTester(); name = tmp_inputLine; crt_tester_info.name=name; line++;}
 				else if(line%6==1){ pk_hash = tmp_inputLine; crt_tester_info.public_key_hash=pk_hash; line++;}
-				else if(line%6==2){ IDs_strings = tmp_inputLine.split(Pattern.quote(D_TesterInfo.TEST_SEP)); indexes = Util.mkIntArray(IDs_strings); line++;}
-				else if(line%6==3){ QTs_strings = tmp_inputLine.split(Pattern.quote(D_TesterInfo.TEST_SEP)); crt_tester_info.tester_QoT = mkFloatArray(indexes, QTs_strings, result.releaseQD); line++;}
-				else if(line%6==4){ RTs_strings = tmp_inputLine.split(Pattern.quote(D_TesterInfo.TEST_SEP)); crt_tester_info.tester_RoT = mkFloatArray(indexes, RTs_strings, result.releaseQD); line++;}
+				else if(line%6==2){ IDs_strings = tmp_inputLine.split(Pattern.quote(D_SoftwareUpdatesReleaseInfoByTester.TEST_SEP)); indexes = Util.mkIntArray(IDs_strings); line++;}
+				else if(line%6==3){ QTs_strings = tmp_inputLine.split(Pattern.quote(D_SoftwareUpdatesReleaseInfoByTester.TEST_SEP)); crt_tester_info.tester_QoT = mkFloatArray(indexes, QTs_strings, result.releaseQD); line++;}
+				else if(line%6==4){ RTs_strings = tmp_inputLine.split(Pattern.quote(D_SoftwareUpdatesReleaseInfoByTester.TEST_SEP)); crt_tester_info.tester_RoT = mkFloatArray(indexes, RTs_strings, result.releaseQD); line++;}
 				else if(line%6==5){
 					sign = tmp_inputLine; line++; crt_tester++; crt_tester_info.signature = Util.byteSignatureFromString(sign);
 					testers.add(crt_tester_info);
@@ -808,7 +808,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 					break;
 				}
 			}
-			result.testers_data = testers.toArray(new D_TesterInfo[0]);
+			result.testers_data = testers.toArray(new D_SoftwareUpdatesReleaseInfoByTester[0]);
 			while ((tmp_inputLine = in.readLine()) != null) {
 				tmp_inputLine = tmp_inputLine.trim();				
 				if(!STOP.equals(tmp_inputLine))  continue;
@@ -1422,7 +1422,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 	 	}
 
 		i.updateHash(filePath);
-		D_TesterSignedData tsd = new D_TesterSignedData(i, 0);
+		D_SoftwareUpdatesReleaseInfoDataSignedByTester tsd = new D_SoftwareUpdatesReleaseInfoDataSignedByTester(i, 0);
 		i.testers_data[0].public_key_hash = Util.getGIDhashFromGID(tested_pk, true);
 		i.testers_data[0].signature = tsd.sign(sk);
 		//i.sign(sk);

@@ -40,7 +40,7 @@ public class DirectoryAnnouncement extends ASNObj{
 	public final static byte TAG=0;
 	private static final int V1 = 1;
 	private static final int V2 = 2;
-	private static final boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	/**
 	 * Version up to (but not equal to) which the structure-version is V1
@@ -48,13 +48,29 @@ public class DirectoryAnnouncement extends ASNObj{
 	public static final String AGENT_VERSION_V1 = "0.9.50";
 	//public int version = V1; // V2 is new
 	//private int address_version;
-	public int agent_version[] =  Util.getMyVersion();
-	public String globalID;
-	public String globalIDhash;
+	public int agent_version[] =  DD.getMyVersion();
+	/**
+	 * Only one of the GID or GIDH is needed. GIDH can be obtained from GID. For efficiency send GIDH
+	 * when you are sure that the server already has the GID (e.g. if one has pre-registered with it). 
+	 */
+	private String myGID;
+	private String myGIDH;
+	public String branch;
+	public String name;
 	public String instance;
 	public DirectoryAnnouncement_Address address = new DirectoryAnnouncement_Address();
+	/**
+	 * A challenge may have been received from the directory server to avoid repeat attacks.
+	 */
 	public byte[] challenge;
+	/**
+	 * This is the date when the signature is made
+	 */
 	public Calendar date;
+	/**
+	 * A certificate is a X509 certificate or some other signature of this GID with a key recognized by the directory server.
+	 * I think this is not yet fully implemented
+	 */
 	public byte[] certificate=new byte[0];
 	public byte[] signature=new byte[0];
 	
@@ -63,8 +79,10 @@ public class DirectoryAnnouncement extends ASNObj{
 	public String toString() {
 		String result =
 				"DA [agent_version="+Util.concat(agent_version, ".", "NULL")+"\n"+
-						" ID="+Util.trimmed(globalID)+"\n"+
-						" IDh="+Util.trimmed(globalIDhash)+"\n"+
+						" branch=" + branch+"\n"+
+						" name=" + name+"\n"+
+						" ID="+Util.trimmed(getGID())+"\n"+
+						" IDh="+Util.trimmed(getGIDH())+"\n"+
 						" instance="+Util.trimmed(instance)+"\n"+
 						" date ="+Encoder.getGeneralizedTime(date)+"\n"+
 						" address="+address+"\n"+
@@ -75,12 +93,16 @@ public class DirectoryAnnouncement extends ASNObj{
 		return result;
 	}
 	public String toSummaryString() {
-		String result=" ID="+Util.getGIDhash(globalID)+"\n address="+address+"'";
+		String result = "I="+instance+" B="+branch+" AV="+Util.concat(agent_version, ".", "NULL")+" ID="+Util.getGIDhash(getGID())+"\n address="+address+"'";
 		return result;
 	}
 	public void setVersion(int version) {
 		address.version = version;
 	}
+	/**
+	 * For the version of the embedded address structures
+	 * @param version
+	 */
 	public void setAddressVersion(int version) {
 		address.address_version = version;
 	}
@@ -136,7 +158,7 @@ public class DirectoryAnnouncement extends ASNObj{
 		Encoder da = new Encoder()
 		.initSequence()
 		.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, DirectoryAnnouncement.TAG);
-		Encoder enc = new Encoder(globalID, false);
+		Encoder enc = new Encoder(getGID(), false);
 		da.addToSequence(enc);
 		if (date != null)  da.addToSequence(new Encoder(date));
 		da.addToSequence(address.getEncoder());
@@ -163,7 +185,7 @@ public class DirectoryAnnouncement extends ASNObj{
 		//da.print();
 		da.addToSequence(new Encoder(getVersion()));
 		
-		Encoder enc=new Encoder(globalID, false);
+		Encoder enc=new Encoder(getGID(), false);
 		//enc.print();
 		da.addToSequence(enc);
 		
@@ -171,7 +193,7 @@ public class DirectoryAnnouncement extends ASNObj{
 		
 		da.addToSequence(address.getEncoder());
 		
-		if (certificate.length > 0) da.addToSequence(new Encoder(certificate, DD.TAG_AC1));
+		if (certificate != null && certificate.length > 0) da.addToSequence(new Encoder(certificate, DD.TAG_AC1));
 		//System.out.println("DA:Enc sign="+Util.byteToHexDump(signature));
 		da.addToSequence(new Encoder(signature));
 		return da;
@@ -200,20 +222,61 @@ public class DirectoryAnnouncement extends ASNObj{
 		.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, DirectoryAnnouncement.TAG);
 		//da.print();
 		da.addToSequence(new Encoder(getVersion()));
+		if (DEBUG) System.out.println("directoryAnnouncement: getEncoder2: Added version: "+getVersion());
 		// V3?
 		da.addToSequence(Encoder.getEncoderArray(agent_version).setASN1Type(DD.TAG_AC2));
-		if (globalID != null) da.addToSequence(new Encoder(globalID, false).setASN1Type(DD.TAG_AC3));
-		if (globalID == null)
-			if (globalIDhash != null)
-				da.addToSequence(new Encoder(globalIDhash, false).setASN1Type(DD.TAG_AC4));
+		if (getGID() != null) da.addToSequence(new Encoder(getGID(), false).setASN1Type(DD.TAG_AC3));
+		if (getGID() == null)
+			if (getGIDH() != null)
+				da.addToSequence(new Encoder(getGIDH(), false).setASN1Type(DD.TAG_AC4));
+		if (instance != null) da.addToSequence(new Encoder(instance, false).setASN1Type(DD.TAG_AC5));
+		if (address != null) da.addToSequence(address.getEncoder()); // has tag AC10
+		if (signed) {
+			if (DEBUG) System.out.println("directoryAnnouncement: getEncoder2: Added signed");
+			if (date != null) {
+				da.addToSequence(new Encoder(date));
+				if (DEBUG) System.out.println("directoryAnnouncement: getEncoder2: Added date=");
+			}
+			if (challenge != null && challenge.length > 0) {
+				da.addToSequence(new Encoder(challenge, DD.TAG_AC6));
+				if (DEBUG) System.out.println("directoryAnnouncement: getEncoder2: Added date=");
+			}
+			if (certificate != null && certificate.length > 0) {
+				da.addToSequence(new Encoder(certificate, DD.TAG_AC1));
+			}
+			if (signature != null && signature.length > 0) da.addToSequence(new Encoder(signature, DD.TAG_AC7));
+		}
+		if (branch != null) da.addToSequence(new Encoder(branch, false).setASN1Type(DD.TAG_AC8));
+		if (DEBUG) System.out.println("directoryAnnouncement: getEncoder2: Added branch="+branch);
+		if (name != null) da.addToSequence(new Encoder(name, false).setASN1Type(DD.TAG_AC9));
+		if (DEBUG) System.out.println("directoryAnnouncement: getEncoder2: Added name="+name);
+		return da;
+	}
+	/**
+	 * Encoder without signature and GID/GIDH (and with sign=true)
+	 * @return
+	 */
+	public Encoder getSignatureEncoder() {
+		Encoder da = new Encoder()
+		.initSequence()
+		.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, DirectoryAnnouncement.TAG);
+		//da.print();
+		da.addToSequence(new Encoder(getVersion())); // V3?
+		da.addToSequence(Encoder.getEncoderArray(agent_version).setASN1Type(DD.TAG_AC2));
+//		if (globalID != null) da.addToSequence(new Encoder(globalID, false).setASN1Type(DD.TAG_AC3));
+//		if (globalID == null)
+//			if (globalIDhash != null)
+//				da.addToSequence(new Encoder(globalIDhash, false).setASN1Type(DD.TAG_AC4));
 		if (instance != null) da.addToSequence(new Encoder(instance, false).setASN1Type(DD.TAG_AC5));
 		if (address != null) da.addToSequence(address.getEncoder());
-		if (signed) {
+		//if (signed) {
 			if (date != null)  da.addToSequence(new Encoder(date));
-			if (challenge.length > 0) da.addToSequence(new Encoder(challenge, DD.TAG_AC6));
-			if (certificate.length > 0) da.addToSequence(new Encoder(certificate, DD.TAG_AC1));
-			if (signature.length > 0) da.addToSequence(new Encoder(signature, DD.TAG_AC7));
-		}
+			if (challenge != null && challenge.length > 0) da.addToSequence(new Encoder(challenge, DD.TAG_AC6));
+			if (certificate != null && certificate.length > 0) da.addToSequence(new Encoder(certificate, DD.TAG_AC1));
+			//if (signature.length > 0) da.addToSequence(new Encoder(signature, DD.TAG_AC7));
+		//}
+		if (branch != null) da.addToSequence(new Encoder(branch, false).setASN1Type(DD.TAG_AC8));
+		if (name != null) da.addToSequence(new Encoder(name, false).setASN1Type(DD.TAG_AC9));
 		return da;
 	}
 	@Override
@@ -236,7 +299,7 @@ public class DirectoryAnnouncement extends ASNObj{
 		}
 	}
 	public DirectoryAnnouncement decode_0(Decoder dec) throws ASN1DecoderFail {
-		globalID = dec.getFirstObject(true).getString();
+		setGID(dec.getFirstObject(true).getString());
 		if (dec.getTypeByte() == Encoder.TAG_GeneralizedTime)
 			date = dec.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
 		//Decoder addr = dec.getFirstObject(true).getContent();
@@ -249,7 +312,7 @@ public class DirectoryAnnouncement extends ASNObj{
 		return this;
 	}
 	public DirectoryAnnouncement decode_1(Decoder dec) throws ASN1DecoderFail {
-		globalID=dec.getFirstObject(true).getString();
+		setGID(dec.getFirstObject(true).getString());
 		if (dec.getTypeByte() == Encoder.TAG_GeneralizedTime)
 			date = dec.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
 		//Decoder addr = dec.getFirstObject(true).getContent();
@@ -265,26 +328,45 @@ public class DirectoryAnnouncement extends ASNObj{
 		return this;
 	}
 	public DirectoryAnnouncement decode_2(Decoder dec) throws ASN1DecoderFail {
+		if (DEBUG) System.out.println("directoryAnnouncement: decoder2: start="+dec.getTypeByte());
 		if(dec.isFirstObjectTagByte(DD.TAG_AC2))
 			agent_version = dec.getFirstObject(true).getIntsArray();
 		if(dec.isFirstObjectTagByte(DD.TAG_AC3)) {
-			globalID=dec.getFirstObject(true).getString(DD.TAG_AC3);
-			globalIDhash = D_Peer.getGIDHashFromGID(globalID);
+			setGID(dec.getFirstObject(true).getString(DD.TAG_AC3));
+			setGIDH(D_Peer.getGIDHashFromGID(getGID()));
 		}
 		if(dec.isFirstObjectTagByte(DD.TAG_AC4))
-			globalIDhash = dec.getFirstObject(true).getString(DD.TAG_AC4);
+			setGIDH(dec.getFirstObject(true).getString(DD.TAG_AC4));
 		if(dec.isFirstObjectTagByte(DD.TAG_AC5))
 			instance = dec.getFirstObject(true).getString(DD.TAG_AC5);
 
-		if(dec.isFirstObjectTagByte(DirectoryAnnouncement_Address.getASN1Tag())){ // TAG_AC10
+		if (DEBUG) System.out.println("directoryAnnouncement: decoder2: before address="+dec.getTypeByte());
+		if (dec.isFirstObjectTagByte(DirectoryAnnouncement_Address.getASN1Tag())) { // TAG_AC10
 			address = new DirectoryAnnouncement_Address(getVersion());
 			//System.out.println("DA:decode_2:addr="+address);
-			address.decode(dec);
+			address.decode(dec.getFirstObject(true));
 		}
-		if(dec.getTypeByte() == Encoder.TAG_GeneralizedTime) date = dec.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
-		if(dec.getTypeByte() == DD.TAG_AC6) challenge =  dec.getFirstObject(true).getBytes(DD.TAG_AC6);
-		if(dec.getTypeByte() == DD.TAG_AC1) certificate =  dec.getFirstObject(true).getBytes(DD.TAG_AC1);
-		if(dec.getTypeByte() == DD.TAG_AC7) signature = dec.getFirstObject(true).getBytes(DD.TAG_AC7);
+		if (DEBUG) System.out.println("directoryAnnouncement: decoder2: Got decoder");
+		if (dec.getTypeByte() == Encoder.TAG_GeneralizedTime) date = dec.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
+		else if (DEBUG) System.out.println("directoryAnnouncement: decoder2: no date="+dec.getTypeByte());
+
+		if (dec.getTypeByte() == DD.TAG_AC6) challenge = dec.getFirstObject(true).getBytes(DD.TAG_AC6);
+		else if (DEBUG) System.out.println("directoryAnnouncement: decoder2: no challenge="+dec.getTypeByte());
+
+		if (dec.getTypeByte() == DD.TAG_AC1) certificate = dec.getFirstObject(true).getBytes(DD.TAG_AC1);
+		else if (DEBUG) System.out.println("directoryAnnouncement: decoder2: no certificate="+dec.getTypeByte());
+
+		if (dec.getTypeByte() == DD.TAG_AC7) signature = dec.getFirstObject(true).getBytes(DD.TAG_AC7);
+		else if (DEBUG) System.out.println("directoryAnnouncement: decoder2: no signature="+dec.getTypeByte());
+
+		if (dec.isFirstObjectTagByte(DD.TAG_AC8))
+			branch = dec.getFirstObject(true).getString(DD.TAG_AC8);
+		else if (DEBUG) System.out.println("directoryAnnouncement: decoder2: no branch="+dec.getTypeByte());
+
+		if (dec.isFirstObjectTagByte(DD.TAG_AC9))
+			name = dec.getFirstObject(true).getString(DD.TAG_AC9);
+		else if (DEBUG) System.out.println("directoryAnnouncement: decoder2: no name="+dec.getTypeByte());
+		if (DEBUG) System.out.println("directoryAnnouncement: decoder2: done?="+dec.getTypeByte());
 		return this;
 	}
 	public DirectoryAnnouncement() {}
@@ -309,24 +391,51 @@ public class DirectoryAnnouncement extends ASNObj{
 		decode(dec);
 	}
 	public boolean verifySignature() {
-		byte[] sign = signature;
-		String GID = this.globalID;
-		String GIDhash = this.globalIDhash;
-		signature = new byte[0];
-		globalID = null;
-		globalIDhash = null;
-		PK pk = Cipher.getPK(globalID);
-		boolean r = Util.verifySign(this, pk, sign);
-
-		signature = sign;
-		globalID = GID;
-		globalIDhash = GIDhash;
+		PK pk = Cipher.getPK(getGID());
+		boolean r = false;
+		switch(getVersion()) {
+		case 0:
+		case 1: 
+			{
+				byte[] sign = signature;
+				String GID = this.getGID();
+				String GIDhash = this.getGIDH();
+				signature = new byte[0];
+				setGID(null);
+				setGIDH(null);
+				r = Util.verifySign(this, pk, sign);
+				signature = sign;
+				setGID(GID);
+				setGIDH(GIDhash);
+			}
+			break;
+		case 2:
+		default:
+			byte[] msg = this.getSignatureEncoder().getBytes();
+			r = Util.verifySign(msg, pk, signature);
+		}
 		return r;
 	}
+	public byte[] sign() {
+		assert(getVersion() >= 2);
+		this.date = Util.CalendargetInstance();
+		byte[] msg = this.getSignatureEncoder().getBytes();
+		this.signature = Util.sign(msg, data.HandlingMyself_Peer.getMyPeerSK());
+		this.signed = true;
+		return this.signature;
+	}
+	/**
+	 * If adr.branch is not same as DD.BRANCH and both no-null, use version V1.
+	 * If adr.agent_version is older than DirectoryAnnouncement.AGENT_VERSION_V1 (0.9.50), use V1
+	 * else use V2 with setVersion(V2)
+	 * @param adr
+	 * @return
+	 * Returns the current version
+	 */
 	public int setAddressVersionForDestination(Address adr) {
 		setAddressVersion ( Address.getStructureVersion(adr) );
 		if (DEBUG) System.out.println("DirectoryAnnouncement:setAddressVersionForDestination: address_version="+getAddressVersion());
-		if (!Util.equalStrings_or_one_null(adr.branch, DD.BRANCH)) {
+		if (! Util.equalStrings_or_one_null(adr.branch, DD.BRANCH)) {
 			this.setVersion (V1);
 			if (DEBUG) System.out.println("DirectoryAnnouncement:setAddressVersionForDestination: branch return="+getVersion());
 			return getVersion();
@@ -339,5 +448,17 @@ public class DirectoryAnnouncement extends ASNObj{
 		setVersion (V2);
 		if (DEBUG) System.out.println("DirectoryAnnouncement:setAddressVersionForDestination: return="+getVersion());
 		return getVersion();
+	}
+	public String getGID() {
+		return myGID;
+	}
+	public void setGID(String gID) {
+		this.myGID = gID;
+	}
+	public String getGIDH() {
+		return myGIDH;
+	}
+	public void setGIDH(String gIDH) {
+		this.myGIDH = gIDH;
 	}
 }

@@ -504,12 +504,12 @@ public class HandleService {
         	v.releaseQD[index].description = testDef.getDesc();
         }
         
-        v.testers_data = new data.D_TesterInfo[response.getTesters().size()];
+        v.testers_data = new data.D_SoftwareUpdatesReleaseInfoByTester[response.getTesters().size()];
         TesterInfo testerInfo = null;
         for( i=0; i< v.testers_data.length; i++)
         {   
         	testerInfo = (TesterInfo) response.getTesters().get(i);
-        	v.testers_data[i] = new data.D_TesterInfo();
+        	v.testers_data[i] = new data.D_SoftwareUpdatesReleaseInfoByTester();
         	v.testers_data[i].name = testerInfo.getName();
         	v.testers_data[i].public_key_hash = testerInfo.getDigestPK();
         	v.testers_data[i].tester_QoT = new float[response.getQOTD().size()]; // not all array elements are used  

@@ -1,6 +1,24 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2014 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package data;
 
-import handling_wb.PreparedMessage;
 import hds.ASNPoint;
 import hds.ASNSyncPayload;
 
@@ -27,7 +45,6 @@ import config.Application;
 import config.Application_GUI;
 import config.DD;
 import config.Language;
-import data.D_Constituent.D_Constituent_Node;
 
 /**
 D_Neighborhood ::= SEQUENCE {
@@ -549,8 +566,8 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				
 				loaded_consts.remove(removed);
 				if (removed.getLIDstr() != null) loaded_const_By_LocalID.remove(new Long(removed.getLID())); 
-				if (removed.getGID() != null) D_Neighborhood_Node.remConstByGID(removed.getGID(), removed.getLID()); //loaded_const_By_GID.remove(removed.getGID());
-				if (removed.getGIDH() != null) D_Neighborhood_Node.remConstByGIDH(removed.getGIDH(), removed.getLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
+				if (removed.getGID() != null) D_Neighborhood_Node.remConstByGID(removed.getGID(), removed.getOrgLID()); //loaded_const_By_GID.remove(removed.getGID());
+				if (removed.getGIDH() != null) D_Neighborhood_Node.remConstByGIDH(removed.getGIDH(), removed.getOrgLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 				if (DEBUG) System.out.println("D_Neighborhood: drop_loaded: remove GIDH="+removed.getGIDH());
 				if (removed.component_node.message != null) current_space -= removed.component_node.message.length;	
 				if (DEBUG) System.out.println("D_Neighborhood: dropLoaded: exit with force="+force+" result="+result);
@@ -2417,8 +2434,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 }
 class D_Neighborhood_SaverThread extends util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000; // ms to sleep
-	private static final long SAVER_SLEEP_ON_ERROR = 2000;
+	//private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	/**
 	 * The next monitor is needed to ensure that two D_Neighborhood_SaverThreadWorker are not concurrently modifying the database,
@@ -2467,7 +2483,7 @@ class D_Neighborhood_SaverThread extends util.DDP2P_ServiceThread {
 			*/
 			synchronized(this) {
 				try {
-					wait(SAVER_SLEEP);
+					wait(SaverThreadsConstants.SAVER_SLEEP_BETWEEN_NEIGHBORHOOD_MSEC);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -2477,8 +2493,6 @@ class D_Neighborhood_SaverThread extends util.DDP2P_ServiceThread {
 }
 
 class D_Neighborhood_SaverThreadWorker extends util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000;
-	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	// public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
@@ -2516,7 +2530,7 @@ class D_Neighborhood_SaverThreadWorker extends util.DDP2P_ServiceThread {
 						synchronized(this) {
 							try {
 								if (DEBUG) System.out.println("D_Neighborhood_Saver: sleep");
-								wait(SAVER_SLEEP_ON_ERROR);
+								wait(SaverThreadsConstants.SAVER_SLEEP_WORKER_NEIGHBORHOOD_ON_ERROR);
 								if (DEBUG) System.out.println("D_Neighborhood_Saver: waked error");
 							} catch (InterruptedException e2) {
 								e2.printStackTrace();
@@ -2529,13 +2543,15 @@ class D_Neighborhood_SaverThreadWorker extends util.DDP2P_ServiceThread {
 				if (DEBUG) System.out.println("D_Neighborhood_Saver: idle ...");
 			}
 		}
-		synchronized(this) {
-			try {
-				if (DEBUG) System.out.println("D_Neighborhood_Saver: sleep");
-				wait(SAVER_SLEEP);
-				if (DEBUG) System.out.println("D_Neighborhood_Saver: waked");
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+		if (SaverThreadsConstants.SAVER_SLEEP_WORKER_BETWEEN_NEIGHBORHOOD_MSEC >= 0) {
+			synchronized(this) {
+				try {
+					if (DEBUG) System.out.println("D_Neighborhood_Saver: sleep");
+					wait(SaverThreadsConstants.SAVER_SLEEP_WORKER_BETWEEN_NEIGHBORHOOD_MSEC);
+					if (DEBUG) System.out.println("D_Neighborhood_Saver: waked");
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}

@@ -52,13 +52,14 @@ public class Identity {
 	public static Object default_id_branch; // for Identities tree widget
 	public static Object current_id_branch;	// for Identities tree widget
 	
-	public String globalID;		// globalID for peer/user (required)
-	public String globalIDH;
+	private String constituentGID;		// globalID for peer/user (required)
+	private String peerGID;		// globalID for peer/user (required)
+	public String peerGIDH;
 	public String name; 		// user/peer name to be displayed (optional)
 	public String slogan;		// slogan to be used displayed for identity (optional)
-	public String instance;
+	public String peerInstance;
 	
-	public String globalOrgID;	// global orgID for user (optional), used for translations
+	public String organizationGID;	// global orgID for user (optional), used for translations
 	public String identity_id;
 	public String authorship_lang;
 	public String authorship_charset;
@@ -67,16 +68,18 @@ public class Identity {
 	public int status_references = 0;
 	private String secret_credential; // not really used
 	
-	/* Default user Identity from the identities table */
+	/* Default user Identity (with constituent and language) from the identities table */
 	private static Identity current_identity = null;
 	/* Peer Identity from the DD database registry */
 	public static Identity current_peer_ID = null;
 	//public static ArrayList<InetSocketAddress> query_directories = new ArrayList<InetSocketAddress>();
 	/* The list of directories as InetSocketAddressed */
-	public static ArrayList<InetSocketAddress> listing_directories_inet = new ArrayList<InetSocketAddress>();
-	public static ArrayList<Address> listing_directories_addr = new ArrayList<Address>();
+	
+	private static boolean listing_directories_loaded = false;
+	private static ArrayList<InetSocketAddress> listing_directories_inet = new ArrayList<InetSocketAddress>();
+	private static ArrayList<Address> listing_directories_addr = new ArrayList<Address>();
 	/* The list of directories as strings prot:IP:port */
-	public static ArrayList<String> listing_directories_string = new ArrayList<String>();
+	private static ArrayList<String> listing_directories_string = new ArrayList<String>();
 	/* the first directory that was online most recent */
 	public static int preferred_directory_idx = 0;
 	public static Calendar current_identity_creation_date;// = Util.CalendargetInstance();
@@ -86,11 +89,26 @@ public class Identity {
 	 */
 	public static String emails;
 	
-	public static void init_Identity() {
+	/**
+	 * <pre>
+	 * Initialize :
+	 * Identity.current_identity=initCurrentIdentity();
+	 * which sets it to the default identity in the "identities" table.
+	 * and 
+	 * Identity.current_peer_ID=initMyCurrentPeerIdentity();
+	 * </pre>
+	 * By setting myself (when setting peer), this also announces myself to directories.
+	 * 
+	 * @return
+	 */
+	public static boolean init_Identity(boolean quit_on_failure, boolean set_peer_myself, boolean announce_dirs) {
 		current_identity = null;
-		current_identity = initCurrentIdentity();
+		// loading language, constituent and organization
+		current_identity = initCurrentConstituentIdentity();
 		current_peer_ID = null;
-		current_peer_ID = initMyCurrentPeerIdentity();
+		// loading peer from application
+		current_peer_ID = initMyCurrentPeerIdentity_fromDB(new Identity(), quit_on_failure, set_peer_myself, announce_dirs);
+		return true;
 	}
 
 	/**
@@ -252,7 +270,7 @@ public class Identity {
 	 * @return
 	 */
 	public static boolean getAmIBroadcastable(){
-		if(Identity.current_peer_ID.globalID == null){
+		if(Identity.current_peer_ID.getPeerGID() == null){
 			return false;
 		}
 		/*
@@ -276,9 +294,10 @@ public class Identity {
 		//System.err.println("Broadcastable get val=\""+br.get(0).get(0)+"\"");
 		boolean result = ("1".equals(br.get(0).get(0).toString()));
 		*/
-		D_Peer peer = D_Peer.getPeerByGID_or_GIDhash(Identity.current_peer_ID.globalID, null, true, false, false, null);
+		D_Peer peer = D_Peer.getPeerByGID_or_GIDhash(Identity.current_peer_ID.getPeerGID(), null, true, false, false, null);
 		if (peer == null) {
-			if(_DEBUG)System.out.println("config.Identity.getAmIBroadcastable: My peer_ID is not in my database: "+Identity.current_peer_ID.globalID);
+			if(_DEBUG)System.out.println("config.Identity.getAmIBroadcastable: My peer_GID is not in my database: \""+Identity.current_peer_ID.getPeerGID()+"\"");
+			Util.printCallPath(""+Identity.current_peer_ID);
 			return false;
 		}
 		boolean result = peer.getBroadcastable();
@@ -308,18 +327,37 @@ public class Identity {
 		}
 	}
 	/**
-	 * Returns current if non-null
+	 * Returns current if non-null (could have constituentGID, orgGID, authorshil languahe and charset)
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public static Identity getCurrentIdentity() throws P2PDDSQLException{
-		if(current_identity != null) return current_identity;
-		return current_identity = _getDefaultIdentity();
+	public static Identity getCurrentConstituentIdentity() throws P2PDDSQLException{
+		if (current_identity != null) return current_identity;
+		return current_identity = _getDefaultConstituentIdentity();
 	}
-	public static Identity addIdentity(boolean default_id) throws P2PDDSQLException {
+	/**
+	 * Loads from table application, Sets and returns current peer identity (peerGID/peerGIDH/peer name)
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public static Identity getCurrentPeerIdentity_QuitOnFailure() {
+		if (Identity.current_peer_ID != null) return current_peer_ID;
+		return current_peer_ID = Identity.initMyCurrentPeerIdentity_fromDB(true);
+	}
+	/**
+	 * Loads from table application, Sets and returns current peer identity (peerGID/peerGIDH/peer name)
+	 * 
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	public static Identity getCurrentPeerIdentity_NoQuitOnFailure() {
+		if (Identity.current_peer_ID != null) return current_peer_ID;
+		return current_peer_ID = Identity.initMyCurrentPeerIdentity_fromDB(false);
+	}
+	public static Identity addConstituentIdentity(boolean default_id) throws P2PDDSQLException {
 		Identity result = new Identity();
 		result.name = __("Default Identity: Double-click to set your name. Right-click to add properties.");
-		result.globalOrgID = null;
+		result.organizationGID = null;
 		result.authorship_lang = Identity.DEFAULT_AUTHORSHIP_LANG;
 		result.authorship_charset = Identity.DEFAULT_AUTHORSHIP_CHARSET;
 		result.preferred_lang = Identity.DEFAULT_PREFERRED_LANG;
@@ -348,42 +386,43 @@ public class Identity {
     	result.identity_id = Util.getStringID(a);
     	return result;
 	}
+	/*
+	String _sql = "SELECT c."+table.constituent.global_constituent_ID+", o."+table.organization.global_organization_ID +
+			", i."+table.identity.identity_ID +", i."+table.identity.authorship_lang +", i."+table.identity.authorship_charset +
+			" FROM "+table.identity.TNAME+" AS i" +
+			" LEFT JOIN "+table.constituent.TNAME+" AS c ON (i."+table.identity.constituent_ID+" == c."+table.constituent.constituent_ID+")" +
+			" LEFT JOIN "+table.organization.TNAME+" AS o ON (o."+table.organization.organization_ID+" == i."+table.identity.organization_ID+")" +
+			" WHERE i."+table.identity.default_id+"==1 LIMIT 1;";
+	*/
 	final static String sql_get_default_identity = "SELECT i."+table.identity.constituent_ID+", i."+table.identity.organization_ID
     			+ ", i."+table.identity.identity_ID +", i."+table.identity.authorship_lang +", i."+table.identity.authorship_charset +
     			" FROM "+table.identity.TNAME+" AS i" +
     			" WHERE i."+table.identity.default_id+"==1 LIMIT 1;";
 	/**
-	 * Builds an Identity for the default in the identities table.
+	 * Builds an Identity for the default in the "identities" table containing 
+	 * (identity_id: constituentGID, organizationGID, authorship_lang, authorship_charset), where default_id==1.
 	 * If no default exists, it creates one if allowed by DD.APP_stop_automatic_creation_of_default_identity
 	 * @return default identity in identities table or null if none exists
 	 * @throws P2PDDSQLException
 	 */
-	private static Identity _getDefaultIdentity() throws P2PDDSQLException{
+	private static Identity _getDefaultConstituentIdentity() throws P2PDDSQLException{
 		if (DEBUG) System.out.println("Identity:getDefaultIdentity");
     	Identity result = new Identity();
     	ArrayList<ArrayList<Object>> id;
-    	/*
-    	String _sql = "SELECT c."+table.constituent.global_constituent_ID+", o."+table.organization.global_organization_ID +
-    			", i."+table.identity.identity_ID +", i."+table.identity.authorship_lang +", i."+table.identity.authorship_charset +
-    			" FROM "+table.identity.TNAME+" AS i" +
-    			" LEFT JOIN "+table.constituent.TNAME+" AS c ON (i."+table.identity.constituent_ID+" == c."+table.constituent.constituent_ID+")" +
-    			" LEFT JOIN "+table.organization.TNAME+" AS o ON (o."+table.organization.organization_ID+" == i."+table.identity.organization_ID+")" +
-    			" WHERE i."+table.identity.default_id+"==1 LIMIT 1;";
-    	*/
     	id = Application.db.select(
     			sql_get_default_identity,
     			new String[]{}, DEBUG);
     	if (id.size() == 0) {
     		if (DEBUG) System.err.println("No default identity found!");
     		if (! DD.getAppBoolean(DD.APP_stop_automatic_creation_of_default_identity))
-    			return addIdentity(true);
+    			return addConstituentIdentity(true);
     		return null;
     	}
     	
     	String cLID = (String) id.get(0).get(0);
-    	result.globalID = D_Constituent.getGIDFromLID(cLID); //(String) id.get(0).get(0);
+    	result.setConstituentGID(D_Constituent.getGIDFromLID(cLID)); //(String) id.get(0).get(0);
     	String oLID = (String) id.get(0).get(1);
-    	result.globalOrgID = D_Organization.getGIDbyLIDstr(oLID); //(String) id.get(0).get(1);
+    	result.organizationGID = D_Organization.getGIDbyLIDstr(oLID); //(String) id.get(0).get(1);
     	result.identity_id = Util.getString(id.get(0).get(2));
 		//if(DEBUG) System.out.println("Identity:getDefaultIdentity: id="+Util.getString(id.get(0).get(2)));
 		result.authorship_lang = Util.getString(id.get(0).get(3));
@@ -392,46 +431,73 @@ public class Identity {
     	return result;
     }
 	/**
-	 * Builds an Identity for the default in the identities table
+	 * Builds an Identity for the default in the "identities" table
 	 * @return default Identity in identities table, or an empty one if none exists
 	 */
-    public static Identity initCurrentIdentity() {
+    public static Identity initCurrentConstituentIdentity() {
 		if(DEBUG) System.out.println("Identity:initCurrentIdentity");
     	Identity result;
     	try {
-    		result = _getDefaultIdentity();
+    		result = _getDefaultConstituentIdentity();
     		if (result != null) return result;
     	} catch(Exception e) {
     		e.printStackTrace();
     	}
-		if(DEBUG) System.out.println("Identity:initCurrentIdentity: return empty");
+		if (DEBUG) System.out.println("Identity: initCurrentIdentity: return empty");
     	return new Identity();
     }
-    public static Identity initMyCurrentPeerIdentity() {
+    /**
+     * loads peer identity (from "application" table) into a new identity objects and returns it.
+     * @param quit_on_failure
+     * @return
+     */
+     public static Identity initMyCurrentPeerIdentity_fromDB(boolean quit_on_failure) {
     	Identity result = new Identity();
-    	return initMyCurrentPeerIdentity(result);
+    	return initMyCurrentPeerIdentity_fromDB_setPeerMyself(result, quit_on_failure);
     }
     /**
      * Builds an Identity from the Database application registry
+     * @param result
+     * @param quit_on_failure
      * @return identity in the registry
      */
-    public static Identity initMyCurrentPeerIdentity(Identity result){
+     public static Identity initMyCurrentPeerIdentity_fromDB_setPeerMyself(Identity result, boolean quit_on_failure) {
+    	 return initMyCurrentPeerIdentity_fromDB(result, quit_on_failure, true, true);
+     }
+     /**
+      * 
+      * Builds an Identity from the Database application registry
+      * @param result
+      * @param quit_on_failure   To call System.exit()
+      * @param set_myself  (to create peer myself and announce it to dirs)
+      * @param announce dirs  (to announce it to dirs, only if myself was created)
+      * @return
+      */
+     public static Identity initMyCurrentPeerIdentity_fromDB(Identity result, boolean quit_on_failure,
+    		 boolean set_myself, boolean announce_dirs) {
     	HandlingMyself_Peer.loadIdentity(result);
+    	if (! set_myself) return result;
+    	
     	D_Peer me = HandlingMyself_Peer.getPeer(result);
 		if (me == null) {
 			Identity.current_peer_ID = result;
-			new DDP2P_ServiceThread("Create Peer Dialog", true) {
+			//if (DEBUG) Util.printCallPath("");
+			new DDP2P_ServiceThread("Create Peer Dialog", true, quit_on_failure?new Object():null) {
 				public void _run() {
 					D_Peer me = HandlingMyself_Peer.createMyselfPeer_by_dialog_w_Addresses(true);
-					if (me == null){
-						if (_DEBUG) System.out.println("StartUpThread:run: fail to create peer!");
-						Util.printCallPath("");
-						System.exit(1);
+					if (me == null) {
+						if (_DEBUG) System.out.println("StartUpThread: run: fail to create peer!");
+						if (ctx != null) { // if an object is passed then we quit on failure
+							Util.printCallPath("");
+							System.exit(1);
+						}
 					}
 				}
 			}.start();
 		} else {
-			HandlingMyself_Peer.setMyself(me, false, result);
+			boolean kept;
+			boolean saveInDB;
+			HandlingMyself_Peer.setMyself(me, saveInDB = false, result, kept = false, announce_dirs);
 		}
 		//HandlingMyself_Peer.setMyself(me, false);
 		//if (me != null) Identity.current_identity_creation_date = me.getCreationTime();
@@ -460,7 +526,7 @@ public class Identity {
 	}
     */
 	public String toString(){
-    	return "Identity: idID="+this.identity_id+" cID="+Util.trimmed(globalID)+" name="+this.name+" slogan="+slogan+" orgID="+this.globalOrgID;
+    	return "Identity: idID="+this.identity_id+" GID="+Util.trimmed(getPeerGID())+" name="+this.name+" slogan="+slogan+" orgID="+this.organizationGID;
     }
     /**
      * Checks if there are any domains known (potentially to check if I am on the net)
@@ -546,7 +612,7 @@ public class Identity {
 	public static boolean setCurrentConstituentForOrg(long _constituentID,
 			long _organizationID) throws P2PDDSQLException {
     	if (DEBUG) System.err.println("Identity:setCurrentConstituent: "+_constituentID+" org="+_organizationID);
-    	getCurrentIdentity(); // to load current Identity in not yet done ...
+    	getCurrentConstituentIdentity(); // to load current Identity in not yet done ...
 		if (Identity.current_identity == null) {
 		  	if (DEBUG) System.err.println("Identity:setCurrentConstituent: No identity object");
 			return false;
@@ -620,7 +686,7 @@ public class Identity {
 	public static long getDefaultConstituentIDForOrg(long _organizationID) throws P2PDDSQLException {
     	if (DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: begin");
     	if (DEBUG) Util.printCallPath("Defaul ID for ORG");
-    	getCurrentIdentity(); // to load current Identity in not yet done ...
+    	getCurrentConstituentIdentity(); // to load current Identity in not yet done ...
 		if (Identity.current_identity == null){
 	    	if(_DEBUG) System.err.println("Identity: getDefaultConstituentIDForOrg: no current obj Done");
 			return -1;
@@ -671,20 +737,21 @@ public class Identity {
 	 * Used for testing, to start the app with a given GID
 	 * @param newID
 	 */
-	public static void setCurrentIdentity(String newID) {
-		 current_identity.globalID = newID;
+	public static void setCurrentPeerIdentity(String peerGID) {
+		 //current_identity.setPeerGID(peerGID); // unclear why setting here?
+		 Identity.current_peer_ID.setPeerGID(peerGID);
 	}
-	public static void setCurrentIdentity(Identity newID) {
+	public static void setCurrentConstituentIdentity(Identity newID) {
 		 current_identity = newID;
 	}
 
 	public static String getMyPeerGID() {
-		if(current_peer_ID == null) return null;
-		return current_peer_ID.globalID;
+		if (current_peer_ID == null) return null;
+		return current_peer_ID.getPeerGID();
 	}
 	public static String getMyPeerInstance() {
-		if(current_peer_ID == null) return null;
-		return current_peer_ID.instance;
+		if (current_peer_ID == null) return null;
+		return current_peer_ID.peerInstance;
 	}
 
 	public static void setAgentWideEmails(String val) {
@@ -699,6 +766,11 @@ public class Identity {
 		return getCrtConstituent(oLID);
 	}
 
+	/**
+	 * Get constituent for a given organization
+	 * @param oLID
+	 * @return
+	 */
 	public static D_Constituent getCrtConstituent(long oLID) {
     	if (oLID <= 0) return null;
 //		D_Organization org;
@@ -708,7 +780,7 @@ public class Identity {
     	long constituent_LID = -1;
     	D_Constituent constituent = null;
     	try {
-    		Identity crt_identity = Identity.getCurrentIdentity();
+    		Identity crt_identity = Identity.getCurrentConstituentIdentity();
     		if (crt_identity == null) {
     			//Log.d(TAG, "No identity");
     		} else 
@@ -722,6 +794,77 @@ public class Identity {
     		//Log.d(TAG, "Got const: "+constituent);
     	}
     	return constituent;
+	}
+
+	public String getPeerGID() {
+		return peerGID;
+	}
+
+	public void setPeerGID(String peerGID) {
+		this.peerGID = peerGID;
+		//Util.printCallPath("Setting:"+peerGID);
+	}
+
+	public String getConstituentGID() {
+		return constituentGID;
+	}
+
+	public void setConstituentGID(String constituentGID) {
+		this.constituentGID = constituentGID;
+	}
+
+	public static int countLocalAddresses() {
+		return Identity.my_server_domains.size() + Identity.my_server_domains_loopback.size();
+	}
+
+	public static ArrayList<String> getListing_directories_string() {
+		if (! isListing_directories_loaded()) {
+			if (_DEBUG) System.out.println("Identity:getListing_directory_string: why not loaded so far?");
+			DD.load_listing_directories_noexception();
+		}
+		return listing_directories_string;
+	}
+
+	public static void setListing_directories_string(
+			ArrayList<String> listing_directories_string) {
+		Identity.listing_directories_string = listing_directories_string;
+	}
+
+	public static ArrayList<Address> getListing_directories_addr() {
+		if (! isListing_directories_loaded()) {
+			if (_DEBUG) {
+				System.out.println("Identity:getListing_directory_addr: why not loaded so far?");
+				Util.printCallPath("");
+			}
+			DD.load_listing_directories_noexception();
+		}
+		return listing_directories_addr;
+	}
+
+	public static void setListing_directories_addr(
+			ArrayList<Address> listing_directories_addr) {
+		Identity.listing_directories_addr = listing_directories_addr;
+	}
+
+	public static ArrayList<InetSocketAddress> getListing_directories_inet() {
+		if (! isListing_directories_loaded()) {
+			if (_DEBUG) System.out.println("Identity:getListing_directory_inet: why not loaded so far?");
+			DD.load_listing_directories_noexception();
+		}
+		return listing_directories_inet;
+	}
+
+	public static void setListing_directories_inet(
+			ArrayList<InetSocketAddress> listing_directories_inet) {
+		Identity.listing_directories_inet = listing_directories_inet;
+	}
+
+	static boolean isListing_directories_loaded() {
+		return listing_directories_loaded;
+	}
+
+	static void setListing_directories_loaded(boolean listing_directories_loaded) {
+		Identity.listing_directories_loaded = listing_directories_loaded;
 	}
 
 }

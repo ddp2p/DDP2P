@@ -155,10 +155,10 @@ public class OrgHandling {
 			}
 		}
 		
-		if(DEBUG)System.out.println("OrgHandling:updateOrg: org id="+id+" name="+od.name);
+		if(DEBUG)System.out.println("OrgHandling:updateOrg: org id="+id+" name="+od.getName());
 		if (id <= 0) {
 			id = D_Organization.getLIDbyGID(od.global_organization_ID);
-			if (DEBUG)System.out.println("OrgHandling:updateOrg: org id(GID)="+id+" name="+od.name);
+			if (DEBUG)System.out.println("OrgHandling:updateOrg: org id(GID)="+id+" name="+od.getName());
 			if (id <= 0) {
 				if (od.signature != null) {
 					od.blocked = DD.BLOCK_NEW_ARRIVING_ORGS_WITH_BAD_SIGNATURE;
@@ -170,7 +170,7 @@ public class OrgHandling {
 							if(peer_name == null) peer_name = __("Unknown");
 						}
 						Application_GUI.warning(
-								__("Verification/Storage failure for incoming org:")+od.name+"\n"+
+								__("Verification/Storage failure for incoming org:")+od.getName()+"\n"+
 										__("Verified:")+verified+"\n"+
 										__("Anonymous:")+anonymous+"\n"+
 										__("Arriving from peer:")+peer_name+"\n"+
@@ -181,9 +181,9 @@ public class OrgHandling {
 					}
 				}
 				// created blocked on bad signature
-				String name = od.name;
+				String name = od.getName();
 				if (id <= 0)
-					id = D_Organization.insertTemporaryGID(od.global_organization_ID, od.global_organization_IDhash, od.blocked, od.name, peer);
+					id = D_Organization.insertTemporaryGID(od.global_organization_ID, od.global_organization_IDhash, od.blocked, od.getName(), peer);
 				if(DEBUG)System.out.println("OrgHandling:updateOrg: tmp id="+id+" name="+name);
 			}
 			od.setLID(id);

@@ -19,6 +19,8 @@
 /* ------------------------------------------------------------------------- */
  package config;
 
+import java.util.regex.Pattern;
+
 public
 class Language{
 	public String lang;
@@ -26,6 +28,13 @@ class Language{
 	public Language(String lang, String flavor) {
 		this.lang = lang;
 		this.flavor = flavor;
+	}
+	public Language(String authorship_lang) {
+		if (authorship_lang == null) return;
+		String []s = authorship_lang.split(Pattern.quote("_"));
+		this.lang = s[0];
+		if (s.length > 0)
+			this.flavor = s[1];
 	}
 	public String toString(){
 		return lang+"_"+flavor;

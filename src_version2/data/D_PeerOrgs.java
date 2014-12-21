@@ -52,7 +52,7 @@ public class D_PeerOrgs extends ASNObj {
 	public D_PeerOrgs(long orgID) {
 		this.organization_ID = orgID;
 		D_Organization org = D_Organization.getOrgByLID_NoKeep(orgID, true);
-		this.org_name = org.name;
+		this.org_name = org.getName();
 		this.global_organization_ID = org.getGID();
 		this.global_organization_IDhash = org.getGIDH_or_guess();
 		served = true;

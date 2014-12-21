@@ -1115,4 +1115,15 @@ Address ::= SEQUENCE {
 		if (this.tcp_port <= 0 && this.udp_port <= 0) return false;
 		return true;
 	}
+	/**
+	 * return true if they have the same domain (used to compare NAT - IP addresses)
+	 * @param detected_sa
+	 * @param old_detected_NAT
+	 * @return
+	 */
+	public static boolean sameDomain(Address adr1, Address adr2) {
+		if (adr1 == null || adr2 == null) return false;
+		boolean result = Util.equalStrings_null_or_not(adr1.getDomain(), adr2.getDomain());
+		return result;
+	}
 }

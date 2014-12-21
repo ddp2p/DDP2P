@@ -647,7 +647,113 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		}
 		if (DEBUG) out.println("Connections: update_supernode_address_request: done");
 	}
-
+	public static class DirectoryRequestAnswer {
+		public DirectoryRequest dr;
+		public DirectoryAnswerMultipleIdentities da;
+		DirectoryRequestAnswer(DirectoryRequest _dr, DirectoryAnswerMultipleIdentities _da) {
+			dr = _dr;
+			da = _da;
+		}
+	}
+	public static DirectoryRequestAnswer requestDirectoryAnswer (
+			String global_peer_ID, String peer_ID, 
+			InetSocketAddress sock_addr, Address dir_address)
+					throws IOException, Exception {
+		Socket socket = new Socket();
+		DirectoryRequest dr = null;
+		DirectoryAnswerMultipleIdentities da = null;
+		//try {
+			socket.connect(sock_addr, Server.TIMEOUT_Client_wait_Dir);
+			if (DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: connected:"+sock_addr);
+			if (DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: connected:"+dir_address);
+			//System.out.println("-----------------------------------------Identity.current_peer_ID.instance= "+Identity.current_peer_ID.instance);
+			dr = new DirectoryRequest(
+					global_peer_ID,
+					Identity.getMyPeerGID(),
+					Identity.current_peer_ID.peerInstance,
+					Identity.udp_server_port, 
+					peer_ID,
+					dir_address);
+			if (DEBUG) out.println("Connections: getDirAddress: sending:"+dr);
+			byte[] msg = dr.encode();
+			if (DEBUG) {
+				Decoder d = new Decoder(msg);
+				DirectoryRequest _dr = new DirectoryRequest(d);
+				if (DEBUG) out.println("Connections: getDirAddress: actually sent:"+_dr);
+			}
+			socket.setSoTimeout(Server.TIMEOUT_Client_wait_Dir);
+			socket.getOutputStream().write(msg);
+			if (DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: "+Util.byteToHexDump(msg, " ")+dr);
+			da = new DirectoryAnswerMultipleIdentities(socket.getInputStream());
+			socket.close();
+			return new DirectoryRequestAnswer(dr, da);
+		//} catch (Exception e) {e.printStackTrace();}
+		//return new DirectoryRequestAnswer(dr, da);
+	}
+	/**
+	 * Go to the next level of negotiating terms, updating request dr based on da.
+	 * 
+	 * Ideally here we would immediately resend a new request with the updated offer, but it is not yet implemented.
+	 * TODO
+	 * 
+	 * @param dr
+	 * @param da
+	 * @param global_peer_ID
+	 * @param peer_ID
+	 * @param dir_address
+	 * @return
+	 *   Returns true if negotiation ended and no new round is needed. Currently always returns true.
+	 */
+	public static boolean updateNegotiationTerms (DirectoryRequest dr, DirectoryAnswerMultipleIdentities da, String global_peer_ID, String peer_ID, Address dir_address) {
+		for ( DirectoryAnswerInstance inst : da.instances) {
+			DIR_Terms_Requested[] terms = inst.instance_terms; // da.terms
+			if ((terms != null) && (terms.length != 0)) {
+				dr.terms_default = dr.updateTerms(terms, peer_ID, global_peer_ID, dir_address, dr.terms_default);
+				if (dr != null) {
+					System.out.println("Connections: getDirAddress: negotiation TODO: "+inst);
+					continue;
+					/* TODO negotiations
+					msg = dr.encode();
+					socket.setSoTimeout(Server.TIMEOUT_Client_wait_Dir);
+					socket.getOutputStream().write(msg);
+					if(DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: "+Util.byteToHexDump(msg, " ")+dr);
+					da = new DirectoryAnswerMultipleIdentities(socket.getInputStream());
+					*/
+				}
+			}
+		}
+		return true;
+	}
+	/**
+	 * Get addresses by instance
+	 * @param dr
+	 * @param da
+	 * @param peerc_name
+	 * @return
+	 */
+	public static Hashtable<String, ArrayList<Address>> extractAddresses (DirectoryRequest dr, DirectoryAnswerMultipleIdentities da,
+			String peerc_name) {
+		Hashtable<String,ArrayList<Address>> addresses = new Hashtable<String,ArrayList<Address>>();
+		for ( DirectoryAnswerInstance inst : da.instances) {
+			if (inst.addresses == null) {
+				if (_DEBUG) out.println("Connections: getDirAddress:  Got empty addresses!");
+				continue;
+				//socket.close();
+				//return null;
+			}
+			if (inst.addresses.size() == 0) {
+				if(DEBUG) out.println("Connections: getDirAddress:  Got no addresses! da="+da+" for:"+peerc_name);
+				continue;
+				//socket.close();
+				//return null;
+			}
+			String _inst = Util.getStringNonNullUnique(inst.instance);
+			addresses.put(_inst, inst.addresses); // da.addresses
+			if (DEBUG) out.println("Connections: getDirAddress: Dir Answer: "+da);
+			//socket.close();
+		}
+		return addresses;
+	}
 	/**
 	 * Get directory IP (if not yet found), and extract addresses from it
 	 * Return null on failure
@@ -687,65 +793,23 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 			ClientSync.reportDa(dir_address.ipPort(), global_peer_ID, peer_name, null, __("Null Socket"));
 			return null; //"";
 		}
-		Socket socket = new Socket();
 		try {
-			socket.connect(sock_addr, Server.TIMEOUT_Client_wait_Dir);
-			if(DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: connected:"+sock_addr);
-			if(DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: connected:"+dir_address);
-			//System.out.println("-----------------------------------------Identity.current_peer_ID.instance= "+Identity.current_peer_ID.instance);
-			DirectoryRequest dr = new DirectoryRequest(
-					global_peer_ID,
-					Identity.getMyPeerGID(),
-					Identity.current_peer_ID.instance,
-					Identity.udp_server_port, 
-					peer_ID,
-					dir_address);
-			if (DEBUG) out.println("Connections: getDirAddress: got:"+dr);
-			byte[] msg = dr.encode();
-			socket.setSoTimeout(Server.TIMEOUT_Client_wait_Dir);
-			socket.getOutputStream().write(msg);
-			if (DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: "+Util.byteToHexDump(msg, " ")+dr);
-			DirectoryAnswerMultipleIdentities da = new DirectoryAnswerMultipleIdentities(socket.getInputStream());
+			for (;;) {
+				DirectoryRequestAnswer dra = requestDirectoryAnswer(global_peer_ID, peer_ID, sock_addr, dir_address);
+				// Reporting to the widget in Directories Widget
+				ClientSync.reportDa(dir_address.ipPort(), global_peer_ID, peer_name, dra.da, null);
+				
+				/**
+				 * Go to the next level of negotiating terms, updating request dr based on da.
+				 * Currently not yet implemented, but just updating the dr terms.
+				 * However, a loop has to be added with the new negotiation. Currently function returns always true;
+				 */
+				if (! updateNegotiationTerms(dra.dr, dra.da, global_peer_ID, peer_ID, dir_address))
+					continue;
 			
-			// Reporting to the widget in Directories Widget
-			ClientSync.reportDa(dir_address.ipPort(), global_peer_ID, peer_name, da, null);
-
-			Hashtable<String,ArrayList<Address>> addresses = new Hashtable<String,ArrayList<Address>>();
-			for ( DirectoryAnswerInstance inst : da.instances) {
-				DIR_Terms_Requested[] terms = inst.instance_terms; // da.terms
-				if ((terms != null) && (terms.length != 0)) {
-					dr.terms_default = dr.updateTerms(terms, peer_ID, global_peer_ID, dir_address, dr.terms_default);
-					if (dr != null) {
-						System.out.println("Connections: getDirAddress: negotiation TODO: "+inst);
-						continue;
-						/* TODO negotiations
-						msg = dr.encode();
-						socket.setSoTimeout(Server.TIMEOUT_Client_wait_Dir);
-						socket.getOutputStream().write(msg);
-						if(DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: "+Util.byteToHexDump(msg, " ")+dr);
-						da = new DirectoryAnswerMultipleIdentities(socket.getInputStream());
-						*/
-					}
-				}
-				if (inst.addresses == null) {
-					if (_DEBUG) out.println("Connections: getDirAddress:  Got empty addresses!");
-					continue;
-					//socket.close();
-					//return null;
-				}
-				if (inst.addresses.size() == 0) {
-					if(DEBUG) out.println("Connections: getDirAddress:  Got no addresses! da="+da+" for:"+_pc.getName());
-					continue;
-					//socket.close();
-					//return null;
-				}
-				String _inst = Util.getStringNonNullUnique(inst.instance);
-				addresses.put(_inst, inst.addresses); // da.addresses
-				if (DEBUG) out.println("Connections: getDirAddress: Dir Answer: "+da);
-				//socket.close();
+				Hashtable<String,ArrayList<Address>> addresses = extractAddresses(dra.dr, dra.da, _pc.getName());
+				return addresses;
 			}
-			socket.close();
-			return addresses;
 			//InetSocketAddress s= da.address.get(0);
 			//return s.getHostName()+":"+s.getPort();
 		} catch (IOException e) {
@@ -765,6 +829,48 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		return null;
 	}
 	/**
+	 * Creates and sends by UDP a request for GID from dir_address listening on sock_addr
+	 * @param directory_sock_addr
+	 * @param dir_address
+	 * @param GID
+	 * @param peer_name
+	 * @param peer_ID
+	 * @return
+	 */
+	public static DirectoryRequest getDirAddressUDP(
+			InetSocketAddress directory_sock_addr,
+			Address dir_address,
+			String GID,
+			String peer_name, 
+			String peer_ID
+			) {
+		if (DEBUG) System.out.println("Directories:askAddressUDP: enter dir_address = "+dir_address);
+		DirectoryRequest dr =
+				new DirectoryRequest(GID,
+						Identity.getMyPeerInstance(),
+				Identity.getMyPeerGID(),
+				Identity.getMyPeerInstance(),
+				Identity.udp_server_port, 
+				peer_ID,
+				dir_address);
+		if (DEBUG) System.out.println("Directories:askAddressUDP: prepared dir request dr="+dr);
+		//if (DEBUG) System.out.println("Directories:askAddressUDP: dir_address = "+dir_address+" -> "+dir_address.toLongString());
+		//if (DEBUG) System.out.println("Directories:askAddressUDP: sock_address="+_sock_addr.getAddress()+" port="+udp_port);
+		//InetSocketAddress sock_addr = new InetSocketAddress(_sock_addr.getAddress(), udp_port);
+		byte[] msg = dr.encode();
+		if (DEBUG) {
+			DirectoryRequest drt = new DirectoryRequest(new Decoder(msg));
+			if (DEBUG) System.out.println("Directories:askAddressUDP: actually sent (decoded) request "+drt);
+		}
+		try {
+			DatagramPacket dp = new DatagramPacket(msg, msg.length, directory_sock_addr);
+			UDPServer.getUDPSocket().send(dp);
+		} catch (IOException e) {
+			if (DEBUG) e.printStackTrace();
+		}
+		return dr;
+	}	
+	/**
 	 * This function is queried when the TCP request fails. 
 	 * It sends a UDP request but does not wait for answer (retrieving the last available in Connections.
 	 * @param sock_addr
@@ -782,36 +888,16 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 			String peer_ID
 			) {
 		if (DEBUG) System.out.println("Directories:askAddressUDP: enter dir_address = "+dir_address);
-		if ((Application.aus == null) || (UDPServer.ds == null)) return null;
-		InetSocketAddress sock_addr = pd.supernode_addr.isa_udp;
+		if ((Application.aus == null) || (UDPServer.getUDPSocket() == null)) return null;
+		InetSocketAddress directory_sock_addr = pd.supernode_addr.isa_udp;
 		//int udp_port = dir_address.udp_port;
 		//if (udp_port <= 0) Util.printCallPath("udp_port="+dir_address.toLongString()); 
 		//if (udp_port <= 0) udp_port = dir_address.getTCPPort();
 		//if (udp_port <= 0) return null; 
 		String GIDH = _pc.getGIDH();
-		DirectoryRequest dr =
-				new DirectoryRequest(GID,
-						Identity.getMyPeerInstance(),
-				Identity.getMyPeerGID(),
-				Identity.getMyPeerInstance(),
-				Identity.udp_server_port, 
-				peer_ID,
-				dir_address);
-		if (DEBUG) System.out.println("Directories:askAddressUDP: prepared dir request dr="+dr);
-		//if (DEBUG) System.out.println("Directories:askAddressUDP: dir_address = "+dir_address+" -> "+dir_address.toLongString());
-		//if (DEBUG) System.out.println("Directories:askAddressUDP: sock_address="+_sock_addr.getAddress()+" port="+udp_port);
-		//InetSocketAddress sock_addr = new InetSocketAddress(_sock_addr.getAddress(), udp_port);
-		byte[] msg = dr.encode();
-		if (DEBUG) {
-			DirectoryRequest drt = new DirectoryRequest(new Decoder(msg));
-			if (DEBUG) System.out.println("Directories:askAddressUDP: prepared dec request "+drt);
-		}
-		try {
-			DatagramPacket dp = new DatagramPacket(msg, msg.length, sock_addr);
-			UDPServer.ds.send(dp);
-		} catch (IOException e) {
-			if (DEBUG) e.printStackTrace();
-		}
+
+		DirectoryRequest dr = getDirAddressUDP(directory_sock_addr, dir_address, GID, peer_name, peer_ID);
+		
 		return Connections.getKnownDirectoryAddresses(dir_address, GIDH, Identity.getMyPeerInstance());
 	}
 	/**

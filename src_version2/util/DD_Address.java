@@ -24,6 +24,7 @@ import hds.Address;
 import hds.DirectoryServer;
 import hds.SR;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.regex.Pattern;
@@ -39,7 +40,7 @@ import ASN1.Decoder;
 import ASN1.Encoder;
 
 public class DD_Address implements StegoStructure {
-	public static final boolean DEBUG = false;
+	public static final boolean DEBUG = true;
 	private static final boolean _DEBUG = true;
 	private static final int MAX_ID_DESCRIPTION = 50;
 	/** Nobody uses this, but it is V3 encoding without addresses */
@@ -493,10 +494,10 @@ public class DD_Address implements StegoStructure {
 		//type = clean(elem[4].substring(TYPE.length()-SEP.length()));
 		broadcastable = Integer.parseInt(clean(elem[t++].substring(BROADCAST.length()-SEP.length())))>0;
 		String s_hash_alg = clean(elem[t++].substring(HASH_ALG.length()-SEP.length()));
-		if(s_hash_alg==null) hash_alg=new String[]{};
+		if (s_hash_alg == null) hash_alg = new String[]{};
 		else {
 			String[]q_hash_alg = s_hash_alg.split(Pattern.quote("\""));
-			if(q_hash_alg.length<2) hash_alg = null;
+			if (q_hash_alg.length < 2) hash_alg = null;
 			else hash_alg = (q_hash_alg[1]==null)?(new String[]{}):q_hash_alg[1].split(Pattern.quote(":"));
 		}
 		served_orgs = Util.parsePeerOrgs(elem[t++].substring(SERVING.length()-SEP.length()));
@@ -507,23 +508,34 @@ public class DD_Address implements StegoStructure {
 		return true;
 	}
 	public byte[] getBytes() {
-		return _getBytes();
+		return getEncoder().getBytes(); // _getBytes();
 	}
-	public byte[] _getBytes() {
+	public Encoder getEncoder() {
+		Encoder enc = _getEncoder();
+		enc.setASN1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, getASN1Tag());
+		return enc;
+	}
+	public Encoder _getEncoder() {
 		if(V1.equals(version)) return _getBytes_V1();
 		if(V2.equals(version)) return _getBytes_V2();
 		if(V3.equals(version)) return _getBytes_V3(); //peer.encode();
 		throw new RuntimeException("Unknown DDAddress version:"+peer_version);
 	}
-	public byte[] _getBytes_V3() {
+//	public byte[] _getBytes() {
+//		if(V1.equals(version)) return _getBytes_V1();
+//		if(V2.equals(version)) return _getBytes_V2();
+//		if(V3.equals(version)) return _getBytes_V3(); //peer.encode();
+//		throw new RuntimeException("Unknown DDAddress version:"+peer_version);
+//	}
+	public Encoder _getBytes_V3() {
 		Encoder enc = new Encoder().initSequence();
 		if (version != null) enc.addToSequence(new Encoder(version,false).setASN1Type(DD.TAG_AC0));
 		enc.addToSequence(peer.getEncoder());
 		ArrayList<D_PeerInstance> dpi = new ArrayList<D_PeerInstance>( peer._instances.values());
 		enc.addToSequence(Encoder.getEncoder(dpi));
-		return enc.getBytes();
+		return enc;//.getBytes();
 	}
-	public byte[] _getBytes_V1() {
+	public Encoder _getBytes_V1() {
 		Encoder enc = new Encoder().initSequence();
 		if(version!=null) enc.addToSequence(new Encoder(version,false).setASN1Type(DD.TAG_AC0));
 		enc.addToSequence(new Encoder(globalID,false));
@@ -541,9 +553,9 @@ public class DD_Address implements StegoStructure {
 		enc.addToSequence(Encoder.getStringEncoder(hash_alg, Encoder.TAG_PrintableString));
 		if(this.served_orgs!=null)enc.addToSequence(Encoder.getEncoder(this.served_orgs).setASN1Type(DD.TAG_AC12));
 		enc.addToSequence(new Encoder(signature).setASN1Type(Encoder.TAG_OCTET_STRING));
-		return enc.getBytes();
+		return enc;//.getBytes();
 	}
-	public byte[] _getBytes_V2() {
+	public Encoder _getBytes_V2() {
 		Encoder enc = new Encoder().initSequence();
 		if(version!=null)enc.addToSequence(new Encoder(version,false).setASN1Type(DD.TAG_AC0));
 		enc.addToSequence(new Encoder(globalID,false));
@@ -568,28 +580,52 @@ public class DD_Address implements StegoStructure {
 		enc.addToSequence(Encoder.getStringEncoder(hash_alg, Encoder.TAG_PrintableString));
 		if(this.served_orgs!=null)enc.addToSequence(Encoder.getEncoder(this.served_orgs).setASN1Type(DD.TAG_AC12));
 		enc.addToSequence(new Encoder(signature).setASN1Type(Encoder.TAG_OCTET_STRING));
-		return enc.getBytes();
+		return enc;//.getBytes();
 	}
+	/**
+	 * Attempts to decode may profit by detecting a miss-matched object type by not accepting data with no name.
+	 */
+	@Override
 	public void setBytes(byte[] msg) throws ASN1DecoderFail {
+		_setBytes(msg);
+		// Attempts to decode may profit by detecting a miss-matched object type by not accepting data with no name.
+		if (this.peer == null || this.peer.getName() == null) {
+			if (_DEBUG) System.out.println("DD_Address: setBytes: we do not allow peers with no name");
+			throw new ASN1.ASNLenRuntimeException("No name in received peer!");
+		}
+	}
+	/**
+	 * This version always returns true. Could be configured to return false on wrong ASN1 tag by uncommenting return condition.
+	 * @param msg
+	 * @return
+	 * @throws ASN1DecoderFail
+	 */
+	public boolean _setBytes(byte[] msg) throws ASN1DecoderFail {
 		if (DEBUG) System.out.println("DD_Address: setBytes: enter");
+		if (_DEBUG) System.out.println("DD_Address: setBytes: enter msg=#"+msg.length+": "+Util.byteToHexDump(msg, 30));
 		Decoder dec = new Decoder(msg);
-		dec=dec.getContent();
+		if (! new BigInteger(""+this.getSignShort()).equals(dec.getTagValueBN())) {
+			if (_DEBUG) System.err.println("ControlPane: actionImport: Got: message not ASN1 tag of ="+this.getClass());
+			//return false;
+		}
+		dec = dec.getContent();
 		peer_version = null;
 		if (dec.getTypeByte() == DD.TAG_AC0) version = peer_version = dec.getFirstObject(true).getString(DD.TAG_AC0);
 		
 		if (V0.equals(version)) {
 			if (DEBUG) System.out.println("DD_Address: setBytes: V0");
-			setBytes_V2(dec); return;}
+			setBytes_V2(dec); return true;}
 		if (V1.equals(version)) {
 			if (DEBUG) System.out.println("DD_Address: setBytes: V1");
-			setBytes_V2(dec); return;}
+			setBytes_V2(dec); return true;}
 		if (V2.equals(version)) {
 			if (DEBUG) System.out.println("DD_Address: setBytes: V2");
-			setBytes_V2(dec); return;}
+			setBytes_V2(dec); return true;}
 		if (V3.equals(version)) {
 			if (DEBUG) System.out.println("DD_Address: setBytes: V3");
-			setBytes_V3(dec); return;}
+			setBytes_V3(dec); return true;}
 		if (DEBUG) System.out.println("DD_Address: setBytes: exit: \""+version+"\"");
+		return true;
 	}
 	public void setBytes_V3(Decoder dec) throws ASN1DecoderFail {
 		if (DEBUG) System.out.println("DD_Address: setBytes_V3: enter");
@@ -611,7 +647,7 @@ public class DD_Address implements StegoStructure {
 	public void setBytes_V2(Decoder dec) throws ASN1DecoderFail {
 		//if(V0.equals(version)){
 		globalID = dec.getFirstObject(true).getString(Encoder.TAG_PrintableString);
-		if(dec.getTypeByte()==Encoder.TAG_GeneralizedTime)
+		if (dec.getTypeByte()==Encoder.TAG_GeneralizedTime)
 			creation_date = dec.getFirstObject(true).getGeneralizedTimeAnyType();
 		name = dec.getFirstObject(true).getString(Encoder.TAG_UTF8String);
 		if("".equals(name)) name = null;
@@ -622,7 +658,7 @@ public class DD_Address implements StegoStructure {
 			if("".equals(phones)) phones = null;			
 		}
 		slogan = dec.getFirstObject(true).getString(Encoder.TAG_UTF8String);
-		if("".equals(slogan)) slogan = null;
+		if ("".equals(slogan)) slogan = null;
 		address = dec.getFirstObject(true).getString(Encoder.TAG_PrintableString);
 		//type = dec.getFirstObject(true).getString(Encoder.TAG_PrintableString);
 		broadcastable = dec.getFirstObject(true).getBoolean();
@@ -651,5 +687,8 @@ public class DD_Address implements StegoStructure {
 	@Override
 	public short getSignShort() {
 		return DD.STEGO_SIGN_PEER;
+	}
+	public static BigInteger getASN1Tag() {
+		return new BigInteger(DD.STEGO_SIGN_PEER+"");
 	}
 }

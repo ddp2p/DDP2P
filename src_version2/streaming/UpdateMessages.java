@@ -141,7 +141,7 @@ public class UpdateMessages {
 		String maxDate =_maxDate[0];
 		if(!justDate && (maxDate==null) && (orgs.size()==0)) {
 			if(DEBUG) out.println("UpdateMessages:buildAnswer: START-EXIT Nothing new to send!");
-			return new SyncAnswer(asr.lastSnapshot, Identity.current_peer_ID.globalID);
+			return new SyncAnswer(asr.lastSnapshot, Identity.current_peer_ID.getPeerGID());
 		}
 		if(DEBUG) out.println("UpdateMessages:buildAnswer: START: Date at entrance: "+_maxDate[0]+" justDate="+justDate);
 		String last_sync_date="00000000000000.000Z";
@@ -199,7 +199,7 @@ public class UpdateMessages {
 				}
 			}
 		sa.orgData = orgData;
-		sa.responderGID = Identity.current_peer_ID.globalID;
+		sa.responderGID = Identity.current_peer_ID.getPeerGID();
 		if (tableslist.size() > 0) {
 			sa.tables = new ASNDatabase();
 			sa.tables.snapshot = Util.getCalendar(_maxDate[0]); // Util.CalendargetInstance();
@@ -860,17 +860,20 @@ public class UpdateMessages {
 		return true;
 	}
 	*/
-	static public long getonly_constituent_ID(String global_constituent_ID) throws P2PDDSQLException{
-		long result=-1;
-		if(DEBUG) System.out.println("\n************\nUpdateMessages:getonly_constituentID':  start gcID= = "+Util.trimmed(global_constituent_ID));		
-		String sql="SELECT "+table.constituent.constituent_ID+" FROM "+table.constituent.TNAME+" WHERE "+table.constituent.global_constituent_ID+" = ?";
-		ArrayList<ArrayList<Object>> dt=Application.db.select(sql, new String[]{global_constituent_ID}, DEBUG);
-		if((dt.size()>=1) && (dt.get(0).size()>=1))
-			result = Long.parseLong(dt.get(0).get(0).toString());
-		if(DEBUG) System.out.println("UpdateMessages:getonly_constituentID':  exit result = "+result);		
-		if(DEBUG) System.out.println("****************");		
-		return result;
-	}
+//	public static final	String sql_constLID_By_ConstGID =
+//			"SELECT "+table.constituent.constituent_ID +
+//			" FROM "+table.constituent.TNAME+" WHERE "+table.constituent.global_constituent_ID+" = ?";
+//	static public long get_constituent_LID_ByGID(String constituent_GID) throws P2PDDSQLException{
+//		//D_Constituent.getLIDFromGID(constituent_GID, oID);
+//		long result=-1;
+//		if(DEBUG) System.out.println("\n************\nUpdateMessages:getonly_constituentID':  start gcID= = "+Util.trimmed(constituent_GID));		
+//		ArrayList<ArrayList<Object>> dt=Application.db.select(sql_constLID_By_ConstGID, new String[]{constituent_GID}, DEBUG);
+//		if((dt.size()>=1) && (dt.get(0).size()>=1))
+//			result = Long.parseLong(dt.get(0).get(0).toString());
+//		if(DEBUG) System.out.println("UpdateMessages:getonly_constituentID':  exit result = "+result);		
+//		if(DEBUG) System.out.println("****************");		
+//		return result;
+//	}
 	static public long get_news_ID(String global_news_ID, long constituentID, long organizationID, String date, String news, String type, String signature) throws P2PDDSQLException {
 		long result=0;
 		ArrayList<ArrayList<Object>> dt=Application.db.select("SELECT "+table.news.news_ID+" FROM "+table.news.TNAME+" WHERE "+table.news.global_news_ID+" = ?",
@@ -884,23 +887,25 @@ public class UpdateMessages {
 		return result;
 	}
 	
-	static public long getonly_organizationID(String global_organizationID, String orgID_hash) throws P2PDDSQLException {
-		long result=-1;
-		if(DEBUG) System.out.println("\n************\nUpdateMessages:getonly_organizationID':  start orgID_hash= = "+orgID_hash);		
-		if ((global_organizationID!=null)||(orgID_hash!=null)) {
-			String sql="SELECT "+table.organization.organization_ID+
-				" FROM "+table.organization.TNAME+
-				" WHERE "+table.organization.global_organization_ID+" = ? OR "+table.organization.global_organization_ID_hash+" = ?";
-			ArrayList<ArrayList<Object>> dt=Application.db.select(sql, new String[]{global_organizationID, orgID_hash}, DEBUG);
-			if((dt.size()>=1) && (dt.get(0).size()>=1)) {
-				result = Long.parseLong(dt.get(0).get(0).toString());
-				//return result;
-			}
-		}
-		if(DEBUG) System.out.println("UpdateMessages:getonly_organizationID':  exit result = "+result);		
-		if(DEBUG) System.out.println("****************");		
-		return result;
-	}
+//	static public long getonly_organizationID(String global_organizationID, String orgID_hash) throws P2PDDSQLException {
+//
+//		//D_Organization.getLIDbyGIDorGIDH(orgGID, orgGIDH);
+//		long result=-1;
+//		if(DEBUG) System.out.println("\n************\nUpdateMessages:getonly_organizationID':  start orgID_hash= = "+orgID_hash);		
+//		if ((global_organizationID!=null)||(orgID_hash!=null)) {
+//			String sql="SELECT "+table.organization.organization_ID+
+//				" FROM "+table.organization.TNAME+
+//				" WHERE "+table.organization.global_organization_ID+" = ? OR "+table.organization.global_organization_ID_hash+" = ?";
+//			ArrayList<ArrayList<Object>> dt=Application.db.select(sql, new String[]{global_organizationID, orgID_hash}, DEBUG);
+//			if((dt.size()>=1) && (dt.get(0).size()>=1)) {
+//				result = Long.parseLong(dt.get(0).get(0).toString());
+//				//return result;
+//			}
+//		}
+//		if(DEBUG) System.out.println("UpdateMessages:getonly_organizationID':  exit result = "+result);		
+//		if(DEBUG) System.out.println("****************");		
+//		return result;
+//	}
 	/**
 	 * Get ID and/or insert temporary org entry
 	 * @param global_organizationID

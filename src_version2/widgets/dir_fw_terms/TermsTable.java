@@ -34,7 +34,7 @@ import widgets.components.BulletRenderer;
 import widgets.components.DebateDecideAction;
 import config.Application;
 import config.Identity;
-import data.D_TesterDefinition;
+import data.D_Tester;
 import data.D_UpdatesKeysInfo;
 import util.P2PDDSQLException;
 import widgets.updatesKeys.UpdatesKeysTable;

@@ -1,3 +1,22 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2014 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package data;
 
 import static java.lang.System.out;
@@ -369,8 +388,8 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 					}
 				}
 				if (removed.getLIDstr() != null) loaded_By_LocalID.remove(new Long(removed.getLID())); 
-				if (removed.getGID() != null) D_Justification_Node.remConstByGID(removed.getGID(), removed.getLID()); //loaded_const_By_GID.remove(removed.getGID());
-				if (removed.getGIDH() != null) D_Justification_Node.remConstByGIDH(removed.getGIDH(), removed.getLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
+				if (removed.getGID() != null) D_Justification_Node.remConstByGID(removed.getGID(), removed.getOrganizationLID()); //loaded_const_By_GID.remove(removed.getGID());
+				if (removed.getGIDH() != null) D_Justification_Node.remConstByGIDH(removed.getGIDH(), removed.getOrganizationLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 				if (DEBUG) System.out.println("D_Justification: drop_loaded: remove GIDH="+removed.getGIDH());
 				return result;
 			}
@@ -398,9 +417,11 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		}
 	}
 	private D_Justification(String gID, boolean load_Globals, boolean create,
-			D_Peer __peer, long p_oLID, long p_mLID) throws P2PDDSQLException {
+			D_Peer __peer, long p_oLID, long p_mLID, ArrayList<ArrayList<Object>> ma) throws P2PDDSQLException {
 		try {
-			init(gID);
+			if (ma != null && ma.size() > 0) init(ma.get(0));
+			else init(gID);
+			
 			if (load_Globals) this.fillGlobals();
 		} catch (Exception e) {
 			//e.printStackTrace();
@@ -731,6 +752,18 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if(DEBUG) System.out.println("D_Justification: init: got="+this);//result);
 	}	
 
+	private static ArrayList<ArrayList<Object>> getJustificationArrayByGID(
+			String gID) {
+		ArrayList<ArrayList<Object>> a;
+		try {
+			a = Application.db.select(cond_GID, new String[]{gID});
+			return a;
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return new ArrayList<ArrayList<Object>>();
+	}
+
 	/**
 	 * exception raised on error
 	 * @param ID
@@ -978,10 +1011,12 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			}
 
 			try {
-				if (storage == null)
-					crt = new D_Justification(GID, load_Globals, create, __peer, p_oLID, p_mLID);
+				ArrayList<ArrayList<Object>> ma = D_Justification.getJustificationArrayByGID(GID);
+				if (storage == null || ma.size() > 0)
+					crt = new D_Justification(GID, load_Globals, create, __peer, p_oLID, p_mLID, ma);
 				else {
 					D_Justification_Node.dropLoaded(storage, true);
+					//if (ma.size() > 0) storage.init(ma.get(0));
 					crt = storage.initNew(GID, __peer, p_oLID, p_mLID);
 				}
 				if (DEBUG) System.out.println("D_Justification: getJustByGID: loaded crt="+crt);
@@ -2289,6 +2324,14 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	public String getAnswerToLIDstr() {
 		return answerTo_ID;
 	}
+	/**
+	 * Would not work an a remote justification just decoded, (where the GID is set but not the LID)
+	 * @return
+	 */
+	public long getAnswerToLID() {
+		//if (this.loaded_locals)
+		return Util.lval(answerTo_ID);
+	}
 	public void setAnswerToLIDstr(String answerTo_ID) {
 		if (! Util.equalStrings_null_or_not(this.answerTo_ID, answerTo_ID)) {
 			this.answerTo_ID = answerTo_ID;
@@ -3009,8 +3052,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 }
 
 class D_Justification_SaverThread extends util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000; // ms to sleep
-	private static final long SAVER_SLEEP_ON_ERROR = 2000;
+	//private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	/**
 	 * The next monitor is needed to ensure that two D_Justification_SaverThreadWorker are not concurrently modifying the database,
@@ -3059,7 +3101,7 @@ class D_Justification_SaverThread extends util.DDP2P_ServiceThread {
 			*/
 			synchronized(this) {
 				try {
-					wait(SAVER_SLEEP);
+					wait(SaverThreadsConstants.SAVER_SLEEP_BETWEEN_JUSTIFICATION_MSEC);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -3069,8 +3111,6 @@ class D_Justification_SaverThread extends util.DDP2P_ServiceThread {
 }
 
 class D_Justification_SaverThreadWorker extends util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000;
-	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	//public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
@@ -3108,7 +3148,7 @@ class D_Justification_SaverThreadWorker extends util.DDP2P_ServiceThread {
 						synchronized(this) {
 							try {
 								if (DEBUG) System.out.println("D_Justification_Saver: sleep");
-								wait(SAVER_SLEEP_ON_ERROR);
+								wait(SaverThreadsConstants.SAVER_SLEEP_WORKER_JUSTIFICATION_ON_ERROR);
 								if (DEBUG) System.out.println("D_Justification_Saver: waked error");
 							} catch (InterruptedException e2) {
 								e2.printStackTrace();
@@ -3121,13 +3161,15 @@ class D_Justification_SaverThreadWorker extends util.DDP2P_ServiceThread {
 				if (DEBUG) System.out.println("D_Justification_Saver: idle ...");
 			}
 		}
-		synchronized(this) {
-			try {
-				if (DEBUG) System.out.println("D_Justification_Saver: sleep");
-				wait(SAVER_SLEEP);
-				if (DEBUG) System.out.println("D_Justification_Saver: waked");
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+		if (SaverThreadsConstants.SAVER_SLEEP_WORKER_BETWEEN_JUSTIFICATION_MSEC >= 0) {
+			synchronized(this) {
+				try {
+					if (DEBUG) System.out.println("D_Justification_Saver: sleep");
+					wait(SaverThreadsConstants.SAVER_SLEEP_WORKER_BETWEEN_JUSTIFICATION_MSEC);
+					if (DEBUG) System.out.println("D_Justification_Saver: waked");
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}

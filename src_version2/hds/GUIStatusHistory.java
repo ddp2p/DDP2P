@@ -245,6 +245,10 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	}
 	public void addJustificationStatusListener(JustificationsListener l) {
 		if(DEBUG) System.out.println("GUIStatus: addJusts Listener "+l);
+		if (l == null) {
+			if(_DEBUG) System.out.println("GUIStatus: addJusts null Listener "+l);
+			return;
+		}
 		if(just_listeners.contains(l)) return;
 		just_listeners.add(l);
 		D_Justification just = getSelectedJust();
@@ -375,7 +379,7 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	}
 	public synchronized
 	void setSelectedOrg(D_Organization org){
-		if(DEBUG) System.out.println("GUIStatusHistory: setOrgs "+((org==null)?null:org.name));
+		if(DEBUG) System.out.println("GUIStatusHistory: setOrgs "+((org==null)?null:org.getName()));
 		if(sameOrganization(org, getSelectedOrg())){
 			if(DEBUG) System.out.println("GUIStatusHistory: setOrgs same old org");
 			return;
@@ -489,7 +493,7 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		D_Organization org = getSelectedOrg();
 		D_Organization o_prev = getSelectedOrg(previous);
 		if(org!=o_prev){
-			if (DEBUG) System.out.println("GUISH: tellListeners: new org "+((org==null)?"null":org.name));
+			if (DEBUG) System.out.println("GUISH: tellListeners: new org "+((org==null)?"null":org.getName()));
 			fireOrgListeners();
 		}
 
@@ -797,7 +801,7 @@ class GUIStatus {
 		if(selected_identity!=null) r+=s(i)+"id  ="+selected_identity.name+"\n";
 		if(myself_peer!=null) r+=s(i)+"me  ="+myself_peer.component_basic_data.name+"\n";
 		if(selected_peer!=null) r+=s(i)+"peer="+selected_peer.component_basic_data.name+"\n";
-		if(selected_organization!=null) r+=s(i)+"org ="+selected_organization.name+"\n";
+		if(selected_organization!=null) r+=s(i)+"org ="+selected_organization.getName()+"\n";
 		if(selected_neighborhood!=null) r+=s(i)+"neig="+selected_neighborhood.getName()+"\n";
 		if(myself_constituent!=null) r+=s(i)+"me_c="+myself_constituent.getNameFull()+"\n";
 		if(selected_constituent!=null) r+=s(i)+"cons="+selected_constituent.getNameFull()+"\n";

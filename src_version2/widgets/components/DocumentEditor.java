@@ -93,7 +93,13 @@ public class DocumentEditor implements DocumentListener{
 		}
 		return null;
 	}
-	
+	/**
+	 * Makes editor (not) editable.
+	 * Hides/Shoes toolbars for RTEditor.
+	 * 
+	 * Applies only to the currently set type of editor format
+	 * @param b
+	 */
 	public void setEnabled(boolean b) {
 		//boolean DEBUG = true;
 		//System.out.println("DocumentEditor: setEnabled: bool="+b);
@@ -276,7 +282,10 @@ public class DocumentEditor implements DocumentListener{
 		data.setFormatString(this.getFormatString());
 		data.setDocumentString(this.getText());
 	}
-
+	/**
+	 * Set the editor type
+	 * @param formatStrings
+	 */
 	public void setType(String formatString) {
 		//boolean DEBUG=true;
 		if(DEBUG) System.out.println("DocumentEditor: setType: type="+formatString);

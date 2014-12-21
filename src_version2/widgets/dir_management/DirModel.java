@@ -17,7 +17,7 @@ import javax.swing.DefaultCellEditor;
 
 import util.P2PDDSQLException;
 import config.Application_GUI;
-import data.D_SubscriberInfo;
+import data.D_DirectoryServerSubscriberInfo;
 import util.DBInfo;
 import util.DBInterface;
 import util.DBListener;
@@ -53,7 +53,7 @@ public class DirModel extends AbstractTableModel implements TableModel, DBListen
 	HashSet<Object> tables = new HashSet<Object>();
 	DirTable dirTable;
 	String columnNames[]={__("Name"),__("Instance"),__("Topic"),__("AD"),__("Plaintext"),__("Payment"),__("Services"),__("Expiration")};
-	ArrayList<D_SubscriberInfo> data = new ArrayList<D_SubscriberInfo>();
+	ArrayList<D_DirectoryServerSubscriberInfo> data = new ArrayList<D_DirectoryServerSubscriberInfo>();
 	private DirPanel panel;
 	
 	public DirModel(DBInterface _db, DirPanel _panel) { // constructor with dataSource -> DBInterface _db
@@ -106,7 +106,7 @@ public class DirModel extends AbstractTableModel implements TableModel, DBListen
 	public Object getValueAt(int rowIndex, int columnIndex) {// a cell
 		if((rowIndex<0) || (rowIndex>=data.size())) return null;
 		if((columnIndex<0) || (columnIndex>this.getColumnCount())) return null;
-		D_SubscriberInfo crt = data.get(rowIndex);
+		D_DirectoryServerSubscriberInfo crt = data.get(rowIndex);
 		if(crt==null) return null;
 		switch(columnIndex){
 		case TABLE_COL_TOPIC:
@@ -208,7 +208,7 @@ public class DirModel extends AbstractTableModel implements TableModel, DBListen
 		if(_DEBUG) System.out.println("DirModel:setValueAt: r="+row +", c="+col+" val="+aValue);
 		if((row<0) || (row>=data.size())) return;
 		if((col<0) || (col>this.getColumnCount())) return;
-		D_SubscriberInfo crt = data.get(row);
+		D_DirectoryServerSubscriberInfo crt = data.get(row);
 		if(_DEBUG) System.out.println("DirModel:setValueAt: old crt="+crt);
 		switch(col) {
 		case TABLE_COL_TOPIC:
@@ -329,9 +329,9 @@ public class DirModel extends AbstractTableModel implements TableModel, DBListen
 			e.printStackTrace();
 			return;
 		}
-		data = new ArrayList<D_SubscriberInfo>();
+		data = new ArrayList<D_DirectoryServerSubscriberInfo>();
 		for(ArrayList<Object> _u :u){
-			D_SubscriberInfo ui = new D_SubscriberInfo(_u, db);
+			D_DirectoryServerSubscriberInfo ui = new D_DirectoryServerSubscriberInfo(_u, db);
 			if(DEBUG) System.out.println("DirModel: update: add: "+ui);
 			data.add(ui); // add a new item to data list (rows)
 		}

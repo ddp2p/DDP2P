@@ -281,7 +281,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 		ArrayList<ArrayList<Object>> d = null;
 		long myConstituentID = 0;
 		try {
-			myConstituentID = Identity.getCurrentIdentity()
+			myConstituentID = Identity.getCurrentConstituentIdentity()
 					.getDefaultConstituentIDForOrg(this.organizationID);// TODO:-1
 		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
@@ -352,7 +352,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			}
 //			System.out.println("constituentName:" + constituentName);
 			try {
-				myConstituentID = (int) Identity.getCurrentIdentity()
+				myConstituentID = (int) Identity.getCurrentConstituentIdentity()
 						.getDefaultConstituentIDForOrg(this.organizationID);
 			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();

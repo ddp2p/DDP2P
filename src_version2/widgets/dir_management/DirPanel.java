@@ -41,7 +41,7 @@ import config.Application;
 import config.DD;
 import config.PeerListener;
 import data.D_Peer;
-import data.D_SubscriberInfo;
+import data.D_DirectoryServerSubscriberInfo;
 import util.DBInterface;
 import util.Util;
 //import table.directory_forwarding_dir;// changed

@@ -40,7 +40,7 @@ import config.Application_GUI;
 import config.Identity;
 import config.DD;
 import data.D_MirrorInfo;
-import data.D_TesterDefinition;
+import data.D_Tester;
 import data.D_UpdatesKeysInfo;
 import table.mirror;
 import updates.ClientUpdates;
