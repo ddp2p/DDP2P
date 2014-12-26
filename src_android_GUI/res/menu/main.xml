@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/action_settings"/>
+    <item
+        android:id="@+id/action_directories"
+        android:icon="@drawable/directory"
+        android:orderInCategory="100"
+        android:showAsAction="never|withText"
+        android:title="@string/action_directories"/>
+    <!--
+         <item
+        android:id="@+id/action_directories_icon"
+        android:icon="@drawable/directory"
+        android:orderInCategory="100"
+        android:showAsAction="always"
+        android:title="@string/action_directories"/>
+    -->
+
+    <item
+        android:id="@+id/add_new"
+        android:icon="@drawable/ic_action_new"
+        android:orderInCategory="1"
+        android:showAsAction="always"
+        android:title="@string/new_icon">
+        <menu>
+            <item
+                android:id="@+id/add_new_safe_my"
+                android:icon="@drawable/add_safe_my"
+                android:orderInCategory="2"
+                android:showAsAction="ifRoom|withText"
+                android:title="@string/new_safe_my"/>
+            <item
+                android:id="@+id/add_new_safe_other"
+                android:icon="@drawable/add_safe_other"
+                android:orderInCategory="3"
+                android:showAsAction="ifRoom|withText"
+                android:title="@string/new_safe_other"/>
+            <item
+                android:id="@+id/add_new_org"
+                android:icon="@drawable/add_org"
+                android:orderInCategory="4"
+                android:showAsAction="ifRoom|withText"
+                android:title="@string/new_org"/>
+            <item
+                android:id="@+id/action_loadPeerAddresss"
+                android:orderInCategory="5"
+                android:icon="@drawable/address"
+                android:showAsAction="ifRoom|withText"
+                android:title="@string/load_peer_address"/>
+        </menu>
+    </item>
+
+</menu>

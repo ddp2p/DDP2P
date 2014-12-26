@@ -1,0 +1,97 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/directory_instruction" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="DIR%" />
+
+        <EditText
+            android:id="@+id/add_directory_server_body_branch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="B"
+            android:inputType="text" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="%" />
+
+        <EditText
+            android:id="@+id/add_directory_server_body_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="version"
+            android:inputType="text" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="://" />
+
+        <EditText
+            android:id="@+id/add_directory_server_body_ip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="IP_Address"
+            android:inputType="text" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=":" />
+
+        <EditText
+            android:id="@+id/add_directory_server_body_port"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="port:25123"
+            android:inputType="text" />
+
+        <EditText
+            android:id="@+id/add_directory_server_body_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Name"
+            android:inputType="text" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/submit_add_directory_server"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right"
+        android:layout_marginRight="30dp"
+        android:layout_marginTop="30dp"
+        android:text="@string/submit" />
+
+</LinearLayout>

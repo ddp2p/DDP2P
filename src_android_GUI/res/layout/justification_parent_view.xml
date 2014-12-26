@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:background="#009999"
+    android:orientation="horizontal" >
+
+    <TextView
+        android:id="@+id/justification_parent_thumbs_up"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="false"
+        android:drawableLeft="@drawable/thumbs_up"
+        android:text="0"
+        android:textColor="#000000" />
+
+    <!--
+         <TextView
+        android:id="@+id/justification_parent_thumbs_down"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:clickable="false"
+        android:drawableLeft="@drawable/thumbs_down"
+        android:text="0"
+        android:textColor="#000000" />
+    -->
+
+    <CheckedTextView
+        android:id="@+id/textViewGroupName"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:background="#009999"
+        android:gravity="center_vertical"
+        android:padding="10dp"
+        android:text="@string/hello_world"
+        android:textColor="#FFFFFF"
+        android:textSelectHandleLeft="@string/hello_world"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+</LinearLayout>

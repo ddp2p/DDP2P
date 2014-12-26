@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" 
+    android:paddingTop="20dp"
+    android:paddingBottom="20dp"
+    >
+    <ImageView
+        android:id="@+id/avatar_chat_right"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"/>
+    <RelativeLayout
+        android:id="@+id/rl_chat_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@+id/avatar_chat_right"
+        android:background="@drawable/chat_right" >
+    <TextView
+        android:id="@+id/message_chat_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="160dp" />
+    </RelativeLayout>
+    <TextView
+        android:id="@+id/sendtime_chat_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/rl_chat_right"
+        android:layout_toLeftOf="@+id/avatar_chat_right"
+        android:textSize="14sp"/>
+</RelativeLayout>

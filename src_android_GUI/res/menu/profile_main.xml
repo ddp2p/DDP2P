@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/action_setNameMy"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/set_name_my"/>
+    <item
+        android:id="@+id/action_setEmail"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/set_email"/>
+    <item
+        android:id="@+id/action_setSlogan"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/set_slogan"/>
+    <item
+        android:id="@+id/action_addToCurrentOrg"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/add_to_current_org"/>
+
+</menu>

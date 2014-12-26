@@ -1,0 +1,9 @@
+CREATE TABLE "peer_org_inferred" (
+        "peer_org_inferred_ID" INTEGER PRIMARY KEY NOT NULL,
+        "peer_ID" INTEGER NOT NULL,
+        "organization_ID" INTEGER NOT NULL,
+        "served" INTEGER NOT NULL DEFAULT (0),
+        "last_sync_date" TEXT,
+        FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID),
+        FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
+);

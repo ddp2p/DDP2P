@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="40dp"
+    android:background="#99D6D6"
+    android:clickable="true"
+    android:orientation="vertical"
+    android:paddingLeft="40dp" >
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/constituent_child_view_add_neiborhood"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+Neighborhood"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/constituent_child_view_add_constituent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+Constituent"
+            android:textSize="15sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/constituent_child_view_set_myself"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Myself"
+            android:textSize="15sp" />
+        <Button
+            android:id="@+id/constituent_child_view_move_here"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Move"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/constituent_child_view_witness"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Witness"
+            android:textSize="15sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="39dp"
+        android:gravity="center_vertical" >
+
+        <ImageView
+            android:id="@+id/childImage"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_margin="5dp"
+            android:background="@drawable/ic_launcher"
+            android:contentDescription="@string/hello_world" />
+
+        <TextView
+            android:id="@+id/textViewChild"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:text="@string/hello_world"
+            android:textColor="#1919A3"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/white" />
+
+</LinearLayout>

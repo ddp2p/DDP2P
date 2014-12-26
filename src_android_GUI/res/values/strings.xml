@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">DDP2P</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_directories">Manage Directories</string>
+
+    <!-- main action bar -->
+    <string name="action_back" translatable="false">back</string>
+    <string name="new_safe_my" translatable="false">add a new safe my</string>
+    <string name="new_safe_other" translatable="false">add a new safe other</string>
+    <string name="new_org" translatable="false">add a new org</string>
+    <string name="new_icon" translatable="false">add</string>
+
+    <!-- used in safe profile menu -->
+    <string name="set_name_my" translatable="false">set name my</string>
+    <string name="set_email" translatable="false">set email</string>
+    <string name="set_slogan" translatable="false">set slogan</string>
+    <string name="add_to_current_org" translatable="false">add to current org</string>
+    <string name="export_peer_pk" translatable="false">export peer pk</string>
+    <string name="load_peer_address" translatable="false">load peer address</string>
+    <string name="safe_profile_drawer_open">Open safe profile drawer</string>
+    <string name="safe_profile_drawer_close">Close safe profile drawer</string>
+
+    <!-- used in data_list -->
+    <string name="name" translatable="false">Name</string>
+    <string name="email" translatable="false">Email</string>
+    <string name="slogan" translatable="false">Slogan</string>
+    <string name="profile_pic_datalist" translatable="false">profile picture</string>
+
+    <!-- buttons -->
+    <string name="submit" translatable="false">submit</string>
+    <string name="submit_new" translatable="false">submit new</string>
+    <string name="ok" translatable="false">OK</string>
+
+    <!-- chat -->
+    <string name="send" translatable="false">Send</string>
+    <string name="input" translatable="false">input...</string>
+
+    <!-- Orgs -->
+    <string name="constituents" translatable="false">Constituent</string>
+    <string name="motion" translatable="false">Motion</string>
+    <string name="news" translatable="false">News</string>
+    <string name="org_set" translatable="false">Set</string>
+    <string name="org_profile" translatable="false">Profile</string>
+    <string name="body" translatable="false">Body</string>
+    <string name="forename" translatable="false">Forename</string>
+    <string name="surname" translatable="false">Surname</string>
+    <string name="neiborhood" translatable="false">Neiborhood</string>
+    <string name="keys" translatable="false">Keys</string>
+    <string name="has_right_to_vote" translatable="false">Has Right To Vote</string>
+    <string name="phone_number" translatable="false">Phone Number</string>
+    <string name="constituent_slogan" translatable="false">Slogan</string>
+    <string name="profile_picture" translatable="false">Profile Picture</string>
+    <string name="eligibility" translatable="false">Eligibility</string>
+    <string name="extra_fields" translatable="false">Extra Fields</string>
+    <string name="eligible" translatable="false">Eligible</string>
+    <string name="ineligible" translatable="false">Ineligible</string>
+    <string name="description" translatable="false">Description</string>
+    <string name="inst_for_motion" translatable="false">Instruction for motion</string>
+    <string name="inst_for_registration" translatable="false">Instruction for registration</string>
+    <string name="add_extra" translatable="false">Extra</string>
+    <string name="varied_voting_right" translatable="false">Varied voting right</string>
+    <string name="max_voting_level" translatable="false">Max voting level</string>
+    <string name="org_icon" translatable="false">Organization icon</string>
+
+    <!-- Justification -->
+    <string name="support" translatable="false">Support</string>
+    <string name="against" translatable="false">Against</string>
+    <string name="neutral" translatable="false">Neutral</string>
+    <string name="title" translatable="false">Title</string>
+    <string name="yes" translatable="false">Yes</string>
+    <string name="no" translatable="false">No</string>
+
+    <!-- Motion -->
+    <string name="view_votes" translatable="false">Votes</string>
+
+    <!-- Witness & Neiborhood -->
+    <string name="division" translatable="false">Division</string>
+    <string name="subdivision" translatable="false">Subdivision</string>
+    <string name="trustworthy" translatable="false">Trustworthy</string>
+
+    <!-- Constituent -->
+    <string name="voting_right" translatable="false">Voting Right</string>
+    <string name="new_constituent" translatable="false">New Constituent</string>
+    <string name="new_neighborhood" translatable="false">New Neighborhood</string>
+    <!-- Server -->
+    <string name="directory_empty" translatable="false">There is no directory server, please add one from top right "+" mark!</string>
+    <string name="directory_instruction" translatable="false">Directory Address, such as: \nDIR%B%0.10.07://10.0.0.1:25123:25123:Name</string>
+
+</resources>
