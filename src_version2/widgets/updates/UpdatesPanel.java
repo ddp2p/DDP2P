@@ -1,6 +1,8 @@
 package widgets.updates;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Container;
 import java.awt.GridLayout;
 import java.awt.Font;
 import java.awt.event.KeyEvent;
@@ -9,6 +11,7 @@ import java.awt.event.FocusListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
 
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
@@ -26,15 +29,20 @@ import config.DD;
 import util.DBInterface;
 import static util.Util.__;
 import widgets.components.GUI_Swing;
+import widgets.dir_management.DirPanel;
 import widgets.updatesKeys.*;
 
 public class UpdatesPanel extends JPanel implements ActionListener, FocusListener {
     String numberString=__("Number");
     String percentageString=__("Percentage");
+    String manualRatingString=__("Manual Rating");
+    String autoRatingString=__("Automatic Rating");
     public JTextField numberTxt = new JTextField(3);
     public JTextField percentageTxt = new JTextField(3);
     public JRadioButton numberButton = new JRadioButton(numberString);
     public JRadioButton percentageButton = new JRadioButton(percentageString);
+    public JRadioButton autoRatingButton = new JRadioButton(autoRatingString);
+    public JRadioButton manualRatingButton = new JRadioButton(manualRatingString);
 	public JCheckBox absoluteCheckBox =  new JCheckBox();
 	private UpdatesKeysTable updateKeysTable;
     public UpdatesPanel() {
@@ -44,6 +52,65 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
     	init();
     	GUI_Swing.panelUpdates = this;
     }
+   public JPanel buildTesterControlsPanel(){
+		JButton recalculateTestersRating = new JButton("Recalculate Testers Rating");
+		JButton ConsultRecommender = new JButton("Consult the Recommender System");
+	   
+		JPanel testerControls = new JPanel(new BorderLayout());
+		//testerControls.setBackground(Color.DARK_GRAY);
+		testerControls.add(buildThresholdPanel() , BorderLayout.WEST);
+		
+		JPanel buttonsPanel = new JPanel();
+		buttonsPanel.add(recalculateTestersRating);
+		recalculateTestersRating.addActionListener(this);
+		recalculateTestersRating.setActionCommand("recalculate");
+		
+		buttonsPanel.add(ConsultRecommender);
+		buttonsPanel.setBackground(Color.DARK_GRAY);
+		ConsultRecommender.addActionListener(this);
+		ConsultRecommender.setActionCommand("Consult");
+		
+		testerControls.add(buttonsPanel, BorderLayout.EAST);
+		 
+		return testerControls;
+	}
+   public JPanel buildAutoManualPanel() {
+	    
+   	   JLabel ratingL = new JLabel("Testers Rating  : ");
+   	   ratingL.setFont(new Font("Times New Roman",Font.BOLD,14));
+   	
+       manualRatingButton.setMnemonic(KeyEvent.VK_M);
+       manualRatingButton.setActionCommand(manualRatingString);
+       manualRatingButton.setSelected(false);
+       manualRatingButton.addActionListener(this);
+       manualRatingButton.setFont(new Font(null,Font.BOLD,12));
+       JLabel spaceL = new JLabel("       ");
+       JLabel space2L = new JLabel("       ");
+   	
+       autoRatingButton.setMnemonic(KeyEvent.VK_A);
+       autoRatingButton.setActionCommand(autoRatingString);
+       autoRatingButton.setSelected(true);
+       autoRatingButton.setFont(new Font(null,Font.BOLD,12));
+       autoRatingButton.addActionListener(this);
+       
+       JPanel autoManualPanel = new JPanel();
+       autoManualPanel.add(ratingL);
+       autoManualPanel.add(autoRatingButton);
+       autoManualPanel.add(spaceL);   
+       autoManualPanel.add(manualRatingButton);
+       autoManualPanel.add(space2L);
+ 
+   	
+   	//Group the radio buttons.
+       ButtonGroup group = new ButtonGroup();
+       group.add(manualRatingButton);
+       group.add(autoRatingButton);
+
+   	
+   	JPanel autoManualPanel2 = new JPanel(new BorderLayout());
+   	autoManualPanel2.add(autoManualPanel,BorderLayout.WEST );
+   	return autoManualPanel2;
+   }
     public JPanel buildThresholdPanel() {
     
     	JLabel thresholdL = new JLabel("Threshold  : ");
@@ -95,7 +162,18 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
     }
     public void init(){
         JPanel updatePanel = new JPanel(new BorderLayout());
-    	updatePanel.add(buildThresholdPanel(),BorderLayout.NORTH );
+        
+        JLabel updateMirrorsTitleL = new JLabel(" Update Mirrors Preferences ");
+        updateMirrorsTitleL.setFont(new Font("Times New Roman",Font.BOLD,20));
+        updateMirrorsTitleL.setHorizontalAlignment(SwingConstants.CENTER);
+        updateMirrorsTitleL.setVerticalAlignment(SwingConstants.CENTER);
+        JPanel mirrorsTitilePanel = new JPanel(new BorderLayout());
+        mirrorsTitilePanel.add(new JPanel(), BorderLayout.NORTH);
+        mirrorsTitilePanel.add(updateMirrorsTitleL);
+        mirrorsTitilePanel.add(new JPanel(), BorderLayout.SOUTH);
+        
+        
+    	updatePanel.add(mirrorsTitilePanel,BorderLayout.NORTH );
     	
     	UpdatesTable updateTable = new UpdatesTable(this);
     	JPanel updateTablePanel = new JPanel(new BorderLayout());
@@ -108,13 +186,13 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
         
         
         JPanel updateKeysPanel = new JPanel(new BorderLayout());
-        JLabel updateKeysTitleL = new JLabel(" Update Keys Information ");
+        JLabel updateKeysTitleL = new JLabel(" Testers Preferences ");
         updateKeysTitleL.setHorizontalAlignment(SwingConstants.CENTER);
         updateKeysTitleL.setVerticalAlignment(SwingConstants.CENTER);
         JPanel titilePanel = new JPanel(new BorderLayout());
         titilePanel.add(new JPanel(), BorderLayout.NORTH);
         titilePanel.add(updateKeysTitleL);
-        titilePanel.add(new JPanel(), BorderLayout.SOUTH);
+        titilePanel.add(buildAutoManualPanel(), BorderLayout.SOUTH);
     	updateKeysTitleL.setFont(new Font("Times New Roman",Font.BOLD,20));
     	updateKeysPanel.add(titilePanel,BorderLayout.NORTH );
     	
@@ -123,7 +201,7 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 		updateKeysTablePanel.add(updateKeysTable.getTableHeader(),BorderLayout.NORTH);
 		updateKeysTablePanel.add(updateKeysTable.getScrollPane());
         updateKeysPanel.add(updateKeysTablePanel );
-        updateKeysPanel.add(new JPanel(), BorderLayout.SOUTH);
+        updateKeysPanel.add(buildTesterControlsPanel(), BorderLayout.SOUTH);
         this.add(updateKeysPanel);
             
     }

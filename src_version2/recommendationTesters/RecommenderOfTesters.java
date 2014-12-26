@@ -45,8 +45,8 @@ public class RecommenderOfTesters extends util.DDP2P_ServiceThread {
 	final static float Pr_PROBABILITY_OF_REPLACING_A_USED_TESTER_WITH_A_HIGHER_SCORED_ONE = 0.5f; // switching probability
 	final static int N_MAX_NUMBER_OF_TESTERS = 3; // in our experiments we set N=10
 	
-	public final int maxSizeoftesterCreationHistory=10;// shouldn't exceed this limit
-	public final int ExperationOfRecommInDays=100;// 
+	public final static int MAX_SIZE_OF_TESER_INTRODUCERS_IN_A_MESSAGE=10;// shouldn't exceed this limit
+	public final static int EXPERATION_OF_RECOMMENDATION_BY_INTRODUCER_IN_DAYS=100;// 
 	
 	private static final boolean DEBUG = false;
 	public static boolean STOP_RECOMMENDATION_OF_TESTERS = true;
@@ -198,35 +198,62 @@ public class RecommenderOfTesters extends util.DDP2P_ServiceThread {
 		if (currentUsedTesters.length < N_MAX_NUMBER_OF_TESTERS && currentUsedTesters.length <= knownTestersList.length)
 			return TopNwithFilter(knownTestersList, N_MAX_NUMBER_OF_TESTERS);
 		
-		ArrayList<TesterAndScore>  usedTestersList = new ArrayList<TesterAndScore>();
+		ArrayList<TesterAndScore>  usedTestersListTemp = new ArrayList<TesterAndScore>();
 		
 		if (currentUsedTesters.length < N_MAX_NUMBER_OF_TESTERS && currentUsedTesters.length > knownTestersList.length)
 			for(int i=0; i < currentUsedTesters.length; i++)
-				usedTestersList.add(currentUsedTesters[i]);
+				usedTestersListTemp.add(currentUsedTesters[i]);
 		else{
 		      assert(currentUsedTesters.length >= N_MAX_NUMBER_OF_TESTERS);
 		      //if(currentUsedTesters.length>=N)
 		      for(int i=0; i < N_MAX_NUMBER_OF_TESTERS; i++)
-			      usedTestersList.add(currentUsedTesters[i]); // usedTesters got the topN of currentList
+			      usedTestersListTemp.add(currentUsedTesters[i]); // usedTesters got the topN of currentList
 		}
-		//should we change the weight of testers in the UT list with new testers's weight in KT list????
-		// the answer is YES
+		if(DEBUG) System.out.println("usedTestersList: ["+ Util.concat(usedTestersListTemp.toArray(new TesterAndScore[0]), "|")+"]");
+		removeAndReplaceNigativeWieght(usedTestersListTemp);
 		TesterAndScore candidateTesterForReplacement=null;
 		int index;
+		//changing the weight of testers in the UT list with new testers's weight in KT list
 		for(int i=0; i<knownTestersList.length; i++)
-			if((index=isExist(knownTestersList[i], usedTestersList))!=-1){
+			if((index=isExist(knownTestersList[i], usedTestersListTemp))!=-1){
 				//update score for used testers list from KT list
-				usedTestersList.get(index).score = knownTestersList[i].score;
+				usedTestersListTemp.get(index).score = knownTestersList[i].score;
 			} 
 			else if(candidateTesterForReplacement==null){
 				candidateTesterForReplacement = knownTestersList[i]; 
 			}
 		if(candidateTesterForReplacement!=null && switchBasedOnPr()){
-					usedTestersList.get(usedTestersList.size()-1).testerID = candidateTesterForReplacement.testerID;
-					usedTestersList.get(usedTestersList.size()-1).score = candidateTesterForReplacement.score;
-				    Collections.sort(usedTestersList);
+					usedTestersListTemp.get(usedTestersListTemp.size()-1).testerID = candidateTesterForReplacement.testerID;
+					usedTestersListTemp.get(usedTestersListTemp.size()-1).score = candidateTesterForReplacement.score;
+				    Collections.sort(usedTestersListTemp);
 		}		
-		return usedTestersList.toArray(new TesterAndScore[0]);
+		return usedTestersListTemp.toArray(new TesterAndScore[0]);
+	}
+	private void removeAndReplaceNigativeWieght(
+			ArrayList<TesterAndScore> usedTesterListTemp) {
+		int index;
+		int removeCount=0;
+		// Remove Step
+		for(int i=0; i<knownTestersList.length; i++)
+			if((index=isExist(knownTestersList[i], usedTesterListTemp))!=-1){
+				if(knownTestersList[i].score<=0){
+				     usedTesterListTemp.remove(index);		    
+					removeCount++;
+				}
+			} 
+		// Replace Step (Add)
+		boolean found=false;
+		for(int k=0; k<removeCount; k++){
+			for(int i=0; i<knownTestersList.length; i++)
+				if((index=isExist(knownTestersList[i], usedTesterListTemp))==-1  
+				                                         && knownTestersList[i].score>0){
+					     usedTesterListTemp.add(knownTestersList[i]);		    
+					     found=true;
+				}
+			if(found==false)
+				break;
+			} 
+		
 	}
 	private boolean switchBasedOnPr() {
 		Random rand = new Random();

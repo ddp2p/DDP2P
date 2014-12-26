@@ -34,6 +34,7 @@ public class DirectoryAddress extends ASNObj{
 	public String GIDH;
 	public String instance;
 	public boolean revoked = false;
+	/** By default this is true, such that on an import it is used if not manually deactivated */
 	public boolean active = true;
 	public Calendar contact;
 	public Calendar creation;
@@ -170,6 +171,11 @@ public class DirectoryAddress extends ASNObj{
 	static final String getActiveDirs = "SELECT "+table.directory_address.fields+
 			" FROM "+table.directory_address.TNAME+
 			" WHERE "+table.directory_address.active+"='1';";
+	/**
+	 * Get the Directories from the table "directory_address".
+	 * @return
+	 *  Returns a list size 0 on error.
+	 */
 	public static DirectoryAddress[] getActiveDirectoryAddresses() {
 		DirectoryAddress[] result;
 		try {
@@ -248,6 +254,10 @@ public class DirectoryAddress extends ASNObj{
 		DirectoryAddress[] da = getDirectoryAddresses();
 		return Util.concat(da,DD.APP_LISTING_DIRECTORIES_SEP);
 	}
+	/**
+	 * Delete all data in table "directory_address", and save instead the one in parameter val
+	 * @param val
+	 */
 	public static void reset(String val) {
 		try {
 			Application.db.delete(table.directory_address.TNAME, new String[]{}, 

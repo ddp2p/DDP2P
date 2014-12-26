@@ -295,7 +295,7 @@ public class Server extends util.DDP2P_ServiceThread {
 	public static final int TIMEOUT_Client_wait_Dir = 2000;
 	public static final String DIR = "DIR";
 	public static final String SOCKET = "Socket";
-	public static int TIMEOUT_UDP_NAT_BORER = 2000;
+	public static int TIMEOUT_UDP_NAT_BORER = 20000;
 	public static final long TIMEOUT_UDP_Reclaim = 2000;
 	public static final int TIMEOUT_UDP_Announcement_Diviser = 30;
 	public static boolean DEBUG = false;

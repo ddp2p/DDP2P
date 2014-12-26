@@ -15,7 +15,8 @@ import data.HandlingMyself_Peer;
 
 public class RecommendationOfTesterTestTool {
 	
-	private static D_RecommendationOfTestersBundle buildRecomMessage(String senderPeerGIDH) {
+	private static D_RecommendationOfTestersBundle
+	buildRecommendationOfTestersMessage(String senderPeerGIDH) {
 		D_RecommendationOfTestersBundle testerItemsMsg = new D_RecommendationOfTestersBundle();
 		testerItemsMsg.senderGIDH = senderPeerGIDH;
 		testerItemsMsg.creation_date = Util.CalendargetInstance();
@@ -53,7 +54,7 @@ public class RecommendationOfTesterTestTool {
 			return;
 		}
 		
-		D_RecommendationOfTestersBundle testerItemsMsg1 = buildRecomMessage(senderPeer.getGIDH());
+		D_RecommendationOfTestersBundle testerItemsMsg1 = buildRecommendationOfTestersMessage(senderPeer.getGIDH());
 		// encode and decode msg.
 		byte[] msg = testerItemsMsg1.encode();
 		//send and receive

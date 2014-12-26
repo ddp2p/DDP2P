@@ -36,6 +36,8 @@ public class AddrBook_Tests {
 	private static boolean request = false;
 	private static boolean ping = false;
 	private static int DS_PORT = 10000;
+	private static long pLID = 1;
+	private static boolean b_pLID = false;
 	private static String DS_DOMAIN = "debatedecide.org";
 
 	public static void main(String[] args) {
@@ -50,7 +52,7 @@ public class AddrBook_Tests {
 			
 			char c;
 			opts:
-			while ((c = GetOpt.getopt(args, "P:D:d:huvarp")) != GetOpt.END) {
+			while ((c = GetOpt.getopt(args, "P:D:d:L:huvarp")) != GetOpt.END) {
 				System.out.println("Options received"+GetOpt.optopt +" optind="+GetOpt.optind+" arg="+GetOpt.optarg);
 				switch (c) {
 				case 'h':
@@ -60,6 +62,7 @@ public class AddrBook_Tests {
 							+ "\n\t -u          udp"
 							+ "\n\t -d file     Use file as current database (dir database in the same folder)"
 							+ "\n\t -P port     port"
+							+ "\n\t -L pLID     peer LID questioned"
 							+ "\n\t -D IP      domain"
 							+ "\n\t -a         Send announcement for myself"
 							+ "\n\t -p         Send pingempty for myself"
@@ -83,6 +86,13 @@ public class AddrBook_Tests {
 					DirectoryServerUDP.DEBUG = true;
 					DirectoryRequest.DEBUG = true;
 					if (DEBUG) System.out.println("Option v: "+GetOpt.optarg);
+					break;
+				case 'L':
+					if (DEBUG) System.out.println("Option L: "+GetOpt.optarg);
+					try {
+						pLID = Long.parseLong(GetOpt.optarg);
+						b_pLID = true;
+					} catch(Exception e) {e.printStackTrace();}
 					break;
 				case 'P':
 					if (DEBUG) System.out.println("Option P: "+GetOpt.optarg);
@@ -200,14 +210,17 @@ public class AddrBook_Tests {
 		adr.branch = DD.BRANCH;
 		adr.agent_version = DD.VERSION;
 
-		D_Peer myself = data.HandlingMyself_Peer.get_myself_or_null();
-		if (myself == null) {
-			System.out.println("AddrBook_Test: sendTCPrequest: no myself");
+		D_Peer peer;
+		if (b_pLID) peer = D_Peer.getPeerByLID_NoKeep(pLID, true);
+		else peer = data.HandlingMyself_Peer.get_myself_or_null();
+		
+		if (peer == null) {
+			System.out.println("AddrBook_Test: sendTCPrequest: no such peer");
 			return;
 		}
-		System.out.println("AddrBook_Test: sendTCPrequest: got myself");
+		System.out.println("AddrBook_Test: sendTCPrequest: got peer");
 		try {
-			DirectoryRequestAnswer dra = Connections.requestDirectoryAnswer(myself.getGID(), myself.getLIDstr(), adr.inetSockAddr, adr);
+			DirectoryRequestAnswer dra = Connections.requestDirectoryAnswerByTCP(peer.getGID(), peer.getLIDstr(), adr.inetSockAddr, adr);
 			System.out.println("AddrBook_Test: sendTCPrequest: result ="+dra.da);
 			
 		} catch (IOException e) {
@@ -228,13 +241,16 @@ public class AddrBook_Tests {
 
 		Application.aus = new UDPServer(Identity.getCurrentPeerIdentity_NoQuitOnFailure());
 
-		D_Peer myself = data.HandlingMyself_Peer.get_myself_or_null();
-		if (myself == null) {
-			System.out.println("AddrBook_Test: sendUDPRequest: no myself");
+		D_Peer peer;
+		if (b_pLID) peer = D_Peer.getPeerByLID_NoKeep(pLID, true);
+		else peer = data.HandlingMyself_Peer.get_myself_or_null();
+		
+		if (peer == null) {
+			System.out.println("AddrBook_Test: sendUDPRequest: no such peer");
 			return;
 		}
 
-		DirectoryRequest dr = Connections.getDirAddressUDP(adr.inetSockAddr, adr, myself.getGID(), myself.getName(), myself.getLIDstr());
+		DirectoryRequest dr = Connections.getDirAddressUDP(adr.inetSockAddr, adr, peer.getGID(), peer.getName(), peer.getLIDstr());
 		System.out.println("AddrBook_Test: sendUDPRequest: sent request = " + dr);
 		
 		byte[] _buffer = new byte[UDPServer.UDP_BUFFER_LENGTH];

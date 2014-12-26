@@ -639,6 +639,18 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			+ " WHERE "+table.peer_scheduled_message.peer_ID+"=?" 
 			+ " AND "+table.peer_scheduled_message.message_type+"=? " +
 					" ORDER BY "+table.peer_scheduled_message.creation_date+" DESC;";
+//	/**
+//	 * This returns the bundle and sets it to null, flagging dirty.
+//	 * Caller should then call store.
+//	 * @return
+//	 */
+//	public String getTesterRecommendationBundle() {
+//		if (component_messages.recommendationOfTestersBundle == null) return null;
+//		String result = component_messages.recommendationOfTestersBundle;
+//		component_messages.recommendationOfTestersBundle = null;
+//		this.dirty_tester_recommendation = true;
+//		return result;
+//	}
 	/**
 	 * This should be called from the sender module.
 	 * Returns the Bundle encodes with ASN1 and then with base64.
@@ -686,6 +698,18 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	 */
 	void clearMessageTesterRecommendation() {
 		this.component_messages.recommendationOfTestersBundle = null;
+		this.dirty_tester_recommendation = true;
+	}
+	/**
+	 * Store in database.
+	 * When building a reply, send it and set it to null;
+	 * 
+	 * Sets the dirty_flag (caller should call store)
+	 * @param bundle
+	 */
+	public void sendTesterRecommendationBundle(
+			D_RecommendationOfTestersBundle bundle) {
+		component_messages.recommendationOfTestersBundle = Util.stringSignatureFromByte(bundle.encode());
 		this.dirty_tester_recommendation = true;
 	}
 	private final static String sql_peer_org_inf = 
@@ -2467,7 +2491,47 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		this.dirty_main = true;
 	}
 	
+	/**
+	 * Sets an object with at least an image, a url, or a non-negative is
+	 * @param _icon
+	 * @return
+	 */
+	public boolean setIconObject(IconObject _icon) {
+		if (_icon == null || _icon.empty()) {
+			return setIcon(null);
+		}
+		return setIcon(_icon.encode());
+	}
+	public IconObject getIconObject() {
+		IconObject ic = new IconObject();
+		if (this.component_basic_data.picture == null) return ic;
+		try {
+			Decoder dec = new Decoder(this.component_basic_data.picture);
+			if (dec.getTypeByte() == IconObject.getASN1Type()) {
+				ic.decode(dec);
+				if (! ic.empty()) {
+					return ic;
+				}
+			}
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+		ic.setImage(this.component_basic_data.picture);
+		return ic;
+	}
 	public byte[] getIcon() {
+		if (this.component_basic_data.picture == null) return null;
+		try {
+			Decoder dec = new Decoder(this.component_basic_data.picture);
+			if (dec.getTypeByte() == IconObject.getASN1Type()) {
+				IconObject ic = new IconObject().decode(dec);
+				if (! ic.empty()) {
+					return ic.getImage();
+				}
+			}
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
 		return this.component_basic_data.picture;
 	}
 	/**
@@ -2508,7 +2572,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		return this.peer_ID;
 	}	
 	/**
-	 * When this is not yet kept, and has no LID (it will keep it and store synchronously)
+	 * When this is not yet kept, and has no LID (it will keep it and store synchronously, then release)
 	 * @return
 	 */
 	public String getLIDstr_keep_force() {
@@ -2535,6 +2599,10 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		}
 		return this.peer_ID;
 	}
+	/**
+	 * When no LID: keep, store synchronously, then release
+	 * @return
+	 */
 	public long getLID_keep_force() {
 		String ID = getLIDstr_keep_force();
 		return Util.lval(ID);
@@ -5046,10 +5114,14 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public String getPluginsMessage() {
 		return this.component_local_agent_state.plugins_msg;
 	}
-	public static ArrayList<D_Peer> getUsedPeers() {
-		String peers_scan_sql = "SELECT "+table.peer.peer_ID+
+	final static String peers_scan_used_sql = "SELECT "+table.peer.peer_ID+
 				//", "+table.peer.name+", "+table.peer.global_peer_ID+", "+table.peer.last_sync_date+", "+table.peer.filtered+
 		" FROM "+table.peer.TNAME+" WHERE "+table.peer.used+" = 1;";
+	/**
+	 * Gets the list of peer LIDs for peers with flag used set. Then gets the D_Peer 
+	 * @return
+	 */
+	public static ArrayList<D_Peer> getUsedPeers() {
 		ArrayList<D_Peer> peers = new ArrayList<D_Peer>();
 		try {
 			/*
@@ -5057,7 +5129,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 					" FROM peer JOIN peer_address ON peer.peer_ID=peer_address.peer_ID WHERE used = 1;",
 					new String[]{});
 			*/
-			ArrayList<ArrayList<Object>> _peers = Application.db.select(peers_scan_sql,
+			ArrayList<ArrayList<Object>> _peers = Application.db.select(peers_scan_used_sql,
 					new String[]{});
 			for (ArrayList<Object> p: _peers) {
 				String ID = Util.getString(p.get(0));
@@ -5474,30 +5546,6 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		}
 		this.status_references--;
 		Application_GUI.ThreadsAccounting_ping("Dropped peer status references for "+getName());
-	}
-	/**
-	 * Store in database.
-	 * When building a reply, send it and set it to null;
-	 * 
-	 * Sets the dirty_flag (caller should call store)
-	 * @param bundle
-	 */
-	public void sendTesterRecommendationBundle(
-			D_RecommendationOfTestersBundle bundle) {
-		component_messages.recommendationOfTestersBundle = Util.stringSignatureFromByte(bundle.encode());
-		this.dirty_tester_recommendation = true;
-	}
-	/**
-	 * This returns the bundle and sets it to null, flagging dirty.
-	 * Called should then call store.
-	 * @return
-	 */
-	public String getTesterRecommendationBundle() {
-		if (component_messages.recommendationOfTestersBundle == null) return null;
-		String result = component_messages.recommendationOfTestersBundle;
-		component_messages.recommendationOfTestersBundle = null;
-		this.dirty_tester_recommendation = true;
-		return result;
 	}
 
 }

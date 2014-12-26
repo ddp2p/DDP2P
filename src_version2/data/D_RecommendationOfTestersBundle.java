@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Comparator;
+import java.util.concurrent.TimeUnit;
+
+import recommendationTesters.RecommenderOfTesters;
 
 import ciphersuits.SK;
 import util.Util;
@@ -78,6 +81,11 @@ public class D_RecommendationOfTestersBundle extends ASNObj{
 			D_TesterRatingByPeer testerRating = testersRatingList.get(k);
 			// update Tester's Profile if needed
 			D_Tester tester = D_Tester.getTesterInfoByGID(testerRating.testerGID, true, peer, testerRating.address);
+			// search for common introducers and store them in the database, if find any return true			
+			// there maybe more than one introducer with newer creation date than the introducers of the current recommended tester 
+			boolean newrIntroducerExist = processNewerIntroducers(tester.getLID(), testerRating.testerIntroducers);
+			if( newrIntroducerExist)
+				 continue;
 			
 			D_RecommendationOfTester crt = D_RecommendationOfTester.getRecommendationOfTester(peer.getLID(), tester.getLID(), true, true, null);
 			// check for duplicate and store the newest recommendation
@@ -107,6 +115,54 @@ public class D_RecommendationOfTestersBundle extends ASNObj{
 		return true;
 	}
 	
+	
+	private boolean passExpirationLimit(Calendar testerRejectingDate) {
+		long days = daysBetween(testerRejectingDate, Util.CalendargetInstance());
+		return days>RecommenderOfTesters.EXPERATION_OF_RECOMMENDATION_BY_INTRODUCER_IN_DAYS;
+	}
+	public static long daysBetween(Calendar startDate, Calendar endDate) {
+	    long end = endDate.getTimeInMillis();
+	    long start = startDate.getTimeInMillis();
+	    return TimeUnit.MILLISECONDS.toDays(Math.abs(end - start));
+	}
+	private boolean processNewerIntroducers(long testerLID,
+			ArrayList<D_TesterIntroducer> currentTesterIntroducers) {
+		
+		//ArrayList<Long> newerIntroducers = new ArrayList<Long>();
+		ArrayList<D_TesterIntroducer> StoredTesterIntroducers = D_TesterIntroducer.retrieveTesterIntroducers(Util.getStringID(testerLID));
+		// if new tester arrive or tester with no stored record in "tester_introducer" table
+		// then insert a new record in the table  
+		if(StoredTesterIntroducers==null || StoredTesterIntroducers.size()==0){
+			D_TesterIntroducer.insertTesterIntroducersInfo(currentTesterIntroducers);
+			return false;
+		}
+		int index=-1;
+		boolean reject=false;
+		for(D_TesterIntroducer crt : currentTesterIntroducers)
+			if((index=inroducerExist(crt, StoredTesterIntroducers))!=-1){
+				if(crt.creation_date.before(StoredTesterIntroducers.get(index).creation_date)){
+					if(crt._weight != StoredTesterIntroducers.get(index)._weight){	
+						if(!passExpirationLimit(StoredTesterIntroducers.get(index).testerRejectingDate) ){
+							StoredTesterIntroducers.get(index).testerRejectingDate = Util.CalendargetInstance();
+							reject=true;
+						} else StoredTesterIntroducers.get(index).attackByIntroducer++;
+					
+						D_TesterIntroducer.updateTesterIntroducer(StoredTesterIntroducers.get(index).testerIntroducerID, StoredTesterIntroducers.get(index));	
+					}
+				}else{D_TesterIntroducer.updateTesterIntroducer(StoredTesterIntroducers.get(index).testerIntroducerID, crt);}
+			}else D_TesterIntroducer.insertTesterIntroducerInfo(crt);
+						
+		return reject;
+	}
+
+	private int inroducerExist(D_TesterIntroducer crt,
+			ArrayList<D_TesterIntroducer> storedTesterIntroducers) {
+		for(int i=0; i<storedTesterIntroducers.size(); i++)
+			if(crt.testerLID == storedTesterIntroducers.get(i).testerLID &&
+			   crt.introducerPeerLID == storedTesterIntroducers.get(i).introducerPeerLID)
+					return i;
+		return -1;
+	}
 	public boolean verifySignature() {
 		byte[] message = this.getSignableEncoder().getBytes();
 		

@@ -1189,6 +1189,8 @@ public class DD {
 	 */
 	public static final String APP_STOP_RECOMMENDATION_OF_TESTERS = "STOP_RECOMMENDATION_OF_TESTERS";
 	public static final String APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS = "APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS";
+	public static boolean DEBUG_COMMUNICATION_ADDRESSES = false;
+	public static boolean DEBUG_COMMUNICATION_STUN = false;
 	public static int MAX_ORG_ICON_LENGTH = 20000;
 	public static int MAX_CONSTITUENT_ICON_LENGTH = 20000; 
 	public static int MAX_PEER_ICON_LENGTH = 20000;

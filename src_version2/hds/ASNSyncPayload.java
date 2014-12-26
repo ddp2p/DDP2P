@@ -92,6 +92,7 @@ public class ASNSyncPayload extends ASNObj{
 	// hash of all data I have, to avoid resending it if the hash is the same
 	// this currently does not work for votes, as their hash is not containing the actual vote, justification and creation date 
 	public ArrayList<OrgsData_Hash> advertised_orgs_hash;
+	public byte[] recommendation_testers;
 
 	public boolean empty() {
 		if((advertised!=null) && !advertised.empty()) return true;
@@ -874,6 +875,9 @@ ASNSyncPayload := IMPLICIT [APPLICATION 8] SEQUENCE {
 			enc.addToSequence(Encoder.getEncoder(ch_orgs).setASN1Type(DD.TAG_AC18));
 		}
 		if (peer_instance != null) enc.addToSequence(peer_instance.getEncoder().setASN1Type(DD.TAG_AC10));
+		
+		if (recommendation_testers != null) enc.addToSequence(new Encoder(recommendation_testers).setASN1Type(DD.TAG_AC20)); 
+		
 		enc.setASN1Type(getASN1Type());
 		if (ASNSyncRequest.DEBUG) System.out.println("\n\nEncoded SyncAnswer: "+this);
 		//this.expandDictionariesAtDecoding(); // redundant now!
@@ -938,6 +942,7 @@ ASNSyncPayload := IMPLICIT [APPLICATION 8] SEQUENCE {
 			changed_orgs=dec.getFirstObject(true).getSequenceOfAL(ResetOrgInfo.getASN1Type(),new ResetOrgInfo());
 		}
 		if(dec.getTypeByte()==DD.TAG_AC10) peer_instance=new D_PeerInstance().decode(dec.getFirstObject(true)); //(DD.TAG_AC10);
+		if(dec.getTypeByte()==DD.TAG_AC20) recommendation_testers = dec.getFirstObject(true).getBytes(DD.TAG_AC20);
 
 		if(DEBUG)System.out.println("\n\n***********ASNSyncPayload:Decoded SyncAnswer: raw "+this+"\n");
 		

@@ -56,9 +56,14 @@ DirectoryRequestPerInstance ::= SEQUENCE [AC27] IMPLICIT {
 	}
 }
 public class DirectoryRequest extends ASNObj{
+	/** 
+	 * TODO It seems that the last director server only answers correctly  to V3 (have to test why).
+	 * Enable others only after verifying that the correct version of directory agents is stored in table "peer_address"
+	 */
 	private static final int V1 = 1;
 	private static final int V2 = 2;
 	private static final int V3 = 3;
+	private static final int V_LAST = V3;
 	public static boolean DEBUG = false;
 	private static boolean _DEBUG = true;
 	private static int MAX_VERSION_SUPPORTED = V3;
@@ -419,16 +424,32 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		this.req_instances.add(drpi);
 		this.signature=null; // optional ?
 	}
+	/**
+	* TODO to use this function one has to:
+	*   1. make sure that the directory does understand V2 (not yet tested and probably not working)
+	*   2. Make sure to store the directory agent version/branch in table "peer_address", not done in 2014
+	*   
+	 * 
+	 * @param peer_address
+	 * @return
+	 *  Currently will always return V3 until the problem is solved!
+	 */
 	static int getVersionStructure(Address peer_address){
 		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("DirRequest: getVersionStructure: enter "+peer_address.toLongString());
 		int version;
 		if (Util.isVersionNewer(DirectoryAnnouncement.AGENT_VERSION_V1, peer_address.agent_version)) {
-			if (DEBUG) System.out.println("DirRequest: getVersionStructure: V2: "+peer_address);
-			version = V2;
+			/**
+			 * TODO to use this function one has to:
+			 *   1. make sure that the directory does understand V2 (not yet tested and probably not working)
+			 *   2. Make sure to store the directory agent version/branch in table "peer_address", not done in 2014
+			 */
+			
+			if (DEBUG) System.out.println("DirRequest: getVersionStructure: V2 (setting V3 until you fix it!): "+peer_address);
+			version = V_LAST;
 		}else {
 			if (DEBUG) System.out.println("DirRequest: getVersionStructure: V3: "+peer_address);
-			version = V3;
+			version = V_LAST;
 		}
 		return version;
 	}

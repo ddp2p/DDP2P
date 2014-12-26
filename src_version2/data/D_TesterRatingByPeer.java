@@ -33,7 +33,7 @@ public class D_TesterRatingByPeer extends ASNObj  {
 	public String weight;  // encoded in ASN1 as a String
 	public float _weight;  // encoded in ASN1 as a String
 	public String address; //address where the tester can be contacted
-	public ArrayList<D_TesterCreationHistory> testerCreationHistory = new ArrayList<D_TesterCreationHistory>();
+	public ArrayList<D_TesterIntroducer> testerIntroducers = new ArrayList<D_TesterIntroducer>();
 	@Override
 	public D_TesterRatingByPeer instance() {
 		return new D_TesterRatingByPeer();
@@ -47,7 +47,7 @@ public class D_TesterRatingByPeer extends ASNObj  {
 		result += this.testerGID+"\r\n";
 		result += this.weight+"\r\n";
 		result += this.address+"\r\n";
-		result += "["+Util.concat(testerCreationHistory, "|", null) +"]\r\n";
+		result += "["+Util.concat(testerIntroducers, "|", null) +"]\r\n";
 		return result;
 	}
 	@Override
@@ -56,7 +56,7 @@ public class D_TesterRatingByPeer extends ASNObj  {
 		enc.addToSequence(new Encoder(testerGID));
 		enc.addToSequence(new Encoder(weight));
 		enc.addToSequence(new Encoder(address));
-		//enc.addToSequence(new Encoder(testerCreationHistory));
+		enc.addToSequence(Encoder.getEncoder(testerIntroducers));
 		enc.setASN1Type(getASNType());
 		return enc;
 	}
@@ -70,7 +70,7 @@ public class D_TesterRatingByPeer extends ASNObj  {
 		testerGID = d.getFirstObject(true).getString();
 		_weight = Util.fval(weight = d.getFirstObject(true).getString(), 0.0f);
 		address = d.getFirstObject(true).getString();
-		//testerCreationHistory = d.getFirstObject(true).getString();
+		testerIntroducers = d.getFirstObject(true).getSequenceOfAL(D_TesterIntroducer.getASNType(), new D_TesterIntroducer());
 		return this;
 	}
 	/** No longer used since no longer implementing comparator*/

@@ -53,6 +53,7 @@ class D_OrgParams extends ASNObj {
 	public String[] languages; // SEQ of Printable
 	public byte[] icon;
 	public D_OrgParam[] orgParam; // SEQ of 
+	//public String _icon; // undecoded icon
 	public String toString() {
 		return "Org Params: ["+
 		";\n     mWeightsType="+mWeightsType+
@@ -128,7 +129,7 @@ class D_OrgParams extends ASNObj {
 		if(dec.getTypeByte()==DD.TAG_AC9) orgParam = dec.getFirstObject(true).getSequenceOf(Encoder.TYPE_SEQUENCE, new D_OrgParam[]{}, new D_OrgParam());
 		if(dec.getTypeByte()==DD.TAG_AC11) mWeightsType = dec.getFirstObject(true).getInteger(DD.TAG_AC11).intValue();
 		if(dec.getTypeByte()==DD.TAG_AC12) mWeightsMax = dec.getFirstObject(true).getInteger(DD.TAG_AC12).intValue();
-		if(dec.getTypeByte()==DD.TAG_AC4) certificate= dec.getFirstObject(true).getBytesAnyType();
+		if(dec.getTypeByte()==DD.TAG_AC14) icon = dec.getFirstObject(true).getBytesAnyType();
 		if(dec.getFirstObject(false) != null) {
 			if (ASNSyncRequest.DEBUG)  System.out.println("DEcoding OrgParams: Extra objects!");
 			//throw new ASN1DecoderFail("Extra Objects in decoder: "+decoder.dumpHex());

@@ -50,28 +50,30 @@ class My_Directory {
  * HashTable<GID,Peer_Connection> used_peer, ArrayList _used_peera
  * @author M. Silaghi
  */
-public class Connections extends util.DDP2P_ServiceThread implements DBListener{
+public class Connections extends util.DDP2P_ServiceThread implements DBListener {
 	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
+	public static final long CONNECTIONS_UPDATE_TIMEOUT_MSEC = 60*1000;
 
 	/**
-	 * This peer's addresses as seen by AddressBooks (directories)
+	 * This (myself) peer's addresses as seen by AddressBooks (directories). 
+	 * The key in the hashtable is obtained with getIPPORT()
+	 * being a concatenation of domain and udp port separated with ":".
+	 * The value is the Connection_sPeer_Directories structure.
 	 */
-	static public Hashtable<String,Connections_Peer_Directory> personal_HT_IPPORT_PC = new Hashtable<String,Connections_Peer_Directory>();
+	static public Hashtable<String,Connections_Peer_Directory> myselfPeer_HT_IPPORT_CPD = new Hashtable<String,Connections_Peer_Directory>();
 	/**
 	 * The ordered list of contacted peer addresses
 	 */
-	static public ArrayList<Connection_Peer> used_peers_AL_PC;
-
-	
+	static public ArrayList<Connection_Peer> used_peers_AL_CP;
 	/**
-	 * The addresses of contacted peers (by GID), accessed in "used_peers_AL_PC"
+	 * The addresses of contacted peers (by GID), accessed in "used_peers_AL_CP"
 	 */
-	static public Hashtable<String,Connection_Peer> used_peers_HT_GID_PC;//= new Hashtable<String,Connection_Peer>();
+	static public Hashtable<String,Connection_Peer> used_peers_HT_GID_CP;//= new Hashtable<String,Connection_Peer>();
 	/**
-	 * The addresses of contacted peers (by GIDH), accessed in "used_peers_AL_PC"
+	 * The addresses of contacted peers (by GIDH), accessed in "used_peers_AL_CP"
 	 */
-	static public Hashtable<String,Connection_Peer> used_peers_HT_GIDH_PC; //= new Hashtable<String,Connection_Peer>();
+	static public Hashtable<String,Connection_Peer> used_peers_HT_GIDH_CP; //= new Hashtable<String,Connection_Peer>();
 
 	static public ArrayList<My_Directory> my_directories_AL;
 	static public int peersAvailable = 0;
@@ -82,21 +84,71 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 	static private ArrayList<My_Directory> tmp_my_directories_AL;
 	private static int tmp_peersAvailable;
 	
-	/** flags and monitors to update needs, keep wait_obj during lock_update_pc */
-	private final static Object wait_obj = new Object();
-	private final static Object lock_update_pc = new Object(); // hold during wait_obj
-	private final static Object lock_used_structures = new Object();
-	private static final Object monitor = new Object();
-	
+	/** flags on whether changes are needed for dirs */
 	private static boolean update_dirs;
+	/** flags on whether changes are needed for list of peers */
 	private static boolean update_peers;
-	/** list of pc that need updating */
-	private static ArrayList<Connection_Peer> update_pc = new ArrayList<Connection_Peer>();
+	/** list of peer_connections that need updating */
+	private static ArrayList<Connection_Peer> update_needing_peer_connections = new ArrayList<Connection_Peer>();
+	
+	/** flags and monitors to update needs, keep wait_obj during lock_update_pc */
+	private final static Object monitor_wait_obj = new Object();
+	/** control access to update_needing_peer_connections; it happens to be locked during wait_obj ! (do not try inverse for deadly brace!) */
+	private final static Object lock_update_needing_peer_connections = new Object();
+	/** changing used_peers_AL_PC, used_peers_HT_GIDH_PC */
+	private final static Object lock_used_structures = new Object();
+	/** locked while calling "integrateDirAddresses" */
+	private static final Object monitor_integrateDirAddresses = new Object();
+
+	
+	public void _run() {
+		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Connections Start"));
+		try {__run();} catch(Exception e) {}
+		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Stop Connections"));
+		if (DEBUG) out.println("Connections: run: turned Off");
+	}
+	/**
+	 * Continuously tries to update, each time something changes
+	 */
+	private void __run() {
+		init();
+		for (;;) {
+			if (DEBUG) System.out.println("Connections: _run: will wait_obj");
+			try {
+				synchronized (monitor_wait_obj) { // waked up by updates (from DB) and by updates request from client
+					if (DEBUG) System.out.println("Connections: _run: got wait_obj");
+					if (! updates_available()) {
+						Application_GUI.ThreadsAccounting_ping("No updates available");
+						monitor_wait_obj.wait(CONNECTIONS_UPDATE_TIMEOUT_MSEC); //60*1000);
+					}
+				}
+				Application_GUI.ThreadsAccounting_ping("Updates");
+				updates();
+			} catch (InterruptedException e) {
+				if (_DEBUG) System.out.println("Connections: _run: interrupted");
+				//e.printStackTrace();
+			} catch (Exception e) {
+				if (_DEBUG) System.out.println("Connections: _run: continue");
+				e.printStackTrace();
+			}
+			if (DEBUG) System.out.println("Connections: _run: yield wait_obj");
+		}
+	}
+	/** allocate new tmp structures, fill them with dirs and peers; then switch tmp-actual; (why only on start?) */
+	private static void init() {
+		if (DEBUG) System.out.println("Connections: init()");
+		allocate_tmp_structures();
+		//init_myself();
+		init_my_active_directories_listings();
+		init_used_peers();
+		switch_tmp();
+		if (DEBUG) System.out.println("Connections: init() done:"+_toString());
+	}
 	
 	public static hds.Connections_Peer_Directory getConnectionPeerDirectory(String domain, int udp_port, String GIDH, String instance) {
 		//boolean DEBUG = true;
 		if (DEBUG || (GIDH == null)) System.out.println("Connections: getConnectionPeerDirectory: enter GIDH="+GIDH+" i:"+instance+" from="+domain+":"+udp_port);
-		Connection_Peer peer = used_peers_HT_GIDH_PC.get(GIDH);
+		Connection_Peer peer = used_peers_HT_GIDH_CP.get(GIDH);
 		if (peer != null) {
 			
 			// instance
@@ -106,16 +158,16 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 				return null;
 			}
 			for (Connections_Peer_Directory dir : pi.peer_directories) {
-				if (DEBUG) System.out.println("Connections: getConnectionPeerDirectory: try: "+dir.supernode_addr.ad.toLongString());
-				if (!Util.equalStrings_null_or_not(domain, dir.supernode_addr.ad.domain)) continue;
-				if (dir.supernode_addr.ad.udp_port != udp_port) continue;
+				if (DEBUG) System.out.println("Connections: getConnectionPeerDirectory: try: "+dir.supernode_addr.getAddressSupernode().toLongString());
+				if (!Util.equalStrings_null_or_not(domain, dir.supernode_addr.getAddressSupernode().domain)) continue;
+				if (dir.supernode_addr.getAddressSupernode().udp_port != udp_port) continue;
 				return dir;
 			}
 			
 			for (Connections_Peer_Directory dir : peer.shared_peer_directories) {
-				if (DEBUG) System.out.println("Connections: getConnectionPeerDirectory: try: "+dir.supernode_addr.ad.toLongString());
-				if (!Util.equalStrings_null_or_not(domain, dir.supernode_addr.ad.domain)) continue;
-				if (dir.supernode_addr.ad.udp_port != udp_port) continue;
+				if (DEBUG) System.out.println("Connections: getConnectionPeerDirectory: try: "+dir.supernode_addr.getAddressSupernode().toLongString());
+				if (!Util.equalStrings_null_or_not(domain, dir.supernode_addr.getAddressSupernode().domain)) continue;
+				if (dir.supernode_addr.getAddressSupernode().udp_port != udp_port) continue;
 				return dir;
 			}
 		} else {
@@ -125,7 +177,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 	}
 	
 	public static Connection_Instance getConnectionPeerInstance(String GIDH, String instance, Connection_Peer _pc[]) {
-		Connection_Peer peer = used_peers_HT_GIDH_PC.get(GIDH);
+		Connection_Peer peer = used_peers_HT_GIDH_CP.get(GIDH);
 		if (peer != null) {
 			if ((_pc != null) && (_pc.length > 0)) _pc[0] = peer;
 			// instance
@@ -136,13 +188,13 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 	}
 	
 	public static Connection_Peer getConnectionPeer(String GIDH) {
-		Connection_Peer peer = used_peers_HT_GIDH_PC.get(GIDH);
+		Connection_Peer peer = used_peers_HT_GIDH_CP.get(GIDH);
 		return peer;
 	}
 	
 	public static String _toString() {
 		return "[Connections: #"+peersAvailable+
-				" \npeers=\n "+Util.concat(used_peers_AL_PC, "\n ", "empty")+
+				" \npeers=\n "+Util.concat(used_peers_AL_CP, "\n ", "empty")+
 				" \ntmp_peers=\n "+Util.concat(tmp_used_peers_AL_PC, "\n ", "empty")+
 				" \nmy_dirs=\n "+Util.concat(my_directories_AL, "\n ","empty")+
 				" \ntmp_my_dirs=\n "+Util.concat(tmp_my_directories_AL, "\n ","empty")+"]";
@@ -181,9 +233,9 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		Connection_Peer result = null;
 		if(DEBUG) System.out.println("Connections: getConnectionAtIdx: "+crt+"/"+peersAvailable);
 		synchronized(lock_used_structures) {
-			if(crt < 0) result = null;
+			if (crt < 0) result = null;
 			else if(crt >= peersAvailable) result = null;
-				else result = used_peers_AL_PC.get(crt);
+				else result = used_peers_AL_CP.get(crt);
 		}
 		if(DEBUG) System.out.println("Connections: getConnectionAtIdx: result="+result);
 		return result;
@@ -208,11 +260,11 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 	private static void switch_tmp_peers() {
 		if (DEBUG) System.out.println("Connections: switch_tmp_peers: start");
 		synchronized(lock_used_structures) {
-			used_peers_HT_GID_PC = tmp_used_peers_HT_GID_PC;
-			used_peers_HT_GIDH_PC = tmp_used_peers_HT_GIDH_PC;
+			used_peers_HT_GID_CP = tmp_used_peers_HT_GID_PC;
+			used_peers_HT_GIDH_CP = tmp_used_peers_HT_GIDH_PC;
 			if (tmp_used_peers_HT_GIDH_PC == null) Util.printCallPath("");
-			used_peers_AL_PC = tmp_used_peers_AL_PC;
-			peersAvailable = used_peers_AL_PC.size();
+			used_peers_AL_CP = tmp_used_peers_AL_PC;
+			peersAvailable = used_peers_AL_CP.size();
 		}
 		
 		tmp_used_peers_HT_GID_PC = null;
@@ -232,9 +284,10 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		}
 	}
 	/**
-	 * Creates peers in tmp_peers.
-	 * Loads them by in tmp_used_peers_AL_PC, tmp_used_peers_HT_GID_PC, tmp_peersAvailable
-	 * Should compute last_sync_date from instances.
+	 * Computes # of used peers in: tmp_peersAvailable. Gets the list of all used "peers", then:
+	 * Loads peers in tmp_used_peers_AL_PC, tmp_used_peers_HT_GID_PC, tmp_used_peers_HT_GIDH_PC.
+	 * 
+	 * TODO ? Should compute last_sync_date from instances.
 	 */
 	private static void init_used_peers() {
 		if (DEBUG) System.out.println("Connections: init_peers");
@@ -257,207 +310,257 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		tmp_peersAvailable = peers.size();
 		if (DEBUG) System.out.println("Connections: init_peers: peers #="+tmp_peersAvailable);
 		for (int k = 0; k < tmp_peersAvailable; k++) {
-			Connection_Peer p = new Connection_Peer();
-			long ID = peers.get(k).getLID_keep_force(); //Util.lval(peers.get(k).get(QUERY_ID), -1);
-			if (DEBUG) System.out.println("Connections: init_peers: peer #="+ID);
-			loadAddresses_to_PeerConnection(p, ID);
-			tmp_used_peers_AL_PC.add(p);
-			tmp_used_peers_HT_GID_PC.put(p.getGID(), p);
-			tmp_used_peers_HT_GIDH_PC.put(p.getGIDH(), p);
+			Connection_Peer peer_connection = new Connection_Peer();
+			//long ID = peers.get(k).getLID_keep_force(); //Util.lval(peers.get(k).get(QUERY_ID), -1);
+			D_Peer peer = peers.get(k);
+			if (DEBUG) System.out.println("Connections: init_peers: peer #=" + peer); //ID);
+			loadAddresses_to_PeerConnection(peer_connection, peer);
+			tmp_used_peers_AL_PC.add(peer_connection);
+			tmp_used_peers_HT_GID_PC.put(peer_connection.getGID(), peer_connection);
+			tmp_used_peers_HT_GIDH_PC.put(peer_connection.getGIDH(), peer_connection);
 		}
 		if (DEBUG) System.out.println("Connections: init_peers: got="+_toString());
 	}
 	/**
-	 * Loads the addresses of Peer_Connection p in tmp_peers.
-	 * @param p
+	 * Loads the addresses from _peer in Peer_Connection p (for tmp_used_peers_xxx).
+	 * For each address in the database, it checks the current values and uses the eventually found sockets and flags values.
+	 * 
+	 * Then it loads eventual uncertified addressed potentially received.
+	 * 
+	 * @param next_conn_peer
 	 * @param peer_ID : In the future should us GIDH to support clouds
+	 * @param _peer 
 	 */
-	private static void loadAddresses_to_PeerConnection(Connection_Peer p, long peer_ID) {
-		if (DEBUG) System.out.println("Connections: loadAddresses:"+p);
+	private static void loadAddresses_to_PeerConnection(Connection_Peer next_conn_peer, D_Peer _peer) {
+		if (DEBUG) System.out.println("Connections: loadAddresses_to_PeerConnection: start with empty pc for: "+_peer);
 		
 		// when using clouds, the query should be by GIDH (and parameter ID should be GIDH)
-		D_Peer peer = D_Peer.getPeerByLID_NoKeep(peer_ID, true);  // not yet used when saving new served orgs
-		if (DEBUG) System.out.println("Connection:loadAddresses: peer: "+p.getName());
-		if (peer != null) p.peer = peer; else return;
-		if (DEBUG) System.out.println("Connection:loadAddresses: peer: loaded D_PeerAddresses");
-		loadInstanceAddresses(p, peer, peer.shared_addresses, null);
-		for (D_PeerInstance dpi : peer._instances.values()) {
-			loadInstanceAddresses(p, peer, dpi.addresses, dpi);
+		//if (_peer == null) _peer = D_Peer.getPeerByLID_NoKeep(peer_ID, true);  // not yet used when saving new served orgs
+		//if (DEBUG) System.out.println("Connection: loadAddresses_to_PeerConnection: peer: "+p.getName());
+		if (_peer != null) next_conn_peer.peer = _peer;
+		else {
+			if (_DEBUG) System.out.println("Connection: loadAddresses_to_PeerConnection: null peer");
+			return;
 		}
+		if (DEBUG) System.out.println("Connection: loadAddresses_to_PeerConnection: peer: loaded D_PeerAddresses");
+		
+		loadInstanceAddresses(next_conn_peer, _peer, _peer.shared_addresses, null);
+		
+		for (D_PeerInstance dpi : _peer._instances.values()) {
+			loadInstanceAddresses(next_conn_peer, _peer, dpi.addresses, dpi);
+		}
+		if (DEBUG) System.out.println("Connections: loadAddresses_to_PeerConnection: quit with loaded: "+next_conn_peer);
 	}
 	/**
 	 * copy addresses from addresses to p for instance in dpi
 	 * Use old sockets from used_peers_HT_GID_PC
-	 * @param p
+	 * @param next_conn_peer
 	 * @param peer
 	 * @param addresses
 	 * @param dpi
 	 */
-	static void loadInstanceAddresses(Connection_Peer p, D_Peer peer, ArrayList<Address> addresses, D_PeerInstance dpi) {
+	static void loadInstanceAddresses(Connection_Peer next_conn_peer, D_Peer peer, ArrayList<Address> addresses, D_PeerInstance dpi) {
 		// old resolved IP addresses, to avoid repeat the waiting
 		//boolean DEBUG = true;//(dpi != null);
-		if (DEBUG) System.out.println("*********\n*********\nConnection: loadInstanceAddresses: start dpi=\n"+dpi+"\n crt stored adr="+Util.concat(addresses, ",", "NULL")+" p=\n"+p);
-		Connection_Peer _p = used_peers_HT_GID_PC.get(p.getGID()); // previous values
-		if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: prev _p=\n"+_p);
-		Connection_Instance pi, _pi = null;
-		ArrayList<Connections_Peer_Directory> _apd = null, apd = null;  // previous values
-		ArrayList<Connections_Peer_Socket> _aps = null, aps = null;  // previous values
+		if (DEBUG) System.out.println("*********\n*********\nConnection: loadInstanceAddresses: start dpi=\n"+dpi+"\n crt stored adr="+Util.concat(addresses, ",", "NULL")+" p=\n"+next_conn_peer);
+		Connection_Peer old_conn_peer = used_peers_HT_GID_CP.get(next_conn_peer.getGID()); // previous values
+		if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: prev _p=\n"+old_conn_peer);
+		Connection_Instance old_conn_peer_instance, next_conn_peer_instance = null;
+		ArrayList<Connections_Peer_Directory> old_conn_peer_dirs_AL = null, next_conn_peer_dirs_AL = null;  // previous values
+		ArrayList<Connections_Peer_Socket> old_conn_peer_sock_AL = null, next_conn_peer_sock_AL = null;  // previous values
 		if (dpi != null) {
-			pi = p.getInstanceConnection(dpi.peer_instance);
-			if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: crt pi=\n"+pi);
-			if (pi == null) {
-				pi = new Connection_Instance ();
-				pi.dpi = dpi;
-				p.putInstanceConnection (dpi.peer_instance, pi);
+			next_conn_peer_instance = next_conn_peer.getInstanceConnection(dpi.peer_instance);
+			if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: crt pi=\n"+next_conn_peer_instance);
+			if (next_conn_peer_instance == null) {
+				next_conn_peer_instance = new Connection_Instance ();
+				next_conn_peer_instance.dpi = dpi;
+				next_conn_peer.putInstanceConnection (dpi.peer_instance, next_conn_peer_instance);
 			}
 			// the temporary values
-			apd = pi.peer_directories;
-			aps = pi.peer_sockets;
+			next_conn_peer_dirs_AL = next_conn_peer_instance.peer_directories;
+			next_conn_peer_sock_AL = next_conn_peer_instance.peer_sockets;
 			
 			// old addresses for this peer
-			if (_p != null) {
-				_pi = _p.getInstanceConnection (dpi.peer_instance);
-				if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: old _pi=\n"+_pi);
-				if (_pi != null) {
-					_apd = _pi.peer_directories;
-					_aps = _pi.peer_sockets;
+			if (old_conn_peer != null) {
+				old_conn_peer_instance = old_conn_peer.getInstanceConnection (dpi.peer_instance);
+				if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: old _pi=\n"+old_conn_peer_instance);
+				if (old_conn_peer_instance != null) {
+					old_conn_peer_dirs_AL = old_conn_peer_instance.peer_directories;
+					old_conn_peer_sock_AL = old_conn_peer_instance.peer_sockets;
 				}
 			}
 		} else {
 			if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: in null dpi");
-			apd = p.shared_peer_directories;
-			aps = p.shared_peer_sockets;
-			if (_p != null) {
-				_apd = _p.shared_peer_directories;
-				_aps = _p.shared_peer_sockets;
+			next_conn_peer_dirs_AL = next_conn_peer.shared_peer_directories;
+			next_conn_peer_sock_AL = next_conn_peer.shared_peer_sockets;
+			if (old_conn_peer != null) {
+				old_conn_peer_dirs_AL = old_conn_peer.shared_peer_directories;
+				old_conn_peer_sock_AL = old_conn_peer.shared_peer_sockets;
 			}
 		}
 		if (DEBUG) System.out.println("******\nConnection: loadInstanceAddresses: copy old addresses #"+addresses.size());
-		for (int a = 0; a < addresses.size(); a ++) {
-			Address ad = addresses.get(a);
-			if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: a["+a+"]="+ad);
-			if (Address.NAT.equals(ad.getPureProtocol())) {
-				if (_DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: continue, NAT");
+		loadInstanceAddresses_certified(addresses, old_conn_peer_dirs_AL, next_conn_peer_dirs_AL, old_conn_peer_sock_AL, next_conn_peer_sock_AL, next_conn_peer.getName());
+
+		loadInstanceAddresses_uncertified(old_conn_peer_dirs_AL, next_conn_peer_dirs_AL, old_conn_peer_sock_AL, next_conn_peer_sock_AL);
+		if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: got: "+next_conn_peer);
+	}
+	/**
+	 * Now load only the addresses coming from the database: found in loadInstanceAddresses_certified
+	 * @param addresses
+	 * @param old_conn_peer_dirs_AL
+	 * @param next_conn_peer_dirs_AL
+	 * @param old_conn_peer_sock_AL
+	 * @param next_conn_peer_sock_AL
+	 * @param peer_name
+	 */
+	static void loadInstanceAddresses_certified (
+			ArrayList<Address> addresses,
+			ArrayList<Connections_Peer_Directory> old_conn_peer_dirs_AL,
+			ArrayList<Connections_Peer_Directory> next_conn_peer_dirs_AL,
+			ArrayList<Connections_Peer_Socket> old_conn_peer_sock_AL,
+			ArrayList<Connections_Peer_Socket> next_conn_peer_sock_AL,
+			String peer_name
+			)
+	{
+		for (int crt_adr_idx = 0; crt_adr_idx < addresses.size(); crt_adr_idx ++) {
+			Address crt_adr = addresses.get(crt_adr_idx);
+			if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: a["+crt_adr_idx+"]="+crt_adr);
+			if (Address.NAT.equals(crt_adr.getPureProtocol())) {
+				if (_DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: continue, NAT");
 				continue; // not handling NATs stored in database
 			}
-			if (Address.DIR.equals(ad.getPureProtocol())) {
-				if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: DIR: locate in old");
-				Connections_Peer_Directory pd = locatePD(_apd, ad);
-				if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: DIR: located in old: pd=\n"+pd);
+			if (Address.DIR.equals(crt_adr.getPureProtocol())) {
+				if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: DIR: locate in old");
+				Connections_Peer_Directory pd = locatePD(old_conn_peer_dirs_AL, crt_adr);
+				if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: DIR: located in old: pd=\n"+pd);
 				if (pd == null) {
 					// New addresses
 					InetSocketAddress isa_tcp = null;
 					InetSocketAddress isa_udp = null;
 					//if(DEBUG)System.out.println("Connection:loadAddresses: get nonblocking "+domain);
-					InetAddress ia = Util.getNonBlockingHostIA(ad.getDomain());
+					InetAddress ia = Util.getNonBlockingHostIA(crt_adr.getDomain());
 					//if(DEBUG)System.out.println("Connection:loadAddresses: got nonblocking "+ia);
 					if (ia != null) {
-						if (ad.tcp_port > 0) isa_tcp = new InetSocketAddress(ia, ad.tcp_port);
-						if (ad.udp_port > 0) isa_udp = new InetSocketAddress(ia, ad.udp_port);
+						if (crt_adr.tcp_port > 0) isa_tcp = new InetSocketAddress(ia, crt_adr.tcp_port);
+						if (crt_adr.udp_port > 0) isa_udp = new InetSocketAddress(ia, crt_adr.udp_port);
 					} else {
-						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Unknown host: "+ad);
+						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: Unknown host: "+crt_adr);
 						continue;
 					}
 					/** New Addresses retrieved */
 					
 					pd = new Connections_Peer_Directory();
-					pd.supernode_addr = new Address_SocketResolved_TCP(isa_tcp, isa_udp, ad);
-					pd._last_contact_TCP = ad.last_contact; //Util.getString(item.get(QUERY_LAST_CONN));
+					pd.supernode_addr = new Address_SocketResolved_TCP(isa_tcp, isa_udp, crt_adr);
+					pd._last_contact_TCP = crt_adr.last_contact; //Util.getString(item.get(QUERY_LAST_CONN));
 				}
-				pd.address_ID = ad.get_peer_address_ID(); //Util.lval(item.get(QUERY_ADDR_ID), -1);
-				apd.add(pd);
-				if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Directory got "+pd);
+				pd.address_ID = crt_adr.get_peer_address_ID(); //Util.lval(item.get(QUERY_ADDR_ID), -1);
+				next_conn_peer_dirs_AL.add(pd);
+				if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: Directory got "+pd);
 			} else
-				if (Address.SOCKET.equals(ad.getPureProtocol())) { // socket
-					if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Socket: locate in old");
-					Connections_Peer_Socket ps = locatePS(_aps, ad);
-					if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Socket: located in old: pd=\n"+ps);
+				if (Address.SOCKET.equals(crt_adr.getPureProtocol())) { // socket
+					if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: Socket: locate in old");
+					Connections_Peer_Socket ps = locatePS(old_conn_peer_sock_AL, crt_adr);
+					if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: Socket: located in old: pd=\n"+ps);
 					if (ps == null) {
 						/** New addresses */
 						InetSocketAddress isa_tcp = null;
 						InetSocketAddress isa_udp = null;
 						//if(DEBUG)System.out.println("Connection:loadAddresses: get nonblocking "+domain);
-						InetAddress ia = Util.getNonBlockingHostIA(ad.getDomain());
+						InetAddress ia = Util.getNonBlockingHostIA(crt_adr.getDomain());
 						//if(DEBUG)System.out.println("Connection:loadAddresses: got nonblocking "+ia);
 						if (ia != null) {
-							if (ad.tcp_port > 0) isa_tcp = new InetSocketAddress(ia, ad.tcp_port);
-							if (ad.udp_port > 0) isa_udp = new InetSocketAddress(ia, ad.udp_port);
+							if (crt_adr.tcp_port > 0) isa_tcp = new InetSocketAddress(ia, crt_adr.tcp_port);
+							if (crt_adr.udp_port > 0) isa_udp = new InetSocketAddress(ia, crt_adr.udp_port);
 						} else {
-							if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Unknown host: "+ad);
+							if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: Unknown host: "+crt_adr);
 							continue;
 						}
 						/** New Addresses retrieved */
 												
-						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Socket: myself");
+						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: Socket: myself");
 						if ((isa_udp != null) &&
-								ClientSync.isMyself(Identity.udp_server_port, isa_udp, ad)) {
-							if (DEBUG) out.println("***\nConnection: loadInstanceAddresses:  UPeer "+p.getName()+" is myself!"+isa_udp);
+								ClientSync.isMyself(Identity.udp_server_port, isa_udp, crt_adr)) {
+							if (DEBUG) out.println("***\nConnection: loadInstanceAddresses_certified:  UPeer " + peer_name +" is myself!"+isa_udp);
 							isa_udp = null;
 						}
 						//if(DEBUG)System.out.println("Connection:loadAddresses: Socket: self udp");
 						if ((isa_tcp != null) &&
 								(Server.isMyself(isa_udp) ||
-										ClientSync.isMyself(Identity.port, isa_tcp, ad))) {
-							if (DEBUG) out.println("***\nConnection: loadInstanceAddresses: UPeer "+p.getName()+" is myself!"+isa_udp);
+										ClientSync.isMyself(Identity.port, isa_tcp, crt_adr))) {
+							if (DEBUG) out.println("***\nConnection: loadInstanceAddresses_certified: UPeer " + peer_name + " is myself!"+isa_udp);
 							isa_tcp = null;
 						}
 						if ((isa_udp == null) && (isa_tcp == null)) {
-							if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Socket: null socks, continue");
+							if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: Socket: null socks, continue");
 							continue;
 						}
 						ps = new Connections_Peer_Socket();
 						//if(DEBUG)System.out.println("Connection:loadAddresses: Socket: PS");
-						ps.addr = new Address_SocketResolved(ia, isa_tcp, isa_udp, ad);
+						ps.addr = new Address_SocketResolved(ia, isa_tcp, isa_udp, crt_adr);
 						//if(DEBUG)System.out.println("Connection:loadAddresses: Socket: SAD");
-						ps._last_contact = ad.last_contact;
+						ps._last_contact = crt_adr.last_contact;
 					}
-					ps.address_ID = ad.get_peer_address_ID();// Util.lval(item.get(QUERY_ADDR_ID), -1);
-					aps.add(ps);
-					if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Socket: ps=\n"+ps);
+					ps.address_ID = crt_adr.get_peer_address_ID();// Util.lval(item.get(QUERY_ADDR_ID), -1);
+					next_conn_peer_sock_AL.add(ps);
+					if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: Socket: ps=\n"+ps);
 				}
 		}
-		/**
-		 * Could have uncertified addresses coming from a server and not saved
-		 */
-		if (DEBUG) System.out.println("******\nConnection: loadInstanceAddresses: try old");
+	}
+	/**
+	 * Could have uncertified addresses coming from a server and not saved
+	 * @param old_conn_peer_dirs_AL
+	 * @param next_conn_peer_dirs_AL
+	 * @param old_conn_peer_sock_AL
+	 * @param next_conn_peer_sock_AL
+	 */
+	static void loadInstanceAddresses_uncertified(
+			ArrayList<Connections_Peer_Directory> old_conn_peer_dirs_AL,
+			ArrayList<Connections_Peer_Directory> next_conn_peer_dirs_AL,
+			ArrayList<Connections_Peer_Socket> old_conn_peer_sock_AL,
+			ArrayList<Connections_Peer_Socket> next_conn_peer_sock_AL
+			) {
+		if (DEBUG) System.out.println("******\nConnection: loadInstanceAddresses_uncertified: try old");
 		try {
-			if (_aps != null) {
-				if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Socket: old peer_socks #"+_aps.size());
-				for (int c = _aps.size() - 1; c >= 0; c --) {
-					Connections_Peer_Socket tmpsock = _aps.get(c);
+			if (old_conn_peer_sock_AL != null) {
+				if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_uncertified: Socket: old peer_socks #"+old_conn_peer_sock_AL.size());
+				for (int c = old_conn_peer_sock_AL.size() - 1; c >= 0; c --) {
+					Connections_Peer_Socket tmpsock = old_conn_peer_sock_AL.get(c);
 				
 					if (tmpsock.address_ID > 0) {
-						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Socket: fix old peer_sock #"+tmpsock);
+						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_uncertified: Socket: fix old peer_sock #"+tmpsock);
 						continue;
 					}
 					if ((tmpsock.contacted_since_start_TCP && tmpsock.contacted_since_start_UDP) && (!tmpsock.last_contact_successful_TCP && !tmpsock.last_contact_successful_UDP)) {
-						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Socket: failed old peer_sock #"+tmpsock);
+						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_uncertified: Socket: failed old peer_sock #"+tmpsock);
 						continue;
 					}
 					/**
 					 * Locate a new instance of tmpsock (received from Dir and not in the database)
 					 * that could be now in the database, and use it (to have its local address_ID
 					 */
-					Connections_Peer_Socket crt = locatePS(aps, tmpsock.getAddress());
+					Connections_Peer_Socket crt = locatePS(next_conn_peer_sock_AL, tmpsock.getAddress());
 					if (crt != null) {
-						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Socket: fixated peer_sock #"+tmpsock);
+						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_uncertified: Socket: fixated peer_sock #"+tmpsock);
 						continue;
 					}
-					if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: Socket: imported peer_sock #"+tmpsock);
-					aps.add(0, tmpsock);
+					if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_uncertified: Socket: imported peer_sock #"+tmpsock);
+					next_conn_peer_sock_AL.add(0, tmpsock);
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses: got: "+p);
+		if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_uncertified: done");
 	}
 	/**
-	 * Loads my active listing directories. 
-	 * adds them (and TCP socket address) to tmp_my_directories_AL: 
+	 * Analyze my listing directories 
+	 * (if table "directory_addresses" is empty, then try loading them from "application", APP_LISTING_DIRECTORIES, as active). 
+	 *
+	 * Adds those that are active (with initialized TCP SocketAddress "supernode_addr") to tmp_my_directories_AL: 
+	 *
 	 */
 	private static void init_my_active_directories_listings() {
-		if (DEBUG) System.out.println("Connections: init_directories");
+		if (DEBUG) System.out.println("Connections: init_my_active_directories_listings");
 		/*
 		String ld;
 		try {
@@ -478,8 +581,11 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 	     		String listing_directories;
 				try {
 					listing_directories = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
-					DirectoryAddress.reset(listing_directories);
-					dirs = DirectoryAddress.getActiveDirectoryAddresses();
+					if (listing_directories != null) {
+						if (DEBUG) System.out.println("Connections: init_my_active_directories_listings: loading from application: " + listing_directories);
+						DirectoryAddress.reset(listing_directories);
+						dirs = DirectoryAddress.getActiveDirectoryAddresses();
+					}
 				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 				}
@@ -493,13 +599,18 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
     					"If you have a stable IP, than you probably do not need it."), __("Configuration"));
     			DD.WARNED_NO_DIRS = true;
     		}
-    		return;
+			if (DEBUG) System.out.println("Connections: init_my_active_directories_listings: quit on empty directories list");
+			return;
     	}
-   	for (int k = 0; k < dirs.length; k ++) {
-    		try {
+		if (DEBUG) System.out.println("Connections: init_my_active_directories_listings: handling dirs #" + dirs.length);
+     	for (int k = 0; k < dirs.length; k ++) {
+     		try {
 	    		//String[] d=dirs[k].split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_ELEM_SEP));
     			Address adr = new Address(dirs[k]);
-    			if (!adr.active) continue;
+    			if (!adr.active) {
+    				if (DEBUG) System.out.println("Connections: init_my_active_directories_listings: skip inactive dir="+adr);
+    				continue;
+    			}
 	    		My_Directory md = new My_Directory();
 	    		//Address ad = new Address(dirs[k]);
 	    		InetAddress ia = Util.getNonBlockingHostIA(adr.getIP());
@@ -512,17 +623,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
     			continue;
     		}
     	}
-		if (DEBUG) System.out.println("Connections: init_directories: done");
-	}
-	/** alloc tmp structures, fill them with dirs and peers; then switch; (only on start) */
-	private static void init() {
-		if (DEBUG) System.out.println("Connections: init()");
-		allocate_tmp_structures();
-		//init_myself();
-		init_my_active_directories_listings();
-		init_used_peers();
-		switch_tmp();
-		if (DEBUG) System.out.println("Connections: init() done:"+_toString());
+		if (DEBUG) System.out.println("Connections: init_my_active_directories_listings: done");
 	}
 
 	@Override
@@ -533,9 +634,9 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		if (_table.contains(table.peer.TNAME) || _table.contains(table.peer_address.TNAME)){
 			update_peers=true;}
 		if (DEBUG) System.out.println("Connections: update: will wait_obj");
-		synchronized (wait_obj) {
+		synchronized (monitor_wait_obj) {
 			if (DEBUG) System.out.println("Connections: update: got wait_obj");
-			wait_obj.notifyAll();
+			monitor_wait_obj.notifyAll();
 			if (DEBUG) System.out.println("Connections: update: yield wait_obj");
 		}
 		if (DEBUG) System.out.println("Connections: update done");
@@ -544,7 +645,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 	 * called on timeout alarm or on database changes
 	 */
 	private void updates() {	
-		boolean __DEBUG = DEBUG;
+		boolean __DEBUG = Connections.DEBUG;
 		if (DEBUG) System.out.println("Connections: updates: ***********");
 		if(__DEBUG) System.out.println("**********\nConnections: updates: **********\n"+_toString()+"\nvvvvvvvvvv");
 		if (DEBUG) System.out.println("Connections: updates: start");
@@ -557,65 +658,35 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 			Connections.allocate_dirs();
 			Connections.init_my_active_directories_listings();
 			Connections.switch_tmp_dirs();
-		}
+		} else
+			if (__DEBUG) System.out.println("Connections: no updates dirs");
 		if (update_peers) {
 			if (__DEBUG) System.out.println("Connections: updates peers");
 			update_peers = false;
 			Connections.allocate_peers();
 			Connections.init_used_peers();
 			Connections.switch_tmp_peers();
-		}
+		} else
+			if (__DEBUG) System.out.println("Connections: no updates peers");
 		/**
 		 * The client cannot contact a peer and requests its re-evaluation
 		 */
-		if (update_pc.size() > 0) {
+		if (update_needing_peer_connections.size() > 0) {
 			if (__DEBUG) System.out.println("Connections: updates pc");
 			Connection_Peer pc;
 			if (__DEBUG) System.out.println("Connections: updates will wait_obj");
-			synchronized (lock_update_pc) {
+			synchronized (lock_update_needing_peer_connections) {
 				if (__DEBUG) System.out.println("Connections: updates got wait_obj");
-				pc = update_pc.remove(0);
+				pc = update_needing_peer_connections.remove(0);
 				if (__DEBUG) System.out.println("Connections: updates yield wait_obj");
 			}
 			update_supernode_address(pc);
 			if (__DEBUG) System.out.println("Connections: updates pc done");
-		}
-		if(DEBUG) System.out.println("Connections: updates done");
-		if(__DEBUG) System.out.println("Connections: updates: ^^^^^^^^\n"+_toString()+"\n*******");
-	}
-	
-	public void _run() {
-		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Connections Start"));
-		try {__run();} catch(Exception e) {}
-		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Stop Connections"));
-		if (DEBUG) out.println("Connections: run: turned Off");
-	}
-	/**
-	 * Continuously tries to update, each time something changes
-	 */
-	private void __run() {
-		init();
-		for (;;) {
-			if (DEBUG) System.out.println("Connections: _run: will wait_obj");
-			try {
-				synchronized (wait_obj) { // waked up by updates (from DB) and by updates request from client
-					if (DEBUG) System.out.println("Connections: _run: got wait_obj");
-					if (!updates_available()) {
-						Application_GUI.ThreadsAccounting_ping("No updates available");
-						wait_obj.wait(60*1000);
-					}
-				}
-				Application_GUI.ThreadsAccounting_ping("Updates");
-				updates();
-			} catch (InterruptedException e) {
-				if (_DEBUG) System.out.println("Connections: _run: interrupted");
-				//e.printStackTrace();
-			} catch (Exception e) {
-				if (_DEBUG) System.out.println("Connections: _run: continue");
-				e.printStackTrace();
-			}
-			if (DEBUG) System.out.println("Connections: _run: yield wait_obj");
-		}
+		} else
+			if (__DEBUG) System.out.println("Connections: updates pc not needed");
+		
+		if (DEBUG) System.out.println("Connections: updates done");
+		if (__DEBUG) System.out.println("Connections: updates: ^^^^^^^^\n"+_toString()+"\n*******");
 	}
 	/**
 	 * //synchronized  (protecting update_pc list)
@@ -623,26 +694,28 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 	 * @return
 	 */
 	private static boolean updates_available() {
-		synchronized(lock_update_pc){
-			return update_dirs || update_peers || (update_pc.size() != 0);
+		synchronized (lock_update_needing_peer_connections) {
+			return update_dirs || update_peers || (update_needing_peer_connections.size() != 0);
 		}
 	}
 	/**
 	 * To request the update of a given peer from directories
-	 * called from client2 (and wake up _run)
+	 * add parameter "pc" to "update_needing_peer_connections" (and wake up _run).
+	 * 
+	 * It is called from Client2 (handleNotRecently...).
 	 * @param pc
 	 */
 	public static void update_supernode_address_request(Connection_Peer pc) {
 		if (DEBUG) out.println("Connections: update_supernode_address_request: will wait_obj");
-		synchronized (lock_update_pc) {
-			if (!update_pc.contains(pc)) {
-				update_pc.add(pc);
+		synchronized (lock_update_needing_peer_connections) {
+			if (! update_needing_peer_connections.contains(pc)) {
+				update_needing_peer_connections.add(pc);
 				if (DEBUG) out.println("Connections: update_supernode_address_request: added");
 			}
 		}
-		synchronized (wait_obj) {
+		synchronized (monitor_wait_obj) {
 			if (DEBUG) out.println("Connections: update_supernode_address_request: got wait_obj");
-			wait_obj.notifyAll();
+			monitor_wait_obj.notifyAll();
 			if (DEBUG) out.println("Connections: update_supernode_address_request: yield wait_obj");
 		}
 		if (DEBUG) out.println("Connections: update_supernode_address_request: done");
@@ -655,17 +728,29 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 			da = _da;
 		}
 	}
-	public static DirectoryRequestAnswer requestDirectoryAnswer (
+	/**
+	 * The actual TCP code for requiring an address from a directory
+	 * @param global_peer_ID
+	 * @param peer_ID
+	 * @param sock_addr
+	 * @param dir_address
+	 * @return
+	 * @throws IOException
+	 * @throws Exception
+	 */
+	public static DirectoryRequestAnswer requestDirectoryAnswerByTCP (
 			String global_peer_ID, String peer_ID, 
 			InetSocketAddress sock_addr, Address dir_address)
 					throws IOException, Exception {
+		//boolean DEBUG = true;
+		if (DEBUG) out.println("Connections: requestDirectoryAnswer: pLID="+peer_ID+" from:"+dir_address.toLongString()+" GIDH="+D_Peer.getGIDHashFromGID(global_peer_ID));
 		Socket socket = new Socket();
 		DirectoryRequest dr = null;
 		DirectoryAnswerMultipleIdentities da = null;
 		//try {
 			socket.connect(sock_addr, Server.TIMEOUT_Client_wait_Dir);
-			if (DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: connected:"+sock_addr);
-			if (DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: connected:"+dir_address);
+			if (DEBUG) out.println("Connections: requestDirectoryAnswer:  Sending to Directory Server: connected:"+sock_addr);
+			if (DEBUG) out.println("Connections: requestDirectoryAnswer:  Sending to Directory Server: connected:"+dir_address);
 			//System.out.println("-----------------------------------------Identity.current_peer_ID.instance= "+Identity.current_peer_ID.instance);
 			dr = new DirectoryRequest(
 					global_peer_ID,
@@ -674,17 +759,18 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 					Identity.udp_server_port, 
 					peer_ID,
 					dir_address);
-			if (DEBUG) out.println("Connections: getDirAddress: sending:"+dr);
+			if (DEBUG) out.println("Connections: requestDirectoryAnswer: sending:"+dr);
 			byte[] msg = dr.encode();
 			if (DEBUG) {
 				Decoder d = new Decoder(msg);
 				DirectoryRequest _dr = new DirectoryRequest(d);
-				if (DEBUG) out.println("Connections: getDirAddress: actually sent:"+_dr);
+				if (DEBUG) out.println("Connections: requestDirectoryAnswer: actually sent:"+_dr);
 			}
 			socket.setSoTimeout(Server.TIMEOUT_Client_wait_Dir);
 			socket.getOutputStream().write(msg);
-			if (DEBUG) out.println("Connections: getDirAddress:  Sending to Directory Server: "+Util.byteToHexDump(msg, " ")+dr);
+			if (DEBUG) out.println("Connections: requestDirectoryAnswer:  Sending to Directory Server: "+Util.byteToHexDump(msg, " ")+dr);
 			da = new DirectoryAnswerMultipleIdentities(socket.getInputStream());
+			if (DEBUG) out.println("Connections: requestDirectoryAnswer:  Receiving DirectoryAnswerMultipleIdentities: "+da);
 			socket.close();
 			return new DirectoryRequestAnswer(dr, da);
 		//} catch (Exception e) {e.printStackTrace();}
@@ -766,22 +852,24 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 	 * @param peer_ID
 	 * @return
 	 */
-	static Hashtable<String,ArrayList<Address>> getDirAddress(
+	static Hashtable<String,ArrayList<Address>> getDirAddress (
 			Connection_Peer _pc,
 			Connections_Peer_Directory pd, 
 			Address dir_address,
 			String global_peer_ID,
 			String peer_name,
 			String peer_ID) {
-		
-		if (DEBUG) out.println("Connections: getDirAddress: "+dir_address+" ID="+Util.trimmed(global_peer_ID));
-		Address ad = pd.supernode_addr.ad;
+		boolean DEBUG = Connections.DEBUG || DD.DEBUG_COMMUNICATION_ADDRESSES;
+		if (DEBUG) out.println("Connections: getDirAddress: "+dir_address.toLongString()+" p_name="+peer_name
+				+" GIDH="+D_Peer.getGIDHashFromGID(global_peer_ID) + " ID="+Util.trimmed(global_peer_ID));
+		Address ad = pd.supernode_addr.getAddressSupernode();
 		InetSocketAddress sock_addr = null;
 		
 		// test again if directory IP is reachable
 		if (pd.supernode_addr.isa == null) {
 			InetAddress ia = Util.getHostIA(ad.domain);
 			if (ia == null) {
+				if (DEBUG) out.println("Connections: trouble finding directory server, null socket");
 				ClientSync.reportDa(dir_address.ipPort(), global_peer_ID, peer_name, null, __("Null Socket"));
 				return null; // cannot find directory server
 			}
@@ -795,7 +883,8 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		}
 		try {
 			for (;;) {
-				DirectoryRequestAnswer dra = requestDirectoryAnswer(global_peer_ID, peer_ID, sock_addr, dir_address);
+				if (DEBUG) out.println("Connections: getDirAddress: new negotiation loop");
+				DirectoryRequestAnswer dra = requestDirectoryAnswerByTCP(global_peer_ID, peer_ID, sock_addr, dir_address);
 				// Reporting to the widget in Directories Widget
 				ClientSync.reportDa(dir_address.ipPort(), global_peer_ID, peer_name, dra.da, null);
 				
@@ -804,16 +893,19 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 				 * Currently not yet implemented, but just updating the dr terms.
 				 * However, a loop has to be added with the new negotiation. Currently function returns always true;
 				 */
-				if (! updateNegotiationTerms(dra.dr, dra.da, global_peer_ID, peer_ID, dir_address))
+				if (! updateNegotiationTerms(dra.dr, dra.da, global_peer_ID, peer_ID, dir_address)) {
+					if (DEBUG) out.println("Connections: getDirAddress: ! updating Negotition terms");
 					continue;
+				}
 			
 				Hashtable<String,ArrayList<Address>> addresses = extractAddresses(dra.dr, dra.da, _pc.getName());
+				if (DEBUG) out.println("Connections: getDirAddress: returning result: "+addresses);
 				return addresses;
 			}
 			//InetSocketAddress s= da.address.get(0);
 			//return s.getHostName()+":"+s.getPort();
 		} catch (IOException e) {
-			if (DEBUG) out.println("Connections: getDirAddress:  fail: "+e+" peer: "+peer_name+" DIR addr="+dir_address);
+			if (DEBUG) out.println("Connections: getDirAddress: IO fail: "+e+" peer: "+peer_name+" DIR addr="+dir_address);
 			ClientSync.reportDa(dir_address.ipPort(), global_peer_ID, peer_name, null, e.getLocalizedMessage());
 			getDirAddressUDP( _pc, pd, dir_address, global_peer_ID, peer_name, peer_ID);
 			//e.printStackTrace();
@@ -844,6 +936,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 			String peer_name, 
 			String peer_ID
 			) {
+		boolean DEBUG = Connections.DEBUG || DD.DEBUG_COMMUNICATION_ADDRESSES;
 		if (DEBUG) System.out.println("Directories:askAddressUDP: enter dir_address = "+dir_address);
 		DirectoryRequest dr =
 				new DirectoryRequest(GID,
@@ -887,8 +980,12 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 			String peer_name, 
 			String peer_ID
 			) {
-		if (DEBUG) System.out.println("Directories:askAddressUDP: enter dir_address = "+dir_address);
-		if ((Application.aus == null) || (UDPServer.getUDPSocket() == null)) return null;
+		boolean DEBUG = Connections.DEBUG || DD.DEBUG_COMMUNICATION_ADDRESSES;
+		if (DEBUG) System.out.println("Directories: getDirAddressUDP: enter dir_address = "+dir_address);
+		if ((Application.aus == null) || (UDPServer.getUDPSocket() == null)) {
+			if (DEBUG) System.out.println("Directories: getDirAddressUDP: exit no server");
+			return null;
+		}
 		InetSocketAddress directory_sock_addr = pd.supernode_addr.isa_udp;
 		//int udp_port = dir_address.udp_port;
 		//if (udp_port <= 0) Util.printCallPath("udp_port="+dir_address.toLongString()); 
@@ -897,6 +994,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		String GIDH = _pc.getGIDH();
 
 		DirectoryRequest dr = getDirAddressUDP(directory_sock_addr, dir_address, GID, peer_name, peer_ID);
+		if (DEBUG) System.out.println("Directories: getDirAddressUDP: sent "+dr);
 		
 		return Connections.getKnownDirectoryAddresses(dir_address, GIDH, Identity.getMyPeerInstance());
 	}
@@ -905,7 +1003,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 	 * @param _pc
 	 */
 	private static void update_supernode_address(Connection_Peer _pc) {
-		//boolean DEBUG = true;
+		boolean DEBUG = Connections.DEBUG || DD.DEBUG_COMMUNICATION_ADDRESSES;
 		if(DEBUG) out.println("Connections: update_supernode_address: **********");
 		if(DEBUG) out.println("Connections: update_supernode_address: pc="+_pc);
 		String peer_name = _pc.getName();
@@ -937,10 +1035,10 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		for (Connection_Instance i : _pc.instances_HT.values()) {
 			update_supernode_address_instance(_pc, i, peer_key, i.peer_directories, i.peer_sockets);
 		}
-		if(DEBUG) out.println("Connections: update_supernode_address: got pc="+_pc);
+		if (DEBUG) out.println("Connections: update_supernode_address: got pc="+_pc);
 	}
 	/**
-	 * update a given instance's addresses
+	 * update a given instance's addresses, from all its supernodes
 	 * @param _pc
 	 * @param dpi
 	 * @param peer_key
@@ -949,91 +1047,114 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 	 */
 	private static void update_supernode_address_instance(Connection_Peer _pc, Connection_Instance dpi, String peer_key,
 			ArrayList<Connections_Peer_Directory> crt_peer_directories, ArrayList<Connections_Peer_Socket> crt_peer_sockets) {
+		boolean DEBUG = Connections.DEBUG || DD.DEBUG_COMMUNICATION_ADDRESSES;
+		if (DEBUG) out.println("Connections: update_supernode_address_instance: start dpi="+dpi);
 
+		if (DEBUG) out.println("Connections: update_supernode_address_instance: try directories #" + crt_peer_directories.size());
+		
+		for (int k = 0; k < crt_peer_directories.size(); k ++) {
+			update_supernode_address_instance_dir(_pc, dpi, peer_key, crt_peer_directories, crt_peer_sockets, 
+					k, crt_peer_directories.get(k));
+		}
+	}
+	private static void update_supernode_address_instance_dir(
+			Connection_Peer _pc,
+			Connection_Instance dpi,
+			String peer_key,
+			ArrayList<Connections_Peer_Directory> crt_peer_directories,
+			ArrayList<Connections_Peer_Socket> crt_peer_sockets,
+			int k,
+			Connections_Peer_Directory pd
+			) {
+		boolean DEBUG = Connections.DEBUG || DD.DEBUG_COMMUNICATION_ADDRESSES;
+		IClient This = Application.ac;
+		if (DEBUG) out.println("Connections: update_supernode_address_instance_dir: start dp="+pd);
+		
 		Hashtable<String, Hashtable<String, Hashtable<String,String>>> _peer_contacts_for_this_peer = D_Peer.peer_contacts.get(peer_key);
 		if (_peer_contacts_for_this_peer == null) {
 			_peer_contacts_for_this_peer = new Hashtable<String, Hashtable<String, Hashtable<String,String>>>();
 			D_Peer.peer_contacts.put(peer_key, _peer_contacts_for_this_peer);
 		}
-		Hashtable<String, Hashtable<String,String>> _peer_contacts_for_this_instance = null;
-		String inst = null;
-		if (dpi != null && dpi.dpi != null) inst = dpi.dpi.peer_instance;
-		_peer_contacts_for_this_instance = _peer_contacts_for_this_peer.get(Util.getStringNonNullUnique(inst));
+		
+		Hashtable<String, Hashtable<String,String>> _peer_contacts_for_this_instance;
+		String crt_inst = null;
+		if (dpi != null && dpi.dpi != null) crt_inst = dpi.dpi.peer_instance;
+		_peer_contacts_for_this_instance = _peer_contacts_for_this_peer.get(Util.getStringNonNullUnique(crt_inst));
 		if (_peer_contacts_for_this_instance == null) {
 			_peer_contacts_for_this_instance = new Hashtable<String, Hashtable<String,String>>();
-			_peer_contacts_for_this_peer.put(Util.getStringNonNullUnique(inst), _peer_contacts_for_this_instance);
+			_peer_contacts_for_this_peer.put(Util.getStringNonNullUnique(crt_inst), _peer_contacts_for_this_instance);
 		}
-		IClient This = Application.ac;
+		
 		String peer_ID = _pc.peer.getLIDstr();
 		// ArrayList<Address> adr_addresses;
 		Hashtable<String,ArrayList<Address>> adr_addresses; // <identity,addresses_list>
 		String peer_name = _pc.getName();
 		String global_peer_ID = _pc.getGID();
+		//Connections_Peer_Directory pd = crt_peer_directories.get(k);
 		
-		for (int k = 0; k < crt_peer_directories.size(); k++) {
-			Connections_Peer_Directory pd = crt_peer_directories.get(k);
-			Address address_supernode = pd.supernode_addr.ad;
-			String type = address_supernode.pure_protocol;
-			String now = Util.getGeneralizedTime();
-			if (type == null) type = Address.DIR;
-			//String s_address = ad.toString();
-			String s_addr_ip = address_supernode.ipPort();
-			String old_address = s_addr_ip;
-			DD.ed.fireClientUpdate(new CommEvent(This, address_supernode.ipPort(), null, "DIR REQUEST", peer_name+" ("+global_peer_ID+")"));
-			if (DEBUG) out.println("Connections:update_supernode_address:"+k+" will getDir");
-			// can be slow
-			// adr_addresses = Client.getDirAddress(s_address, global_peer_ID, peer_name, peer_ID);
-			adr_addresses = Connections.getDirAddress(_pc, pd, address_supernode, global_peer_ID, peer_name, peer_ID);
-			if (adr_addresses == null) {
-				if (DEBUG) out.println("Connections:update_supernode_address:"+k+" did getDir: null");
-				if (DEBUG) out.print(" ");
+		if (DEBUG) out.println("Connections: update_supernode_address_instance_dir: try dir" + pd);
+		Address address_supernode = pd.supernode_addr.getAddressSupernode();
+		String type = address_supernode.pure_protocol;
+		String now = Util.getGeneralizedTime();
+		if (type == null) type = Address.DIR;
+		//String s_address = ad.toString();
+		String s_addr_ip = address_supernode.ipPort();
+		String old_address = s_addr_ip;
+		DD.ed.fireClientUpdate(new CommEvent(This, address_supernode.ipPort(), null, "DIR REQUEST", peer_name+" ("+global_peer_ID+")"));
+		if (DEBUG) out.println("Connections: update_supernode_address_instance_dir:"+k+" will getDir");
+		// can be slow
+		// adr_addresses = Client.getDirAddress(s_address, global_peer_ID, peer_name, peer_ID);
+		adr_addresses = Connections.getDirAddress(_pc, pd, address_supernode, global_peer_ID, peer_name, peer_ID);
+		if (adr_addresses == null) {
+			if (DEBUG) out.println("Connections: update_supernode_address_instance_dir:"+k+" did getDir: null");
+			if (DEBUG) out.print(" ");
 				
-				///// Another section on displaying PeerContacts tree widget (new addresses)
-				String key = type+":"+s_addr_ip;
-				Hashtable<String,String> value = _peer_contacts_for_this_instance.get(key);
-				if (value == null) {
-					value = new Hashtable<String,String>();
-					_peer_contacts_for_this_instance.put(key, value);
-				}
-				value.put(DD.NO_CONTACT, now);
-				///// Done displaying contacts
+			///// Another section on displaying PeerContacts tree widget (new addresses)
+			String key = type+":"+s_addr_ip;
+			Hashtable<String,String> value = _peer_contacts_for_this_instance.get(key);
+			if (value == null) {
+				value = new Hashtable<String,String>();
+				_peer_contacts_for_this_instance.put(key, value);
+			}
+			value.put(DD.NO_CONTACT, now);
+			///// Done displaying contacts
 				
-				if (DEBUG) out.println("Connections:update_supernode_address:"+k+" DIR returns empty");
-				//return false;
-				continue;
-			} else {
-				if (DEBUG) out.println("Connections:update_supernode_address:"+k+" did getDir: non"
-						+ "-null");
+			if (DEBUG) out.println("Connections: update_supernode_address_instance_dir:"+k+" DIR returns empty");
+			//return false;
+			return;
+		} else {
+			if (DEBUG) out.println("Connections: update_supernode_address_instance_dir:"+k+" did getDir: non"
+					+ "-null");
 				
-				if (DEBUG) {
-					System.out.println("\n\nGetting:");
-					for (String key  : adr_addresses.keySet()) {
-						System.out.println("Inst: \""+key+"\" :"+Util.concat(adr_addresses.get(key), " --- ", "NULL"));
-					}
+			if (DEBUG) {
+				System.out.println("\n\nGetting:");
+				for (String key  : adr_addresses.keySet()) {
+					System.out.println("Inst: \""+key+"\" :"+Util.concat(adr_addresses.get(key), " --- ", "NULL"));
 				}
 			}
+		}
+		
+		// tell of "no contact" if this instance is not in received addresses
+		if (adr_addresses.get(Util.getStringNonNullUnique(crt_inst)) == null) {
+			ClientSync.peerContactAdd(null, type, s_addr_ip, now, _peer_contacts_for_this_instance);
+		}
 			
-			// tell of "no contact" if this instance is not in received addresses
-			if (adr_addresses.get(Util.getStringNonNullUnique(inst)) == null) {
-				ClientSync.peerContactAdd(null, type, s_addr_ip, now, _peer_contacts_for_this_instance);
-			}
-			
-			// add addresses to widget PeerContacts displayed with Peers/Safes
-			for (String _inst_nonull : adr_addresses.keySet()) {
-				Hashtable<String, ArrayList<Address>> _adr_addresses = new Hashtable<String, ArrayList<Address>>();
-				_adr_addresses.put(_inst_nonull, adr_addresses.get(_inst_nonull));
-				// treating separately the other (unknown? instances)
-				// probably they need not be treated separately
-				if (! Util.equalStrings_null_or_not(Util.getStringNonNullUnique(inst), _inst_nonull)) {
-					if (DEBUG) System.out.println("Connections:update_supernode_address: dropping inst:"+_inst_nonull+" -> "+Util.concat(adr_addresses.get(_inst_nonull), "---", ""));
+		// add addresses to widget PeerContacts displayed with Peers/Safes
+		for (String _inst_nonull : adr_addresses.keySet()) {
+			Hashtable<String, ArrayList<Address>> _adr_addresses = new Hashtable<String, ArrayList<Address>>();
+			_adr_addresses.put(_inst_nonull, adr_addresses.get(_inst_nonull));
+			// treating separately the other (unknown? instances)
+			// probably they need not be treated separately
+			if (! Util.equalStrings_null_or_not(Util.getStringNonNullUnique(crt_inst), _inst_nonull)) {
+				if (DEBUG) System.out.println("Connections: update_supernode_address_instance_dir: dropping inst:"+_inst_nonull+" -> "+Util.concat(adr_addresses.get(_inst_nonull), "---", ""));
 
-					Hashtable<String, Hashtable<String, String>> peer_contacts_for_this_instance = _peer_contacts_for_this_peer.get(_inst_nonull);
-					if (peer_contacts_for_this_instance == null) {
-						peer_contacts_for_this_instance = new Hashtable<String, Hashtable<String,String>>();
-						_peer_contacts_for_this_peer.put(_inst_nonull, peer_contacts_for_this_instance);
-					}					
+				Hashtable<String, Hashtable<String, String>> peer_contacts_for_this_instance = _peer_contacts_for_this_peer.get(_inst_nonull);
+				if (peer_contacts_for_this_instance == null) {
+					peer_contacts_for_this_instance = new Hashtable<String, Hashtable<String,String>>();
+					_peer_contacts_for_this_peer.put(_inst_nonull, peer_contacts_for_this_instance);
+				}					
 					
-					getSocketAddresses_for_peerContacts_widget(//tcp_sock_addresses, udp_sock_addresses,
+				getSocketAddresses_for_peerContacts_widget(//tcp_sock_addresses, udp_sock_addresses,
 							_adr_addresses,
 							global_peer_ID, 
 							type, 
@@ -1044,14 +1165,14 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 							DEBUG);
 
 					
-					if (DEBUG) Util.printPeerContacts("Connections:update_supernode_address: after diff:"); 
-					continue;
-				}
+				if (DEBUG) Util.printPeerContacts("Connections: update_supernode_address_instance_dir: after diff:"); 
+				continue;
+			}
 				
 				// Also handle this current instance, if received (storing in model for PeerContact widget)
 				
 				
-				getSocketAddresses_for_peerContacts_widget(//tcp_sock_addresses, udp_sock_addresses,
+			getSocketAddresses_for_peerContacts_widget(//tcp_sock_addresses, udp_sock_addresses,
 						_adr_addresses,
 						global_peer_ID, 
 						type, 
@@ -1060,37 +1181,36 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 						now, 
 						_peer_contacts_for_this_instance,
 						DEBUG);
-				if (DEBUG) Util.printPeerContacts("Connections:update_supernode_address: after eq:"); 
-				if (DEBUG) System.out.println("Connections:update_supernode_address: got "+_peer_contacts_for_this_instance);
-			}
+			if (DEBUG) Util.printPeerContacts("Connections:update_supernode_address: after eq:"); 
+			if (DEBUG) System.out.println("Connections:update_supernode_address: got "+_peer_contacts_for_this_instance);
+		}
 			
-			synchronized(Connections.monitor) {
+		synchronized(Connections.monitor_integrateDirAddresses) {
 				
-			if (DEBUG) System.out.println("****\nConnections: update_supernode_address_instance: add\n" + Util.concat("\t", adr_addresses, ",", "NULL")); 
-			// add addresses and instances to _pc
-			integrateDirAddresses(_pc, pd, adr_addresses, //global_peer_ID, type, s_addr_ip, peer_key, now, peer_contacts_for_this_peer,
-					crt_peer_directories, crt_peer_sockets);
-			if (DEBUG) System.out.println("Connections: update_supernode_address_instance: after integrate: "); 
-			if (DEBUG) System.out.println(_pc); 
-			if (DEBUG) System.out.println(_toString()); 
-			if (DEBUG) Util.printPeerContacts("-"); 
-			if (DEBUG) Util.printCallPath("");
+			if (DEBUG) System.out.println("****\nConnections: update_supernode_address_instance_dir: add\n" + Util.concat("\t", adr_addresses, ",", "NULL")); 
+				// add addresses and instances to _pc
+				integrateDirAddresses(_pc, pd, adr_addresses, //global_peer_ID, type, s_addr_ip, peer_key, now, peer_contacts_for_this_peer,
+						crt_peer_directories, crt_peer_sockets);
+				if (DEBUG) System.out.println("Connections: update_supernode_address_instance_dir: after integrate: "); 
+				if (DEBUG) System.out.println(_pc); 
+				if (DEBUG) System.out.println(_toString()); 
+				if (DEBUG) Util.printPeerContacts("-"); 
+				if (DEBUG) Util.printCallPath("");
 			
-			}			
+		}			
 			
 			
-			// pretty print addresses and instances in the Client log
-			s_addr_ip = null;
-			for (String i : adr_addresses.keySet()) {
+		// pretty print addresses and instances in the Client log
+		s_addr_ip = null;
+		for (String i : adr_addresses.keySet()) {
 				ArrayList<Address> adrs = adr_addresses.get(i);
 				String _s_addr_ip = "\""+i+"\" "+Util.concat(adrs.toArray(), DirectoryServer.ADDR_SEP);
 				if (s_addr_ip == null) s_addr_ip = _s_addr_ip;
 				else s_addr_ip = _s_addr_ip + DirectoryServer.ADDR_SEP + s_addr_ip;
-			}
-			
-			if (DEBUG) out.println("Connections:update_supernode_address: DIR obtained address: "+s_addr_ip);
-			DD.ed.fireClientUpdate(new CommEvent(This, old_address, null,"DIR ANSWER", peer_name+" ("+s_addr_ip+")"));
 		}
+			
+		if (DEBUG) out.println("Connections: update_supernode_address_instance_dir: DIR obtained address: "+s_addr_ip);
+		DD.ed.fireClientUpdate(new CommEvent(This, old_address, null,"DIR ANSWER", peer_name+" ("+s_addr_ip+")"));
 	}
 	/**
 	 * Adding the addresses in adr_addresses, from s_address, to the PeerContacts tree widget pc.
@@ -1198,9 +1318,25 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 				if (Address.NAT.equals(ad.pure_protocol)) {
 					InetSocketAddress isa = new InetSocketAddress(ad.domain, ad.udp_port);
 					Address_SocketResolved_TCP reported_peer_addr = new Address_SocketResolved_TCP(isa, ad);
-					pd.reported_peer_addr_ = reported_peer_addr;
-					pd._reported_peer_addr.put(_inst, pd.reported_peer_addr_);
+					//pd.reported_peer_addr_ = reported_peer_addr;
+					pd._reported_peer_addr.put(_inst, reported_peer_addr); // pd.reported_peer_addr_);
 					if (DEBUG) System.out.println("Connections: integrateDirAddresses: got= "+pd._reported_peer_addr);
+					continue;
+				}
+				if ((ad.pure_protocol == null) || Address.SOCKET.equals(ad.pure_protocol)) {
+					Connections_Peer_Socket _ps = locatePS(peer_sockets_list, ad);
+					if (_ps != null) {
+						if(DEBUG) System.out.println("Connections: integrateDirAddresses: got existing= "+_ps);
+						continue;
+					}
+					InetAddress ia = Util.getHostIA(ad.domain);
+					if (ia == null) {
+						if (DEBUG) System.out.println("Connections: integrateDirAddresses: null ia= "+ad);
+						continue;
+					}
+					Connections_Peer_Socket ps = new Connections_Peer_Socket(ad, ia);
+					peer_sockets_list.add(ps);
+					if (DEBUG) System.out.println("Connections: integrateDirAddresses: got sock= "+_ps);
 					continue;
 				}
 				// TODO if a DIR is retrieved, it should be queried recursively!
@@ -1218,22 +1354,6 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 					_pd = new Connections_Peer_Directory(ad, ia);
 					peer_directories_list.add(_pd);
 					if (DEBUG) System.out.println("Connections: integrateDirAddresses: got dir= "+_pd);
-					continue;
-				}
-				if ((ad.pure_protocol == null) || Address.SOCKET.equals(ad.pure_protocol)) {
-					Connections_Peer_Socket _ps = locatePS(peer_sockets_list, ad);
-					if (_ps != null) {
-						if(DEBUG) System.out.println("Connections: integrateDirAddresses: got existing= "+_ps);
-						continue;
-					}
-					InetAddress ia = Util.getHostIA(ad.domain);
-					if(ia == null){
-						if(DEBUG) System.out.println("Connections: integrateDirAddresses: null ia= "+ad);
-						continue;
-					}
-					Connections_Peer_Socket ps = new Connections_Peer_Socket(ad, ia);
-					peer_sockets_list.add(ps);
-					if(DEBUG) System.out.println("Connections: integrateDirAddresses: got sock= "+_ps);
 					continue;
 				}
 				if(DEBUG) System.out.println("Connections: integrateDirAddresses: ad no protocol");
@@ -1287,7 +1407,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		int udp_port = _ad.udp_port;
 		for (int k = 0; k < shared_peer_directories.size(); k++){
 			Connections_Peer_Directory pd = shared_peer_directories.get(k);
-			Address ad = pd.supernode_addr.ad;
+			Address ad = pd.supernode_addr.getAddressSupernode();
 			if (ad.domain.equals(domain) && (ad.tcp_port == tcp_port) && (ad.udp_port == udp_port)) {
 				if(DEBUG) System.out.println("Connection: locatePD: "+pd);
 				return pd;
@@ -1312,11 +1432,11 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 			ArrayList<Address> pca, String peer_GID, 
 			ArrayList<String> peer_directories,
 			ArrayList<InetSocketAddress> peer_directories_sockets) {
-		synchronized(lock_used_structures) {
-			Connection_Peer pc = Connections.used_peers_HT_GID_PC.get(peer_GID);
+		synchronized (lock_used_structures) {
+			Connection_Peer pc = Connections.used_peers_HT_GID_CP.get(peer_GID);
 			if (pc != null) {
 				if (pc.shared_peer_sockets != null) {
-					for(int k = 0; k < pc.shared_peer_sockets.size(); k++){
+					for (int k = 0; k < pc.shared_peer_sockets.size(); k ++) {
 						Connections_Peer_Socket ps = pc.shared_peer_sockets.get(k);
 						if (ps.addr.isa_tcp != null) tcp_sock_addresses.add(Address_SocketResolved_TCP.getTCP(ps.addr));
 						if (ps.addr.isa_udp != null) udp_sock_addresses.add(Address_SocketResolved_TCP.getUDP(ps.addr));
@@ -1334,7 +1454,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 				return;
 			}
 			
-			for (int k = 0; k < pc.shared_peer_directories.size(); k ++){
+			for (int k = 0; k < pc.shared_peer_directories.size(); k ++) {
 				Connections_Peer_Directory pd = pc.shared_peer_directories.get(k);
 				if (pd == null) {
 					System.out.println ("Connections:getSocketAddresses null pd for peer_dir "+k);
@@ -1345,27 +1465,36 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 					udp_sock_addresses.add(adr);
 					added = true;
 				}
-				if (pd.reported_peer_addr_ != null) {
-					udp_sock_addresses.add(pd.reported_peer_addr_);
-					added = true;
-				}
+//				if (pd.reported_peer_addr_ != null) {
+//					udp_sock_addresses.add(pd.reported_peer_addr_);
+//					added = true;
+//				}
 				if (added) {
-					peer_directories.add(pd.supernode_addr.ad.toString());
+					peer_directories.add(pd.supernode_addr.getAddressSupernode().toString());
 					peer_directories_sockets.add(pd.supernode_addr.isa);
 				}
 			}
 		}
 	}
 
-	public static void main(String args[]){
-		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
-			if (DEBUG) System.out.println("Connection: main: Client2");
-			Client2 c2 = new Client2();
-			c2.start();
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
+//	public static void main(String args[]){
+//		try {
+//			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+//			if (DEBUG) System.out.println("Connection: main: Client2");
+//			Client2 c2 = new Client2();
+//			c2.start();
+//		} catch (P2PDDSQLException e) {
+//			e.printStackTrace();
+//		}
+//	}
+	/**
+	 * Just concatenates the domain and the port with separator ":" to be used as keys in "personal_HT_IPPORT_PC"
+	 * @param domain
+	 * @param port
+	 * @return
+	 */
+	public static String getIPPORT(String domain, int port) {
+		return domain+":"+port;
 	}
 	/**
 	 * This should return address of "GID:instance" as last received from the directory: dir_address.
@@ -1383,9 +1512,9 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		D_Peer me = data.HandlingMyself_Peer.get_myself_with_wait();
 		
 		if ((Util.equalStrings_null_or_not(instance, me.getInstance())) && Util.equalStrings_null_or_not(GIDH, me.getGIDH_force())) {
-			String ipport = directory_domain+":"+directory_udp_port;
+			String ipport = getIPPORT(directory_domain, directory_udp_port);
 			if (DEBUG) System.out.println("Connections: getKnownDirectoryAddresses: me "+ipport);
-			Connections_Peer_Directory pd = Connections.personal_HT_IPPORT_PC.get(ipport);
+			Connections_Peer_Directory pd = Connections.myselfPeer_HT_IPPORT_CPD.get(ipport);
 			if (pd == null) {
 				if (DEBUG) System.out.println("Connections: getKnownDirectoryAddresses: null pd");
 				return null;
@@ -1419,7 +1548,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		InetSocketAddress sa = (InetSocketAddress) pak.getSocketAddress();
 		if (directory_udp_port <= 0) directory_udp_port = sa.getPort();
 		if (directory_domain == null) directory_domain = sa.getHostString();
-		String ipport = directory_domain+":"+directory_udp_port;
+		String ipport = getIPPORT(directory_domain, directory_udp_port);
 		D_Peer me = data.HandlingMyself_Peer.get_myself_with_wait();
 		D_Peer target = D_Peer.getPeerByGID_or_GIDhash(null, dami.remote_GIDhash, true, false, false, null);
 		ClientSync.reportDa(ipport+"/UDP", target.getGID(), target.getName(), dami, null);
@@ -1430,10 +1559,10 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 			if (DEBUG) System.out.println("Connections: registerIncomingDirectoryAnswer: handling "+inst);
 			if ((Util.equalStrings_null_or_not(inst.instance, me.getInstance())) && Util.equalStrings_null_or_not(dami.remote_GIDhash, me.getGIDH_force())) {
 				if (DEBUG) System.out.println("Connections: registerIncomingDirectoryAnswer: me "+ipport);
-				Connections_Peer_Directory _pd = Connections.personal_HT_IPPORT_PC.get(ipport);
+				Connections_Peer_Directory _pd = Connections.myselfPeer_HT_IPPORT_CPD.get(ipport);
 				if (_pd == null) {
 					_pd = new Connections_Peer_Directory();
-					Connections.personal_HT_IPPORT_PC.put(ipport, _pd);
+					Connections.myselfPeer_HT_IPPORT_CPD.put(ipport, _pd);
 					_pd.supernode_addr = new Address_SocketResolved_TCP((InetSocketAddress) pak.getSocketAddress(), new Address(ipport));
 				}
 				_pd._last_contact_UDP = Util.getGeneralizedTime();
@@ -1507,7 +1636,13 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener{
 		
 			Connection_Peer _pc[] = new Connection_Peer[1];
 			Connection_Instance pi = Connections.getConnectionPeerInstance(dami.remote_GIDhash, inst.instance, _pc);
-			integrateDirAddresses(_pc[0], pd, adr, pi.peer_directories, pi.peer_sockets);			
+
+			/**
+			 * The synchronization added but its need was not yet tested
+			 */
+			synchronized(Connections.monitor_integrateDirAddresses) {
+				integrateDirAddresses(_pc[0], pd, adr, pi.peer_directories, pi.peer_sockets);
+			}
 		}	
 	}
 }

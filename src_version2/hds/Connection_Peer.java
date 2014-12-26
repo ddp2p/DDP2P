@@ -23,13 +23,13 @@ public class Connection_Peer {
 	public D_Peer peer;
 
 	/**
-	 * The address books listing this peer
+	 * The address books listing this peer, //order by last_contact!
 	 */
-	public ArrayList<Connections_Peer_Directory> shared_peer_directories; //order by last_contact!
+	public ArrayList<Connections_Peer_Directory> shared_peer_directories; 
 	/**
-	 * Known IP addresses for this peer (assumed static)
+	 * Known IP addresses for this peer (assumed static) // static addresses, order by contact!
 	 */
-	public ArrayList<Connections_Peer_Socket> shared_peer_sockets; // static addresses, order by contact!
+	public ArrayList<Connections_Peer_Socket> shared_peer_sockets; 
 	
 	public boolean contacted_since_start = false;
 	public boolean last_contact_successful = false;
@@ -68,20 +68,28 @@ public class Connection_Peer {
 		 sortInstances();
 	}
 	public String getName() {return peer.getName();}
+	/** gets GID of peer */
 	public String getGID() {return peer.getGID();}
+	/** gets GIDH of peer */
 	public String getGIDH() {return peer.getGIDH_force();}
 	public long getID() {return peer.getLID_keep_force();}
 	public boolean getFiltered() {return peer.getFiltered();}
 	//public String getLastSyncDate() {return peer.getLastSyncDate(instance);}
 	public String toString() {
-		return "[Peer_Connection: ID="+getID()+" name="+getName()+//" date="+getLastSyncDate()+
-				" contact="+contacted_since_start+
-				" success="+last_contact_successful+
-				"\n shared dirs=\n  " + Util.concat(shared_peer_directories, "\n  ", "empty")+
-				"\n shared socks=\n  " + Util.concat(shared_peer_sockets, "\n  ", "empty")+
-				"\n instances=\n  " + Util.concat(instances_AL, "\n  ", "empty")+
+		return "[Peer_Connection: ID = "+getID()+" name = "+getName()+//" date="+getLastSyncDate()+
+				" contact = "+contacted_since_start+
+				" success = "+last_contact_successful+
+				"\n shared dirs = \n  " + Util.concat(shared_peer_directories, "\n  ", "empty")+
+				"\n shared socks = \n  " + Util.concat(shared_peer_sockets, "\n  ", "empty")+
+				"\n instances = \n  " + Util.concat(instances_AL, "\n  ", "empty")+
 				"]";
 	}
+	/**
+	 * TODO
+	 * Not implemented
+	 * @param ps
+	 * @return
+	 */
 	public String getInstance(Connections_Peer_Socket ps) {
 		System.out.println("Connection_Peer: getInstance: TODO");
 		// TODO Auto-generated method stub

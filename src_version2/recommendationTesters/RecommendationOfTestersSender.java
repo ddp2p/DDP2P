@@ -26,6 +26,7 @@ import util.Util;
 import data.D_Peer;
 import data.D_RecommendationOfTestersBundle;
 import data.D_Tester;
+import data.D_TesterIntroducer;
 import data.D_TesterRatingByPeer;
 import data.HandlingMyself_Peer;
 
@@ -61,6 +62,7 @@ public class RecommendationOfTestersSender {
 			D_Tester tester = D_Tester.getTesterInfoByLID(usedTestersList[i].testerID);
 			tRating.testerGID = tester.testerGID;
 			tRating.address = tester.url;
+			tRating.testerIntroducers = D_TesterIntroducer.retrieveTesterIntroducers(Util.getStringID(usedTestersList[i].testerID));
 			message.testersRatingList.add(tRating);
 		}
 		
@@ -83,10 +85,15 @@ public class RecommendationOfTestersSender {
 		D_RecommendationOfTestersBundle bundle = buildBundle(knownTestersList, usedTestersList);
 		// retrieve neighbor peers of the current peer (destination peers) 
 		ArrayList<D_Peer> peers = D_Peer.getUsedPeers();
-		if(!DEBUG) if(peers==null || peers.size()==0)
+		if(DEBUG) if(peers==null || peers.size()==0)
 						System.out.println("announceRecommendation(): NO neighbor peers? why send recom. ");
 		for (D_Peer peer : peers) {
+			// this is for the unit test : lock and release peer 
+			peer = D_Peer.getPeerByPeer_Keep(peer);//just to lock the peer
 			peer.sendTesterRecommendationBundle(bundle);
+			if(DEBUG) System.out.println("peerID:="+peer.getLID());
+			peer.storeRequest();
+			peer.releaseReference();
 		}
 	}
 }

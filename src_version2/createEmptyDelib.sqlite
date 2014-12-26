@@ -156,6 +156,8 @@ CREATE TABLE "tester_introducer" (
     "weight" TEXT,				
     "creation_date" TEXT,			
     "signature" TEXT,				
+    "tester_rejecting_date" TEXT,	
+    "attack_by_introducer" TEXT,  
     FOREIGN KEY (testerLID) REFERENCES tester(tester_ID),
     FOREIGN KEY (introducer_peer_LID) REFERENCES peer(peer_ID)
 );

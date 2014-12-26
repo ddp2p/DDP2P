@@ -170,7 +170,7 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 	}
 	private Object[] getTree() {
 		ArrayList<Object> result = new ArrayList<Object>();
-		for (Connection_Peer peer : connections.used_peers_AL_PC) {
+		for (Connection_Peer peer : connections.used_peers_AL_CP) {
 			if (DEBUG) System.out.println("PeerIContacts: getTree: peer="+peer);
 			D_PIC_Node n = new D_PIC_Node();
 			result.add(n);
@@ -220,7 +220,7 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 			if (ad == null) Util.printCallPath("Null peer directory here!");
 			String rep = ad.getReportedAddresses();
 			a.text =
-					ad.supernode_addr.ad+"/"+ad.supernode_addr.isa+" (#"+ad.address_ID+") rep=" + rep +
+					ad.supernode_addr.getAddressSupernode()+"/"+ad.supernode_addr.isa+" (#"+ad.address_ID+") rep=" + rep +
 					"contact="+ ad._last_contact_TCP+" tried="+ad.contacted_since_start_TCP+"/ok="+ad.last_contact_successful_TCP
 					;
 			n.child.add(a);

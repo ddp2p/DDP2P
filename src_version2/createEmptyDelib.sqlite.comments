@@ -155,7 +155,9 @@ CREATE TABLE "tester_introducer" ( 	# the history of tesrter creation history re
     "introducer_peer_LID" TEXT  NOT NULL,          # the peer who has introduced the tester in the recommendation (LID or GID or HGID??).
     "weight" TEXT,				# the initial weight given by the creator peer
     "creation_date" TEXT,			# date set by the creator when introduced the tester first time
-    "signature" TEXT,				# signature of date,weght and tester_GID (from tester table if exist??)
+    "signature" TEXT,				# signature of date,weight and tester_GID (from tester table if exist??)
+    "tester_rejecting_date" TEXT,	# date when reject a recomendation of testerLID because of the introducer.
+    "attack_by_introducer" TEXT,  # count of attack attempts with in the limit expiration date
     FOREIGN KEY (testerLID) REFERENCES tester(tester_ID),
     FOREIGN KEY (introducer_peer_LID) REFERENCES peer(peer_ID)
 );

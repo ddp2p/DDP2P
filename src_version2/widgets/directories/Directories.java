@@ -583,7 +583,7 @@ class DirectoryPing extends util.DDP2P_ServiceThread {
 	}
 	
 	ArrayList<Address> askAddress(InetSocketAddress sock_addr, String global_peer_ID, String GIDH,
-			String peer_ID, Address dir_address){
+			String peer_ID, Address dir_address) {
 		//final boolean DEBUG = true;
 		//final boolean _DEBUG = true;
 		if (DEBUG) System.out.println("Directories:askAddress: prepared dir request "+sock_addr+"/"+dir_address.toLongString());

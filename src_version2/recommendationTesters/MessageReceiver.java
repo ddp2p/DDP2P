@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014
-		Authors: Khalid Alhamed
+		Authors: Khalid Alhamed, Marius Silaghi
 		Florida Tech, Human Decision Support Systems Laboratory
    
        This program is free software; you can redistribute it and/or modify
@@ -19,24 +19,33 @@
 /* ------------------------------------------------------------------------- */
 package recommendationTesters;
 
+import ASN1.ASN1DecoderFail;
+import ASN1.Decoder;
 import data.D_Peer;
 import data.D_RecommendationOfTestersBundle;
 
 public class MessageReceiver {
 	public static boolean DEBUG = true;
 	//D_TesterItem[] testerItemList;
-	public void msgListener( D_Peer senderPeer, D_RecommendationOfTestersBundle testerItemsMsg) {
+	public static void msgListener( D_Peer senderPeer, byte[] bundle) throws ASN1DecoderFail {
+		data.D_RecommendationOfTestersBundle recommendation_testers = new D_RecommendationOfTestersBundle();
+		recommendation_testers.decode(new Decoder(bundle));
+		msgListener(senderPeer, recommendation_testers);
+	}
+	public static void msgListener(D_Peer senderPeer,
+			D_RecommendationOfTestersBundle recommendation_testers) {
 		//1) validate Signature
-		if (! testerItemsMsg.verifySignature()) {
+		if (! recommendation_testers.verifySignature()) {
 			if (DEBUG) System.out.println("claas:MessageReceiver, msgListener() invalid signature");
 			return;
 		}
 		//2) check duplicate and store the newest recommendation
 		//3) update Tester's Profile if needed (e.g. add new tester or update address)
-		testerItemsMsg.storeMessage();
+		recommendation_testers.storeMessage();
 		//updateReceivedRecommendations(senderPeer, testerItemsMsg);
 		
-				
+				 
+		
 	}
 
 }

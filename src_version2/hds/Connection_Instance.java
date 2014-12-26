@@ -12,13 +12,13 @@ public class Connection_Instance {
 	public D_PeerInstance dpi;
 	
 	/**
-	 * Any dedicated address books
+	 * Any dedicated address books //order by last_contact!
 	 */
-	public ArrayList<Connections_Peer_Directory> peer_directories = new ArrayList<Connections_Peer_Directory>(); //order by last_contact!
+	public ArrayList<Connections_Peer_Directory> peer_directories = new ArrayList<Connections_Peer_Directory>();
 	/**
-	 * The current sockets known for this clone
+	 * The current sockets known for this clone // static addresses, order by contact!
 	 */
-	public ArrayList<Connections_Peer_Socket> peer_sockets = new ArrayList<Connections_Peer_Socket>(); // static addresses, order by contact!
+	public ArrayList<Connections_Peer_Socket> peer_sockets = new ArrayList<Connections_Peer_Socket>();
 
 	public boolean contacted_since_start = false;
 	public boolean last_contact_successful = false;

@@ -33,6 +33,8 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Hashtable;
 
 import util.P2PDDSQLException;
 import config.Application;
@@ -46,7 +48,9 @@ import ASN1.Decoder;
 import ASN1.Encoder;
 
 /**
- *  TODO Make it concurrent ... any takers?
+ *  TODO When receiving a request from a NAT different than the one received in the last announcement,
+ *  should ask the client to reannounce itself. Simply piggibacking the client's NAT in each response
+ *  can help this detect alone when he needs to re-announce! (Dec 23, 2014)
  * @author msilaghi
  *
  */
@@ -68,6 +72,7 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 	public static final ArrayList<String> mAcceptedIPs = new ArrayList<String>();
 	public static final ArrayList<String> mAcceptedGIDH_Addresses = new ArrayList<String>();
 	public static final ArrayList<String> mAcceptedGIDH_Clients = new ArrayList<String>();
+	public static int SOCKET_READ_TIMEOUT = 4000;
 	
 	public DatagramSocket udp_socket;
 	DirectoryServerUDP dsu;
@@ -141,7 +146,15 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 				out.printf("inetAddress: %s\n", inetAddress);
 			}
 		}
-		
+		initAcceptedInets();		
+	}
+	static ArrayList<InetAddress> mAcceptedInets = new ArrayList<InetAddress>();
+	static void initAcceptedInets() {
+		DirectoryServer.mAcceptedInets = new ArrayList<InetAddress>();
+		for ( String ip : DirectoryServer.mAcceptedIPs) {
+			InetAddress _isa = new InetSocketAddress(ip, 45000).getAddress();
+			mAcceptedInets.add(_isa);
+		}
 	}
 	boolean turnOff=false;
 	public void turnOff(){
@@ -366,143 +379,63 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 		out.println("Enter DS Server Thread");
 		dsu.start();
 		for(;;) {
-			if(turnOff){
+			if (turnOff) {
 				out.println("Turned off");
 				break;
 			}
-			//out.println("DirServ: *******");
+			out.println("TCP DirServ: cycle *******");
+			Socket client = null;
 			try {
-				Socket client = ss.accept();
-				//out.println("DirServ: Accepted... from: "+client.getRemoteSocketAddress());
-				InetSocketAddress risa = null;
-				try {
-					//InetAddress risa = ((InetSocketAddress) client.getRemoteSocketAddress()).getAddress();
-					risa = (InetSocketAddress) client.getRemoteSocketAddress();
-					if (DirectoryServer.mAcceptedIPs.size() > 0) {
-						boolean accepted = false;
-						for ( String ip : DirectoryServer.mAcceptedIPs) {
-							InetAddress _isa = new InetSocketAddress(ip, 45000).getAddress();
-							if (DEBUG) out.print("(TCP: "+risa+")");
-							if (risa.getAddress().equals(_isa)) {
-								if (DEBUG) out.print("(TCP: from accepted "+_isa+")");
-								accepted = true;
-								break;
-							} else {
-								if (_DEBUG) out.print("(TCP: not from "+_isa+" but "+risa+")");
-							}
-						}
-						if (! accepted) return;
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				byte buffer[] = new byte[DirectoryServer.MAX_DR];
-				int peek = client.getInputStream().read(buffer);
-				if (peek < 0) {
-					out.println("DirServTCP: got no bytes from: "+risa);
-					client.close();
-					continue;
-				} else {
-					out.println("DirServTCP: __run got bytes from: "+risa);
-				}
-				//out.println("DirServ: Got ASN1 dump: "+Util.byteToHexDump(buffer,peek));
-				Decoder test = new Decoder(buffer, 0, peek);
-				//out.println("DirServTCP: __run got decoder: "+test);
-				
-				out.println("DirServTCP: __run: Decoded ASN1: class="+test.typeClass()+" val="+test.tagVal()+" blen="+buffer.length);
-				DirMessage m; // recording msgs
-				if (test.typeClass() == Encoder.CLASS_APPLICATION && test.tagVal()==DirectoryAnnouncement.TAG) {
-					//out.println("DirServ: Detected directory announcement");
-					InetSocketAddress isa= (InetSocketAddress)client.getRemoteSocketAddress();
-					DirectoryAnnouncement da = new DirectoryAnnouncement(buffer,peek,client.getInputStream());
-					out.println("DirServTCP: got announcement: "+da+"\n from: "+isa);
-					
-					// here should first get the old detected address (probably from UDP) and keep it if has same IP
-					
-					// this stores the message in the announcement_storage for this GID, and the GID - IP relation in its hashtable
-					recordAnnouncementMessage(isa, da, null, DirMessage.TCP, DirMessage.ANNOUNCEMENT);
-					
-					// creates an address object from the socket and reported udp port
-					Address detected_sa = detectUDP_Address(isa, da.address.udp_port);
-					out.println("DirServTCP: got announcement: detected = "+detected_sa);
-					
-					//Address detected_sa = new Address(_detected_sa);
-					detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
-					
-					out.println("DirServTCP: got announcement: detected tuned = " + detected_sa);
-					if (da.address.udp_port <= 0) detected_sa = null;
-					
-					boolean storeNAT;
-					boolean TCP;
-					DirectoryAnnouncement_Answer daa = handleAnnouncement(da, detected_sa, db_dir, storeNAT = false, TCP = true);
-					byte[] answer = new byte[0];
-					if (daa != null) answer = daa.encode();
-					//byte[] answer = new D_DAAnswer(detected_sa).encode();
-					client.getOutputStream().write(answer);
-					
-					recordAnnouncementMessage(isa, da, daa, DirMessage.TCP, DirMessage.ANN_ANSWER);
-				} else {
-					//boolean DEBUG = true;
-					if (DEBUG) out.println("DSTCP: Potential directory request");
-					// handling terms here
-					DirectoryRequest dr = new DirectoryRequest(buffer,peek,client.getInputStream());
-					if (dr.empty()) {
-						out.println("DirServTCP:__run: potential message detected empty = "+risa+" dr="+dr);
-						continue;
-					}
-					//boolean acceptedTerms = areTermsAccepted(dr);
-					InetSocketAddress isa = (InetSocketAddress)client.getRemoteSocketAddress();
-					if(DEBUG)out.println("Received directory request: "+dr);
-
-					recordRequestMessage(isa, dr, null, DirMessage.TCP, DirMessage.REQUEST);
-					if (DEBUG) out.println("DirServ: Looking for: "+
-							D_Peer.getGIDHashFromGID(dr.globalID)+"\n  by "+
-							D_Peer.getGIDHashFromGID(dr.initiator_globalID));//+"\n  with source udp="+dr.UDP_port);
-
-					String globalID = dr.globalID; // looking for peer GID
-					String globalIDhash = dr.globalIDhash; // looking for peer GID hash
-					// de has the look-for-peer and all instances stored in the db
-					D_DirectoryEntry de = DirectoryServerCache.getEntry(globalID, globalIDhash);
-					if (DEBUG) out.println("DirServ: From cache got: "+de);
-					ASNObj da = getDA(de, dr, dr.version);
-
-					
-					if ((da == null)) //|| (da.date == null)) 
-					{
-						System.out.println("DirectoryServer:__run: abandon: ?why da="+da+
-								"\n\tde="+de+
-								"\n\tdr="+dr);
-						continue;
-					}
-					recordRequestMessage(isa, dr, da, DirMessage.TCP, DirMessage.REQUEST_ANSWER);
-
-					byte msg[] = da.encode();
-					if (DEBUG) {
-						Decoder dec = new Decoder(msg);
-						DirectoryAnswerMultipleIdentities dami = new DirectoryAnswerMultipleIdentities(dec);
-						System.out.println("DirectoryServer:_run:encode "+da+"\nto "+dami);
-					}
-					//out.println("answer: "+Util.byteToHexDump(msg, " ")+"\n\tI.e.: "+da);
-					/*
-					if(_DEBUG&&(da.addresses.size()>0)){
-						out.println("DirServ: *******");
-						out.println("DirServ: Aanswer: "+client.getRemoteSocketAddress()+" <- "+da.toString());
-					}
-					*/
-					client.getOutputStream().write(msg);
-				}
-				client.close();
-			}
-			catch (SocketException e){
-				out.println("server: "+e);
-				continue;
-			}
-			catch(Exception e) {
+				client = ss.accept();
+				out.println("TCP DirServ: got client="+client);
+				handleclient(client);
+			} catch (Exception e) {
 				e.printStackTrace();
-				continue;
 			}
 		}
 		out.println("Turning off");
+	}
+	public void handleclient(Socket client) {
+
+		InetSocketAddress risa = null;
+		try {
+			//InetAddress risa = ((InetSocketAddress) client.getRemoteSocketAddress()).getAddress();
+			risa = (InetSocketAddress) client.getRemoteSocketAddress();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (DirectoryServer.mAcceptedIPs.size() > 0) {
+			boolean accepted = false;
+			for ( InetAddress _isa : DirectoryServer.mAcceptedInets) {
+				if (DEBUG) out.print("(TCP: "+risa+")");
+				if (risa.getAddress().equals(_isa)) {
+					if (DEBUG) out.print("(TCP: from accepted "+_isa+")");
+					accepted = true;
+					break;
+				} else {
+					if (_DEBUG) out.print("(TCP: not from "+_isa+" but "+risa+")");
+				}
+			}
+			if (! accepted) {
+				try {
+					client.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				return;
+			}
+		}
+
+		ServiceThread thread = new ServiceThread("Service", true, client);
+		if (! joining(thread, client)) {
+			try {
+				client.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return;
+		}
+		thread.start();
 	}
 	public static void recordRequestMessage(InetSocketAddress isa, DirectoryRequest dr,
 			 ASNObj da, String transport, String msg_type) {
@@ -955,4 +888,230 @@ public class DirectoryServer extends util.DDP2P_ServiceThread{
 		det.pure_protocol = Address.NAT;
 		return det.toString();
 	}
+	static public final ArrayList<ServiceThread> threads = new ArrayList<ServiceThread>();
+	
+	private static final int TIMEOUT_THREAD = 10000;
+	private static final int MAX_THREADS = 20;
+	/**
+	 * We could implement joining based on number of already joined.
+	 */
+	static public final Hashtable<InetAddress, Integer> client_inets= new Hashtable<InetAddress, Integer>();
+	
+	/**
+	 * 
+	 * @param serviceThread
+	 * @param client
+	 * @return
+	 * Returns false if it should be rejected!
+	 */
+	public static boolean joining(ServiceThread serviceThread, Socket client) {
+		synchronized (threads) {
+			if (threads.size() < MAX_THREADS) {
+				threads.add(serviceThread);
+			} else {
+				if (threads.get(0).older(TIMEOUT_THREAD)) {
+					threads.get(0).closeClient();
+					threads_dec(threads.get(0).getClient());
+					threads.remove(0);
+					threads.add(serviceThread);
+				}
+				else return false;
+			}
+		}
+		threads_inc(client);
+		return true;
+	}
+	private static void threads_inc(Socket client) {
+		if (client == null) return;
+		InetAddress ia = client.getInetAddress();
+		if (ia == null) return;
+		Integer i = client_inets.get(ia);
+		if (i == null) i = Integer.valueOf(1);
+		else i = Integer.valueOf(1+i.intValue());
+		client_inets.put(ia, i);
+	}
+	private static void threads_dec(Socket client) {
+		if (client == null) return;
+		InetAddress ia = client.getInetAddress();
+		if (ia == null) return;
+		
+		Integer i = client_inets.remove(ia);
+		if (i == null || i.intValue() <= 1) return;
+		
+		i = Integer.valueOf(i.intValue() - 1);
+		client_inets.put(ia, i);
+	}
+	public static void leaving(ServiceThread serviceThread, Socket client) {
+		synchronized (threads) {
+			threads.remove(serviceThread);
+		}
+	}
 }
+
+class ServiceThread extends util.DDP2P_ServiceThread {
+	private static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
+	private Calendar startTime;
+
+	public ServiceThread(String name, boolean daemon, Object ctx) {
+		super(name, daemon, ctx);
+		startTime = Util.CalendargetInstance();
+	}
+
+	public Socket getClient() {
+		try {
+			return ((Socket)ctx);
+		} catch (Exception e) {
+			
+		}
+		return null;
+	}
+
+	public boolean older(long timeoutThread) {
+		return Util.CalendargetInstance().getTimeInMillis() - this.startTime.getTimeInMillis() > timeoutThread;
+	}
+
+	public void closeClient() {
+		try {
+			((Socket)ctx).close();
+			this.interrupt();
+		} catch (Exception e) {
+			
+		}
+	}
+
+	public void _run () {
+		Socket client = null;
+		try {
+			client = (Socket) ctx;
+			__run(client);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		try {
+			client.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		DirectoryServer.leaving(this, client); 
+	}
+	public void __run (Socket client) {
+
+		try {
+			client.setSoTimeout(DirectoryServer.SOCKET_READ_TIMEOUT);
+			//out.println("DirServ: Accepted... from: "+client.getRemoteSocketAddress());
+			InetSocketAddress risa = null;
+			try {
+				//InetAddress risa = ((InetSocketAddress) client.getRemoteSocketAddress()).getAddress();
+				risa = (InetSocketAddress) client.getRemoteSocketAddress();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			byte buffer[] = new byte[DirectoryServer.MAX_DR];
+			int peek = client.getInputStream().read(buffer);
+			if (peek < 0) {
+				out.println("DirServTCP: got no bytes from: "+risa);
+				return;
+			} else {
+				out.println("DirServTCP: __run got bytes from: "+risa);
+			}
+			//out.println("DirServ: Got ASN1 dump: "+Util.byteToHexDump(buffer,peek));
+			Decoder test = new Decoder(buffer, 0, peek);
+			//out.println("DirServTCP: __run got decoder: "+test);
+			
+			out.println("DirServTCP: __run: Decoded ASN1: class="+test.typeClass()+" val="+test.tagVal()+" blen="+buffer.length);
+			DirMessage m; // recording msgs
+			if (test.typeClass() == Encoder.CLASS_APPLICATION && test.tagVal()==DirectoryAnnouncement.TAG) {
+				//out.println("DirServ: Detected directory announcement");
+				InetSocketAddress isa= (InetSocketAddress)client.getRemoteSocketAddress();
+				DirectoryAnnouncement da = new DirectoryAnnouncement(buffer,peek,client.getInputStream());
+				out.println("DirServTCP: got announcement: "+da+"\n from: "+isa);
+				
+				// here should first get the old detected address (probably from UDP) and keep it if has same IP
+				
+				// this stores the message in the announcement_storage for this GID, and the GID - IP relation in its hashtable
+				DirectoryServer.recordAnnouncementMessage(isa, da, null, DirMessage.TCP, DirMessage.ANNOUNCEMENT);
+				
+				// creates an address object from the socket and reported udp port
+				Address detected_sa = DirectoryServer.detectUDP_Address(isa, da.address.udp_port);
+				out.println("DirServTCP: got announcement: detected = "+detected_sa);
+				
+				//Address detected_sa = new Address(_detected_sa);
+				detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
+				
+				out.println("DirServTCP: got announcement: detected tuned = " + detected_sa);
+				if (da.address.udp_port <= 0) detected_sa = null;
+				
+				boolean storeNAT;
+				boolean TCP;
+				DirectoryAnnouncement_Answer daa = DirectoryServer.handleAnnouncement(da, detected_sa, DirectoryServer.db_dir, storeNAT = false, TCP = true);
+				byte[] answer = new byte[0];
+				if (daa != null) answer = daa.encode();
+				//byte[] answer = new D_DAAnswer(detected_sa).encode();
+				client.getOutputStream().write(answer);
+				
+				DirectoryServer.recordAnnouncementMessage(isa, da, daa, DirMessage.TCP, DirMessage.ANN_ANSWER);
+			} else {
+				//boolean DEBUG = true;
+				if (DEBUG) out.println("DSTCP: Potential directory request");
+				// handling terms here
+				DirectoryRequest dr = new DirectoryRequest(buffer,peek,client.getInputStream());
+				if (dr.empty()) {
+					out.println("DirServTCP:__run: potential message detected empty = "+risa+" dr="+dr);
+					return;
+				}
+				//boolean acceptedTerms = areTermsAccepted(dr);
+				InetSocketAddress isa = (InetSocketAddress)client.getRemoteSocketAddress();
+				if(DEBUG)out.println("Received directory request: "+dr);
+	
+				DirectoryServer.recordRequestMessage(isa, dr, null, DirMessage.TCP, DirMessage.REQUEST);
+				if (DEBUG) out.println("DirServ: Looking for: "+
+						D_Peer.getGIDHashFromGID(dr.globalID)+"\n  by "+
+						D_Peer.getGIDHashFromGID(dr.initiator_globalID));//+"\n  with source udp="+dr.UDP_port);
+	
+				String globalID = dr.globalID; // looking for peer GID
+				String globalIDhash = dr.globalIDhash; // looking for peer GID hash
+				// de has the look-for-peer and all instances stored in the db
+				D_DirectoryEntry de = DirectoryServerCache.getEntry(globalID, globalIDhash);
+				if (DEBUG) out.println("DirServ: From cache got: "+de);
+				ASNObj da = DirectoryServer.getDA(de, dr, dr.version);
+	
+				
+				if ((da == null)) //|| (da.date == null)) 
+				{
+					System.out.println("DirectoryServer:__run: abandon: ?why da="+da+
+							"\n\tde="+de+
+							"\n\tdr="+dr);
+					return;
+				}
+				DirectoryServer.recordRequestMessage(isa, dr, da, DirMessage.TCP, DirMessage.REQUEST_ANSWER);
+	
+				byte msg[] = da.encode();
+				if (DEBUG) {
+					Decoder dec = new Decoder(msg);
+					DirectoryAnswerMultipleIdentities dami = new DirectoryAnswerMultipleIdentities(dec);
+					System.out.println("DirectoryServer:_run:encode "+da+"\nto "+dami);
+				}
+				//out.println("answer: "+Util.byteToHexDump(msg, " ")+"\n\tI.e.: "+da);
+				/*
+				if(_DEBUG&&(da.addresses.size()>0)){
+					out.println("DirServ: *******");
+					out.println("DirServ: Aanswer: "+client.getRemoteSocketAddress()+" <- "+da.toString());
+				}
+				*/
+				client.getOutputStream().write(msg);
+			}
+			client.close();
+		}
+		catch (SocketException e){
+			out.println("server: "+e);
+			return;
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			return;
+		}
+	}
+}
+
+

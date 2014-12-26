@@ -69,6 +69,7 @@ public class DD_DirectoryServer extends ASNObj implements StegoStructure {
 		
 		if (DEBUG) System.out.println("DD_DirServ:add: dom="+domain+" port="+port);
 		DirectoryAddress d = new DirectoryAddress();
+		d.active = true;
 		d.domain = domain;
 		d.tcp_port = port;
 		dirs.add(d);

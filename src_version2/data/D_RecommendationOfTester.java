@@ -44,8 +44,8 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 	public String weight;   // score
 	public float _weight;   // score
 	public String address; //address where the tester can be contacted
-	public Calendar creation_date; //the timestamp of the given testres rating
-	public Calendar arrival_date; //the timestamp of the given testres rating
+	public Calendar creation_date; //the timestamp of the given testers rating
+	public Calendar arrival_date; //the timestamp of the given testers rating
 	public byte[] signature; //only for one record at a time
 	
 	public String toString() {
@@ -87,7 +87,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 	private static final String sql_load_all_senderPeerIDs_from_RecOT = 
 			"SELECT DISTINCT "+table.recommendation_of_tester.senderPeerLID 
 		  + " FROM "+table.recommendation_of_tester.TNAME+" ;";
-	
+	final static int SELECT_PEER_LID = 0;
 	/**
 	 * Returns all recommenderID. (Later one by one get them from cache with getByLID())
 	 * 
@@ -105,7 +105,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		//if (obj.size() <= 0) throw new  Exception("D_RecommendationOfTester: retrieveAllTestersLIDs:");
 		//init(obj.get(0));
 		for(int i=0; i<obj.size(); i++)
-			result.add(Util.lval(obj.get(i).get(table.recommendation_of_tester.F_SENDER_PEER_LID), -1));
+			result.add(Util.lval(obj.get(i).get(SELECT_PEER_LID), -1));
 		if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllRecommendationSenderPeerLID: got="+result.size());//result);
 		return result;
 	}
@@ -113,6 +113,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 	private static final String sql_load_all_testersIDs_from_RecOT = 
 			"SELECT DISTINCT "+table.recommendation_of_tester.testerLID 
 		  + " FROM "+table.recommendation_of_tester.TNAME+" ;";
+	final static int SELECT_TESTER_LID = 0;
 	
 	/**
 	 * Returns all recommenderID. (Later one by one get them from cache with getByLID())
@@ -131,13 +132,14 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		//if (obj.size() <= 0) throw new  Exception("D_RecommendationOfTester: retrieveAllTestersLIDs:");
 		//init(obj.get(0));
 		for(int i=0; i<obj.size(); i++)
-			result.add(Util.lval(obj.get(i).get(table.recommendation_of_tester.F_TESTER_LID), -1));
+			result.add(Util.lval(obj.get(i).get(SELECT_TESTER_LID), -1));
 		if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllRecommendationTestersLID: got="+result.size());//result);
 		return result;
 	}
 	private static final String sql_load_allRecOT = 
 			"SELECT "+table.recommendation_of_tester.recommendationID 
 			+ " FROM "+table.recommendation_of_tester.TNAME+" ;";
+	final static int SELECT_ID = 0;
 	
 	/**
 	 * Returns all recommenderID. (Later one by one get them from cache with getByLID())
@@ -156,7 +158,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		//if (obj.size() <= 0) throw new  Exception("D_RecommendationOfTester: retrieveAllTestersLIDs:");
 		//init(obj.get(0));
 		for(int i=0; i<obj.size(); i++)
-			result.add(Util.lval(obj.get(i).get(table.recommendation_of_tester.F_ID), -1));
+			result.add(Util.lval(obj.get(i).get(SELECT_ID), -1));
 		if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllTestersLIDs: got="+result.size());//result);
 		return result;
 	}
@@ -164,6 +166,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			"SELECT "+table.recommendation_of_tester.recommendationID 
 			+ " FROM "+table.recommendation_of_tester.TNAME+
 			  " WHERE "+table.recommendation_of_tester.senderPeerLID+"=?;";
+	static final int SELECT_ID_BYSENDER = 0;
 	
 	public static ArrayList<Long> retrieveAllRecommendationTestersLIDs(String pLID) {
 		ArrayList<Long> result = new ArrayList<Long>();
@@ -176,9 +179,17 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		}
 		//if (obj.size() <= 0) throw new  Exception("D_RecommendationOfTester: retrieveAllTestersLIDs:");
 		//init(obj.get(0));
+		if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllTestersLIDs: got="+obj.size());
 		for(int i = 0; i < obj.size(); i ++)
-			result.add(Util.lval(obj.get(i).get(table.recommendation_of_tester.F_ID), -1));
-		if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllTestersLIDs: got="+result.size());//result);
+			result.add(Util.lval(obj.get(i).get(SELECT_ID_BYSENDER), -1));
+		//if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllTestersLIDs: got="+result.size());//result);
+		if(DEBUG){
+			System.out.println("D_RecommendationOfTester: retrieveAllTestersLIDs: got="+result.size());
+			for(int i=0; i<result.size();i++)
+				System.out.print("D_RecommendationOfTester: retrieveAllTestersLIDs: got[="+result.get(i)+" ,");
+			System.out.println("]");
+		}
+		
 		return result;
 	}
 	
@@ -388,6 +399,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		
 		this.clear_dirty();
 		if (this.isDeleteFlag()) {
+			if(DEBUG)System.out.println("Try to delete:"+ recommendationID);
 			if (recommendationID > 0)
 				Application.db.delete(true, table.recommendation_of_tester.TNAME,
 						new String[] {table.recommendation_of_tester.recommendationID},
@@ -430,25 +442,31 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			System.arraycopy(params,0,params2,0,params2.length);
 			if(DEBUG)System.out.println("params2[last]: "+ params2[table.recommendation_of_tester.F_FIELDS_NOID-1]);
 			this.recommendationID = Application.db.insert(table.recommendation_of_tester.TNAME, table.recommendation_of_tester._fields_recommendationOfTester_no_ID,params2, DEBUG);
+			if(DEBUG)System.out.println("this.recommendationID: "+ this.recommendationID);
 		}
 		
 	}
 	public void clear_dirty() {
 		this.dirty_main = false;
 	}
+	//crt.loadRemote(testerRating, this, (k==0)?this.signature:null);
 	public boolean loadRemote(D_TesterRatingByPeer remoteRating,
 			D_RecommendationOfTestersBundle remoteMsg, byte[] signature) {
 		// ignore old recommendations
-		if(this.creation_date != null && !this.creation_date.before(remoteMsg.creation_date)){
+		if(remoteMsg.creation_date != null && this.creation_date!=null && !this.creation_date.before(remoteMsg.creation_date)){
 			// keep with no change
+			if(DEBUG) System.out.println("Recom keep with no change: ");
 			return false;
 		}
+		
 		this.weight = remoteRating.weight;
 		this.creation_date = remoteMsg.creation_date;
 		this.address = remoteRating.address;
 		this.signature = signature;
 		this.arrival_date = null;
 		this.dirty_main = true;
+		
+		if(DEBUG) System.out.println("Rget new rec: "+ this);
 		
 		return true;
 	}
@@ -785,12 +803,14 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 	}
 	public void delete() {
 		this.deleted = true;
+		this.dirty_main = true;
 		this.storeRequest();
 	}
 	
 }
 class D_RecommendationOfTester_SaverThread extends util.DDP2P_ServiceThread {
-	//private static final long SAVER_SLEEP_ON_ERROR = 2000;
+	private static final long SAVER_SLEEP = 5000; // ms to sleep
+	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	/**
 	 * The next monitor is needed to ensure that two D_RecommentationOfTester_SaverThreadWorker are not concurrently modifying the database,
@@ -849,6 +869,8 @@ class D_RecommendationOfTester_SaverThread extends util.DDP2P_ServiceThread {
 }
 
 class D_RecommendationOfTester_SaverThreadWorker extends util.DDP2P_ServiceThread {
+	private static final long SAVER_SLEEP = 5000;
+	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	//public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;

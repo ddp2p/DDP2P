@@ -470,5 +470,11 @@ public class D_Tester extends ASNObj implements Summary{
 		
 	}
 
+	public static long getTesterLIDbyGID(String testerGID2) {
+		D_Tester tester = D_Tester.getTesterInfoByGID(testerGID2, false, null, null);
+		if (tester == null) return -1;
+		return tester.getLID();
+	}
+
 	
 }

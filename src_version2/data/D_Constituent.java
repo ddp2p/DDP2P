@@ -3073,19 +3073,76 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public boolean setWeight(boolean voter) {
 		return setWeight(voter?1:0);
 	}
-	public byte[] getPicture() {
-		return picture;
+	/**
+	 * Sets an object with at least an image, a url, or a non-negative is
+	 * @param _icon
+	 * @return
+	 */
+	public boolean setIconObject(IconObject _icon) {
+		if (_icon == null || _icon.empty()) {
+			return setIcon(null);
+		}
+		return setIcon(_icon.encode());
+	}
+	public IconObject getIconObject() {
+		IconObject ic = new IconObject();
+		if (this.picture == null) return ic;
+		try {
+			Decoder dec = new Decoder(this.picture);
+			if (dec.getTypeByte() == IconObject.getASN1Type()) {
+				ic.decode(dec);
+				if (! ic.empty()) {
+					return ic;
+				}
+			}
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+		ic.setImage(this.picture);
+		return ic;
+	}
+	public byte[] getIcon() {
+		if (this.picture == null) return null;
+		try {
+			Decoder dec = new Decoder(this.picture);
+			if (dec.getTypeByte() == IconObject.getASN1Type()) {
+				IconObject ic = new IconObject().decode(dec);
+				if (! ic.empty()) {
+					return ic.getImage();
+				}
+			}
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+		return this.picture;
 	}
 	/**
 	 * Returns false if the image is larger than DD.MAX_CONSTITUENT_ICON_LENGTH
+	 * @param _icon
+	 * @return
+	 */
+	public boolean setIcon(byte[] _icon) {
+		if (_icon != null && _icon.length > DD.MAX_CONSTITUENT_ICON_LENGTH) return false;
+		this.picture = _icon;
+		this.dirty_main = true;
+		return true;
+	}
+	/**
+	 * This calls setIcon(picture)
 	 * @param picture
 	 * @return
 	 */
+	@Deprecated
 	public boolean setPicture(byte[] picture) {
-		if (picture != null && picture.length > DD.MAX_CONSTITUENT_ICON_LENGTH) return false;
-		this.picture = picture;
-		this.dirty_main = true;
-		return true;
+		return setIcon(picture);
+	}
+	/**
+	 * Calls getIcon()
+	 * @return
+	 */
+	@Deprecated
+	public byte[] getPicture() {
+		return getIcon();//return picture;
 	}
 	public String getHash_alg() {
 		return hash_alg;

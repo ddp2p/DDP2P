@@ -30,6 +30,7 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Hashtable;
 
+import recommendationTesters.MessageReceiver;
 import streaming.RequestData;
 import streaming.UpdateMessages;
 import util.CommEvent;
@@ -47,6 +48,7 @@ import config.DD;
 import config.Identity;
 import data.D_Peer;
 import data.D_PeerInstance;
+import data.D_RecommendationOfTestersBundle;
 import data.HandlingMyself_Peer;
 
 public class UDPServerThread extends util.DDP2P_ServiceThread {
@@ -201,12 +203,12 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				if (DEBUG) System.out.println("UDPServer:run: UDPServer receives ping from:"+pak.getSocketAddress());
 				if (DEBUG) System.out.println("UDPServer:run: UDPServer attempts decoding Ping");
 				aup.decode(dec);
-				if (DEBUG) System.out.println("UDPServer:run: receives: "+aup+" from:"+pak.getSocketAddress());
+				if (DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("UDPServer:run: receives: "+aup+" from:"+pak.getSocketAddress());
 				if (aup.senderIsPeer) {
-					if (!handleSTUNfromPeer(aup)) return;
+					if (! handleSTUNfromPeer(aup)) return;
 				} else {
 					if (DEBUG) System.out.println("UDPServer:run: receives forwarded ping from directory/initiator! "+aup);
-					if (!handleSTUNForward(aup)) return;
+					if (! handleSTUNForward(aup)) return;
 				}			
 			
 				if (DEBUG) System.out.println("UDPServer:run: UDPServer pinged on request: "+aup);
@@ -246,14 +248,14 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 			try {
 				DirectoryAnswerMultipleIdentities dami = new DirectoryAnswerMultipleIdentities(dec);
 				hds.Connections.registerIncomingDirectoryAnswer(dami, pak);
-				if (DEBUG) out.println("UDPServer:DirectoryAnswerMultipleIdentities: Directory Answer: "+dami);
+				if (DEBUG) out.println("UDPServer: DirectoryAnswerMultipleIdentities: Directory Answer: "+dami);
 				if (Application.directory_status != null) {
 					Application.directory_status.setUDPOn(peer_address, new Boolean(true));
 				} else {
-					System.out.println("UDPServer:DirectoryAnswerMultipleIdentities no display");
+					System.out.println("UDPServer: DirectoryAnswerMultipleIdentities no display");
 				}
 			} catch (ASN1DecoderFail e) {
-				  if(DEBUG)System.out.println("UDPServer:DirectoryAnswerMultipleIdentities: UDP Announcement answer decoding failed! "+e);
+				  if(DEBUG)System.out.println("UDPServer: DirectoryAnswerMultipleIdentities: UDP Announcement answer decoding failed! "+e);
 				  if(Application.directory_status!=null)
 						Application.directory_status.setUDPOn(peer_address, new Boolean(false));
 				e.printStackTrace();
@@ -362,6 +364,14 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				DD.touchClient();
 			}
 
+			/**
+			 * Integrate recommendations of testers if available.
+			 */
+			if (sa.recommendation_testers != null) {
+				try {
+					MessageReceiver.msgListener(peer, sa.recommendation_testers);
+				} catch (Exception e) {e.printStackTrace();}
+			}
 			
 			if (DEBUG) System.out.println("UDPServerThread: handleAnswer: Answer received and integrated "+pak.getSocketAddress());
 			if (DEBUG) if ((rq != null) && !rq.empty()) System.out.println("UDPServerThread: handleAnswer: Should reply with request for: "+rq);
@@ -469,6 +479,14 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				if (_DEBUG) System.out.println("UDPServerThread: handleRequest: Null Reply to "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(null));
 				return;
 			}
+
+			/**
+			 * If any recommendation of testers is scheduled for this peer (load it, if not in cache) and send it now!
+			 */
+			try {
+				String recomendation_testers = peer_sender.getTesterRecommendationBundleASN1Base64();
+				if (recomendation_testers != null) sa.recommendation_testers = Util.byteSignatureFromString(recomendation_testers);
+			} catch (Exception e){e.printStackTrace();}
 			
 			D_Peer p = data.HandlingMyself_Peer.get_myself_with_wait();
 			sa.peer_instance = p.getPeerInstance(p.getInstance());
@@ -614,6 +632,9 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 	}
 
 	private boolean handleSTUNForward(ASNUDPPing aup) throws P2PDDSQLException {
+		boolean DEBUG = UDPServerThread.DEBUG || DD.DEBUG_COMMUNICATION_STUN;
+		if (DEBUG || DD.DEBUG_COMMUNICATION_STUN)
+			System.out.println("UDPServer: handleSTUNForward: Ping received "+aup);
 		//if data is from directory server,
 		// then ping the peer willing to contact me
 		if (!aup.senderIsInitiator) { // this is from directory (since from peer does not come here)
@@ -630,7 +651,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 			aup.peer_instance = Identity.getMyPeerInstance();
 		}
 		if (!Util.equalStrings_null_or_not(Identity.getMyPeerInstance(), aup.peer_instance)) {
-			if (DEBUG) System.out.println("UDPServer:run: Ping received for other instance!"+aup+" \n\tme="+Identity.getMyPeerGID());
+			if (DEBUG) System.out.println("UDPServer:run: Ping received for other instance!"+aup+" \n\tme="+Identity.getMyPeerInstance());
 			aup.peer_instance = Identity.getMyPeerInstance();
 		}
 		aup.senderIsPeer = true;
@@ -657,7 +678,18 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 		return false;
 	}
 
+	/**
+	 * When a DDP2P STUN message is received from a remote peer, send a SyncRequest.
+	 * Do nothing if the peer is unknown 
+	 * 
+	 * @param aup
+	 * @return
+	 * @throws ASN1DecoderFail
+	 */
 	private boolean handleSTUNfromPeer(ASNUDPPing aup) throws ASN1DecoderFail {
+		boolean DEBUG = UDPServerThread.DEBUG || DD.DEBUG_COMMUNICATION_STUN;
+		if (DEBUG || DD.DEBUG_COMMUNICATION_STUN)
+			System.out.println("UDPServer: handleSTUNfromPeer: Ping received "+aup);
 		//if data is a ping from a contacted peer
 		// than send a request to that peer
 		synchronized (us.lock_reply) {
@@ -671,12 +703,15 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 
 			if (DD.AVOID_REPEATING_AT_PING && !Application.aus.hasSyncRequests(g_peerID, instance)) {
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Received ping confirmation already handled from peer"));
-				if (DEBUG) System.out.println("UDPServer:run: Ping already handled for: "+Util.trimmed(g_peerID));
+				if (DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("UDPServer:run: Ping already handled for: "+Util.trimmed(g_peerID));
 				return false;					
 			}
 			
 			D_Peer peer = D_Peer.getPeerByGID_or_GIDhash(g_peerID, null, true, false, false, null);
-			if (peer == null) return false; // not requesting unknown peers
+			if (peer == null) {
+				if (DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("UDPServer:run: Abandon Ping from unknown peer: "+Util.trimmed(g_peerID));
+				return false; // not requesting unknown peers
+			}
 			
 			DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Received ping confirmation from peer"));
 			if (DEBUG) System.out.println("UDPServer:run: GID ping: "+aup+" from: "+pak.getSocketAddress());

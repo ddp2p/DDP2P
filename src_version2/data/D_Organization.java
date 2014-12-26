@@ -1187,7 +1187,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.params.creation_time = Util.getCalendar(Util.getString(row.get(table.organization.ORG_COL_CREATION_DATE)), Util.CalendargetInstance());
 		this.reset_date = Util.getCalendar(Util.getString(row.get(table.organization.ORG_COL_RESET_DATE)), null);
 		this.params.certificate = Util.byteSignatureFromString(Util.getString(row.get(table.organization.ORG_COL_CERTIF_DATA),null));
-		this.params.icon = Util.byteSignatureFromString(Util.getString(row.get(table.organization.ORG_COL_ICON),null));
+		//this.params._icon
+		String i64 = Util.getString(row.get(table.organization.ORG_COL_ICON),null);
+		this.params.icon = Util.byteSignatureFromString(i64); //this.params._icon);
 		this.params.mWeightsType = Util.ival(row.get(table.organization.ORG_COL_WEIGHTS_TYPE),table.organization.WEIGHTS_TYPE_DEFAULT);
 		this.params.mWeightsMax = Util.ival(row.get(table.organization.ORG_COL_WEIGHTS_MAX),table.organization.WEIGHTS_MAX_DEFAULT);
 		//String 
@@ -4052,9 +4054,6 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.name = name2;
 		dirty_main = true;
 	}
-	public byte[] getIcon() {
-		return params.icon;
-	}
 	/**
 	 * Returns false if the image is larger than DD.MAX_ORG_ICON_LENGTH
 	 * 
@@ -4063,10 +4062,84 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 */
 	public boolean setIcon(byte[] icon) {
 		if (icon != null && icon.length > DD.MAX_ORG_ICON_LENGTH) return false;
+		if (icon == null && this.params.icon == null) return true; // no dirty
 		this.params.icon = icon;
 		dirty_main = true;
 		return true;
 	}
+	/**
+	 * Sets an object with at least an image, a url, or a non-negative is
+	 * @param _icon
+	 * @return
+	 */
+	public boolean setIconObject(IconObject _icon) {
+		if (_icon == null || _icon.empty()) {
+			return setIcon(null);
+		}
+		return setIcon(_icon.encode());
+	}
+	public IconObject getIconObject() {
+		IconObject ic = new IconObject();
+		if (params.icon == null) return ic;
+		try {
+			Decoder dec = new Decoder(params.icon);
+			if (dec.getTypeByte() == IconObject.getASN1Type()) {
+				ic.decode(dec);
+				if (! ic.empty()) {
+					return ic;
+				}
+			}
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+		ic.setImage(params.icon);
+		return ic;
+	}
+	public byte[] getIcon() {
+		if (params.icon == null) return null;
+		try {
+			Decoder dec = new Decoder(params.icon);
+			if (dec.getTypeByte() == IconObject.getASN1Type()) {
+				IconObject ic = new IconObject().decode(dec);
+				if (! ic.empty()) {
+					return ic.getImage();
+				}
+			}
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+		return params.icon;
+	}
+//	public int getIconID() {
+//		if (params.icon == null) return -1;
+//		try {
+//			Decoder dec = new Decoder(params.icon);
+//			if (dec.getTypeByte() == IconClass.getASN1Type()) {
+//				IconClass ic = new IconClass().decode(dec);
+//				if (! ic.empty()) {
+//					return ic.id;
+//				}
+//			}
+//		} catch (ASN1DecoderFail e) {
+//			e.printStackTrace();
+//		}
+//		return -1;
+//	}
+//	public String getIconURL() {
+//		if (params.icon == null) return null;
+//		try {
+//			Decoder dec = new Decoder(params.icon);
+//			if (dec.getTypeByte() == IconClass.getASN1Type()) {
+//				IconClass ic = new IconClass().decode(dec);
+//				if (! ic.empty()) {
+//					return ic.url;
+//				}
+//			}
+//		} catch (ASN1DecoderFail e) {
+//			e.printStackTrace();
+//		}
+//		return null;
+//	}
 }
 
 class D_Organization_SaverThread extends util.DDP2P_ServiceThread {
