@@ -65,7 +65,8 @@ public class organization {
 	 public static final String requested = "requested";  // request data about this item, in filters
 	 public static final String broadcasted = "broadcasted";  // send data for this
 	 public static final String specific_requests = "specific_requests";
-	 public static final String broadcast_rule = "broadcast_rule";  // send data for this
+	 public static final String broadcast_rule = "broadcast_rule";  // set to 1 if by default this org should not be broadcasted
+	 public static final String neighborhoods_rule = "neighborhoods_rule";  // set to 1 to allow users to change neighborhood hierarchy structures, 0 for fix structures, 2 for dynamic neighborhoods but no language specs
 	 public static final String preferences_date = "preferences_date";
 	 public static final String temporary = "temporary";
 	 public static final String hidden = "hidden";
@@ -81,7 +82,8 @@ public class organization {
 			plugins_excluding+","+description+","+ 			creator_ID+","+ 	    global_organization_ID_hash+"," +signature+","+				
 			requested+","+		  blocked+","+		  		broadcasted+","+			specific_requests+","	+reset_date+","+
 			signature_initiator+","+broadcast_rule+","+     preapproved+","+            preferences_date+","+   first_provider_peer+","+
-			hidden+","+			weights_type+","+			weights_max+","+			icon+","+      		name_constituent)+" ";
+			hidden+","+			weights_type+","+			weights_max+","+			icon+","+      		name_constituent+","+
+			neighborhoods_rule)+" ";
 	 public static final String field_list = field_list_noID + "," + organization_ID;
 	 //hash_org+"," +
 	public static final int _GRASSROOT = 0;
@@ -140,7 +142,8 @@ public class organization {
 	public static final int ORG_COL_WEIGHTS_MAX = 37;
 	public static final int ORG_COL_ICON = 38;
 	public static final int ORG_COL_NAME_CONS = 39;
-	public static final int ORG_COL_ID = 40;
+	public static final int ORG_COL_NEIGHBORHOODS_RULE = 40;
+	public static final int ORG_COL_ID = 41;
 	public static final String[] fields_noID = Util.trimmed(field_list_noID.split(","));
 	public static final int FIELDS_NOID = fields_noID.length;
 	public static final String[] fields = Util.trimmed(field_list.split(","));

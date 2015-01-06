@@ -204,7 +204,7 @@ public class ClientSync{
 		if(sad == null) 
 			return isMyself(port, sock_addr, sad);
 		else
-			return isMyself(port, sock_addr, sad.getAddressSupernode());
+			return isMyself(port, sock_addr, sad.getAddress());
 	}
 	/**
 	 * Add the request to the appropriate list in 

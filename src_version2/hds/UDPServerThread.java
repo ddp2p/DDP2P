@@ -205,6 +205,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				aup.decode(dec);
 				if (DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("UDPServer:run: receives: "+aup+" from:"+pak.getSocketAddress());
 				if (aup.senderIsPeer) {
+					Connections.acknowledgeReply(aup, pak.getSocketAddress());
 					if (! handleSTUNfromPeer(aup)) return;
 				} else {
 					if (DEBUG) System.out.println("UDPServer:run: receives forwarded ping from directory/initiator! "+aup);
@@ -382,6 +383,11 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 		} 
 	}
 	
+	/**
+	 * Called when a SyncRequest message was detected.
+	 * @param dec
+	 * @param msg
+	 */
 	private void handleRequest(Decoder dec, byte[] msg) {
 			//boolean DEBUG = true;
 		  ASNSyncRequest asr;
@@ -441,6 +447,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				throw new Exception("Unknown peer");
 			}
 			
+			// Avoid sending in parallel answers to the same SyncRequest since they would be redundant.
 			if (UDPServer.transferringPeerAnswerMessage(peerGID, instance)) {
 				if(DEBUG)System.out.println("UDPServer:run: UDPServer Answer being sent for: "+Util.trimmed(peerGID));
 				//throw new Exception("While transferring answer to same peer");
@@ -730,10 +737,12 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 
 			if (DEBUG) System.out.println("UDPServer:run: Request being sent at snapshot: "+_lastSnapshotString+" to: "+peer.getName()+":"+inst+" GID: "+Util.trimmed(g_peerID));
 
+			/** Checks whether any message is being exchanged (sending request or receiving payload, and cancel sending request if true) */
 			if (UDPServer.transferringPeerMessage(g_peerID, instance)) {
 				if (_DEBUG) System.out.println("UDPServer:run: Request being sent for: "+Util.trimmed(g_peerID));
 				return false;
 			}
+			
 			if (DEBUG) System.out.println("UDPServer:run: will build request! "+Util.trimmed(g_peerID)+" ... time="+_lastSnapshotString);
 			//D_Peer dp = D_Peer.getPeerByGID(g_peerID, true, false, null);
 			if (DEBUG) System.out.println("UDPServer:run: ping reply from: "+peer.getName()+" <"+peer.getEmail()+"> "+" from:"+pak.getSocketAddress());

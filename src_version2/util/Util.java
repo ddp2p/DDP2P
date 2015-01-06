@@ -2564,15 +2564,33 @@ public class Util {
 			}
 			return dec_da;
 		}
+		public final static String DEFAULT_NONULL_STRING = "DEFAULT";
 		/**
-		 * A non-null string
+		 * for null returns DEFAULT_NONULL_STRING. Otherwise add a " to the beginning of the name.
+		 * Warns if a " was already there.
+		 * 
+		 * Returns a non-null string
 		 * @param o
 		 * @return
 		 */
 		public static String getStringNonNullUnique(Object o) {
-			if (o == null) return "DEFAULT";
+			if (o == null) return DEFAULT_NONULL_STRING;
 			if (o.toString().startsWith("\"")) Util.printCallPath(o.toString());
 			return "\""+o.toString();
+		}
+		/**
+		 * Transforms DEFAULT_NONULL_STRING in null and removes " from the beginning of other strings
+		 * @param o
+		 * @return
+		 */
+		public static String getStringNullUnique(String o) {
+			if (o == null) return null;
+			if (DEFAULT_NONULL_STRING.equals(o)) return null;
+			if (! o.startsWith("\"")) {
+				Util.printCallPath(o.toString());
+				return o;
+			}
+			return o.substring(1);
 		}
 		public static void dumpThreads() {
 			Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
@@ -2690,6 +2708,10 @@ public class Util {
 			BufferedReader r = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(result.getBytes())));
 			return r;
 		}
+		/**
+		 * Dumping the content of the field "D_Peer.peer_contacts", which is displayed in the debugging "peer contacts" widgets
+		 * @param prefix
+		 */
 		public static void printPeerContacts(String prefix) {
 			//out.println(prefix+ "crt key="+ peer_key);
 			out.println("Util: printPeerContacts: " + prefix);

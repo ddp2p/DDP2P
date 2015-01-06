@@ -29,17 +29,17 @@ import java.net.InetSocketAddress;
  *
  */
 public class Address_SocketResolved{
-	public Address ad;
+	public Address addr;
 	InetSocketAddress isa_tcp, isa_udp;
 	public InetAddress ia;
 	
 	Address_SocketResolved(InetAddress _ia, InetSocketAddress _isa_tcp, InetSocketAddress _isa_udp, Address _ad){
-		ad = _ad;
+		addr = _ad;
 		ia = _ia;
 		isa_tcp = _isa_tcp;
 		isa_udp = _isa_udp;
 	}
 	public String toString() {
-		return "[SockAddr_D: ad="+ad+" ia="+ia+" tcp="+isa_tcp+" udp="+isa_udp+"]";
+		return "[SockAddr_D: ad="+addr+" ia="+ia+" tcp="+isa_tcp+" udp="+isa_udp+"]";
 	}
 }

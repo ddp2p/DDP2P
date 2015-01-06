@@ -980,7 +980,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 			organization = D_Organization.getOrgByOrg_Keep(organization);
 			organization.setBroadcastRule(val);
 			organization.setCreationDate(creationTime);
-			organization.setArrivalDate(currentTime, _currentTime);
+			organization.setArrivalDate();//currentTime, _currentTime);
 			organization.setSignature(null);
 			if (organization.dirty_any()) this.organization.storeRequest();
 			organization.releaseReference();

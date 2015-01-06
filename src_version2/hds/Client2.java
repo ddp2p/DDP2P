@@ -12,7 +12,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Hashtable;
 
 import ASN1.ASN1DecoderFail;
@@ -42,12 +44,19 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 		turnOff = true;
 		this.interrupt();
 	}
-	static public void touchClient() throws NumberFormatException, P2PDDSQLException {
-		if(ClientSync.DEBUG) System.out.println("Client2: touchClient");
+	/**
+	 * Method to make the client wake up from sleep and retry connections (e.g. after new addresses are received from directories)
+	 */
+	static public void touchClient() { //throws NumberFormatException, P2PDDSQLException {
+		if (ClientSync.DEBUG) System.out.println("Client2: touchClient");
 		Client2 ac = (Client2)Application.ac;
-		if(ac==null) {
-			if(ClientSync.DEBUG) System.out.println("Client2: touchClient: start");
-			startClient(true);
+		if (ac == null) {
+			if (ClientSync.DEBUG) System.out.println("Client2: touchClient: start");
+			try {
+				startClient(true);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			ac = (Client2)Application.ac;
 		}
 		synchronized(ac.wait_lock) {
@@ -57,6 +66,14 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 			ac.wait_lock.notify();
 		}
 	}
+	/**
+	 * 
+	 * @param on 
+	 *   If on is false then the client processed is stopped.
+	 * @return
+	 * @throws NumberFormatException
+	 * @throws P2PDDSQLException
+	 */
 	static public boolean startClient(boolean on) throws NumberFormatException, P2PDDSQLException {
 		if(ClientSync.DEBUG) System.out.println("Client2: startClient: "+on);
 		Client2 ac = (Client2)Application.ac;
@@ -140,11 +157,11 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 				if (ClientSync.DEBUG) System.out.println("Client2: _run: handle "+peersToGo);
 				if (ClientSync.DEBUG && !Connections.DEBUG) System.out.println("Client2: _run: handle "+pc);
 				handlePeer(pc);
-			}else{
-				if(ClientSync.DEBUG) System.out.println("Client2: _run: handle null");
+			} else {
+				if (ClientSync.DEBUG) System.out.println("Client2: _run: handle null");
 			}
-			peersToGo++;
-			if(peersToGo > Connections.peersAvailable) peersToGo = -1;
+			peersToGo ++;
+			if (peersToGo > Connections.peersAvailable) peersToGo = -1;
 		}
 	}
 	/**
@@ -153,13 +170,13 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 	 * @return
 	 */
 	private boolean try_wait(int crt) {
-		if(ClientSync.DEBUG) System.out.println("Client2: try_wait: "+crt+"/"+Connections.peersAvailable);
+		if (ClientSync.DEBUG) System.out.println("Client2: try_wait: "+crt+"/"+Connections.peersAvailable);
 		// Avoid asking in parallel too many synchronizations (wait for answers)
-		if((Application.aus!=null)&&(Application.aus.getThreads() > UDPServer.MAX_THREADS/2)){
+		if ((Application.aus != null) && (Application.aus.getThreads() > UDPServer.MAX_THREADS/2)){
 			try {
-				if(ClientSync._DEBUG) System.out.println("Client2: try_wait: overloaded threads = "+Application.aus.getThreads());
+				if (ClientSync._DEBUG) System.out.println("Client2: try_wait: overloaded threads = "+Application.aus.getThreads());
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Sleep: "+ClientSync.PAUSE));
-				synchronized(wait_lock ){
+				synchronized (wait_lock) {
 					wait_lock.wait(ClientSync.PAUSE);
 				}
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Wakes Up"));
@@ -170,10 +187,10 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 			}
 		}
 		try {
-			if((!Client2.recentlyTouched) && (crt >= Connections.peersAvailable)) {
-				if(ClientSync.DEBUG || DD.DEBUG_LIVE_THREADS) out.println("Client2: try_wait: Will wait ms: "+ClientSync.PAUSE+" p="+Connections.peersAvailable);
+			if ((! Client2.recentlyTouched) && (crt >= Connections.peersAvailable)) {
+				if (ClientSync.DEBUG || DD.DEBUG_LIVE_THREADS) out.println("Client2: try_wait: Will wait ms: "+ClientSync.PAUSE+" p="+Connections.peersAvailable);
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Sleep: "+ClientSync.PAUSE));
-				synchronized(wait_lock ){
+				synchronized(wait_lock) {
 					wait_lock.wait(ClientSync.PAUSE);
 				}
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Wakes Up"));
@@ -188,7 +205,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 		/*
 		catch (P2PDDSQLException e1) {Application.warning(_("Database: ")+e1, _("Database"));}
 		*/
-		if(ClientSync.DEBUG) System.out.println("Client2: try_wait: done");
+		if (ClientSync.DEBUG) System.out.println("Client2: try_wait: done");
 		return false;
 	}
 	/**
@@ -200,59 +217,94 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 	 */
 	private boolean handlePeer(Connection_Peer pc) {
 		boolean result;
-		if(ClientSync.DEBUG) System.out.println("Client2: handlePeer");
-		if(!pc.contacted_since_start || !pc.last_contact_successful) {
+		if (ClientSync.DEBUG) System.out.println("Client2: handlePeer");
+		if (! pc.isContactedSinceStart() || ! pc.isLastContactSuccessful()) {
 			result = handlePeerNotRecentlyContacted(pc);
-		}else{
-			pc.last_contact_successful = false;
+		} else {
+			pc.setLastContactSuccessful(false);
 			boolean success = handlePeerRecent(pc);
-			if(success){
-				pc.last_contact_successful = true;
-				pc.contacted_since_start = true;
+			if (success) { 
+				pc.setLastContactSuccessful(true);
+				pc.setContactedSinceStart(true);
 			}
 			result = success;
 		}
-		if(ClientSync.DEBUG) System.out.println("Client2: handlePeer: done");
+		if (ClientSync.DEBUG) System.out.println("Client2: handlePeer: done");
 		return result;
 	}
-	public boolean trySocketsListTCP(ArrayList<Connections_Peer_Socket> peer_sockets, Connection_Peer pc, boolean retry, String instance) {
-		boolean success = false;
+	/**
+	 * Attempts to contact by TCP, and sets success flags in Connections_Peer_Socket and Connection_Instance
+	 * @param peer_sockets
+	 * @param pc
+	 * @param ci
+	 * @param retry
+	 * @param instance
+	 * @return
+	 */
+	public boolean trySocketsListTCP(ArrayList<Connections_Peer_Socket> peer_sockets, Connection_Peer pc, Connection_Instance ci, boolean retry, String instance) {
 		for (int k = 0; k < peer_sockets.size(); k ++) {
+			boolean success = false;
 			Connections_Peer_Socket ps = peer_sockets.get(k);
-			if (retry || (ps.contacted_since_start_TCP && ps.last_contact_successful_TCP)) {
-				ps.last_contact_successful_TCP = false;
-				Socket sock = try_TCP_connection(pc, ps, instance); // Do this in a thread?
+			if (retry || ps.last_contact_successful_TCP) {
+				Socket sock = ps.tcp_connection_open;
+				if (sock == null || sock.isClosed())
+					sock = try_TCP_connection(pc, ps, instance); // Do this in a thread?
 				if (sock != null) { 
-					success = Client2.transfer_TCP(pc, ps, sock);
-					if (success) ps.last_contact_successful_TCP = true;
+					boolean close = ! Connections_Peer_Socket.OPEN_CONNECTIONS;
+					success = Client2.transfer_TCP(pc, ps, sock, close);
+					//try {sock.close();} catch (IOException e) {e.printStackTrace();}// now closed in: transfer_TCP()
+					if (! close)
+						ps.tcp_connection_open =  sock; // could have rather saved it
 				}
 				if (success) {
+					ps.setLastContactDateTCP();
+					// set also the instance flags
+					ci.setContactedSinceStart_TCP(true);
+					ci.setLastContactSuccessful_TCP(true);
+					
 					if (ClientSync.DEBUG) System.out.println("Client2: handlePeerRecent: done TCP "+success);
 					return success;
+				} else {
+					ps.last_contact_successful_TCP = false;
 				}
 			}
 		}
+		
+		ci.setLastContactSuccessful_TCP(false);
 		return false;
 	}
+	/**
+	 * 
+	 * @param peer_sockets
+	 * @param pc
+	 * @param aup
+	 *  the target domain/port will be added here
+	 * @param retry
+	 *  set to true for a peer instance that was not successfully contacted recently
+	 * @return
+	 * Always returns true if a ping was sent (no way to know success!)
+	 */
 	public boolean trySocketsListUDP(ArrayList<Connections_Peer_Socket> peer_sockets, Connection_Peer pc, ASNUDPPing aup, boolean retry) {
-		boolean DEBUG = Client2.DEBUG || DD.DEBUG_COMMUNICATION_STUN;
-		if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: trySocketsListUDP: start #"+peer_sockets.size());
+		boolean DEBUG = Client2.DEBUG || ClientSync.DEBUG || DD.DEBUG_COMMUNICATION_STUN;
+		boolean result = false;
+		if (DEBUG) System.out.println("Client2: trySocketsListUDP: start #"+peer_sockets.size());
 		for (int k = 0; k < peer_sockets.size(); k ++) {
 			Connections_Peer_Socket ps = peer_sockets.get(k);
-			if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: trySocketsListUDP: INET sock ping to "+ps);
-			if (retry || (ps.contacted_since_start_UDP && ps.last_contact_successful_UDP)) {
-				ps.last_contact_successful_UDP = false;
-				if ((ps.addr == null) || (ps.addr.ad == null)) {
-					if(DEBUG||ClientSync.DEBUG) System.out.println("Client2: trySocketsListUDP:  INET sock skip null adr");
+			if (DEBUG) System.out.println("Client2: trySocketsListUDP: INET sock ping to "+ps);
+			if (retry || ps.worksRecently()) {
+				//ps.last_contact_pending_UDP = false;
+				if ((ps.addr == null) || (ps.addr.addr == null)) {
+					if (DEBUG) System.out.println("Client2: trySocketsListUDP:  INET sock skip null adr");
 					continue;
 				}
-				aup.peer_domain = ps.addr.ad.domain;
-				aup.peer_port = ps.addr.ad.udp_port;
-				if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: trySocketsListUDP:  INET sock do ping: "+aup);
-				try_UDP_connection_socket(pc, ps, aup.encode());
+				aup.peer_domain = ps.addr.addr.domain;
+				aup.peer_port = ps.addr.addr.udp_port;
+				if (DEBUG) System.out.println("Client2: trySocketsListUDP:  INET sock do ping: "+aup);
+				// sets the ping sent date on success
+				result |= try_UDP_connection_socket(pc, ps, aup.encode());
 			}
 		}
-		return true;		
+		return result;		
 	}
 	/*// integrate these in socket
 	public boolean tryAddressListUDP(ArrayList<Address> peer_sockets, Connection_Peer pc, ASNUDPPing aup, boolean retry) {
@@ -275,80 +327,110 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 	}
 	*/
 	/**
-	 * For not yet contacted peers
+	 * For not yet contacted peers. 
+	 * Request updating the supernode addresses with "Connections.update_supernode_address_request"
+	 * 		Without TCP this should not be done on each run but only on each second run, since if it was requested last time,
+	 * 		then it was not yet possible to use the last addresses it works.
+	 * If DD.ClientTCP, try first TCP sockets (shared, then instances). On success return true;
+	 * 
+	 * Next, if DD.ClientUDP, for each instance i,
+	 * 		ping the sockets,*
+	 * 		ping the shared directories, by requesting instance i, *
+	 * 		ping the specialized directories of instance i (if any)
+	 * 
 	 * @param pc
 	 * @return
 	 */
 	private boolean handlePeerNotRecentlyContacted(Connection_Peer pc) {
-		boolean DEBUG = Client2.DEBUG || DD.DEBUG_COMMUNICATION_STUN;
-		if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted handle "+pc);
+		boolean DEBUG = Client2.DEBUG || ClientSync.DEBUG || DD.DEBUG_COMMUNICATION_STUN;
+		if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted handle "+pc);
 		boolean retry = true;
 		boolean success = false;
+		
+		// Without TCP, retry only each second time.
+		if (! DD.ClientTCP && pc.isJustRequestedSupernodesAddresses())  {
+			retry = false;
+			pc.setJustRequestedSupernodesAddresses(false);
+		} else {
+			pc.setJustRequestedSupernodesAddresses(true);
+		}
 		if (retry) Connections.update_supernode_address_request(pc); // requests queries for supernodes
-		pc.last_contact_successful = false;
+		pc.setLastContactSuccessful(false);
 		//pc.contacted_since_start = true;
 
+		retry = true;
 		if (DD.ClientTCP) {
-			if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: try TCP");
+			if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: try TCP");
 			
 			// does not really make sense to have sockets not linked to an instance
-			success |= trySocketsListTCP(pc.shared_peer_sockets, pc, retry, null);
+			success = trySocketsListTCP(pc.shared_peer_sockets, pc, null, retry, null) || success;
 			if (success) return success;
 			
 			pc.sortInstances();
 			
 			for (Connection_Instance ci : pc.instances_AL) {
-				success |= trySocketsListTCP(ci.peer_sockets, pc, retry, ci.dpi.peer_instance);
+				boolean success_inst;
+				success = (success_inst = trySocketsListTCP(ci.peer_sockets, pc, ci, retry, ci.dpi.peer_instance)) || success;
+				if (success) return success;
+				// try transient
+				success = (success_inst = trySocketsListTCP(ci.peer_sockets_transient, pc, ci, retry, ci.dpi.peer_instance)) || success;
 				if (success) return success;
 			}
 		} else {
-			if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: not trying TCP");
+			if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: not trying TCP");
 		}
 		if (DD.ClientUDP) {
-			if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: try UDP");
+			if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: try UDP");
 			// TRY first direct
 			ASNUDPPing aup = preparePing(pc.getGID(), null);
-			if (DEBUG || ClientSync.DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("Client2: handlePeerNotRecentlyContacted: prepared ping = "+aup);
+			if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: prepared ping = "+aup);
 			/*
 			trySocketsListUDP(pc.shared_peer_sockets, pc, aup, retry); // not expected to have any address
 			// TRY STUN for null
-			if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerOld: directories: #"+pc.shared_peer_directories.size());
+			if (DEBUG) System.out.println("Client2: handlePeerOld: directories: #"+pc.shared_peer_directories.size());
 			for (int k = 0; k < pc.shared_peer_directories.size(); k ++) {
 				Connections_Peer_Directory ps = pc.shared_peer_directories.get(k);
-				if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerOld: NAT sock ping to "+k+":"+ps);
-				if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerOld: NAT sock skip "+
+				if (DEBUG) System.out.println("Client2: handlePeerOld: NAT sock ping to "+k+":"+ps);
+				if (DEBUG) System.out.println("Client2: handlePeerOld: NAT sock skip "+
 						"retry="+retry+" contacted="+ps.contacted_since_start_UDP+" succes="+ps.last_contact_successful_UDP);
 				if (retry || (ps.contacted_since_start_UDP && ps.last_contact_successful_UDP)) {
 					ps.last_contact_successful_UDP = false;
-					if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerOld: NAT sock retry:"+k);
+					if (DEBUG) System.out.println("Client2: handlePeerOld: NAT sock retry:"+k);
 					try_UDP_connection_directory(pc, ps, aup);
-					if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerOld: NAT sock retried:"+k);
+					if (DEBUG) System.out.println("Client2: handlePeerOld: NAT sock retried:"+k);
 				} else {
-					if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerOld: NAT sock skip:"+k);
+					if (DEBUG) System.out.println("Client2: handlePeerOld: NAT sock skip:"+k);
 				}
 			}
 			*/
 
+			// For each given instance try first all its sockets (certified and transient)
+			// then try shared directories
+			// and last try specialized instance directories
 			for (Connection_Instance ci : pc.instances_AL) {
-				if (DEBUG || ClientSync.DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("Client2: handlePeerNotRecentlyContacted: try instance: "+ci);
+				if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: try instance: "+ci);
 				aup.peer_instance = ci.dpi.peer_instance;
+				ci.setPingPending_UDP();
 				trySocketsListUDP(ci.peer_sockets, pc, aup, retry);
+				trySocketsListUDP(ci.peer_sockets_transient, pc, aup, retry);
 				
 				// STUN
-				for (int k = 0; k < pc.shared_peer_directories.size(); k ++) {
-					Connections_Peer_Directory ps = pc.shared_peer_directories.get(k);
-					if (DEBUG || ClientSync.DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("Client2: handlePeerNotRecentlyContacted: try shared directory: "+ps);
-					if (retry || (ps.contacted_since_start_UDP && ps.last_contact_successful_UDP)) {
-						ps.last_contact_successful_UDP = false;
-						try_UDP_connection_directory(pc, ps, aup, ci.dpi.peer_instance);
+				for (int k = 0; k < pc.getSharedPeerDirectories().size(); k ++) {
+					Connections_Peer_Directory pd = pc.getSharedPeerDirectories().get(k);
+					if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: try shared directory: "+pd);
+					if (retry || pd.recentlyContacted(ci.dpi.peer_instance)) { //(pd.contacted_since_start_UDP && pd.last_contact_successful_UDP)) {
+						//pd.last_contact_successful_UDP = false;
+						pd.setPeerPingPendingUDP(ci.dpi.peer_instance);
+						try_UDP_connection_directory(pc, pd, aup, ci.dpi.peer_instance);
 					}
 				}
 				for (int k = 0; k < ci.peer_directories.size(); k ++) {
-					Connections_Peer_Directory ps = pc.shared_peer_directories.get(k);
-					if (DEBUG || ClientSync.DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("Client2: handlePeerNotRecentlyContacted: try instance directory: "+ps);
-					if (retry || (ps.contacted_since_start_UDP && ps.last_contact_successful_UDP)) {
-						ps.last_contact_successful_UDP = false;
-						try_UDP_connection_directory(pc, ps, aup, ci.dpi.peer_instance);
+					Connections_Peer_Directory pd_inst = pc.getSharedPeerDirectories().get(k);
+					if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: try instance directory: "+pd_inst);
+					if (retry || pd_inst.recentlyContacted(ci.dpi.peer_instance)) { //(pd_inst.contacted_since_start_UDP && pd_inst.last_contact_successful_UDP)) {
+						//pd_inst.last_contact_successful_UDP = false;
+						pd_inst.setPeerPingPendingUDP(ci.dpi.peer_instance);
+						try_UDP_connection_directory(pc, pd_inst, aup, ci.dpi.peer_instance);
 					}
 				}
 				/*
@@ -359,26 +441,50 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 				*/
 			}
 			
-			if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: try UDP done");
+			if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: try UDP done");
 		}
-		if (DEBUG || ClientSync.DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: done");
+		if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: done");
 		return false;
 	}
 	private boolean handlePeerRecent(Connection_Peer pc) {
 		if (ClientSync.DEBUG) System.out.println("Client2: handlePeerRecent: "+pc);
 		boolean success = false;
 		boolean retry = false;
-		pc.last_contact_successful = false;
+		pc.setLastContactSuccessful(false);
 		if (DD.ClientTCP) {
 			if(ClientSync.DEBUG) System.out.println("Client2: handlePeerRecent: try TCP");
-			success |= trySocketsListTCP(pc.shared_peer_sockets, pc, retry, null);
+			success = trySocketsListTCP(pc.shared_peer_sockets, pc, null, retry, null) || success;
 			if (success) return success;
 			
 			pc.sortInstances();
 			
 			for (Connection_Instance ci : pc.instances_AL) {
-				success |= trySocketsListTCP(ci.peer_sockets, pc, retry, ci.dpi.peer_instance);
+				// TODO ideally should sort sockets (transient or not) to start with the most recently successful one
+				ArrayList<Connections_Peer_Socket> peer_sockets_list = new ArrayList<Connections_Peer_Socket>(); 
+				peer_sockets_list.addAll(ci.peer_sockets);
+				peer_sockets_list.addAll(ci.peer_sockets_transient);
+				Connections_Peer_Socket[] peer_sockets_arr = peer_sockets_list.toArray(new Connections_Peer_Socket[0]); 
+				Arrays.sort(peer_sockets_arr, new Comparator<Connections_Peer_Socket>(){
+
+					@Override
+					public int compare(Connections_Peer_Socket o1,
+							Connections_Peer_Socket o2) {
+						if (o1.contacted_since_start_TCP && !o2.contacted_since_start_TCP) return -1;
+						if (!o1.contacted_since_start_TCP && o2.contacted_since_start_TCP) return 1;
+						if (!o1.contacted_since_start_TCP && !o2.contacted_since_start_TCP) return 0;
+						return o1._last_contact_date_TCP.compareTo(o2._last_contact_date_TCP);
+					}});
+				peer_sockets_list = new ArrayList<Connections_Peer_Socket>(Arrays.asList(peer_sockets_arr));
+				
+				boolean success_inst; // no longer used since contact flags already set in the trySocketsListTCP
+				success = (success_inst = trySocketsListTCP(peer_sockets_list, pc, ci, retry, ci.dpi.peer_instance)) || success;
 				if (success) return success;
+//				// try certified
+//				success = (success_inst = trySocketsListTCP(ci.peer_sockets, pc, ci, retry, ci.dpi.peer_instance)) || success;
+//				if (success) return success;
+//				// try transient
+//				success = (success_inst = trySocketsListTCP(ci.peer_sockets_transient, pc, ci, retry, ci.dpi.peer_instance)) || success;
+//				if (success) return success;
 			}
 		}
 		
@@ -399,23 +505,29 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 			}
 			*/
 			
+			// For each given instance try first all its sockets (certified and transient)
+			// then try shared directories
+			// and last try specialized instance directories
 			for (Connection_Instance ci : pc.instances_AL) {
 				aup.peer_instance = ci.dpi.peer_instance;
 				trySocketsListUDP(ci.peer_sockets, pc, aup, retry);
+				trySocketsListUDP(ci.peer_sockets_transient, pc, aup, retry);
 			
 				// STUN
-				for (int k = 0; k < pc.shared_peer_directories.size(); k ++) {
-					Connections_Peer_Directory ps = pc.shared_peer_directories.get(k);
-					if (retry || (ps.contacted_since_start_UDP && ps.last_contact_successful_UDP)) {
-						ps.last_contact_successful_UDP = false;
-						try_UDP_connection_directory(pc, ps, aup, null);
+				for (int k = 0; k < pc.getSharedPeerDirectories().size(); k ++) {
+					Connections_Peer_Directory pd = pc.getSharedPeerDirectories().get(k);
+					if (retry || pd.recentlyContacted(ci.dpi.peer_instance)) { //(pd.contacted_since_start_UDP && pd.last_contact_successful_UDP)) {
+						//pd.last_contact_successful_UDP = false;
+						pd.setPeerPingPendingUDP(ci.dpi.peer_instance);
+						try_UDP_connection_directory(pc, pd, aup, null);
 					}
 				}
 				for (int k = 0; k < ci.peer_directories.size(); k ++) {
-					Connections_Peer_Directory ps = pc.shared_peer_directories.get(k);
-					if (retry || (ps.contacted_since_start_UDP && ps.last_contact_successful_UDP)) {
-						ps.last_contact_successful_UDP = false;
-						try_UDP_connection_directory(pc, ps, aup, ci.dpi.peer_instance);
+					Connections_Peer_Directory pd_inst = pc.getSharedPeerDirectories().get(k);
+					if (retry || pd_inst.recentlyContacted(ci.dpi.peer_instance)) { //(pd_inst.contacted_since_start_UDP && pd_inst.last_contact_successful_UDP)) {
+						//pd_inst.last_contact_successful_UDP = false;
+						pd_inst.setPeerPingPendingUDP(ci.dpi.peer_instance);
+						try_UDP_connection_directory(pc, pd_inst, aup, ci.dpi.peer_instance);
 					}
 				}
 			}
@@ -424,7 +536,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 		if (ClientSync.DEBUG) System.out.println("Client2: handlePeerRecent: done "+success);
 		return success;
 	}
-	private static boolean transfer_TCP(Connection_Peer pc, Connections_Peer_Socket ps, Socket client_socket) {
+	private static boolean transfer_TCP(Connection_Peer pc, Connections_Peer_Socket ps, Socket client_socket, boolean close) {
 		if (ClientSync.DEBUG) System.out.println("Client2: transfer_TCP: "+ps);
 		String peer_ID = pc.peer.getLIDstr();
 		String peer_name = pc.getName();
@@ -454,19 +566,19 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 			client_socket.setSoTimeout(Server.TIMEOUT_Client_Data);
 			InputStream is=client_socket.getInputStream();
 			int len = is.read(update);
-			if(len>0){
+			if (len > 0){
 				if(ClientSync.DEBUG) err.println("Client2: transfer_TCP: answer received length: "+len);
 				DD.ed.fireClientUpdate(new CommEvent(Application.ac, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Answered Received"));
 				Decoder dec = new Decoder(update,0,len);
 				System.out.println("Got first msg size: "+len);//+"  bytes: "+Util.byteToHex(update, 0, len, " "));
-				if(!dec.fetchAll(is)){
+				if (!dec.fetchAll(is)) {
 					System.err.println("Buffer too small for receiving update answer!");
 					return false;
 				}
 				len = dec.getMSGLength();
 				//System.out.println("Got msg size: "+len);//+"  bytes: "+Util.byteToHex(update, 0, len, " "));
 				RequestData rq = new RequestData();
-				integrateUpdate(update,len, (InetSocketAddress)client_socket.getRemoteSocketAddress(), Application.ac, global_peer_ID, pc.peer.getLIDstr(), Util.getStringID(ps.address_ID), rq, pc.peer);
+				integrateUpdate(update,len, (InetSocketAddress)client_socket.getRemoteSocketAddress(), Application.ac, global_peer_ID, pc.peer.getLIDstr(), Util.getStringID(ps.address_LID), rq, pc.peer);
 				if(ClientSync.DEBUG) err.println("Client2: transfer_TCP: answer received rq: "+rq);
 			}else{
 				if(ClientSync.DEBUG) out.println("Client2: transfer_TCP: No answered received!");
@@ -483,11 +595,13 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		try {
-			if(ClientSync.DEBUG) out.println("Client2: transfer_TCP: will close socket");
-			client_socket.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		if (close) {
+			try {
+				if(ClientSync.DEBUG) out.println("Client2: transfer_TCP: will close socket");
+				client_socket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		if(ClientSync.DEBUG) out.println("Client2: transfer_TCP: done peer");
 		return true;
@@ -521,8 +635,13 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 		if (ClientSync.DEBUG) err.println("Client2: preparePing: done");
 		return aup;
 	}
+	static boolean warned_instance_from_dir = false;
 	/**
-	 * Try NAT piercing via STUN (NAT signaled by reported address of peer) 
+	 * Try NAT piercing via STUN (NAT signaled by reported address of peer).
+	 * 
+	 * The tested directory may be a shared one, but try to ping now for the instance in parameter (i.e. using its reported address).
+	 * If no reported address is found for this instance, then at least send a ping to the first encountered NAT instance from this directory.
+	 * 
 	 * @param conn_peer
 	 * @param conn_peer_dir
 	 * @param aup
@@ -532,41 +651,44 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 		boolean DEBUG = false || ClientSync.DEBUG || DD.DEBUG_COMMUNICATION_STUN;
 		if (DEBUG) err.println("Client2: try_UDP_connection_directory: "+conn_peer_dir);
 		if (conn_peer_dir.supernode_addr == null) { if (DEBUG) err.println("Client2:try_UDP_connection_directory:x1"); return;}
-		if (conn_peer_dir.supernode_addr.isa == null) { if (DEBUG) err.println("Client2:try_UDP_connection_directory:x2"); return;}
-		if (conn_peer_dir.supernode_addr.isa.isUnresolved()) { if (DEBUG) err.println("Client2:try_UDP_connection_directory:x3"); return;}
+		if (conn_peer_dir.supernode_addr.isa_tcp == null) { if (DEBUG) err.println("Client2:try_UDP_connection_directory:x2"); return;}
+		if (conn_peer_dir.supernode_addr.isa_tcp.isUnresolved()) { if (DEBUG) err.println("Client2:try_UDP_connection_directory:x3"); return;}
 	
 		Address_SocketResolved_TCP reported_peer_addr = conn_peer_dir.getReportedAddress(instance);
 		if (reported_peer_addr == null) {
-			if (_DEBUG) err.println("Client2: try_UDP_connection_directory: RATHER THAN THIS, create instances from getDirAddress");
+			if (_DEBUG && !warned_instance_from_dir) {
+				err.println("Client2: try_UDP_connection_directory: RATHER THAN THIS, create instances from getDirAddress");
+				warned_instance_from_dir = true;
+			}
 			reported_peer_addr = conn_peer_dir.getReportedAddressSome();
 		}
 		if (reported_peer_addr == null) { if (DEBUG) err.println("Client2:try_UDP_connection_directory:x4: inst="+instance+" ps="+conn_peer_dir+" pc="+conn_peer); return;}
-		if (reported_peer_addr.isa == null) { if (DEBUG) err.println("Client2:try_UDP_connection_directory:x5"); return;}
-		if (reported_peer_addr.isa.isUnresolved()) { if (DEBUG) err.println("Client2:try_UDP_connection_directory:x6"); return;}
-		aup.peer_domain=reported_peer_addr.getAddressSupernode().domain;
-		aup.peer_port=reported_peer_addr.getAddressSupernode().udp_port;
+		if (reported_peer_addr.isa_tcp == null) { if (DEBUG) err.println("Client2:try_UDP_connection_directory:x5"); return;}
+		if (reported_peer_addr.isa_tcp.isUnresolved()) { if (DEBUG) err.println("Client2:try_UDP_connection_directory:x6"); return;}
+		aup.peer_domain=reported_peer_addr.getAddress().domain;
+		aup.peer_port=reported_peer_addr.getAddress().udp_port;
 		byte [] msg = aup.encode();
 		DatagramPacket dp = new DatagramPacket(msg, msg.length);
 		if (DEBUG) err.println("Client2: try_UDP_connection_directory: ping supernode "+aup);
 		
-		if (! sendUDP(conn_peer_dir.supernode_addr.isa, dp, conn_peer.getName())) {
+		if (! sendUDP(conn_peer_dir.supernode_addr.isa_tcp, dp, conn_peer.getName())) {
 			if(_DEBUG) System.out.println("Client2:try_UDP_connection_directory: fail "+conn_peer_dir.supernode_addr);
 			return;
 		}
 		if (DEBUG) err.println("Client2: try_UDP_connection_directory: ping peer");
 		
-		if (! sendUDP(reported_peer_addr.isa, dp, conn_peer.getName())) {
+		if (! sendUDP(reported_peer_addr.isa_tcp, dp, conn_peer.getName())) {
 			if (DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("Client2:try_UDP_connection_directory: fail "+reported_peer_addr+" from "+conn_peer_dir.supernode_addr);
 			return;
 		}
 		if (DEBUG) err.println("Client2: try_UDP_connection_directory: register contact in logs");
-		registerPeerContact(reported_peer_addr.isa, conn_peer.getGID(), conn_peer.getName(), conn_peer_dir.supernode_addr, "UDP", instance);
+		registerPeerContact(reported_peer_addr.isa_tcp, conn_peer.getGID(), conn_peer.getName(), conn_peer_dir.supernode_addr, "UDP", instance);
 		if (DEBUG) err.println("Client2: try_UDP_connection_directory: done");
 	}
 	private void registerPeerContact(InetSocketAddress sock_addr, String global_peer_ID, String peer_name, Address_SocketResolved_TCP supernode_addr, String trans, String instance){
 		if(ClientSync.DEBUG) System.out.println("Client2: registerPeerContact: "+peer_name);
 		Address ad = null;
-		if(supernode_addr!=null) ad = supernode_addr.getAddressSupernode();
+		if(supernode_addr!=null) ad = supernode_addr.getAddress();
 		registerPeerContact(sock_addr, global_peer_ID, peer_name, ad, trans, instance);
 		if(ClientSync.DEBUG) System.out.println("Client2: registerPeerContact: done");
 	}
@@ -621,21 +743,31 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 		if(ClientSync.DEBUG) System.out.println("Client2: sendUDP done: "+sock_addr);
 		return true;
 	}
-	private void try_UDP_connection_socket(Connection_Peer pc, Connections_Peer_Socket ps, byte[] msg) {
+	private boolean try_UDP_connection_socket(Connection_Peer pc, Connections_Peer_Socket ps, byte[] msg) {
 		boolean DEBUG = Client2.DEBUG  || ClientSync.DEBUG || DD.DEBUG_COMMUNICATION_STUN;
 		if (DEBUG) System.out.println("Client2: try_UDP_connection_socket");
 		if ((ps == null) || (ps.addr == null) || (ps.addr.isa_udp == null)) {
 			if(DEBUG) System.out.println("Client2: try_UDP_connection_socket: done empty: pc="+pc+"\nps="+ps);
-			return;
+			return false;
 		}
-		if(ps.addr.isa_udp.isUnresolved()) {
+		if (ps.addr.isa_udp.isUnresolved()) {
 			if (DEBUG) out.println("Client2: try_UDP_connection_socket: UPeer "+pc.getName()+" is unresolved! "+ps.addr.isa_tcp);
-			return;
+			return false;
 		}
 		DatagramPacket dp = new DatagramPacket(msg, msg.length);
+		// set the date ping sent
+		ps.setPingSentDateUDP();
 		sendUDP(ps.addr.isa_udp, dp, pc.getName());
 		if (DEBUG) System.out.println("Client2: try_UDP_connection_socket: done");
+		return true;
 	}
+	/**
+	 * Returns the open socket, and it will be closed after transfer
+	 * @param pc
+	 * @param ps
+	 * @param instance
+	 * @return
+	 */
 	private Socket try_TCP_connection(Connection_Peer pc, Connections_Peer_Socket ps, String instance) {
 		if (ClientSync.DEBUG) System.out.println("Client2: try_TCP_connection: "+ps);
 		if ((ps == null) || (ps.addr == null) || (ps.addr.isa_tcp == null)) {
@@ -653,7 +785,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 			client_socket.connect(sock_addr, Server.TIMEOUT_Client_wait_Server);
 			if (ClientSync.DEBUG) out.println("Client: Success connecting Server: "+sock_addr);
 			DD.ed.fireClientUpdate(new CommEvent(this, pc.getName(), sock_addr,"SERVER", "Connected: "+pc.getGID()));
-			this.registerPeerContact(sock_addr, pc.getGID(), pc.getName(), ps.addr.ad, "TCP", instance);
+			this.registerPeerContact(sock_addr, pc.getGID(), pc.getName(), ps.addr.addr, "TCP", instance);
 			if (ClientSync.DEBUG) System.out.println("Client2: try_TCP_connection: done "+client_socket);
 			return client_socket;
 		}
@@ -735,7 +867,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 			
 				//address = addresses[k];
 				Address_SocketResolved_TCP sad = tcp_sock_addresses.get(k);
-				sock_addr=sad.isa;//getSockAddress(address);
+				sock_addr=sad.isa_tcp;//getSockAddress(address);
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null,"TRY ADDRESS", sock_addr+""));
 				if(sock_addr.isUnresolved()) {
 					if(DEBUG) out.println("Client: Peer is unresolved!");
@@ -811,14 +943,14 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 							value = new Hashtable<String,String>();
 							pc.put(key, value);
 						}
-						sock_addr=udp_sock_addresses.get(k).isa;//getSockAddress(address);
+						sock_addr=udp_sock_addresses.get(k).isa_tcp;//getSockAddress(address);
 						value.put(sock_addr+" UDP-"+DD.ALREADY_CONTACTED, now);
 					}
 					//System.out.print("#2");
 					return false;					
 				}
 				Address_SocketResolved_TCP sad = udp_sock_addresses.get(k);
-				sock_addr=sad.isa;//getSockAddress(address);
+				sock_addr=sad.isa_tcp;//getSockAddress(address);
 				if(DEBUG) out.println("UClient:try_connect: checkMyself");
 				
 				if(ClientSync.isMyself(Identity.udp_server_port, sock_addr, sad)){
@@ -843,7 +975,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 				aup.initiator_globalID=Identity.current_peer_ID.getPeerGID(); //dr.initiator_globalID;
 				aup.initiator_port = Identity.udp_server_port;//dr.UDP_port;
 				aup.peer_globalID=global_peer_ID;
-				aup.peer_domain=sad.getAddressSupernode().domain;//;
+				aup.peer_domain=sad.getAddress().domain;//;
 				if(DEBUG) System.out.println("Client:try_connect: domain ping = \""+aup.peer_domain+"\" vs \""+Util.getNonBlockingHostName(sock_addr)+"\"");
 				aup.peer_port=sock_addr.getPort();
 				byte[] msg = aup.encode();

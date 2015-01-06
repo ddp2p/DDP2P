@@ -31,39 +31,39 @@ import util.Util;
 public class Address_SocketResolved_TCP{
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
-	private Address ad;
-	public InetSocketAddress isa, isa_udp; // sometimes both set to the same address
+	private Address addr;
+	public InetSocketAddress isa_tcp, isa_udp; // sometimes both set to the same address
 	/**
 	 * Sets all parameters
-	 * @param _isa
+	 * @param _isa_tcp
 	 * @param _isa_udp
 	 * @param _ad
 	 */
-	public Address_SocketResolved_TCP(InetSocketAddress _isa, InetSocketAddress _isa_udp, Address _ad){
-		setAddressSupernode(_ad);
+	public Address_SocketResolved_TCP(InetSocketAddress _isa_tcp, InetSocketAddress _isa_udp, Address _ad){
+		setAddress(_ad);
 		if (DEBUG) {
 			System.out.println("Address_SocketResolved_TCP <init3>: setting "+_ad.toLongString());
 			Util.printCallPath("");
 		}
-		isa = _isa;
+		isa_tcp = _isa_tcp;
 		isa_udp = _isa_udp;
-		if (isa_udp == null) isa_udp = isa;
+		if (isa_udp == null) isa_udp = isa_tcp;
 	}
 	/**
 	 * Sets both the TCP and UDP sockets to the same value: _isa
 	 * @param _isa
 	 * @param _ad
 	 */
-	public Address_SocketResolved_TCP(InetSocketAddress _isa, Address _ad){
+	public Address_SocketResolved_TCP(InetSocketAddress _isa, Address _ad) {
 		if (DEBUG) {
 			System.out.println("Address_SocketResolved_TCP <init2>: setting "+_ad.toLongString());
 			Util.printCallPath("");
 		}
-		setAddressSupernode(_ad);
-		isa_udp = isa = _isa;
+		setAddress(_ad);
+		isa_udp = isa_tcp = _isa;
 	}
 	public String toString() {
-		return "[SockAd_D: ad="+getAddressSupernode()+" sock="+isa+"]";
+		return "[SockAd_D: ad="+getAddress()+" sock="+isa_tcp+" udp="+isa_udp+"]";
 	}
 	/**
 	 * Creates a Address_SocketResolved_TCP based just on the tcp socket (setting the udp to this tcp)
@@ -71,7 +71,7 @@ public class Address_SocketResolved_TCP{
 	 * @return
 	 */
 	public static Address_SocketResolved_TCP getTCP(Address_SocketResolved addr) {
-		Address_SocketResolved_TCP sad = new Address_SocketResolved_TCP(addr.isa_tcp, addr.ad);
+		Address_SocketResolved_TCP sad = new Address_SocketResolved_TCP(addr.isa_tcp, addr.addr);
 		return sad;
 	}
 	/**
@@ -81,13 +81,13 @@ public class Address_SocketResolved_TCP{
 	 * @return
 	 */
 	public static Address_SocketResolved_TCP getUDP(Address_SocketResolved addr) {
-		Address_SocketResolved_TCP sad = new Address_SocketResolved_TCP(addr.isa_udp, addr.ad);
+		Address_SocketResolved_TCP sad = new Address_SocketResolved_TCP(addr.isa_udp, addr.addr);
 		return sad;
 	}
-	public Address getAddressSupernode() {
-		return ad;
+	public Address getAddress() {
+		return addr;
 	}
-	public void setAddressSupernode(Address ad) {
-		this.ad = ad;
+	public void setAddress(Address ad) {
+		this.addr = ad;
 	}
 }

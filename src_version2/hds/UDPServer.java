@@ -72,22 +72,46 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	public Hashtable<String, HashSet<String>> synced = new Hashtable<String, HashSet<String>>(); 
 	Random rnd = new Random();
 	
+	/**
+	 * Checks whether a "DD.MSGTYPE_SyncAnswer=10" is being received from this peer and instance.
+	 * If found and the number of times the check happened is smaller than "DD.UDP_SENDING_CONFLICTS=10",
+	 * then true is returned (and a sendReclaim is performed on the message).
+	 * 
+	 * Messages with more checks (incremented at each call) are considered lost (and the result is false)
+ 	 * 
+	 * @param global_peer_ID
+	 * @param instance
+	 * @return
+	 */
 	public static boolean transferringPeerAnswerMessage(String global_peer_ID, String instance) {
 		if (global_peer_ID == null) return false;
 		for (UDPMessage um : Application.aus.recvMessages.values()) {
 			if (global_peer_ID.equals(um.sender_GID) && Util.equalStrings_null_or_not(instance, um.sender_instance) &&
 					(um.type == DD.MSGTYPE_SyncAnswer)) {
-				if(DEBUG)System.out.println("UDPServer: transfAnswer:now="+Util.CalendargetInstance().getTimeInMillis()+" checks="+um.checked +"/"+ DD.UDP_SENDING_CONFLICTS);
-				if(DEBUG)System.out.println("UDPServer: transfAnswer:"+um);
-				um.checked++;
-				if(um.checked > DD.UDP_SENDING_CONFLICTS) // potentially lost
-					return false; //let it go further!
+				if (DEBUG) System.out.println("UDPServer: transfAnswer:now="+Util.CalendargetInstance().getTimeInMillis()+" checks="+um.checked +"/"+ DD.UDP_SENDING_CONFLICTS);
+				if (DEBUG) System.out.println("UDPServer: transfAnswer:"+um);
+				um.checked ++;
+				if (um.checked > DD.UDP_SENDING_CONFLICTS) { // potentially lost
+					continue; // return false; //let it go further!
+				}
 				Application.aus.sendReclaim(um);
 				return true;
 			}
 		}
 		return false;
 	}
+	/**
+	 * Called from handleSTUNfromPeer to avoid sending a duplicate "DD.MSGTYPE_SyncRequest=11" to the same peer
+	 * and instance in parallel.
+	 * If found and the number of times the check happened is smaller than "DD.UDP_SENDING_CONFLICTS=10",
+	 * then true is returned (and a UDPServer.reclaim() is performed on the message if no ack was yet received for it).
+	 * 
+	 * Messages with more checks (incremented at each call) are considered lost (and the result is false).
+	 * 
+	 * @param global_peer_ID
+	 * @param instance
+	 * @return
+	 */
 	public static boolean transferringPeerRequestMessage(String global_peer_ID, String instance) {
 		if (global_peer_ID == null) return false;
 		for (UDPMessage um : Application.aus.sentMessages.values()) {
@@ -95,7 +119,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 					(um.type == DD.MSGTYPE_SyncRequest) ) {
 				um.checked ++;
 				if (um.checked > DD.UDP_SENDING_CONFLICTS) // potentially lost
-					return false; //let it go further!
+					continue; //return false; //let it go further!
 				if (um.no_ack_received()) {
 					try {
 						Application.aus.reclaim(um);
@@ -108,6 +132,14 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		}
 		return false;
 	}
+	/**
+	 * Checks whether any message (sending or receiving) is being handled to this 
+	 * destination (and a UDPServer is running).
+	 * Reclaiming of the message happens if it is found.
+	 * @param global_peer_ID
+	 * @param instance
+	 * @return
+	 */
 	public static boolean transferringPeerMessage(String global_peer_ID, String instance) {
 		if (Application.aus == null) return false;
 		if (transferringPeerAnswerMessage(global_peer_ID, instance)) return true;
@@ -173,6 +205,8 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	/**
 	 * If message length larger than DD.MTU, then break it into fragments
 	 * else send in a single fragment
+	 * 
+	 * Sends at most DD.FRAGMENTS_WINDOW=10 fragments at a time in parallel
 	 * 
 	 * Synchronizes on "UDPServer.sentMessages"
 	 * @param sa
@@ -247,6 +281,10 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		}
 	}
 	/**
+	 * Get acknowledgement that a list of fragments was received at the destination
+	 * (and may send more fragments based on the window size).
+	 * If all fragments were received, we free the buffer.
+	 * 
 	 * Synchronizes on sentMessages
 	 * @param sa 
 	 * @param frag
@@ -269,7 +307,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			// prepare for verification
 			ack.signature = new byte[0];
 			ack.senderID = "";
-			if(!Util.verifySign(ack, Cipher.getPK(senderID), signature)){
+			if (! Util.verifySign(ack, Cipher.getPK(senderID), signature)){
 				System.err.println("Failure verifying FragAck: "+ack+
 						"\n ID="+Util.trimmed(senderID)+ 
 						"\n sign="+Util.byteToHexDump(signature));
@@ -349,6 +387,8 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		if(DEBUG) System.out.println("get Nack: removing message"+frag.msgID);
 	}
 	/**
+	 * Tells that there was a timeout at destination. May resend unacknowledged messages or
+	 *  NACK if the message no longer exists (might has been considered sent and was released).
 	 * Synchronizes on sentMessages
 	 * @param frag
 	 * @param sa
@@ -370,10 +410,10 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 				return;
 			}
 		}
-		boolean bag[] = new boolean[recl.transmitted.length];
-		int bagged = 0;
 		UDPMessage umsg = null;
 		synchronized(sentMessages) {
+			boolean bag[] = new boolean[recl.transmitted.length];
+			int bagged = 0;
 			umsg = sentMessages.get(recl.msgID+"");
 			if(umsg != null){
 				if(DEBUG) System.out.println("Answering Reclaim: "+recl+"   for umsg="+umsg);
@@ -392,16 +432,16 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 				umsg.unacknowledged = 0;
 				bagged = this.prepareBag(bag, umsg, umsg.unacknowledged);
 			}
+			sendBag(bag, umsg, bagged);
 		}
-		sendBag(bag, umsg, bagged);
-		if(umsg == null) {
+		if (umsg == null) {
 			if(DEBUG) System.out.println("Reclaim for discarded message: "+recl.msgID);
 			UDPFragmentNAck uf = new UDPFragmentNAck();
 			uf.msgID = recl.msgID;
 			uf.destinationID = recl.senderID;
 			uf.transmitted = recl.transmitted;
 			
-			if(DD.PRODUCE_FRAGMENT_NACK_SIGNATURE) {
+			if (DD.PRODUCE_FRAGMENT_NACK_SIGNATURE) {
 				// prepare for signature
 				uf.signature = new byte[0];
 				uf.senderID="";
@@ -477,10 +517,24 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			return;
 		}
 	}
+	/**
+	 * Send a UDPReclaim message for the missing fragments in the umsg 
+	 * (containing the msgID and array of transmitted fragments IDs).
+	 * Sets the current time when calling sendReclaim(umsg, crt_time).
+	 * 
+	 * @param umsg
+	 * @param crt_time
+	 */
 	private void sendReclaim(UDPMessage umsg) {
 		long crt_time = Util.CalendargetInstance().getTimeInMillis();
 		sendReclaim (umsg, crt_time);
 	}
+	/**
+	 * Send a UDPReclaim message for the missing fragments in the umsg 
+	 * (containing the msgID and array of transmitted fragments IDs)
+	 * @param umsg
+	 * @param crt_time
+	 */
 	private void sendReclaim(UDPMessage umsg, long crt_time) {
 		umsg.date = crt_time;
 		if(DEBUG) out.println("userver: UDPServer Reclaim at "+crt_time+"ms: "+umsg);
@@ -497,10 +551,10 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			uf.senderID = umsg.destination_GID;
 		}
 		if(DEBUG)System.out.println("Sending reclaim: "+uf);
-		byte[] ack = uf.encode();
+		byte[] _msg = uf.encode();
 		DatagramPacket dp;
 		try {
-			dp = new DatagramPacket(ack, ack.length, umsg.sa);
+			dp = new DatagramPacket(_msg, _msg.length, umsg.sa);
 			if(DEBUG) out.println("userver: UDPServer Reclaim sent to "+umsg.sa+" recl=: "+ uf);
 			this.getUDPSocket().send(dp);
 			if(DEBUG) out.println("userver: UDPServer Reclaim sent to "+umsg.sa+" recl=: "+ umsg.received+"/"+umsg.fragment.length+" of "+umsg.msgID);
@@ -511,27 +565,28 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		}
 	}
 	/**
-	 * Synchronized on recvMessages
+	 * Synchronized on recvMessages.
+	 * Analyzes recvMessages for those whose waiting expired (Server.TIMEOUT_UDP_Reclaim) and reclaims them.
 	 */
-	public void sendFragmentReclaim(){
-		if(DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: UDPServer Reclaim! messages #"+recvMessages.size());
-		ArrayList<UDPMessage> bag = new ArrayList<UDPMessage>();
+	public void sendFragmentReclaim() {
+		if (DD.DEBUG_COMMUNICATION_LOWLEVEL) out.println("userver: UDPServer Reclaim! messages #"+recvMessages.size());
+		ArrayList<UDPMessage> bag_expired = new ArrayList<UDPMessage>();
 		long crt_time = Util.CalendargetInstance().getTimeInMillis();
 		/**
 		 * First extract all messages to reclaim (to not keep lock for long)
 		 */
 		synchronized(this.recvMessages) {
-			for(UDPMessage umsg: recvMessages.values()) {
-				if(DEBUG) out.println("userver: UDPServer Reclaim "+umsg.msgID+" check: "+crt_time+"-"+umsg.date+"="+(crt_time-umsg.date)+">"+Server.TIMEOUT_UDP_Reclaim);
-				if(crt_time-umsg.date>Server.TIMEOUT_UDP_Reclaim) {
-					bag.add(umsg);
+			for (UDPMessage umsg: recvMessages.values()) {
+				if (DEBUG) out.println("userver: UDPServer Reclaim "+umsg.msgID+" check: "+crt_time+"-"+umsg.date+"="+(crt_time-umsg.date)+">"+Server.TIMEOUT_UDP_Reclaim);
+				if (crt_time-umsg.date > Server.TIMEOUT_UDP_Reclaim) {
+					bag_expired.add(umsg);
 				}
 			}
 		}
 		/**
 		 * Then reclaim them. Synchronization is probably not needed
 		 */
-		for(UDPMessage umsg: bag){
+		for (UDPMessage umsg: bag_expired) {
 			sendReclaim(umsg, crt_time);
 		}
 	}

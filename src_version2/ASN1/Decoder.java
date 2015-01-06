@@ -86,10 +86,19 @@ class Decoder {
 		this.offset = offset;
 		this.length = length;
 	}
+	/**
+	 * Returns the first byte of the type
+	 * 
+	 * @return
+	 */
 	public byte type(){
 		if (length <= 0) return 0;
 		return data[offset];
 	}
+	/**
+	 * Returns the first byte of the type by a call to type().
+	 * @return
+	 */
 	public byte getTypeByte(){
 		return type();
 	}
@@ -99,12 +108,26 @@ class Decoder {
 	 */
 	public int tagVal() {
 		if (length <= 0) return 0;
-		return data[offset]&0x1f;
+		return data[offset] & 0x1f;
 	}
-	public int typeClass(){
-		if(length<=0) return 0;
-		return (data[offset]&0xc0)>>6;
+	/**
+	 * Returns the class value, which can be one of:
+	 * Encoder.CLASS_APPLICATION,
+	 * Encoder.CLASS_CONTEXT,
+	 * Encoder.CLASS_PRIVATE,
+	 * Encoder.CLASS_UNIVERSAL
+	 * @return
+	 */
+	public int typeClass() {
+		if (length <= 0) return 0;
+		return (data[offset] & 0xc0) >> 6;
 	}
+	/**
+	 * Returns the type of the object which can be one of:
+	 *  Encoder.PC_CONSTRUCTED,
+	 *  Encoder.PC_PRIMITIVE
+	 * @return
+	 */
 	public int typePC() {
 		if (length <= 0) return 0;
 		return (data[offset]&0x20)>>5;
@@ -191,26 +214,29 @@ class Decoder {
 	/**
 	 * 
 	 * @param type
-	 * @param al : from ArrayList?
+	 * @param alist : from ArrayList?
+	 * If alist is set, then each element is translated in an entry where tge value is a generalized time
+	 * computed from the position.
+	 * Otherwise it extracts a Hashtable, each element from a different SEQUENCE
 	 * @return
 	 * @throws ASN1DecoderFail
 	 */
 	public Hashtable<String, String> getSequenceOfHSS(byte type, boolean alist) throws ASN1DecoderFail {
 		Decoder dec = getContent();
-		Hashtable<String,String> al= new Hashtable<String,String>();
+		Hashtable<String,String> al = new Hashtable<String,String>();
 		long pos = 0;
-		for(;;) {
+		for (;;) {
 			Decoder d_t = dec.getFirstObject(true);
-			if(d_t==null) break;
-			if(!alist)
+			if (d_t == null) break;
+			if (! alist)
 				d_t = d_t.getContent();
 			String k = d_t.getFirstObject(true).getString(type);
 			String val=null;
-			if(!alist){
+			if (! alist) {
 				d_t = d_t.getFirstObject(true);
-				if(d_t!=null) val = d_t.getString(type);
+				if (d_t != null) val = d_t.getString(type);
 			}
-			if(val == null){
+			if (val == null) {
 				if(DD.DEBUG_TODO)System.out.println("Decoder: transient versions!");
 				//if(_DEBUG)Util.printCallPath("Who?");
 				Calendar c = Util.CalendargetInstance();
@@ -219,7 +245,7 @@ class Decoder {
 				val = Encoder.getGeneralizedTime(c);
 			}
 			al.put(k, val);
-			pos++;
+			pos ++;
 		}
 		return al;
 	}
@@ -251,9 +277,16 @@ class Decoder {
 		}
 		return al;
 	}
+	/**
+	 * Requires types that implement ASNArrayableObj
+	 * @param type
+	 * @param inst
+	 * @return
+	 * @throws ASN1DecoderFail
+	 */
 	@SuppressWarnings("unchecked")
 	public <T> ArrayList<T> getSequenceOfAL(byte type, T inst) throws ASN1DecoderFail{
-		if(getTypeByte()==Encoder.TAG_NULL) return null;
+		if (getTypeByte() == Encoder.TAG_NULL) return null;
 		Decoder dec = getContent();
 		ArrayList<T> al= new ArrayList<T>();
 		int k=0;
@@ -264,7 +297,7 @@ class Decoder {
 			} catch (Exception e) {if(DEBUG)System.out.println("Decoder:getSeqOfAl:k="+k); throw e;}
 			if (d_t==null) break;
 			try {
-				al.add(((T) ((ASNObj)inst).instance().decode(d_t)));
+				al.add(((T) ((ASNObjArrayable)inst).instance().decode(d_t)));
 			} catch (CloneNotSupportedException e) {
 				e.printStackTrace();
 			}
@@ -283,7 +316,7 @@ class Decoder {
 	public <T> T[] getSequenceOf(byte type, T[] temp, T inst) throws ASN1DecoderFail{
 		ArrayList<T> al;
 		al = getSequenceOfAL(type, inst);
-		if(al==null) return null;
+		if (al == null) return null;
 		return al.toArray(temp);
 	}
 	/**
@@ -701,6 +734,26 @@ class Decoder {
 	        System.out.println("Compared: "+m1+" vs "+m2);
 	        //Assert.assertEquals(m1, m2);
 	}
+	/**
+	 * compares the parameter tag with the result of getTypeByte() when there is a next object (peeked)
+	 * @param tag
+	 * @return
+	 */
+	public boolean isFirstObjectTagByte(byte tag) {
+		return (getFirstObject(false)!=null)&&(getFirstObject(false).getTypeByte()==tag);
+	}
+	/**
+	 * Peeks the next object and compares to null
+	 * @return
+	 */
+	public boolean isEmptyContainer() {
+		return (getFirstObject(false)==null);
+	}
+	/**
+	 * Test example.
+	 * @param nb
+	 * @throws ASN1DecoderFail
+	 */
 	public static void encodeDecodeBNTAG(String nb) throws ASN1DecoderFail {
 		byte msg[];
 		Encoder enc = new Encoder().initSequence();
@@ -732,10 +785,4 @@ class Decoder {
 			e.printStackTrace();
 		}
     }
-	public boolean isFirstObjectTagByte(byte tag) {
-		return (getFirstObject(false)!=null)&&(getFirstObject(false).getTypeByte()==tag);
-	}
-	public boolean isEmptyContainer() {
-		return (getFirstObject(false)==null);
-	}
 }

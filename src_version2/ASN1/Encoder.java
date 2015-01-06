@@ -548,7 +548,7 @@ class Encoder {
 	 * @return
 	 */
 	public static Encoder get_BIT_STRING( byte padding_bits, byte[] s, byte type) {
-		return new Encoder(padding_bits,s, type);
+		return new Encoder(padding_bits, s, type);
 	}
 	/**
 	 * Create an OCTET STRING encoder. 
@@ -618,6 +618,23 @@ class Encoder {
 		assert(bytes==this.header_type.length+this.header_length.length+data.length);
 	}
 	/**
+	 * 
+	 * @param param, an array of String[] to encode
+	 * @param type, the type to assign to each String
+	 * @return, an Encoder 
+	 */
+	public static Encoder getStringEncoder(String[] param, byte type){
+		if (param == null) {
+			return Encoder.getNullEncoder();
+		}
+		Encoder enc = new Encoder().initSequence();
+		for(int k=0; k<param.length; k++) {
+			if (param[k] != null) enc.addToSequence(new Encoder(param[k],type));
+			else enc.addToSequence(Encoder.getNullEncoder());
+		}
+		return enc;
+	}
+	/**
 	 * for null "param" it returns an NULL ASN1 encoder
 	 * @param param
 	 * @param type
@@ -636,6 +653,7 @@ class Encoder {
 		return enc;
 	}
 	/**
+	 * Uses the type for each element that is not null. uses TAG_NULL for null elements.
 	 * 
 	 * @param param
 	 * @param type
@@ -653,17 +671,23 @@ class Encoder {
 		}
 		return enc;
 	}
+	/**
+	 * Uses the type TAG_INTEGER for each element that is not null. uses TAG_NULL for null elements.
+	 * @param param
+	 * @return
+	 */
 	public static Encoder getBNsEncoder(ArrayList<BigInteger> param) {
-		if (param == null) {
-			return Encoder.getNullEncoder();
-		}
-		Encoder enc = new Encoder().initSequence();
-		for (int k = 0; k < param.size(); k++) {
-			BigInteger crt = param.get(k);
-			if (crt != null) enc.addToSequence(new Encoder(crt));
-			else enc.addToSequence(Encoder.getNullEncoder());
-		}
-		return enc;
+		return getBNsEncoder(param, Encoder.TAG_INTEGER);
+//		if (param == null) {
+//			return Encoder.getNullEncoder();
+//		}
+//		Encoder enc = new Encoder().initSequence();
+//		for (int k = 0; k < param.size(); k++) {
+//			BigInteger crt = param.get(k);
+//			if (crt != null) enc.addToSequence(new Encoder(crt));
+//			else enc.addToSequence(Encoder.getNullEncoder());
+//		}
+//		return enc;
 	}
 	/**
 	 * for null param it returns a NULL ASN1 encoder
@@ -710,23 +734,6 @@ class Encoder {
 		Encoder enc = new Encoder().initSequence();
 		for (int k = 0 ; k < param.length ; k ++) {
 			if (param[k] != null) enc.addToSequence(((ASNObj)param[k]).getEncoder(dictionary_GIDs, dependants));
-			else enc.addToSequence(Encoder.getNullEncoder());
-		}
-		return enc;
-	}
-	/**
-	 * 
-	 * @param param, an array of String[] to encode
-	 * @param type, the type to assign to each String
-	 * @return, an Encoder 
-	 */
-	public static Encoder getStringEncoder(String[] param, byte type){
-		if(param == null) {
-			return Encoder.getNullEncoder();
-		}
-		Encoder enc = new Encoder().initSequence();
-		for(int k=0; k<param.length; k++) {
-			if(param[k]!=null) enc.addToSequence(new Encoder(param[k],type));
 			else enc.addToSequence(Encoder.getNullEncoder());
 		}
 		return enc;

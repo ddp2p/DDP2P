@@ -1,0 +1,892 @@
+\documentclass{book}
+\sloppy
+
+%package style
+\newcommand{\pkg}[1]{{\tt #1}}
+\newcommand{\cls}[1]{{\tt\bf #1}}
+\newcommand{\mth}[1]{{\tt #1}}
+\newcommand{\mmb}[1]{{\tt #1}}
+
+\title{DirectDemocracyP2P Architecture}
+
+\author{Marius C. Silaghi, Khalid Alhamed, Osamah Dhanoon, Hang Dong,\\
+ Song Qin, Rahul Vishen, Ryan Knowles, Yi Yang, Yog Lok Seo \\
+... and hopefully you!}
+
+\begin{document}
+\maketitle
+\chapter{Introduction}
+\section{This document}
+The latest version of this document is on {\tt /Users/msilaghi/svn/p2pdd/dev/MSilaghi/Doc/GUIDE.pdf} in my
+machine, or (hopefully soon to be placed on) the {\tt https://github.com/ddp2p/DDP2P/GUIDE} (from now on this site is simply referred to as the {\tt github}).
+
+\section{Release History}
+
+The technical details and intentions of this project were first lined out in 2004 in the FIT technical report {\tt CS-2004-07}, that had also been  submitted in 2003 as an NSF funding request.
+The funding was not grated, and after repeated requests to different governmental agencies (including a 2005 EU proposal with Markus Zanker from Austria and 10 EU institutions), 
+in 2007 we started to develop the system as a volunteer work.
+A first version of the system was developped as a webapplication prototype (http://debatedecide.fit.edu). It was not P2P and its intentions was a proof of concept,
+and potential demo for further funding requests. By 2009 it was nevertheless pretty complete and is still used to manage some classes at FIT. Its weakneses are:
+\begin{itemize}
+\item
+difficulties with the java applets plugins frequently not well supported by browsers (but needed to create and handle certificates).
+\item
+the system administrator has too much power as he can apply censorship and delete items.
+\end{itemize}
+
+In 2010 we started the P2P implementation of the system. First we still thought of a P2P prototype, in python. After a few months developing an interface with python,
+we felt that it was less easy to build and maintain then an actual full system in Java.
+
+The actual implementation of the open-source P2P Java program started in spring 2011 with the ASN1 packages and STUN-like NAT piercing mechanism.  The GUI development
+started in summer 2011, with the tree view for constituents and neighborhoods (which helped revise the final stucture of the corresponding objects. Song also started working
+that summer on the Census panel. The swing GUI centered on developing autonomous widgets for various functions. Their assembly into an ergonomic GUI was left for
+later (and not yet tackled by 2014). Currently widgets are just chained in a pretty long tab.... (apologize to those that do not like it, as you are welcome to change it to an ergonomic GUI).
+The year 2012 was spent designing and implementing the various objects, integrating an ad-hoc network module (with Osamah Dhanoon's master thesis), and integrating an automatic update mechanism
+(with the PhD work of Khalid Alhamed).
+
+The first public release of the system was in summer 2013, at the {\em Open Peer-Reviewed Workshop on Decentralized Coordination} that we organized at Florid Tech in April 7. There we presented the articles detailing the technical and scientific contributions of the first version. A demo was made at the P2P 2013 conference. The firsion 1 is pretty stable but slow, since the only synchronization
+point of the various modules is the database on the disk. The database acces is slow, which slows down the whole system. This is why in september 2013 we started working on a new version.
+The version 1 was left untouched except for a few very minor fixes (versions 0.9.49 to 0.9.55), some proving more bothering then worth. The version is avaiable on github in the {\tt src} folder.
+
+While the second version (which uses a cache of objects as point of synchronization) is pretty finalized, there are still a couple of bugs (see the Bugs section), and was not yet released as an installation package until now (Oct 2014). You can download the code from the {\tt src\_version2} folder and compile it yourself.
+
+\chapter{Development}
+\section{Overall Structure}
+
+Instructions to work with the code in Eclipse are available in the file: {\tt instructionsEclipseSetUp.pdf} on github, prepared by Song Qin.
+
+The code consists of:
+\begin{itemize}
+\item a main engine that was tested on Android, Linux, Windos, MacOS.
+\item GUI interfaces: we have develloped an interface in Java Swing (under package {\tt widgets}), and a beginning of an interface on Android (development led by Dong Hang). GUI interfaces can start the engine and then be attached to it by registering an implementation of the interface {\tt config.Vendor\_GUI\_Dialogs}.
+\item Database modules: currently we have three database modules supporting sqlite-jdbc, sqlite-4-java (needed for upgrades on MacOS), and an interface to the Android sqlite.
+\item Plugins: we currently have two plugins for PC (a chat application, and a game) and a plugin for Android. The game plugin works with the version 1 of the DDP2P, and has to be recompiled to work with version 2 (no big changes should be needed, but menus now subclass a different type).
+ 
+The plugins can be loaded dynamically from any {\tt .jar} file found in the {\tt plugins} folder, but can also be linked in the code, by calling a static method {\tt loadPlugin} 
+in the class {\tt PluginRegistration} of package {\tt plugin\_data}, namely:\\
+ {\tt plugin\_data.PluginRegistration.loadPlugin(Class<?> plugin, String peer\_GID, String peer\_name).}
+
+The dynamic loading is performed at startup (or when called from GUI), and happens in:\\
+ {\tt plugin\_data.PluginRegistration.loadPlugins(String peer\_GID, String peer\_name).}
+
+In these methods, the {\tt peer\_GID} and {\tt peer\_name} are the {\tt GID} and name for the current peer.
+Simple educational plugins are in the {\tt Hello} examples in folder {\tt plugins}, as well as in the package {\tt AndroidChat}. 
+\item Installers and tools: we have some scripts to create release packages ({\tt installers/DD\_P2P}), merge databases of existing installations {\tt merge\_databases/Seo}, etc.
+\end{itemize}
+
+\section{Debugging}
+
+Almost each class has the constants {\tt DEBUG} and {\tt \_DEBUG}. Typically {\tt DEBUG} is false and {\tt \_DEBUG}  is true.
+Printing runtime information is done with {\tt if (DEBUG) System.out.println("CLASS\_NAME: METHOD\_NAME: message")}. 
+
+Sometimes for debugging a class I either:
+\begin{itemize}
+\item
+set its {\tt DEBUG} to true
+\item
+set some of its {\tt if (DEBUG)} into {\tt if (\_DEBUG)}.
+\item
+a local variable is declared in the debugged method  {\tt boolean DEBUG = true}
+\end{itemize}
+
+\section{Known Bugs}
+
+It seems existing {\tt D\_Witness} objects signature fails. Have to check if it is due to old bugs when they were made, or something newer.
+
+Motions are not synchronized. Have to check the corresponding class in the streaming {\tt package}, see if they are correctly queried.
+
+\chapter{Architecture}
+\section{Structure of Main Engine}
+
+The engine is composed of a set of libraries (packages) for maintaining data structures for the managed items, as well as servers and clients
+for exchanging this data. This engine is independent of database and of GUI. These libraries are compiled into DD\_Android.jar.
+
+\paragraph{Using Databases, Email and GUI}
+To be independent of database, this whole code uses an abstract database interface defined in \pkg{util}.\cls{DBInterface}, which
+itseld uses an abstract class \pkg{config}.\cls{Vendor\_DB\_Email}. Applications using a database or email must instantiate
+\pkg{config}.\cls{Application\_GUI}.\mmb{dbmail} with an instance of this class. For example on Linux/Mac/Windows we use \pkg{util}.\pkg{db}.\cls{Vendor\_JDBC\_EMAIL\_DB} which is based on jdbc for sqlite, javax.mail.jar, sqlite-jdbc-3.7.2.jar.
+On Android we use (see android code)...
+
+To be idependent of GUI, the warnings and notifications of data arrivals to GUI are done via an abstract GUI interface class
+\pkg{config}.\cls{Vendor\_GUI\_Dialogs}. Applications using some GUI for notifications must instantiate
+\pkg{config}.\cls{Application\_GUI}.\mmb{gui} with an instance of this class.  On standard Oracle java systems we use: 
+\pkg{widgets}.\pkg{components}.\cls{GUI\_Swing}, whose static method \mth{initSwingGUI} does the job.
+
+\paragraph{Main Application and Tools}
+The entry points for various tools and GUIs are in the subpackages:
+\begin{itemize}
+\item
+ \pkg{widgets} : if they use GUI
+\item
+ \pkg{util}.{tools} : if they use databases but no GUI
+\item
+ \pkg{tools} : if they need no database and no GUI (e.g. tools related to digital signatures and keys). Here there still are some old tools
+ that need databases and GUI and need to be moved to the appropriate package (and to be changed by adding the aforementioned code for initializing the database and GUI drivers).
+\end{itemize}
+
+\paragraph{Initialization of Identity}
+The communication servers need to know what is the identity of the current peer (to sign sent messages). This identity
+is loaded from a database using any one of the static methods:
+\begin{itemize}
+\item
+\pkg{config}.\cls{Identity}.\mth{getCurrentPeerIdentity\_QuitOnFailure()} which may try to use GUI to create or load the peer from a file if the database does not specify
+the current peer, and it exits with \mth{System.exit()} if no peer is established.
+\item
+\pkg{config}.\cls{Identity}.\mth{getCurrentPeerIdentity\_NoQuitOnFailure()} which may try to use GUI if the database does not specify
+the current peer.
+\item
+\pkg{config}.\cls{Identity}.\mth{init\_Identity(boolean quit\_on\_failure, boolean set\_peer\_myself, boolean announce\_dirs)}. 
+
+	\begin{itemize}
+	\item
+	When setting the parameter \mmb{quit\_on\_failure} to true it will try to use GUI if the database does not specify a peer, to create
+	or load the current peer from a file. 
+	\item
+	When setting the parameter \mmb{set\_peer\_myself} to true, this will also initialize a \pkg{data}.\cls{HandlingMyself\_Peer}.\mmb{\_myself} peer (the one used for signing messages),
+	otherwise it just loads the data from the database with no other attempt to create the peer structure or to query the user with GUI for a 		peer
+	when this is not found in the database.
+	\item
+	When setting the parameter \mmb{announce\_dirs} to true, the obtained peer and its addresses are sent to any directory
+	in the list of directories loaded from the database.
+	\end{itemize}
+\item
+\pkg{data}.\cls{HandlingMyself\_Peer}.\mth{loadIdentity(null)}. Same as the above call with all parameters set to false.
+\item
+\pkg{data}.\cls{HandlingMyself\_Peer}.\mth{get\_myself\_or\_null()}. Returns the currently set peer identity, or null if none was set.
+\item
+\pkg{data}.\cls{HandlingMyself\_Peer}.\mth{get\_myself\_with\_wait()}. Returns the currently set peer identity, or
+on null it waits indefinitely for one to be set (e.g. by the GUI interraction n the aforementioned methods).
+\end{itemize}
+
+\paragraph{Initialization of Directories}
+To enable communication to roaming peers and peers behind NATs, such peers need help from {\em access points} (aka {\em directory} or {\em supernode}).
+A peer with a static IP does not need such a directory! In fact it can volunteer to act as an access point for others
+(and may get incentives for it, see the IEEE-P2P14 article).
+Each peer can set-up such access points or select from existing ones and present it as its address.
+From that moment the peer would need to keep announcing its current roaming position (IP address) to that access point.
+
+Currently selected access points can be loaded from the database using the static method:
+\pkg{config}.\cls{DD}.\mth{load\_listing\_directories()} which can generate exceptions, or from
+\pkg{config}.\cls{DD}.\mth{load\_listing\_directories\_noexception()}. They are made available to
+the code via the static data structures \pkg{config}.\cls{Identity}.\mmb{listing\_directories\_xxx} where \mmb{xxx} is \mmb{inet}, \mmb{addr} or \mmb{string} which contain the data
+as \pkg{hds}.\cls{Address} structures, as resolved internet addresses for making sockets ready for communication, or as strings ready for pretty printing.
+
+\section{Connections}
+The communication in DDP2P can be based on any of the Internet technologies called TCP and UDP. The communication code is found in the package \pkg{hds}, while
+the code to build messages and to integrate incoming  messages is found in the package \pkg{streaming}.
+
+A module exists for broadcasting over Adhoc WIFI using UDP broadcast (see packages \pkg{wireless}, \pkg{widgets.wireless}, and \pkg{handling\_wb}).
+The module was built under the master thesis of Osamah Dhanoon and during the last experiments it had some useful
+general parts commented
+out for faster hard-coded configuration of some experiments. Somebody should take time to reverse that process and replace the
+hard-coded shortcuts with the original general procedures.
+
+Hopefully that should be done when the broadcasting module is tested for Android, or when it is extended to bluetooth communication.
+
+
+\section{Streaming}
+
+\subsection{ASN1 Tags}
+There are various types of messages and the server distinguish them based on ASN1 tag. Each message in DDP2P is
+encapsulated as an ASN1 object using our own implementation of ASN1 standard found in package \pkg{ASN1}.
+This implementation was not tested to be compatible with the standard but was tested only for the correct invertibility of the
+encoding and decoding, as well as for the DER minimality and determinism of the encoding (for usage with digital signatures).
+Implementation of explicit tags was not done, even if it is relatively trivial from the available primitives.
+
+\paragraph{ASN1 \cls{Encoder}}
+In principle, a container sequence is created with \mth{initSequence()} on an empty ASN1 \cls{Encoder} object.
+Elements are added to this sequence using \mth{addToEncoder()} functions. There exist \mth{Encoder} constructors for
+most primitive types: \cls{boolean, int, byte, BigInteger, String, byte[], double}. A parameter 
+\cls{Calendar} is for obtaining an ASN1 GeneralizedTime. The \cls{Encoder} class provides the static method \mth{getGeneralizedTime(Calendar)}
+to convert between types Calendar and String in the GeneralizedTime format.
+Use \mth{getNullEncoder()} or \mth{new Encoder().setNull()} to create a NULL tag.
+
+
+A tag for the Encoded data can be set with the various \mth{setASN1Type} methods.
+
+To get an Encoder for ASN1 BITSTRING use the method \mth{get\_BIT\_STRING(byte[])} since the constructor
+with parameter byte[] is used for OCTET STRING.
+The constructors Encoder(BigInteger[]) and Encoder(int[]) build an encoding of an ASN1 OID. To encode
+arrays of integers or arrays of BigInteger you must used the functions described below!
+
+The \mth{getEncoder()} static functions are used to create homogenous sequences from arrays or ArrayLists.
+When the elements of these vectors are not primitive, then they must be extending the abstract class \cls{ASNObjArray},
+and must be implementing the optional \mth{instance()} method of that abstract class.
+For primitive elements of the arrays one can use \mth{getBNsEncoder(), getStringsEncoder(), getStringEncoder(), 
+getEncoderArray()}, handling BigInteger[], ArrayList<String>, String[], int[] or float[]
+
+One can encode hashtables Hashtable<String,String> using \mth{getKeysStringEncoder()} or \mth{getHashStringEncoder()}.
+The second variant encodes both the key and the value, sorted by the key. The first variant encodes just the keys,
+placing them at positions defined by a function based on the value.
+
+To get the array of bytes serialization from an ASN1 \cls{Encoder} one calls its method \mth{"getBytes()"}.
+Directly from a class implementing the ASNObj abstract class, the DER serialization is obtained using
+the method \mth{encode()}, or the calls \mth{getEncoder().getBytes()}.
+
+\paragraph{ASN1 \cls{Decoder}}
+Our ASN1 \cls{Decoder} works similarly. A \cls{Decoder} object is constructed based on an array of bytes. From a constructed object (SEQUENCE)
+one removes the outer envelop with the method \mth{getContent()}.
+Further the \cls{Decoder} of each element is obtained with \mth{getFirstObject(extract)}. The parameter must be "true" for the object to be extracted from the stream (such that we get the next element at the next call).
+Here there are also separate member function to extract primitives from the current \cls{Decoder} (if it is for a primitive element).
+\begin{itemize}
+\item
+\mth{getInteger()} returns a BigInteger
+\item
+\mth{getString()} returns a String
+\item
+\mth{getBytes()} returns byte[]
+\item
+\mth{getOID}, \mth{getBNOID()} returns an OID as int[], or BigInteger[], respectively
+\item
+\mth{getBoolean()} returns boolean
+\item
+\mth{getGeneralizedTime(), getGeneralizedTimeCalender()} returns a generalized time as String or Calender, respectively.
+\item
+\mth{ getReal(), getFloatsArray(), getIntsArray, getBNIntsArray(), getAny()} returns double, float[], int[], BigInteger[], byte[], respectively.
+The encoding of reals/floats is not standard!
+\end{itemize}
+Each of these functions throws an exception \cls{ASNLenRuntimeException} if the encountered byte type is not the same as the native one
+for the corresponding primitive. Optionally they can get a parameter of type byte which specifies the expected type byte 
+for the data to be decoded. Some have a discouraged extra version that accepts to decode data of any type without error (and
+typically are recognized by the suffix AnyType added to the aforementioned method names). A similat type byte can be
+passed as a parameter of getFirstObject
+
+
+Homogeneous arrays are obtained with factories \mth{getSequenceOf[AL|BN]} that receive as parameter an instance of the array and/or an
+instance of the ASN1 object type to be decoded in the array.
+
+\begin{verbatim}
+// The next class implements the following ASN1 definition
+// MyASNObj := SEQUENCE {
+//     val [0] IMPLICIT INTEGER
+// }
+class MyASNObj extends ASNObjArrayable {
+  int val = 1;
+ MyASNObj instance() {return new MyASNObj();}
+ @Override
+ Encoder getEncoder() {
+  Encoder enc = new Encoder().initSequence(); // creates SEQUENCE
+  enc.add(new Encoder(val).setASN1Type(DD.TAG_AP0)); // IMPLICIT [0] INTEGER
+  return enc.setASN1Type(getASN1Type);
+ }
+ @Override
+ MyASNObj decode(Decoder dec) {
+   Decoder decoder = dec.getContent; // remove the SEQUENCE envelope
+   val = decoder.getFirstObject(true).getInteger(DD.TAG_AP0).intValue();
+ }
+}
+
+// The next class implements the message definition
+// Message := SEQUENCE {
+//   obj [1] SEQUENCE OF MyASNObj
+// }
+class Message extends ASNObj {
+ MyASNObj obj[];
+ @Override
+ Encoder getEncoder() {
+  Encoder enc = new Encoder().initSequence(); // creates SEQUENCE
+                           // obj IMPLICIT [1] SEQUENCE OF MyASNObj
+  enc.add(Encoder.getEncoder(obj).setASN1Type(DD.TAG_AC1)); 
+  return enc.setASN1Type(getASN1Type);
+ }
+ @Override
+ Message  decode (Decoder decoder) {
+  Decoder content = decoder.getContent();
+  obj = content.getFirstObject(true, DD.TAG_AC1)
+   .getSequenceOf (
+     MyASNObj.getASN1Type(),
+     new MyASNObj[0], 
+     new MyASNObj);
+   return this;
+  }
+
+  // The next method is an example of usage of the class to decode a message
+  static Message extract(byte[] message) {
+  return new Message().decode(new Decoder(message));
+ }
+ byte[] serialize() {
+  return encode(); // or return getEncoder().getBytes();
+ }
+\end{verbatim}
+
+Objects of type Hashtable<String,String> are obtained with factory \mth{getSequenceOfHSS} that receives as parameter 
+a type of each element. These are encoded sorted by the key.
+
+Non-primitive objects that extens ASNObj are typically decoded by creating an empty instance with an empty constructor or factory,
+and then calling their member method \mth{decode()} giving as parameter the decoder of the structure obtained with one of the aforementioned methods (constructor from array of bytes or extraction from a decoder with \mth{getContent()} or
+\mth{getFirstObject()}.
+
+The type/tag of the object that will be extracted next can be queried on a \cls{Decoder} object using the methods:
+\begin{itemize}
+\item
+\mth{isFirstObjectTagByte(tag)}.
+Which returns tru if the next object has the type byte eqlat to the parameter.
+\item
+\mth{getTypeByte()}, \mth{type()}
+Return the type byte.
+\item
+\mth{getTagValueBN()}, \mth{tagVal()}
+returns the tag value as a BigInteger, or an int strictly smaller than 31, respectively.
+\item
+\mth{typeClass()}, \mth{typePC()}
+returns the class and class type values as ints.
+\end{itemize}
+
+\subsection{Streaming Threads}
+The streaming of data between DDP2P peers is managed by the following threads (classes in package \pkg{hds}):
+\begin{itemize}
+\item
+\cls{Connections}. This thread manages a data structure with all the known addresses of all the peers ("safes") that we are currently polling (i.e., "used" peers).
+\item
+\cls{Client2}. This thread uses the data structure maintained by \cls{Connections} to poll peers in a loop based on TCP or UDP. This is a new
+version replacing \cls{Client1} which was not using a \cls{Connections} data structures, but rebuilt it herself at each polling round.
+\item
+\cls{UDPServer}. This is the UDP server thread that listens for connections on a port. To send messages one uses the same 
+UDP port (socket). 
+
+\item
+\cls{UDPServerThread}. This is a thread launched from \cls{UDPServer} to handle a given incoming datagram. Since
+datagrams are limited in size. If incoming messages are of type \cls{UDPFragment}, then they are assembled. Only when
+the whole message is assembled, then it is interpreted further and handled.
+\end{itemize}
+
+\subsection{Handling Fragments}
+To send large messages one can use the method \pkg{hds}.\cls{UDPServer}.sentLargeMessage(),
+which breaks them into blocks of size MTU and encapsulates each of them in a \pkg{hds}.\cls{UDPFragment} and in a UDPMessage.
+
+Ar the receiving end, fragments are assembled in the \cls{UDPServer}.\mth{recvMessages} list of \cls{UDPMessage}.
+The lists of received fragments are reevaluated in each loop of the \cls{UDPServer} thread, with the method \mth{sendFragmentReclaim()}
+which builds a list of messages expired and reclaimes them. 
+
+They are reevaluated also at each loop of the UDPServerThread when  in \mth{handleRequest()}
+the peer is checked with \cls{UDPServer}.\mth{transferringPeerAnswerMessage()} for the existence of other ongoing messages towards the same destination (to avoid sending parallel answers to \cls{SyncRequest}, which would be redundant).
+
+Both sending and receiving messages are reevaluated from \cls{UDPServer}.\mth{transferringPeerMessage()}
+which is used from \cls{UDPServerThread}.\mth{handleSTUNfromPeer} to check for duplicates before sending messages SyncRequest.
+
+A peer send only a limited number of fragments at a time (\mmb{DD.FRAGMENTS\_WINDOW}=10).
+More fragments are sent when \cls{UDPFragmentAck} objects are received witnessing the array of fragments delivered
+so far (and which are sent on receiving the fragments or on reclaim).
+When the acknowledgements testify that all fragments were received we free the buffer.
+
+Under the tag of a reclaim, \mmb{DD.TAG\_AC16}, the peers also send a  \cls{UDPFragmentAck} after an expiration of waiting time.
+If the message reclaimed is found to be a zombi (a message believed sent and removed from the system) then a NACK is sent
+to the remote peer. Zombis may exist because either an ack was duplicated and when the latter duplicates arrive the message's
+arrival was already known, or because some fragment was duplicated and the receipient started to store it as a new message
+whose other fragments never arrive (having been acknowledges and received once).
+
+\chapter{Connection Data Structure}
+
+In a diagram, the main hierarchy of data structures explained below could be represented as:
+
+\noindent
+\strut\cls{Connections}\\
+\strut~\mmb{used\_peers\_xxx,  myselfPeer\_HT\_IPPORT\_CPD} $\rightarrow$\\
+\strut~~\cls{Connection\_Peer}\\
+\strut~~~\mmb{instances}  $\rightarrow$\\
+\strut~~~$|$~\cls{Connection\_Instance}\\
+\strut~~~$|$~~\mmb{peer\_directories}  $\rightarrow$\\
+\strut~~~$|$~~$|$~\cls{Connections\_Peer\_Directory}  \\
+\strut~~~$|$~~$|$~~\mmb{supernode\_addr, reported\_peer\_addr}  $\rightarrow$\\
+\strut~~~$|$~~$|$~~~\cls{Address\_SocketResolved\_TCP} \\	
+\strut~~~$|$~~\mmb{peer\_sockets, peer\_sockets\_transient}  $\rightarrow$\\
+\strut~~~$|$~~~\cls{Connections\_Peer\_Socket}\\
+\strut~~~$|$~~~~\mmb{addr}  $\rightarrow$\\
+\strut~~~$|$~~~~~\cls{Address\_SocketResolved}\\	
+\strut~~~\mmb{shared\_peer\_directories}  $\rightarrow$\\
+\strut~~~~\cls{Connections\_Peer\_Directory}  \\
+\strut~~~~~\mmb{supernode\_addr, reported\_peer\_addr}  $\rightarrow$\\
+\strut~~~~~~\cls{Address\_SocketResolved\_TCP} \\	
+
+\paragraph{Status of Polled Peers}
+The \pkg{hds}.\cls{Connections} class keeps in static members the data describing the addresses and resolved sockets of the currently
+polled remote peers.
+The corresponding data structure elements are:
+\begin{itemize}
+\item
+\mmb{myselfPeer\_HT\_IPPORT\_CPD}. This is a hashtable mapping the string obtained by concatenating the IP and PORT
+of each of my listing directories to an object of type \cls{Connections\_Peer\_Directory} for that directory.
+The object is placed in this hashtable when an answer from a directory comes comtaining my own peerGID and instance name.
+\item
+\mmb{my\_directories\_AL}. This is an \cls{ArrayList<My\_Directory>} for all my listing directories. Its updating and usage not yet implemented as of 12/28/2014.
+\item
+\mmb{used\_peers\_AL\_CP}. Is an \cls{ArrayList<Connection\_Peer}, one for each of the peers being currently polled.
+\item
+\mmb{used\_peers\_GID\_CP}. Is an \cls{Hashtable<String,Connection\_Peer}, with an entry for each of the peers being currently polled.
+It maps the global identifier (GID) of the peer to the connection data for that peer.
+\item
+\mmb{used\_peers\_GIDH\_CP}. Is an \cls{Hashtable<String,Connection\_Peer}, with an entry for each of the peers being currently polled.
+It maps the hash of the global identifier (GIDH) of the peer to the connection data for that peer.
+\item
+\mmb{peersAvailable} simply caches the number of peers in \mmb{used\_peers\_AL\_CP}.
+\end{itemize}
+
+\paragraph{Status of the Data Manager}
+For managing the updates needed to be performed to the above structures, we use the following:
+\begin{itemize}
+\item
+\mmb{update\_dirs} tells that some modifications were made to my listing directories.
+\item
+\mmb{update\_peers} tells that some modifications were made in my database to the peers that we are polling, and the connection
+structures need to be updated.
+\item
+\mmb{update\_needing\_peer\_connections} is a list of objects of type \cls{Connection\_Peer} that were inaccessible at the last
+poll attempt, and therefore whose directories should be queried for updates. Its modifications is synchronized on
+\mmb{lock\_update\_needing\_peer\_connections}.
+\item
+\mmb{lock\_used\_structures} is a monitor for synchronizing changes to the \mmb{used\_peers\_xxx} data structures.
+\item
+\mmb{monitor\_integrateDirAddresses} is a monitor for synchronizing changes due to incoming data from directories. I believe it
+should be replaced with \mmb{lock\_used\_structures}, where there is time to test such changes!
+\item
+\mmb{monitor\_wait\_obj} is a monitor on which the connections maintaining thread is waiting to be notified of changes or timeout.
+Timeouts may not be really needed since any change or failure is found separately.
+\end{itemize}
+
+
+When the connection manager thread updates its data structures, it does not do so concurrently with the \cls{Client2} thread
+that uses this structures, since bothe processes could be long and synchronization between them could be slow or complex.
+Therefore we have opted for implementing it by having the manager create the update into a set of temporary structures,
+which are later switched with the ones actually accessed by end-user processes.
+
+\paragraph{Working Data Structures}
+Therefore the \cls{Client2} thread accesses the above data strucures while the \cls{Connections} creates the update in
+the set of similar structures:
+\begin{itemize}
+\item
+\mmb{tmp\_my\_directories\_AL}
+\item
+\mmb{tmp\_used\_peers\_AL\_CP}.
+\item
+\mmb{tmp\_used\_peers\_GID\_CP}
+\item
+\mmb{tmp\_used\_peers\_GIDH\_CP}
+\item
+\mmb{tmp\_peersAvailable}
+\end{itemize}
+At the end of the update, the data structures are swapped, ad the is the only time when the \cls{Connections} thread needs to 
+hold the lock of \mmb{lock\_used\_structures}. The user thread \cls{Client2} should create its copy of this set of structures 
+at the beginning of each loop, which would also reduce its need of synchronization to a short time (we have to check that 
+we are doing so).
+
+While the \cls{Connections} is creating the new data structure with fields updated from the database changes, various
+status flags and logs may be changed inside the currently used data structure based on the events on the network
+(e.g., flags about the connection attempts and their success, as well as new socket and NAT addresses 
+obtained from directories). To correctly integrate these flags into the new data structures build built,
+the updatable structures are grouped in objects that can be directly linked from the new data. This way the updates
+happen simultaneously in the old and the new structures.
+
+New uncertified sockets and new instances received from the directories (that are not yet on the disk) have to be 
+linked into the new data structure. Currently new instances received from directories are directly stored in database (table "peer\_instance")
+but that may not be needed and in fact may be counterproductive since it is hard to avoid attacks with spam
+without requiring signatures certifying each directory information (which would slow down the system). Either
+that saving should no longer be done until the peer instance contacts us itself with a digitally signed information,
+or saving should also store the directory server announcing the instance to help trace attacks.
+
+\section{Data Types for Connections}
+
+
+\subsection{\cls{Address}}
+An \cls{Address} defines away to contact a peer or a directory, and consists of:
+\begin{itemize}
+\item
+\mmb{domain}: host or IP address
+\item
+\mmb{tcp\_port}, \mmb{udp\_port}: the ports for TCP and UDP servers
+\item
+\mmb{pure\_protocol}, \mmb{branch}, \mmb{agent\_version}: together these define the type of the messages understood by the peer
+\item
+\mmb{instance},  \mmb{certified}, \mmb{name}: with local informative value. Each address may be associated with a given 'instance' (rather than being a generic directory for the peer, or a static address of a peer with a single instance). Only the certified addresses are to be stored in database table 'peer\_address'. The name is typically used to easily identify directories.
+\item
+\mmb{active} used for my listing directories to tell whether I am currently announcing myself to this address.
+\item
+\mmb{priority} used to deterministically order the addresses in ASN1 encoded sequences for correct verification of digital signatures.
+It could also be used by clients as an order of testing addresses. 
+\item
+\mmb{inetSockAddr} used with my listing directory servers (where the tcp and udp ports are the same), to cache their socket. It
+is initialized in \pkg{config}.\cls{DD}.\mth{load\_listing\_directories()}.
+\end{itemize}
+
+\subsubsection{\cls{Address\_SocketResolved\_TCP}}
+
+This type of object hold:
+\begin{itemize}
+\item
+\mmb{addr}: an address of type \cls{Address}
+\item
+\mmb{isa\_tcp}, \mmb{isa\_udp}:  cached socket addresses for TCP and UDP, respectively
+\end{itemize}
+
+\subsubsection{\cls{Address\_SocketResolved}}
+
+This type of object hold:
+\begin{itemize}
+\item
+\mmb{addr}: an address of type \cls{Address}
+\item
+\mmb{isa\_tcp}, \mmb{isa\_udp}:  cached InetSocketAddresses for TCP and UDP, respectively
+\item
+\mmb{ia}:  cached InetAddress
+\end{itemize}
+
+\subsection{\cls{My\_Directory}}
+This structure (visibly not yet used) stores, for a directory listing me:
+\begin{itemize}
+\item
+\mmb{supernode\_addr}: the \cls{Address\_SocketResolved\_TCP} socket address of the directory. Initalized in \cls{Connections}.\mth{init\_my\_active\_directories\_listings} but never used
+\item
+\mmb{reported\_my\_addr}: my (NAT?) \cls{Address\_SocketResolved\_TCP} socket address seen by the directory
+\item
+  \mmb{last\_contact}, \mmb{contacted\_since\_start}, \mmb{last\_contact\_successful}: date and flags of the last contact
+
+\end{itemize}
+
+\subsection{\cls{Connection\_Peer}}
+
+All the connection data about a given polled peer is stored in an object of this type:
+\begin{itemize}
+\item
+\mmb{peer}: the \cls{D\_Peer} object whose connections are described here.
+\item
+\mmb{shared\_peer\_directories}: the generic directories listed in peer, of type \cls{ArrayList<Connections\_Peer\_Directory>}, one for each
+shared address of the peer that is of type DIR.
+\item
+\mmb{shared\_peer\_sockets}: the generic socket addresses listed in peer, of type \cls{ArrayList<Connections\_Peer\_Socket>}, one for each
+shared address of the peer that is of type SOCKET.
+\item
+\mmb{instances\_AL}, \mmb{instances\_HT}: for each known instance of the peer there is a \cls{Connection\_Instance}
+in the array list, and Hashtable, respectively. In the Hashtable, the instances are placed using as key the name
+of the instance made non-null using the method \cls{Util}.\mth{getStringNonNullUnique()} (which is invertible with \mth{getStringNullUnique}).
+The instances in the arrayList are sorted descending based on the number of objects exchanged so far.
+\item
+\mmb{status}: a structure (passed on update from old structures to new ones)  containing
+ \begin{itemize}
+ \item
+  \mmb{contacted\_since\_start}, \mmb{last\_contact\_successful}: flags to tell the status of the last contact. These flags are encapsulated in the
+status structure to easily pass them to the next updated version of the structure!
+ \item
+ \mmb{justRequestedSupernodesAddresses}: flag set to tell that directories were just asked for addresses by UDP, and should not
+ send a new request (until \cls{Client2} finds that existing addresses are not yet working, i.e. each second attempt)
+
+ The flag tells that the peer's directories were just asked by UDP for addresses in the previous itteration, and for at least one iteration of usage one can have patience for the UDP answer to arrive.
+ \end{itemize}
+\end{itemize}
+
+\subsection{\cls{Connection\_Peer\_Instance}}
+This structure stores the connection information related to a give clone (aka instance):
+\begin{itemize}
+\item
+\mmb{dpi}: the database/directory information about this clone, of type \cls{D\_PeerInstance}.
+\item
+\mmb{peer\_directories}: the  directories listed in peer, of type \cls{ArrayList<Connections\_Peer\_Directory>}, one for each
+instance address of the peer that is of type DIR.
+\item
+\mmb{peer\_sockets}: the socket addresses listed in peer, of type \cls{ArrayList<Connections\_Peer\_Socket>}, one for each
+instance address of the peer that is of type SOCKET.
+\item
+\mmb{peer\_sockets\_transient}: the socket addresses received from directories for this instance, of type \cls{ArrayList<Connections\_Peer\_Socket>}, one for each volatile/transient
+instance address of the peer that is of type SOCKET. 
+
+Currently transient diectories are not stored in separate lists (keeping an old implementation) and thefore 
+there is a risk they can be lost when udating the structures (but we assume that transient directories will likely not exist and therefore
+we do not take time now to implement a similar \mmb{peer\_directories\_transient} member).
+\item
+\mmb{status}: a structure (passed on update from old structures to new ones)  containing
+ \begin{itemize}
+ \item
+	\mmb{contacted\_since\_start\_TCP}: set if there was a success of the TCP to this instance since start
+ \item
+	 \mmb{last\_contact\_successful\_TCP}:
+            flags to tell the status of the last TCP contact attempt with this instance.
+ \item
+ 	\mmb{ping\_pending\_UDP}: flag to tell whether there was a UDP ping sent to this instance without answer so far
+ \item
+	\mmb{last\_contact\_date\_UDP}: flag to tell the last date when aping reply came from this isnstance
+ \end{itemize}
+\end{itemize}
+
+\subsection{\cls{Connections\_Peer\_Socket}}
+This structure stores all the information needed to keep track of the status of the connection with a given socket address (typically for an instance, but generic ones may exist if the peer has a single instance). It holds:
+\begin{itemize}
+\item
+\mmb{addr}: is an object of type \cls{Address\_SocketResolved} containing an address and its resolved sockets.
+\item
+\mmb{address\_LID}: the local pseudokey of the address in the "peer\_address" table. A negative value testifies that this is a transient address.
+received from a directory but not certified.
+\item
+\mmb{behind\_NAT}: true with transient addresses if there was a NAT address reported with this socket
+\item
+\mmb{\_last\_contact\_date\_TCP}, 
+\item
+\mmb{last\_contact\_successful\_TCP}, 
+%\item
+\mmb{contacted\_since\_start\_TCP}: date
+and flags with the status of the TCP connection to this address
+\item
+\mmb{\_last\_ping\_sent\_date}, \mmb{\_last\_ping\_received\_date}: dates of the UDP connection to this address (when UDP connection was last attempted,  reply was last received).
+\item
+\mmb{replied\_since\_start\_UDP}:
+This flag is redundant since it results from the existence of a value to  \mmb{\_last\_ping\_received\_date}.
+\item
+\mmb{last\_contact\_pending\_UDP}:
+This flag is set iff any UDP ping was sent since the last UDP ping reply was received.
+\end{itemize}
+
+\subsection{\cls{Connections\_Peer\_Directory}}
+
+This structure stores all the information needed to keep track of the status of the connection with a given listing directory of a given
+peer/instance. It holds:
+\begin{itemize}
+\item
+\mmb{supernode\_addr}: on abject of type \cls{Address\_SocketResolved\_TCP} that contains the resolved address of the directory server.
+\item data structures concerning the connection via NAT addresses reported by this directory.
+ \begin{itemize}
+ \item
+ \mmb{\_reported\_peer\_addr}: a hashtable mapping "instance" names for a peer into objects of type \cls{Address\_SocketResolved\_TCP} that contains the resolved address of the NAT entry to that "instance", as reported by this directory. Instance names are translated in non-null
+versions using Util.getStringNonNullUnique().
+ \item
+ \mmb{\_reported\_last\_contact\_date}: a hashtable mapping "instance" names for a peer into objects of type String holding the GeneralizedTime of the last time a ping reply was received for the NAT address reported for that instance by this directory.
+ \item
+ \mmb{\_reported\_last\_ping\_pending}: a hashtable mapping "instance" names for a peer into objects of type \cls{Boolean} which are
+set to TRUE if a ping request was sent for the NAT address reported by this directory since the last reply, and to FALSE or null otherwise.
+ \end{itemize}
+\item
+\mmb{\_last\_contact\_TCP}, \mmb{contacted\_since\_start\_TCP}, \mmb{last\_contact\_successful\_TCP}: date and flags for the connection
+status via TCP to this directory when quering addresses of the current peer.
+\item
+\mmb{\_last\_contact\_UDP}, \mmb{contacted\_since\_start\_UDP}, \mmb{last\_directory\_address\_request\_pending}: date and flags for the connection
+status via UDP to this directory when quering addresses of the current peer.
+\item
+\mmb{address\_LID}: the local pseudokey in the database table "peer\_address" for the data associated to this directory. Set to -1
+if this is a transient directory, i.e., received from a directory.
+\item
+\mmb{reportedAddressesUDP}: an object of type \cls{ArrayList<Address>} with the complete list of addresses received over UDP from
+this directory for the current instance. Used in displays, in the widget \cls{DirectoryPing} with status of directories,
+and as temporary answer from this peer when doing a UDP request.
+%
+%This is {\bf deprecated} Could be replaced by \mmb{lastAnswer} when time allows.
+\item
+\mmb{lastAnswer}: this is the whole last answer received from this directory over UDP. It is used only for shared directories to retrieve
+the last know list of addresses from an instance as temporary answer to an UDP request or for display in the \cls{DirectoryPing}.
+\end{itemize}
+
+\section{Connections Update Process}
+The simplified diagram of this process is shown in Figure~\ref{fig:conn_update}.
+\begin{figure}[!ht]
+\noindent
+\noindent
+\strut\cls{Connections}.\mth{\_\_run} \\
+\strut~init \\
+\strut~wait\_updates (locking lock\_updates\_pc, check changes in dirs, peers, update\_pc) \\
+\strut~ updates\\
+\strut~~ init \mmb{tmp\_xxx} \& switch \\
+\strut~~$|$~ \mth{init\_used\_peers} \\
+\strut~~$|$~~ for all \mmb{used\_peers} \\
+\strut~~$|$~~~ \mth{loadAddresses\_to\_PeerConnection} \\
+\strut~~$|$~~~~ links transient instances from old and, for all instances:\\
+\strut~~$|$~~~~~ \mth{loadInstanceAddresses}  and links transient instancies from old\\
+\strut~~$|$~~~~~~ \mth{loadInstanceAddresses\_certified} and link transient addresses\\
+\strut~~$|$~~~~~~~ \mth{locatePS} from old  or resolve addresses\\
+\strut~~ for all \mmb{update\_needing\_peer\_connections} \\
+\strut~~~ \mth{update\_supernodeaddress()} \\
+\strut~~~~ \mth{update\_supernodeaddress\_instance()} \\
+\strut~~~~~ \mth{update\_supernodeaddress\_instance\_dir()} \\
+\strut~~~~~~ \mth{getDirAddress()} \\
+\strut~~~~~~~ \mth{getDirAddressUDP()} only on the failure of TCP \\
+\strut~~~~~~~~ \mth{getKnownDirectoryAddresses()} use old UDP addresses while expecting new ones \\
+\caption{\cls{Connections} maintenance}\label{fig:conn_update}
+\end{figure}
+The connections update process consists of a loop. 
+An initial initialization in \pkg{Connections}.\mth{init()} has as purpose is to make the 
+structures non-null, and loaded from the database.
+
+The loop waits on the monitor \mmb{monitor\_wait\_obj} until a change is signalled in the database, a connection fails, or until a timeout of amount \mmb{CONNECTIONS\_UPDATE\_TIMEOUT\_MSEC} (currently set to 3 minutes).
+After each wake up, the method \mth{updates} is called.
+
+The method \mth{updates} initializes the \mmb{tmp\_xxx} data structures in \cls{Connections} with the data in the database 
+(as well as the data in the currently used data structures) and then uses them to replace the currently used data structures.
+
+Further, if there are peer connections that did not work recently, these are updated by contacting to their directories and asking
+new transient addresses, to be integrated in the data structures.
+
+
+\section{Client Process}
+
+\begin{figure}[!ht]
+\noindent
+\strut\cls{Client2}.\mth{\_\_run} \\
+\strut~loop for each peer, until \mmb{turnOff} is set \\
+\strut~~\mth{try\_wait} \\
+\strut~~\mth{handlePeer} \\
+\strut~~~\mth{handlePeerRecent()} \\
+\strut~~~\mth{handlePeerNotRecentlyContacted()} \\
+\strut~~~~\mth{trySocketsListTCP()} \\
+\strut~~~~$|$~\mth{try\_TCP\_connection()} \\
+\strut~~~~$|$~\mth{Client2.transfer\_TCP} \\
+\strut~~~~$|$~~\mth{ClientSync.buildRequest()} \\
+\strut~~~~$|$~~\mth{Client2.integrateUpdate()} \\
+\strut~~~~$|$~~~\mth{UpdateMessages.integrateUpdate()} \\
+\strut~~~~\mth{trySocketsListUDP()} \\
+\strut~~~~$|$~\mth{try\_UDP\_connection\_socket()} \\
+\strut~~~~\mth{try\_UDP\_connection\_directory()} \\
+\caption{\cls{Client2} and connections structures}\label{fig:conn_client2}
+\end{figure}
+
+The \cls{Client2} loops over the available connections and for each of them attempts TCP and UDP connections,
+and is shown in Figure~\ref{fig:conn_client2}.
+
+By calling method \mth{Client2.try\_wait()} we make sure that
+each peer is handled only when the load of the system in terms of number of \cls{UDPServerThread}s (based on \mth{UDPServer.getThreads()}) is below 
+\mmb{UDPServer.MAX\_THREADS}/2 (currently 3=6/2). Otherwise a delay is set to \mmb{ClientSync.PAUSE}.
+At the loop immediately after a wakeup request, the value of \mmb{Client2.recentlyTouched} is true.
+The client thread also delays the same amount at the end of each loop if the \mmb{Client2.recentlyTouched} is not set.
+The end of the loop is detected by comparison of the current peer index \mmb{peersToGo} with \mmb{Connections.peersAvailable}.
+
+Once it is decided to poll some peer, this is obtained with \mth{Connections.getConnectionAtIdx(peersToGo)},
+and handled with \mth{handlePeer}. Further each peer is handled in this method separately based on whether it was
+recentry reached or not.
+
+The methods \mth{handlePeerNotRecentlyContacted()}, and \mth{handlePeerRecent()} work by calling 
+\mth{trySocketsListTCP()} (if \mmb{DD.ClientTCP} is set) and \mth{trySocketsListUDP()} (if \mmb{DD.ClientUDP})
+is set. 
+These methods attempt connections separately for each listed socket. 
+If a TCP connection is successful, further connections are not tried for that peer.
+
+In \mth{handlePeerRecent()}  the tcp sockets
+are tried in the reversed order of the date of last connections. 
+Both methods try TCP sockets in instances giving priority to the ones with which we exchanged
+so far the largest number of items.
+
+If trying UDP connections for an instance, the methods call \mth{try\_UDP\_connection\_directory} to also 
+send pings using directories of the instance as well as the shared directories, as STUN servers.
+
+\section{UDPServerThread Process}
+
+\begin{figure}[!ht]
+\noindent
+\strut\cls{UDPServerThread}.\mth{\_\_run} \\
+\strut~\cls{Connections}.\mth{acknowledgeReply()} on ping reply\\
+\strut~\cls{Connections}.\mth{registerIncomingDirectoryAnswer()} on answer from server\\
+\strut~~\mth{Connections.getConnectionSharedPeerDirectory()}\\
+\strut~~for each instance\\
+\strut~~~may update \mth{Connections.myselfPeer\_HT\_IPPORT\_CPD}\\
+\strut~~~\mth{Connections.getConnectionInstancePeerDirectory()}\\
+\strut~~~\mth{Connections.getConnectionPeer()} \\
+\strut~~~build visualisation data in \mmb{D\_Peer.peer\_contacts} \\
+\strut~~~\mth{getSocketAddresses\_for\_peerContacts\_widget()} \\
+\strut~~~$|$~build visualisation data in \mmb{ClientSync.peer\_contacted\_addresses} \\
+\strut~~~\mth{Connections.integrateDirAddresses()} \\
+\strut~~~~\mth{Connections.locatePS()} \\
+\strut~~~~\mth{Connections.locatePD()} \\
+\caption{\cls{UDPServerThread} and connections structures}\label{fig:conn_udpserver}
+\end{figure}
+This process retrieves incoming datagram packets, and integrates them based on their type. The
+algorithm is given in Figure~\ref{fig:conn_udpserver}.
+If they are UDP ping sent by another initiator, then just a reply ping is sent.
+
+When a reply is received to a ping sent my this agent as an initiator, then a \cls{SyncRequest} is sent back and 
+also the connections structure is updated announcing of the success of the connection.
+
+When an answer is received from a directory with the list of addresses of a peer, new transient addresses are added to the
+corresponding place in the data structure. Also, NAT addresses reported are stored in the corresponding directory structure.
+The directory sending the message is identified among the directories serving the peer mentioned in the reply, based on the
+IP and port thereof, using methods \mth{Connections.getConnectionSharedPeerDirectory()} and \mth{Connections.getConnectionInstancePeerDirectory}. This can be improved in the future by adding the \mmb{address\_LID} of the directory in the exchage...
+
+The \cls{UDPServerThread} then calls \cls{Connections}.\mth{registerIncomingDirectoryAnswer()}.
+This method iterates over all in instances in the answer. If any reports the instance of the agent receiving the message,
+the result is stored in \mth{Connections.myselfPeer\_HT\_IPPORT\_CPD}.
+
+The results for each instance are stored in the corresponding \cls{Connection\_Peer} and \cls{Connections\_Peer\_Instance}s
+obtained using method \mth{Connections.getConnectionPeer()} (old versions have used \mth{Connections.getConnectionPeerInstance()}. 
+Significant code there deals with building the data structure used for visualisation in \mmb{D\_Peer.peer\_contacts},
+and \mmb{ClientSync.peer\_contacted\_addresses}.
+
+The actual integration is done using method \mth{Connections.integrateDirAddresses()}, and is followed by waking up
+the client using method \mth{Client2.touchClient()}.
+
+The method \mth{Connections.integrateDirAddresses()} iterates over all the instances in the obtained structure and
+tries to locate previous status objects using locatePS and locatePD. New addresses are stored in \mmb{peer\_sockets\_transient}
+and \mmb{peer\_directories}. It also marks instances found, or no longer found, behind NAT.
+
+\chapter{Data Objects}
+The data exchanged between peers is organized into semantically independedt units, each of them of manageable size.
+Ideally this size should fit a small number of UDP datagrams, exchangeable in one round of communications between two peers found in
+adhoc wifi contact between two cars running in opposite directions on a highway. In fact, an encounter may fit one or more such data items.
+
+The data items exchangeable in DDP2P are:
+\begin{itemize}
+\item
+peer (aka safe)
+\item
+organization of type authoritarian
+\item
+organization of type grassroot
+\item
+active constituent
+\item
+external constituent
+\item
+neighborhood
+\item
+witness stance
+\item
+motion
+\item
+justification
+\item
+signature
+\item
+news item
+\item
+translation item
+\item
+tester recommendation
+\end{itemize}
+Each of these items is identified by a unique global identifier (GID) whose construction algorithm depends on the type of item described.
+
+Some items may have multiple interchangeable GIDs such as a public key and its secure hash with an agreed digest algorithm such as SHA1 (e.g., peers, authoritarian organizations, active constituents, tester items).
+
+Agents may locally store only the GIDs of the data units of interest (or an indication of their existence, such as a hash of a bundle of GIDs),
+while the actual data items may be stored on clound and retrieved on need based on these GIDs.
+
+The GID of some items may have a scope, being unique only in the context of some other object (e.g., active constituent GIDs
+are unique only in the context of a given organization GID).
+
+\chapter{Streaming Logic}
+
+Since each peer's database may be voluminous, we do not intend to have complete databases synchronized
+at each interractions.
+Rather we want at each TCP or UDP encounter to only exchange a token amount of information. For this purpose
+a total order is defined on all semantically independent items of information of the database. This order is given by the
+\mmb{arrival\_date} in the database, namely the date when the latest version of the item was locally defined (either by arrival 
+from another peer, or by local construction). The resolution of this date in is terms of milliseconds. Due to limited precision
+of the local clock, multiple items may have arrived at the same declared arrival time and therefore they would
+have to be shipped together. To avoid large such clusters, we tend to artificially delay saving arrival objects with delays of a millisecond.
+This is currently not done consistently, and a mechanism to ensure it accross the whole system may be designed using
+a global timestamping manager to be queries by all item saving processes (e.g., intercepting \mth{Util.CalendarGetInstance()} or \mth{Util.getGeneralizedTime()}).
+ 
+\section{Incremental Synchronization}
+
+Each agent Alice keeps for each polled peer Bob the latest arrival time of that peer, $arrival\_time_{Bob}$, up to each it has obtained all the data.
+At each poll round Allice will send to Bob the value it has for $arrival\_time_{Bob}$ and Bob will reply
+back with bag of GIDs of sequential items (in the order given by arrrival times), and starting immediately after the arrival time,
+as well as the arrival time of the last of them to be used as the new $arrival\_time_{Bob}$ of Alice.
+
+Alice also send in each poll a bag of GIDs it has obtained from Bob and which are for items that she does not have yet.
+Therefore Bob gives priority in each reply to sending some of the objects requested by alice in the poll, rather then 
+sending new GIDs. First Bob ads to the reply message requested items until it reaches an overall size
+of 3/4 of a datagram. 
+New GIDs are sent only if after adding all requested data, the overall size of the obtained message is smaller than the maximum size of a datagram.
+
+Bob has to send back the list of GIDs that he does not have, such that Alice avoids asking them again from him (this is not implemented yet!).
+
+\section{Building SyncRequests}
+
+\section{Replying SyncRequests}
+
+\section{Integrating Data}
+
+\chapter{AdHoc Synchronization}
+
+\end{document}
+

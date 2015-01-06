@@ -189,7 +189,14 @@ class ThreadAskPull extends util.DDP2P_ServiceThread {
 	ASNSyncRequest asr;
 	SocketAddress sa;
 	Object caller;
-	
+	/**
+	 * If created pith a peer pa with blocking false, then it would recursively call itself!
+	 * @param pa
+	 * @param peer_ID
+	 * @param asr
+	 * @param sa
+	 * @param caller
+	 */
 	ThreadAskPull(D_Peer pa, String peer_ID, ASNSyncRequest asr, SocketAddress sa, Object caller) {
 		super("TCP Server ASK-Pull /new peer", true);
 		this.pa = pa;
@@ -254,7 +261,7 @@ class ThreadAskPull extends util.DDP2P_ServiceThread {
 			}
 			//pa.dirty_main = true;
 			//peer_ID = Util.getStringID(pa.storeSynchronouslyNoException()); //in fact only the options should be forced
-			peer_ID = D_Peer.save_external_instance(pa, asr.dpi);
+			peer_ID = D_Peer.save_external_instance(pa, asr.dpi); // should not be kept!
 			break;
 		case 1: // No pull
 			pa.setBlocked(DD.BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME);
@@ -331,6 +338,14 @@ public class Server extends util.DDP2P_ServiceThread {
 	 * GIDH of peers about which the user is currently asked on whether to enable them or not. 
 	 */
 	public static HashSet<String> queried = new HashSet<String>();
+	/**
+	 * 
+	 * @param asr
+	 * @param sa
+	 * @param caller
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
 	public static boolean extractDataSyncRequest(ASNSyncRequest asr, SocketAddress sa, Object caller) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if (DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nServer: extractDataSyncRequest: asr");	
@@ -365,6 +380,7 @@ public class Server extends util.DDP2P_ServiceThread {
 							received_peer.component_preferences.used = false; //DD.USE_NEW_ARRIVING_PEERS_CONTACTING_ME;
 							//local.loadRemote(pa);
 							//peer_ID = Util.getStringID(local.storeSynchronouslyNoException());
+							// here called with blocking true
 							new ThreadAskPull(received_peer, __peer_ID, asr, sa, caller).start();
 							if (_DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nServer: extractDataSyncRequest: asking user");	
 							return false;
@@ -394,10 +410,10 @@ public class Server extends util.DDP2P_ServiceThread {
 						if (local_peer.loadRemote(received_peer, null, null)) {
 							local_peer.setArrivalDate(crt_date, _crt_date);
 							if (asr.dpi != null) local_peer.integratePeerInstance(asr.dpi);
-							__peer_ID = local_peer.getLIDstr_keep_force(); //Util.getStringID(local_peer.storeSynchronouslyNoException());
+							__peer_ID = local_peer.getLIDstr_force(); //Util.getStringID(local_peer.storeSynchronouslyNoException());
 							if (DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nServer: extractDataSyncRequest: saved peer_ID! "+__peer_ID);	
 						} else {
-							__peer_ID = local_peer.getLIDstr_keep_force();
+							__peer_ID = local_peer.getLIDstr_force();
 						}
 						if (local_peer.dirty_any()) local_peer.storeRequest();
 						local_peer.releaseReference();

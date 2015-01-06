@@ -1586,7 +1586,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if (DEBUG) System.out.println("D_Motion: storeAct_my: done="+this.mydata.row);
 	}
 	public long storeAct_main() throws P2PDDSQLException {
-		//boolean DEBUG = true;
+		boolean DEBUG = true;
 
 		if (this.arrival_date == null && (this.getGIDH() != null)) {
 			this.arrival_date = Util.CalendargetInstance();
@@ -1694,7 +1694,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		this.motion_text = r.motion_text;
 		this.category = r.category;
 		//if (r.choices != this.choices) {
-		if (!((r.choices == null || r.choices.length == 0) && (this.choices == null || this.choices.length == 0))) {
+		if (! ((r.choices == null || r.choices.length == 0) && (this.choices == null || this.choices.length == 0))) {
 			this.choices = r.choices;
 			this.dirty_choices = true;
 		}
@@ -1813,23 +1813,41 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	*/
 	public static long insertTemporaryGID(String p_cGID,
 			long p_oLID, D_Peer __peer, boolean default_blocked) {
-		D_Motion neigh = D_Motion.insertTemporaryGID_org(p_cGID, p_oLID, __peer, default_blocked);
-		if (neigh == null) return -1;
-		return neigh.getLID_force(); 
+		D_Motion tmp_motion = D_Motion.insertTemporaryGID_org(p_cGID, p_oLID, __peer, default_blocked);
+		if (tmp_motion == null) {
+			if (_DEBUG) System.out.println("D_Motion: insertTemporaryGID: failure to insert temporary! "+p_cGID+" oLID="+p_oLID+" blocked="+default_blocked+" from="+__peer);
+			return -1;
+		}
+		return tmp_motion.getLID_force(); 
 	}
+	/**
+	 * Only returns null if p_mGID is null.
+	 * Saving is asynchronous.
+	 * @param p_mGID
+	 * @param p_oLID
+	 * @param __peer
+	 * @param default_blocked
+	 * @return
+	 */
 	public static D_Motion insertTemporaryGID_org(
-			String p_cGID, long p_oLID,
+			String p_mGID, long p_oLID,
 			D_Peer __peer, boolean default_blocked) {
 		D_Motion moti;
-		if ((p_cGID != null)) {
-			moti = D_Motion.getMotiByGID(p_cGID, true, true, true, __peer, p_oLID, null);
+		if ((p_mGID != null)) {
+			moti = D_Motion.getMotiByGID(p_mGID, true, true, true, __peer, p_oLID, null);
 			//consts.setName(_name);
-			moti.setBlocked(default_blocked);
-			moti.setArrivalDate();
-			moti.storeRequest();
+			if (moti.isTemporary()) {
+				moti.setBlocked(default_blocked);
+				moti.setArrivalDate(); // since it is temporary, the arrival date need not be unique as it will not be sent out
+				moti.storeRequest();
+			} else {
+				if (_DEBUG) System.out.println("D_Motion: insertTemporaryGID_org: found not temporary: "+moti);
+			}
 			moti.releaseReference();
+		} else {
+			if (_DEBUG) System.out.println("D_Motion: insertTemporaryGID_org: null motion");
+			return null;
 		}
-		else return null;
 		return moti; 
 	}
 	/**

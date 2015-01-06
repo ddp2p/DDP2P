@@ -75,7 +75,9 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	private static final int MIN_PEERS_RAM = 2;
 	private static final Object monitor_object_factory = new Object();
 	D_Peer_Node component_node = new D_Peer_Node(null, null);
+	/** Use to lock peer in memory cache while modifying it to save changes. */
 	private int status_lock_write = 0;
+	/** Used to lock the "myself" Peer in memory, while other threads can write to it. Changed in data.HandlingMyself_Peer.setMyself(). Checked on D_Peer_Node.register_loaded. */
 	private int status_references = 0;
 
 	public static class D_Peer_Basic_Data {
@@ -2197,6 +2199,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (!addInstanceElem(this.instance, true)) return;
 	}
 	/**
+	 * This adds for myself a new instance and signs it (setting the local branch and version)
 	 * 
 	 * @param instance2 (if null, try current time)
 	 * @param createdLocally
@@ -2222,6 +2225,44 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		this.dirty_instances = true;
 		//nou.set_peer_ID(this.get_ID(), this.get_ID_long());
 		return true;
+	}
+	/**
+	 * Not adding null instances
+	 * @param instance2
+	 * @param dir // TODO save this directory with the instance to detect attacks by spam with directories
+	 * @return
+	 * Returns false if parameter was null.
+	 */
+	public boolean addInstanceFromDir(String instance2, Address dir) {
+		if (instance2 == null) {
+			return false;
+		}
+		
+		if (this.containsPeerInstance(instance2)) return false;
+
+		D_PeerInstance nou = new D_PeerInstance(instance2);
+		nou.createdLocally = false;
+		nou.dirty = true;
+//		nou.branch = DD.BRANCH;
+//		nou.agent_version = DD.VERSION;
+//		nou.setCreationDate();
+//		nou.set_last_sync_date(Util.CalendargetInstance());
+//		nou.sign(getSK());
+		//nou._last_sync_date = Encoder.getGeneralizedTime(nou.last_sync_date);
+
+		//if (this.instances_orig == null) {this.instances_orig = D_PeerInstance.deep_clone(instances);}
+		D_Peer p = D_Peer.getPeerByPeer_Keep(this);
+		if (p != null) {
+			if (! p.containsPeerInstance(instance2)) {
+				p.putPeerInstance_setDirty(instance2, nou);
+				//p.dirty_instances = true;
+				p.storeRequest();
+				p.releaseReference();
+			}
+			return true;
+		}
+		//nou.set_peer_ID(this.get_ID(), this.get_ID_long());
+		return false;
 	}
 	public static boolean samePeers(D_Peer p1, D_Peer p2) {
 		if (p1 == p2) return true;
@@ -2572,12 +2613,20 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		return this.peer_ID;
 	}	
 	/**
-	 * When this is not yet kept, and has no LID (it will keep it and store synchronously, then release)
+	 * If it already has a LID, returning it without keeping.
+	 * To be called when this is not yet kept, since if
+	 * it has no LID, it will keep it and store synchronously, then release.
 	 * @return
 	 */
 	public String getLIDstr_keep_force() {
 		if ((this.peer_ID == null) && (this._peer_ID > 0))
 			this.peer_ID = Util.getStringID(_peer_ID);
+		if (this.getStatusLockWrite() > 0) { // not designed to go on this way, but we try to save face
+			Util.printCallPath("Was supposed to be called when not yet kept! Is this really a coincidence?");
+			Util.printCallPath(lastPath, "Last path was: ", "     ");
+			this.storeSynchronouslyNoException();
+			return this.peer_ID;
+		}
 		if ((this.peer_ID == null) && (this.dirty_any())) {
 			D_Peer p = D_Peer.getPeerByPeer_Keep(this);
 			p.storeSynchronouslyNoException();
@@ -2621,14 +2670,14 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	}
 	
 	/**
-	 * Loads instances if needed,
+	 * Creates instance with: addInstanceElem. Then call storeRequest!
 	 * @param instance2 : the name should have been provided
 	 * @param createdLocally
 	 * @return : returns false if it already existed
 	 */
 	public boolean addInstance(String instance2, boolean createdLocally) {
 		//this.loadInstances();
-		if (!addInstanceElem(instance2, createdLocally)) return false;
+		if (! addInstanceElem(instance2, createdLocally)) return false;
 		this.storeRequest();
 		return true;
 	}
@@ -5357,7 +5406,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			if (dpi != null) local.integratePeerInstance(dpi);
 			local.setBlocked_setDirty(pa.getBlocked());
 			local.setUsed_setDirty(pa.getUsed());
-			peer_ID = local.getLIDstr_keep_force();//Util.getStringID(local.storeSynchronouslyNoException());
+			peer_ID = local.getLIDstr_force();//Util.getStringID(local.storeSynchronouslyNoException());
 			if (local.dirty_any()) local.storeRequest();
 		}
 		local.releaseReference();
@@ -5478,11 +5527,19 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (peer.dirty_any()) peer.storeRequest();
 		peer.releaseReference();
 	}
+	/**
+	 * Use to lock peer in memory cache while modifying it to save changes.
+	 * @return
+	 * The value of the lock
+	 */
 	public int getStatusLockWrite() {
 		return status_lock_write;
 	}
 	StackTraceElement[] lastPath;
 	final private Object monitor_reserve = new Object();
+	/**
+	 * Use to lock peer in memory cache while modifying it to save changes. Here increment the counter. Maximum value is 1 (2 for myself)
+	 */
 	public void incStatusLockWrite() {
 		if (this.getStatusLockWrite() > 0) {
 			//Util.printCallPath("Why getting: "+getStatusReferences());
@@ -5519,6 +5576,9 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		lastPath = Util.getCallPath();
 		this.status_lock_write++;
 	}
+	/**
+	 * Use to lock peer in memory cache while modifying it to save changes. Here we decrement the counter.
+	 */
 	public void decStatusLockWrite() {
 		if (this.getStatusLockWrite() <= 0) {
 			Util.printCallPath("Why getting: "+getStatusLockWrite());

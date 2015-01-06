@@ -25,26 +25,36 @@ public class Connection_Peer {
 	/**
 	 * The address books listing this peer, //order by last_contact!
 	 */
-	public ArrayList<Connections_Peer_Directory> shared_peer_directories; 
+	private ArrayList<Connections_Peer_Directory> shared_peer_directories; 
 	/**
 	 * Known IP addresses for this peer (assumed static) // static addresses, order by contact!
 	 */
 	public ArrayList<Connections_Peer_Socket> shared_peer_sockets; 
 	
-	public boolean contacted_since_start = false;
-	public boolean last_contact_successful = false;
 	
 	/**
 	 * list of clones for this peer
 	 */
 	public ArrayList<Connection_Instance> instances_AL = new ArrayList<Connection_Instance>();
 	/**
-	 * clones, accessed by instance_name made unique (based on Util.getUniqueNameNotNull).
+	 * clones, accessed by instance_name made unique (based on Util.getStringNonNullUnique).
 	 */
 	public Hashtable<String, Connection_Instance> instances_HT = new Hashtable<String, Connection_Instance>();
+	static class Connection_Peer_Status {
+		private boolean contacted_since_start = false;
+		private boolean last_contact_successful = false;
+
+		/**
+		 * If not using TCP, Client2 cannot know if the addresses were just added and not yet tested,
+		 *  therefore will ask them again redundantly.
+		 *  
+		 */
+		private boolean justRequestedSupernodesAddresses;
+	}
+	Connection_Peer_Status status = new Connection_Peer_Status();
 	
 	public Connection_Peer() {
-		shared_peer_directories = new ArrayList<Connections_Peer_Directory>();
+		setSharedPeerDirectories(new ArrayList<Connections_Peer_Directory>());
 		shared_peer_sockets = new ArrayList<Connections_Peer_Socket>();
 	}
 	/**
@@ -59,11 +69,23 @@ public class Connection_Peer {
 				return arg1.dpi.getNbSyncObjects() - arg0.dpi.getNbSyncObjects();
 			}});
 	}
+	/**
+	 * Gets based on potentially null parameters
+	 * @param instance
+	 * @return
+	 */
 	public Connection_Instance getInstanceConnection(String instance) {
 		return this.instances_HT.get(Util.getStringNonNullUnique(instance));
 	}
+	/**
+	 * Puts using potentially null instance names.
+	 * Sorts instances based on the number of exchanged objects (to access first the most accessed)
+	 * @param instance
+	 * @param ic
+	 */
 	public void putInstanceConnection(String instance, Connection_Instance ic) {
 		 this.instances_HT.put(Util.getStringNonNullUnique(instance), ic);
+		 // add the element at the end such that the iterator in update may be able to pass over it, if added from a directory.
 		 instances_AL.add(ic);
 		 sortInstances();
 	}
@@ -76,10 +98,10 @@ public class Connection_Peer {
 	public boolean getFiltered() {return peer.getFiltered();}
 	//public String getLastSyncDate() {return peer.getLastSyncDate(instance);}
 	public String toString() {
-		return "[Peer_Connection: ID = "+getID()+" name = "+getName()+//" date="+getLastSyncDate()+
-				" contact = "+contacted_since_start+
-				" success = "+last_contact_successful+
-				"\n shared dirs = \n  " + Util.concat(shared_peer_directories, "\n  ", "empty")+
+		return "[Peer_Connection: ID = "+getID()+" name = \""+getName()+//" date="+getLastSyncDate()+
+				"\" contact = "+isContactedSinceStart()+
+				" success = "+isLastContactSuccessful()+
+				"\n shared dirs = \n  " + Util.concat(getSharedPeerDirectories(), "\n  ", "empty")+
 				"\n shared socks = \n  " + Util.concat(shared_peer_sockets, "\n  ", "empty")+
 				"\n instances = \n  " + Util.concat(instances_AL, "\n  ", "empty")+
 				"]";
@@ -94,5 +116,30 @@ public class Connection_Peer {
 		System.out.println("Connection_Peer: getInstance: TODO");
 		// TODO Auto-generated method stub
 		return null;
+	}
+	public ArrayList<Connections_Peer_Directory> getSharedPeerDirectories() {
+		return shared_peer_directories;
+	}
+	public void setSharedPeerDirectories(ArrayList<Connections_Peer_Directory> shared_peer_directories) {
+		this.shared_peer_directories = shared_peer_directories;
+	}
+	public boolean isContactedSinceStart() {
+		return status.contacted_since_start;
+	}
+	public void setContactedSinceStart(boolean contacted_since_start) {
+		status.contacted_since_start = contacted_since_start;
+	}
+	public boolean isLastContactSuccessful() {
+		return status.last_contact_successful;
+	}
+	public void setLastContactSuccessful(boolean last_contact_successful) {
+		status.last_contact_successful = last_contact_successful;
+	}
+	public boolean isJustRequestedSupernodesAddresses() {
+		return status.justRequestedSupernodesAddresses;
+	}
+	public void setJustRequestedSupernodesAddresses(
+			boolean justRequestedSupernodesAddresses) {
+		status.justRequestedSupernodesAddresses = justRequestedSupernodesAddresses;
 	}
 }

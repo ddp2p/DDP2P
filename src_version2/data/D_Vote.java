@@ -786,6 +786,7 @@ class D_Vote extends ASNObj{
 		return Util.getString(o.get(0).get(0));
 	}
 	public boolean fillLocals(RequestData new_rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion, boolean tempJust) throws P2PDDSQLException {
+		if (DEBUG) System.out.println("D_Vote: fillLocals: start");
 		D_Peer __peer = null;
 		boolean default_blocked = false;
 		boolean default_blocked_mot = false;
@@ -811,9 +812,15 @@ class D_Vote extends ASNObj{
 				String orgGID_hash = D_Organization.getOrgGIDHashGuess(getOrganizationGID());
 				if(new_rq!=null)new_rq.orgs.add(orgGID_hash);
 				setOrganizationLID(Util.getStringID(D_Organization.insertTemporaryGID(getOrganizationGID(), orgGID_hash, default_blocked_org, __peer)));
-				if(default_blocked_org) return false;
+				if(default_blocked_org) {
+					Util.printCallPath("cannot store vote for blocked org");
+					return false;
+				}
 			}
-			if(getOrganizationLIDstr() == null) return false;
+			if(getOrganizationLIDstr() == null) {
+				Util.printCallPath("cannot store vote with no organization");
+				return false;
+			}
 		}
 		
 		if ((this.getConstituentGID() != null) && (getConstituentLIDstr() == null)) {
@@ -827,26 +834,45 @@ class D_Vote extends ASNObj{
 					if(_DEBUG) System.out.println("D_Vote:fill_locals: invalidGID:"+this.getConstituentGID());
 				}
 			}
-			if(getConstituentLIDstr() == null) return false;
+			if(getConstituentLIDstr() == null) {
+				Util.printCallPath("cannot store vote with no constituent");
+				return false;
+			}
 		}
+		if (DEBUG) System.out.println("D_Vote: fillLocals: done half");
 		
-		if((this.getMotionGID()!=null)&&(getMotionLIDstr() == null)){
+		if ((this.getMotionGID() != null) && (getMotionLIDstr() == null)) {
 			this.setMotionLID(D_Motion.getLIDstrFromGID(getMotionGID(), Util.lval(this.getOrganizationLIDstr())));
-			if(tempMotion && (getMotionLIDstr() == null ))  {
-				if(new_rq!=null)new_rq.moti.add(getMotionGID());
-				setMotionLID(Util.getStringID(D_Motion.insertTemporaryGID(getMotionGID(), Util.lval(this.getOrganizationLIDstr()), __peer, default_blocked_mot)));
+			if (tempMotion && (getMotionLIDstr() == null ))  {
+				if (new_rq != null) new_rq.moti.add(getMotionGID());
+				long mLID = D_Motion.insertTemporaryGID(getMotionGID(), Util.lval(this.getOrganizationLIDstr()), __peer, default_blocked_mot);
+				if (_DEBUG) System.out.println("D_Vote: fillLocals: got temp mLID= "+mLID);
+				setMotionLID(Util.getStringID(mLID));
+			} else {
+				if (_DEBUG) System.out.println("D_Vote: fillLocals: not tempMotion? "+tempMotion);
 			}
-			if(getMotionLIDstr() == null) return false;
+			if (getMotionLIDstr() == null) {
+				Util.printCallPath("cannot store vote with no motion");
+				return false;
+			}
 		}
 		
-		if((this.getJustificationGID()!=null)&&(getJustificationLIDstr() == null)) {
+		if ((this.getJustificationGID() != null) && (getJustificationLIDstr() == null)) {
 			this.setJustificationLID(D_Justification.getLIDstrFromGID(getJustificationGID(), Util.Lval(this.getOrganizationLIDstr()), Util.Lval(this.getMotionLIDstr())));
-			if(tempJust && (getJustificationLIDstr() == null ))  {
-				if(new_rq!=null)new_rq.just.add(getJustificationGID());
-				setJustificationLID(Util.getStringID(D_Justification.insertTemporaryGID(getJustificationGID(), Util.Lval(this.getOrganizationLIDstr()), Util.Lval(this.getMotionLIDstr()), __peer, default_blocked_just)));
+			if (tempJust && (getJustificationLIDstr() == null ))  {
+				if (new_rq != null) new_rq.just.add(getJustificationGID());
+				long jLID = D_Justification.insertTemporaryGID(getJustificationGID(), Util.Lval(this.getOrganizationLIDstr()), Util.Lval(this.getMotionLIDstr()), __peer, default_blocked_just);
+				if (_DEBUG) System.out.println("D_Vote: fillLocals: got temp jLID= "+jLID);
+				setJustificationLID(Util.getStringID(jLID));
+			} else {
+				if (_DEBUG) System.out.println("D_Vote: fillLocals: not tempJust? "+tempJust);
 			}
-			if(getJustificationLIDstr() == null) return false;
+			if (getJustificationLIDstr() == null) {
+				Util.printCallPath("cannot store vote with no local justification");
+				return false;
+			}
 		}
+		if (DEBUG) System.out.println("D_Vote: fillLocals: done success");
 		return true;
 	}
 	/**

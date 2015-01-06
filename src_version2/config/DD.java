@@ -636,6 +636,12 @@ public class DD {
 			e.printStackTrace();
 		}
 	}
+	/**
+	 * Loads the listing directories from the "directory_address" or, if none, from the "application" table
+	 * @throws P2PDDSQLException
+	 * @throws NumberFormatException
+	 * @throws UnknownHostException
+	 */
 	public static void load_listing_directories() throws P2PDDSQLException, NumberFormatException, UnknownHostException{
 		Identity.setListing_directories_loaded(true);
 		

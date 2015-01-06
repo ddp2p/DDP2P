@@ -209,7 +209,7 @@ class Client1 extends util.DDP2P_ServiceThread implements IClient {
 			
 				//address = addresses[k];
 				Address_SocketResolved_TCP sad = tcp_sock_addresses.get(k);
-				sock_addr=sad.isa;//getSockAddress(address);
+				sock_addr=sad.isa_tcp;//getSockAddress(address);
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null,"TRY ADDRESS", sock_addr+""));
 				if(sock_addr.isUnresolved()) {
 					if(DEBUG) out.println("Client: Peer is unresolved!");
@@ -284,14 +284,14 @@ class Client1 extends util.DDP2P_ServiceThread implements IClient {
 							value = new Hashtable<String,String>();
 							pc.put(key, value);
 						}
-						sock_addr=udp_sock_addresses.get(k).isa;//getSockAddress(address);
+						sock_addr=udp_sock_addresses.get(k).isa_tcp;//getSockAddress(address);
 						value.put(sock_addr+" UDP-"+DD.ALREADY_CONTACTED, now);
 					}
 					//System.out.print("#2");
 					return false;					
 				}
 				Address_SocketResolved_TCP sad = udp_sock_addresses.get(k);
-				sock_addr=sad.isa;//getSockAddress(address);
+				sock_addr=sad.isa_tcp;//getSockAddress(address);
 				if(DEBUG) out.println("UClient:try_connect: checkMyself");
 				
 				if(ClientSync.isMyself(Identity.udp_server_port, sock_addr, sad)){
@@ -316,7 +316,7 @@ class Client1 extends util.DDP2P_ServiceThread implements IClient {
 				aup.initiator_globalID=Identity.current_peer_ID.getPeerGID(); //dr.initiator_globalID;
 				aup.initiator_port = Identity.udp_server_port;//dr.UDP_port;
 				aup.peer_globalID=global_peer_ID;
-				aup.peer_domain=sad.getAddressSupernode().domain;//;
+				aup.peer_domain=sad.getAddress().domain;//;
 				if(DEBUG) System.out.println("Client:try_connect: domain ping = \""+aup.peer_domain+"\" vs \""+Util.getNonBlockingHostName(sock_addr)+"\"");
 				aup.peer_port=sock_addr.getPort();
 				byte[] msg = aup.encode();

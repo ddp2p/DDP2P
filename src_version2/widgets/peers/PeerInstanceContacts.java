@@ -174,10 +174,10 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 			if (DEBUG) System.out.println("PeerIContacts: getTree: peer="+peer);
 			D_PIC_Node n = new D_PIC_Node();
 			result.add(n);
-			n.text = "\""+peer.getName()+"\" Contacted="+peer.contacted_since_start+" (ok="+peer.last_contact_successful+")";
+			n.text = "\""+peer.getName()+"\" Contacted="+peer.isContactedSinceStart()+" (ok="+peer.isLastContactSuccessful()+")";
 			
-			if (peer.shared_peer_directories.size() > 0) {
-				D_PIC_Node dirs = getAddressesDirNodes(peer.shared_peer_directories);
+			if (peer.getSharedPeerDirectories().size() > 0) {
+				D_PIC_Node dirs = getAddressesDirNodes(peer.getSharedPeerDirectories());
 				dirs.parent = n;
 				n.child.add(dirs);
 			}
@@ -198,7 +198,7 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 	}
 	private D_PIC_Node getInstance(Connection_Instance i) {
 		D_PIC_Node n = new D_PIC_Node();
-		n.text = "INST=\""+i.dpi.peer_instance+"\" Contacted="+i.contacted_since_start+" (ok="+i.last_contact_successful+")";
+		n.text = "INST=\""+i.dpi.peer_instance+"\" Contacted="+i.isContactedSinceStart_TCP()+" (ok="+i.isLastContactSuccessful_TCP()+")";
 		if (i.peer_directories.size() > 0) {
 			D_PIC_Node dirs = getAddressesDirNodes(i.peer_directories);
 			dirs.parent = n;
@@ -206,6 +206,11 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 		}
 		if (i.peer_sockets.size() > 0) {
 			D_PIC_Node socks = getAddressesSockNodes(i.peer_sockets);
+			socks.parent = n;
+			n.child.add(socks);
+		}
+		if (i.peer_sockets_transient.size() > 0) {
+			D_PIC_Node socks = getAddressesSockNodes(i.peer_sockets_transient);
 			socks.parent = n;
 			n.child.add(socks);
 		}
@@ -220,7 +225,7 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 			if (ad == null) Util.printCallPath("Null peer directory here!");
 			String rep = ad.getReportedAddresses();
 			a.text =
-					ad.supernode_addr.getAddressSupernode()+"/"+ad.supernode_addr.isa+" (#"+ad.address_ID+") rep=" + rep +
+					ad.supernode_addr.getAddress()+"/"+ad.supernode_addr.isa_tcp+" (#"+ad.address_LID+") rep=" + rep +
 					"contact="+ ad._last_contact_TCP+" tried="+ad.contacted_since_start_TCP+"/ok="+ad.last_contact_successful_TCP
 					;
 			n.child.add(a);
@@ -230,15 +235,15 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 	private D_PIC_Node getAddressesSockNodes(ArrayList<Connections_Peer_Socket> addr) {
 		D_PIC_Node n = new D_PIC_Node();
 		n.text = Address.SOCKET;
-		for (Connections_Peer_Socket ad: addr) {
+		for (Connections_Peer_Socket as: addr) {
 			D_PIC_Node a = new D_PIC_Node();
 			a.parent = n;
-			a.text = ((ad.addr != null)?(ad.addr.ad+" (#"+ad.address_ID+") IP="+ad.addr.ia):"No addresss ")+
-					" date="+ad._last_contact+
-					" TCP="+ad.contacted_since_start_TCP+"(ok="+ad.last_contact_successful_TCP+" "+
-					"open="+ad.tcp_connection_open+"/busy="+ad.tcp_connection_open_busy+")"+
-					" UDP="+ad.contacted_since_start_UDP+"(ok="+ad.last_contact_successful_UDP+")"+
-					" NAT="+ad.behind_NAT
+			a.text = ((as.addr != null)?(as.addr.addr+" (#"+as.address_LID+") IP="+as.addr.ia):"No addresss ")+
+					" date="+as._last_contact_date_TCP+
+					" TCP="+as.contacted_since_start_TCP+"(ok="+as.last_contact_successful_TCP+" "+
+					"open="+as.tcp_connection_open+"/busy="+as.tcp_connection_open_busy+")"+
+					" UDP="+as.replied_since_start_UDP+"(pend="+as.last_contact_pending_UDP+")"
+					+" NAT="+as.behind_NAT
 					;
 			n.child.add(a);
 		}

@@ -107,7 +107,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public boolean blocked = false;
 	public boolean requested = false;
 	public boolean broadcasted = DEFAULT_BROADCASTED_ORG_ITSELF;
+	/** If this is false, then the organization is broadcasted only to the users that are manually specified */
 	public boolean broadcast_rule = true;
+	/** If this is false, then users should (TODO not implemented) refuse to receive for this organization a neighborhood whose parents/children divisions/labels are not defined in the org params */
+	public boolean neighborhoods_rule = true;
 	public HashSet<String> preapproved = new HashSet<String>();
 	public String _preapproved = null; // ordered (for saving)
 	//public int status_references = 0;
@@ -365,6 +368,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		//";\n  id  = "+global_organization_ID+";\n"+
 		result += " name="+getName()+"; ";
 		result += " b_r="+broadcast_rule+"; ";
+		result += " n_r="+neighborhoods_rule+"; ";
 		//";\n  l_s_d="+_last_sync_date+
 		//";\n  params="+params+
 		//";\n  creator="+creator+
@@ -390,6 +394,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		result += ";\n  id  = "+global_organization_ID;
 		result += ";\n  name="+getName();
 		result += ";\n  broadcast_rule="+broadcast_rule;
+		result += ";\n  neighborhoods_rule="+neighborhoods_rule;
 		result += ";\n  l_s_d="+_last_sync_date;
 		result += ";\n  params="+params;
 		result += ";\n  creator_ID="+creator_ID;
@@ -702,7 +707,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return getOrgByGID_or_GIDhash(GID, GIDhash, load_Globals, false, keep, null);
 	}
 	/**
-	 * 
+	 * On create, set temporary
 	 * @param GID
 	 * @param GIDhash
 	 * @param load_Globals
@@ -714,9 +719,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	static public D_Organization getOrgByGID_or_GIDhash(String GID, String GIDhash, boolean load_Globals, boolean create, boolean keep, D_Peer __peer) {
 		return getOrgByGID_or_GIDhash(GID, GIDhash, load_Globals, create, keep, __peer, null);
 	}
+	/** If storage is not null, then on create does not set temporary */
 	static public D_Organization getOrgByGID_or_GIDhash(String GID, String GIDhash, 
-			boolean load_Globals, boolean create, boolean keep, D_Peer __peer,
-			D_Organization storage) {
+			boolean load_Globals, boolean create, boolean keep, D_Peer __peer, D_Organization storage) {
 		if ((GID == null) && (GIDhash == null)) return null;
 		if ((GID != null) && (GIDhash == null)) GIDhash = D_Organization.getOrgGIDHashGuess(GID);
 		if (!D_Organization.isOrgGID(GID)) GID = null;
@@ -1200,6 +1205,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.requested = Util.stringInt2bool(row.get(table.organization.ORG_COL_REQUEST),false);
 		this.broadcasted = Util.stringInt2bool(row.get(table.organization.ORG_COL_BROADCASTED), D_Organization.DEFAULT_BROADCASTED_ORG_ITSELF);
 		this.broadcast_rule = Util.stringInt2bool(row.get(table.organization.ORG_COL_BROADCAST_RULE), true);
+		this.neighborhoods_rule = Util.stringInt2bool(row.get(table.organization.ORG_COL_NEIGHBORHOODS_RULE), true);
 
 		_preapproved = Util.getString(row.get(table.organization.ORG_COL_PREAPPROVED));
 		updatePreapproved();
@@ -1245,7 +1251,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		}
 
 		if ((this.signature_initiator == null) && (this.params.creator_global_ID != null)) {
-
+			if (_DEBUG) System.out.println("D_Organization: init: this organization has a creator but no signature:"+this);
 			//byte[] msg = this.getSignableEncoder().getBytes();
 			//SK sk = Util.getStoredSK(this.params.creator_global_ID, null);
 			//if (sk != null) {
@@ -1346,6 +1352,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (params != null) enc.addToSequence(params.getEncoder().setASN1Type(DD.TAG_AC1));
 		if (concepts != null) enc.addToSequence(concepts.getEncoder().setASN1Type(DD.TAG_AC2));
 		if (broadcast_rule != true) enc.addToSequence(new Encoder(broadcast_rule).setASN1Type(DD.TAG_AC15));
+		if (neighborhoods_rule != true) enc.addToSequence(new Encoder(neighborhoods_rule).setASN1Type(DD.TAG_AC16));
 		if (ASNSyncRequest.DEBUG || DEBUG) System.out.println("Encoded OrgData sign: "+this);
 		return enc;
 	}
@@ -1363,6 +1370,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (params != null) enc.addToSequence(params.getEncoder().setASN1Type(DD.TAG_AC1));
 		if (concepts != null) enc.addToSequence(concepts.getEncoder().setASN1Type(DD.TAG_AC2));
 		if (broadcast_rule != true) enc.addToSequence(new Encoder(broadcast_rule).setASN1Type(DD.TAG_AC15));
+		if (neighborhoods_rule != true) enc.addToSequence(new Encoder(neighborhoods_rule).setASN1Type(DD.TAG_AC16));
 		//if (signature != null) enc.addToSequence(new Encoder(signature));
 		//if (creator != null) enc.addToSequence(creator.getEncoder().setASN1Type(DD.TAG_AC0));
 		//if (neighborhoods != null) enc.addToSequence(Encoder.getEncoder(neighborhoods).setASN1Type(DD.TAG_AC3));
@@ -1410,6 +1418,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (params != null) enc.addToSequence(params.getEncoder(dictionary_GIDs).setASN1Type(DD.TAG_AC1));
 		if (concepts != null) enc.addToSequence(concepts.getEncoder().setASN1Type(DD.TAG_AC2));
 		if (broadcast_rule != true) enc.addToSequence(new Encoder(broadcast_rule).setASN1Type(DD.TAG_AC15));
+		if (neighborhoods_rule != true) enc.addToSequence(new Encoder(neighborhoods_rule).setASN1Type(DD.TAG_AC16));
 		if (signature != null) enc.addToSequence(new Encoder(signature));
 		if (signature_initiator != null) enc.addToSequence(new Encoder(signature_initiator).setASN1Type(DD.TAG_AC14));
 		
@@ -1481,6 +1490,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if(dec.getTypeByte()==DD.TAG_AC1){ params=new D_OrgParams().decode(dec.getFirstObject(true)); if(DEBUG )System.out.println("OrgData p="+params);}
 		if(dec.getTypeByte()==DD.TAG_AC2){ concepts=new D_OrgConcepts().decode(dec.getFirstObject(true)); if(DEBUG)System.out.println("OrgData c="+concepts);}
 		if(dec.getTypeByte()==DD.TAG_AC15){ broadcast_rule = dec.getFirstObject(true).getBoolean(DD.TAG_AC15); if(DEBUG)System.out.println("OrgData b_r="+broadcast_rule);}
+		if(dec.getTypeByte()==DD.TAG_AC16){ neighborhoods_rule = dec.getFirstObject(true).getBoolean(DD.TAG_AC16); if(DEBUG)System.out.println("OrgData n_r="+neighborhoods_rule);}
 		if(dec.getTypeByte()==Encoder.TAG_OCTET_STRING){ signature=dec.getFirstObject(true).getBytes(); if(DEBUG)System.out.println("OrgData s="+Util.byteToHexDump(signature));}
 		if(dec.getTypeByte()==DD.TAG_AC14){ signature_initiator=dec.getFirstObject(true).getBytes(DD.TAG_AC14); if(DEBUG)System.out.println("OrgData s="+Util.byteToHexDump(signature_initiator));}
 		if(dec.getTypeByte()==DD.TAG_AC0){ creator = D_Peer.getEmpty().decode(dec.getFirstObject(true)); if(DEBUG)System.out.println("OrgData cr="+creator);}
@@ -1522,6 +1532,13 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.arrival_date = _currentTime;
 		if (_currentTime == null)
 			this.arrival_date = Util.getCalendar(currentTime);
+		this.dirty_locals = true;
+	}
+	/**
+	 * Sets the next arrival time using the sequencer: ArrivalDateStream.getNextArrivalDate();
+	 */
+	public void setArrivalDate() {
+		this.arrival_date = ArrivalDateStream.getNextArrivalDate();
 		this.dirty_locals = true;
 	}
 	
@@ -1930,6 +1947,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				p[table.organization.ORG_COL_REQUEST] = Util.bool2StringInt(requested);
 				p[table.organization.ORG_COL_BROADCASTED] = Util.bool2StringInt(broadcasted);
 				p[table.organization.ORG_COL_BROADCAST_RULE] = Util.bool2StringInt(broadcast_rule);
+				p[table.organization.ORG_COL_NEIGHBORHOODS_RULE] = Util.bool2StringInt(neighborhoods_rule);
 				p[table.organization.ORG_COL_PREAPPROVED] = _preapproved;
 				p[table.organization.ORG_COL_PREFERENCES_DATE] = this._preferences_date;
 				p[table.organization.ORG_COL_FIRST_PROVIDER_PEER] = this.first_provider_peer;
@@ -1992,7 +2010,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			////creator_ID = D_Peer.storePeerAndGetOrInsertTemporaryLocalForPeerGID(null, params.creator_global_ID,creator,arrival_time);
 			//D_Peer _creator = D_Peer.getPeerByGID(this.params.creator_global_ID, true, true, source_peer);
 			//if (creator != null) _creator.loadRemote(creator);
-			if (creator == null) creator = D_Peer.getPeerByGID_or_GIDhash(this.params.creator_global_ID, null, true, true, false, null);
+			if (creator == null) {
+				creator = D_Peer.getPeerByGID_or_GIDhash(this.params.creator_global_ID, null, true, true, true, null);
+				creator.storeRequest();
+				creator.releaseReference();
+			}
 			creator_ID = creator.getLIDstr_keep_force();
 			System.out.println("D_Organization: fillLocals: should not be here: unknown source peer");
 		}
@@ -2563,7 +2585,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (this.params.creator_global_ID == null) return null;
 		// reusing, but does not controll dirty 
 		sign(null, getCreatorSK(), false);
-		return getSignatureInitiator();
+		return this.signature_initiator; // avoid recalling getSignatureInitiator(); since this is recursive
 		
 		/*
 		SK sk_ini = getCreatorSK();
@@ -2764,7 +2786,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (creator != null) {
 			sk_ini = creator.getSK(); //Util.getStoredSK(creator.component_basic_data.globalID, creator.component_basic_data.globalIDhash);
 			if (sk_ini == null)
-				Util.printCallPath("Why!!");
+				Util.printCallPath("Why!! "+this);
 			if ( ! Util.equalStrings_null_or_not(creator.component_basic_data.globalID, params.creator_global_ID))
 				System.out.println("D_Organization:readSignSave: diff GIDs:!!!");
 		} else
@@ -2854,14 +2876,16 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			//return local_org_ID;
 			return  D_Organization.getLIDbyGID(oRG.getGID());// -1;//oRG.getLID();
 		}
-		
 		D_Organization org = D_Organization.getOrgByGID_or_GIDhash(oRG.getGID(), oRG.getGIDH_or_guess(), true, true, true, provider);
+		if (!org.isTemporary() && org.getLID() <= 0) Util.printCallPath("Why not temporary?"+org);
 		if (org.loadRemote(oRG, provider, _changed, __sol_rq, __new_rq)) {
 			Application_GUI.inform_arrival(org, provider);
-			org.storeRequest();
+			//org.dirty_main = true;
+			if (org.dirty_any()) org.storeRequest_getID();
 		}
+		org.getLID_forced();
 		org.releaseReference();
-		return org.getLID_forced();
+		return org.getLID();
 	}
 	/**
 	 * Calls loadRemote which currently also synchronously stores data.
@@ -2873,7 +2897,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		D_Organization org = D_Organization.getOrgByGID_or_GIDhash(oRG.getGID(), oRG.getGIDH_or_guess(), true, true, true, provider);
 		if (org.loadRemote(oRG, provider, null, null, null)) {
 			Application_GUI.inform_arrival(org, provider);
-			if (org.dirty_any()) org.storeRequest();
+			if (org.dirty_any()) org.storeRequest_getID();
 		}
 		org.releaseReference();
 		return org;
@@ -2893,6 +2917,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (! this.isTemporary() && ! newer(oRG, this)) {
 			if (DEBUG) out.println("D_Organization: storeVerified: Will not integrate old ["+oRG.getCreationDate_str()+"]: "+this);
 			if (changed != null) changed[0]=false;
+			if (this.getLID() <= 0) Util.printCallPath("Why is this not tempory?"+this);
 			this.getLID_forced();
 			return false;
 		}
@@ -2900,16 +2925,21 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (changed != null) changed[0] = true;
 
 		this.broadcast_rule = oRG.broadcast_rule;
+		this.neighborhoods_rule = oRG.neighborhoods_rule;
+		
 		this.setName(oRG.getName());
 		this.signature = oRG.signature;
-		this.params = oRG.params.getClone();
+		this.signature_initiator = oRG.signature_initiator;
 		this.concepts = oRG.concepts.getClone();
 		
 		if (! Util.equalStrings_null_or_not(this.global_organization_ID, oRG.global_organization_ID)) {
 			this.global_organization_ID = oRG.global_organization_ID;
 			this.setLID(null);
 		}
-		if (! Util.equalStrings_null_or_not(this.params.creator_global_ID, oRG.params.creator_global_ID)) {
+		
+		D_OrgParams oldParams = this.params;
+		this.params = oRG.params.getClone();
+		if (! Util.equalStrings_null_or_not(oldParams.creator_global_ID, oRG.params.creator_global_ID)) {
 			//this.creator_ID = oRG.creator_ID;
 			String GIDhash = null;//D_Peer.getGIDHashFromGID(this.params.creator_global_ID); 
 			D_Peer p = D_Peer.getPeerByGID_or_GIDhash(this.params.creator_global_ID, GIDhash, true, false, false, null);
@@ -2918,13 +2948,27 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				String creaGID_hash = oRG.getCreatorGIDH_orGuess();
 				if (_new_rq != null) _new_rq.peers.put(creaGID_hash, DD.EMPTYDATE);
 
-				p = D_Peer.getPeerByGID_or_GIDhash(oRG.params.creator_global_ID, null, true, true, false, provider);
+				p = D_Peer.getPeerByGID_or_GIDhash(oRG.params.creator_global_ID, null, true, true, true, provider);
 				if (provider != null) p.setProvider(provider.getLIDstr_keep_force());
 				p.storeRequest_getID();
+				p.releaseReference();
 				this.setCreatorID(p.getLIDstr(), oRG.getCreatorGID());
 			}
 		}
-		
+		if ((creator_ID == null) && (this.params.creator_global_ID != null)) {
+			////creator_ID = D_Peer.storePeerAndGetOrInsertTemporaryLocalForPeerGID(null, params.creator_global_ID,creator,arrival_time);
+			//D_Peer _creator = D_Peer.getPeerByGID(this.params.creator_global_ID, true, true, source_peer);
+			//if (creator != null) _creator.loadRemote(creator);
+			if (creator == null) {
+				creator = D_Peer.getPeerByGID_or_GIDhash(this.params.creator_global_ID, null, true, true, true, provider);
+				creator.storeRequest();
+				creator.releaseReference();
+			}
+			creator_ID = creator.getLIDstr_keep_force();
+			if (_DEBUG) System.out.println("D_Organization: loadRemote: fillLocals: why here?"+this);
+		}
+
+		this.setArrivalDate();
 		dirty_main = true;
 		
 		if (this.isTemporary() && this.first_provider_peer == null && provider != null) this.first_provider_peer = provider.getLIDstr_keep_force();
@@ -2932,6 +2976,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		getLID_forced();
 		return true;
 	}
+
 	private String getCreatorGIDH_orGuess() {
 		return D_Peer.getGIDHashFromGID(this.getCreatorGID());
 	}
@@ -3122,6 +3167,21 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		dirty_main = true;
 	}
 	/**
+	 * The value that is disseminated (If users are allowed to create custom neighborhood levels)
+	 * @return
+	 */
+	public boolean getNetworkRule() {
+		return this.neighborhoods_rule;
+	}
+	/**
+	 * The value that is certified (requested by creator)
+	 * @param val
+	 */
+	public void setNetworkRule(boolean val) {
+		this.neighborhoods_rule = val;
+		this.dirty_main = true;
+	}
+	/**
 	 * The value that is disseminated
 	 * @return
 	 */
@@ -3285,7 +3345,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.dirty_main = true;
 	}
 /**
- * If cGID null, get it from cLID
+ * If cGID null, get it from cLID. Sets both the creator GID and the creator_ID
  * @param cLID
  * @param cGID
  */
