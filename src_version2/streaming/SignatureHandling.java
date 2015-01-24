@@ -35,6 +35,7 @@ import config.DD;
 
 
 import data.D_Organization;
+import data.D_Peer;
 import data.D_Vote;
 
 import util.Util;
@@ -211,7 +212,7 @@ public class SignatureHandling {
 
 	public static boolean integrateNewData(D_Vote[] signatures, String org_GID,
 			String org_local_ID, String arrival_time, D_Organization orgData,
-			RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
+			RequestData sol_rq, RequestData new_rq, D_Peer __peer) throws P2PDDSQLException {
 		//boolean DEBUG = true;
 		if(DEBUG) out.println("SignatureHandling:integrateNewData: start: #"+signatures);
 		if(signatures==null) {
@@ -222,7 +223,7 @@ public class SignatureHandling {
 			if(DEBUG) out.println("SignatureHandling:integrateNewData: doing["+k+"]: #"+signatures[k]);
 			signatures[k].setOrganizationGID(org_GID);
 			signatures[k].setOrganizationLID(org_local_ID);
-			signatures[k].store(sol_rq, new_rq);
+			signatures[k].store(sol_rq, new_rq, __peer);
 		}
 		if(DEBUG) out.println("SignatureHandling:integrateNewData: done for:"+signatures.length);
 		return signatures.length>0;

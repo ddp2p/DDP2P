@@ -40,7 +40,7 @@ import ASN1.Decoder;
 import ASN1.Encoder;
 
 public class DD_Address implements StegoStructure {
-	public static final boolean DEBUG = true;
+	public static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final int MAX_ID_DESCRIPTION = 50;
 	/** Nobody uses this, but it is V3 encoding without addresses */
@@ -588,11 +588,16 @@ public class DD_Address implements StegoStructure {
 	@Override
 	public void setBytes(byte[] msg) throws ASN1DecoderFail {
 		_setBytes(msg);
+		//if (DEBUG) System.out.println("DD_Address: setBytes x: done");
 		// Attempts to decode may profit by detecting a miss-matched object type by not accepting data with no name.
+		if (V0.equals(this.version)) return;
+		if (V1.equals(this.version)) return;
+		if (V2.equals(this.version)) return;
 		if (this.peer == null || this.peer.getName() == null) {
-			if (_DEBUG) System.out.println("DD_Address: setBytes: we do not allow peers with no name");
+			if (_DEBUG) System.out.println("DD_Address: setBytes: we do not allow peers with no name:"+peer);
 			throw new ASN1.ASNLenRuntimeException("No name in received peer!");
 		}
+		//if (DEBUG) System.out.println("DD_Address: setBytes x: success");
 	}
 	/**
 	 * This version always returns true. Could be configured to return false on wrong ASN1 tag by uncommenting return condition.
@@ -601,11 +606,14 @@ public class DD_Address implements StegoStructure {
 	 * @throws ASN1DecoderFail
 	 */
 	public boolean _setBytes(byte[] msg) throws ASN1DecoderFail {
+		//Util.printCallPath("");
 		if (DEBUG) System.out.println("DD_Address: setBytes: enter");
 		if (_DEBUG) System.out.println("DD_Address: setBytes: enter msg=#"+msg.length+": "+Util.byteToHexDump(msg, 30));
 		Decoder dec = new Decoder(msg);
-		if (! new BigInteger(""+this.getSignShort()).equals(dec.getTagValueBN())) {
-			if (_DEBUG) System.err.println("ControlPane: actionImport: Got: message not ASN1 tag of ="+this.getClass());
+		BigInteger expected = new BigInteger(""+this.getSignShort());
+		BigInteger _found = dec.getTagValueBN();
+		if (! expected.equals(_found)) {
+			if (_DEBUG) System.err.println("DD_Address: setBytes: Got: message not ASN1 tag of ="+this.getClass()+" "+expected+" vs "+_found);
 			//return false;
 		}
 		dec = dec.getContent();
@@ -620,10 +628,14 @@ public class DD_Address implements StegoStructure {
 			setBytes_V2(dec); return true;}
 		if (V2.equals(version)) {
 			if (DEBUG) System.out.println("DD_Address: setBytes: V2");
-			setBytes_V2(dec); return true;}
+			setBytes_V2(dec); 
+			if (DEBUG) System.out.println("DD_Address: setBytes: done V2. I am=:"+this);
+			return true;}
 		if (V3.equals(version)) {
 			if (DEBUG) System.out.println("DD_Address: setBytes: V3");
-			setBytes_V3(dec); return true;}
+			setBytes_V3(dec); 
+			//if (DEBUG) System.out.println("DD_Address: setBytes: done V3");
+			return true;}
 		if (DEBUG) System.out.println("DD_Address: setBytes: exit: \""+version+"\"");
 		return true;
 	}

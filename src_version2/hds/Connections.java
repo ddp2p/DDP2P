@@ -625,7 +625,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener 
 					Connections_Peer_Socket tmpsock = old_conn_peer_sock_AL.get(c);
 				
 					if (tmpsock.address_LID > 0) {
-						if (_DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_uncertified: Socket: fix old peer_sock #"+tmpsock);
+						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_uncertified: Socket: fix old peer_sock #"+tmpsock);
 						continue;
 					}
 					if ((tmpsock.contacted_since_start_TCP && tmpsock.replied_since_start_UDP) && (!tmpsock.last_contact_successful_TCP && tmpsock.last_contact_pending_UDP)) {
@@ -1089,7 +1089,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener 
 			) {
 		boolean DEBUG = Connections.DEBUG || DD.DEBUG_COMMUNICATION_ADDRESSES;
 		if (DEBUG) System.out.println("Directories: getDirAddressUDP: enter dir_address = "+dir_address);
-		if ((Application.aus == null) || (UDPServer.getUDPSocket() == null)) {
+		if ((Application.g_UDPServer == null) || (UDPServer.getUDPSocket() == null)) {
 			if (DEBUG) System.out.println("Directories: getDirAddressUDP: exit no server");
 			return null;
 		}
@@ -1201,7 +1201,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener 
 			Connections_Peer_Directory pd
 			) {
 		boolean DEBUG = Connections.DEBUG || DD.DEBUG_COMMUNICATION_ADDRESSES;
-		IClient This = Application.ac;
+		IClient This = Application.g_PollingStreamingClient;
 		if (DEBUG) out.println("Connections: update_supernode_address_instance_dir: start dp="+pd);
 		
 		Hashtable<String, Hashtable<String, Hashtable<String,String>>> _peer_contacts_for_this_peer = D_Peer.peer_contacts.get(peer_key);
@@ -1340,7 +1340,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener 
 		}
 		
 		if (DEBUG) System.out.println("Connections: update_supernode_address_instance_dir: waking up Client2"); 
-		Client2.touchClient();
+		DD.touchClient();
 			
 		// pretty print addresses and instances in the Client log
 		s_addr_ip = null;
@@ -1849,7 +1849,7 @@ public class Connections extends util.DDP2P_ServiceThread implements DBListener 
 			//integrateDirAddresses(_pc[0], pd_instance, adr);//, pi.peer_directories, pi.peer_sockets);
 		}
 		// wake up the client
-		Client2.touchClient();
+		DD.touchClient();
 		if (DEBUG) System.out.println("Connections: registerIncomingDirectoryAnswer: waking up Client2"); 
 	}
 	/**

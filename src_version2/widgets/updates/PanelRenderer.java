@@ -48,6 +48,6 @@ public class PanelRenderer extends JPanel
 //    }
    // setSelectedItem(a.get(0));
     
-        return (JPanel) items;
+        return (Component) items;
     }
 }

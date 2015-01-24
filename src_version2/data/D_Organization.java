@@ -42,6 +42,7 @@ import config.Application;
 import config.Application_GUI;
 import config.DD;
 import data.D_Motion.D_Motion_Node;
+import data.D_Peer.D_Peer_Node;
 import streaming.OrgPeerDataHashes;
 import streaming.RequestData;
 import util.DDP2P_DoubleLinkedList;
@@ -62,7 +63,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 
 	public static final int A_NON_FORCE_COL = 4; 
 	private static final String V0 = "0";
-	public static final byte TAG = Encoder.TAG_SEQUENCE;
+	//public static final byte TAG = Encoder.TAG_SEQUENCE; // using DD.TYPE_ORG_DATA
 	public static final boolean DEFAULT_BROADCASTED_ORG = true;
 	public static final boolean DEFAULT_BROADCASTED_ORG_ITSELF = false;
 
@@ -127,9 +128,6 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public boolean loaded_locals = false;
 	private static Object monitor_object_factory = new Object();
 	static Object lock_organization_GID_storage = new Object(); // duplicate of the above
-	public static int MAX_LOADED_ORGS = 10000;
-	public static long MAX_ORGS_RAM = 10000000;
-	private static final int MIN_ORGS_RAM = 2;
 	D_Organization_Node component_node = new D_Organization_Node(null, null);
 	private int status_references = 0;
 	private boolean temporary = true;
@@ -141,10 +139,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public static class D_Organization_Node {
 		private static final int MAX_TRIES = 30;
 		/** Currently loaded peers, ordered by the access time*/
-		private static DDP2P_DoubleLinkedList<D_Organization> loaded_orgs = new DDP2P_DoubleLinkedList<D_Organization>();
-		private static Hashtable<Long, D_Organization> loaded_org_By_LocalID = new Hashtable<Long, D_Organization>();
-		private static Hashtable<String, D_Organization> loaded_org_By_GID = new Hashtable<String, D_Organization>();
-		private static Hashtable<String, D_Organization> loaded_org_By_GIDhash = new Hashtable<String, D_Organization>();
+		private static DDP2P_DoubleLinkedList<D_Organization> loaded_objects = new DDP2P_DoubleLinkedList<D_Organization>();
+		private static Hashtable<Long, D_Organization> loaded_By_LocalID = new Hashtable<Long, D_Organization>();
+		private static Hashtable<String, D_Organization> loaded_By_GID = new Hashtable<String, D_Organization>();
+		private static Hashtable<String, D_Organization> loaded_By_GIDhash = new Hashtable<String, D_Organization>();
 		private static long current_space = 0;
 		
 		/** message is enough (no need to store the Encoder itself) */
@@ -162,7 +160,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			if(!crt.loaded_globals) return;
 			if ((crt.getGID() != null) && (!crt.isTemporary())) {
 				byte[] message = crt.encode();
-				synchronized(loaded_orgs) {
+				synchronized(loaded_objects) {
 					crt.component_node.message = message; // crt.encoder.getBytes();
 					if(crt.component_node.message != null) current_space += crt.component_node.message.length;
 				}
@@ -180,25 +178,54 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		*/
 		private static void register_loaded(D_Organization crt) {
 			crt.reloadMessage(); 
-			synchronized(loaded_orgs) {
-				String gid = crt.getGID();
+			synchronized(loaded_objects) {
 				String gidh = crt.getGIDH_or_guess();
+				String gid = gidh; //crt.getGID();
 				long lid = crt.getLID();
 				
-				loaded_orgs.offerFirst(crt);
-				if (lid > 0) loaded_org_By_LocalID.put(new Long(lid), crt);
-				if (gid != null) loaded_org_By_GID.put(gid, crt);
-				if (gidh != null) loaded_org_By_GIDhash.put(gidh, crt);
+				loaded_objects.offerFirst(crt);
+				if (lid > 0) {
+					// section added for duplication control
+					Long oLID = new Long(lid);
+					D_Organization old = loaded_By_LocalID.get(oLID);
+					if (old != null && old != crt) {
+						Util.printCallPath("Double linking of: old="+old+" vs crt="+crt);
+						//return false;
+						// here we are trying a dirty recovery, but really we should not be here!!!!
+						String o_gid = old.getGID();
+						String o_gidh = old.getGIDH();
+						if (o_gid != null) loaded_By_GID.remove(o_gid);
+						if (o_gidh != null) loaded_By_GIDhash.remove(o_gidh);
+					}
+					
+					loaded_By_LocalID.put(oLID, crt);
+				}
+				if (gid != null) {
+					// section added for duplication control
+					D_Organization old = loaded_By_GID.get(gid);
+					if (old != null && old != crt) {
+						Util.printCallPath("D_Organization conflict: gid old="+old+" crt="+crt);
+					}
+					loaded_By_GID.put(gid, crt);
+				}
+				if (gidh != null) {
+					// section added for duplication control
+					D_Organization old = loaded_By_GIDhash.get(gidh);
+					if (old != null && old != crt) {
+						Util.printCallPath("D_Organization conflict: gidh old="+old+" crt="+crt);
+					}
+					loaded_By_GIDhash.put(gidh, crt);
+				}
 				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
 				
 				int tries = 0;
-				while ((loaded_orgs.size() > MAX_LOADED_ORGS)
-						|| (current_space > MAX_ORGS_RAM)) {
-					if (loaded_orgs.size() <= MIN_ORGS_RAM) break; // at least _crt_peer and _myself
+				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_ORGS)
+						|| (current_space > SaverThreadsConstants.MAX_ORGS_RAM)) {
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_ORGS_RAM) break; // at least _crt_peer and _myself
 	
 					if (tries > MAX_TRIES) break;
 					tries ++;
-					D_Organization candidate = loaded_orgs.getTail();
+					D_Organization candidate = loaded_objects.getTail();
 					if ((candidate.getStatusReferences() > 0)
 							||
 							D_Organization.is_crt_org(candidate)
@@ -210,10 +237,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 						continue;
 					}
 					
-					D_Organization removed = loaded_orgs.removeTail();//remove(loaded_peers.size()-1);
-					loaded_org_By_LocalID.remove(new Long(removed.getLID_forced())); 
-					loaded_org_By_GID.remove(removed.getGID());
-					loaded_org_By_GIDhash.remove(removed.getGIDH_or_guess());
+					D_Organization removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
+					loaded_By_LocalID.remove(new Long(removed.getLID_forced())); 
+					loaded_By_GID.remove(removed.getGID());
+					loaded_By_GIDhash.remove(removed.getGIDH_or_guess());
 					if (DEBUG) System.out.println("D_Organization: register_loaded: remove GIDH="+removed.getGIDH_or_guess());
 					if (removed.component_node.message != null) current_space -= removed.component_node.message.length;				
 				}
@@ -224,11 +251,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		 * @param crt
 		 */
 		private static void setRecent(D_Organization crt) {
-			loaded_orgs.moveToFront(crt);
+			loaded_objects.moveToFront(crt);
 		}
 		public static boolean dropLoaded(D_Organization removed, boolean force) {
 			boolean result = true;
-			synchronized(loaded_orgs) {
+			synchronized(loaded_objects) {
 				if (removed.getStatusReferences() > 0 || removed.get_DDP2P_DoubleLinkedList_Node() == null)
 					result = false;
 				if (! force && ! result) {
@@ -236,14 +263,117 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 					return result;
 				}
 				
-				loaded_orgs.remove(removed);
-				if (removed.getLIDstr_forced() != null) loaded_org_By_LocalID.remove(new Long(removed.getLID_forced())); 
-				if (removed.getGID() != null) loaded_org_By_GID.remove(removed.getGID());
-				if (removed.getGIDH_or_guess() != null) loaded_org_By_GIDhash.remove(removed.getGIDH_or_guess());
+				loaded_objects.remove(removed);
+				if (removed.getLIDstr_forced() != null) loaded_By_LocalID.remove(new Long(removed.getLID_forced())); 
+				if (removed.getGID() != null) loaded_By_GID.remove(removed.getGID());
+				if (removed.getGIDH_or_guess() != null) loaded_By_GIDhash.remove(removed.getGIDH_or_guess());
 				if (DEBUG) System.out.println("D_Organization: drop_loaded: remove GIDH="+removed.getGIDH_or_guess());
 				if (removed.component_node.message != null) current_space -= removed.component_node.message.length;	
 				if (DEBUG) System.out.println("D_Organization: dropLoaded: exit with force="+force+" result="+result);
 				return result;
+			}
+		}
+		/**
+		 * This function is used to link an object by its LID when this is obtained
+		 * by storing an object already linked by its GIDH (if it was linked)
+		 * @param crt
+		 * @return
+		 * true if i is linked and false if it is not
+		 */
+		public static boolean register_newLID_ifLoaded(D_Organization crt) {
+			if (DEBUG) System.out.println("D_Organization: register_newLID_ifLoaded: start crt = "+crt);
+			synchronized (loaded_objects) {
+				//String gid = crt.getGID();
+				String gidh = crt.getGIDH();
+				long lid = crt.getLID();
+				if (gidh == null) {
+					if (_DEBUG) { System.out.println("D_Organization: register_newLID_ifLoaded: had no gidh! no need of this call.");
+					Util.printCallPath("Path");}
+					return false;
+				}
+				if (lid <= 0) {
+					Util.printCallPath("Why call without LID="+crt);
+					return false;
+				}
+				
+				D_Organization old = loaded_By_GIDhash.get(gidh); //getByGIDH(gidh, );
+				if (old == null) {
+					if (DEBUG) System.out.println("D_Organization: register_newLID_ifLoaded: was not registered.");
+					return false;
+				}
+				
+				if (old != crt)	{
+					Util.printCallPath("Different linking of: old="+old+" vs crt="+crt);
+					return false;
+				}
+				
+				Long pLID = new Long(lid);
+				D_Organization _old = loaded_By_LocalID.get(pLID);
+				if (_old != null && _old != crt) {
+					Util.printCallPath("Double linking of: old="+_old+" vs crt="+crt);
+					return false;
+				}
+				loaded_By_LocalID.put(pLID, crt);
+				if (DEBUG) System.out.println("D_Organization: register_newLID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
+
+				return true;
+			}
+		}
+		private static boolean register_newGID_ifLoaded(D_Organization crt) {
+			if (DEBUG) System.out.println("D_Organization: register_newGID_ifLoaded: start crt = "+crt);
+			crt.reloadMessage(); 
+			synchronized (loaded_objects) {
+				String gidh = crt.getGIDH();
+				String gid = gidh;//crt.getGID();
+				long lid = crt.getLID();
+				if (gidh == null) {
+					Util.printCallPath("Why call without GIDH="+crt);
+					return false;
+				}
+				if (lid <= 0) {
+					if (_DEBUG) { System.out.println("D_Organization: register_newGID_ifLoaded: had no lid! no need of this call.");
+					Util.printCallPath("Path");}
+					return false;
+				}
+								
+				Long oLID = new Long(lid);
+				D_Organization _old = loaded_By_LocalID.get(oLID);
+				if (_old == null) {
+					if (DEBUG) System.out.println("D_Organization: register_newGID_ifLoaded: was not loaded");
+					return false;
+				}
+				if (_old != null && _old != crt) {
+					Util.printCallPath("Using expired: old="+_old+" vs crt="+crt);
+					return false;
+				}
+				
+//				D_Peer_Node.putByGID(gid, crt.getOrganizationLID(), crt); //loaded_const_By_GID.put(gid, crt);
+//				if (DEBUG) System.out.println("D_Motion: register_newGID_ifLoaded: store gid="+gid);
+//				D_Peer_Node.putByGIDH(gidh, organizationLID, crt);//loaded_const_By_GIDhash.put(gidh, crt);
+//				if (DEBUG) System.out.println("D_Motion: register_newGID_ifLoaded: store gidh="+gidh);
+				if (gid != null) { // it is always true since we only locally create ready peers
+					// section added for duplication control
+					D_Organization old = loaded_By_GID.get(gid);
+					if (old != null && old != crt) {
+						Util.printCallPath("D_Organization conflict: gid old="+old+" crt="+crt);
+					}
+					loaded_By_GID.put(gid, crt);
+				}
+				
+				if (gidh != null) { // it is always true since we only locally create ready peers
+					// section added for duplication control
+					D_Organization old = loaded_By_GIDhash.get(gidh);
+					if (old != null && old != crt) {
+						Util.printCallPath("D_Organization conflict: gidh old="+old+" crt="+crt);
+					}
+					loaded_By_GIDhash.put(gidh, crt);
+				}
+				
+				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
+				
+				if (DEBUG) System.out.println("D_Organization: register_newGID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
+
+				return true;
 			}
 		}
 	}
@@ -311,7 +441,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (!i.hasNext()) return null;
 		String c = i.next();
 		if (DEBUG) System.out.println("D_Organization: need_saving_next: next: "+c);
-		D_Organization r = D_Organization_Node.loaded_org_By_GIDhash.get(c);
+		D_Organization r = D_Organization_Node.loaded_By_GIDhash.get(c);
 		if (r == null) {
 			if (_DEBUG) {
 				System.out.println("D_Organization Cache: need_saving_next null entry "
@@ -352,7 +482,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	public static String dumpDirCache() {
 		String s = "[";
-		s += D_Organization_Node.loaded_orgs.toString();
+		s += D_Organization_Node.loaded_objects.toString();
 		s += "]";
 		return s;
 	}
@@ -546,7 +676,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	static public D_Organization getOrgByLID_AttemptCacheOnly_NoKeep(long ID, boolean load_Globals) {
 		if (ID <= 0) return null;
 		Long id = new Long(ID);
-		D_Organization crt = D_Organization_Node.loaded_org_By_LocalID.get(id);
+		D_Organization crt = D_Organization_Node.loaded_By_LocalID.get(id);
 		if (crt == null) return null;
 		
 		synchronized (monitor_object_factory) {
@@ -654,8 +784,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 
 	static private D_Organization getOrgByGID_or_GIDhash_AttemptCacheOnly_NoKeep(String GID, String GIDhash, boolean load_Globals) {
 		D_Organization  crt = null;
-		if (GIDhash != null) crt = D_Organization_Node.loaded_org_By_GIDhash.get(GIDhash);
-		if ((crt == null) && (GID != null)) crt = D_Organization_Node.loaded_org_By_GID.get(GID);
+		if (GIDhash != null) crt = D_Organization_Node.loaded_By_GIDhash.get(GIDhash);
+		if ((crt == null) && (GID != null)) crt = D_Organization_Node.loaded_By_GID.get(GID);
 		
 //		if ((GID != null) && ((crt == null) || (GIDhash == null) || DD.VERIFY_GIDH_ALWAYS)) {
 //			if (crt == null) crt = D_Organization_Node.loaded_org_By_GIDhash.get(GIDhash);
@@ -1382,7 +1512,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		//if (translations != null) enc.addToSequence(Encoder.getEncoder(translations).setASN1Type(DD.TAG_AC9));
 		//if (news != null) enc.addToSequence(Encoder.getEncoder(news).setASN1Type(DD.TAG_AC10));
 		//if (requested_data != null) enc.addToSequence(Encoder.getEncoder(requested_data).setASN1Type(DD.TAG_AC11));
-		enc.setASN1Type(DD.TYPE_ORG_DATA);
+		enc.setASN1Type(getASN1Type());//DD.TYPE_ORG_DATA);
 		if (ASNSyncRequest.DEBUG) System.out.println("Encoded OrgData: "+this);
 		return enc;
 	}
@@ -1467,7 +1597,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		// these are aggregated in ASNSyncPayload in "advertised"
 		//if (this.availableHashes != null) enc.addToSequence(availableHashes.getEncoder().setASN1Type(DD.TAG_AC12));
 		
-		enc.setASN1Type(DD.TYPE_ORG_DATA);
+		enc.setASN1Type(getASN1Type());
 		if (ASNSyncRequest.DEBUG) System.out.println("Encoded OrgData: "+this);
 		return enc;
 	}
@@ -1724,7 +1854,56 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (GID.startsWith(D_GIDH.d_OrgGrassSign)) return true; // grass root
 		return false;
 	}
+	public void setGID_AndLink (String gID, String gIDH) {
+		setGID (gID, gIDH);
+		if (this.getGIDH() != null)
+			D_Organization_Node.register_newGID_ifLoaded(this);
+	}
 	public void setGID (String gID, String gIDH) {
+		//boolean DEBUG = true;
+		//boolean loaded_in_cache = this.isLoadedInCache();
+//		if (DEBUG) System.out.println("D_Organization:setGID: start loaded="+loaded_in_cache);
+		String oldGID = this.getGID();
+		if ( ! Util.equalStrings_null_or_not(oldGID, gID)) {		
+			if (DEBUG) System.out.println("D_Organization:setGID: change GID");
+//			if (oldGID != null)
+//				loaded_in_cache |= (null!=D_Organization_Node.loaded_By_GID.remove(oldGID));
+			this.global_organization_ID = gID;
+			this.dirty_main = true;
+		}
+		if ((gID != null) && (gIDH == null)) {
+			if (DEBUG) System.out.println("D_Organization:setGID: compute GIDH");
+			if (!D_GIDH.isCompactedGID(gID)) {
+				gIDH = D_Organization.getOrgGIDHashGuess(gID);
+			} else {
+				// the next would be wrong if this si authoritarian!
+				//gIDH = gID;
+			}
+			if (gIDH == null) Util.printCallPath("D_Organization: setGID:"+gID+" for: "+this);
+		}
+
+		if ( ! Util.equalStrings_null_or_not(global_organization_IDhash, gIDH)) {		
+			if (DEBUG) System.out.println("D_Organization:setGID: change GIDH");
+//			if (this.global_organization_IDhash != null)
+//				loaded_in_cache |= (null!=D_Organization_Node.loaded_By_GIDhash.remove(this.getGIDH_or_guess()));
+			this.global_organization_IDhash = gIDH;
+			this.dirty_main = true;
+		}
+		
+//		if (loaded_in_cache) {
+//			if (DEBUG) System.out.println("D_Organization:setGID: register");
+//			if (this.getGID() != null) {
+//				D_Organization_Node.loaded_By_GID.put(this.getGID(), this);
+//				if (DEBUG) System.out.println("D_Organization:setGID: register GID="+this.getGID());
+//			}
+//			if (this.getGIDH_or_guess() != null) {
+//				D_Organization_Node.loaded_By_GIDhash.put(this.getGIDH_or_guess(), this);
+//				if (DEBUG) System.out.println("D_Organization:setGID: register GIDH="+this.getGIDH_or_guess());
+//			}
+//		}
+//		if (DEBUG) System.out.println("D_Organization:setGID: quit loaded="+loaded_in_cache);
+	}
+	public void setGID_relink_gross (String gID, String gIDH) {
 		//boolean DEBUG = true;
 		boolean loaded_in_cache = this.isLoadedInCache();
 		if (DEBUG) System.out.println("D_Organization:setGID: start loaded="+loaded_in_cache);
@@ -1732,7 +1911,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if ( ! Util.equalStrings_null_or_not(oldGID, gID)) {		
 			if (DEBUG) System.out.println("D_Organization:setGID: change GID");
 			if (oldGID != null)
-				loaded_in_cache |= (null!=D_Organization_Node.loaded_org_By_GID.remove(oldGID));
+				loaded_in_cache |= (null!=D_Organization_Node.loaded_By_GID.remove(oldGID));
 			this.global_organization_ID = gID;
 			this.dirty_main = true;
 		}
@@ -1741,14 +1920,15 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			if (!D_GIDH.isCompactedGID(gID)) {
 				gIDH = D_Organization.getOrgGIDHashGuess(gID);
 			} else
-				gIDH = gID;
+				// the next would be wrong if this si authoritarian!
+				// gIDH = gID;
 			if (gIDH == null) Util.printCallPath("D_Organization: setGID:"+gID+" for: "+this);
 		}
 
 		if ( ! Util.equalStrings_null_or_not(global_organization_IDhash, gIDH)) {		
 			if (DEBUG) System.out.println("D_Organization:setGID: change GIDH");
 			if (this.global_organization_IDhash != null)
-				loaded_in_cache |= (null!=D_Organization_Node.loaded_org_By_GIDhash.remove(this.getGIDH_or_guess()));
+				loaded_in_cache |= (null!=D_Organization_Node.loaded_By_GIDhash.remove(this.getGIDH_or_guess()));
 			this.global_organization_IDhash = gIDH;
 			this.dirty_main = true;
 		}
@@ -1756,11 +1936,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (loaded_in_cache) {
 			if (DEBUG) System.out.println("D_Organization:setGID: register");
 			if (this.getGID() != null) {
-				D_Organization_Node.loaded_org_By_GID.put(this.getGID(), this);
+				D_Organization_Node.loaded_By_GID.put(this.getGID(), this);
 				if (DEBUG) System.out.println("D_Organization:setGID: register GID="+this.getGID());
 			}
 			if (this.getGIDH_or_guess() != null) {
-				D_Organization_Node.loaded_org_By_GIDhash.put(this.getGIDH_or_guess(), this);
+				D_Organization_Node.loaded_By_GIDhash.put(this.getGIDH_or_guess(), this);
 				if (DEBUG) System.out.println("D_Organization:setGID: register GIDH="+this.getGIDH_or_guess());
 			}
 		}
@@ -1768,14 +1948,15 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	
 	
+	
 	public boolean isLoadedInCache() {
 		String GIDH;
-		if (!D_Organization_Node.loaded_orgs.inListProbably(this)) return false;
+		if (!D_Organization_Node.loaded_objects.inListProbably(this)) return false;
 		long lID = this.getLID_forced();
 		if (lID > 0)
-			if ( null != D_Organization_Node.loaded_org_By_LocalID.get(new Long(lID)) ) return true;
+			if ( null != D_Organization_Node.loaded_By_LocalID.get(new Long(lID)) ) return true;
 		if ((GIDH = this.getGIDH_or_guess()) != null)
-			if ( null != D_Organization_Node.loaded_org_By_GIDhash.get(GIDH) ) return true;
+			if ( null != D_Organization_Node.loaded_By_GIDhash.get(GIDH) ) return true;
 		return false;
 	}
 
@@ -1814,6 +1995,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				if (DEBUG) System.out.println("D_Peer:storeRequest:startThread");
 				saverThread.start();
 			}
+			synchronized(saverThread) {saverThread.notify();}
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -1954,10 +2136,12 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				p[table.organization.ORG_COL_TEMPORARY] = Util.bool2StringInt(this.temporary);
 				p[table.organization.ORG_COL_HIDDEN] = Util.bool2StringInt(this.hidden);
 				if (this.getSpecificRequest() != null) p[table.organization.ORG_COL_SPECIFIC] = Util.stringSignatureFromByte(this.getSpecificRequest().encode());
+
+				if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) out.println("D_Organization: _storeAct: saving spec req: "+this.getSpecificRequest());
 				
 				//String orgID;
 				if (filter == 0) {//organization_ID == null) {
-					setLID(result = Application.db.insertNoSync(table.organization.TNAME, table.organization.fields_noID, p, DEBUG));//changed = true;
+					setLID_AndLink(result = Application.db.insertNoSync(table.organization.TNAME, table.organization.fields_noID, p, DEBUG));//changed = true;
 					if (DEBUG) out.println("D_Organization: storeVerified: Inserted: "+this);
 				} else {
 					//orgID = Util.getString(p_data.get(0).get(table.organization.ORG_COL_ID));
@@ -1965,7 +2149,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 					//if (filter > 0) p[table.organization.FIELDS] = organization_ID;
 					Application.db.updateNoSync(table.organization.TNAME,  table.organization.fields_noID, new String[]{table.organization.organization_ID}, p, DEBUG);//changed = true;
 					result = Util.lval(getLIDstr(), -1);
-					if(DEBUG) out.println("\nD_Organization: storeVerified: Updated: "+this);
+					if (DEBUG) out.println("\nD_Organization: storeVerified: Updated: "+this);
 				}
 				//if (sync) 
 				Application.db.sync(new ArrayList<String>(Arrays.asList(table.organization.TNAME)));
@@ -2382,7 +2566,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	
 	public static byte getASN1Type() {
-		return TAG;
+		return DD.TYPE_ORG_DATA;
 	}
 	public static D_Organization getOrgFromDecoder(Decoder decoder) {
 		D_Organization org;
@@ -2912,7 +3096,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @return
 	 */
 	private boolean loadRemote(D_Organization oRG, D_Peer provider, boolean[] changed, RequestData _sol_rq, RequestData _new_rq) {
-		if (_DEBUG) out.println("D_Organization: storeVerified: Test integrate old: "+this+" vs incoming: "+oRG);
+		if (DEBUG) out.println("D_Organization: storeVerified: Test integrate old: "+this+" vs incoming: "+oRG);
 		
 		if (! this.isTemporary() && ! newer(oRG, this)) {
 			if (DEBUG) out.println("D_Organization: storeVerified: Will not integrate old ["+oRG.getCreationDate_str()+"]: "+this);
@@ -3636,9 +3820,14 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return true;
 	}
 	*/
+	/**
+	 * Called from GUI to discard an organisation completely.
+	 * @param orgID
+	 * @return
+	 */
 	public static D_Organization deleteAllAboutOrg(String orgID) {
 		try {
-			D_Organization o = D_Organization_Node.loaded_org_By_GID.get(orgID);
+			D_Organization o = D_Organization_Node.loaded_By_GID.get(orgID);
 			if (o != null) {
 				if (o.getStatusReferences() <= 0) {
 					if (!D_Organization_Node.dropLoaded(o, false)) {
@@ -3649,7 +3838,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			
 			//Application.db.delete(table.field_value.TNAME, new String[]{table.field_value.organization_ID}, new String[]{orgID}, DEBUG);
 			//Application.db.delete(table.witness.TNAME, new String[]{table.witness.organization_ID}, new String[]{orgID}, DEBUG);
-			//Application.db.delete(table.justification.TNAME, new String[]{table.justification.organization_ID}, new String[]{orgID}, DEBUG);
+			Application.db.delete(table.justification.TNAME, new String[]{table.justification.organization_ID}, new String[]{orgID}, DEBUG);
+			Application.db.delete(table.motion.TNAME, new String[]{table.motion.organization_ID}, new String[]{orgID}, DEBUG);
 			//Application.db.delete(table.signature.TNAME, new String[]{table.signature.organization_ID}, new String[]{orgID}, DEBUG);
 			String sql="SELECT "+table.constituent.constituent_ID+" FROM "+table.constituent.TNAME+" WHERE "+table.constituent.organization_ID+"=?;";
 			ArrayList<ArrayList<Object>> constits = Application.db.select(sql, new String[]{orgID}, DEBUG);
@@ -3658,13 +3848,12 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				Application.db.delete(table.witness.TNAME, new String[]{table.witness.source_ID}, new String[]{cID}, DEBUG);
 				Application.db.delete(table.witness.TNAME, new String[]{table.witness.target_ID}, new String[]{cID}, DEBUG);
 	
-				Application.db.delete(table.motion.TNAME, new String[]{table.motion.constituent_ID}, new String[]{cID}, DEBUG);
-				Application.db.delete(table.justification.TNAME, new String[]{table.justification.constituent_ID}, new String[]{cID}, DEBUG);
 	   			Application.db.delete(table.signature.TNAME, new String[]{table.signature.constituent_ID}, new String[]{cID}, DEBUG);
+				Application.db.delete(table.justification.TNAME, new String[]{table.justification.constituent_ID}, new String[]{cID}, DEBUG);
+				Application.db.delete(table.motion.TNAME, new String[]{table.motion.constituent_ID}, new String[]{cID}, DEBUG);
 	   			// Application.db.delete(table.news.TNAME, new String[]{table.news.constituent_ID}, new String[]{cID}, DEBUG);
 	   		}
 			Application.db.delete(table.news.TNAME, new String[]{table.news.organization_ID}, new String[]{orgID}, DEBUG);
-			Application.db.delete(table.motion.TNAME, new String[]{table.motion.organization_ID}, new String[]{orgID}, DEBUG);
 			String sql_del_fv_fe =
 					"DELETE FROM "+table.field_value.TNAME+
 					" WHERE "+table.field_value.field_extra_ID+
@@ -3700,7 +3889,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	private static D_Organization unlinkMemory(String orgID) {
 		Long lID = new Long(orgID);
-		D_Organization org = D_Organization_Node.loaded_org_By_LocalID.get(lID);
+		D_Organization org = D_Organization_Node.loaded_By_LocalID.get(lID);
 		if (org == null) { 
 			System.out.println("D_Organization: unlinkMemory: referred null org for: "+orgID);
 			return null;
@@ -3784,7 +3973,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		
 		
 		ArrayList<ArrayList<Object>> n = Application.db.select(sql_getFieldsExtraByGID, new String[]{fieldGID, Util.getStringID(org_LID)}, DEBUG);
-		if (n.size() != 0) {
+		if (n.size() != 0) {// happeded on savind orgs from DD_SK
 			if (_DEBUG) Util.printCallPath("D_Organization: getFieldExtraID: unexpectedly found "+fieldGID+" ("+org_LID+") as "+Util.getString(n.get(0).get(0)));
 			return Util.getString(n.get(0).get(0));
 		}
@@ -3882,6 +4071,12 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public void setLID(long __organization_ID) {
 		this._organization_ID = __organization_ID;
 		this.organization_ID = Util.getStringID(__organization_ID);
+	}
+	public void setLID_AndLink(long __organization_ID) {
+		setLID(__organization_ID);
+		if (__organization_ID > 0)
+			D_Organization_Node.register_newLID_ifLoaded(this);
+		//this.component_node.loaded_By_LocalID.put(new Long(getLID()), this);
 	}
 	/**
 	 * Returns crt value (no force saving)
@@ -4200,6 +4395,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 //		}
 //		return null;
 //	}
+
+	public static int getNumberItemsNeedSaving() {
+		return _need_saving.size() + _need_saving_obj.size();
+	}
 }
 
 class D_Organization_SaverThread extends util.DDP2P_ServiceThread {
@@ -4218,6 +4417,7 @@ class D_Organization_SaverThread extends util.DDP2P_ServiceThread {
 	public void _run() {
 		for (;;) {
 			if (stop) return;
+			if (data.SaverThreadsConstants.getNumberRunningSaverThreads() < SaverThreadsConstants.MAX_NUMBER_CONCURRENT_SAVING_THREADS && D_Organization.getNumberItemsNeedSaving() > 0)
 			synchronized(saver_thread_monitor) {
 				new D_Organization_SaverThreadWorker().start();
 			}
@@ -4252,7 +4452,10 @@ class D_Organization_SaverThread extends util.DDP2P_ServiceThread {
 			*/
 			synchronized(this) {
 				try {
-					wait(SaverThreadsConstants.SAVER_SLEEP_BETWEEN_ORGANIZATION_MSEC);
+					long timeout = (D_Organization.getNumberItemsNeedSaving() > 0)?
+							SaverThreadsConstants.SAVER_SLEEP_BETWEEN_ORGANIZATION_MSEC:
+								SaverThreadsConstants.SAVER_SLEEP_WAITING_ORGANIZATION_MSEC;
+					wait(timeout);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -4270,6 +4473,12 @@ class D_Organization_SaverThreadWorker extends util.DDP2P_ServiceThread {
 		//start ();
 	}
 	public void _run() {
+		synchronized (SaverThreadsConstants.monitor_threads_counts) {SaverThreadsConstants.threads_orgs ++;}
+		try{__run();} catch (Exception e){}
+		synchronized (SaverThreadsConstants.monitor_threads_counts) {SaverThreadsConstants.threads_orgs --;}
+	}
+	@SuppressWarnings("unused")
+	public void __run() {
 		synchronized(D_Organization_SaverThread.saver_thread_monitor) {
 			D_Organization de;
 			boolean edited = true;
@@ -4288,7 +4497,7 @@ class D_Organization_SaverThreadWorker extends util.DDP2P_ServiceThread {
 				else D_Organization.need_saving_remove(de.getGIDH_or_guess());//, de.instance);
 				if (DEBUG) System.out.println("D_Organization_Saver: loop removed need_saving flag");
 				// try 3 times to save
-				for (int k = 0; k < 3; k++) {
+				for (int k = 0; k < SaverThreadsConstants.ATTEMPTS_ON_ERROR; k++) {
 					try {
 						if (DEBUG) System.out.println("D_Organization_Saver: loop will try saving k="+k);
 						de.storeAct();

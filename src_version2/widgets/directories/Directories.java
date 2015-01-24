@@ -702,7 +702,7 @@ class DirectoryPing extends util.DDP2P_ServiceThread {
 	ArrayList<Address> askAddressUDP(InetSocketAddress _sock_addr, String global_peer_ID, String GIDH, 
 			String peer_ID, Address dir_address) {
 		if (DEBUG) System.out.println("Directories:askAddressUDP: enter dir_address = "+dir_address);
-		if ((Application.aus == null) || (UDPServer.getUDPSocket() == null)) return null;
+		if ((Application.g_UDPServer == null) || (UDPServer.getUDPSocket() == null)) return null;
 		int udp_port = dir_address.udp_port;
 		if (udp_port <= 0) Util.printCallPath("udp_port="+dir_address.toLongString()); 
 		if (udp_port <= 0) udp_port = dir_address.getTCPPort();

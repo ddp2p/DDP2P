@@ -8,7 +8,9 @@ import java.util.Iterator;
 
 import config.Application;
 import config.Application_GUI;
+import data.D_Neighborhood;
 import data.D_Peer;
+import data.SaverThreadsConstants;
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
@@ -122,7 +124,7 @@ class DirectoryServerCache{
 		D_DirectoryEntry elem;
 		// Try GID first
 		if (globalID != null) {
-			elem = D_Directory_Storage.loaded_peer_By_GID.get(globalID);
+			elem = D_Directory_Storage.loaded_By_GID.get(globalID);
 			if (elem != null) {
 				D_Directory_Storage.setRecent(elem);
 				if (DEBUG) System.out.println("DirServCache: getEntry found in loaded by GID");
@@ -136,10 +138,10 @@ class DirectoryServerCache{
 			}
 		}
 		// if not found with GID
-		elem = D_Directory_Storage.loaded_peer_By_GIDhash.get(globalIDhash);
+		elem = D_Directory_Storage.loaded_By_GIDhash.get(globalIDhash);
 		if (elem != null) {
 			D_Directory_Storage.setRecent(elem);
-			if (globalID != null) D_Directory_Storage.loaded_peer_By_GID.put(globalID, elem);
+			if (globalID != null) D_Directory_Storage.loaded_By_GID.put(globalID, elem);
 			if (DEBUG) System.out.println("DirServCache: getEntry found in loaded by GIDH");
 			return elem;
 		}
@@ -768,16 +770,16 @@ class DirectoryServerCache{
 		/**
 		 * Currently loaded peers, ordered by the access time
 		 */
-		private static DDP2P_DoubleLinkedList<D_DirectoryEntry> loaded_peers = new DDP2P_DoubleLinkedList<D_DirectoryEntry>();
+		private static DDP2P_DoubleLinkedList<D_DirectoryEntry> loaded_objects = new DDP2P_DoubleLinkedList<D_DirectoryEntry>();
 		// private static Hashtable<Long, D_DirectoryEntry> loaded_peer_By_LocalID = new Hashtable<Long, D_DirectoryEntry>();
 		/**
 		 * Loaded indexed by GID
 		 */
-		private static Hashtable<String, D_DirectoryEntry> loaded_peer_By_GID = new Hashtable<String, D_DirectoryEntry>();
+		private static Hashtable<String, D_DirectoryEntry> loaded_By_GID = new Hashtable<String, D_DirectoryEntry>();
 		/**
 		 * Loaded indexed by GIDH
 		 */
-		private static Hashtable<String, D_DirectoryEntry> loaded_peer_By_GIDhash = new Hashtable<String, D_DirectoryEntry>();
+		private static Hashtable<String, D_DirectoryEntry> loaded_By_GIDhash = new Hashtable<String, D_DirectoryEntry>();
 		/**
 		 * Space used by this storage (estimation)
 		 */
@@ -797,7 +799,7 @@ class DirectoryServerCache{
 		 */
 		private static String dumpDirCache() {
 			String s = "[";
-			s += loaded_peers.toString();
+			s += loaded_objects.toString();
 			s += "]";
 			return s;
 		}
@@ -837,7 +839,7 @@ class DirectoryServerCache{
 			KEY c = i.next();
 			String h = c.hash;
 			String index = c.instance;
-			D_DirectoryEntry r = loaded_peer_By_GIDhash.get(h);
+			D_DirectoryEntry r = loaded_By_GIDhash.get(h);
 			if (r == null) {
 				System.out.println("DirectoryServerCache: need_saving_next null entry "
 						+ "needs saving next: "+h);
@@ -860,7 +862,7 @@ class DirectoryServerCache{
 		 *
 		 */
 		public static class SaverThread extends util.DDP2P_ServiceThread {
-			private static final long SAVER_SLEEP = 100;
+			public static final long SAVER_SLEEP = 100;
 			private static final long SAVER_SLEEP_ON_ERROR = 2000;
 			boolean stop = false;
 			SaverThread() {
@@ -876,7 +878,7 @@ class DirectoryServerCache{
 							Application_GUI.ThreadsAccounting_ping("Saving");
 							need_saving_remove(de.globalIDhash, de.instance);
 							// try 3 times to save
-							for (int k=0; k<3; k++) {
+							for (int k = 0; k < data.SaverThreadsConstants.ATTEMPTS_ON_ERROR; k ++) {
 								try {
 									de.update();
 									break;
@@ -897,7 +899,10 @@ class DirectoryServerCache{
 					}
 					synchronized(this){
 						try {
-							wait(SAVER_SLEEP);
+							long timeout = (DirectoryServerCache.getNumberItemsNeedSaving() > 0)?
+									SaverThreadsConstants.SAVER_SLEEP_BETWEEN_DIRS_MSEC:
+										SaverThreadsConstants.SAVER_SLEEP_WAITING_DIRS_MSEC;
+							wait(timeout); //SAVER_SLEEP);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
@@ -935,7 +940,7 @@ class DirectoryServerCache{
 				return;
 			//if(!crt.loaded_globals) return;
 			byte[] message = crt.encode();
-			synchronized(loaded_peers) {
+			synchronized(loaded_objects) {
 				crt.component_node.message = message; // crt.encoder.getBytes();
 				if(crt.component_node.message != null)
 					current_space += crt.component_node.message.length;
@@ -950,17 +955,17 @@ class DirectoryServerCache{
 		 */
 		public static void register_loaded_instance(D_DirectoryEntry crt) {
 			ArrayList<D_DirectoryEntry> rem = new ArrayList<D_DirectoryEntry>();
-			synchronized(loaded_peers) {
-				loaded_peers.offerFirst(crt);
+			synchronized(loaded_objects) {
+				loaded_objects.offerFirst(crt);
 				if(crt.component_node.message != null) current_space += crt.component_node.message.length;
 				
 				/**
 				 * Disconnect overflowing instances from list, set them in "removed"
 				 */
-				while ((loaded_peers.size() > MAX_LOADED_PEERS)
+				while ((loaded_objects.size() > MAX_LOADED_PEERS)
 						|| (current_space > MAX_PEERS_RAM)) {
-					if (loaded_peers.size() <= MIN_PEERS_RAM) break; // at least _crt_peer and _myself
-					D_DirectoryEntry removed = loaded_peers.removeTail();//remove(loaded_peers.size()-1);
+					if (loaded_objects.size() <= MIN_PEERS_RAM) break; // at least _crt_peer and _myself
+					D_DirectoryEntry removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
 					if (removed.component_node.message != null) current_space -= removed.component_node.message.length;
 					if (D_Directory_Storage.need_saving_contains(removed.globalIDhash, removed.instance)) rem.add(removed);
 					else {
@@ -999,40 +1004,43 @@ class DirectoryServerCache{
 			ArrayList<D_DirectoryEntry> rem = new ArrayList<D_DirectoryEntry>();
 			//crt.encoder = crt.getEncoder();
 			//if(crt.loaded_globals) crt.component_node.message = crt.encode(); //crt.encoder.getBytes();
-			synchronized (loaded_peers) {
+			synchronized (loaded_objects) {
 				if (DEBUG) System.out.println("DSCache:register_loaded registering "+crt);
 				if (crt.get_DDP2P_DoubleLinkedList_Node() == null) {
-					boolean result = loaded_peers.offerFirst(crt);
+					boolean result = loaded_objects.offerFirst(crt);
 					if (DEBUG) System.out.println("DSCache:register_loaded registered "+result);
-					if (DEBUG) System.out.println("DSCache:register_loaded "+loaded_peers);
+					if (DEBUG) System.out.println("DSCache:register_loaded "+loaded_objects);
 					// loaded_peer_By_LocalID.put(new Long(crt._peer_ID), crt);
-					loaded_peer_By_GID.put(crt.globalID, crt);
-					loaded_peer_By_GIDhash.put(crt.globalIDhash, crt);
-					if(crt.component_node.message != null) {
+					
+					loaded_By_GID.put(crt.globalID, crt);
+					
+					loaded_By_GIDhash.put(crt.globalIDhash, crt);
+					
+					if (crt.component_node.message != null) {
 						current_space += crt.component_node.message.length;
 					}
 				} else {
-					loaded_peers.moveToFront(crt);
+					loaded_objects.moveToFront(crt);
 				}
 				
-				while ((loaded_peers.size() > MAX_LOADED_PEERS)
+				while ((loaded_objects.size() > MAX_LOADED_PEERS)
 						|| (current_space > MAX_PEERS_RAM)) {
-					if (loaded_peers.size() <= MIN_PEERS_RAM) break; // at least _crt_peer and _myself
+					if (loaded_objects.size() <= MIN_PEERS_RAM) break; // at least _crt_peer and _myself
 //					D_DirectoryEntry candidate = loaded_peers.getTail();
 //					if((candidate == D_DirectoryEntry._crt_peer)||(candidate == D_DirectoryEntry._myself)){
 //						setRecent(candidate);
 //						continue;
 //					}
 					
-					D_DirectoryEntry removed = loaded_peers.removeTail();//remove(loaded_peers.size()-1);
+					D_DirectoryEntry removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
 					// loaded_peer_By_LocalID.remove(new Long(removed._peer_ID));
-					loaded_peer_By_GID.remove(removed.globalID);
-					loaded_peer_By_GIDhash.remove(removed.globalIDhash);
+					loaded_By_GID.remove(removed.globalID);
+					loaded_By_GIDhash.remove(removed.globalIDhash);
 					if(removed.component_node.message != null) current_space -= removed.component_node.message.length;
 					if(D_Directory_Storage.need_saving_contains(removed.globalIDhash, removed.instance)) rem.add(removed);
 				}
 			}
-			if (DEBUG) System.out.println("DSCache:register_loaded cleaned "+loaded_peers);
+			if (DEBUG) System.out.println("DSCache:register_loaded cleaned "+loaded_objects);
 			for(D_DirectoryEntry removed : rem){
 				try {
 					synchronized(D_Directory_Storage.saver_thread_monitor){
@@ -1042,14 +1050,17 @@ class DirectoryServerCache{
 					e.printStackTrace();
 				}				
 			}
-			if (DEBUG) System.out.println("DSCache:register_loaded exit "+loaded_peers);
+			if (DEBUG) System.out.println("DSCache:register_loaded exit "+loaded_objects);
 		}
 		/**
 		 * Move this to the front of the list of items (tail being trimmed)
 		 * @param crt
 		 */
 		private static void setRecent(D_DirectoryEntry crt) {
-			loaded_peers.moveToFront(crt);
+			loaded_objects.moveToFront(crt);
 		}
+	}
+	public static int getNumberItemsNeedSaving() {
+		return D_Directory_Storage._need_saving.size();
 	}
 }

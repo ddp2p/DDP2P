@@ -19,26 +19,29 @@
 /* ------------------------------------------------------------------------- */
 package recommendationTesters;
 
+import util.Util;
 import ASN1.ASN1DecoderFail;
 import ASN1.Decoder;
 import data.D_Peer;
 import data.D_RecommendationOfTestersBundle;
 
 public class MessageReceiver {
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
 	//D_TesterItem[] testerItemList;
 	public static void msgListener( D_Peer senderPeer, byte[] bundle) throws ASN1DecoderFail {
 		data.D_RecommendationOfTestersBundle recommendation_testers = new D_RecommendationOfTestersBundle();
 		recommendation_testers.decode(new Decoder(bundle));
+		if(!DEBUG) System.out.println("--------------- MessageReceiver:msgListener():creationDate="+recommendation_testers.creation_date.getTime() +" No. of recieved testers="+recommendation_testers.testersRatingList.size());
 		msgListener(senderPeer, recommendation_testers);
 	}
 	public static void msgListener(D_Peer senderPeer,
 			D_RecommendationOfTestersBundle recommendation_testers) {
 		//1) validate Signature
 		if (! recommendation_testers.verifySignature()) {
-			if (DEBUG) System.out.println("claas:MessageReceiver, msgListener() invalid signature");
+			if (!DEBUG) System.out.println("claas:MessageReceiver, msgListener() invalid signature");
 			return;
 		}
+		
 		//2) check duplicate and store the newest recommendation
 		//3) update Tester's Profile if needed (e.g. add new tester or update address)
 		recommendation_testers.storeMessage();

@@ -24,8 +24,14 @@ import javax.swing.tree.TreePath;
 import config.Vendor_GUI_Dialogs;
 import data.D_Constituent;
 import data.D_Constituent;
+import data.D_Justification;
+import data.D_Motion;
+import data.D_Neighborhood;
+import data.D_News;
 import data.D_Organization;
 import data.D_Peer;
+import data.D_Vote;
+import data.D_Witness;
 import util.DDP2P_ServiceRunnable;
 import util.P2PDDSQLException;
 import util.Util;
@@ -38,6 +44,7 @@ import widgets.constituent.ConstituentsPanel;
 import widgets.constituent.ConstituentsWitness;
 import widgets.org.Orgs;
 import widgets.peers.CreatePeer;
+import widgets.peers.DataHashesPanel;
 import widgets.peers.PeerContacts;
 import widgets.updates.UpdatesPanel;
 
@@ -50,6 +57,7 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 	public static Orgs orgs;
 	public static UpdatesPanel panelUpdates;
 	public static PeerContacts peer_contacts;
+	public static DataHashesPanel dataHashesPanel;
 
 	@Override
 	public void fixScriptsBaseDir(String dir) {
@@ -375,11 +383,54 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 	@Override
 	public void inform_arrival(Object obj, D_Peer source) {
 		// TODO Auto-generated method stub
-		String from = "";
-		if (source != null) from = source.getName()+" <"+source.getEmail()+">";
-		System.out.println("GUI_Swing: inform_arrival: from "+from+" new\n"+obj);
+		if (obj == null) {
+			String from = "";
+			if (source != null) from = source.getName()+" <"+source.getEmail()+">";
+			System.out.println("GUI_Swing: inform_arrival: from "+from+" new\n"+obj);			
+		}
+		
+		if (obj instanceof D_Peer) inform_arrival_peer((D_Peer) obj, source);
+		else if (obj instanceof D_Organization) inform_arrival_org((D_Organization) obj, source);
+		else if (obj instanceof D_Constituent) inform_arrival_cons((D_Constituent) obj, source);
+		else if (obj instanceof D_Neighborhood) inform_arrival_neigh((D_Neighborhood) obj, source);
+		else if (obj instanceof D_Witness) inform_arrival_witn((D_Witness) obj, source);
+		else if (obj instanceof D_Motion) inform_arrival_moti((D_Motion) obj, source);
+		else if (obj instanceof D_Justification) inform_arrival_just((D_Justification) obj, source);
+		else if (obj instanceof D_Vote) inform_arrival_vote((D_Vote) obj, source);
+		else if (obj instanceof D_News) inform_arrival_news((D_News) obj, source);
+		else  {
+			String from = "";
+			if (source != null) from = source.getName()+" <"+source.getEmail()+">";
+			System.out.println("GUI_Swing: inform_arrival: from "+from+" new\n"+obj);
+		}
 	}
-
+	public void inform_arrival_peer(D_Peer obj, D_Peer source) {
+		System.out.println("GUI_Swing: IAP:P GIDH="+obj.getGIDH()+" tit="+obj.getName_MyOrDefault());		
+	}
+	public void inform_arrival_org(D_Organization obj, D_Peer source) {
+		System.out.println("GUI_Swing: IAP:O GIDH="+obj.getGIDH()+" tit="+obj.getOrgNameOrMy());	
+	}
+	public void inform_arrival_cons(D_Constituent obj, D_Peer source) {
+		System.out.println("GUI_Swing: IAP:C GIDH="+obj.getGIDH()+" tit="+obj.getNameOrMy());
+	}
+	public void inform_arrival_neigh(D_Neighborhood obj, D_Peer source) {
+		System.out.println("GUI_Swing: IAP:N "+obj.getName());		
+	}
+	public void inform_arrival_witn(D_Witness obj, D_Peer source) {
+		System.out.println("GUI_Swing: IAP:W "+obj.global_witness_ID+" t="+obj.witnessed_constituentID+" s:"+obj.witnessing_constituentID);		
+	}
+	public void inform_arrival_moti(D_Motion obj, D_Peer source) {
+		System.out.println("GUI_Swing: IAP:M GIDH="+obj.getGIDH()+" tit="+obj.getTitleStrOrMy());		
+	}
+	public void inform_arrival_just(D_Justification obj, D_Peer source) {
+		System.out.println("GUI_Swing: IAP:J GIDH="+obj.getGIDH()+" tit="+obj.getTitleStrOrMy());		
+	}
+	public void inform_arrival_vote(D_Vote obj, D_Peer source) {
+		System.out.println("GUI_Swing: IAP:V "+obj.getGID()+" m:"+obj.getMotionLID()+" c:"+obj.getConstituentLIDstr()+" j:"+obj.getJustificationLID()+":"+obj.getJustificationGID());		
+	}
+	public void inform_arrival_news(D_News obj, D_Peer source) {
+		System.out.println("GUI_Swing: IAP:news GIDH="+obj.global_news_ID+" tit="+obj.getTitle());
+	}
 }
 class Html2Text extends HTMLEditorKit.ParserCallback {
  StringBuffer s;

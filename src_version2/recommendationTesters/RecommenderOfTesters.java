@@ -24,7 +24,9 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Random;
 
+import util.P2PDDSQLException;
 import util.Util;
+import widgets.updates.UpdatesPanel;
 import config.DD;
 import data.D_RecommendationOfTester;
 import data.D_Tester;
@@ -35,25 +37,45 @@ import data.D_Tester;
  *
  */
 public class RecommenderOfTesters extends util.DDP2P_ServiceThread {
-	static RecommenderOfTesters runningRecommender;
+	//public static RecommenderOfTesters rot = new RecommenderOfTesters(false);
+	public static RecommenderOfTesters runningRecommender;
+	final static boolean START_ROT_ON_START = false;
+	static boolean started = decideStartRec();
+	public static boolean startROT() {
+		runningRecommender = new RecommenderOfTesters(false);
+		return true;
+	}
+	static boolean decideStartRec() {
+		if (!START_ROT_ON_START) return false;
+		runningRecommender = new RecommenderOfTesters(false);
+		return true;
+	}
 	final static int EXPIRATION_DELAY_RECEIVED_RECOMMENDATIONS_IN_DAYS = 360;
 	final static int EXPIRATION_DELAY_PRODUCED_RECOMMENDATIONS_IN_DAYS = 1;
 	static boolean USER_SOPHISTICATED_IN_SELECTING_TESTERS = false;
 	
-	final static float f_AMORTIZATION_OF_SCORE_APPLIED_AT_EACH_TRANSFER_BETWEEN_USERS = 0.9f;  // amortization factor
-	final static float k_DIVERSITY_FACTOR_AS_TRADEOFF_AGAINST_PROXIMITY = 2.0f;  // diversity factor
-	final static float Pr_PROBABILITY_OF_REPLACING_A_USED_TESTER_WITH_A_HIGHER_SCORED_ONE = 0.5f; // switching probability
-	final static int N_MAX_NUMBER_OF_TESTERS = 3; // in our experiments we set N=10
+	public final static float f_AMORTIZATION_OF_SCORE_APPLIED_AT_EACH_TRANSFER_BETWEEN_USERS = 0.9f;  // amortization factor
+	public final static float k_DIVERSITY_FACTOR_AS_TRADEOFF_AGAINST_PROXIMITY = 2.0f;  // diversity factor
+	public final static float Pr_PROBABILITY_OF_REPLACING_A_USED_TESTER_WITH_A_HIGHER_SCORED_ONE = 0.5f; // switching probability
+	public final static int N_MAX_NUMBER_OF_TESTERS = 3; // in our experiments we set N=10
 	
 	public final static int MAX_SIZE_OF_TESER_INTRODUCERS_IN_A_MESSAGE=10;// shouldn't exceed this limit
 	public final static int EXPERATION_OF_RECOMMENDATION_BY_INTRODUCER_IN_DAYS=100;// 
 	
 	private static final boolean DEBUG = false;
 	public static boolean STOP_RECOMMENDATION_OF_TESTERS = true;
-	public RecommenderOfTesters() {
+	public RecommenderOfTesters(boolean immediateRrecommendation) {
 		super(Util.__("RecommenderOfTesters"), true);
 		STOP_RECOMMENDATION_OF_TESTERS = DD.getAppBoolean(DD.APP_STOP_RECOMMENDATION_OF_TESTERS, false);
 		USER_SOPHISTICATED_IN_SELECTING_TESTERS = DD.getAppBoolean(DD.APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS, false);
+		if(immediateRrecommendation)
+			try {
+				DD.setAppText(DD.APP_LAST_RECOMMENDATION_OF_TESTERS, null, true);
+			} catch (P2PDDSQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			//DD.setAppTextNoException(DD.APP_LAST_RECOMMENDATION_OF_TESTERS, null);
 		runningRecommender = this;
 	}
 	/**
@@ -68,11 +90,13 @@ public class RecommenderOfTesters extends util.DDP2P_ServiceThread {
 	/**
 	 * This creates a new thread, stopping previous ones
 	 */
-	public static void startRecommenders() {
+	public static void startRecommenders(boolean immediateRrecommendation) {
 		if (runningRecommender != null) runningRecommender.stopRecommenders();
 		RecommenderOfTesters.STOP_RECOMMENDATION_OF_TESTERS = false;
 		DD.setAppBoolean(DD.APP_STOP_RECOMMENDATION_OF_TESTERS, STOP_RECOMMENDATION_OF_TESTERS);
-		runningRecommender = new RecommenderOfTesters();
+		runningRecommender = new RecommenderOfTesters(immediateRrecommendation);
+		runningRecommender.start();
+		
 	}
 	public static void setSophisticated(boolean sophisticated) {
 		if (runningRecommender != null) runningRecommender.stopRecommenders();
@@ -126,19 +150,22 @@ public class RecommenderOfTesters extends util.DDP2P_ServiceThread {
 			DD.setAppTextNoException(DD.APP_LAST_RECOMMENDATION_OF_TESTERS, Util.getGeneralizedTime());
 		}
 	}
-	TesterAndScore[] knownTestersList;
-	TesterAndScore[] usedTestersList;
+	static TesterAndScore[] knownTestersList;
+	static TesterAndScore[] usedTestersList;
+	static Float scoreMatrix[][];
+	boolean autoTestersRating;
 	/**
 	 * Read all recommendations,
 	 * Store result in local tables used by the local update modules. 
 	 */
-	private void recommendTesters() {
+	public void recommendTesters() {
 		Float scoreMatrix[][];
 		Long[] receivedTesters;
+		Long[] sourcePeers;
 		synchronized (this) {
 			receivedTesters = D_RecommendationOfTester.retrieveAllTestersLIDFromRecievedRecommendation().toArray(new Long[0]);
 			if(DEBUG) System.out.println("[   T"+ Util.concat(receivedTesters, " | T")+"]");
-			Long[] sourcePeers = D_RecommendationOfTester.retrieveAllRecommendationSenderPeerLID().toArray(new Long[0]);
+			sourcePeers = D_RecommendationOfTester.retrieveAllRecommendationSenderPeerLID().toArray(new Long[0]);
 			scoreMatrix = extractScoreMatrix(sourcePeers, receivedTesters);
 			
 			if(!DEBUG) System.out.println("[   T"+ Util.concat(receivedTesters, " | T")+"]");
@@ -148,10 +175,13 @@ public class RecommenderOfTesters extends util.DDP2P_ServiceThread {
 					for(int j=0; j<receivedTesters.length; j++)
 						System.out.print(" "+scoreMatrix[i][j]);
 					System.out.println();
-				}
-					
-                				
+				}				
 			}
+		}
+		try {
+			autoTestersRating = DD.getAppBoolean(DD.AUTOMATIC_TESTERS_RATING_BY_SYSTEM);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
 		}
 		knownTestersList = buildKnownTestersList(receivedTesters, scoreMatrix);
 		if(!DEBUG) System.out.println("knownTestersList: ["+ Util.concat(knownTestersList, "|")+"]"); 
@@ -159,7 +189,22 @@ public class RecommenderOfTesters extends util.DDP2P_ServiceThread {
 		if(!DEBUG) System.out.println("currentUsedTesters: ["+ Util.concat(currentUsedTesters, "|")+"]");
 		usedTestersList = buildusedTestersList(currentUsedTesters);
 		if(!DEBUG) System.out.println("usedTestersList: ["+ Util.concat(usedTestersList, "|")+"]");
-		updateTestersWieght();
+		UpdatesPanel.knownTestersList = knownTestersList;
+		UpdatesPanel.usedTestersList = usedTestersList;
+		UpdatesPanel.scoreMatrix =  scoreMatrix;
+		
+		if(!DEBUG){ 
+			for(int i=0; i<sourcePeers.length; i++){
+				System.out.print("P"+sourcePeers[i]);
+				for(int j=0; j<receivedTesters.length; j++)
+					System.out.print(" "+UpdatesPanel.scoreMatrix[i][j]);
+				System.out.println();
+			}				
+		}
+		UpdatesPanel.receivedTesters = receivedTesters;
+		UpdatesPanel.sourcePeers = sourcePeers;
+		if(autoTestersRating)
+			updateTestersWieght();
 	}
 	private void updateTestersWieght() {
 		// all weights set to -1 , flags set to 0 (reference, used,..)
@@ -194,6 +239,9 @@ public class RecommenderOfTesters extends util.DDP2P_ServiceThread {
 	 */
 	private TesterAndScore[] buildusedTestersList(
 			TesterAndScore[] currentUsedTesters) {
+		
+		if(!autoTestersRating)
+			return currentUsedTesters;
 		
 		if (currentUsedTesters.length < N_MAX_NUMBER_OF_TESTERS && currentUsedTesters.length <= knownTestersList.length)
 			return TopNwithFilter(knownTestersList, N_MAX_NUMBER_OF_TESTERS);
@@ -294,6 +342,7 @@ public class RecommenderOfTesters extends util.DDP2P_ServiceThread {
 			if(count>=nMaxNumberOfTesters)
 				break;
 			topNlist.add(tScore);
+			count++;
 		}	
 		return topNlist.toArray(new TesterAndScore[0]);
 	}
@@ -356,11 +405,18 @@ List after applying the formula for all testers received from others.
 		Float scoreMatrix[][] = new Float[sourcePeers.length][receivedTesters.length];
 		// -1 means a tester is not yet rated by a peer
 		initMatrix(scoreMatrix, null);
-		for(int i=0; i<sourcePeers.length; i++){
-			ArrayList<D_RecommendationOfTester> recomList = D_RecommendationOfTester.retrieveAllRecommendationTestersKeep(""+sourcePeers[i]);
+		ArrayList<D_RecommendationOfTester> recomList=null;
+		for(int i=0; i<sourcePeers.length; i++){ 
+			recomList = D_RecommendationOfTester.retrieveAllRecommendationTestersKeep(""+sourcePeers[i]);
 			for(int j=0; j<receivedTesters.length;j++)
 				scoreMatrix[i][j] = scoreForTester(recomList, receivedTesters[j]);
+			if(recomList!=null)
+				for(D_RecommendationOfTester rot:recomList)
+					{rot.releaseReferences();
+					//System.out.println("after releaseReferences() for tester:"+rot.testerLID+" the release is:"+rot.getReferenced());
+					}
 		}
+		
 		return scoreMatrix;
 	}
 	private Float scoreForTester(ArrayList<D_RecommendationOfTester> recomList,
@@ -378,7 +434,7 @@ List after applying the formula for all testers received from others.
 	}
 	
 }
-
+/*
 class TesterAndScore implements Comparable<TesterAndScore>{
 	private static final boolean _DEBUG = true;
 	long testerID;
@@ -409,3 +465,4 @@ class TesterAndScore implements Comparable<TesterAndScore>{
 		return result;
 	}
 }
+*/

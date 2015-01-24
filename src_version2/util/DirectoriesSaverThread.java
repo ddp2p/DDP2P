@@ -50,7 +50,7 @@ class DirectoriesSaverThread extends util.DDP2P_ServiceThread {
 	    		Application_GUI.warning(__("Already known directory:")+new_dir, __("Added directory"));
 	    	}
     	}
-		if (Application.as != null) {
+		if (Application.g_TCPServer != null) {
 			//HandlingMyself_Peer.updateAddress(HandlingMyself_Peer.get_myself_with_wait());
 			D_Peer myself = HandlingMyself_Peer.get_myself_or_null();
 			if (myself != null) {

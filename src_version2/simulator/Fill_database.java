@@ -509,7 +509,7 @@ public class Fill_database<org_id_for> extends util.DDP2P_ServiceThread  {
 		mot.setMotionTitle(doc3);
 		if(DEBUG)System.out.println("add_motion : mot.title : "+mot.getMotionTitle());
 		mot.setStatus(0);
-		mot.setGID(mot.make_ID());
+		mot._setGID(mot.make_ID());
 		if(DEBUG)System.out.println("add_motion : before signing");
 		mot.setSignature(mot.sign(sk));
 		if(DEBUG)System.out.println("add_motion : after signing : "+mot);

@@ -2,6 +2,9 @@ package data;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+
+import recommendationTesters.TesterAndScore;
 
 import ciphersuits.PK;
 import ciphersuits.SK;
@@ -15,7 +18,7 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
-public class D_TesterIntroducer extends ASNObj  {
+public class D_TesterIntroducer extends ASNObj implements Comparable<D_TesterIntroducer> {
 	private static final boolean DEBUG = false;
 	
 	public long testerIntroducerID; // primary key
@@ -133,6 +136,7 @@ public class D_TesterIntroducer extends ASNObj  {
 				System.out.println("]");
 			}
 			
+			Collections.sort(result);
 			return result;
 		}
 
@@ -228,6 +232,16 @@ public class D_TesterIntroducer extends ASNObj  {
 				e.printStackTrace();
 			}
 			
+		}
+
+		@Override
+		public int compareTo(D_TesterIntroducer o) {
+			if ( this.creation_date.equals(o.creation_date))
+	            return 0;
+	        else if ( this.creation_date.before(o.creation_date))
+	            return 1;
+	        else
+	            return -1;
 		}
 
 	

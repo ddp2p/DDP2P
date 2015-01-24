@@ -97,8 +97,8 @@ public class DDIcons {
 	private static final String I_BACK20 = "back20.gif";		
 	private static final String I_FORW20 = "forward20.gif";		
 
-	private static final String I_BROADCAST20 = "broadcast20.gif";
-	private static final String I_BLOCK_DOWNLOAD20 = "block20.gif";
+	public static final String I_BROADCAST20 = "broadcast20.gif";
+	public static final String I_BLOCK_DOWNLOAD20 = "block20.gif";
 	private static final String I_HIDE20 = "hide20.gif";
 	private static final String I_TMP20 = "tmp20.gif";
 	private static final String I_GID20 = "gid20.gif";

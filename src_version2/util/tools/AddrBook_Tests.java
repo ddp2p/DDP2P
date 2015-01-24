@@ -239,7 +239,7 @@ public class AddrBook_Tests {
 		adr.branch = DD.BRANCH;
 		adr.agent_version = DD.VERSION;
 
-		Application.aus = new UDPServer(Identity.getCurrentPeerIdentity_NoQuitOnFailure());
+		Application.g_UDPServer = new UDPServer(Identity.getCurrentPeerIdentity_NoQuitOnFailure());
 
 		D_Peer peer;
 		if (b_pLID) peer = D_Peer.getPeerByLID_NoKeep(pLID, true);
@@ -297,7 +297,7 @@ public class AddrBook_Tests {
 		adr.branch = DD.BRANCH;
 		adr.agent_version = DD.VERSION;
 		boolean result;
-		Application.aus = new UDPServer(Identity.getCurrentPeerIdentity_NoQuitOnFailure());
+		Application.g_UDPServer = new UDPServer(Identity.getCurrentPeerIdentity_NoQuitOnFailure());
 		result = UDPServer._announceMyselfToDirectories(a, UDPServer.getUDPSocket(), adr);		
 		System.out.println("AddrBook_Test: run: udp result ="+result);
 	}

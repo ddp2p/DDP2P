@@ -111,12 +111,12 @@ public class ClientSync{
 	 *  The place to decide on a Client1 and Client2
 	 * @return
 	 */
-	static public IClient startClient(){
+	static public IClient startClient() {
 		if(DEBUG) System.out.println("ClientSync:startClient: start Client2");
 		IClient r;
 		r = new Client2(); // Change to Client1 on bugs
 		r.start();
-		if(DEBUG) System.out.println("ClientSync:startClient: started Client2");
+		if (DEBUG) System.out.println("ClientSync:startClient: started Client2");
 		return r;
 	}
 	/**
@@ -234,7 +234,7 @@ public class ClientSync{
 	 */
 	public static void try_send(PluginRequest msg, ArrayList<Address> pca) {
 		if(DD.DEBUG_PLUGIN) System.out.println(CLASS+":try_send: start");
-		IClient c = Application.ac;
+		IClient c = Application.g_PollingStreamingClient;
 		if (c == null) {
 			if(DD.DEBUG_PLUGIN) System.out.println(CLASS+":try_send: done your Communication client is off");
 			Application_GUI.warning(__("Plugin attempts but no communication client!\nStart from Settings."), __("No Communication client"));
@@ -245,7 +245,7 @@ public class ClientSync{
 		ArrayList<String> peer_directories=null;
 		ArrayList<InetSocketAddress> peer_directories_sockets=null;
 		if(DD.DEBUG_PLUGIN) System.out.println(CLASS+":try_send: will get addresses");
-		if(Application.ac instanceof Client1){
+		if(Application.g_PollingStreamingClient instanceof Client1){
 			ClientSync.getSocketAddresses(tcp_sock_addresses, udp_sock_addresses, pca, msg.peer_GID, null, null, null, null, null);
 			if(DD.DEBUG_PLUGIN) System.out.println(CLASS+":try_send: got addresses");
 			peer_directories = ClientSync.peer_contacted_dirs.get(msg.peer_GID);
@@ -253,7 +253,7 @@ public class ClientSync{
 				peer_directories_sockets = new ArrayList<InetSocketAddress>();
 				peer_directories_sockets = ClientSync.getUDPDirectoriesSockets(peer_directories, peer_directories_sockets);
 			}
-		}else if(Application.ac instanceof Client2){
+		}else if(Application.g_PollingStreamingClient instanceof Client2){
 			peer_directories = new ArrayList<String>();
 			peer_directories_sockets = new ArrayList<InetSocketAddress>();
 			Connections.getSocketAddresses(tcp_sock_addresses, udp_sock_addresses, 
@@ -404,7 +404,7 @@ public class ClientSync{
 		sr.directory = new Address(Identity.listing_directories_string.get(Identity.preferred_directory_idx));
 		 */
 		}else{
-			out.println("Not broadcastable: "+Application.as);
+			out.println("Not broadcastable: "+Application.g_TCPServer);
 		}
 		//sr.sign(); //signed before encoding
 		try {
@@ -678,8 +678,6 @@ public class ClientSync{
 			try {
 				DD.touchClient();
 			} catch (NumberFormatException e) {
-				e.printStackTrace();
-			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 	}

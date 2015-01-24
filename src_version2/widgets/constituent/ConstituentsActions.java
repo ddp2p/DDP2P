@@ -420,13 +420,13 @@ class ConstituentsCustomAction extends DebateDecideAction {
        				}
        			}       		
        		}
-       		if(action == BLOCK) {
+       		if (action == BLOCK) {
        			if (tpath != null) {
-    	    		if(target instanceof ConstituentsIDNode) {
+    	    		if (target instanceof ConstituentsIDNode) {
     	    	    	ConstituentsIDNode can = (ConstituentsIDNode) target;
-    	    	    	can.block(tree);
+    	    	    	can.toggle_block(tree);
     	    		}
-    	       		if(target instanceof ConstituentsAddressNode) {
+    	       		if (target instanceof ConstituentsAddressNode) {
     	       			ConstituentsAddressNode can = (ConstituentsAddressNode) target;
     	    	    	can.block(tree);
     	    		}
@@ -444,13 +444,13 @@ class ConstituentsCustomAction extends DebateDecideAction {
     	    		}
      	    	}
         	}
-            if(action == BROADCAST) {
+            if (action == BROADCAST) {
     	    	if (tpath != null) {
-    	    		if(target instanceof ConstituentsIDNode) {
+    	    		if (target instanceof ConstituentsIDNode) {
     	    	    	ConstituentsIDNode can = (ConstituentsIDNode) target;
-    	    	    	can.broadcast(tree);
+    	    	    	can.toggle_broadcast(tree);
     	    		}
-    	       		if(target instanceof ConstituentsAddressNode) {
+    	       		if (target instanceof ConstituentsAddressNode) {
     	       			ConstituentsAddressNode can = (ConstituentsAddressNode) target;
     	    	    	can.broadcast(tree);
     	    		}
@@ -1001,6 +1001,8 @@ class ConstituentsAddAction extends DebateDecideAction {
     		data.icon = imageicon;
     		data.inserted_by_me = true;
     		data.external = true;
+    		data.blocked = false;
+    		data.broadcast = true;
     		data.slogan = table.constituent.INIT_EXTERNAL_SLOGAN;
         	data.email = dialog.emailEditor;
         	if(dialog.sign)data.submitter_ID = ""+model.getConstituentIDMyself();
@@ -1566,6 +1568,8 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     		data.icon = imageicon;
     		data.inserted_by_me = true;
     		data.external = false;
+    		data.blocked = false;
+    		data.broadcast = true;
     		data.slogan = table.constituent.INIT_SLOGAN;
         	data.email = dialog.emailEditor;
         	data.submitter_ID = ""+model.getConstituentIDMyself();

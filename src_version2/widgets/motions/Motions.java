@@ -807,7 +807,7 @@ class MotionCustomAction extends DebateDecideAction {
         	//n_justification.organization_ID = tree.getOrganizationID();
         	//n_justification.creation_date = Util.CalendargetInstance();
         	long nID;
-        	n_motion.setGID(null);
+        	n_motion._setGID(null);
         	n_motion.setTemporary();
         	nID = n_motion.storeLinkNewTemporary();
         	//nID = n_motion.storeVerified();

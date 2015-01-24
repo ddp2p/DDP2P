@@ -106,7 +106,6 @@ class DNode implements TreeNode{
 	}
 	
 }
-
 public class PeerContacts extends JPanel implements MouseListener, PeerListener {
 	public static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
@@ -132,8 +131,8 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 
 	// (GID: (instance: (DIR_Address:(ADR:date))))
 	public void update(Hashtable<String, Hashtable<String, Hashtable<String, Hashtable<String, String>>>> peer_contacts) {
-		if(DEBUG) System.out.println("PeerContacts: update: start");
-		if (!refresh) {
+		if (DEBUG) System.out.println("PeerContacts: update: start");
+		if (! refresh) {
 			if (_DEBUG) System.out.println("PeerContacts: update: norefresh");
 			return;
 		}

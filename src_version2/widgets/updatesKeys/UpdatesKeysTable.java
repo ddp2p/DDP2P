@@ -2,6 +2,7 @@ package widgets.updatesKeys;
 
 import static util.Util.__;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.MouseEvent;
@@ -9,6 +10,7 @@ import java.awt.event.MouseListener;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
 
+import javax.swing.DefaultCellEditor;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JPopupMenu;
@@ -21,9 +23,12 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
 import util.DBInterface;
+import util.P2PDDSQLException;
 import widgets.app.DDIcons;
 import widgets.components.BulletRenderer;
 import config.Application;
+import config.Application_GUI;
+import config.DD;
 import config.Identity;
 import widgets.updates.PanelRenderer;
 import widgets.updates.MyPanelEditor;
@@ -66,8 +71,10 @@ public class UpdatesKeysTable extends JTable implements MouseListener{
         __("Click to sort; Shift-Click to sort in reverse order"));
 		this.setAutoCreateRowSorter(true);
 		
-		getColumnModel().getColumn(UpdatesKeysModel.TABLE_COL_NAME).setCellRenderer(new PanelRenderer());
-		getColumnModel().getColumn(UpdatesKeysModel.TABLE_COL_NAME).setCellEditor(new MyPanelEditor());
+		//getColumnModel().getColumn(UpdatesKeysModel.TABLE_COL_NAME).setCellRenderer(new TesterNameCellPanel());
+		//getColumnModel().getColumn(UpdatesKeysModel.TABLE_COL_NAME).setCellEditor(new TesterNameCellEditor());
+		getColumnModel().getColumn(UpdatesKeysModel.TABLE_COL_NAME).setCellRenderer(new TesterNameColumnRenderer(this.getDefaultRenderer(String.class)));
+		getColumnModel().getColumn(UpdatesKeysModel.TABLE_COL_NAME).setCellEditor(new TesterNameCellEditor(this.getDefaultEditor(String.class)));
 		
 		if(DEBUG) System.out.println("UpdateKeysTable:init:done");
 		//his.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
@@ -101,7 +108,7 @@ public class UpdatesKeysTable extends JTable implements MouseListener{
 
 	@Override
 	public void mouseEntered(MouseEvent e) {
-		jtableMouseReleased(e);
+		//jtableMouseReleased(e);
 	}
 
 	@Override
@@ -143,9 +150,20 @@ public class UpdatesKeysTable extends JTable implements MouseListener{
         }
     }
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
+    	if(!evt.isPopupTrigger()) return;
+    	boolean autoSeleced =false;
+    	try {
+    		autoSeleced = DD.getAppBoolean(DD.AUTOMATIC_TESTERS_RATING_BY_SYSTEM);
+    	} catch (P2PDDSQLException e) {
+    		e.printStackTrace();
+    	} 
+    	if(autoSeleced){
+    		Application_GUI.warning("you need to select manual rating mode to use this option", "Manual Rating");
+    		return;
+    	}
     	int row; //=this.getSelectedRow();
     	int col; //=this.getSelectedColumn();
-    	if(!evt.isPopupTrigger()) return;
+    	
     	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
         row=this.rowAtPoint(point);
@@ -180,5 +198,9 @@ public class UpdatesKeysTable extends JTable implements MouseListener{
     	popup.add(menuItem);
     	    
     	return popup;
+	}
+	public void setColumnBackgroundColor(Color gray) {
+		// TODO Auto-generated method stub
+		
 	}
 }

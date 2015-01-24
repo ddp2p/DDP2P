@@ -37,7 +37,6 @@ import config.Application;
 import config.Identity;
 import data.D_MirrorInfo;
 import data.D_Tester;
-import data.D_UpdatesKeysInfo;
 import util.P2PDDSQLException;
 import widgets.updatesKeys.UpdatesKeysTable;
 
@@ -90,15 +89,16 @@ public class ImportData {
 			    			try{	
 				    			//t.store();
 				    			testerDef.add(t);
-				    			D_UpdatesKeysInfo ukeys = new D_UpdatesKeysInfo();
-				    			ukeys.original_tester_name = t.name;
-				    			ukeys.public_key = t.testerGID;
-				    			ukeys.public_key_hash = Util.getGIDhashFromGID(t.testerGID, false);
+				    			D_Tester ukeys = new D_Tester();
+				    			ukeys.name = t.name;
+				    			ukeys.testerGID = t.testerGID;
+				    			ukeys.testerGIDH = Util.getGIDhashFromGID(t.testerGID, false);
 				    			ukeys.email=t.email;
 				    			ukeys.url=t.url;
 				    			ukeys.description = t.description;
-				    			if(ukeys.existsInDB()) ukeys.store("update"); 
-				    			else ukeys.store("insert");
+				    			ukeys.store();
+//				    			if(ukeys.existsInDB()) ukeys.store("update"); 
+//				    			else ukeys.store("insert");
 				    			line=3;
 				    			Application.db.sync(new ArrayList<String>(Arrays.asList(table.tester.TNAME)));
 			    			}catch(P2PDDSQLException e){}
@@ -130,7 +130,7 @@ public class ImportData {
 		BufferedReader in =null;
 		try{in = new BufferedReader(new FileReader(f));} catch(IOException e){}
 		String tmp_inputLine = null;
-		D_UpdatesKeysInfo t=new D_UpdatesKeysInfo();
+		D_Tester t=new D_Tester();
 		int line = 0;
 		try {
 			while ((tmp_inputLine = in.readLine()) != null ) {
@@ -141,8 +141,8 @@ public class ImportData {
 				switch(line)
 				{
 				case 0: line++; break; //TESTERINFO_START
-				case 1: t.original_tester_name = tmp_inputLine; line++; break;
-				case 2: t.public_key = tmp_inputLine; line++; break;
+				case 1: t.name = tmp_inputLine; line++; break;
+				case 2: t.testerGID = tmp_inputLine; line++; break;
 				case 3: t.email = tmp_inputLine; line++; break;
 				case 4: t.url = tmp_inputLine; line++; break;
 				case 5: if(tmp_inputLine.equals("DESC")){ t.description="";line++; break;} else continue;
@@ -155,9 +155,10 @@ public class ImportData {
 				    			//D_UpdatesKeysInfo ukeys = new D_UpdatesKeysInfo();
 				    			//ukeys.original_tester_name = t.name;
 				    			//ukeys.public_key = t.public_key;
-				    			t.public_key_hash = Util.getGIDhashFromGID(t.public_key, false);
-				    			if(t.existsInDB()) t.store("update"); 
-				    			else t.store("insert");
+				    			t.testerGIDH = Util.getGIDhashFromGID(t.testerGID, false);
+//				    			if(t.existsInDB()) t.store("update"); 
+//				    			else t.store("insert");
+				    			t.store();
 				    			line=0;
 			    			}catch(P2PDDSQLException e){}
 			             }

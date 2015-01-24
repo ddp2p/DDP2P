@@ -23,6 +23,7 @@ public class justification {
 	 public static final String justification_ID = "justification_ID";
 	 public static final String global_justification_ID = "global_justification_ID";
 	 public static final String motion_ID = "motion_ID";
+	 public static final String organization_ID = "organization_ID";
 	 public static final String hash_justification_alg = "hash_justification_alg";
 	 public static final String hash_justification = "hash_justification";
 	 public static final String justification_title_format = "justification_title_format";
@@ -66,8 +67,8 @@ public class justification {
 		temporary+","+
 		peer_source_ID+","+
 		preferences_date+","+
-		hidden
-		// +","+organization_ID
+		hidden+","+
+		organization_ID
 		;
 	public static String fields = fields_noID + "," + justification_ID;
 	public static String[] fields_noID_array = fields_noID.split(",");
@@ -95,7 +96,7 @@ public class justification {
 	public static final int J_PEER_SOURCE_ID = 18;
 	public static final int J_PREFERENCES_DATE = 19;
 	public static final int J_HIDDEN = 20;
-	//public static final int J_ORG_ID = 14;
-	public static final int J_ID = 21;
+	public static final int J_ORG_ID = 21;
+	public static final int J_ID = 22;
 	public static final int J_FIELDS = fields_array.length;
 }

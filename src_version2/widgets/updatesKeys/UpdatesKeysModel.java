@@ -25,8 +25,9 @@ import java.awt.event.ActionEvent;
 import util.P2PDDSQLException;
 
 import config.Application;
+import config.Application_GUI;
+import config.DD;
 
-import data.D_UpdatesKeysInfo;
 import data.D_Tester;
 
 
@@ -38,7 +39,7 @@ import table.tester;
 import widgets.updates.TableJButton;
 import widgets.updates.PanelRenderer;
 
-public class UpdatesKeysModel extends AbstractTableModel implements TableModel, DBListener, ActionListener {
+public class UpdatesKeysModel extends AbstractTableModel implements TableModel, DBListener {
 	public static final int TABLE_COL_NAME = 0; // orginal or preferred name
 	public static final int TABLE_COL_WEIGHT = 1; // selecting wight value
 	public static final int TABLE_COL_REFERENCE = 2; // required tester
@@ -50,10 +51,11 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 
 	private DBInterface db;
 	HashSet<Object> tables = new HashSet<Object>();
-	String columnNames[]={__("Name"),__("Weight"),__("Reference"),__("Trusted as tester"),__("Trusted as mirror")};
+	String columnNames[]={__("Name/ID"),__("Weight"),__("Reference"),__("Trusted as tester"),__("Trusted as mirror")};
 
-	ArrayList<D_UpdatesKeysInfo> data = new ArrayList<D_UpdatesKeysInfo>(); // rows of type D_UpdateInfo -> Bean
 	
+	public ArrayList<D_Tester> data = new ArrayList<D_Tester>(); // rows of type D_UpdateInfo -> Bean
+   
 	public UpdatesKeysModel(DBInterface _db) { // constructor get dataSource -> DBInterface _db
 		db = _db;
 		db.addListener(this, new ArrayList<String>(Arrays.asList(table.tester.TNAME, table.tester.TNAME, table.mirror.TNAME)), null);
@@ -79,57 +81,60 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 
 	@Override
 	public Class<?> getColumnClass(int col) {
-		if(col == this.TABLE_COL_WEIGHT) return Float.class;
+		//if(col == this.TABLE_COL_WEIGHT) return Float.class;
 		if(col == this.TABLE_COL_TRUSTED_MIRROR) return Boolean.class;
 		if(col == this.TABLE_COL_TRUSTED_TESTER) return Boolean.class;
 		if(col == this.TABLE_COL_REFERENCE) return Boolean.class;
-		if(col == this.TABLE_COL_NAME) return JPanel.class;//PanelRenderer.class;
+		if(col == this.TABLE_COL_NAME) return String.class;//TesterNameCellPanel.class;//PanelRenderer.class;
 		
 		return String.class;
 	}
 
 	@Override
 	public boolean isCellEditable(int rowIndex, int columnIndex) {
-//		switch(columnIndex){
-//		case TABLE_COL_NAME:
-//		case TABLE_COL_TRUSTED_MIRROR:
-//		case TABLE_COL_WEIGHT:
-//		case TABLE_COL_TRUSTED_TESTER:
-//			return true;
-//		}
+		switch(columnIndex){
+		case TABLE_COL_NAME:
+		case TABLE_COL_WEIGHT:
+		case TABLE_COL_REFERENCE:
+		case TABLE_COL_TRUSTED_TESTER:
+			try {
+				return !DD.getAppBoolean(DD.AUTOMATIC_TESTERS_RATING_BY_SYSTEM);
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
 		return true;
 	}
-
+    final String prefixID="ID:";
+    
+    
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {// a cell
 		if((rowIndex<0) || (rowIndex>data.size())) return null;
 		if((columnIndex<0) || (columnIndex>this.getColumnCount())) return null;
-		D_UpdatesKeysInfo crt = data.get(rowIndex);
+		D_Tester crt = data.get(rowIndex);
 		if(crt==null) return null;
 		switch(columnIndex){
 		case TABLE_COL_NAME:
 			String result = null;
-			result = data.get(rowIndex).my_tester_name;
-			if(result == null) result = data.get(rowIndex).original_tester_name;
-			JTextField nameTxt = new JTextField(result);
-			JPanel p = new JPanel(new BorderLayout());
-			p.setPreferredSize(new Dimension(60,40));
-		    p.add(nameTxt);
-	        TableJButton b = new TableJButton("...",rowIndex );
-	        b.addActionListener(this);
-	       // System.out.println(b.rowNo); 
-	        b.setPreferredSize(new Dimension(20,30));
-	        nameTxt.setPreferredSize(new Dimension(40,30));
-	        p.add(b, BorderLayout.EAST);
-			return p;
+			result = data.get(rowIndex).my_name;
+			if(result == null) result = data.get(rowIndex).name;
+			if(result == null) result = prefixID+data.get(rowIndex).testerGIDH;
+//			JTextField nameTxt = new JTextField(result);
+//			nameTxt.setPreferredSize(new Dimension(40,30));
+//			TableJButton b = new TableJButton("...",rowIndex);
+//			b.addActionListener(this); 
+//	    	b.setPreferredSize(new Dimension(20,30));
+//			testerNameCellPanel = new TesterNameCellPanel(nameTxt, b);
+			return result; //testerNameCellPanel;
 		case TABLE_COL_REFERENCE:
-			return data.get(rowIndex).reference;
+			return data.get(rowIndex).referenceTester;
 		case TABLE_COL_WEIGHT:
-			return data.get(rowIndex).weight;
+			return data.get(rowIndex).trustWeight;
 		case TABLE_COL_TRUSTED_MIRROR:
-			return data.get(rowIndex).trusted_as_mirror;
+			return data.get(rowIndex).trustedAsMirror;
 		case TABLE_COL_TRUSTED_TESTER:
-			return data.get(rowIndex).trusted_as_tester; 
+			return data.get(rowIndex).trustedAsTester; 
 		}
 		return null;
 	}
@@ -139,47 +144,52 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 		if(DEBUG) System.out.println("setVlaueAt"+row +", "+col);
 		if((row<0) || (row>=data.size())) return;
 		if((col<0) || (col>this.getColumnCount())) return;
-		D_UpdatesKeysInfo crt = data.get(row);
+		D_Tester crt = data.get(row);
 		switch(col) {
 		case TABLE_COL_NAME:
-			System.out.println("txtField"+ aValue);
-			crt.my_tester_name = Util.getString(aValue);
-			if(crt.my_tester_name!=null) crt.my_tester_name = crt.my_tester_name.trim();
-			if("".equals(crt.my_tester_name)) crt.my_tester_name = null;
+			System.out.println("setValueAt:txtField"+ aValue);
+			crt.my_name = Util.getString(aValue);
+			System.out.println("crt.my_name:"+ aValue+":");
+			if(crt.my_name!=null) crt.my_name = crt.my_name.trim();
+			if(crt.my_name!=null && ("".equals(crt.my_name) || crt.my_name.startsWith(prefixID))) crt.my_name = null;
 			try {
-				data.get(row).store("update");
+				data.get(row).store();
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
-		case TABLE_COL_WEIGHT: 
-			crt.weight = Float.valueOf(Util.getString(aValue)).floatValue();
+		case TABLE_COL_WEIGHT: // use float value for validation
+			crt.trustWeight = Util.getString(Float.valueOf(Util.getString(aValue)).floatValue());
 			try {
-				data.get(row).store("update");
+				data.get(row).store();
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
 		case TABLE_COL_REFERENCE:
-			data.get(row).reference = ((Boolean)aValue).booleanValue(); 
+			data.get(row).referenceTester = ((Boolean)aValue).booleanValue(); 
 			try {
-				data.get(row).store("update");
+				data.get(row).store();
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
 		case TABLE_COL_TRUSTED_MIRROR:
-			data.get(row).trusted_as_mirror = ((Boolean)aValue).booleanValue(); 
+			data.get(row).trustedAsMirror = ((Boolean)aValue).booleanValue(); 
 			try {
-				data.get(row).store("update");
+				data.get(row).store();
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
 			break;
 		case TABLE_COL_TRUSTED_TESTER:
-			data.get(row).trusted_as_tester = ((Boolean)aValue).booleanValue(); 
+			if(data.get(row).trustWeight==null && ((Boolean)aValue).booleanValue()){
+				Application_GUI.warning(Util.__("Note: the tester you trusted has no weight, It will be assigned 0 value, you can change it later!"), Util.__("Tester has no weight"));
+				data.get(row).trustWeight = ""+0;
+			}
+			data.get(row).trustedAsTester = ((Boolean)aValue).booleanValue(); 
 			try {
-				data.get(row).store("update");
+				data.get(row).store();
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
@@ -212,9 +222,9 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 			e.printStackTrace();
 			return;
 		}
-		data = new ArrayList<D_UpdatesKeysInfo>();
+		data = new ArrayList<D_Tester>();
 		for(ArrayList<Object> _u :u){
-			D_UpdatesKeysInfo ui = new D_UpdatesKeysInfo(_u);
+			D_Tester ui = new D_Tester(_u);
 			if(DEBUG)System.out.println("UpdatesKeysModel:update: adding : id= "+ui.tester_ID);
 			data.add(ui); // add a new item to data list (rows)
 		}
@@ -229,31 +239,17 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 		tables.add(l);
 	}
 	
-		@Override
-	public void actionPerformed(ActionEvent e) {
-		TableJButton bb =(TableJButton)e.getSource();
-		D_UpdatesKeysInfo uKey =data.get(bb.rowNo);
-//	    TesterInfoPanel testerPanel= new TesterInfoPanel(D_TesterDefinition.retrieveTesterDefinition(uKey.original_tester_name, uKey.public_key ));
- 		TesterInfoPanel testerPanel = new TesterInfoPanel(
- 				//D_Tester.retrieveTesterDefinition_ByGID(uKey.public_key )
- 				D_Tester.getTesterInfoByGID(uKey.public_key, false, null, null)
- 				);
-//		QualitesTable q = new QualitesTable(data.get(bb.rowNo));
-		JPanel p = new JPanel(new BorderLayout());
-//		p.add(q.getScrollPane());
-//		JFrame frame = new JFrame();
-//		frame.setContentPane(p);
-//		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//		frame.pack();
-//		frame.setSize(800,300);
-//		frame.setVisible(true);
-		
-		p.setBackground(Color.BLUE);
-        p.setMinimumSize(new Dimension(200,200));
-		p.add(new JButton("hi"));
-		JOptionPane.showMessageDialog(null,testerPanel,"Tester Info", JOptionPane.DEFAULT_OPTION, null);
-
-	}
+//		@Override
+//	public void actionPerformed(ActionEvent e) {
+//		TableJButton bb =(TableJButton)e.getSource();
+//		D_Tester uKey =data.get(bb.rowNo);
+// 		TesterInfoPanel testerPanel= new TesterInfoPanel(D_Tester.getTesterInfoByGID(uKey.testerGID, false, null, null)); 
+//		JPanel p = new JPanel(new BorderLayout());
+//		p.setBackground(Color.BLUE);
+//        p.setMinimumSize(new Dimension(200,200));
+//		p.add(new JButton("hi"));
+//		JOptionPane.showMessageDialog(null,testerPanel,"Tester Info", JOptionPane.DEFAULT_OPTION, null);
+//	}
 
 	public static void main(String args[]) {
 		JFrame frame = new JFrame();
@@ -288,7 +284,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 		}
 	}
 
-	public D_UpdatesKeysInfo get_UpdatesKeysInfo(int row) {
+	public D_Tester get_UpdatesKeysInfo(int row) {
 		try{
 			return data.get(row);
 		}catch(Exception e){

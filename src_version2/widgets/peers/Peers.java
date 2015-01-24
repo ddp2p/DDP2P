@@ -1219,8 +1219,6 @@ class PeersUseAction extends DebateDecideAction {
 			DD.touchClient();
 		} catch (NumberFormatException e1) {
 			e1.printStackTrace();
-		} catch (P2PDDSQLException e1) {
-			e1.printStackTrace();
 		}
      	/*
     	String peerID = Util.getString(model.getPeers().get(row).get(0));
@@ -1332,8 +1330,6 @@ class PeersRowAction extends DebateDecideAction {
 				DD.touchClient();
 			} catch (NumberFormatException e6) {
 				e6.printStackTrace();
-			} catch (P2PDDSQLException e6) {
-				e6.printStackTrace();
 			}
 	     	/*
 	    	peerID = Util.getString(model.getPeers().get(row).get(0));
@@ -1377,11 +1373,11 @@ class PeersRowAction extends DebateDecideAction {
 			}
 			break;
 		case Peers.COMMAND_TOUCH_CLIENT:
-			try {
-				DD.touchClient();
-			} catch (P2PDDSQLException e4) {
-				e4.printStackTrace();
-				Application_GUI.warning(__("Error trying to restart comunication:")+"\n "+e4.getLocalizedMessage(), __("Error trying to restart communication!"));
+			if (! DD.touchClient()) {
+				// e4.printStackTrace();
+				Application_GUI.warning(__("Error trying to restart comunication:")+"\n ",
+				//+e4.getLocalizedMessage(),
+				__("Error trying to restart communication!"));
 			}
 			break;
 		case Peers.COMMAND_MENU_SET_NAME:

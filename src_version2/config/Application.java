@@ -38,12 +38,12 @@ public class Application{
 	//public static String CURRENT_DELIBERATION_FILE = null;
 	static public DBInterface db;
 	static public DBInterface db_dir;
-	static public DirectoryServer ds;
-	static public Server as;
-	static public UDPServer aus; //have to unify with the one in DD
+	static public DirectoryServer g_DirectoryServer;
+	static public Server g_TCPServer;
+	static public UDPServer g_UDPServer; //have to unify with the one in DD
 	static public BroadcastServer g_BroadcastServer = null; // reference to the unique BroadcastServer
 	static public BroadcastClient g_BroadcastClient = null; // reference to the unique BroadcastClient
-	static public IClient ac;
+	static public IClient g_PollingStreamingClient;
 	static public Directories_View directory_status=null;
 	static public Peers_View peers=null;
 	//public static String my_global_peer_ID;

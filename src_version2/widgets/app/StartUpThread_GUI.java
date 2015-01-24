@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- */
-/*   Copyright (C) 2012 Marius C. Silaghi
+/*   Copyright (C) 2012 Marius C. Silaghi and Khalid Alhamed
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
    
@@ -44,6 +44,7 @@ import ASN1.Decoder;
 import ASN1.Encoder;
 import util.DDP2P_ServiceRunnable;
 import util.P2PDDSQLException;
+import recommendationTesters.RecommenderOfTesters;
 import streaming.OrgHandling;
 import util.Util;
 import widgets.components.GUI_Swing;
@@ -183,8 +184,7 @@ public class StartUpThread_GUI extends util.DDP2P_ServiceThread {
 
 		    ActionListener exitListener = new ActionListener() {
 		        public void actionPerformed(ActionEvent e) {
-		            System.out.println("Exiting...");
-		            System.exit(0);
+		        	DD.clean_exit();
 		        }
 		    };
 		            
@@ -287,6 +287,11 @@ public class StartUpThread_GUI extends util.DDP2P_ServiceThread {
 			MainFrame.controlPane.setUServerStatus(true);
 		}
 		
+		if (StartUp.data_userver_on_start){
+			//MainFrame.controlPane.setUServerStatus(true);
+			RecommenderOfTesters.startROT();
+		}
+		
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat userver");
 		if (StartUp.data_server_on_start){
 			MainFrame.controlPane.setServerStatus(true);
@@ -351,21 +356,21 @@ public class StartUpThread_GUI extends util.DDP2P_ServiceThread {
 		//boolean DEBUG = true;
 		try{
 			StartUp.init_startup();
-			//if(DEBUG) System.out.println("Starting UDP Server");
-			//DD.userver= new UDPServer(Server.PORT);
-			//DD.userver.start();
-			//if(DEBUG) System.out.println("StartUpThread:run: will create peer");
-			//MyselfHandling.createMyPeerIDIfEmpty();
-			//D_Peer me = HandlingMyself_Peer.get_myself();
-			/*
-			if (me == null) {
-				me = HandlingMyself_Peer.createMyselfPeer_by_dialog_w_Addresses(true);
-				if (me == null){
-					if (_DEBUG) System.out.println("StartUpThread:run: fail to create peer!");
-					System.exit(1);
-				}
-			}
-			*/
+//			//if(DEBUG) System.out.println("Starting UDP Server");
+//			//DD.userver= new UDPServer(Server.PORT);
+//			//DD.userver.start();
+//			//if(DEBUG) System.out.println("StartUpThread:run: will create peer");
+//			//MyselfHandling.createMyPeerIDIfEmpty();
+//			//D_Peer me = HandlingMyself_Peer.get_myself();
+//			/*
+//			if (me == null) {
+//				me = HandlingMyself_Peer.createMyselfPeer_by_dialog_w_Addresses(true);
+//				if (me == null){
+//					if (_DEBUG) System.out.println("StartUpThread:run: fail to create peer!");
+//					System.exit(1);
+//				}
+//			}
+//			*/
 			//if(DEBUG) System.out.println("StartUpThread:run: created peer");
 			if (MainFrame.controlPane == null) StartUp.initServers_no_GUI();
 			else initServers_GUI();

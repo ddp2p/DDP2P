@@ -32,63 +32,60 @@ import data.D_Peer;
 
 public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 	private static final boolean _DEBUG = true;
-	private static final boolean DEBUG = false;
+	public static final boolean DEBUG = false;
 	public static final Object conn_monitor = new Object();
 	private static boolean recentlyTouched;
 	static int peersToGo = -1;
 	boolean turnOff = false;
 	public Object wait_lock = new Object();
-	public static Connections conn = null;
+	public static Connections g_Connections = null;
 	public void turnOff() {
 		if(ClientSync.DEBUG) System.out.println("Client2: turnOff");
 		turnOff = true;
 		this.interrupt();
 	}
-	/**
-	 * Method to make the client wake up from sleep and retry connections (e.g. after new addresses are received from directories)
-	 */
-	static public void touchClient() { //throws NumberFormatException, P2PDDSQLException {
-		if (ClientSync.DEBUG) System.out.println("Client2: touchClient");
-		Client2 ac = (Client2)Application.ac;
-		if (ac == null) {
-			if (ClientSync.DEBUG) System.out.println("Client2: touchClient: start");
-			try {
-				startClient(true);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			ac = (Client2)Application.ac;
-		}
-		synchronized(ac.wait_lock) {
-			if(ClientSync.DEBUG) System.out.println("Client2: touchClient really");
-			Client2.recentlyTouched = true;
-			//Client.peersToGo = Client.peersAvailable;
-			ac.wait_lock.notify();
-		}
-	}
-	/**
-	 * 
-	 * @param on 
-	 *   If on is false then the client processed is stopped.
-	 * @return
-	 * @throws NumberFormatException
-	 * @throws P2PDDSQLException
-	 */
-	static public boolean startClient(boolean on) throws NumberFormatException, P2PDDSQLException {
-		if(ClientSync.DEBUG) System.out.println("Client2: startClient: "+on);
-		Client2 ac = (Client2)Application.ac;
-		
-		if((on == false)&&(ac!=null)) {ac.turnOff(); Application.ac=null;}
-		if(ac != null) return false;
-		try {
-			Application.ac = new Client2();
-			Application.ac.start();
-		} catch (Exception e) {
-			return false;
-		}
-		if(ClientSync.DEBUG) System.out.println("Client2: startClient: done");
-		return true;
-	}
+//	static public void touchClient() { //throws NumberFormatException, P2PDDSQLException {
+//		if (ClientSync.DEBUG) System.out.println("Client2: touchClient");
+//		Client2 ac = (Client2) Application.g_PollingStreamingClient;
+//		if (ac == null) {
+//			if (ClientSync.DEBUG) System.out.println("Client2: touchClient: start");
+//			try {
+//				DD.startClient(true);
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//			ac = (Client2)Application.g_PollingStreamingClient;
+//		}
+//		ac.wakeUp();
+////		synchronized (ac.wait_lock) {
+////			if (ClientSync.DEBUG) System.out.println("Client2: touchClient really");
+////			Client2.recentlyTouched = true;
+////			//Client.peersToGo = Client.peersAvailable;
+////			ac.wait_lock.notify();
+////		}
+//	}
+//	static public boolean startClient(boolean on) throws NumberFormatException, P2PDDSQLException {
+//		boolean DEBUG = Client2.DEBUG || ClientSync.DEBUG;
+//		if (DEBUG) System.out.println("Client2: startClient: " + on);
+//		Client2 old_client = (Client2) Application.g_PollingStreamingClient;
+//		
+//		if (on == false) {
+//			if (old_client != null) {
+//				old_client.turnOff(); Application.g_PollingStreamingClient = null;
+//				return true;
+//			}
+//			return true;
+//		}
+//		if (old_client != null) return false; // if it was to stop it it is done. If it was to start, it is running.
+//		try {
+//			Application.g_PollingStreamingClient = new Client2();
+//			Application.g_PollingStreamingClient.start();
+//		} catch (Exception e) {
+//			return false;
+//		}
+//		if (DEBUG) System.out.println("Client2: startClient: done");
+//		return true;
+//	}
 	public Client2() {
 		super ("Client 2", false);
 		boolean DEBUG = ClientSync.DEBUG;// || true;
@@ -100,6 +97,12 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 			e.printStackTrace();
 		}
 	}
+	public static void startConnections() {
+		synchronized (Client2.conn_monitor) {
+			if (g_Connections == null)
+				g_Connections  = new Connections(Application.db);
+		}
+	}
 	public void _run() {
 		//if (_DEBUG) System.out.println("Client2: run");
 		//this.setName("Client 2");
@@ -108,10 +111,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 			try {
 				wait_lock.wait(DD.PAUSE_BEFORE_CONNECTIONS_START);
 				if (ClientSync.DEBUG || DD.DEBUG_LIVE_THREADS) System.out.println("Client2: run: connections go");
-				synchronized(Client2.conn_monitor) {
-					if (conn == null)
-						conn  = new Connections(Application.db);
-				}
+				startConnections();
 				wait_lock.wait(DD.PAUSE_BEFORE_CLIENT_START);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
@@ -172,9 +172,9 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 	private boolean try_wait(int crt) {
 		if (ClientSync.DEBUG) System.out.println("Client2: try_wait: "+crt+"/"+Connections.peersAvailable);
 		// Avoid asking in parallel too many synchronizations (wait for answers)
-		if ((Application.aus != null) && (Application.aus.getThreads() > UDPServer.MAX_THREADS/2)){
+		if ((Application.g_UDPServer != null) && (Application.g_UDPServer.getThreads() > UDPServer.MAX_THREADS/2)){
 			try {
-				if (ClientSync._DEBUG) System.out.println("Client2: try_wait: overloaded threads = "+Application.aus.getThreads());
+				if (ClientSync._DEBUG) System.out.println("Client2: try_wait: overloaded threads = "+Application.g_UDPServer.getThreads());
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Sleep: "+ClientSync.PAUSE));
 				synchronized (wait_lock) {
 					wait_lock.wait(ClientSync.PAUSE);
@@ -548,7 +548,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 		Application_GUI.peer_contacts_update();
 		if (Application.peers != null) Application.peers.setConnectionState(peer_ID, DD.PEERS_STATE_CONNECTION_TCP);
 		if (ClientSync.DEBUG) out.println("Client2: transfer_TCP: Connected!");
-		DD.ed.fireClientUpdate(new CommEvent(Application.ac, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Connected"));
+		DD.ed.fireClientUpdate(new CommEvent(Application.g_PollingStreamingClient, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Connected"));
 				
 		ASNSyncRequest sr = ClientSync.buildRequest(_lastSnapshotString, _lastSnapshot, peer_ID);
 		if (filtered) sr.orgFilter=UpdateMessages.getOrgFilter(peer_ID);
@@ -560,7 +560,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 			byte[] msg = sr.encode();
 			if(ClientSync.DEBUG) out.println("Client2: transfer_TCP: Sync Request sent: "+Util.byteToHexDump(msg, " ")+"::"+sr);
 			client_socket.getOutputStream().write(msg);
-			DD.ed.fireClientUpdate(new CommEvent(Application.ac, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Request Sent"));
+			DD.ed.fireClientUpdate(new CommEvent(Application.g_PollingStreamingClient, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Request Sent"));
 			byte update[] = new byte[Client1.MAX_BUFFER];
 			if(ClientSync.DEBUG) out.println("Waiting data from socket: "+client_socket+" on len: "+update.length+" timeout ms:"+Server.TIMEOUT_Client_Data);
 			client_socket.setSoTimeout(Server.TIMEOUT_Client_Data);
@@ -568,7 +568,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 			int len = is.read(update);
 			if (len > 0){
 				if(ClientSync.DEBUG) err.println("Client2: transfer_TCP: answer received length: "+len);
-				DD.ed.fireClientUpdate(new CommEvent(Application.ac, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Answered Received"));
+				DD.ed.fireClientUpdate(new CommEvent(Application.g_PollingStreamingClient, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Answered Received"));
 				Decoder dec = new Decoder(update,0,len);
 				System.out.println("Got first msg size: "+len);//+"  bytes: "+Util.byteToHex(update, 0, len, " "));
 				if (!dec.fetchAll(is)) {
@@ -578,11 +578,11 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 				len = dec.getMSGLength();
 				//System.out.println("Got msg size: "+len);//+"  bytes: "+Util.byteToHex(update, 0, len, " "));
 				RequestData rq = new RequestData();
-				integrateUpdate(update,len, (InetSocketAddress)client_socket.getRemoteSocketAddress(), Application.ac, global_peer_ID, pc.peer.getLIDstr(), Util.getStringID(ps.address_LID), rq, pc.peer);
+				integrateUpdate(update,len, (InetSocketAddress)client_socket.getRemoteSocketAddress(), Application.g_PollingStreamingClient, global_peer_ID, pc.peer.getLIDstr(), Util.getStringID(ps.address_LID), rq, pc.peer);
 				if(ClientSync.DEBUG) err.println("Client2: transfer_TCP: answer received rq: "+rq);
 			}else{
 				if(ClientSync.DEBUG) out.println("Client2: transfer_TCP: No answered received!");
-				DD.ed.fireClientUpdate(new CommEvent(Application.ac, peer_name, client_socket.getRemoteSocketAddress(), "Server", "TIMEOUT_Client_Data may be too short: No Answered Received"));
+				DD.ed.fireClientUpdate(new CommEvent(Application.g_PollingStreamingClient, peer_name, client_socket.getRemoteSocketAddress(), "Server", "TIMEOUT_Client_Data may be too short: No Answered Received"));
 			}
 		} catch (SocketTimeoutException e1) {
 			if(ClientSync.DEBUG) out.println("Client2: transfer_TCP: Read done: "+e1);
@@ -734,7 +734,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 		}
 		try {
 			if(DEBUG)System.out.print("Client2:sendUDP:#_"+dp.getSocketAddress());
-			if (Application.aus != null) Application.aus.send(dp);
+			if (Application.g_UDPServer != null) Application.g_UDPServer.send(dp);
 			else if(ClientSync._DEBUG)System.out.println("Client2: sendUDP: fail due to absent UDP Server");
 		} catch (IOException e) {
 			if(ClientSync.DEBUG)System.out.println("Client2: sendUDP: Fail to send ping to peer \""+peer_name+"\" at "+sock_addr);
@@ -826,6 +826,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 	@Override
 	public void wakeUp() {
 		synchronized(get_wait_lock()) {
+			if (Client2.DEBUG || ClientSync.DEBUG) System.out.println("Client2: wakeUp: touchClient really");
 			Client2.recentlyTouched = true;
 			//Client2.peersToGo = Connections.peersAvailable;
 			get_wait_lock().notify();
@@ -922,7 +923,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 		}
 		//System.out.print("#0");
 		if (DD.ClientUDP) {
-			if(Application.aus == null){
+			if(Application.g_UDPServer == null){
 				DD.ed.fireClientUpdate(new CommEvent(this, s_address,null,"FAIL: UDP Server not running", peer_name+" ("+global_peer_ID+")"));
 				if(_DEBUG) err.println("UClient socket not yet open, no UDP server");
 				//System.out.print("#1");
@@ -933,7 +934,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 				//boolean ClientSync.DEBUG = true;
 				if(DEBUG) out.println("UClient try address["+k+"]"+udp_sock_addresses.get(k));
 
-				if (DD.AVOID_REPEATING_AT_PING && (Application.aus!=null) && (!Application.aus.hasSyncRequests(global_peer_ID, instance))) {
+				if (DD.AVOID_REPEATING_AT_PING && (Application.g_UDPServer!=null) && (!Application.g_UDPServer.hasSyncRequests(global_peer_ID, instance))) {
 					DD.ed.fireClientUpdate(new CommEvent(this, peer_name, null, "LOCAL", "Stop sending: Received ping confirmation already handled from peer"));
 					if (DEBUG) System.out.println("UDPServer Ping already handled for: "+Util.trimmed(global_peer_ID));
 					{
@@ -998,7 +999,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 				}
 				try {
 					//System.out.print("#_"+dp.getSocketAddress());
-					Application.aus.send(dp);
+					Application.g_UDPServer.send(dp);
 				} catch (IOException e) {
 					if(DEBUG)System.out.println("Fail to send ping to peer \""+peer_name+"\" at "+sock_addr);
 					continue;
@@ -1014,7 +1015,7 @@ public class Client2 extends util.DDP2P_ServiceThread  implements IClient{
 						if(dir_adr.isUnresolved()) continue;
 						dp.setSocketAddress(dir_adr);
 						//System.out.print("#d");
-						Application.aus.send(dp);
+						Application.g_UDPServer.send(dp);
 						if(DEBUG)System.out.println("I requested ping via: "+dp.getSocketAddress()+" ping="+aup);
 					} catch (IOException e) {
 						if(ClientSync._DEBUG)System.out.println("Client: try_connect: EEEEERRRRRRRROOOOOOORRRRR "+e.getMessage());

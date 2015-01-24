@@ -820,8 +820,8 @@ public class Server extends util.DDP2P_ServiceThread {
 		if(DEBUG) System.out.println("My ID: "+guID);
 		if (directory_server_on_start) {
 			try {
-				Application.ds = new DirectoryServer(DirectoryServer.PORT);
-				Application.ds.start();
+				Application.g_DirectoryServer = new DirectoryServer(DirectoryServer.PORT);
+				Application.g_DirectoryServer.start();
 			}catch(Exception e) {
 				System.exit(-1);
 			}
@@ -836,12 +836,12 @@ public class Server extends util.DDP2P_ServiceThread {
 			//Identity id = new Identity();
 			//id.globalID = guID;
 			Identity id2 = Identity.getCurrentPeerIdentity_QuitOnFailure();
-			Application.as = new Server(id2);
-			Application.as.start();
+			Application.g_TCPServer = new Server(id2);
+			Application.g_TCPServer.start();
 			//server.setID(id);
 		}
 		if (data_client_on_start) {
-			Application.ac = ClientSync.startClient();
+			Application.g_PollingStreamingClient = ClientSync.startClient();
 		}
 	}
 	public static boolean isMyself(InetSocketAddress sock_addr) {

@@ -125,7 +125,7 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 		connections = c;
 	}
 	public void update() {
-		if (connections == null) this.setConnections(Client2.conn);
+		if (connections == null) this.setConnections(Client2.g_Connections);
 		if (connections == null) {
 			if (_DEBUG) System.out.println("PeerIContacts: update: no connections object");
 			return;

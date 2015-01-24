@@ -33,6 +33,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import updates.VersionInfo;
 import util.P2PDDSQLException;
 import util.Summary;
 import config.Application;
@@ -57,10 +58,12 @@ public class D_Tester extends ASNObj implements Summary{
 	public byte[] signature;
 	public boolean trustedAsMirror;
 	public boolean trustedAsTester;
-	public String trustWeight="-1"; //as default not rated yet.
+	public String trustWeight=null; //as default not rated yet.
+	//public float _trustWeight; //float type.
 	public boolean referenceTester;
 	public Calendar creation_date;
 	public Calendar preference_date;
+	public String expected_test_thresholds; // I don't why???
 
 	@Override
 	public String toString() {
@@ -140,6 +143,7 @@ public class D_Tester extends ASNObj implements Summary{
 		preference_date = Util.getCalendar(Util.getString(_u.get(table.tester.F_PREFERENCE_DATE)));
 		referenceTester = Util.stringInt2bool(_u.get(table.tester.F_REFERENCE), false);
 		description = Util.getString(_u.get(table.tester.F_DESCRIPTION));
+		expected_test_thresholds = Util.getString(_u.get(table.tester.F_EXPECTED_TEST_THRESHOLDS));
 		if (DEBUG) System.out.println("D_TesterDefinition: <init>: done");
 	
 	}
@@ -240,6 +244,7 @@ public class D_Tester extends ASNObj implements Summary{
 		params[table.tester.F_PEER_SOURCE_LID] = Util.getStringID(this.peer_source_LID);
 		params[table.tester.F_CREATION_DATE] = Encoder.getGeneralizedTime(this.creation_date);
 		params[table.tester.F_PREFERENCE_DATE] = Encoder.getGeneralizedTime(this.preference_date);
+		params[table.tester.F_EXPECTED_TEST_THRESHOLDS] = this.expected_test_thresholds;
 
 		if (update) {
 			params[table.tester.F_ID] = Util.getStringID(this.tester_ID);
@@ -340,6 +345,9 @@ public class D_Tester extends ASNObj implements Summary{
 //		return new D_Tester(result.get(0));
 //	}
 	final static Object factory_monitor = new Object(); 
+	public static String getTesterGIDHfromGID(String testerGID) {
+		return D_GIDH.d_Tester+Util.getGIDhashFromGID(testerGID, DEBUG);
+	}
 	/**
 	 * GetTeser by GID
 	 * @param testerGID
@@ -353,6 +361,8 @@ public class D_Tester extends ASNObj implements Summary{
 			D_Tester tester = new D_Tester(testerGID);
 			if (create && tester.tester_ID <= 0) {
 				tester.testerGID = testerGID;
+				// Ask Dr. Silaghi
+				tester.testerGIDH = getTesterGIDHfromGID(testerGID);
 				tester.url = url;
 				if (url != null) {
 					try {
@@ -476,5 +486,67 @@ public class D_Tester extends ASNObj implements Summary{
 		return tester.getLID();
 	}
 
+	///////////////////////////////// combine with D_UpdatesKey class ////////////////////////////
+	// no need for this constructor??!!only used in util.TesterSaverThread??
+	public D_Tester(D_Tester d) {
+		this.name = d.name;
+		this.testerGID = d.testerGID;
+		this.testerGIDH = Util.getGIDhash(d.testerGID);
+	}
 	
+	public boolean existsInDB() {
+		D_Tester old = new D_Tester(testerGID);
+		return old.tester_ID >=0 ;
+	}
+	
+	public static boolean verifySignaturesOfVI(VersionInfo a) {
+		System.out.println("\nD_UpdatesKeyInfo: verifySignaturesOfVI: start ************************");
+		System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: input: VI="+a);
+		System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
+
+		for(int i=0; i<a.testers_data.length; i++ ){
+			D_SoftwareUpdatesReleaseInfoDataSignedByTester tsd = new D_SoftwareUpdatesReleaseInfoDataSignedByTester(a, i);
+		//	System.out.println("a.testers_data["+i+"].public_key_hash" + a.testers_data[i].public_key_hash);
+		//	System.out.println("a.testers_data["+i+"].signature" + Util.stringSignatureFromByte(a.testers_data[i].signature));
+			PK pk = getKey(a.testers_data[i].public_key_hash);
+			if(pk == null){
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: PK is null: VI="+a);
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: PK is null: VI="+tsd);
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: end null ************************\n");
+				return false;
+			}
+			if((pk!=null) && !tsd.verifySignature(pk)){
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: PK is not null: VI="+a);
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: ************************");
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: PK is not null: VItester="+tsd);
+				System.out.println("D_UpdatesKeyInfo: verifySignaturesOfVI: end no null ************************\n");
+				return false;
+			}
+		}
+		System.out.println("\nD_UpdatesKeyInfo: verifySignaturesOfVI: success ************************");
+		return true;
+	}
+	/**
+	 * Gets the public key for the hash in the message
+	 * @param public_key_hash
+	 * @return
+	 */
+	public static PK getKey(String public_key_hash) {
+		ArrayList<ArrayList<Object>> a;
+		try {
+			a = Application.db.select(
+					"SELECT "+table.tester.public_key+
+					" FROM "+table.tester.TNAME+
+					" WHERE "+table.tester.public_key_hash+"=?;",
+					new String[]{public_key_hash}, _DEBUG);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		if (a.size()==0) return null;
+		return Cipher.getPK(Util.getString(a.get(0).get(0)));
+	}
 }

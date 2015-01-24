@@ -253,51 +253,59 @@ public class WB_Messages extends ASNObj{
 					e.printStackTrace();
 				}
 			}
-			for(String gid: r.moti) {
-				if(DEBUG) System.out.println("WB_Messages: getRequestedData: moti gid="+gid);
-				if((sa!=null)&&sa.hasMotion(gid)) continue;
+			for (String gid: r.moti) {
+				if (DEBUG) System.out.println("WB_Messages: getRequestedData: moti gid="+gid);
+				if ((sa != null) && sa.hasMotion(gid)) continue;
 				try {
 					D_Motion m = D_Motion.getMotiByGID(gid, true, false);
-					if(!m.readyToSend()) continue;
-					if(!OrgHandling.serving(asr, m.getOrganizationLIDstr())) continue;
+					if (! m.readyToSend()) {
+						if (_DEBUG) System.out.println("WB_Messages: getRequestedData: not ready moti gid="+m);
+						continue;
+					}
+					if (! OrgHandling.serving(asr, m.getOrganizationLIDstr())) {
+						if (_DEBUG) System.out.println("WB_Messages: getRequestedData: not serving moti gid="+m);
+						continue;
+					}
 					result.moti.add(m);
-					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got moti");
+					if (_DEBUG) System.out.println("WB_Messages: getRequestedData: shipping moti:"+m.getGIDH()+" "+m.getTitleStrOrMy());
+					//if (DEBUG) System.out.println("WB_Messages: getRequestedData: got moti");
 				}
 				catch (data.D_NoDataException e) {
-					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested motion: "+gid);
+					if (_DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested motion: "+gid);
 				}
 				catch (Exception e) {
-					if(DEBUG) System.out.println("WB_Messages: getRequestedData: Error for moti: "+gid);
+					if (DEBUG) System.out.println("WB_Messages: getRequestedData: Error for moti: "+gid);
 					e.printStackTrace();
 				}
 			}
-			for(String gid: r.just) {
-				if(DEBUG) System.out.println("WB_Messages: getRequestedData: cons just="+gid);
-				if((sa!=null)&&sa.hasJustification(gid)) continue;
-				try{
+			for (String gid: r.just) {
+				if (DEBUG) System.out.println("WB_Messages: getRequestedData: cons just="+gid);
+				if ((sa != null) && sa.hasJustification(gid)) continue;
+				try {
 					D_Justification j = D_Justification.getJustByGID(gid, true, false);
-					if(!j.readyToSend()) continue;
-					if(!OrgHandling.serving(asr, j.getOrganizationLIDstr())) continue;
+					if (!j.readyToSend()) continue;
+					if (!OrgHandling.serving(asr, j.getOrganizationLIDstr())) continue;
 					result.just.add(j);
-					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got just");
+					//if (DEBUG) System.out.println("WB_Messages: getRequestedData: got just");
+					if (DEBUG) System.out.println("WB_Messages: getRequestedData: shipping just:"+j.getGIDH()+" "+j.getTitleStrOrMy());
 				}
 				catch (data.D_NoDataException e) {
-					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested just: "+gid);
+					if(_DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested just: "+gid);
 				}
 				catch (Exception e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: Error for justification: "+gid);
 					e.printStackTrace();
 				}
 			}			
-			for(String gid: r.sign.keySet()) {
-				if(DEBUG) System.out.println("WB_Messages: getRequestedData: vote just="+gid);
-				if((sa!=null)&&sa.hasSignature(gid, r.sign.get(gid))) continue;
+			for (String gid: r.sign.keySet()) {
+				if (DEBUG) System.out.println("WB_Messages: getRequestedData: vote just="+gid);
+				if ((sa != null) && sa.hasSignature(gid, r.sign.get(gid))) continue;
 				try{
 					D_Vote v = new D_Vote(gid);
-					if(!v.readyToSend()) continue;
-					if(!OrgHandling.serving(asr, v.getOrganizationLIDstr())) continue;
+					if (! v.readyToSend()) continue;
+					if (! OrgHandling.serving(asr, v.getOrganizationLIDstr())) continue;
 					result.sign.add(v);
-					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got vote");
+					if (DEBUG) System.out.println("WB_Messages: getRequestedData: got vote o:"+v.getOrganizationLID()+" m:"+v.getMotionLID()+" c:"+v.getConstituentLIDstr());
 				}
 				catch (data.D_NoDataException e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested vote: "+gid);
@@ -313,8 +321,8 @@ public class WB_Messages extends ASNObj{
 
 	private static void fillTran(ArrayList<String> request,
 			ArrayList<D_Translations> result, SyncAnswer sa) {
-		for(String gid: request) {
-			if(_DEBUG) System.out.println("WB_Messages: fillPeers: peer gid="+gid);
+		for (String gid: request) {
+			if (_DEBUG) System.out.println("WB_Messages: fillPeers: peer gid="+gid);
 			Util.printCallPath("");
 		}
 	}
@@ -385,45 +393,45 @@ public class WB_Messages extends ASNObj{
 		if (DEBUG || DD.DEBUG_CHANGED_ORGS) err.println("WB_Messages: store: srs: obtained="+obtained_sr.size()+" - missing="+missing_sr.size());
 		
 		try {
-		for (D_Peer p: r.peers) {
-			if (DEBUG) System.out.println("WB_Messages: store: handle peer: "+p);
-			if (! p.verifySignature()) {
-				if (_DEBUG) System.out.println("WB_Messages: store: failed signature for: "+p);
-				continue;
-			}
-			rq = missing_sr.get(PEER_POOL);
-			if (rq == null) rq = new RequestData();
-			sol_rq = new RequestData();
-			new_rq = new RequestData();
-			p.fillLocals(sol_rq, new_rq);
-			if (DEBUG) System.out.println("WB_Messages: store: nou="+p);
-			D_Peer old = D_Peer.getPeerByGID_or_GIDhash(p.getGID(), null, true, true, true, null);
-			if (DEBUG) System.out.println("WB_Messages: store: old="+old);
-			//old = D_Peer.getPeerByPeer_Keep(p);
-			if (old.loadRemote(p, sol_rq, new_rq)) {
-				if (old.dirty_any()) {
-					old.setArrivalDate();
-					old.storeRequest();
-					
-					config.Application_GUI.inform_arrival(old, peer);
+			for (D_Peer p: r.peers) {
+				if (DEBUG) System.out.println("WB_Messages: store: handle peer: "+p);
+				if (! p.verifySignature()) {
+					if (_DEBUG) System.out.println("WB_Messages: store: failed signature for: "+p);
+					continue;
 				}
-				rq.update(sol_rq, new_rq);
-				missing_sr.put(PEER_POOL, rq);			
-				
-				obtained = obtained_sr.get(PEER_POOL);
-				if (obtained == null) obtained = new RequestData();
-				obtained.peers.put(p.getGID(), Util.getNonNullDate(p.getCreationDate()));//DD.EMPTYDATE);
-				obtained.peers.put(p.getGIDH_force(), Util.getNonNullDate(p.getCreationDate()));//DD.EMPTYDATE);
-				obtained_sr.put(PEER_POOL, obtained);
+				rq = missing_sr.get(PEER_POOL);
+				if (rq == null) rq = new RequestData();
+				sol_rq = new RequestData();
+				new_rq = new RequestData();
+				p.fillLocals(sol_rq, new_rq);
+				if (DEBUG) System.out.println("WB_Messages: store: nou="+p);
+				D_Peer old = D_Peer.getPeerByGID_or_GIDhash(p.getGID(), null, true, true, true, null);
+				if (DEBUG) System.out.println("WB_Messages: store: old="+old);
+				//old = D_Peer.getPeerByPeer_Keep(p);
+				if (old.loadRemote(p, sol_rq, new_rq)) {
+					if (old.dirty_any()) {
+						old.setArrivalDate();
+						old.storeRequest();
+						
+						config.Application_GUI.inform_arrival(old, peer);
+					}
+					rq.update(sol_rq, new_rq);
+					missing_sr.put(PEER_POOL, rq);			
+					
+					obtained = obtained_sr.get(PEER_POOL);
+					if (obtained == null) obtained = new RequestData();
+					obtained.peers.put(p.getGID(), Util.getNonNullDate(p.getCreationDate()));//DD.EMPTYDATE);
+					obtained.peers.put(p.getGIDH_force(), Util.getNonNullDate(p.getCreationDate()));//DD.EMPTYDATE);
+					obtained_sr.put(PEER_POOL, obtained);
+				}
+				old.releaseReference();
+				orgs.add(PEER_POOL);
 			}
-			old.releaseReference();
-			orgs.add(PEER_POOL);
-		}
-		}catch(Exception e) {e.printStackTrace();}
+		} catch(Exception e) {e.printStackTrace();}
 
 		
 		for (D_Organization org: r.orgs) { // should we store new orgs like that?
-			if(DEBUG) System.out.println("WB_Messages: store: handle org: "+org);
+			if (DEBUG) System.out.println("WB_Messages: store: handle org: "+org);
 			//org.store(rq);
 			///_obtained.orgs.add(org.global_organization_ID);
 			//obtained.orgs.add(org.global_organization_ID_hash);
@@ -440,9 +448,9 @@ public class WB_Messages extends ASNObj{
 			long id = D_Organization.storeRemote(org, _changed, sol_rq, new_rq, peer);
 			rq.update(sol_rq, new_rq);
 			missing_sr.put(org.getGID(), rq);			
-			if(DEBUG)System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
+			if (DEBUG) System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
 					" br="+org.broadcast_rule+" id="+id+" creat="+org.creator_ID);
-			if(DEBUG)System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
+			if (DEBUG) System.out.println("OrgHandling:updateOrg: sharing: ch="+_changed[0]+
 					" br="+org.broadcast_rule+" id="+id+" creat="+org.creator_ID);
 			if (
 					(org.broadcast_rule == false) &&
@@ -527,7 +535,7 @@ public class WB_Messages extends ASNObj{
 			new_rq = new RequestData();
 			long lid = w.store(sol_rq, new_rq, peer);
 			if (lid <= 0) {
-				if(_DEBUG) System.out.println("WB_Messages: store: failed to handled witn: "+w+" "+dbg_msg);
+				if (DEBUG) System.out.println("WB_Messages: store: either old, or failed to handled witn: "+w+" "+dbg_msg);
 				continue;
 			}
 			rq.update(sol_rq, new_rq);
@@ -581,11 +589,11 @@ public class WB_Messages extends ASNObj{
 
 			if(DEBUG) System.out.println("WB_Messages: store: handled moti: "+m.getGID()+" "+m.getMotionTitle());
 		}
-		for(D_Justification j: r.just) {
-			if(DEBUG) System.out.println("WB_Messages: store: handle just: "+j);
-			if(j.getOrgGIDH() == null){
+		for (D_Justification j: r.just) {
+			if (DEBUG) System.out.println("WB_Messages: store: handle just: "+j);
+			if (j.getOrgGIDH() == null){
 				j.setOrgGID(j.guessOrganizationGID());
-				if(j.getOrgGIDH() == null) {
+				if (j.getOrgGIDH() == null) {
 					if(_DEBUG) System.out.println("WB_Messages: store: cannot determine org: skip");
 					continue;
 				}
@@ -600,21 +608,41 @@ public class WB_Messages extends ASNObj{
 				if (_DEBUG) System.out.println("WB_Messages: store: justif: motion not found for: "+j.getMotionGID());
 				continue;
 			}
+			
+			if (! j.isGIDValidAndNotBlocked()) {
+				if (_DEBUG) System.out.println("WB_Messages: store: justif: invalid or blocked: "+j);
+				continue;
+			}
+			// preparing management of missing/obtained GIDH
 			rq = missing_sr.get(j.getOrgGIDH());
-			if (rq==null) rq = new RequestData();
+			if (rq == null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
+			
+			// actual integration
 			D_Justification jus = D_Justification.getJustByGID(j.getGID(), true, true, true, peer, p_oLID, p_mLID, j);
 			long lid = jus.getLID();
-			if (jus.loadRemote(j, sol_rq, new_rq, peer)) {
-				config.Application_GUI.inform_arrival(jus, peer);
-				lid = jus.storeRequest_getID(); //j.store(sol_rq, new_rq);
+			if (jus == j) {
+			    jus.fillLocals(sol_rq, new_rq, peer);
+			    config.Application_GUI.inform_arrival(jus, peer);
+			    jus.storeRequest();
+			} else {
+				if (jus.loadRemote(j, sol_rq, new_rq, peer)) {
+					config.Application_GUI.inform_arrival(jus, peer);
+					jus.storeRequest();
+					// the following is just for debugging but could be eventually commented out
+					lid = jus.storeRequest_getID(); //j.store(sol_rq, new_rq);
+				} else {
+					if (DEBUG) System.out.println("WB_Messages: store: skipped just: "+j+" "+dbg_msg);
+				}
 			}
 			jus.releaseReference();
 			if (lid <= 0) {
 				if (_DEBUG) System.out.println("WB_Messages: store: failed to handled just: "+j+" "+dbg_msg);
 				continue;
 			}
+			
+			// management of new and missing GIDH
 			rq.update(sol_rq, new_rq);
 			missing_sr.put(j.getOrgGIDH(), rq);			
 			
@@ -637,12 +665,13 @@ public class WB_Messages extends ASNObj{
 				if(rq==null) rq = new RequestData();
 				sol_rq = new RequestData();
 				new_rq = new RequestData();
-				long lid=v.store(sol_rq, new_rq);
+				long lid=v.store(sol_rq, new_rq, peer);
 				if (lid <= 0) {
 					if(_DEBUG) System.out.println("WB_Messages: store: failed to handled vote: "+v+" "+dbg_msg);
 					continue;
 				}
 				if(DEBUG) System.out.println("WB_Messages: store: handled vote: "+v);
+				if(DEBUG) System.out.println("WB_Messages: store: handled vote: new="+new_rq+" sol="+sol_rq);
 				rq.update(sol_rq, new_rq);
 				missing_sr.put(v.getOrganizationGID(), rq);			
 				

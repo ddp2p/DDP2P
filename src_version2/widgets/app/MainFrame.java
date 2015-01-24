@@ -25,6 +25,8 @@ import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -61,7 +63,6 @@ import data.D_Constituent;
 import data.D_Organization;
 import streaming.UpdateMessages;
 import table.identity;
-import tools.MigrateMirrors;
 import util.DBInterface;
 import util.DB_Import;
 import util.GetOpt;
@@ -543,7 +544,17 @@ public class MainFrame {
 	            //System.out.println("componentResized:"+frame.getHeight());
 	        }
 		});
-		_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		//_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		_frame.addWindowListener(new WindowAdapter() {
+	            public void windowClosing(WindowEvent e) {
+	                //ExitAction.getInstance().actionPerformed(null);
+	            	DD.clean_exit();
+	            }
+
+	        });
+
+		
 		MainFrame.loadAppIcons(false, _frame);
 	
 		/*
@@ -1655,16 +1666,16 @@ public class MainFrame {
 							__("Want to be asked to import in the future?"),
 							JOptionPane.YES_NO_OPTION);
 				} else {
-					String oldDB = db_to_import;
-					String newDB = Application.DELIBERATION_FILE;
-					DBInterface dbSrc = new DBInterface(oldDB);
-					DBInterface dbDes = new DBInterface(newDB);
-					boolean r=tools.MigrateMirrors.migrateIfNeeded(db_to_import, Application.DELIBERATION_FILE, dbSrc, dbDes);
-					dbSrc.close();
-					dbDes.close();
-					if(!r){
-						Application_GUI.warning(__("A failure happened while trying to migrate your mirrors and testers!\nInstall new mirrors."), __("Mirrors Failure"));
-					}
+//					String oldDB = db_to_import;
+//					String newDB = Application.DELIBERATION_FILE;
+//					DBInterface dbSrc = new DBInterface(oldDB);
+//					DBInterface dbDes = new DBInterface(newDB);
+					//boolean r=tools.MigrateMirrors.migrateIfNeeded(db_to_import, Application.DELIBERATION_FILE, dbSrc, dbDes);
+//					dbSrc.close();
+//					dbDes.close();
+//					if(!r){
+//						Application_GUI.warning(__("A failure happened while trying to migrate your mirrors and testers!\nInstall new mirrors."), __("Mirrors Failure"));
+//					}
 				}
 				if (imported || (q != 0)) {
 					if(_DEBUG) System.out.println("DD:run: done database, will clean "+DD.APP_DB_TO_IMPORT);

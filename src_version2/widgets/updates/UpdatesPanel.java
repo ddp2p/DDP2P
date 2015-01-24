@@ -13,8 +13,10 @@ import java.awt.event.FocusEvent;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JRadioButton;
@@ -22,9 +24,14 @@ import javax.swing.SwingConstants;
 import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
 
+import recommendationTesters.RecommendationOfTestersSender;
+import recommendationTesters.RecommenderOfTesters;
+import recommendationTesters.TesterAndScore;
+
 import util.P2PDDSQLException;
 
 import config.Application;
+import config.Application_GUI;
 import config.DD;
 import util.DBInterface;
 import static util.Util.__;
@@ -33,7 +40,8 @@ import widgets.dir_management.DirPanel;
 import widgets.updatesKeys.*;
 
 public class UpdatesPanel extends JPanel implements ActionListener, FocusListener {
-    String numberString=__("Number");
+    private static final boolean DEBUG = false;
+	String numberString=__("Number");
     String percentageString=__("Percentage");
     String manualRatingString=__("Manual Rating");
     String autoRatingString=__("Automatic Rating");
@@ -45,6 +53,11 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
     public JRadioButton manualRatingButton = new JRadioButton(manualRatingString);
 	public JCheckBox absoluteCheckBox =  new JCheckBox();
 	private UpdatesKeysTable updateKeysTable;
+	public static TesterAndScore[] knownTestersList = null;
+	public static TesterAndScore[] usedTestersList = null;
+	public static Float scoreMatrix[][] = null;
+	public static Long[] receivedTesters;
+	public static Long[] sourcePeers;
     public UpdatesPanel() {
     	super( new GridLayout(2,1));// hold two tables (UpdateTatble+QualitiesTable)
     	numberTxt.setText(""+DD.UPDATES_TESTERS_THRESHOLD_COUNT_DEFAULT);
@@ -55,6 +68,7 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
    public JPanel buildTesterControlsPanel(){
 		JButton recalculateTestersRating = new JButton("Recalculate Testers Rating");
 		JButton ConsultRecommender = new JButton("Consult the Recommender System");
+		JButton sendRecommendations = new JButton("send Recommendations");
 	   
 		JPanel testerControls = new JPanel(new BorderLayout());
 		//testerControls.setBackground(Color.DARK_GRAY);
@@ -65,23 +79,35 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 		recalculateTestersRating.addActionListener(this);
 		recalculateTestersRating.setActionCommand("recalculate");
 		
+		buttonsPanel.add(sendRecommendations);
+		buttonsPanel.setBackground(Color.DARK_GRAY);
+		sendRecommendations.addActionListener(this);
+		sendRecommendations.setActionCommand("sendRecommendations");
+		
 		buttonsPanel.add(ConsultRecommender);
 		buttonsPanel.setBackground(Color.DARK_GRAY);
 		ConsultRecommender.addActionListener(this);
 		ConsultRecommender.setActionCommand("Consult");
+		
+		
 		
 		testerControls.add(buttonsPanel, BorderLayout.EAST);
 		 
 		return testerControls;
 	}
    public JPanel buildAutoManualPanel() {
-	    
+	   boolean autoSeleced = true;
+	   try {
+		autoSeleced = DD.getAppBoolean(DD.AUTOMATIC_TESTERS_RATING_BY_SYSTEM);
+	} catch (P2PDDSQLException e) {
+		e.printStackTrace();
+	}  
    	   JLabel ratingL = new JLabel("Testers Rating  : ");
    	   ratingL.setFont(new Font("Times New Roman",Font.BOLD,14));
    	
        manualRatingButton.setMnemonic(KeyEvent.VK_M);
        manualRatingButton.setActionCommand(manualRatingString);
-       manualRatingButton.setSelected(false);
+       manualRatingButton.setSelected(!autoSeleced);
        manualRatingButton.addActionListener(this);
        manualRatingButton.setFont(new Font(null,Font.BOLD,12));
        JLabel spaceL = new JLabel("       ");
@@ -89,7 +115,7 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
    	
        autoRatingButton.setMnemonic(KeyEvent.VK_A);
        autoRatingButton.setActionCommand(autoRatingString);
-       autoRatingButton.setSelected(true);
+       autoRatingButton.setSelected(autoSeleced);
        autoRatingButton.setFont(new Font(null,Font.BOLD,12));
        autoRatingButton.addActionListener(this);
        
@@ -259,13 +285,91 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
         			percentageTxt.setEnabled(true);
         			DD.setAppBoolean(DD.UPDATES_TESTERS_THRESHOLD_WEIGHT, true);
         		}
+        		if(r.getActionCommand().equals(autoRatingString)&& r.isSelected()){
+        			DD.setAppBoolean(DD.AUTOMATIC_TESTERS_RATING_BY_SYSTEM, true);
+        			updateKeysTable.setColumnBackgroundColor(Color.GRAY);
+        			refreshRecommendations();
+        			updateKeysTable.getModel().update(null, null);
+        			updateKeysTable.repaint();
+        			
+        		}
+        		if(r.getActionCommand().equals(manualRatingString)&& r.isSelected()){
+        			DD.setAppBoolean(DD.AUTOMATIC_TESTERS_RATING_BY_SYSTEM, false);
+        			updateKeysTable.setColumnBackgroundColor(Color.WHITE);
+        			updateKeysTable.getModel().update(null, null);
+        			//updateKeysTable.repaint();
+        		}
         	}
         	if(e.getSource() instanceof JTextField){
-        		handleTxtFiled(e.getActionCommand());
+        		handleTxtFiled(e.getActionCommand());	
+        	}
+        	if(e.getSource() instanceof JButton){
+        		JButton b = (JButton)e.getSource();
+        		if(b.getActionCommand().equals("Consult")){
+        			showConsultingPanel();
+        		}else if(b.getActionCommand().equals("recalculate")){
+        			refreshRecommendations();
+        		}else if(b.getActionCommand().equals("sendRecommendations")){
+        			sendRecommendations();
+        		}
         		
+        			
         	}
         }
-    	public static void main(String args[]) {
+    	private void sendRecommendations() {
+    		if(knownTestersList == null || usedTestersList == null){
+				Application_GUI.warning("You need to click on recalculate ratings first!!", "No Data to Show");
+				return;
+			}
+    		//RecommenderOfTesters.runningRecommender.recommendTesters();
+    		RecommendationOfTestersSender.announceRecommendation(knownTestersList, usedTestersList);
+			
+		}
+		private void refreshRecommendations() {
+//    		RecommenderOfTesters rt = new RecommenderOfTesters(false);
+//			rt.recommendTesters();
+			if (RecommenderOfTesters.runningRecommender == null) {
+				Application_GUI.warning("Recommender Process Not Started Yet!", "Failure to Refresh Recommender Data!");
+				return;
+			}
+			RecommenderOfTesters.runningRecommender.recommendTesters();
+			updateKeysTable.getModel().update(null, null);
+			updateKeysTable.repaint();
+			
+		}
+		private void showConsultingPanel() {
+			//if(knownTestersList == null)
+			//	RecommenderOfTesters.startRecommenders(true);
+//			if(knownTestersList == null){
+//				if(!DEBUG) System.out.println("UpdatesPanel:showConsultingPanel(): knownTestersList = null ?");
+//				return;
+//			}
+//			if(usedTestersList == null){
+//				if(!DEBUG) System.out.println("UpdatesPanel:showConsultingPanel(): usedTestersList = null ?");
+//				return;
+//			}
+//			
+//			if(scoreMatrix == null){
+//				if(!DEBUG) System.out.println("UpdatesPanel:showConsultingPanel(): scoreMatrix = null ?");
+//				return;
+//			}
+//			RecommenderOfTesters rt = new RecommenderOfTesters(false);
+//			rt.recommendTesters();
+//			
+			if(knownTestersList == null){
+				Application_GUI.warning("You need to click on recalculate ratings first!!", "No Data to Show");
+				return;
+			}
+			
+			TestersListsTable knownTestersTable = new TestersListsTable(new TestersListsModel(knownTestersList)) ;
+			TestersListsTable usedTestersTable = new TestersListsTable(new TestersListsModel(usedTestersList)) ;
+			RecommendationsTable recommendationsTable = new RecommendationsTable(new RecommendationsModel(scoreMatrix, sourcePeers, receivedTesters)) ;
+			ConsultingRecommendationsPanel p = new ConsultingRecommendationsPanel(knownTestersTable, usedTestersTable, recommendationsTable);
+			//p.setSize(200, 300);
+			JOptionPane.showMessageDialog(null,p,"Consulting Recommendations", JOptionPane.DEFAULT_OPTION, null);
+			//JOptionPane.showMessageDialog(null,p);
+    	}
+		public static void main(String args[]) {
 		JFrame frame = new JFrame();
 		try {
 			Application.db = new DBInterface(Application.DEFAULT_DELIBERATION_FILE);

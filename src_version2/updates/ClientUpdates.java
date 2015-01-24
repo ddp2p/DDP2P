@@ -58,7 +58,7 @@ import data.D_ReleaseQuality;
 import data.D_SoftwareUpdatesReleaseInfoByTester;
 import data.D_SoftwareUpdatesReleaseInfoDataSignedByTester;
 import data.D_MirrorInfo;
-import data.D_UpdatesKeysInfo;
+import data.D_Tester;
 import data.HandlingMyself_Peer;
 //http://debatedecide.org/DD_Updates;http://distributedcensus.com/DD_Updates;wsdl:http://andrew.cs.fit.edu/~kalhamed2011/webservices/ddWS_doc3.php?wsdl&123331c847ba3a5d6a52e817a4d0109fe65ffbc2038f68c8db1c3f9793b50c0d
 public class ClientUpdates extends util.DDP2P_ServiceThread {
@@ -602,7 +602,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 			*/
 			boolean signed = false;
 			// need to verify all testers signatures
-			signed = D_UpdatesKeysInfo.verifySignaturesOfVI(a);
+			signed = D_Tester.verifySignaturesOfVI(a);
 			if(!signed) {
 				if(_DEBUG) System.out.println(" ClientUpdates: run: unsigned updates info\n from "+url_str+": "+a);
 				Application_GUI.warning(Util.__("Unsigned updates info\n from "+url_str+": "+a.warningPrint()), Util.__("Unsigned updates info!"));
@@ -679,7 +679,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 		}
 		boolean signed = false;
 		// need to verify all testers signatures
-		signed = D_UpdatesKeysInfo.verifySignaturesOfVI(a);
+		signed = D_Tester.verifySignaturesOfVI(a);
 		if(!signed) {
 			if(_DEBUG) System.out.println(" ClientUpdates: run: unsigned updates info\n from "+url_str+": "+a);
 			Application_GUI.warning(Util.__("Unsigned updates info\n from "+url_str+": "+a.warningPrint()), Util.__("Unsigned updates info!"));

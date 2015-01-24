@@ -15,6 +15,7 @@ public class D_GIDH {
 	public static final String d_Just  = "J:";
 	public static final String d_OrgExtraFieldSign = "F:";
 	public static final String d_Witn = "W:"; 
+	public static final String d_Tester = "T:"; 
 
 	/**
 	 * Checks that this is compacted at transmission into a number (dictionary entry)

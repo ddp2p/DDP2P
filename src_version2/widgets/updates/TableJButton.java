@@ -23,4 +23,7 @@ public class TableJButton extends JButton {
      	super(label);
      	rowNo=row;
     }
+    public void setRow(int row){
+    	rowNo = row;
+    }
 }

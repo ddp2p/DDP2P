@@ -498,6 +498,7 @@ public class EmbedInMedia {
 	 * @throws ASN1DecoderFail
 	 */
 	public static void setSteganoBytes(StegoStructure d[], int[]selected, byte[]buffer, int offset, int word_bytes, int bits) throws ASN1DecoderFail{
+		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes: start");
 		verif_steg_sign(d, selected, buffer, offset, word_bytes, bits);
 		int bytes_len=verif_steg_length(buffer, offset, word_bytes, bits);
@@ -525,6 +526,7 @@ public class EmbedInMedia {
 	 * @throws ASN1DecoderFail
 	 */
 	public static void setSteganoBytes(StegoStructure d, byte[]buffer, int offset, int word_bytes, int bits, int bytes_len) throws ASN1DecoderFail{
+		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes(d): start");
 		byte[] a = extractSteganoBytes(buffer, offset, word_bytes, bits, bytes_len);
 		if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes(d): will set Bytes");

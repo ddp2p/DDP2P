@@ -1390,7 +1390,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 			}
 			*/
 			organization = D_Organization.getOrgByOrg_Keep(organization);
-			organization.setGID(new_GID, new_GIDhash);
+			organization.setGID_AndLink(new_GID, new_GIDhash);
 			organization.setCreationDate(creationTime);
 			organization.setArrivalDate(currentTime, _currentTime);
 			organization.setSignature(null);//organization.sign());

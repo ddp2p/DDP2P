@@ -724,5 +724,9 @@ class D_News extends ASNObj{
 		}
 		return result;
 	}
+	public String getTitle() {
+		if (this.title == null) return null;
+		return this.title.getTitleStr();
+	}
 	
 }

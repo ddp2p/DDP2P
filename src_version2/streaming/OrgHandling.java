@@ -212,7 +212,7 @@ public class OrgHandling {
 		result |= streaming.MotionHandling.integrateNewData(od.motions, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed moti="+result);
 		result |= streaming.JustificationHandling.integrateNewData(od.justifications, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
-		result |= streaming.SignatureHandling.integrateNewData(od.signatures, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
+		result |= streaming.SignatureHandling.integrateNewData(od.signatures, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
 		result |= streaming.TranslationHandling.integrateNewData(od.translations, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
 		result |= streaming.NewsHandling.integrateNewData(od.news, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
 		return result;

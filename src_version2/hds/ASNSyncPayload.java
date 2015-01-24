@@ -574,7 +574,7 @@ public class ASNSyncPayload extends ASNObj{
 		if(DEBUG)System.out.println("ASNSyncPayload:Expanding: "+m);
 		if(m.getOrganizationGID_force()!=null) m.setOrganizationGID(getDictionaryValueOrKeep(dictionary_GIDs, (m.getOrganizationGID_force())));
 		if(m.getConstituentGID()!=null) m.setConstituentGID(getDictionaryValueOrKeep(dictionary_GIDs, (m.getConstituentGID())));
-		if(m.getGID()!=null) m.setGID(getDictionaryValueOrKeep(dictionary_GIDs, (m.getGID())));
+		if(m.getGID()!=null) m._setGID(getDictionaryValueOrKeep(dictionary_GIDs, (m.getGID())));
 		if(m.getEnhancedMotionGID()!=null) m.setEnhancedMotionGID(getDictionaryValueOrKeep(dictionary_GIDs, (m.getEnhancedMotionGID())));
 		
 		if(m.getConstituent()!=null) expandConstDictionariesAtDecoding(m.getConstituent(), dictionary_GIDs);
@@ -909,7 +909,7 @@ ASNSyncPayload := IMPLICIT [APPLICATION 8] SEQUENCE {
 		}
 		
 		//if(dec.getTypeByte()==DD.TAG_AC1) orgData=new OrgData().decode(dec.getFirstObject(true));
-		if(dec.getTypeByte()==DD.TAG_AC1) orgData=(D_Organization[]) dec.getFirstObject(true).getSequenceOf(DD.TYPE_ORG_DATA, new D_Organization[0], D_Organization.getEmpty());
+		if(dec.getTypeByte()==DD.TAG_AC1) orgData=(D_Organization[]) dec.getFirstObject(true).getSequenceOf(D_Organization.getASN1Type(), new D_Organization[0], D_Organization.getEmpty());
 		if(dec.getTypeByte()==DD.TAG_AC2) orgCRL=new OrgCRL().decode(dec.getFirstObject(true));
 		//dec.getFirstObject(true,Encoder.TAG_BOOLEAN).getBoolean();
 		//if(dec.getFirstObject(false)!=null) 

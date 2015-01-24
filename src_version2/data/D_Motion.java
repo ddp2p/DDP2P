@@ -60,7 +60,7 @@ D_MOTION ::= SEQUENCE {
 	signature OCTET_STRING
 }
  */
-public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payload<D_Motion>, util.Summary {
+public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payload<D_Motion>, util.Summary, util.DDP2P_DoubleLinkedList.CachedSummary {
 	private static final String V0 = "V0";
 	private static final String V1 = "V1";  // In this version we removed creation date
 	public static boolean DEBUG = false;
@@ -111,11 +111,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	boolean dirty_local = false;
 	boolean dirty_choices = false;
 	
-	private static Object monitor_object_factory = new Object();
 	//static Object lock_organization_GID_storage = new Object(); // duplicate of the above
-	public static int MAX_LOADED_OBJECTS = 10000;
-	public static long MAX_OBJECTS_RAM = 10000000;
-	private static final int MIN_OBJECTS = 2;
+	private static Object monitor_object_factory = new Object();
 	D_Motion_Node component_node = new D_Motion_Node(null, null);
 		
 	public static D_Motion getEmpty() {return new D_Motion();}
@@ -151,7 +148,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		} catch (Exception e) {
 			//e.printStackTrace();
 			if (create) {
-				this.setGID(gID);
+				this._setGID(gID);
 				this.setOrganizationLID(p_oLID);
 				if (__peer != null) this.setPeerSourceLID((__peer.getLID()));
 				this.dirty_main = true;
@@ -354,20 +351,20 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		private static Hashtable<Long, D_Motion> loaded_By_LocalID = new Hashtable<Long, D_Motion>();
 		//private static Hashtable<String, D_Motion> loaded_const_By_GID = new Hashtable<String, D_Motion>();
 		//private static Hashtable<String, D_Motion> loaded_const_By_GIDhash = new Hashtable<String, D_Motion>();
-		private static Hashtable<String, Hashtable<Long, D_Motion>> loaded_const_By_GIDH_ORG = new Hashtable<String, Hashtable<Long, D_Motion>>();
-		private static Hashtable<Long, Hashtable<String, D_Motion>> loaded_const_By_ORG_GIDH = new Hashtable<Long, Hashtable<String, D_Motion>>();
-		private static Hashtable<String, Hashtable<Long, D_Motion>> loaded_const_By_GID_ORG = new Hashtable<String, Hashtable<Long, D_Motion>>();
-		private static Hashtable<Long, Hashtable<String, D_Motion>> loaded_const_By_ORG_GID = new Hashtable<Long, Hashtable<String, D_Motion>>();
+		private static Hashtable<String, Hashtable<Long, D_Motion>> loaded_By_GIDH_ORG = new Hashtable<String, Hashtable<Long, D_Motion>>();
+		private static Hashtable<Long, Hashtable<String, D_Motion>> loaded_By_ORG_GIDH = new Hashtable<Long, Hashtable<String, D_Motion>>();
+		private static Hashtable<String, Hashtable<Long, D_Motion>> loaded_By_GID_ORG = new Hashtable<String, Hashtable<Long, D_Motion>>();
+		private static Hashtable<Long, Hashtable<String, D_Motion>> loaded_By_ORG_GID = new Hashtable<Long, Hashtable<String, D_Motion>>();
 		private static long current_space = 0;
 		
 		//return loaded_const_By_GID.get(GID);
-		private static D_Motion getConstByGID(String GID, Long organizationLID) {
+		private static D_Motion getByGID(String GID, Long organizationLID) {
 			if (organizationLID != null && organizationLID > 0) {
-				Hashtable<String, D_Motion> t1 = loaded_const_By_ORG_GID.get(organizationLID);
+				Hashtable<String, D_Motion> t1 = loaded_By_ORG_GID.get(organizationLID);
 				if (t1 == null || t1.size() == 0) return null;
 				return t1.get(GID);
 			}
-			Hashtable<Long, D_Motion> t2 = loaded_const_By_GID_ORG.get(GID);
+			Hashtable<Long, D_Motion> t2 = loaded_By_GID_ORG.get(GID);
 			if ((t2 == null) || (t2.size() == 0)) return null;
 			if ((organizationLID != null) && (organizationLID > 0))
 				return t2.get(organizationLID);
@@ -377,32 +374,59 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			return null;
 		}
 		//return loaded_const_By_GID.put(GID, c);
-		private static D_Motion putConstByGID(String GID, Long organizationLID, D_Motion c) {
-			Hashtable<Long, D_Motion> v1 = loaded_const_By_GID_ORG.get(GID);
-			if (v1 == null) loaded_const_By_GID_ORG.put(GID, v1 = new Hashtable<Long, D_Motion>());
-			D_Motion result = v1.put(organizationLID, c);
-			
-			Hashtable<String, D_Motion> v2 = loaded_const_By_ORG_GID.get(organizationLID);
-			if (v2 == null) loaded_const_By_ORG_GID.put(organizationLID, v2 = new Hashtable<String, D_Motion>());
-			D_Motion result2 = v2.put(GID, c);
-			
-			if (result == null) result = result2;
-			return result; 
-		}
-		//return loaded_const_By_GID.remove(GID);
-		private static D_Motion remConstByGID(String GID, Long organizationLID) {
-			D_Motion result = null;
-			D_Motion result2 = null;
-			Hashtable<Long, D_Motion> v1 = loaded_const_By_GID_ORG.get(GID);
-			if (v1 != null) {
-				result = v1.remove(organizationLID);
-				if (v1.size() == 0) loaded_const_By_GID_ORG.remove(GID);
+		/**
+		 * Refuses to put if an old one exists, and prints a trace on conflict.
+		 * @param GID
+		 * @param organizationLID
+		 * @param c
+		 * @return the value in the queue
+		 */
+		private static D_Motion putByGID(String GID, Long organizationLID, D_Motion c) {
+			if (organizationLID <= 0) {
+				Util.printCallPath("D_Motion conflict: no orgID for:"+c);
+				return null;
+			}
+			Hashtable<Long, D_Motion> v1 = loaded_By_GID_ORG.get(GID);
+			if (v1 == null) loaded_By_GID_ORG.put(GID, v1 = new Hashtable<Long, D_Motion>());
+
+			// section added for duplication control
+			D_Motion old = v1.get(organizationLID);
+			if (old != null && old != c) {
+				Util.printCallPath("D_Motion conflict: old="+old+" crt="+c);
+				return old;
 			}
 			
-			Hashtable<String, D_Motion> v2 = loaded_const_By_ORG_GID.get(organizationLID);
+			D_Motion result = v1.put(organizationLID, c);
+			
+			Hashtable<String, D_Motion> v2 = loaded_By_ORG_GID.get(organizationLID);
+			if (v2 == null) loaded_By_ORG_GID.put(organizationLID, v2 = new Hashtable<String, D_Motion>());
+			
+			// section added for duplication control
+			old = v2.get(GID);
+			if (old != null && old != c) {
+				Util.printCallPath("D_Motion conflict: old="+old+" crt="+c);
+				//return old; // in this case, for consistency, store the new one
+			}
+			
+			D_Motion result2 = v2.put(GID, c);
+			
+			//if (result == null) result = result2;
+			return c; //result; 
+		}
+		//return loaded_const_By_GID.remove(GID);
+		private static D_Motion remByGID(String GID, Long organizationLID) {
+			D_Motion result = null;
+			D_Motion result2 = null;
+			Hashtable<Long, D_Motion> v1 = loaded_By_GID_ORG.get(GID);
+			if (v1 != null) {
+				result = v1.remove(organizationLID);
+				if (v1.size() == 0) loaded_By_GID_ORG.remove(GID);
+			}
+			
+			Hashtable<String, D_Motion> v2 = loaded_By_ORG_GID.get(organizationLID);
 			if (v2 != null) {
 				result2 = v2.remove(GID);
-				if (v2.size() == 0) loaded_const_By_ORG_GID.remove(organizationLID);
+				if (v2.size() == 0) loaded_By_ORG_GID.remove(organizationLID);
 			}
 			
 			if (result == null) result = result2;
@@ -412,13 +436,13 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 //			return getConstByGID(GID, Util.Lval(organizationLID));
 //		}
 		
-		private static D_Motion getConstByGIDH(String GIDH, Long organizationLID) {
+		private static D_Motion getByGIDH(String GIDH, Long organizationLID) {
 			if (organizationLID != null && organizationLID > 0) {
-				Hashtable<String, D_Motion> t1 = loaded_const_By_ORG_GIDH.get(organizationLID);
+				Hashtable<String, D_Motion> t1 = loaded_By_ORG_GIDH.get(organizationLID);
 				if (t1 == null || t1.size() == 0) return null;
 				return t1.get(GIDH);
 			}
-			Hashtable<Long, D_Motion> t2 = loaded_const_By_GIDH_ORG.get(GIDH);
+			Hashtable<Long, D_Motion> t2 = loaded_By_GIDH_ORG.get(GIDH);
 			if ((t2 == null) || (t2.size() == 0)) return null;
 			if ((organizationLID != null) && (organizationLID > 0))
 				return t2.get(organizationLID);
@@ -427,32 +451,59 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			}
 			return null;
 		}
-		private static D_Motion putConstByGIDH(String GIDH, Long organizationLID, D_Motion c) {
-			Hashtable<Long, D_Motion> v1 = loaded_const_By_GIDH_ORG.get(GIDH);
-			if (v1 == null) loaded_const_By_GIDH_ORG.put(GIDH, v1 = new Hashtable<Long, D_Motion>());
-			D_Motion result = v1.put(organizationLID, c);
+		/**
+		 * Refuses to put if an old one exists, and prints a trace on conflict.
+		 * @param GIDH
+		 * @param organizationLID
+		 * @param c
+		 * @return the value in the queue
+		 */		
+		private static D_Motion putByGIDH(String GIDH, Long organizationLID, D_Motion c) {
+			if (organizationLID <= 0) {
+				Util.printCallPath("D_Motion conflict: no orgID for:"+c);
+				return null;
+			}
+			Hashtable<Long, D_Motion> v1 = loaded_By_GIDH_ORG.get(GIDH);
+			if (v1 == null) loaded_By_GIDH_ORG.put(GIDH, v1 = new Hashtable<Long, D_Motion>());
 			
-			Hashtable<String, D_Motion> v2 = loaded_const_By_ORG_GIDH.get(organizationLID);
-			if (v2 == null) loaded_const_By_ORG_GIDH.put(organizationLID, v2 = new Hashtable<String, D_Motion>());
-			D_Motion result2 = v2.put(GIDH, c);
-			
-			if (result == null) result = result2;
-			return result; 
-		}
-		//return loaded_const_By_GIDhash.remove(GIDH);
-		private static D_Motion remConstByGIDH(String GIDH, Long organizationLID) {
-			D_Motion result = null;
-			D_Motion result2 = null;
-			Hashtable<Long, D_Motion> v1 = loaded_const_By_GIDH_ORG.get(GIDH);
-			if (v1 != null) {
-				result = v1.remove(organizationLID);
-				if (v1.size() == 0) loaded_const_By_GIDH_ORG.remove(GIDH);
+			// section added for duplication control
+			D_Motion old = v1.get(organizationLID);
+			if (old != null && old != c) {
+				Util.printCallPath("D_Motion conflict: old="+old+" crt="+c);
+				return old;
 			}
 			
-			Hashtable<String, D_Motion> v2 = loaded_const_By_ORG_GIDH.get(organizationLID);
+			D_Motion result = v1.put(organizationLID, c);
+			
+			Hashtable<String, D_Motion> v2 = loaded_By_ORG_GIDH.get(organizationLID);
+			if (v2 == null) loaded_By_ORG_GIDH.put(organizationLID, v2 = new Hashtable<String, D_Motion>());
+			
+			// section added for duplication control
+			old = v2.get(GIDH);
+			if (old != null && old != c) {
+				Util.printCallPath("D_Motion conflict: old="+old+" crt="+c);
+				//return old; // in this case, for consistency, store the new one
+			}
+			
+			D_Motion result2 = v2.put(GIDH, c);
+			
+			//if (result == null) result = result2;
+			return c; //result; 
+		}
+		//return loaded_const_By_GIDhash.remove(GIDH);
+		private static D_Motion remByGIDH(String GIDH, Long organizationLID) {
+			D_Motion result = null;
+			D_Motion result2 = null;
+			Hashtable<Long, D_Motion> v1 = loaded_By_GIDH_ORG.get(GIDH);
+			if (v1 != null) {
+				result = v1.remove(organizationLID);
+				if (v1.size() == 0) loaded_By_GIDH_ORG.remove(GIDH);
+			}
+			
+			Hashtable<String, D_Motion> v2 = loaded_By_ORG_GIDH.get(organizationLID);
 			if (v2 != null) {
 				result2 = v2.remove(GIDH);
-				if (v2.size() == 0) loaded_const_By_ORG_GIDH.remove(organizationLID);
+				if (v2.size() == 0) loaded_By_ORG_GIDH.remove(organizationLID);
 			}
 			
 			if (result == null) result = result2;
@@ -493,7 +544,109 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			}
 		}
 		*/
-		private static void register_loaded(D_Motion crt) {
+		/**
+		 * This function is used to link an object by its LID when this is obtained
+		 * by storing an object already linked by its GIDH (if it was linked)
+		 * @param crt
+		 * @return
+		 * true if i is linked and false if it is not
+		 */
+		private static boolean register_newLID_ifLoaded(D_Motion crt) {
+			if (DEBUG) System.out.println("D_Motion: register_newLID_ifLoaded: start crt = "+crt);
+			synchronized (loaded_objects) {
+				//String gid = crt.getGID();
+				String gidh = crt.getGIDH();
+				long lid = crt.getLID();
+				if (gidh == null) {
+					if (_DEBUG) { System.out.println("D_Motion: register_newLID_ifLoaded: had no gidh! no need of this call.");
+					Util.printCallPath("Path");}
+					return false;
+				}
+				if (lid <= 0) {
+					Util.printCallPath("Why call without LID="+crt);
+					return false;
+				}
+				
+				Long organizationLID = crt.getOrganizationLID();
+				if (organizationLID <= 0) {
+					Util.printCallPath("No orgLID="+crt);
+					return false;
+				}
+				D_Motion old = getByGIDH(gidh, organizationLID);
+				if (old == null) {
+					if (DEBUG) System.out.println("D_Motion: register_newLID_ifLoaded: was not registered.");
+					return false;
+				}
+				
+				if (old != crt)	{
+					Util.printCallPath("Different linking of: old="+old+" vs crt="+crt);
+					return false;
+				}
+				
+				Long oLID = new Long(lid);
+				D_Motion _old = loaded_By_LocalID.get(oLID);
+				if (_old != null && _old != crt) {
+					Util.printCallPath("Double linking of: old="+_old+" vs crt="+crt);
+					return false;
+				}
+				loaded_By_LocalID.put(oLID, crt);
+				if (DEBUG) System.out.println("D_Motion: register_newLID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
+
+				return true;
+			}
+		}
+		private static boolean register_newGID_ifLoaded(D_Motion crt) {
+			if (DEBUG) System.out.println("D_Motion: register_newGID_ifLoaded: start crt = "+crt);
+			crt.reloadMessage(); 
+			synchronized (loaded_objects) {
+				String gid = crt.getGID();
+				String gidh = crt.getGIDH();
+				long lid = crt.getLID();
+				if (gidh == null) {
+					Util.printCallPath("Why call without GIDH="+crt);
+					return false;
+				}
+				if (lid <= 0) {
+					if (_DEBUG) { System.out.println("D_Motion: register_newGID_ifLoaded: had no lid! no need of this call.");
+					Util.printCallPath("Path");}
+					return false;
+				}
+				
+				Long organizationLID = crt.getOrganizationLID();
+				if (organizationLID <= 0) {
+					Util.printCallPath("No orgLID="+crt);
+					return false;
+				}
+				
+				Long oLID = new Long(lid);
+				D_Motion _old = loaded_By_LocalID.get(oLID);
+				if (_old == null) {
+					if (DEBUG) System.out.println("D_Motion: register_newGID_ifLoaded: was not loaded");
+					return false;
+				}
+				if (_old != null && _old != crt) {
+					Util.printCallPath("Using expired: old="+_old+" vs crt="+crt);
+					return false;
+				}
+				
+				D_Motion_Node.putByGID(gid, crt.getOrganizationLID(), crt); //loaded_const_By_GID.put(gid, crt);
+				if (DEBUG) System.out.println("D_Motion: register_newGID_ifLoaded: store gid="+gid);
+				D_Motion_Node.putByGIDH(gidh, organizationLID, crt);//loaded_const_By_GIDhash.put(gidh, crt);
+				if (DEBUG) System.out.println("D_Motion: register_newGID_ifLoaded: store gidh="+gidh);
+				
+				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
+				
+				if (DEBUG) System.out.println("D_Motion: register_newGID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
+
+				return true;
+			}
+		}
+		/**
+		 * 
+		 * @param crt
+		 * @return false on success
+		 */
+		private static boolean register_loaded(D_Motion crt) {
 			if (DEBUG) System.out.println("D_Motion: register_loaded: start crt = "+crt);
 			crt.reloadMessage(); 
 			synchronized (loaded_objects) {
@@ -501,22 +654,34 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				String gidh = crt.getGIDH();
 				long lid = crt.getLID();
 				Long organizationLID = crt.getOrganizationLID();
+				if (organizationLID <= 0) {
+					Util.printCallPath("No orgLID="+crt);
+					return false;
+				}
 				
 				loaded_objects.offerFirst(crt);
 				if (lid > 0) {
-					loaded_By_LocalID.put(new Long(lid), crt);
+					// section added for duplication control
+					Long oLID = new Long(lid);
+					D_Motion old = loaded_By_LocalID.get(oLID);
+					if (old != null && old != crt) {
+						Util.printCallPath("Double linking of: old="+old+" vs crt="+crt);
+						return false;
+					}
+					
+					loaded_By_LocalID.put(oLID, crt);
 					if (DEBUG) System.out.println("D_Motion: register_loaded: store lid="+lid+" crt="+crt.getGIDH());
 				}else{
 					if (DEBUG) System.out.println("D_Motion: register_loaded: no store lid="+lid+" crt="+crt.getGIDH());
 				}
 				if (gid != null) {
-					D_Motion_Node.putConstByGID(gid, crt.getOrganizationLID(), crt); //loaded_const_By_GID.put(gid, crt);
+					D_Motion_Node.putByGID(gid, crt.getOrganizationLID(), crt); //loaded_const_By_GID.put(gid, crt);
 					if (DEBUG) System.out.println("D_Motion: register_loaded: store gid="+gid);
 				} else {
 					if (DEBUG) System.out.println("D_Motion: register_loaded: no store gid="+gid);
 				}
 				if (gidh != null) {
-					D_Motion_Node.putConstByGIDH(gidh, organizationLID, crt);//loaded_const_By_GIDhash.put(gidh, crt);
+					D_Motion_Node.putByGIDH(gidh, organizationLID, crt);//loaded_const_By_GIDhash.put(gidh, crt);
 					if (DEBUG) System.out.println("D_Motion: register_loaded: store gidh="+gidh);
 				} else {
 					if (DEBUG) System.out.println("D_Motion: register_loaded: no store gidh="+gidh);
@@ -524,9 +689,9 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
 				
 				int tries = 0;
-				while ((loaded_objects.size() > MAX_LOADED_OBJECTS)
-						|| (current_space > MAX_OBJECTS_RAM)) {
-					if (loaded_objects.size() <= MIN_OBJECTS) break; // at least _crt_peer and _myself
+				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_MOTIONS)
+						|| (current_space > SaverThreadsConstants.MAX_MOTIONS_RAM)) {
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_MOTIONS) break; // at least _crt_peer and _myself
 	
 					if (tries > MAX_TRIES) break;
 					tries ++;
@@ -543,13 +708,14 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 					}
 					
 					D_Motion removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
-					loaded_By_LocalID.remove(new Long(removed.getLID())); 
-					D_Motion_Node.remConstByGID(removed.getGID(), removed.getOrganizationLID());//loaded_const_By_GID.remove(removed.getGID());
-					D_Motion_Node.remConstByGIDH(removed.getGIDH(), removed.getOrganizationLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
+					if (removed.getLID() > 0) loaded_By_LocalID.remove(new Long(removed.getLID())); 
+					if (removed.getGID() != null) D_Motion_Node.remByGID(removed.getGID(), removed.getOrganizationLID());//loaded_const_By_GID.remove(removed.getGID());
+					if (removed.getGIDH() != null) D_Motion_Node.remByGIDH(removed.getGIDH(), removed.getOrganizationLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 					if (DEBUG) System.out.println("D_Motion: register_loaded: remove GIDH="+removed.getGIDH());
 					if (removed.component_node.message != null) current_space -= removed.component_node.message.length;				
 				}
 			}
+			return true;
 		}
 		/**
 		 * Move this to the front of the list of items (tail being trimmed)
@@ -558,6 +724,12 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		private static void setRecent(D_Motion crt) {
 			loaded_objects.moveToFront(crt);
 		}
+		/**
+		 *  
+		 * @param removed
+		 * @param force
+		 * @return
+		 */
 		public static boolean dropLoaded(D_Motion removed, boolean force) {
 			boolean result = true;
 			synchronized(loaded_objects) {
@@ -578,8 +750,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 					}
 				}
 				if (removed.getLIDstr() != null) loaded_By_LocalID.remove(new Long(removed.getLID())); 
-				if (removed.getGID() != null) D_Motion_Node.remConstByGID(removed.getGID(), removed.getOrganizationLID()); //loaded_const_By_GID.remove(removed.getGID());
-				if (removed.getGIDH() != null) D_Motion_Node.remConstByGIDH(removed.getGIDH(), removed.getOrganizationLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
+				if (removed.getGID() != null) D_Motion_Node.remByGID(removed.getGID(), removed.getOrganizationLID()); //loaded_const_By_GID.remove(removed.getGID());
+				if (removed.getGIDH() != null) D_Motion_Node.remByGIDH(removed.getGIDH(), removed.getOrganizationLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 				if (DEBUG) System.out.println("D_Motion: drop_loaded: remove GIDH="+removed.getGIDH());
 				return result;
 			}
@@ -704,7 +876,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	static private D_Motion getMotiByGID_AttemptCacheOnly(String GID, Long organizationLID, boolean load_Globals) {
 		D_Motion  crt = null;
 		if ((GID == null)) return null;
-		if ((GID != null)) crt = D_Motion_Node.getConstByGID(GID, organizationLID); //.loaded_const_By_GID.get(GID);
+		if ((GID != null)) crt = D_Motion_Node.getByGID(GID, organizationLID); //.loaded_const_By_GID.get(GID);
 		
 				
 		if (crt != null) {
@@ -800,7 +972,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 */
 	@Deprecated
 	static public D_Motion getMotiByGID(String GID, boolean load_Globals, boolean keep) {
-		System.out.println("Remove me setting orgID");
+		// System.out.println("D_Motion: getMotiByGID: Remove me setting orgID");
+		//Util.printCallPathTop("D_Motion: getMotiByGID: Remove me setting orgID");
 		return getMotiByGID(GID, load_Globals, false, keep, null, -1, null);
 	}
 	/**
@@ -859,7 +1032,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				if (storage == null || ma.size() > 0)
 					crt = new D_Motion(GID, load_Globals, create, __peer, p_oLID, ma);
 				else {
-					D_Motion_Node.dropLoaded(storage, true);
+					D_Motion_Node.dropLoaded(storage, true); // Should not normally happen!
 					//if (ma.size() > 0) storage.init(ma.get(0));
 					crt = storage.initNew(GID, __peer, p_oLID);
 				}
@@ -1032,7 +1205,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	
 	
 	/**
-	 * Load this message in the storage cache node.
+	 * Load this message in the storage cache node (as ASN1 encoded).
 	 * Should be called each time I load a node and when I sign myself.
 	 */
 	private void reloadMessage() {
@@ -1086,7 +1259,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	}
 	static D_Motion need_saving_next() {
 		Iterator<D_Motion> i = _need_saving.iterator();
-		if (!i.hasNext()) return null;
+		if (! i.hasNext()) return null;
 		D_Motion c = i.next();
 		if (DEBUG) System.out.println("D_Motion: need_saving_next: next: "+c);
 		//D_Motion r = D_Motion_Node.getConstByGIDH(c, null);//.loaded_const_By_GIDhash.get(c);
@@ -1094,10 +1267,11 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			if (_DEBUG) {
 				System.out.println("D_Motion Cache: need_saving_next null entry "
 						+ "needs saving next: "+c);
-				System.out.println("D_Motion Cache: "+dumpDirCache());
+				System.out.println("D_Motion Cache: "+dumpObjCache());
 			}
 			return null;
 		}
+		if (c.isTemporary()) dumpObjCacheGIDH();
 		return c;
 	}
 	static D_Motion need_saving_obj_next() {
@@ -1110,10 +1284,11 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			if (_DEBUG) {
 				System.out.println("D_Motion Cache: need_saving_obj_next null entry "
 						+ "needs saving obj next: "+r);
-				System.out.println("D_Motion Cache: "+dumpDirCache());
+				System.out.println("D_Motion Cache: "+dumpObjCache());
 			}
 			return null;
 		}
+		if (r.isTemporary()) dumpObjCacheGIDH();
 		return r;
 	}
 	private static void dumpNeeds(HashSet<String> _need_saving2) {
@@ -1128,7 +1303,13 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			System.out.println("\t"+i);
 		}
 	}
-	public static String dumpDirCache() {
+	public static String dumpObjCacheGIDH() {
+		String s = "[";
+		s += D_Motion_Node.loaded_objects.toString();
+		s += "]";
+		return s;
+	}
+	public static String dumpObjCache() {
 		String s = "[";
 		s += D_Motion_Node.loaded_objects.toString();
 		s += "]";
@@ -1209,6 +1390,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if(global_constituent_ID!=null)enc.addToSequence(new Encoder(global_constituent_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC5));
 		if(global_enhanced_motionID!=null)enc.addToSequence(new Encoder(global_enhanced_motionID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
 		if(global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC7));
+		else if (_DEBUG) System.out.println("D_Motion: getHashEncoder_V1: why no organizationGID?");
 		//if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC8));
 		if(choices!=null && choices.length>0)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
 		//System.out.println("D_Motion:getHash: this_1="+this);
@@ -1586,7 +1768,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if (DEBUG) System.out.println("D_Motion: storeAct_my: done="+this.mydata.row);
 	}
 	public long storeAct_main() throws P2PDDSQLException {
-		boolean DEBUG = true;
+		//boolean DEBUG = true;
+		if (DEBUG) Util.printCallPath("D_Motion: storeRequest GIDH="+this.getGIDH()+" tit="+this.getTitleStrOrMy());
 
 		if (this.arrival_date == null && (this.getGIDH() != null)) {
 			this.arrival_date = Util.CalendargetInstance();
@@ -1647,7 +1830,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 						DEBUG
 						);
 			}
-			setLID(result);
+			setLID_AndLink(result);
 		} else {
 			if (DEBUG) System.out.println("D_Motion: storeAct_main: updating");
 			params[table.motion.M_MOTION_ID] = getLIDstr();
@@ -1671,7 +1854,10 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	   	return this.getLID();
 	}
 	/**
-	 * Tests newer
+	 * Tests newer. Makes temporary (unblocked) constituent/enhanced/org, if needed.
+	 * 
+	 * Should decide how to control this...
+	 * 
 	 * @param r
 	 * @param sol_rq
 	 * @param new_rq
@@ -1685,7 +1871,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if (DEBUG) System.out.println("D_Motion: loadRemote: in r =" + r);
 		
 		if (! this.isTemporary()) {
-			if (_DEBUG) System.out.println("D_Motion: loadRemote: abandon incoming since this is not temporary!");
+			if (DEBUG) System.out.println("D_Motion: loadRemote: abandon incoming since this is not temporary!");
 			return false;
 		}
 		
@@ -1721,7 +1907,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				if (new_rq != null && o.isTemporary()) new_rq.orgs.add(o.getGIDH_or_guess());
 			}
 		}
-		if (!Util.equalStrings_null_or_not(this.global_enhanced_motionID, r.global_enhanced_motionID)) {
+		if (! Util.equalStrings_null_or_not(this.global_enhanced_motionID, r.global_enhanced_motionID)) {
 			this.setEnhancedMotionGID(r.getEnhancedMotionGID());
 			this.setEnhancedMotionLIDstr(D_Motion.getLIDstrFromGID(r.global_enhanced_motionID, this.getOrganizationLID()));
 			if (r.getEnhancedMotionGID() != null && this.getEnhancedMotionLIDstr() == null) {
@@ -1731,12 +1917,13 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				//this.enhanced = r.enhanced;
 			}
 		}
-		if (!Util.equalStrings_null_or_not(this.global_constituent_ID, r.global_constituent_ID)) {
+		if (! Util.equalStrings_null_or_not(this.global_constituent_ID, r.global_constituent_ID)) {
 			this.setConstituentGID(r.getConstituentGID());
 			this.setConstituentLIDstr(D_Constituent.getLIDstrFromGID(global_constituent_ID, this.getOrganizationLID()));
 			if (r.getConstituentGID() != null && this.getConstituentLIDstr() == null) {
-				this.constituent = D_Constituent.getConstByGID_or_GIDH(r.global_constituent_ID, null, true, true, false, __peer, this.getOrganizationLID());
+				this.constituent = D_Constituent.getConstByGID_or_GIDH(r.global_constituent_ID, null, true, true, true, __peer, this.getOrganizationLID());
 				this.setConstituentLIDstr(this.constituent.getLIDstr_force());
+				this.constituent.releaseReference();
 				if (new_rq != null && this.constituent.isTemporary()) new_rq.cons.put(r.global_constituent_ID, DD.EMPTYDATE);
 			}
 			//this.constituent = r.constituent;
@@ -1783,6 +1970,9 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		//this.setSignature(null);
 	}
 	public void setTemporary(boolean b) {
+		if (b && ! this.temporary)
+			if (_DEBUG) Util.printCallPath("D_Motion: setTemporary GIDH="+this.getGIDH()+" tit="+this.getTitleStrOrMy());
+
 		this.temporary = b;
 		this.dirty_local = true;
 	}
@@ -1818,11 +2008,11 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			if (_DEBUG) System.out.println("D_Motion: insertTemporaryGID: failure to insert temporary! "+p_cGID+" oLID="+p_oLID+" blocked="+default_blocked+" from="+__peer);
 			return -1;
 		}
-		return tmp_motion.getLID_force(); 
+		return tmp_motion.getLID(); // saving was done in  insertTemporaryGID_org
 	}
 	/**
 	 * Only returns null if p_mGID is null.
-	 * Saving is asynchronous.
+	 * Saving is synchronous.
 	 * @param p_mGID
 	 * @param p_oLID
 	 * @param __peer
@@ -1839,8 +2029,9 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			if (moti.isTemporary()) {
 				moti.setBlocked(default_blocked);
 				moti.setArrivalDate(); // since it is temporary, the arrival date need not be unique as it will not be sent out
-				moti.storeRequest();
+				moti.storeRequest_getID();//.storeRequest();
 			} else {
+				moti.getLID_force();
 				if (_DEBUG) System.out.println("D_Motion: insertTemporaryGID_org: found not temporary: "+moti);
 			}
 			moti.releaseReference();
@@ -1862,6 +2053,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			Util.printCallPath("Why store when not dirty?");
 			return;
 		}
+				
+		if (DEBUG) Util.printCallPath("D_Motion: storeRequest GIDH="+this.getGIDH()+" tit="+this.getTitleStrOrMy());
 
 		if (this.arrival_date == null && (this.getGIDH() != null)) {
 			this.arrival_date = Util.CalendargetInstance();
@@ -1886,6 +2079,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				if (DEBUG) System.out.println("D_Motion: storeRequest:startThread");
 				saverThread.start();
 			}
+			synchronized(saverThread) {saverThread.notify();}
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -1905,7 +2099,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		return this.getLID();
 	}
 	/**
-	 * This can be delayed saving
+	 * This is immediate saving (no keeping checked).
+	 * Called without keeping when inserting a new temporary with no GIDH, to start editing a new motion.
 	 * @return
 	 */
 	public long storeSynchronouslyNoException() {
@@ -2036,7 +2231,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		this.__LastGIDValid = null;
 	}
 	/**
-	 * If already loaded adjusts adding indexes for GID
+	 * Sets GID, tests that it is not compressed (with _setGID)
+	 * If already loaded adjusts adding indexes for GID.
 	 * @param _global_motionID
 	 * @return
 	 */
@@ -2044,35 +2240,61 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if (Util.equalStrings_null_or_not(_global_motionID, this.getGID())) {
 			return _global_motionID;
 		}
-		boolean loaded_in_cache = this.isLoaded();
+		//boolean loaded_in_cache = this.isLoaded();
 		_setGID(_global_motionID);
 		this.dirty_main = true;
-		Long oID = this.getOrganizationLID();
-		if (loaded_in_cache) {
-			if (this.getGID() != null)
-				D_Motion_Node.putConstByGID(this.getGID(), oID, this); //.loaded_const_By_GID.put(this.getGID(), this);
-			if (this.getGIDH() != null)
-				D_Motion_Node.putConstByGIDH(this.getGIDH(), oID, this); //.loaded_const_By_GIDhash.put(this.getGIDH(), this);
-		}
+//		Long oID = this.getOrganizationLID();
+//		if (loaded_in_cache) {
+//			if (this.getGID() != null)
+//				D_Motion_Node.putByGID(this.getGID(), oID, this); //.loaded_const_By_GID.put(this.getGID(), this);
+//			if (this.getGIDH() != null)
+//				D_Motion_Node.putByGIDH(this.getGIDH(), oID, this); //.loaded_const_By_GIDhash.put(this.getGIDH(), this);
+//		}
+		if (this.getGID() != null) // && isLoaded())
+			D_Motion_Node.register_newGID_ifLoaded(this);
 		return _global_motionID;
 	}
+	/**
+	 * Was used with setGID.
+	 * @return
+	 */
 	public boolean isLoaded() {
 		String GIDH, GID;
-		if (!D_Motion_Node.loaded_objects.inListProbably(this)) return false;
+		if (! D_Motion_Node.loaded_objects.inListProbably(this)) return false;
 		long lID = this.getLID();
 		long oID = this.getOrganizationLID();
 		if (lID > 0)
 			if ( null != D_Motion_Node.loaded_By_LocalID.get(new Long(lID)) ) return true;
 		if ((GIDH = this.getGIDH()) != null)
-			if ( null != D_Motion_Node.getConstByGIDH(GIDH, oID) //.loaded_const_By_GIDhash.get(GIDH)
+			if ( null != D_Motion_Node.getByGIDH(GIDH, oID) //.loaded_const_By_GIDhash.get(GIDH)
 			) return true;
 		if ((GID = this.getGID()) != null)
-			if ( null != D_Motion_Node.getConstByGID(GID, oID)  //.loaded_const_By_GID.get(GID)
+			if ( null != D_Motion_Node.getByGID(GID, oID)  //.loaded_const_By_GID.get(GID)
 			) return true;
 		return false;
 	}
+	/**
+	 * Returns the D_Document_Title object
+	 * @return
+	 */
 	public D_Document_Title getMotionTitle() {
 		return motion_title;
+	}
+	/**
+	 * Returns null if the title is not TXT or HTML, else return the text content
+	 * @return
+	 */
+	public String getMotionTitleStr() {
+		if (motion_title == null || motion_title.title_document == null)
+			return null;
+		if (
+				motion_title.title_document.getFormatString() != null
+				&&
+				! D_Document.TXT_FORMAT.equals(motion_title.title_document.getFormatString())
+				&&
+				! D_Document.HTM_BODY_FORMAT.equals(motion_title.title_document.getFormatString())
+		) return null;
+		return motion_title.title_document.getDocumentUTFString();
 	}
 	public void setMotionTitle(D_Document_Title motion_title) {
 		this.motion_title = motion_title;
@@ -2107,7 +2329,10 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			this.constituent = null;
 		} else {
 			this.constituent = D_Constituent.getConstByGID_or_GIDH(global_constituent_ID, null, true, false, this.getOrganizationLID());
-			this.constituent_ID = constituent.getLIDstr();//Util.getStringID(D_Constituent.getLIDFromGID(global_constituent_ID, this.getOrganizationLID()));
+			if (this.constituent != null) {
+				this.constituent_ID = constituent.getLIDstr();//Util.getStringID(D_Constituent.getLIDFromGID(global_constituent_ID, this.getOrganizationLID()));
+				if (DEBUG) System.out.println("D_Motion: setConstituentGID: setting constituentLID for GID="+global_constituent_ID);
+			}
 		}
 		this.dirty_main = true;
 	}
@@ -2271,8 +2496,12 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		this.constituent_ID = Util.getStringID(id);
 		this.dirty_main = true;
 	}
+	/**
+	 * Should be kept while calling this
+	 * @return
+	 */
 	public long getLID_force() {
-		if (this._motionLID >= 0) return _motionLID;
+		if (this._motionLID > 0) return _motionLID;
 		return this.storeSynchronouslyNoException();
 	}
 	public String getLIDstr() {
@@ -2288,6 +2517,15 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public void setLID(long _motionLID) {
 		this._motionLIDstr = Util.getStringID(_motionLID);
 		this._motionLID = _motionLID;
+	}
+	/**
+	 * If _motionLID is positive, and if the object is linked by GID, it will be also linked by LID.
+	 * @param _motionLID
+	 */
+	public void setLID_AndLink(long _motionLID) {
+		setLID(_motionLID);
+		if (_motionLID > 0)
+			D_Motion_Node.register_newLID_ifLoaded(this);
 	}
 	// preferences
 	public Calendar getArrivalDate() {
@@ -2336,10 +2574,23 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		this.peer_source_ID = peer_source_ID;
 		this.dirty_local = true;
 	}
+	/**
+	 * This returns my replacement if existent or else the D_DocumentTitle representation of the title
+	 * @return
+	 */
 	public Object getTitleOrMy() {
 		String n = mydata.name;
 		if (n != null) return n;
 		return getMotionTitle();
+	}
+	/**
+	 * This returns my replacement if existent or else the String representation of the title assumed TXT mode
+	 * @return
+	 */
+	public String getTitleStrOrMy() {
+		String n = mydata.name;
+		if (n != null) return n;
+		return getMotionTitleStr();
 	}
 	public Object getCategoryOrMy() {
 		String n = mydata.category;
@@ -2353,16 +2604,26 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if (this.constituent == null) return null;
 		return this.constituent.getNameOrMy();
 	}
+	/**
+	 * Store and link in cache a new temporary motion from an editor (assume no GID/h and temporary set).
+	 * If GIDH nonull and existent, nevertheless return its LID
+	 * @return
+	 */
 	public long storeLinkNewTemporary() {
 		synchronized (monitor_object_factory) {
-			if (this.getGID() != null) {
-				D_Motion m = D_Motion.getMotiByGID(this.getGID(), true, false, this.getOrganizationLID());
-				if (m != null) return m.getLID_force();
+			if (this.getGID() != null) { // should not happen!
+				D_Motion m = D_Motion.getMotiByGID(this.getGID(), true, true, this.getOrganizationLID());
+				if (m != null) {
+					m.getLID_force(); // make sure to have it stored
+					m.releaseReference();
+					return m.getLID();
+				}
 			}
-			this.setLID(this.storeSynchronouslyNoException());
+			//this.setLID(); // redundant
+			this.storeSynchronouslyNoException(); // no keeping since this has no GID and is temporary 
 			D_Motion_Node.register_loaded(this);
 		}
-		return 0;
+		return this.getLID();
 	}
 	/**
 	 * Not using cache
@@ -2974,6 +3235,13 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if (this.getLIDstr() == null) return false;
 		return true;
 	}
+	@Override
+	public String getCachedSummary() {
+		return this.getGIDH();
+	}
+	public static int getNumberItemsNeedSaving() {
+		return _need_saving.size() + _need_saving_obj.size();
+	}
 
 }
 
@@ -2994,6 +3262,7 @@ class D_Motion_SaverThread extends util.DDP2P_ServiceThread {
 		for (;;) {
 			if (stop) return;
 			//System.out.println("D_Motion_SaverThread: _run: will lock");
+			if (data.SaverThreadsConstants.getNumberRunningSaverThreads() < SaverThreadsConstants.MAX_NUMBER_CONCURRENT_SAVING_THREADS && D_Motion.getNumberItemsNeedSaving() > 0)
 			synchronized(saver_thread_monitor) {
 				new D_Motion_SaverThreadWorker().start();
 			}
@@ -3030,7 +3299,10 @@ class D_Motion_SaverThread extends util.DDP2P_ServiceThread {
 			synchronized(this) {
 				try {
 					//System.out.println("D_Motion_SaverThread: _run: will sleep");
-					wait(SaverThreadsConstants.SAVER_SLEEP_BETWEEN_MOTION_MSEC);
+					long timeout = (D_Motion.getNumberItemsNeedSaving() > 0)?
+							SaverThreadsConstants.SAVER_SLEEP_BETWEEN_MOTION_MSEC:
+								SaverThreadsConstants.SAVER_SLEEP_WAITING_MOTION_MSEC;
+					wait(timeout);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -3043,12 +3315,18 @@ class D_Motion_SaverThreadWorker extends util.DDP2P_ServiceThread {
 	boolean stop = false;
 	//public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
 	D_Motion_SaverThreadWorker() {
 		super("D_Motion Saver Worker", false);
 		//start ();
 	}
-	@SuppressWarnings("unused")
 	public void _run() {
+		synchronized (SaverThreadsConstants.monitor_threads_counts) {SaverThreadsConstants.threads_moti ++;}
+		try{__run();} catch (Exception e){}
+		synchronized (SaverThreadsConstants.monitor_threads_counts) {SaverThreadsConstants.threads_moti --;}
+	}
+	@SuppressWarnings("unused")
+	public void __run() {
 		if (DEBUG) System.out.println("D_Motion_SaverThreadWorker: wait to start");
 		synchronized(D_Motion_SaverThread.saver_thread_monitor) {
 			D_Motion de;
@@ -3059,7 +3337,12 @@ class D_Motion_SaverThreadWorker extends util.DDP2P_ServiceThread {
 			de = D_Motion.need_saving_obj_next();
 			
 			// then try remaining objects 
-			if (de == null) { de = D_Motion.need_saving_next(); edited = false; }
+			if (de == null) {
+				de = D_Motion.need_saving_next(); edited = false;
+				if ((DEBUG || data.SaverThreadsConstants.DEBUG_SAVING_ACTIVITY) && de != null) System.out.println("D_Motion_SaverThreadWorker: nxt saving GIDH="+de.getGIDH()+" tit="+de.getMotionTitle());
+			} else {
+				if (DEBUG || data.SaverThreadsConstants.DEBUG_SAVING_ACTIVITY) System.out.println("D_Motion_SaverThreadWorker: obj saving GIDH="+de.getGIDH()+" tit="+de.getMotionTitle());
+			}
 			
 			if (de != null) {
 				if (DEBUG) System.out.println("D_Motion_SaverThreadWorker: loop saving "+de.getMotionTitle());
@@ -3068,7 +3351,7 @@ class D_Motion_SaverThreadWorker extends util.DDP2P_ServiceThread {
 				else D_Motion.need_saving_remove(de);//, de.instance);
 				if (DEBUG) System.out.println("D_Motion_SaverThreadWorker: loop removed need_saving flag");
 				// try 3 times to save
-				for (int k = 0; k < 3; k ++) {
+				for (int k = 0; k < data.SaverThreadsConstants.ATTEMPTS_ON_ERROR; k ++) {
 					try {
 						if (DEBUG) System.out.println("D_Motion_SaverThreadWorker: loop will try saving k="+k);
 						de.storeAct();

@@ -510,6 +510,7 @@ CREATE TABLE justification ( # justifications -> justification
 	justification_ID INTEGER PRIMARY KEY, 
 	global_justification_ID TEXT UNIQUE ON CONFLICT FAIL, 
 	motion_ID INTEGER, 
+	organization_ID INTEGER,
 	answerTo_ID INTEGER, 
 	hash_justification_alg TEXT, 
 	hash_justification BLOB, 

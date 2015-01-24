@@ -61,6 +61,7 @@ import ciphersuits.Cipher;
 import ciphersuits.CipherSuit;
 import ciphersuits.PK;
 import ciphersuits.SK;
+import data.D_Motion.D_Motion_Node;
 
 public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payload<D_Peer>, Summary  {
 	public static final boolean _DEBUG = true;
@@ -70,9 +71,6 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public boolean last_signature_verified_successful = false;
 	public boolean signature_verified = false;
 
-	public static int MAX_LOADED_PEERS = 10000;
-	public static long MAX_PEERS_RAM = 10000000;
-	private static final int MIN_PEERS_RAM = 2;
 	private static final Object monitor_object_factory = new Object();
 	D_Peer_Node component_node = new D_Peer_Node(null, null);
 	/** Use to lock peer in memory cache while modifying it to save changes. */
@@ -185,10 +183,10 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public static class D_Peer_Node {
 		private static final int MAX_TRIES = 30;
 		/** Currently loaded peers, ordered by the access time*/
-		private static DDP2P_DoubleLinkedList<D_Peer> loaded_peers = new DDP2P_DoubleLinkedList<D_Peer>();
-		private static Hashtable<Long, D_Peer> loaded_peer_By_LocalID = new Hashtable<Long, D_Peer>();
-		private static Hashtable<String, D_Peer> loaded_peer_By_GID = new Hashtable<String, D_Peer>();
-		private static Hashtable<String, D_Peer> loaded_peer_By_GIDhash = new Hashtable<String, D_Peer>();
+		private static DDP2P_DoubleLinkedList<D_Peer> loaded_objects = new DDP2P_DoubleLinkedList<D_Peer>();
+		private static Hashtable<Long, D_Peer> loaded_By_LocalID = new Hashtable<Long, D_Peer>();
+		private static Hashtable<String, D_Peer> loaded_By_GID = new Hashtable<String, D_Peer>();
+		private static Hashtable<String, D_Peer> loaded_By_GIDhash = new Hashtable<String, D_Peer>();
 		private static long current_space = 0;
 		
 		/** message is enough (no need to store the Encoder itself) */
@@ -205,36 +203,72 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			if(crt.component_node.message != null) return;
 			if(!crt.loaded_globals) return;
 			byte[] message = crt.encode();
-			synchronized(loaded_peers) {
+			synchronized(loaded_objects) {
 				crt.component_node.message = message; // crt.encoder.getBytes();
 				if(crt.component_node.message != null) current_space += crt.component_node.message.length;
 			}
 		}
 		private static void unregister_loaded(D_Peer crt) {
-			synchronized(loaded_peers) {
-				loaded_peers.remove(crt);
-				loaded_peer_By_LocalID.remove(new Long(crt.getLID()));
-				loaded_peer_By_GID.remove(crt.getGID());
-				loaded_peer_By_GIDhash.remove(crt.getGIDH_force());
+			synchronized(loaded_objects) {
+				loaded_objects.remove(crt);
+				loaded_By_LocalID.remove(new Long(crt.getLID()));
+				loaded_By_GID.remove(crt.getGID());
+				loaded_By_GIDhash.remove(crt.getGIDH_force());
 			}
 		}
 		private static void register_loaded(D_Peer crt) {
 			crt.reloadMessage();
-			synchronized(loaded_peers) {
-				loaded_peers.offerFirst(crt);
-				loaded_peer_By_LocalID.put(new Long(crt.getLID()), crt);
-				loaded_peer_By_GID.put(crt.getGIDH_force(), crt);
-				loaded_peer_By_GIDhash.put(crt.getGIDH_force(), crt);
-				if(crt.component_node.message != null) current_space += crt.component_node.message.length;
+			synchronized(loaded_objects) {
+				loaded_objects.offerFirst(crt);
+				
+				long lid = crt.getLID();
+				if (lid > 0) {
+					// section added for duplication control
+					Long oLID = new Long(lid);
+					D_Peer old = loaded_By_LocalID.get(oLID);
+					if (old != null && old != crt) {
+						Util.printCallPath("Double linking of: old="+old+" vs crt="+crt);
+						//return false;
+						// here we are trying a dirty recovery, but really we should not be here!!!!
+						String o_gid = old.getGID();
+						String o_gidh = old.getGIDH();
+						if (o_gid != null) loaded_By_GID.remove(o_gid);
+						if (o_gidh != null) loaded_By_GIDhash.remove(o_gidh);
+					}
+					
+					loaded_By_LocalID.put(oLID, crt);
+				}
+				String gidh = crt.getGIDH_force();
+				String gid = gidh; // not using GID since it may not always be available and would just get in trouble !
+				
+				if (gid != null) { // it is always true since we only locally create ready peers
+					// section added for duplication control
+					D_Peer old = loaded_By_GID.get(gid);
+					if (old != null && old != crt) {
+						Util.printCallPath("D_Peer conflict: gid old="+old+" crt="+crt);
+					}
+					loaded_By_GID.put(gid, crt);
+				}
+				
+				if (gidh != null) { // it is always true since we only locally create ready peers
+					// section added for duplication control
+					D_Peer old = loaded_By_GIDhash.get(gidh);
+					if (old != null && old != crt) {
+						Util.printCallPath("D_Peer conflict: gidh old="+old+" crt="+crt);
+					}
+					loaded_By_GIDhash.put(gidh, crt);
+				}
+				
+				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
 				
 				int tries = 0;
-				while((loaded_peers.size() > MAX_LOADED_PEERS)
-						|| (current_space > MAX_PEERS_RAM)) {
-					if(loaded_peers.size() <= MIN_PEERS_RAM) break; // at least _crt_peer and _myself
+				while((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_PEERS)
+						|| (current_space > SaverThreadsConstants.MAX_PEERS_RAM)) {
+					if(loaded_objects.size() <= SaverThreadsConstants.MIN_PEERS_RAM) break; // at least _crt_peer and _myself
 
 					if (tries > MAX_TRIES) break;
 					tries ++;
-					D_Peer candidate = loaded_peers.getTail();
+					D_Peer candidate = loaded_objects.getTail();
 					if ((candidate.getStatusLockWrite() + candidate.get_StatusReferences() > 0)
 							||
 							D_Peer.is_crt_peer(candidate)
@@ -244,10 +278,10 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 						continue;
 					}
 					
-					D_Peer removed = loaded_peers.removeTail();//remove(loaded_peers.size()-1);
-					loaded_peer_By_LocalID.remove(new Long(removed.getLID_keep_force()));
-					loaded_peer_By_GID.remove(removed.getGID());
-					loaded_peer_By_GIDhash.remove(removed.getGIDH_force());
+					D_Peer removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
+					loaded_By_LocalID.remove(new Long(removed.getLID_keep_force()));
+					loaded_By_GID.remove(removed.getGID());
+					loaded_By_GIDhash.remove(removed.getGIDH_force());
 					if (DEBUG) System.out.println("D_Peer: register_loaded: remove GIDH="+removed.getGIDH_force());
 					if(removed.component_node.message != null) current_space -= removed.component_node.message.length;				
 				}
@@ -258,7 +292,110 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		 * @param crt
 		 */
 		private static void setRecent(D_Peer crt) {
-			loaded_peers.moveToFront(crt);
+			loaded_objects.moveToFront(crt);
+		}
+		/**
+		 * This function is used to link an object by its LID when this is obtained
+		 * by storing an object already linked by its GIDH (if it was linked)
+		 * @param crt
+		 * @return
+		 * true if i is linked and false if it is not
+		 */
+		public static boolean register_newLID_ifLoaded(D_Peer crt) {
+			if (DEBUG) System.out.println("D_Peer: register_newLID_ifLoaded: start crt = "+crt);
+			synchronized (loaded_objects) {
+				//String gid = crt.getGID();
+				String gidh = crt.getGIDH();
+				long lid = crt.getLID();
+				if (gidh == null) {
+					if (_DEBUG) { System.out.println("D_Peer: register_newLID_ifLoaded: had no gidh! no need of this call.");
+					Util.printCallPath("Path");}
+					return false;
+				}
+				if (lid <= 0) {
+					Util.printCallPath("Why call without LID="+crt);
+					return false;
+				}
+				
+				D_Peer old = loaded_By_GIDhash.get(gidh); //getByGIDH(gidh, );
+				if (old == null) {
+					if (DEBUG) System.out.println("D_Peer: register_newLID_ifLoaded: was not registered.");
+					return false;
+				}
+				
+				if (old != crt)	{
+					Util.printCallPath("Different linking of: old="+old+" vs crt="+crt);
+					return false;
+				}
+				
+				Long pLID = new Long(lid);
+				D_Peer _old = loaded_By_LocalID.get(pLID);
+				if (_old != null && _old != crt) {
+					Util.printCallPath("Double linking of: old="+_old+" vs crt="+crt);
+					return false;
+				}
+				loaded_By_LocalID.put(pLID, crt);
+				if (DEBUG) System.out.println("D_Peer: register_newLID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
+
+				return true;
+			}
+		}
+		private static boolean register_newGID_ifLoaded(D_Peer crt) {
+			if (DEBUG) System.out.println("D_Peer: register_newGID_ifLoaded: start crt = "+crt);
+			crt.reloadMessage(); 
+			synchronized (loaded_objects) {
+				String gidh = crt.getGIDH();
+				String gid = gidh;//crt.getGID();
+				long lid = crt.getLID();
+				if (gidh == null) {
+					Util.printCallPath("Why call without GIDH="+crt);
+					return false;
+				}
+				if (lid <= 0) {
+					if (_DEBUG) { System.out.println("D_Peer: register_newGID_ifLoaded: had no lid! no need of this call.");
+					Util.printCallPath("Path");}
+					return false;
+				}
+								
+				Long oLID = new Long(lid);
+				D_Peer _old = loaded_By_LocalID.get(oLID);
+				if (_old == null) {
+					if (DEBUG) System.out.println("D_Peer: register_newGID_ifLoaded: was not loaded");
+					return false;
+				}
+				if (_old != null && _old != crt) {
+					Util.printCallPath("Using expired: old="+_old+" vs crt="+crt);
+					return false;
+				}
+				
+//				D_Peer_Node.putByGID(gid, crt.getOrganizationLID(), crt); //loaded_const_By_GID.put(gid, crt);
+//				if (DEBUG) System.out.println("D_Motion: register_newGID_ifLoaded: store gid="+gid);
+//				D_Peer_Node.putByGIDH(gidh, organizationLID, crt);//loaded_const_By_GIDhash.put(gidh, crt);
+//				if (DEBUG) System.out.println("D_Motion: register_newGID_ifLoaded: store gidh="+gidh);
+				if (gid != null) { // it is always true since we only locally create ready peers
+					// section added for duplication control
+					D_Peer old = loaded_By_GID.get(gid);
+					if (old != null && old != crt) {
+						Util.printCallPath("D_Peer conflict: gid old="+old+" crt="+crt);
+					}
+					loaded_By_GID.put(gid, crt);
+				}
+				
+				if (gidh != null) { // it is always true since we only locally create ready peers
+					// section added for duplication control
+					D_Peer old = loaded_By_GIDhash.get(gidh);
+					if (old != null && old != crt) {
+						Util.printCallPath("D_Peer conflict: gidh old="+old+" crt="+crt);
+					}
+					loaded_By_GIDhash.put(gidh, crt);
+				}
+				
+				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
+				
+				if (DEBUG) System.out.println("D_Peer: register_newGID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
+
+				return true;
+			}
 		}
 	}	
 	
@@ -949,7 +1086,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	static private D_Peer getPeerByLID_AttemptCacheOnly_NoKeep(long ID, boolean load_Globals) {
 		if (ID <= 0) return null;
 		Long id = new Long(ID);
-		D_Peer crt = D_Peer_Node.loaded_peer_By_LocalID.get(id);
+		D_Peer crt = D_Peer_Node.loaded_By_LocalID.get(id);
 		if (crt == null) return null;
 		
 		if (load_Globals && !crt.loaded_globals) { // unlikely
@@ -1021,8 +1158,8 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 //	Factories from GID
 	static private D_Peer getPeerByGID_or_GIDhash_AttemptCacheOnly_NoKeep(String GID, String GIDhash, boolean load_Globals) {
 		D_Peer  crt = null;
-		if (GIDhash != null) crt = D_Peer_Node.loaded_peer_By_GIDhash.get(GIDhash);
-		if ((crt == null) && (GID != null)) crt = D_Peer_Node.loaded_peer_By_GID.get(GID);
+		if (GIDhash != null) crt = D_Peer_Node.loaded_By_GIDhash.get(GIDhash);
+		if ((crt == null) && (GID != null)) crt = D_Peer_Node.loaded_By_GID.get(GID);
 		
 //		if ((GID != null) && ((crt == null) || (GIDhash == null) || DD.VERIFY_GIDH_ALWAYS)) {
 //			if (crt == null) crt = D_Peer_Node.loaded_org_By_GIDhash.get(GIDhash);
@@ -1513,6 +1650,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				if (DEBUG) System.out.println("D_Peer:storeRequest:startThread");
 				saverThread.start();
 			}
+			synchronized(saverThread) {saverThread.notify();}
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -1661,7 +1799,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		params[table.peer_scheduled_message.F_PEER_LID] = this.peer_ID;
 		params[table.peer_scheduled_message.F_MESSAGE_TYPE] = Util.getString(peer_scheduled_message.MESSAGE_TYPE_RECOMMENDATION_OF_TESTERS);
 		params[table.peer_scheduled_message.F_MESSAGE] = this.component_messages.recommendationOfTestersBundle;
-		
+		params[table.peer_scheduled_message.F_CREATION_DATE] =  Util.getGeneralizedTime();//.getString(Util.CalendargetInstance());  
 		try {
 			if (update) {
 				params[table.peer_scheduled_message.F_ID] = Util.getStringID(this.component_messages.recommendationOfTestersBundleLID);
@@ -1732,12 +1870,12 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		}
 		
 		if (getLIDstr() == null) {
-			this.setLID(Application.db.insert(table.peer.TNAME,
+			this.setLID_AndLink(Application.db.insert(table.peer.TNAME,
 					Util.trimmed(table.peer.list_fields_peers_no_ID),
 					params,
 					DEBUG));
 			//peer_ID = Util.getStringID(_peer_ID);
-			this.component_node.loaded_peer_By_LocalID.put(new Long(getLID()), this);
+			//this.component_node.loaded_peer_By_LocalID.put(new Long(getLID()), this);
 
 			if (DEBUG) System.out.println("D_Peer: doSave: inserted "+getLIDstr());
 		} else {
@@ -2469,6 +2607,11 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		}
 		this.component_basic_data.globalIDhash = gIDH;
 	}
+	public void setGID_and_Link(String gID, String gIDH) {
+		setGID(gID, gIDH);
+		if (this.getGID() != null) // && isLoaded())
+			D_Peer_Node.register_newGID_ifLoaded(this);
+	}
 	
 	public void setPeerInputNoCiphersuit(PeerInput data) {
 		setEmail(data.email);
@@ -2611,7 +2754,8 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	 */
 	public String getLIDstr() {
 		return this.peer_ID;
-	}	
+	}
+	final Object monitor_getLID = new Object();
 	/**
 	 * If it already has a LID, returning it without keeping.
 	 * To be called when this is not yet kept, since if
@@ -2619,19 +2763,25 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	 * @return
 	 */
 	public String getLIDstr_keep_force() {
-		if ((this.peer_ID == null) && (this._peer_ID > 0))
-			this.peer_ID = Util.getStringID(_peer_ID);
-		if (this.getStatusLockWrite() > 0) { // not designed to go on this way, but we try to save face
-			Util.printCallPath("Was supposed to be called when not yet kept! Is this really a coincidence?");
-			Util.printCallPath(lastPath, "Last path was: ", "     ");
-			this.storeSynchronouslyNoException();
-			return this.peer_ID;
-		}
-		if ((this.peer_ID == null) && (this.dirty_any())) {
-			D_Peer p = D_Peer.getPeerByPeer_Keep(this);
-			p.storeSynchronouslyNoException();
-			p.releaseReference();
-			return this.peer_ID;
+		synchronized (monitor_getLID) { // avoid redundant savings
+			if ((this.peer_ID == null) && (this._peer_ID > 0))
+				this.peer_ID = Util.getStringID(_peer_ID);
+			if (this.peer_ID != null)
+				return this.peer_ID;
+			if (this.getStatusLockWrite() > 0) { // not designed to go on this way, but we try to save face
+				Util.printCallPath("Was supposed to be called when not yet kept! Is this really a coincidence?");
+				Util.printCallPath(lastPath, "Last path was: ", "     ");
+				System.out.println("The peer was:   sLID="+this.peer_ID+" id="+this._peer_ID+" "+this);
+				this.storeSynchronouslyNoException();
+				System.out.println("The peerID got is:   "+this.peer_ID);
+				return this.peer_ID;
+			}
+			if ((this.peer_ID == null) && (this.dirty_any())) {
+				D_Peer p = D_Peer.getPeerByPeer_Keep(this);
+				p.storeSynchronouslyNoException();
+				p.releaseReference();
+				return this.peer_ID;
+			}
 		}
 		return this.peer_ID;
 	}
@@ -2667,6 +2817,12 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public void setLID(long __peer_ID) {
 		this.peer_ID = Util.getStringID(__peer_ID);
 		this._peer_ID = __peer_ID;
+	}
+	public void setLID_AndLink(long __peer_ID) {
+		setLID(__peer_ID);
+		if (_peer_ID > 0)
+			D_Peer_Node.register_newLID_ifLoaded(this);
+		//this.component_node.loaded_peer_By_LocalID.put(new Long(getLID()), this);
 	}
 	
 	/**
@@ -2946,7 +3102,9 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public D_Peer decode(Decoder dec) throws ASN1DecoderFail {
 		//String instance; // incoming instances should not change current instance here // WHY?
 		Decoder content = dec.getContent();
+		if (content == null || content.getFirstObject(false) == null) throw new ASN1DecoderFail("Version not found!");
 		component_basic_data.version=content.getFirstObject(true).getString();
+		if (content.getFirstObject(false) == null) throw new ASN1DecoderFail("GID not found!");
 		String globalID = content.getFirstObject(true).getString();
 		//this.component_basic_data.globalID = globalID;
 		this.setGID(globalID, null); // do not attempt to set the GIDH since the GIDs may be compacted (into indexes) and this would fail
@@ -3753,7 +3911,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (!i.hasNext()) return null;
 		String c = i.next();
 		if (DEBUG) System.out.println("D_Peer: need_saving_next: next: "+c);
-		D_Peer r = D_Peer_Node.loaded_peer_By_GIDhash.get(c);
+		D_Peer r = D_Peer_Node.loaded_By_GIDhash.get(c);
 		if (r == null) {
 			if (_DEBUG) {
 				System.out.println("D_Peer Cache: need_saving_next null entry "
@@ -3772,7 +3930,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	}
 	public static String dumpDirCache() {
 		String s = "[";
-		s += D_Peer_Node.loaded_peers.toString();
+		s += D_Peer_Node.loaded_objects.toString();
 		s += "]";
 		return s;
 	}
@@ -5607,6 +5765,9 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		this.status_references--;
 		Application_GUI.ThreadsAccounting_ping("Dropped peer status references for "+getName());
 	}
+	public static int getNumberItemsNeedSaving() {
+		return _need_saving.size();
+	}
 
 }
 class D_Peer_SaverThread extends util.DDP2P_ServiceThread {
@@ -5625,6 +5786,7 @@ class D_Peer_SaverThread extends util.DDP2P_ServiceThread {
 	public void _run() {
 		for (;;) {
 			if (stop) return;
+			if (data.SaverThreadsConstants.getNumberRunningSaverThreads() < SaverThreadsConstants.MAX_NUMBER_CONCURRENT_SAVING_THREADS && D_Peer.getNumberItemsNeedSaving() > 0)
 			synchronized(saver_thread_monitor) {
 				new D_Peer_SaverThreadWorker().start();
 			}
@@ -5659,7 +5821,10 @@ class D_Peer_SaverThread extends util.DDP2P_ServiceThread {
 			*/
 			synchronized(this) {
 				try {
-					wait(SaverThreadsConstants.SAVER_SLEEP_BETWEEN_PEER_MSEC);
+					long timeout = (D_Peer.getNumberItemsNeedSaving() > 0)?
+							SaverThreadsConstants.SAVER_SLEEP_BETWEEN_PEER_MSEC:
+								SaverThreadsConstants.SAVER_SLEEP_WAITING_PEER_MSEC;
+					wait(timeout);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -5677,6 +5842,12 @@ class D_Peer_SaverThreadWorker extends util.DDP2P_ServiceThread {
 		//start ();
 	}
 	public void _run() {
+		synchronized (SaverThreadsConstants.monitor_threads_counts) {SaverThreadsConstants.threads_peers ++;}
+		try{__run();} catch (Exception e){}
+		synchronized (SaverThreadsConstants.monitor_threads_counts) {SaverThreadsConstants.threads_peers --;}
+	}
+	@SuppressWarnings("unused")
+	public void __run() {
 		synchronized(D_Peer_SaverThread.saver_thread_monitor) {
 			D_Peer de = D_Peer.need_saving_next();
 			if (de != null) {
@@ -5684,7 +5855,7 @@ class D_Peer_SaverThreadWorker extends util.DDP2P_ServiceThread {
 				Application_GUI.ThreadsAccounting_ping("Saving");
 				D_Peer.need_saving_remove(de.getGIDH_force(), de.instance);
 				// try 3 times to save
-				for (int k = 0; k < 3; k++) {
+				for (int k = 0; k < data.SaverThreadsConstants.ATTEMPTS_ON_ERROR; k++) {
 					try {
 						de.storeAct();
 						break;

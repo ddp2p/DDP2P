@@ -207,9 +207,10 @@ public class MotionHandling {
 			" ORDER BY m."+table.motion.arrival_date
 		;
 	public static ArrayList<String> getMotionHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
+		//boolean DEBUG = true;
 		String maxDate;
 		if (DEBUG) System.out.println("MotionHandling: getMotHashes: start");
-		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
+		if ((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
 		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
 				new String[]{org_id, last_sync_date, maxDate}, DEBUG);
@@ -226,6 +227,7 @@ public class MotionHandling {
 		}
 		*/
 		r = Util.AL_AL_O_2_AL_S(result);
+		if (DEBUG) System.out.println("MotionHandling: getMotHashes: return "+r.size());
 		return r;
 	}
 

@@ -62,7 +62,7 @@ public class RecommendationOfTestersSender {
 			D_Tester tester = D_Tester.getTesterInfoByLID(usedTestersList[i].testerID);
 			tRating.testerGID = tester.testerGID;
 			tRating.address = tester.url;
-			tRating.testerIntroducers = D_TesterIntroducer.retrieveTesterIntroducers(Util.getStringID(usedTestersList[i].testerID));
+			tRating.testerIntroducers = latestIntroducers(D_TesterIntroducer.retrieveTesterIntroducers(Util.getStringID(usedTestersList[i].testerID)));
 			message.testersRatingList.add(tRating);
 		}
 		
@@ -75,12 +75,27 @@ public class RecommendationOfTestersSender {
 				D_Tester tester = D_Tester.getTesterInfoByLID(knownTestersList[i].testerID);
 				tRating.testerGID = tester.testerGID;
 				tRating.address = tester.url;
+				tRating.testerIntroducers = latestIntroducers(D_TesterIntroducer.retrieveTesterIntroducers(Util.getStringID(knownTestersList[i].testerID)));
 				message.testersRatingList.add(tRating);
 		     }
-		
+		message.signature = message.sign();
 		return message;
 	}
-	
+	/**
+	 * return the latest N introducers from a sorted list of introducers based on creation date 
+	 * @param testerIntroducers
+	 * @return
+	 */
+	private static ArrayList<D_TesterIntroducer> latestIntroducers(
+			ArrayList<D_TesterIntroducer> testerIntroducers) {
+			if(testerIntroducers.size()<=RecommenderOfTesters.MAX_SIZE_OF_TESER_INTRODUCERS_IN_A_MESSAGE)
+				return testerIntroducers;
+			ArrayList<D_TesterIntroducer> result = new ArrayList<D_TesterIntroducer>();
+			for(int i = 0; i < RecommenderOfTesters.MAX_SIZE_OF_TESER_INTRODUCERS_IN_A_MESSAGE; i++)
+				result.add(testerIntroducers.get(i));
+		return result;
+	}
+
 	public static void announceRecommendation(TesterAndScore[] knownTestersList, TesterAndScore[] usedTestersList) {
 		D_RecommendationOfTestersBundle bundle = buildBundle(knownTestersList, usedTestersList);
 		// retrieve neighbor peers of the current peer (destination peers) 

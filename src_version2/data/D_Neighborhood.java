@@ -45,6 +45,7 @@ import config.Application;
 import config.Application_GUI;
 import config.DD;
 import config.Language;
+import data.D_Constituent.D_Constituent_Node;
 
 /**
 D_Neighborhood ::= SEQUENCE {
@@ -120,11 +121,8 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 
 	public boolean loaded_globals = false;
 	
-	private static Object monitor_object_factory = new Object();
 	//static Object lock_organization_GID_storage = new Object(); // duplicate of the above
-	public static int MAX_LOADED_CONSTS = 10000;
-	public static long MAX_CONSTS_RAM = 10000000;
-	private static final int MIN_CONSTS_RAM = 2;
+	private static Object monitor_object_factory = new Object();
 	D_Neighborhood_Node component_node = new D_Neighborhood_Node(null, null);
 		
 	public static D_Neighborhood getEmpty() {return new D_Neighborhood();}
@@ -346,24 +344,24 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public static class D_Neighborhood_Node {
 		private static final int MAX_TRIES = 30;
 		/** Currently loaded peers, ordered by the access time*/
-		private static DDP2P_DoubleLinkedList<D_Neighborhood> loaded_consts = new DDP2P_DoubleLinkedList<D_Neighborhood>();
-		private static Hashtable<Long, D_Neighborhood> loaded_const_By_LocalID = new Hashtable<Long, D_Neighborhood>();
+		private static DDP2P_DoubleLinkedList<D_Neighborhood> loaded_objects = new DDP2P_DoubleLinkedList<D_Neighborhood>();
+		private static Hashtable<Long, D_Neighborhood> loaded_By_LID = new Hashtable<Long, D_Neighborhood>();
 		//private static Hashtable<String, D_Neighborhood> loaded_const_By_GID = new Hashtable<String, D_Neighborhood>();
 		//private static Hashtable<String, D_Neighborhood> loaded_const_By_GIDhash = new Hashtable<String, D_Neighborhood>();
-		private static Hashtable<String, Hashtable<Long, D_Neighborhood>> loaded_const_By_GIDH_ORG = new Hashtable<String, Hashtable<Long, D_Neighborhood>>();
-		private static Hashtable<Long, Hashtable<String, D_Neighborhood>> loaded_const_By_ORG_GIDH = new Hashtable<Long, Hashtable<String, D_Neighborhood>>();
-		private static Hashtable<String, Hashtable<Long, D_Neighborhood>> loaded_const_By_GID_ORG = new Hashtable<String, Hashtable<Long, D_Neighborhood>>();
-		private static Hashtable<Long, Hashtable<String, D_Neighborhood>> loaded_const_By_ORG_GID = new Hashtable<Long, Hashtable<String, D_Neighborhood>>();
+		private static Hashtable<String, Hashtable<Long, D_Neighborhood>> loaded_By_GIDH_ORG = new Hashtable<String, Hashtable<Long, D_Neighborhood>>();
+		private static Hashtable<Long, Hashtable<String, D_Neighborhood>> loaded_By_ORG_GIDH = new Hashtable<Long, Hashtable<String, D_Neighborhood>>();
+		private static Hashtable<String, Hashtable<Long, D_Neighborhood>> loaded_By_GID_ORG = new Hashtable<String, Hashtable<Long, D_Neighborhood>>();
+		private static Hashtable<Long, Hashtable<String, D_Neighborhood>> loaded_By_ORG_GID = new Hashtable<Long, Hashtable<String, D_Neighborhood>>();
 		private static long current_space = 0;
 		
 		//return loaded_const_By_GID.get(GID);
-		private static D_Neighborhood getConstByGID(String GID, Long organizationLID) {
+		private static D_Neighborhood getByGID(String GID, Long organizationLID) {
 			if (organizationLID != null && organizationLID > 0) {
-				Hashtable<String, D_Neighborhood> t1 = loaded_const_By_ORG_GID.get(organizationLID);
+				Hashtable<String, D_Neighborhood> t1 = loaded_By_ORG_GID.get(organizationLID);
 				if (t1 == null || t1.size() == 0) return null;
 				return t1.get(GID);
 			}
-			Hashtable<Long, D_Neighborhood> t2 = loaded_const_By_GID_ORG.get(GID);
+			Hashtable<Long, D_Neighborhood> t2 = loaded_By_GID_ORG.get(GID);
 			if ((t2 == null) || (t2.size() == 0)) return null;
 			if ((organizationLID != null) && (organizationLID > 0))
 				return t2.get(organizationLID);
@@ -373,32 +371,48 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			return null;
 		}
 		//return loaded_const_By_GID.put(GID, c);
-		private static D_Neighborhood putConstByGID(String GID, Long organizationLID, D_Neighborhood c) {
-			Hashtable<Long, D_Neighborhood> v1 = loaded_const_By_GID_ORG.get(GID);
-			if (v1 == null) loaded_const_By_GID_ORG.put(GID, v1 = new Hashtable<Long, D_Neighborhood>());
-			D_Neighborhood result = v1.put(organizationLID, c);
-			
-			Hashtable<String, D_Neighborhood> v2 = loaded_const_By_ORG_GID.get(organizationLID);
-			if (v2 == null) loaded_const_By_ORG_GID.put(organizationLID, v2 = new Hashtable<String, D_Neighborhood>());
-			D_Neighborhood result2 = v2.put(GID, c);
-			
-			if (result == null) result = result2;
-			return result; 
-		}
-		//return loaded_const_By_GID.remove(GID);
-		private static D_Neighborhood remConstByGID(String GID, Long organizationLID) {
-			D_Neighborhood result = null;
-			D_Neighborhood result2 = null;
-			Hashtable<Long, D_Neighborhood> v1 = loaded_const_By_GID_ORG.get(GID);
-			if (v1 != null) {
-				result = v1.remove(organizationLID);
-				if (v1.size() == 0) loaded_const_By_GID_ORG.remove(GID);
+		private static D_Neighborhood putByGID(String GID, Long organizationLID, D_Neighborhood c) {
+			Hashtable<Long, D_Neighborhood> v1 = loaded_By_GID_ORG.get(GID);
+			if (v1 == null) loaded_By_GID_ORG.put(GID, v1 = new Hashtable<Long, D_Neighborhood>());
+
+			// section added for duplication control
+			D_Neighborhood old = v1.get(organizationLID);
+			if (old != null && old != c) {
+				Util.printCallPath("D_Neighborhood conflict: old="+old+" crt="+c);
+				return old;
 			}
 			
-			Hashtable<String, D_Neighborhood> v2 = loaded_const_By_ORG_GID.get(organizationLID);
+			D_Neighborhood result = v1.put(organizationLID, c);
+			
+			Hashtable<String, D_Neighborhood> v2 = loaded_By_ORG_GID.get(organizationLID);
+			if (v2 == null) loaded_By_ORG_GID.put(organizationLID, v2 = new Hashtable<String, D_Neighborhood>());
+			
+			// section added for duplication control
+			old = v2.get(GID);
+			if (old != null && old != c) {
+				Util.printCallPath("D_Neighborhood conflict: old="+old+" crt="+c);
+				//return old; // in this case, for consistency, store the new one
+			}
+			
+			D_Neighborhood result2 = v2.put(GID, c);
+			
+			//if (result == null) result = result2;
+			return c; //result; 
+		}
+		//return loaded_const_By_GID.remove(GID);
+		private static D_Neighborhood remByGID(String GID, Long organizationLID) {
+			D_Neighborhood result = null;
+			D_Neighborhood result2 = null;
+			Hashtable<Long, D_Neighborhood> v1 = loaded_By_GID_ORG.get(GID);
+			if (v1 != null) {
+				result = v1.remove(organizationLID);
+				if (v1.size() == 0) loaded_By_GID_ORG.remove(GID);
+			}
+			
+			Hashtable<String, D_Neighborhood> v2 = loaded_By_ORG_GID.get(organizationLID);
 			if (v2 != null) {
 				result2 = v2.remove(GID);
-				if (v2.size() == 0) loaded_const_By_ORG_GID.remove(organizationLID);
+				if (v2.size() == 0) loaded_By_ORG_GID.remove(organizationLID);
 			}
 			
 			if (result == null) result = result2;
@@ -408,13 +422,13 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 //			return getConstByGID(GID, Util.Lval(organizationLID));
 //		}
 		
-		private static D_Neighborhood getConstByGIDH(String GIDH, Long organizationLID) {
+		private static D_Neighborhood getByGIDH(String GIDH, Long organizationLID) {
 			if (organizationLID != null && organizationLID > 0) {
-				Hashtable<String, D_Neighborhood> t1 = loaded_const_By_ORG_GIDH.get(organizationLID);
+				Hashtable<String, D_Neighborhood> t1 = loaded_By_ORG_GIDH.get(organizationLID);
 				if (t1 == null || t1.size() == 0) return null;
 				return t1.get(GIDH);
 			}
-			Hashtable<Long, D_Neighborhood> t2 = loaded_const_By_GIDH_ORG.get(GIDH);
+			Hashtable<Long, D_Neighborhood> t2 = loaded_By_GIDH_ORG.get(GIDH);
 			if ((t2 == null) || (t2.size() == 0)) return null;
 			if ((organizationLID != null) && (organizationLID > 0))
 				return t2.get(organizationLID);
@@ -423,32 +437,48 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			}
 			return null;
 		}
-		private static D_Neighborhood putConstByGIDH(String GIDH, Long organizationLID, D_Neighborhood c) {
-			Hashtable<Long, D_Neighborhood> v1 = loaded_const_By_GIDH_ORG.get(GIDH);
-			if (v1 == null) loaded_const_By_GIDH_ORG.put(GIDH, v1 = new Hashtable<Long, D_Neighborhood>());
-			D_Neighborhood result = v1.put(organizationLID, c);
+		private static D_Neighborhood putByGIDH(String GIDH, Long organizationLID, D_Neighborhood c) {
+			Hashtable<Long, D_Neighborhood> v1 = loaded_By_GIDH_ORG.get(GIDH);
+			if (v1 == null) loaded_By_GIDH_ORG.put(GIDH, v1 = new Hashtable<Long, D_Neighborhood>());
 			
-			Hashtable<String, D_Neighborhood> v2 = loaded_const_By_ORG_GIDH.get(organizationLID);
-			if (v2 == null) loaded_const_By_ORG_GIDH.put(organizationLID, v2 = new Hashtable<String, D_Neighborhood>());
-			D_Neighborhood result2 = v2.put(GIDH, c);
-			
-			if (result == null) result = result2;
-			return result; 
-		}
-		//return loaded_const_By_GIDhash.remove(GIDH);
-		private static D_Neighborhood remConstByGIDH(String GIDH, Long organizationLID) {
-			D_Neighborhood result = null;
-			D_Neighborhood result2 = null;
-			Hashtable<Long, D_Neighborhood> v1 = loaded_const_By_GIDH_ORG.get(GIDH);
-			if (v1 != null) {
-				result = v1.remove(organizationLID);
-				if (v1.size() == 0) loaded_const_By_GIDH_ORG.remove(GIDH);
+			// section added for duplication control
+			D_Neighborhood old = v1.get(organizationLID);
+			if (old != null && old != c) {
+				Util.printCallPath("D_Neighborhood conflict: old="+old+" crt="+c);
+				return old;
 			}
 			
-			Hashtable<String, D_Neighborhood> v2 = loaded_const_By_ORG_GIDH.get(organizationLID);
+			D_Neighborhood result = v1.put(organizationLID, c);
+			
+			Hashtable<String, D_Neighborhood> v2 = loaded_By_ORG_GIDH.get(organizationLID);
+			if (v2 == null) loaded_By_ORG_GIDH.put(organizationLID, v2 = new Hashtable<String, D_Neighborhood>());
+			
+			// section added for duplication control
+			old = v2.get(GIDH);
+			if (old != null && old != c) {
+				Util.printCallPath("D_Neighborhood conflict: old="+old+" crt="+c);
+				//return old; // in this case, for consistency, store the new one
+			}
+			
+			D_Neighborhood result2 = v2.put(GIDH, c);
+			
+			//if (result == null) result = result2;
+			return c; //result; 
+		}
+		//return loaded_const_By_GIDhash.remove(GIDH);
+		private static D_Neighborhood remByGIDH(String GIDH, Long organizationLID) {
+			D_Neighborhood result = null;
+			D_Neighborhood result2 = null;
+			Hashtable<Long, D_Neighborhood> v1 = loaded_By_GIDH_ORG.get(GIDH);
+			if (v1 != null) {
+				result = v1.remove(organizationLID);
+				if (v1.size() == 0) loaded_By_GIDH_ORG.remove(GIDH);
+			}
+			
+			Hashtable<String, D_Neighborhood> v2 = loaded_By_ORG_GIDH.get(organizationLID);
 			if (v2 != null) {
 				result2 = v2.remove(GIDH);
-				if (v2.size() == 0) loaded_const_By_ORG_GIDH.remove(organizationLID);
+				if (v2.size() == 0) loaded_By_ORG_GIDH.remove(organizationLID);
 			}
 			
 			if (result == null) result = result2;
@@ -473,10 +503,107 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			if(!crt.loaded_globals) return;
 			if ((crt.getGID() != null) && (!crt.temporary)) {
 				byte[] message = crt.encode();
-				synchronized(loaded_consts) {
+				synchronized(loaded_objects) {
 					crt.component_node.message = message; // crt.encoder.getBytes();
 					if(crt.component_node.message != null) current_space += crt.component_node.message.length;
 				}
+			}
+		}
+		/**
+		 * This function is used to link an object by its LID when this is obtained
+		 * by storing an object already linked by its GIDH (if it was linked)
+		 * @param crt
+		 * @return
+		 * true if i is linked and false if it is not
+		 */
+		private static boolean register_newLID_ifLoaded(D_Neighborhood crt) {
+			if (DEBUG) System.out.println("D_Neighborhood: register_newLID_ifLoaded: start crt = "+crt);
+			synchronized (loaded_objects) {
+				//String gid = crt.getGID();
+				String gidh = crt.getGIDH();
+				long lid = crt.getLID();
+				if (gidh == null) {
+					if (_DEBUG) { System.out.println("D_Neighborhood: register_newLID_ifLoaded: had no gidh! no need of this call.");
+					Util.printCallPath("Path");}
+					return false;
+				}
+				if (lid <= 0) {
+					Util.printCallPath("Why call without LID="+crt);
+					return false;
+				}
+				
+				Long organizationLID = crt.getOrgLID();
+				if (organizationLID <= 0) {
+					Util.printCallPath("No orgLID="+crt);
+					return false;
+				}
+				D_Neighborhood old = getByGIDH(gidh, organizationLID);
+				if (old == null) {
+					if (DEBUG) System.out.println("D_Neighborhood: register_newLID_ifLoaded: was not registered.");
+					return false;
+				}
+				
+				if (old != crt)	{
+					Util.printCallPath("Different linking of: old="+old+" vs crt="+crt);
+					return false;
+				}
+				
+				Long oLID = new Long(lid);
+				D_Neighborhood _old = loaded_By_LID.get(oLID);
+				if (_old != null && _old != crt) {
+					Util.printCallPath("Double linking of: old="+_old+" vs crt="+crt);
+					return false;
+				}
+				loaded_By_LID.put(oLID, crt);
+				if (DEBUG) System.out.println("D_Neighborhood: register_newLID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
+
+				return true;
+			}
+		}
+		private static boolean register_newGID_ifLoaded(D_Neighborhood crt) {
+			if (DEBUG) System.out.println("D_Constituent: register_newGID_ifLoaded: start crt = "+crt);
+			crt.reloadMessage(); 
+			synchronized (loaded_objects) {
+				String gid = crt.getGID();
+				String gidh = crt.getGIDH();
+				long lid = crt.getLID();
+				if (gidh == null) {
+					Util.printCallPath("Why call without GIDH="+crt);
+					return false;
+				}
+				if (lid <= 0) {
+					if (_DEBUG) { System.out.println("D_Neighborhood: register_newGID_ifLoaded: had no lid! no need of this call.");
+					Util.printCallPath("Path");}
+					return false;
+				}
+				
+				Long organizationLID = crt.getOrgLID();
+				if (organizationLID <= 0) {
+					Util.printCallPath("No orgLID="+crt);
+					return false;
+				}
+				
+				Long oLID = new Long(lid);
+				D_Neighborhood _old = loaded_By_LID.get(oLID);
+				if (_old == null) {
+					if (DEBUG) System.out.println("D_Neighborhood: register_newGID_ifLoaded: was not loaded");
+					return false;
+				}
+				if (_old != null && _old != crt) {
+					Util.printCallPath("Using expired: old="+_old+" vs crt="+crt);
+					return false;
+				}
+				
+				D_Neighborhood_Node.putByGID(gid, crt.getOrgLID(), crt); //loaded_const_By_GID.put(gid, crt);
+				if (DEBUG) System.out.println("D_Neighborhood: register_newGID_ifLoaded: store gid="+gid);
+				D_Neighborhood_Node.putByGIDH(gidh, organizationLID, crt);//loaded_const_By_GIDhash.put(gidh, crt);
+				if (DEBUG) System.out.println("D_Neighborhood: register_newGID_ifLoaded: store gidh="+gidh);
+				
+				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
+				
+				if (DEBUG) System.out.println("D_Neighborhood: register_newGID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
+
+				return true;
 			}
 		}
 		/*
@@ -489,30 +616,38 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			}
 		}
 		*/
-		private static void register_loaded(D_Neighborhood crt) {
+		private static boolean register_loaded(D_Neighborhood crt) {
 			if (DEBUG) System.out.println("D_Neighborhood: register_loaded: start crt = "+crt);
 			crt.reloadMessage(); 
-			synchronized (loaded_consts) {
+			synchronized (loaded_objects) {
 				String gid = crt.getGID();
 				String gidh = crt.getGIDH();
 				long lid = crt.getLID();
 				Long organizationLID = crt.getOrgLID();
 				
-				loaded_consts.offerFirst(crt);
+				loaded_objects.offerFirst(crt);
 				if (lid > 0) {
-					loaded_const_By_LocalID.put(new Long(lid), crt);
+					// section added for duplication control
+					Long oLID = new Long(lid);
+					D_Neighborhood old = loaded_By_LID.get(oLID);
+					if (old != null && old != crt) {
+						Util.printCallPath("Double linking of: old="+old+" vs crt="+crt);
+						//return false;
+					}
+					
+					loaded_By_LID.put(new Long(lid), crt);
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: store lid="+lid+" crt="+crt.getGIDH());
 				}else{
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: no store lid="+lid+" crt="+crt.getGIDH());
 				}
 				if (gid != null) {
-					D_Neighborhood_Node.putConstByGID(gid, crt.getOrgLID(), crt); //loaded_const_By_GID.put(gid, crt);
+					D_Neighborhood_Node.putByGID(gid, crt.getOrgLID(), crt); //loaded_const_By_GID.put(gid, crt);
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: store gid="+gid);
 				} else {
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: no store gid="+gid);
 				}
 				if (gidh != null) {
-					D_Neighborhood_Node.putConstByGIDH(gidh, organizationLID, crt);//loaded_const_By_GIDhash.put(gidh, crt);
+					D_Neighborhood_Node.putByGIDH(gidh, organizationLID, crt);//loaded_const_By_GIDhash.put(gidh, crt);
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: store gidh="+gidh);
 				} else {
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: no store gidh="+gidh);
@@ -520,13 +655,13 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
 				
 				int tries = 0;
-				while ((loaded_consts.size() > MAX_LOADED_CONSTS)
-						|| (current_space > MAX_CONSTS_RAM)) {
-					if (loaded_consts.size() <= MIN_CONSTS_RAM) break; // at least _crt_peer and _myself
+				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_NEIGHS)
+						|| (current_space > SaverThreadsConstants.MAX_NEIGHS_RAM)) {
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_NEIGHS_RAM) break; // at least _crt_peer and _myself
 	
 					if (tries > MAX_TRIES) break;
 					tries ++;
-					D_Neighborhood candidate = loaded_consts.getTail();
+					D_Neighborhood candidate = loaded_objects.getTail();
 					if ((candidate.status_references > 0)
 							//||
 							//D_Neighborhood.is_crt_const(candidate)
@@ -538,13 +673,14 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 						continue;
 					}
 					
-					D_Neighborhood removed = loaded_consts.removeTail();//remove(loaded_peers.size()-1);
-					loaded_const_By_LocalID.remove(new Long(removed.getLID())); 
-					D_Neighborhood_Node.remConstByGID(removed.getGID(), removed.getOrgLID());//loaded_const_By_GID.remove(removed.getGID());
-					D_Neighborhood_Node.remConstByGIDH(removed.getGIDH(), removed.getOrgLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
+					D_Neighborhood removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
+					loaded_By_LID.remove(new Long(removed.getLID())); 
+					D_Neighborhood_Node.remByGID(removed.getGID(), removed.getOrgLID());//loaded_const_By_GID.remove(removed.getGID());
+					D_Neighborhood_Node.remByGIDH(removed.getGIDH(), removed.getOrgLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: remove GIDH="+removed.getGIDH());
 					if (removed.component_node.message != null) current_space -= removed.component_node.message.length;				
 				}
+				return true;
 			}
 		}
 		/**
@@ -552,11 +688,11 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		 * @param crt
 		 */
 		private static void setRecent(D_Neighborhood crt) {
-			loaded_consts.moveToFront(crt);
+			loaded_objects.moveToFront(crt);
 		}
 		public static boolean dropLoaded(D_Neighborhood removed, boolean force) {
 			boolean result = true;
-			synchronized(loaded_consts) {
+			synchronized(loaded_objects) {
 				if (removed.status_references > 0 || removed.get_DDP2P_DoubleLinkedList_Node() == null)
 					result = false;
 				if (! force && ! result) {
@@ -564,10 +700,10 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 					return result;
 				}
 				
-				loaded_consts.remove(removed);
-				if (removed.getLIDstr() != null) loaded_const_By_LocalID.remove(new Long(removed.getLID())); 
-				if (removed.getGID() != null) D_Neighborhood_Node.remConstByGID(removed.getGID(), removed.getOrgLID()); //loaded_const_By_GID.remove(removed.getGID());
-				if (removed.getGIDH() != null) D_Neighborhood_Node.remConstByGIDH(removed.getGIDH(), removed.getOrgLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
+				loaded_objects.remove(removed);
+				if (removed.getLIDstr() != null) loaded_By_LID.remove(new Long(removed.getLID())); 
+				if (removed.getGID() != null) D_Neighborhood_Node.remByGID(removed.getGID(), removed.getOrgLID()); //loaded_const_By_GID.remove(removed.getGID());
+				if (removed.getGIDH() != null) D_Neighborhood_Node.remByGIDH(removed.getGIDH(), removed.getOrgLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 				if (DEBUG) System.out.println("D_Neighborhood: drop_loaded: remove GIDH="+removed.getGIDH());
 				if (removed.component_node.message != null) current_space -= removed.component_node.message.length;	
 				if (DEBUG) System.out.println("D_Neighborhood: dropLoaded: exit with force="+force+" result="+result);
@@ -591,7 +727,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	static private D_Neighborhood getNeighByLID_AttemptCacheOnly (long ID, boolean load_Globals) {
 		if (ID <= 0) return null;
 		Long id = new Long(ID);
-		D_Neighborhood crt = D_Neighborhood_Node.loaded_const_By_LocalID.get(id);
+		D_Neighborhood crt = D_Neighborhood_Node.loaded_By_LID.get(id);
 		if (crt == null) return null;
 		
 		if (load_Globals && !crt.loaded_globals) {
@@ -678,7 +814,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	static private D_Neighborhood getNeighByGID_AttemptCacheOnly(String GID, Long organizationLID, boolean load_Globals) {
 		D_Neighborhood  crt = null;
 		if ((GID == null)) return null;
-		if ((GID != null)) crt = D_Neighborhood_Node.getConstByGID(GID, organizationLID); //.loaded_const_By_GID.get(GID);
+		if ((GID != null)) crt = D_Neighborhood_Node.getByGID(GID, organizationLID); //.loaded_const_By_GID.get(GID);
 		
 				
 		if (crt != null) {
@@ -767,7 +903,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	*/
 	@Deprecated
 	static public D_Neighborhood getNeighByGID(String GID, boolean load_Globals, boolean keep) {
-		System.out.println("Remove me setting orgID");
+		System.out.println("D_Neighborhood: getNeighByGID: Remove me setting orgID");
 		return getNeighByGID(GID, load_Globals, false, keep, null, -1);
 	}
 	static public D_Neighborhood getNeighByGID(String GID, boolean load_Globals, boolean keep, Long oID) {
@@ -963,6 +1099,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				if (DEBUG) System.out.println("D_Peer:storeRequest:startThread");
 				saverThread.start();
 			}
+			synchronized(saverThread) {saverThread.notify();}
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -1161,14 +1298,14 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if (this.creation_date == null) this.setCreationDate(Util.CalendargetInstance());
 		//this.global_organization_ID = orgGID;
 		if (this.getGID() == null) {
-			this.setGID(make_ID());
+			this.setGID_AndLink(make_ID());
 			if (DEBUG) System.out.println("WB_Neighborhood:sign: nGID="+this.getGID());
 		}
 		if(DEBUG) System.out.println("WB_Neighborhood:sign: this="+this+"\norgGID="+this.getOrgGID());
 		byte[] msg = this.getSignableEncoder().getBytes();
 		if(DEBUG) System.out.println("\nWB_Neighborhood:sign:got hash="+Util.byteToHexDump(msg)+"\n\tsk="+sk);
 		setSignature(Util.sign(msg, sk));
-		if(DEBUG) System.out.println("\nWB_Neighborhood:sign:got this="+Util.byteToHexDump(getSignature()));
+		if(DEBUG) System.out.println("\nWB_Neighborhood:sign: got this="+Util.byteToHexDump(getSignature()));
 		if(DEBUG) System.out.println("\nWB_Neighborhood:sign: equiv pk="+sk.getPK());
 		if(DD.VERIFY_AFTER_SIGNING_NEIGHBORHOOD)if(!verifySignature()) Util.printCallPath("Fail to test signature");
 		return getSignature();
@@ -1285,8 +1422,8 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		D_Neighborhood c = D_Neighborhood.getNeighByLID(LID, true, false);
 		if (c == null) {
 			if (_DEBUG) System.out.println("D_Neighborhood: getGIDFromLID: null for nLID = "+n_lID);
-			for (Long l : D_Neighborhood_Node.loaded_const_By_LocalID.keySet()) {
-				if (_DEBUG) System.out.println("D_Neighborhood: getGIDFromLID: available ["+l+"]"+D_Neighborhood_Node.loaded_const_By_LocalID.get(l).getGIDH());
+			for (Long l : D_Neighborhood_Node.loaded_By_LID.keySet()) {
+				if (_DEBUG) System.out.println("D_Neighborhood: getGIDFromLID: available ["+l+"]"+D_Neighborhood_Node.loaded_By_LID.get(l).getGIDH());
 			}
 			return null;
 		}
@@ -1508,7 +1645,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public static String dumpDirCache() {
 		String s = "[";
-		s += D_Neighborhood_Node.loaded_consts.toString();
+		s += D_Neighborhood_Node.loaded_objects.toString();
 		s += "]";
 		return s;
 	}
@@ -1549,30 +1686,39 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public String getGID() {
 		return global_neighborhood_ID;
 	}
+	public void setGID_AndLink (String gIDH) {
+		setGID(gIDH);
+		if (this.getGID() != null) // && isLoaded())
+			D_Neighborhood_Node.register_newGID_ifLoaded(this);
+	}	
 	public void setGID(String global_neighborhood_ID) {
+		this.global_neighborhood_ID = global_neighborhood_ID;
+		this.dirty_main = true;
+	}
+	public void setGID_AndLink_gross(String global_neighborhood_ID) {
 		boolean loaded_in_cache = this.isLoaded();
 		this.global_neighborhood_ID = global_neighborhood_ID;
 		this.dirty_main = true;
-		Long oID = this.organization_ID;
 		if (loaded_in_cache) {
+			Long oID = this.organization_ID;
 			if (this.getGID() != null)
-				D_Neighborhood_Node.putConstByGID(this.getGID(), oID, this); //.loaded_const_By_GID.put(this.getGID(), this);
+				D_Neighborhood_Node.putByGID(this.getGID(), oID, this); //.loaded_const_By_GID.put(this.getGID(), this);
 			if (this.getGIDH() != null)
-				D_Neighborhood_Node.putConstByGIDH(this.getGIDH(), oID, this); //.loaded_const_By_GIDhash.put(this.getGIDH(), this);
+				D_Neighborhood_Node.putByGIDH(this.getGIDH(), oID, this); //.loaded_const_By_GIDhash.put(this.getGIDH(), this);
 		}
 	}
 	public boolean isLoaded() {
 		String GIDH, GID;
-		if (!D_Neighborhood_Node.loaded_consts.inListProbably(this)) return false;
+		if (!D_Neighborhood_Node.loaded_objects.inListProbably(this)) return false;
 		long lID = this.getLID();
 		long oID = this.getOrgLID();
 		if (lID > 0)
-			if ( null != D_Neighborhood_Node.loaded_const_By_LocalID.get(new Long(lID)) ) return true;
+			if ( null != D_Neighborhood_Node.loaded_By_LID.get(new Long(lID)) ) return true;
 		if ((GIDH = this.getGIDH()) != null)
-			if ( null != D_Neighborhood_Node.getConstByGIDH(GIDH, oID) //.loaded_const_By_GIDhash.get(GIDH)
+			if ( null != D_Neighborhood_Node.getByGIDH(GIDH, oID) //.loaded_const_By_GIDhash.get(GIDH)
 			) return true;
 		if ((GID = this.getGID()) != null)
-			if ( null != D_Neighborhood_Node.getConstByGID(GID, oID)  //.loaded_const_By_GID.get(GID)
+			if ( null != D_Neighborhood_Node.getByGID(GID, oID)  //.loaded_const_By_GID.get(GID)
 			) return true;
 		return false;
 	}
@@ -1685,6 +1831,11 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public void setLID(long _neighborhoodID) {
 		this.neighborhoodID = Util.getStringID(_neighborhoodID);
 		this._neighborhoodID = _neighborhoodID;
+	}
+	public void setLID_AndLink(long _neighborhoodID) {
+		setLID(_neighborhoodID);
+		if (_neighborhoodID > 0)
+			D_Neighborhood_Node.register_newLID_ifLoaded(this);
 	}
 	public String getOrgGIDH() {
 		return D_Organization.getOrgGIDHashGuess(this.global_organization_ID);
@@ -1841,7 +1992,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				long _neig_local_ID = -1;
 				try {
 					_neig_local_ID = Application.db.insert(sync, table.neighborhood.TNAME, fields, params, DEBUG);
-					this.setLID(_neig_local_ID);
+					this.setLID_AndLink(_neig_local_ID);
 				} catch (Exception e) {
 					if (_DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: insert fail: "+this.getGID());
 					id = D_Neighborhood.getLIDstrFromGID(this.getGID(), this.organization_ID);
@@ -2078,10 +2229,13 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		this.names_subdivisions = r.names_subdivisions;
 		this.picture = r.picture;
 		this.signature = r.picture;
-		if (!Util.equalStrings_null_or_not(this.global_neighborhood_ID, r.global_neighborhood_ID)) {
-			this.global_neighborhood_ID = r.global_neighborhood_ID;
-			this.neighborhoodID = null;
-			this._neighborhoodID = -1;
+		if (! Util.equalStrings_null_or_not(this.global_neighborhood_ID, r.global_neighborhood_ID)) {
+			//this.global_neighborhood_ID = r.global_neighborhood_ID;
+			if (this.global_neighborhood_ID != null && r.global_neighborhood_ID != null) {
+				this.neighborhoodID = null;
+				this._neighborhoodID = -1;
+			}
+			setGID_AndLink(r.global_neighborhood_ID);
 		}
 		if (!Util.equalStrings_null_or_not(this.submitter_global_ID, r.submitter_global_ID)) {
 			this.submitter_global_ID = r.submitter_global_ID;
@@ -2432,6 +2586,9 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		}
 		return new ArrayList<ArrayList<Object>>();
 	}
+	public static int getNumberItemsNeedSaving() {
+		return _need_saving.size() + _need_saving_obj.size();
+	}
 }
 class D_Neighborhood_SaverThread extends util.DDP2P_ServiceThread {
 	//private static final long SAVER_SLEEP_ON_ERROR = 2000;
@@ -2449,6 +2606,7 @@ class D_Neighborhood_SaverThread extends util.DDP2P_ServiceThread {
 	public void _run() {
 		for (;;) {
 			if (stop) return;
+			if (data.SaverThreadsConstants.getNumberRunningSaverThreads() < SaverThreadsConstants.MAX_NUMBER_CONCURRENT_SAVING_THREADS && D_Neighborhood.getNumberItemsNeedSaving() > 0)
 			synchronized(saver_thread_monitor) {
 				new D_Neighborhood_SaverThreadWorker().start();
 			}
@@ -2483,7 +2641,10 @@ class D_Neighborhood_SaverThread extends util.DDP2P_ServiceThread {
 			*/
 			synchronized(this) {
 				try {
-					wait(SaverThreadsConstants.SAVER_SLEEP_BETWEEN_NEIGHBORHOOD_MSEC);
+					long timeout = (D_Neighborhood.getNumberItemsNeedSaving() > 0)?
+							SaverThreadsConstants.SAVER_SLEEP_BETWEEN_NEIGHBORHOOD_MSEC:
+								SaverThreadsConstants.SAVER_SLEEP_WAITING_NEIGHBORHOOD_MSEC;
+					wait(timeout);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -2501,6 +2662,12 @@ class D_Neighborhood_SaverThreadWorker extends util.DDP2P_ServiceThread {
 		//start ();
 	}
 	public void _run() {
+		synchronized (SaverThreadsConstants.monitor_threads_counts) {SaverThreadsConstants.threads_neig ++;}
+		try{__run();} catch (Exception e){}
+		synchronized (SaverThreadsConstants.monitor_threads_counts) {SaverThreadsConstants.threads_neig --;}
+	}
+	@SuppressWarnings("unused")
+	public void __run() {
 		synchronized(D_Neighborhood_SaverThread.saver_thread_monitor) {
 			D_Neighborhood de;
 			boolean edited = true;
@@ -2519,7 +2686,7 @@ class D_Neighborhood_SaverThreadWorker extends util.DDP2P_ServiceThread {
 				else D_Neighborhood.need_saving_remove(de);//, de.instance);
 				if (DEBUG) System.out.println("D_Neighborhood_Saver: loop removed need_saving flag");
 				// try 3 times to save
-				for (int k = 0; k < 3; k++) {
+				for (int k = 0; k < data.SaverThreadsConstants.ATTEMPTS_ON_ERROR; k++) {
 					try {
 						if (DEBUG) System.out.println("D_Neighborhood_Saver: loop will try saving k="+k);
 						de.storeAct();

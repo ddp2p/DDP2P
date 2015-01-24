@@ -208,13 +208,13 @@ public class UpdateMessages {
 		}
 		if (_maxDate[0] != null) sa.upToDate = Util.getCalendar(_maxDate[0]);
 		else sa.upToDate = asr.lastSnapshot;
-		if(DEBUG) out.println("UpdateMessages:buildAnswer: EXIT with Answer: "+sa);
+		if (DEBUG) out.println("UpdateMessages:buildAnswer: EXIT with Answer: "+sa);
 		return sa;
 	}
 	/**
 	 * DD.ACCEPT_STREAMING_ANSWER_FROM_NEW_PEERS : to exit automatically on new peer
 	 * 
-	 * @param asa : arriving data
+	 * @param payloadReceived : arriving data
 	 * @param s_address : socket of sender
 	 * @param src : caller object (for debugging)
 	 * @param _global_peer_ID
@@ -224,7 +224,7 @@ public class UpdateMessages {
 	 * @throws ASN1DecoderFail
 	 * @throws P2PDDSQLException
 	 */
-	public static boolean integrateUpdate(ASNSyncPayload asa, InetSocketAddress s_address, Object src,
+	public static boolean integrateUpdate(ASNSyncPayload payloadReceived, InetSocketAddress s_address, Object src,
 			String _global_peer_ID, D_PeerInstance instance,
 			String _peer_ID, String address_ID, RequestData __rq,
 			D_Peer _received_peer,
@@ -250,38 +250,38 @@ public class UpdateMessages {
 			}
 		}
 		
-		DD.ed.fireClientUpdate(new CommEvent(src, null, s_address, "Integrating", asa.toSummaryString()));
+		DD.ed.fireClientUpdate(new CommEvent(src, null, s_address, "Integrating", payloadReceived.toSummaryString()));
 		
 		// Integrate peers
 		// First store just the peer contacting us, in the case he is new.
 		// Here we can block him if we want blocking as default for new ones
 		//
 		
-		if ((peer_ID <= 0) && (asa.responderGID != null)) {
-			if (asa.tables != null) {
+		if ((peer_ID <= 0) && (payloadReceived.responderGID != null)) {
+			if (payloadReceived.tables != null) {
 				if (DEBUG) err.println("UpdateMessages:integrateUpdate: tackle peers tables");
 				//Calendar tables_date=asa.tables.snapshot;
-				for (int k = 0; k < asa.tables.tables.length; k ++) {
+				for (int k = 0; k < payloadReceived.tables.tables.length; k ++) {
 					if (DEBUG) err.println("Client: Handling table: "+
-							asa.tables.tables[k].name+", rows="+asa.tables.tables[k].rows.length);
-					if (table.peer.G_TNAME.equals(asa.tables.tables[k].name)) {
+							payloadReceived.tables.tables[k].name+", rows="+payloadReceived.tables.tables[k].rows.length);
+					if (table.peer.G_TNAME.equals(payloadReceived.tables.tables[k].name)) {
 						D_Peer p;
-						p = UpdatePeersTable.integratePeersTable(asa, _received_peer, asa.tables.tables[k], asa.responderGID);
+						p = UpdatePeersTable.integratePeersTable(payloadReceived, _received_peer, payloadReceived.tables.tables[k], payloadReceived.responderGID);
 						if (p != null) {
 							peer_ID = p.getLID();
 							_peer_ID = p.getLIDstr();
 						}
 						continue;
 					}
-					if (table.news.G_TNAME.equals(asa.tables.tables[k].name)) continue;
-					if (_DEBUG) err.println("Client: I do not handle table: "+asa.tables.tables[k].name);
+					if (table.news.G_TNAME.equals(payloadReceived.tables.tables[k].name)) continue;
+					if (_DEBUG) err.println("Client: I do not handle table: "+payloadReceived.tables.tables[k].name);
 				}
 			}
 		
 			// Trying again to recover peer object, in case it was just saved from the message at this moment
 			if (peer_ID <= 0) {
 				if (DEBUG) out.println("UpdateMessages:integrateUpdate: null peerID");
-				D_Peer p = D_Peer.getPeerByGID_or_GIDhash(asa.responderGID, null, false, false, false, null);
+				D_Peer p = D_Peer.getPeerByGID_or_GIDhash(payloadReceived.responderGID, null, false, false, false, null);
 				_peer_ID = null;
 				if (p != null) {
 					if (DEBUG) out.println("UpdateMessages:integrateUpdate: get from peer p:"+p);
@@ -296,7 +296,7 @@ public class UpdateMessages {
 					peer_ID = -1; // Util.lval(_peer_ID, -1);
 				}
 				if (peer_ID <= 0) {
-					if (DEBUG || DD.DEBUG_TODO) err.println("UpdateMessages:integrateUpdate: peer unknown GID not annouced in message:"+asa.responderGID);
+					if (DEBUG || DD.DEBUG_TODO) err.println("UpdateMessages:integrateUpdate: peer unknown GID not annouced in message:"+payloadReceived.responderGID);
 					if (!DD.ACCEPT_STREAMING_ANSWER_FROM_ANONYMOUS_PEERS) {
 						if (_DEBUG) out.println("UpdateMessages:integrateUpdate: not accepting from anonymous");
 						return false;
@@ -306,40 +306,40 @@ public class UpdateMessages {
 		}
 		// else
 		{
-			if (asa.tables != null) {
+			if (payloadReceived.tables != null) {
 				if (DEBUG) err.println("UpdateMessages:integrateUpdate: tackle peers tables");
 			  // Calendar tables_date=asa.tables.snapshot;
-			  for (int k = 0; k < asa.tables.tables.length; k ++) {
+			  for (int k = 0; k < payloadReceived.tables.tables.length; k ++) {
 				if (DEBUG) err.println("Client: Handling table: "+
-						asa.tables.tables[k].name+", rows="+asa.tables.tables[k].rows.length);
-				if (table.peer.G_TNAME.equals(asa.tables.tables[k].name)) {
-						UpdatePeersTable.integratePeersTable(asa, _received_peer, asa.tables.tables[k], null); continue;
+						payloadReceived.tables.tables[k].name+", rows="+payloadReceived.tables.tables[k].rows.length);
+				if (table.peer.G_TNAME.equals(payloadReceived.tables.tables[k].name)) {
+						UpdatePeersTable.integratePeersTable(payloadReceived, _received_peer, payloadReceived.tables.tables[k], null); continue;
 				}
-				if (table.news.G_TNAME.equals(asa.tables.tables[k].name)) continue;
-				if (_DEBUG) err.println("Client: I do not handle table: "+asa.tables.tables[k].name);
+				if (table.news.G_TNAME.equals(payloadReceived.tables.tables[k].name)) continue;
+				if (_DEBUG) err.println("Client: I do not handle table: "+payloadReceived.tables.tables[k].name);
 			  }
 			}
 		}
 		
 		// Integrate news
-		if (asa.tables != null) {
+		if (payloadReceived.tables != null) {
 			if (DEBUG) err.println("UpdateMessages:integrateUpdate: tackle news tables");
 		  //Calendar tables_date=asa.tables.snapshot;
-		  for (int k = 0; k < asa.tables.tables.length; k ++) {
+		  for (int k = 0; k < payloadReceived.tables.tables.length; k ++) {
 			if (DEBUG) err.println("Client: Handling table: "+
-					asa.tables.tables[k].name+", rows="+asa.tables.tables[k].rows.length);
-			if (table.peer.G_TNAME.equals(asa.tables.tables[k].name)) continue;
-			if (table.news.G_TNAME.equals(asa.tables.tables[k].name)) {
-				UpdateNewsTable.integrateNewsTable(asa.tables.tables[k]); continue;
+					payloadReceived.tables.tables[k].name+", rows="+payloadReceived.tables.tables[k].rows.length);
+			if (table.peer.G_TNAME.equals(payloadReceived.tables.tables[k].name)) continue;
+			if (table.news.G_TNAME.equals(payloadReceived.tables.tables[k].name)) {
+				UpdateNewsTable.integrateNewsTable(payloadReceived.tables.tables[k]); continue;
 			}
-			if (_DEBUG) err.println("Client: I do not handle table: "+asa.tables.tables[k].name);
+			if (_DEBUG) err.println("Client: I do not handle table: "+payloadReceived.tables.tables[k].name);
 		  }
 		}
 		
 		// Distribute data to plugins
-		if (asa.plugin_data_set!=null){
+		if (payloadReceived.plugin_data_set!=null){
 			if (DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nUpdateMessages: integrateUpdate: will distribute to plugins");
-			asa.plugin_data_set.distributeToPlugins(_global_peer_ID);
+			payloadReceived.plugin_data_set.distributeToPlugins(_global_peer_ID);
 		} else {
 			if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nUpdateMessages: integrateUpdate: nothing for plugins");
 			
@@ -348,27 +348,27 @@ public class UpdateMessages {
 		boolean future_requests = false;
 		
 		// Reset lastsyncdate for changed orgs
-		if (asa.changed_orgs != null) { // currently implemented only in group (one date per peer, not per peer per org)
-			if (DEBUG || DD.DEBUG_CHANGED_ORGS) err.println("UpdateMessages:integrateUpdate: changed_orgs="+Util.nullDiscrimArray(asa.changed_orgs.toArray(new ResetOrgInfo[0]),"--"));
-			handleChangedOrgs(asa, _peer_ID);
+		if (payloadReceived.changed_orgs != null) { // currently implemented only in group (one date per peer, not per peer per org)
+			if (DEBUG || DD.DEBUG_CHANGED_ORGS) err.println("UpdateMessages:integrateUpdate: changed_orgs="+Util.nullDiscrimArray(payloadReceived.changed_orgs.toArray(new ResetOrgInfo[0]),"--"));
+			handleChangedOrgs(payloadReceived, _peer_ID);
 		} else {
 			if (DEBUG || DD.DEBUG_CHANGED_ORGS) err.println("UpdateMessages:integrateUpdate: changed_orgs=null");
 		}
 		if (instance != null)
-			D_PluginInfo.recordPluginInfo(instance.peer_instance, asa.plugins, _global_peer_ID, _peer_ID);
+			D_PluginInfo.recordPluginInfo(instance.peer_instance, payloadReceived.plugins, _global_peer_ID, _peer_ID);
 		else
-			D_PluginInfo.recordPluginInfo(null, asa.plugins, _global_peer_ID, _peer_ID);
+			D_PluginInfo.recordPluginInfo(null, payloadReceived.plugins, _global_peer_ID, _peer_ID);
 		
 		// Store requested. Put newly obtained in obtained_sr, and newly detected missing in sq_sr 
-		Calendar snapshot_date = asa.upToDate;
+		Calendar snapshot_date = payloadReceived.upToDate;
 		HashSet<String> orgs = new HashSet<String>();
 		Hashtable<String, RequestData> obtained_sr = new Hashtable<String, RequestData>();
 		Hashtable<String, RequestData> missing_sr = new Hashtable<String, RequestData>();
 		if (DEBUG || DD.DEBUG_CHANGED_ORGS) err.println("UpdateMessages: integrateUpdate: srs: obtained="+obtained_sr.size()+" - missing="+missing_sr.size());
 		
 		String crt_date = Util.getGeneralizedTime();
-		WB_Messages.store(asa, _received_peer, asa.requested, missing_sr, obtained_sr, orgs, " from:"+peer_ID+" ");
-		if (DEBUG || DD.DEBUG_CHANGED_ORGS) err.println("UpdateMessages: integrateUpdate: srs:"
+		WB_Messages.store(payloadReceived, _received_peer, payloadReceived.requested, missing_sr, obtained_sr, orgs, " from:"+peer_ID+" ");
+		if (DEBUG || DD.DEBUG_CHANGED_ORGS || DD.DEBUG_TMP_GIDH_MANAGEMENT) err.println("UpdateMessages: integrateUpdate: srs:"
 				+ "\n obtained=#["+obtained_sr.size()+"]"+Util.concat(obtained_sr, ":")+" -"
 				+ "\n missing=#["+missing_sr.size()+"]"+Util.concat(missing_sr, ":"));
 		integrate_GIDs_accounting(missing_sr, obtained_sr, _global_peer_ID, peer_ID, _received_peer);
@@ -376,17 +376,17 @@ public class UpdateMessages {
 		Hashtable<String, String> missing_peers = new Hashtable<String, String>();
 
 		// Integrating organization data
-		if (asa.orgData != null) {
+		if (payloadReceived.orgData != null) {
 			if (DEBUG) err.println("UpdateMessages:integrateUpdate: tackle org");
 			String[] _orgID = new String[1];
 			//boolean changes = false;
 			Calendar arrival__time = Util.CalendargetInstance();
 			String arrival_time;
-			for (int i = 0; i < asa.orgData.length; i ++) {
-				if (DEBUG) out.println("Will integrate ["+i+"]: "+asa.orgData[i]);
-				if (asa.orgData[i] == null) continue;
-				String org_gidh = asa.orgData[i].getGIDH_or_guess();
-				String org_gid  = asa.orgData[i].getGID();
+			for (int i = 0; i < payloadReceived.orgData.length; i ++) {
+				if (DEBUG) out.println("Will integrate ["+i+"]: "+payloadReceived.orgData[i]);
+				if (payloadReceived.orgData[i] == null) continue;
+				String org_gidh = payloadReceived.orgData[i].getGIDH_or_guess();
+				String org_gid  = payloadReceived.orgData[i].getGID();
 				boolean b = D_Organization.verifyGIDhash(org_gid, org_gidh, false);
 				if (! b || (org_gidh == null)) {
 					System.err.println("UpdateMessages: integrateUpdate: wrong pair of GIDs: "+ b+" gID="+
@@ -397,7 +397,7 @@ public class UpdateMessages {
 				D_Organization org = 
 						D_Organization.getOrgByGID_or_GIDhash_NoCreate(null, org_gidh, true, false);
 						//D_Organization.getOrgByGID(asa.orgData[i].global_organization_ID, true, false);
-				asa.orgData[i].getLocalIDfromGIDandBlock(); // set blocking if new
+				payloadReceived.orgData[i].getLocalIDfromGIDandBlock(); // set blocking if new
 				//long organization_ID = Util.lval(D_Organization.getLocalOrgID_fromGIDIfNotBlocked(asa.orgData[i].global_organization_ID), -1);
 				//if(organization_ID>0) asa.orgData[i].organization_ID = Util.getStringID(organization_ID);
 				OrgPeerDataHashes opdh = null;
@@ -424,7 +424,7 @@ public class UpdateMessages {
 				//_rq.purge(obtained);
 				arrival_time = Encoder.getGeneralizedTime(Util.incCalendar(arrival__time, 1));
 				//boolean changed = 
-				OrgHandling.updateOrg(asa, asa.orgData[i], _orgID, arrival_time, _sol_rq, _new_rq, _received_peer); // integrated other data, stores all if not blocked
+				OrgHandling.updateOrg(payloadReceived, payloadReceived.orgData[i], _orgID, arrival_time, _sol_rq, _new_rq, _received_peer); // integrated other data, stores all if not blocked
 
 				org = D_Organization.getOrgByGID_or_GIDhash_NoCreate(null, org_gidh, true, false);
 				for (String p : _new_rq.peers.keySet()) {
@@ -434,7 +434,7 @@ public class UpdateMessages {
 				//changes |= changed;
 				
 				//Store last date, for filtering org
-				String fdate = asa.orgData[i]._last_sync_date;
+				String fdate = payloadReceived.orgData[i]._last_sync_date;
 				//if(fdate!=null) //should never happen
 				if ((_orgID[0] != null) && (_peer_ID != null)) {
 					if (DEBUG) out.println("UpdateMessages:integrateUpdate: peer update lastsd");
@@ -446,23 +446,25 @@ public class UpdateMessages {
 //						new String[]{fdate, _peer_ID, _orgID[0]});
 				}
 				if ((peer_ID <= 0) || org == null) {// || (asa.orgData[i].getLID() <= 0)) {
-					if (_DEBUG) out.println("UpdateMessages: integrateUpdate: NOT SAVING maybe blocked ["+i+"]: "+asa.orgData[i]+" from "+peer_ID);
+					if (_DEBUG) out.println("UpdateMessages: integrateUpdate: NOT SAVING maybe blocked ["+i+"]: "+payloadReceived.orgData[i]+" from "+peer_ID);
 					continue;
 				}
 				// and save future specific requests
-				if (! asa.orgData[i].blocked) {
+				if (! payloadReceived.orgData[i].blocked) {
 					if (DEBUG) out.println("UpdateMessages:integrateUpdate: org not blocked");
 					if (org != null) {
 						opdh = org.getSpecificRequest();
 						if (opdh != null) {
+							if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) out.println("UpdateMessages: integrateUpdate: initial specReq: "+opdh);
 							opdh.updateAfterChanges(old_rq, _sol_rq, _new_rq, peer_ID, crt_date);
 							if (!opdh.empty()) future_requests = true;
 							//opdh.save(asa.orgData[i].getLID(), peer_ID, _received_peer);
 							opdh.save(org.getLID(), peer_ID, _received_peer);
+							if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) out.println("UpdateMessages: integrateUpdate: final specReq: "+opdh);
 						}
 					}
 				} else {
-					if(_DEBUG) out.println("UpdateMessages: integrateUpdate: blocked ["+i+"]: "+asa.orgData[i]);					
+					if(_DEBUG) out.println("UpdateMessages: integrateUpdate: blocked ["+i+"]: "+payloadReceived.orgData[i]);					
 				}
 				//updateDataToRequest(asa.orgData[i], _rq);
 
@@ -474,7 +476,7 @@ public class UpdateMessages {
 		
 		// Store information about needed data
 		SpecificRequest sp = new SpecificRequest();
-		evaluate_interest(asa.advertised, sp); // check existing/non-blocked data and insert wished one into sp, store sp in orgs
+		evaluate_interest(payloadReceived.advertised, sp); // check existing/non-blocked data and insert wished one into sp, store sp in orgs
 		if (store_detected_interests(sp, peer_ID, crt_date, _received_peer)) {
 			if (DEBUG) out.println("UpdateMessages:integrateUpdate: have new future requests");
 			future_requests = true;
@@ -488,27 +490,29 @@ public class UpdateMessages {
 				new String[]{gdate, _global_peer_ID});
 		*/
 		_received_peer = D_Peer.getPeerByPeer_Keep(_received_peer);
-		if (instance != null && pulled) {
-			if (DEBUG) System.out.println("UpdateMessages: integrateUpdate: gdate="+gdate+" inst=["+instance+"]");
-			_received_peer.setLastSyncDate_dirty(instance, gdate, false);
-		} else {
-			if (DEBUG) System.out.println("UpdateMessages: integrateUpdate: gdate="+gdate+" null inst=["+instance+"]");		
-		}
-		
-		// Update date for the address that has contacted me
-		Calendar crtDate = Util.CalendargetInstance();
-		String _crtDate = Encoder.getGeneralizedTime(crtDate);
-		if (address_ID != null) {
-			if (DEBUG) out.println("UpdateMessages:integrateUpdate: update conn: "+address_ID);
-			_received_peer.updateAddress_LastConnection(_crtDate, address_ID);
-		} else {
-			if (DEBUG) out.println("UpdateMessages:integrateUpdate: update conn dir= "+s_address);
-			_received_peer.updateAddress_LastConnection(_crtDate, s_address);
-		}
-		if (instance != null) {
-			_received_peer.updateAddress_LastConnection_Instance(crtDate, instance.get_peer_instance());
-		}
-		if (_received_peer.dirty_any()) _received_peer.storeRequest();
+		try {
+			if (instance != null && pulled) {
+				if (DEBUG) System.out.println("UpdateMessages: integrateUpdate: gdate="+gdate+" inst=["+instance+"]");
+				_received_peer.setLastSyncDate_dirty(instance, gdate, false);
+			} else {
+				if (DEBUG) System.out.println("UpdateMessages: integrateUpdate: gdate="+gdate+" null inst=["+instance+"]");		
+			}
+			
+			// Update date for the address that has contacted me
+			Calendar crtDate = Util.CalendargetInstance();
+			String _crtDate = Encoder.getGeneralizedTime(crtDate);
+			if (address_ID != null) {
+				if (DEBUG) out.println("UpdateMessages:integrateUpdate: update conn: "+address_ID);
+				_received_peer.updateAddress_LastConnection(_crtDate, address_ID);
+			} else {
+				if (DEBUG) out.println("UpdateMessages:integrateUpdate: update conn dir= "+s_address);
+				_received_peer.updateAddress_LastConnection(_crtDate, s_address);
+			}
+			if (instance != null) {
+				_received_peer.updateAddress_LastConnection_Instance(crtDate, instance.get_peer_instance());
+			}
+			if (_received_peer.dirty_any()) _received_peer.storeRequest();
+		} catch (Exception e){e.printStackTrace();}
 		_received_peer.releaseReference();
 //			Application.db.updateNoSync(table.peer_address.TNAME, new String[]{table.peer_address.my_last_connection}, new String[]{table.peer_address.peer_address_ID},
 //					new String[]{crtDate, address_ID});
@@ -592,11 +596,11 @@ public class UpdateMessages {
 			
 			OrgPeerDataHashes old = OrgPeerDataHashes.get(orgID);
 			if (old != null) {
-				if (DEBUG) out.println("UpdateMessages: store_detected_interests: stored old ["+orgID+"]->"+old);
+				if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) out.println("UpdateMessages: store_detected_interests: start stored old ["+orgID+"]->"+old);
 				old.add(rq, _peer_ID, generalizedTime);
 				if ( ! rq.empty()) result |= true;
 				old.save(orgID, _peer_ID, peer);
-				if (DEBUG) out.println("UpdateMessages: store_detected_interests: stored got ["+orgID+"]->"+old);
+				if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) out.println("UpdateMessages: store_detected_interests: final stored got ["+orgID+"]->"+old);
 			} else {
 				if (_DEBUG) out.println("UpdateMessages:store_detected_interests: not storing interests for orgid ="+orgID);
 			}
@@ -762,13 +766,14 @@ public class UpdateMessages {
 		//integrate_peer_GIDs_accounting(missing_sr, obtained_sr, _global_peer_ID, _peer_ID, peer, date);
 		if (DEBUG) System.out.println("Updateessages: integrate_GIDs_accounting: #"+orgs.size());
 		for (String o : orgs) {
+			
 			if (WB_Messages.PEER_POOL.equals(o)) {
 				if (DEBUG) System.out.println("Updateessages: integrate_GIDs_accounting: "+o);
 				GlobalClaimedDataHashes _opdh = GlobalClaimedDataHashes.get(); //orgID_hash
 				_opdh.addPeers(missing_sr.get(o).peers, _peer_ID, date);
 				_opdh.purge(obtained_sr.get(o));
 				_opdh.save();//oID, _peer_ID, peer
-				if (DEBUG) System.out.println("Updateessages: integrate_GIDs_accounting: done peers");
+				if (_DEBUG) System.out.println("Updateessages: integrate_GIDs_accounting: done peers:"+_opdh);
 				continue;
 			}
 			if (WB_Messages.NEWS_POOL.equals(o)) {
@@ -785,15 +790,27 @@ public class UpdateMessages {
 				_opdh.save();//oID, _peer_ID, peer
 				continue;
 			}
-			long oID = D_Organization.getLIDbyGID(o);
+			
+		
+			D_Organization org = D_Organization.getOrgByGID_or_GIDhash(o, o, true, false, false, null);
+			//D_Organization.getOrgByLID_NoKeep(o, true);
+
 			//String orgID_hash = D_Organization.getOrgIDhash(oID);
-			if (oID <= 0) {
+			if (org == null) {
 				Util.printCallPath("UpdateMessages: integrate_GIDs_accounting: unknown org: \""+o+"\"");
 				System.out.println("UpdateMessages: integrate_GIDs_accounting: missing: "+ missing_sr.get(o));
 				System.out.println("UpdateMessages: integrate_GIDs_accounting: obtained: "+ obtained_sr.get(o));
 				continue;
 			}
-			OrgPeerDataHashes _opdh = OrgPeerDataHashes.get(oID); //orgID_hash
+			long oID = org.getLID(); //D_Organization.getLIDbyGID(o);
+			if (oID <= 0) {
+				Util.printCallPath("UpdateMessages: integrate_GIDs_accounting: unknown org: \""+o+"\"");
+				continue;
+			}
+			
+			OrgPeerDataHashes _opdh = org.getSpecificRequest(); // OrgPeerDataHashes.get(oID); //orgID_hash
+			if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UpdateMessages: integrate_GIDs_accounting: start: "+ _opdh);
+			
 			_opdh.add(missing_sr.get(o), _peer_ID, date);
 			_opdh.purge(obtained_sr.get(o));
 			_opdh.save(oID, _peer_ID, peer);
@@ -803,6 +820,8 @@ public class UpdateMessages {
 			_rq.purge(obtained_sr.get(o));
 			_rq.save(oID);
 			*/
+			if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UpdateMessages: integrate_GIDs_accounting: final: "+ _opdh);
+
 		}
 	}
 	/**

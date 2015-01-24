@@ -40,7 +40,6 @@ import config.Application_GUI;
 import config.DD;
 import config.Identity;
 import data.D_Tester;
-import data.D_UpdatesKeysInfo;
 class TesterSaverThread extends Thread {
 	DD_Testers ds;
 
@@ -57,9 +56,9 @@ class TesterSaverThread extends Thread {
 	public void _run() throws P2PDDSQLException{
     	for (D_Tester d : ds.testers) {
     		d.store();
-    		D_UpdatesKeysInfo uki = new D_UpdatesKeysInfo(d);
-			if (uki.existsInDB()) uki.store("update"); 
-			else uki.store("insert");
+//    		D_Tester uki = new D_Tester(d);
+//			if (uki.existsInDB()) uki.store(); 
+//			else uki.store();
     	}
 	}
 }

@@ -175,8 +175,6 @@ class PluginThread extends DDP2P_ServiceThread {
 						DD.touchClient();
 					} catch (NumberFormatException e1) {
 						e1.printStackTrace();
-					} catch (P2PDDSQLException e1) {
-						e1.printStackTrace();
 					}
 				break;
 			case PluginRequest.STORE:

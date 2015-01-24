@@ -22,6 +22,7 @@ package config;
  
 import static util.Util.__;
 import hds.Address;
+import hds.Client2;
 import hds.ClientSync;
 import hds.DirectoryAnswerMultipleIdentities;
 import hds.DirectoryServer;
@@ -164,18 +165,21 @@ public class DD {
 	 */
 	//public static final byte TYPE_DD_IDENTITY_VERIFICATION = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)30);
 	//public static final byte TYPE_DD_IDENTITY_VERIFICATION_ANSWER = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)29);
+	public static short getPositive(short tag) {
+		if (tag >= 0) return tag;
+		return (short)(0x7fff & tag);
+	}
 	/**
-	 * SIGN of images
+	 * SIGN of images (must all be positive, to enable them as ASN1 tags!)
 	 */
 	public static final short STEGO_SIGN_PEER = 0x0D0D;
 	public static final short STEGO_SIGN_DIRECTORY_SERVER = 0x1881;
 	public static final short STEGO_SIGN_CONSTITUENT_VERIF_ANSWER = 0x3EE3;
 	public static final short STEGO_SIGN_MIRRORS = 0x4774;
 	public static final short STEGO_SIGN_TESTERS = 0x588C;
-	public static final short STEGO_SK = (short) 0xBEEF;
+	public static final short STEGO_SK = 0x3EEF; //getPositive((short) 0xBEEF);
 	public static final short STEGO_SIGN_CONSTITUENT_VERIF_REQUEST = 0x7AAD;
-	public static final short STEGO_SLOGAN = (short) 0xDEAD;
-
+	public static final short STEGO_SLOGAN = 0x5EAD; //getPositive((short) 0xDEAD);
 	/**
 	 * class(2bits)||pc(1b)||number
 	 * @param classASN1
@@ -889,12 +893,12 @@ public class DD {
     	*/
 	}
 	static public boolean startDirectoryServer(boolean on, int port) throws NumberFormatException, P2PDDSQLException {
-		DirectoryServer ds= Application.ds;
+		DirectoryServer ds= Application.g_DirectoryServer;
 		
 		if (on == false) {
 			if (ds != null) {
 				ds.turnOff();
-				Application.ds=null;
+				Application.g_DirectoryServer=null;
 				//DirectoryServer.db=null;
 				if(DEBUG)System.out.println("DD:startDirectoryServer:Turning off");
 				return true;
@@ -914,8 +918,8 @@ public class DD {
 			else port = DirectoryServer.PORT;
 		}
 		try {
-			Application.ds = new DirectoryServer(port);
-			Application.ds.start();
+			Application.g_DirectoryServer = new DirectoryServer(port);
+			Application.g_DirectoryServer.start();
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
@@ -923,11 +927,11 @@ public class DD {
 		return true;
 	}
 	static public boolean startServer(boolean on, Identity peer_id) throws NumberFormatException, P2PDDSQLException {
-		Server as = Application.as;
+		Server as = Application.g_TCPServer;
 		if(DEBUG)System.err.println("Will set server as="+as+" id="+peer_id);
 		if (on == false) {
 			if (as != null) {
-				as.turnOff(); Application.as=null;
+				as.turnOff(); Application.g_TCPServer=null;
 				if(DEBUG)System.err.println("Turned off");
 				return true;
 			} else {
@@ -940,8 +944,8 @@ public class DD {
 			return false;
 		}
 		try {
-			Application.as = new Server(peer_id);
-			Application.as.start();
+			Application.g_TCPServer = new Server(peer_id);
+			Application.g_TCPServer.start();
 		} catch (Exception e) {
 			if(DEBUG)System.err.println("Error:"+e);
 			//e.printStackTrace();
@@ -949,13 +953,21 @@ public class DD {
 		}
 		return true;
 	}
+	/**
+	 * 
+	 * @param on To turn on or off.
+	 * @param peer_id This is the peer_identity as set in the database.
+	 * @return
+	 * @throws NumberFormatException
+	 * @throws P2PDDSQLException
+	 */
 	static public boolean startUServer(boolean on, Identity peer_id) throws NumberFormatException, P2PDDSQLException {
 		//boolean DEBUG = true;
-		UDPServer aus = Application.aus;
+		UDPServer aus = Application.g_UDPServer;
 		if(DEBUG) System.err.println("Will set server aus="+aus+" id="+peer_id);
 		if (on == false) {
 			if (aus != null) {
-				aus.turnOff(); Application.aus=null;
+				aus.turnOff(); Application.g_UDPServer=null;
 				if(DEBUG) System.err.println("Turned off");
 				return true;
 			} else {
@@ -969,9 +981,9 @@ public class DD {
 		}
 		try {
 			if(DEBUG) System.err.println("DD:startUServ: <init>");
-			Application.aus = new UDPServer(peer_id);
+			Application.g_UDPServer = new UDPServer(peer_id);
 			if(DEBUG) System.err.println("DD:startUServ: <init> done, start");
-			Application.aus.start();
+			Application.g_UDPServer.start();
 		} catch (Exception e) {
 			if(DEBUG) System.err.println("Error:"+e);
 			//e.printStackTrace();
@@ -979,34 +991,57 @@ public class DD {
 		}
 		return true;
 	}
+	/**
+	 * 
+	 * @param on 
+	 *   If on is false then the client processed is stopped.
+	 * @return
+	 * false on error/no need to start, or when nothing to stop
+	 * @throws NumberFormatException
+	 * @throws P2PDDSQLException
+	 */
 	static public boolean startClient(boolean on) throws NumberFormatException, P2PDDSQLException {
-		IClient ac = Application.ac;
+		boolean DEBUG = DD.DEBUG || Client2.DEBUG || ClientSync.DEBUG;
+		if (DEBUG) System.out.println("DD: startClient: " + on);
+		IClient old_client = Application.g_PollingStreamingClient;
 		
 		if (on == false) {
-			if (ac != null) {
-				ac.turnOff();
-				Application.ac=null;
+			if (old_client != null) {
+				old_client.turnOff();
+				Application.g_PollingStreamingClient=null;
 				return true;
 			} else {
 				return false;
 			}
 		}
 		// Here on = true
-		if(ac != null) return false;
+		if (old_client != null) return false;
 		try {
-			Application.ac = ClientSync.startClient();
+			Application.g_PollingStreamingClient = ClientSync.startClient();
 		} catch (Exception e) {
 			return false;
 		}
+		if (DEBUG) System.out.println("Client2: startClient: done");
 		return true;
 	}
-	static public void touchClient() throws NumberFormatException, P2PDDSQLException {
-		IClient ac = Application.ac;
-		if(ac==null) {
-			startClient(true);
-			ac = Application.ac;
+	/**
+	 * Method to make the client wake up from sleep and retry connections (e.g. after new addresses are received from directories)
+	 */
+	static public boolean touchClient() {//throws NumberFormatException, P2PDDSQLException {
+		boolean result = true;
+		IClient old_client = Application.g_PollingStreamingClient;
+		if (old_client == null) {
+			try {
+				DD.startClient(true);
+			} catch (Exception e) {
+				e.printStackTrace();
+				result = false;
+				return result;
+			}
+			old_client = Application.g_PollingStreamingClient;
 		}
-		ac.wakeUp();
+		old_client.wakeUp();
+		return result;
 	}
 
 	public static SK getConstituentSK(long constituentID) throws P2PDDSQLException {
@@ -1195,6 +1230,8 @@ public class DD {
 	 */
 	public static final String APP_STOP_RECOMMENDATION_OF_TESTERS = "STOP_RECOMMENDATION_OF_TESTERS";
 	public static final String APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS = "APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS";
+	public static final String AUTOMATIC_TESTERS_RATING_BY_SYSTEM = "AUTOMATIC_TESTERS_RATING_BY_SYSTEM";
+	public static final boolean DEBUG_TMP_GIDH_MANAGEMENT = false;
 	public static boolean DEBUG_COMMUNICATION_ADDRESSES = false;
 	public static boolean DEBUG_COMMUNICATION_STUN = false;
 	public static int MAX_ORG_ICON_LENGTH = 20000;
@@ -1314,8 +1351,8 @@ public class DD {
 	 * @throws IOException
 	 */
 	public static String loadBMP(File file, StegoStructure[] adr, int[] selected) throws IOException {
-		String explain="";
-		boolean fail= false;
+		String explain = null;
+		boolean fail = false;
 		FileInputStream fis=new FileInputStream(file);
 		byte[] b = new byte[(int) file.length()];
 		fis.read(b);
@@ -1332,11 +1369,12 @@ public class DD {
 			try {
 				EmbedInMedia.setSteganoBytes(adr, selected, b, offset, word_bytes, bits);
 			} catch (ASN1DecoderFail e1) {
+				e1.printStackTrace();
 				explain = " - "+ __("No valid data in picture!");
 				fail = true;
 			}
 		}
-		if (fail) {
+		if (! fail) {
 			return null;
 		}
 		return explain;
@@ -1581,5 +1619,31 @@ public class DD {
 		ConstituentHandling.DEBUG = true;
 		/*
 		*/
+	}
+	final static public Object stop_monitor = new Object();
+	/**
+	 * Stop servers and wait for the saving threads to stop, sleeping 2 seconds at a time.
+	 */
+	public static void clean_exit() {
+        System.out.println("Exiting attempt...");
+        // Here should first stop servers!
+        try {
+            DD.startUServer(false, null);
+            DD.startServer(false, null);
+            DD.startClient(false);
+            DD.startDirectoryServer(false, 0);
+            System.out.println("Servers Closed...");
+        }catch (Exception er){er.printStackTrace();}
+       	System.out.println("StartUpThread: exitingIcon: items to save: "+data.SaverThreadsConstants.getNumberRunningSaverWaitingItems());
+        while (data.SaverThreadsConstants.getNumberRunningSaverWaitingItems() > 0) {
+        	System.out.println("StartUpThread: exitingIcon: still items to save: "+data.SaverThreadsConstants.getNumberRunningSaverWaitingItems());
+        	synchronized(stop_monitor){try {
+        		stop_monitor.wait(2000);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}}
+        }
+        System.out.println("Exiting...");
+        System.exit(0); // exit from tray icon
 	}
 }

@@ -325,7 +325,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    	widgets.updates.UpdatesModel.DEBUG = val;
 	    	widgets.updates.UpdatesTable.DEBUG = val;
 	    	data.D_SoftwareUpdatesReleaseInfoByTester.DEBUG = val;
-	    	data.D_UpdatesKeysInfo.DEBUG = val;
+	    	data.D_Tester.DEBUG = val;
 	    	data.D_MirrorInfo.DEBUG = val;
 	    	data.D_Tester.DEBUG = val;
 	    } else if (source == this.m_dbgUpdates) {
@@ -1093,21 +1093,21 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 
 		if(DD.GUI){
 			if(EventQueue.isDispatchThread()) {
-				if(Application.as!=null) startServer.setText(STOP_SERVER);
+				if(Application.g_TCPServer!=null) startServer.setText(STOP_SERVER);
 				else startServer.setText(START_SERVER);		
 			}else{
 				if(run)
 					EventQueue.invokeLater(new Runnable() {
 						public void run(){
-							if(Application.as!=null) startServer.setText(STOP_SERVER);
+							if(Application.g_TCPServer!=null) startServer.setText(STOP_SERVER);
 							else startServer.setText(START_SERVER);		
 						}
 					});
 			}
 		}
-		if(DEBUG)System.err.println("Save Setting: "+Application.as);
+		if(DEBUG)System.err.println("Save Setting: "+Application.g_TCPServer);
 
-		DD.setAppText(DD.DD_DATA_SERVER_ON_START, (Application.as==null)?"0":"1");
+		DD.setAppText(DD.DD_DATA_SERVER_ON_START, (Application.g_TCPServer==null)?"0":"1");
 	}
 	public void setUServerStatus(boolean _run) throws NumberFormatException, P2PDDSQLException  {
 		if(DEBUG)System.out.println("ControlPane:Setting userver running status to: "+_run);
@@ -1141,21 +1141,21 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		if(DEBUG)System.err.println("Done Setting: "+_run);
 		if(DD.GUI) {
 			if(EventQueue.isDispatchThread()) {
-				if(Application.aus!=null) startUServer.setText(STOP_USERVER);
+				if(Application.g_UDPServer!=null) startUServer.setText(STOP_USERVER);
 				else startUServer.setText(START_USERVER);		
 			}
 			else
 				EventQueue.invokeLater(new Runnable(){
 					public void run(){
-						if(Application.aus!=null) startUServer.setText(STOP_USERVER);
+						if(Application.g_UDPServer!=null) startUServer.setText(STOP_USERVER);
 						else startUServer.setText(START_USERVER);		
 					}
 				});
 		}
 		
-		if(DEBUG)System.err.println("Save Setting: "+Application.aus);
+		if(DEBUG)System.err.println("Save Setting: "+Application.g_UDPServer);
 		
-		DD.setAppBoolean(DD.DD_DATA_USERVER_INACTIVE_ON_START, DD.DD_DATA_USERVER_ON_START_DEFAULT^(Application.aus!=null));
+		DD.setAppBoolean(DD.DD_DATA_USERVER_INACTIVE_ON_START, DD.DD_DATA_USERVER_ON_START_DEFAULT^(Application.g_UDPServer!=null));
 
 		if(DEBUG)System.err.println("ControlPane:userv:done");
 
@@ -1235,18 +1235,18 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 
 		if(DD.GUI){
 			if(EventQueue.isDispatchThread()) {
-				if(Application.ac!=null) startClient.setText(STOP_CLIENT);
+				if(Application.g_PollingStreamingClient!=null) startClient.setText(STOP_CLIENT);
 				else startClient.setText(START_CLIENT);
 			}else{
 				EventQueue.invokeLater(new Runnable() {
 					public void run(){
-						if(Application.ac!=null) startClient.setText(STOP_CLIENT);
+						if(Application.g_PollingStreamingClient!=null) startClient.setText(STOP_CLIENT);
 						else startClient.setText(START_CLIENT);
 					}
 				});
 			}
 		}
-		DD.setAppBoolean(DD.DD_DATA_CLIENT_INACTIVE_ON_START, DD.DD_DATA_CLIENT_ON_START_DEFAULT^(Application.ac!=null));	
+		DD.setAppBoolean(DD.DD_DATA_CLIENT_INACTIVE_ON_START, DD.DD_DATA_CLIENT_ON_START_DEFAULT^(Application.g_PollingStreamingClient!=null));	
 	}
 	public void setDirectoryStatus(boolean run) throws NumberFormatException, P2PDDSQLException {
 				if(run) DD.startDirectoryServer(true, -1);
@@ -1256,19 +1256,19 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 
 				if(DD.GUI){
 					if(EventQueue.isDispatchThread()) {
-						if(Application.ds!=null) startDirectoryServer.setText(STOP_DIR);
+						if(Application.g_DirectoryServer!=null) startDirectoryServer.setText(STOP_DIR);
 						else startDirectoryServer.setText(START_DIR);
 					}
 					else
 						EventQueue.invokeLater(new Runnable() {
 							public void run(){
-								if(Application.ds!=null) startDirectoryServer.setText(STOP_DIR);
+								if(Application.g_DirectoryServer!=null) startDirectoryServer.setText(STOP_DIR);
 								else startDirectoryServer.setText(START_DIR);
 							}
 						});
 				}
-				DD.setAppText(DD.DD_DIRECTORY_SERVER_ON_START, (Application.ds==null)?"0":"1");		
-				if(DEBUG) System.out.println("ControlPanel:setDirStatus:DS running="+Application.ds);
+				DD.setAppText(DD.DD_DIRECTORY_SERVER_ON_START, (Application.g_DirectoryServer==null)?"0":"1");		
+				if(DEBUG) System.out.println("ControlPanel:setDirStatus:DS running="+Application.g_DirectoryServer);
 	}
 	//@Override
 	public void actionPerformed(ActionEvent e) {
@@ -1330,9 +1330,9 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				if(DEBUG)System.out.println("Broadcastable will be toggled to ="+val);
 				HandlingMyself_Peer.setAmIBroadcastable(val);
 			}else if ("server".equals(e.getActionCommand())) {
-				setServerStatus(Application.as == null);
+				setServerStatus(Application.g_TCPServer == null);
 			}else if ("userver".equals(e.getActionCommand())) {
-				setUServerStatus(Application.aus == null);
+				setUServerStatus(Application.g_UDPServer == null);
 			}else if ("broadcast_server".equals(e.getActionCommand())) {
 				if(DEBUG)System.out.println("Action Broadcast Server");
 				DD.setBroadcastServerStatus(Application.g_BroadcastServer == null);
@@ -1355,11 +1355,11 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				if (DEBUG || ClientUpdates.DEBUG) System.out.println("ControlPane: actionPerformed: object _run = "+_run);
 				setClientUpdatesStatus(_run);
 			}else if ("client".equals(e.getActionCommand())) {
-				setClientStatus(Application.ac == null);
+				setClientStatus(Application.g_PollingStreamingClient == null);
 			}else if ("t_client".equals(e.getActionCommand())) {
 				DD.touchClient();
 			}else if ("directory".equals(e.getActionCommand())) {
-				setDirectoryStatus(Application.ds == null);
+				setDirectoryStatus(Application.g_DirectoryServer == null);
 			}else if ("peerID".equals(e.getActionCommand())) {
 				//MyselfHandling.createMyPeerID();
 				String name = HandlingMyself_Peer.getMyPeerName(); //Identity.current_peer_ID.name;
@@ -1705,8 +1705,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 							for (int k = 0; k < adr.length; k ++) {
 								if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif try adr#="+k+"/"+adr.length);
 								try {
-									if (! new BigInteger(""+adr[k].getSignShort()).equals(new Decoder(addBy).getTagValueBN())) {
-										if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif not ASN1 tag of ="+adr[k].getClass());
+									BigInteger expected = new BigInteger(""+adr[k].getSignShort());
+									BigInteger _found = new Decoder(addBy).getTagValueBN();
+									if (! expected.equals(_found)) {
+										if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif not ASN1 tag of ="+adr[k].getClass()+" "+expected+" vs "+_found);
 										continue;
 									}
 									adr[k].setBytes(addBy);
@@ -1759,7 +1761,9 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 					if ("bmp".equals(Util.getExtension(file))) {
 						//System.err.println("Got: bmp");
 						String explain = DD.loadBMP(file, adr, selected);
+						if (DEBUG) System.err.println("ControlPanel: actionImport: Saving expl=\""+explain+"\"");
 						boolean fail = explain != null; //false;
+						if (DEBUG) System.err.println("ControlPanel: actionImport: Saving fail="+fail);
 						/*
 						FileInputStream fis=new FileInputStream(file);
 						//System.err.println("Got: open");
@@ -1799,12 +1803,15 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 						}
 					}
 	        	if (selected[0] != -1) {
-					if (DEBUG) System.err.println("Got Data: "+adr[selected[0]]);
+	        		// boolean DEBUG = true;
+					if (DEBUG) System.err.println("ControlPanel: actionImport: Got Data: "+adr[selected[0]]);
 		        	Application_GUI.warning(adr[selected[0]].getNiceDescription(), __("Obtained Data (CP)"));
 		        	//adr[selected[0]].save();
 					new util.DDP2P_ServiceThread("Stego Saver Import", false, adr[selected[0]]) {
+						// boolean DEBUG = true;
 						public void _run() {
 							try {
+								if (DEBUG) System.err.println("ControlPanel: actionImport: Saving");
 								((StegoStructure)ctx).save();
 							} catch (P2PDDSQLException e) {
 								e.printStackTrace();
@@ -1812,8 +1819,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 						}
 					}.start();
 	        	}
-	        }catch(IOException e3){
-	        	
+	        }catch(Exception e3){
+	        	e3.printStackTrace();
 	        }
 	    }		
 	}

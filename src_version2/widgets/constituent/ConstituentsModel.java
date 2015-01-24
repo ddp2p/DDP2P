@@ -141,7 +141,7 @@ class AddressAncestors {
 		return value+"::"+fieldID;
 	}
 }
-abstract class ConstituentsBranch extends ConstituentsNode{
+abstract class ConstituentsBranch extends ConstituentsNode {
 	protected static final boolean DEBUG = false;
 	int nchildren = 0;
 	ConstituentsModel model;
@@ -455,7 +455,7 @@ class ConstituentsIDNode extends ConstituentsBranch {
 		String org_hash = D_Organization.getOrgGIDHashGuess(tree.getModel().getOrgGID());
 		ClientSync.addToPayloadFix(streaming.RequestData.CONS, hash, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 	}
-	public void block(ConstituentsTree tree) {
+	public void toggle_block(ConstituentsTree tree) {
 		try {
 			D_Constituent constit = D_Constituent.getConstByLID(this.constituent.constituentID, true, true);
 			boolean blocked = constit.toggleBlock();
@@ -467,7 +467,7 @@ class ConstituentsIDNode extends ConstituentsBranch {
 			return;
 		}
 	}
-	public void broadcast(ConstituentsTree tree) {
+	public void toggle_broadcast(ConstituentsTree tree) {
 		try {
 			D_Constituent constit = D_Constituent.getConstByLID(this.constituent.constituentID, true, true);
 			boolean broadcast = constit.toggleBroadcast();
@@ -1024,6 +1024,8 @@ class ConstituentsAddressNode extends ConstituentsBranch {
     		        ", fv."+table.constituent.submitter_ID +
     		        ", fv."+table.constituent.slogan +
     		        ", fv."+table.constituent.email +
+		        ", fv."+table.constituent.blocked +
+		        ", fv."+table.constituent.broadcasted +
     				" FROM "+table.constituent.TNAME+" AS fv " +
     						
 				tables+" WHERE fv."+table.constituent.organization_ID+" = ? "+where+" GROUP BY fv."+table.constituent.constituent_ID+";";
@@ -1043,6 +1045,8 @@ class ConstituentsAddressNode extends ConstituentsBranch {
 		        ", fv."+table.constituent.submitter_ID +
 		        ", fv."+table.constituent.slogan +
 		        ", fv."+table.constituent.email +
+		        ", fv."+table.constituent.blocked +
+		        ", fv."+table.constituent.broadcasted +
    				" FROM "+table.constituent.TNAME+" as fv WHERE " +
     				table.constituent.neighborhood_ID+" = ?;";
     		//// using this instead of similar commented lines above
@@ -1071,6 +1075,8 @@ class ConstituentsAddressNode extends ConstituentsBranch {
     		if(obj!=null) forename = obj.toString();else forename = null;
     		obj = identities_i.get(2);
     		if(obj!=null) constituentID = obj.toString();else constituentID = "-1";
+       		boolean blocked = "1".equals(Util.getString(identities_i.get(8)));
+       		boolean broadcasted = "1".equals(Util.getString(identities_i.get(9)));
        		boolean external = "1".equals(Util.getString(identities_i.get(3)));
        		//boolean external = Util.ival(identities.get(i).get(3),-1);
        		long submitterID = Util.lval(identities_i.get(5),-1);
@@ -1082,6 +1088,8 @@ class ConstituentsAddressNode extends ConstituentsBranch {
     		//data.inserted_by_me=(model.constituentID == external);
     		data.inserted_by_me=(model.getConstituentIDMyself() == submitterID);
     		data.external = external;
+    		data.blocked = blocked;
+    		data.broadcast = broadcasted;
        		slogan = Util.getString(identities_i.get(6));
        		email = Util.getString(identities_i.get(7));
     		data.slogan = slogan;
@@ -1887,6 +1895,8 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 			//data.inserted_by_me=(model.constituentID == external);
 			data.inserted_by_me=((getConstituentIDMyself() == submitterID)&&(getConstituentIDMyself()>=0));
 			data.external = external;
+			data.blocked = c.blocked;
+			data.broadcast = c.broadcasted;
 			slogan = c.getSlogan(); //Util.getString(identities_i.get(6));
 			email = c.getEmail(); //Util.getString(identities_i.get(7));
 			data.slogan = slogan;

@@ -85,7 +85,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	 */
 	public static boolean transferringPeerAnswerMessage(String global_peer_ID, String instance) {
 		if (global_peer_ID == null) return false;
-		for (UDPMessage um : Application.aus.recvMessages.values()) {
+		for (UDPMessage um : Application.g_UDPServer.recvMessages.values()) {
 			if (global_peer_ID.equals(um.sender_GID) && Util.equalStrings_null_or_not(instance, um.sender_instance) &&
 					(um.type == DD.MSGTYPE_SyncAnswer)) {
 				if (DEBUG) System.out.println("UDPServer: transfAnswer:now="+Util.CalendargetInstance().getTimeInMillis()+" checks="+um.checked +"/"+ DD.UDP_SENDING_CONFLICTS);
@@ -94,7 +94,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 				if (um.checked > DD.UDP_SENDING_CONFLICTS) { // potentially lost
 					continue; // return false; //let it go further!
 				}
-				Application.aus.sendReclaim(um);
+				Application.g_UDPServer.sendReclaim(um);
 				return true;
 			}
 		}
@@ -114,7 +114,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	 */
 	public static boolean transferringPeerRequestMessage(String global_peer_ID, String instance) {
 		if (global_peer_ID == null) return false;
-		for (UDPMessage um : Application.aus.sentMessages.values()) {
+		for (UDPMessage um : Application.g_UDPServer.sentMessages.values()) {
 			if (global_peer_ID.equals(um.destination_GID) && Util.equalStrings_null_or_not(instance, um.sender_instance) &&
 					(um.type == DD.MSGTYPE_SyncRequest) ) {
 				um.checked ++;
@@ -122,7 +122,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 					continue; //return false; //let it go further!
 				if (um.no_ack_received()) {
 					try {
-						Application.aus.reclaim(um);
+						Application.g_UDPServer.reclaim(um);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -141,7 +141,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 	 * @return
 	 */
 	public static boolean transferringPeerMessage(String global_peer_ID, String instance) {
-		if (Application.aus == null) return false;
+		if (Application.g_UDPServer == null) return false;
 		if (transferringPeerAnswerMessage(global_peer_ID, instance)) return true;
 		if (transferringPeerRequestMessage(global_peer_ID, instance)) return true;
 		return false;
@@ -734,7 +734,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			try_connect(_port);
 			getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
 			Identity.udp_server_port = getUDPSocket().getLocalPort();
-			Application.aus = this;
+			Application.g_UDPServer = this;
 			if(DEBUG)System.out.println("UDP Local port obtained is: "+Identity.udp_server_port);
 			//Server.detectDomain(Identity.udp_server_port);
 
@@ -767,7 +767,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 			if (DEBUG) System.out.println("UDPServer:<init>: start, connected");
 			getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
 			Identity.udp_server_port = getUDPSocket().getLocalPort();
-			Application.aus = this;
+			Application.g_UDPServer = this;
 			if (DEBUG) System.out.println("UDPServer:<init>: Local port obtained is: "+Identity.udp_server_port);
 			//Server.detectDomain(Identity.udp_server_port);
 			if (DEBUG) System.out.println("UDPServer:<init>: domain detected");
@@ -1067,10 +1067,11 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		UDPServer.announceMyselfToDirectories();
 		if (DEBUG) System.out.println("UDPServer:_run: peer ID just set & broadcast");
 
-		synchronized(Client2.conn_monitor) {
-			if (Client2.conn == null)
-				Client2.conn  = new Connections(Application.db);
-		}
+		Client2.startConnections();
+//		synchronized(Client2.conn_monitor) {
+//			if (Client2.conn == null)
+//				Client2.conn  = new Connections(Application.db);
+//		}
 
 		DD.ed.fireServerUpdate(new CommEvent(this, null, null, "LOCAL", "UDPServer starting at:"+Identity.udp_server_port));
 		//this.announceMyselfToDirectories();
@@ -1275,7 +1276,7 @@ public class UDPServer extends util.DDP2P_ServiceThread {
 		}
 	}
 	public static boolean isRunning() {
-		return Application.aus != null;
+		return Application.g_UDPServer != null;
 	}
 	public static DatagramSocket getUDPSocket() {
 		return ds;

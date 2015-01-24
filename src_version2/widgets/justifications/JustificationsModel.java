@@ -920,7 +920,19 @@ public class JustificationsModel extends AbstractTableModel implements TableMode
 			break;
 			*/
 		//}
-		_m.storeRequest();
+		if (col == this.TABLE_COL_BROADCASTED) {
+			if (value instanceof Boolean)
+				_m.setBroadcasted((Boolean)value);
+		}
+		if (col == this.TABLE_COL_BLOCKED) {
+			if (value instanceof Boolean)
+				_m.setBlocked((Boolean)value);
+		}
+		if (col == this.TABLE_COL_TMP) {
+			if (value instanceof Boolean)
+				_m.setTemporaryCheck((Boolean)value);
+		}
+		if (_m.dirty_any()) _m.storeRequest();
 		_m.releaseReference();
 		//fireTableCellUpdated(row, col);
 		this.fireTableRowsUpdated(row, row);

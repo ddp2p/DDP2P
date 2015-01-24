@@ -672,34 +672,36 @@ class D_Vote extends ASNObj{
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
-	public long store(streaming.RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
-		return store(null, sol_rq, new_rq);
+	public long store(streaming.RequestData sol_rq, RequestData new_rq, D_Peer __peer) throws P2PDDSQLException {
+		return store(null, sol_rq, new_rq, __peer);
 	}
-	public long store(PreparedMessage pm, streaming.RequestData sol_rq, RequestData new_rq) throws P2PDDSQLException {
-		D_Peer __peer = null;
+	public long store(PreparedMessage pm,
+			streaming.RequestData sol_rq, RequestData new_rq, D_Peer __peer) throws P2PDDSQLException {
 		boolean default_blocked = false;
 		boolean default_blocked_mot = false;
 		boolean default_blocked_just = false;
 		if(DEBUG) System.out.println("D_Vote:store: signature start");
 		
+		/*
 		boolean locals = fillLocals(new_rq, true, true, true, true, true);
 		if (! locals) {
 			if (_DEBUG) System.out.println("D_Vote:store: I do not store this since I do not have some of its refered elements:"+this);
 			return -1;
 		}
+		*/
 		
-		if(!this.verifySignature()){
-			if(_DEBUG) System.out.println("D_Vote:store: signature test failure="+this);
-			if(! DD.ACCEPT_UNSIGNED_DATA)
+		if (! this.verifySignature()) {
+			if (_DEBUG) System.out.println("D_Vote:store: signature test failure="+this);
+			if (! DD.ACCEPT_UNSIGNED_DATA)
 				if(_DEBUG) System.out.println("D_Vote:store: signature test quit");
 				return -1;
 		}
-		if(DEBUG) System.out.println("D_Vote:store: signature storing");
+		if (DEBUG) System.out.println("D_Vote:store: signature storing");
 
 		String _old_date[] = new String[1];
 		if ((this.getLIDstr() == null) && (this.getGID() != null))
 			this.setLID(getLocalIDandDateforGID(this.getGID(),_old_date));
-		if(this.getLIDstr() != null ) {
+		if (this.getLIDstr() != null ) {
 			String old_date = _old_date[0];//getDateFor(this.vote_ID);
 			if(old_date != null) {
 				String new_date = Encoder.getGeneralizedTime(this.getCreationDate());
@@ -713,12 +715,9 @@ class D_Vote extends ASNObj{
 			}
 		}
 		
-		config.Application_GUI.inform_arrival(this, __peer);
-
-		
-		if((this.getOrganizationLIDstr() == null ) && (this.getOrganizationGID() != null))
+		if ((this.getOrganizationLIDstr() == null ) && (this.getOrganizationGID() != null))
 			this.setOrganizationLID(D_Organization.getLIDstrByGID_(this.getOrganizationGID()));
-		if((this.getOrganizationLIDstr() == null ) && (this.getOrganizationGID() != null)) {
+		if ((this.getOrganizationLIDstr() == null ) && (this.getOrganizationGID() != null)) {
 			setOrganizationLID(""+data.D_Organization.insertTemporaryGID(getOrganizationGID(), __peer));
 			new_rq.orgs.add(getOrganizationGID());
 		}
@@ -737,15 +736,23 @@ class D_Vote extends ASNObj{
 			new_rq.moti.add(getMotionGID());
 		}
 
-		if ((this.getJustificationLIDstr() == null) && (this.getJustificationGID() != null))
-			this.setJustificationLID(D_Justification.getLIDstrFromGID(this.getJustificationGID(), Util.Lval(this.getOrganizationLIDstr()), Util.Lval(this.getMotionLIDstr())));
-		
 		if ((this.getJustificationLIDstr() == null) && (this.getJustificationGID() != null)) {
-			this.setJustificationLID(Util.getStringID(D_Justification.insertTemporaryGID(getJustificationGID(), Util.lval(this.getOrganizationLIDstr()), Util.lval(this.getMotionLIDstr()), __peer, default_blocked_just)));
-			new_rq.just.add(getJustificationGID());
+			String jLID = D_Justification.getLIDstrFromGID(this.getJustificationGID(), Util.Lval(this.getOrganizationLIDstr()), Util.Lval(this.getMotionLIDstr()));
+			if (DEBUG) System.out.println("D_Vote: store: previous jLID="+jLID);
+			this.setJustificationLID(jLID);
 		}
+		if ((this.getJustificationLIDstr() == null) && (this.getJustificationGID() != null)) {
+			long jLID = D_Justification.insertTemporaryGID(getJustificationGID(), Util.lval(this.getOrganizationLIDstr()), Util.lval(this.getMotionLIDstr()), __peer, default_blocked_just);
+			String _jLID = Util.getStringID(jLID);
+			this.setJustificationLID(_jLID);
+			if (DEBUG) System.out.println("D_Vote: store: previous jLID="+jLID+" _jLID="+_jLID);
+			new_rq.just.add(getJustificationGID());
+		} else {
+			if (DEBUG) System.out.println("D_Vote: store: previous jLID="+this.getJustificationLIDstr());
+		}
+		if (sol_rq != null) sol_rq.sign.put(this.getGID(), DD.EMPTYDATE);
 
-		if(sol_rq!=null)sol_rq.sign.put(this.getGID(), DD.EMPTYDATE);
+		config.Application_GUI.inform_arrival(this, __peer);
 		
 		return storePMVerified(pm);
 	
@@ -778,6 +785,7 @@ class D_Vote extends ASNObj{
 				new String[]{sign_GID, mot_ID},
 				DEBUG);
 	}
+	/*
 	private static String getDateFor(String signID) throws P2PDDSQLException {
 		String sql = "SELECT "+table.signature.creation_date+" FROM "+table.signature.TNAME+
 		" WHERE "+table.signature.signature_ID+"=?;";
@@ -785,6 +793,7 @@ class D_Vote extends ASNObj{
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
+	
 	public boolean fillLocals(RequestData new_rq, boolean tempOrg, boolean default_blocked_org, boolean tempConst, boolean tempMotion, boolean tempJust) throws P2PDDSQLException {
 		if (DEBUG) System.out.println("D_Vote: fillLocals: start");
 		D_Peer __peer = null;
@@ -875,6 +884,7 @@ class D_Vote extends ASNObj{
 		if (DEBUG) System.out.println("D_Vote: fillLocals: done success");
 		return true;
 	}
+	*/
 	/**
 	 * Filling all GIDs needed for packing and sending the vote away.
 	 * @throws P2PDDSQLException

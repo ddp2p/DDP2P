@@ -20,11 +20,7 @@
 
 package data;
 
-import java.util.Calendar;
-
-
 import config.DD;
-
 import ASN1.ASN1DecoderFail;
 import ASN1.ASNObj;
 import ASN1.Decoder;
@@ -49,17 +45,17 @@ public class D_Document_Title extends ASNObj{
 	}
 	
 	public String toString() {
-		return TD+title_document;
+		return TD + title_document;
 	}
 	public void decode(String s) {
-		if(s==null) return;
-		if(!s.startsWith(TD)) return;
+		if (s == null) return;
+		if (! s.startsWith(TD)) return;
 		this.title_document.decode(s.substring(TD.length()));
 	}
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
-		if(title_document!=null)enc.addToSequence(title_document.getEncoder().setASN1Type(DD.TAG_AC0));
+		if (title_document != null) enc.addToSequence(title_document.getEncoder().setASN1Type(DD.TAG_AC0));
 		return enc;
 	}
 
@@ -67,7 +63,17 @@ public class D_Document_Title extends ASNObj{
 	public D_Document_Title decode(Decoder decoder) throws ASN1DecoderFail {
 
 		Decoder dec = decoder.getContent();
-		if(dec.getTypeByte()==DD.TAG_AC0)title_document = new D_Document().decode(dec.getFirstObject(true));
+		if (dec.getTypeByte() == DD.TAG_AC0) title_document = new D_Document().decode(dec.getFirstObject(true));
 		return this;
+	}
+	public String getTitleStr() {
+		if (title_document == null) return null;
+		if (
+				! D_Document.TXT_FORMAT.equals(title_document.getFormatString())
+				&& 
+				! D_Document.HTM_BODY_FORMAT.equals(title_document.getFormatString())
+		) return null;
+		
+		return title_document.getDocumentUTFString();
 	}	
 }

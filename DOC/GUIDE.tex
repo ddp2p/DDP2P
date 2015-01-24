@@ -1,4 +1,7 @@
 \documentclass{book}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{url}
 \sloppy
 
 %package style
@@ -17,16 +20,15 @@
 \maketitle
 \chapter{Introduction}
 \section{This document}
-The latest version of this document is on {\tt /Users/msilaghi/svn/p2pdd/dev/MSilaghi/Doc/GUIDE.pdf} in my
-machine, or (hopefully soon to be placed on) the {\tt https://github.com/ddp2p/DDP2P/GUIDE} (from now on this site is simply referred to as the {\tt github}).
+The latest version of this document is on {\tt \url{dev/MSilaghi/Doc/GUIDE.pdf}} in my SVN, or on the {\tt \url{https://github.com/ddp2p/DDP2P/tree/master/DOC/GUIDE.pdf}} (from now on this site is simply referred to as the {\tt github}).
 
 \section{Release History}
 
 The technical details and intentions of this project were first lined out in 2004 in the FIT technical report {\tt CS-2004-07}, that had also been  submitted in 2003 as an NSF funding request.
 The funding was not grated, and after repeated requests to different governmental agencies (including a 2005 EU proposal with Markus Zanker from Austria and 10 EU institutions), 
 in 2007 we started to develop the system as a volunteer work.
-A first version of the system was developped as a webapplication prototype (http://debatedecide.fit.edu). It was not P2P and its intentions was a proof of concept,
-and potential demo for further funding requests. By 2009 it was nevertheless pretty complete and is still used to manage some classes at FIT. Its weakneses are:
+A first version of the system was developed as a web-application prototype (\url{http://debatedecide.fit.edu}). It was not P2P and its intentions was a proof of concept,
+and potential demo for further funding requests. By 2009 it was nevertheless pretty complete and is still used to manage some classes at FIT. Its weaknesses are:
 \begin{itemize}
 \item
 difficulties with the java applets plugins frequently not well supported by browsers (but needed to create and handle certificates).
@@ -38,15 +40,15 @@ In 2010 we started the P2P implementation of the system. First we still thought 
 we felt that it was less easy to build and maintain then an actual full system in Java.
 
 The actual implementation of the open-source P2P Java program started in spring 2011 with the ASN1 packages and STUN-like NAT piercing mechanism.  The GUI development
-started in summer 2011, with the tree view for constituents and neighborhoods (which helped revise the final stucture of the corresponding objects. Song also started working
+started in summer 2011, with the tree view for constituents and neighborhoods (which helped revise the final structure of the corresponding objects. Song also started working
 that summer on the Census panel. The swing GUI centered on developing autonomous widgets for various functions. Their assembly into an ergonomic GUI was left for
 later (and not yet tackled by 2014). Currently widgets are just chained in a pretty long tab.... (apologize to those that do not like it, as you are welcome to change it to an ergonomic GUI).
-The year 2012 was spent designing and implementing the various objects, integrating an ad-hoc network module (with Osamah Dhanoon's master thesis), and integrating an automatic update mechanism
+The year 2012 was spent designing and implementing the various objects, integrating an ad-hoc network module (with Osamah Dhanoonn's master thesis), and integrating an automatic update mechanism
 (with the PhD work of Khalid Alhamed).
 
-The first public release of the system was in summer 2013, at the {\em Open Peer-Reviewed Workshop on Decentralized Coordination} that we organized at Florid Tech in April 7. There we presented the articles detailing the technical and scientific contributions of the first version. A demo was made at the P2P 2013 conference. The firsion 1 is pretty stable but slow, since the only synchronization
-point of the various modules is the database on the disk. The database acces is slow, which slows down the whole system. This is why in september 2013 we started working on a new version.
-The version 1 was left untouched except for a few very minor fixes (versions 0.9.49 to 0.9.55), some proving more bothering then worth. The version is avaiable on github in the {\tt src} folder.
+The first public release of the system was in summer 2013, at the {\em Open Peer-Reviewed Workshop on Decentralized Coordination} that we organized at Florid Tech in April 7. There we presented the articles detailing the technical and scientific contributions of the first version. A demo was made at the P2P 2013 conference. The version 1 is pretty stable but slow, since the only synchronization
+point of the various modules is the database on the disk. The database access is slow, which slows down the whole system. This is why in September 2013 we started working on a new version.
+The version 1 was left untouched except for a few very minor fixes (versions 0.9.49 to 0.9.55), some proving more bothering then worth. The version is available on github in the {\tt src} folder.
 
 While the second version (which uses a cache of objects as point of synchronization) is pretty finalized, there are still a couple of bugs (see the Bugs section), and was not yet released as an installation package until now (Oct 2014). You can download the code from the {\tt src\_version2} folder and compile it yourself.
 
@@ -57,8 +59,8 @@ Instructions to work with the code in Eclipse are available in the file: {\tt in
 
 The code consists of:
 \begin{itemize}
-\item a main engine that was tested on Android, Linux, Windos, MacOS.
-\item GUI interfaces: we have develloped an interface in Java Swing (under package {\tt widgets}), and a beginning of an interface on Android (development led by Dong Hang). GUI interfaces can start the engine and then be attached to it by registering an implementation of the interface {\tt config.Vendor\_GUI\_Dialogs}.
+\item a main engine that was tested on Android, Linux, Windows, MacOS.
+\item GUI interfaces: we have developed an interface in Java Swing (under package {\tt widgets}), and a beginning of an interface on Android (development led by Dong Hang). GUI interfaces can start the engine and then be attached to it by registering an implementation of the interface {\tt config.Vendor\_GUI\_Dialogs}.
 \item Database modules: currently we have three database modules supporting sqlite-jdbc, sqlite-4-java (needed for upgrades on MacOS), and an interface to the Android sqlite.
 \item Plugins: we currently have two plugins for PC (a chat application, and a game) and a plugin for Android. The game plugin works with the version 1 of the DDP2P, and has to be recompiled to work with version 2 (no big changes should be needed, but menus now subclass a different type).
  
@@ -77,7 +79,7 @@ Simple educational plugins are in the {\tt Hello} examples in folder {\tt plugin
 \section{Debugging}
 
 Almost each class has the constants {\tt DEBUG} and {\tt \_DEBUG}. Typically {\tt DEBUG} is false and {\tt \_DEBUG}  is true.
-Printing runtime information is done with {\tt if (DEBUG) System.out.println("CLASS\_NAME: METHOD\_NAME: message")}. 
+Printing run-time information is done with {\tt if (DEBUG) System.out.println("CLASS\_NAME: METHOD\_NAME: message")}. 
 
 Sometimes for debugging a class I either:
 \begin{itemize}
@@ -103,11 +105,11 @@ for exchanging this data. This engine is independent of database and of GUI. The
 
 \paragraph{Using Databases, Email and GUI}
 To be independent of database, this whole code uses an abstract database interface defined in \pkg{util}.\cls{DBInterface}, which
-itseld uses an abstract class \pkg{config}.\cls{Vendor\_DB\_Email}. Applications using a database or email must instantiate
+itself uses an abstract class \pkg{config}.\cls{Vendor\_DB\_Email}. Applications using a database or email must instantiate
 \pkg{config}.\cls{Application\_GUI}.\mmb{dbmail} with an instance of this class. For example on Linux/Mac/Windows we use \pkg{util}.\pkg{db}.\cls{Vendor\_JDBC\_EMAIL\_DB} which is based on jdbc for sqlite, javax.mail.jar, sqlite-jdbc-3.7.2.jar.
 On Android we use (see android code)...
 
-To be idependent of GUI, the warnings and notifications of data arrivals to GUI are done via an abstract GUI interface class
+To be independent of GUI, the warnings and notifications of data arrivals to GUI are done via an abstract GUI interface class
 \pkg{config}.\cls{Vendor\_GUI\_Dialogs}. Applications using some GUI for notifications must instantiate
 \pkg{config}.\cls{Application\_GUI}.\mmb{gui} with an instance of this class.  On standard Oracle java systems we use: 
 \pkg{widgets}.\pkg{components}.\cls{GUI\_Swing}, whose static method \mth{initSwingGUI} does the job.
@@ -155,7 +157,7 @@ the current peer.
 \pkg{data}.\cls{HandlingMyself\_Peer}.\mth{get\_myself\_or\_null()}. Returns the currently set peer identity, or null if none was set.
 \item
 \pkg{data}.\cls{HandlingMyself\_Peer}.\mth{get\_myself\_with\_wait()}. Returns the currently set peer identity, or
-on null it waits indefinitely for one to be set (e.g. by the GUI interraction n the aforementioned methods).
+on null it waits indefinitely for one to be set (e.g. by the GUI interaction n the aforementioned methods).
 \end{itemize}
 
 \paragraph{Initialization of Directories}
@@ -176,12 +178,12 @@ The communication in DDP2P can be based on any of the Internet technologies call
 the code to build messages and to integrate incoming  messages is found in the package \pkg{streaming}.
 
 A module exists for broadcasting over Adhoc WIFI using UDP broadcast (see packages \pkg{wireless}, \pkg{widgets.wireless}, and \pkg{handling\_wb}).
-The module was built under the master thesis of Osamah Dhanoon and during the last experiments it had some useful
+The module was built under the master thesis of Osamah Dhanoonn and during the last experiments it had some useful
 general parts commented
 out for faster hard-coded configuration of some experiments. Somebody should take time to reverse that process and replace the
 hard-coded shortcuts with the original general procedures.
 
-Hopefully that should be done when the broadcasting module is tested for Android, or when it is extended to bluetooth communication.
+Hopefully that should be done when the broadcasting module is tested for Android, or when it is extended to Bluetooth communication.
 
 
 \section{Streaming}
@@ -209,7 +211,7 @@ with parameter byte[] is used for OCTET STRING.
 The constructors Encoder(BigInteger[]) and Encoder(int[]) build an encoding of an ASN1 OID. To encode
 arrays of integers or arrays of BigInteger you must used the functions described below!
 
-The \mth{getEncoder()} static functions are used to create homogenous sequences from arrays or ArrayLists.
+The \mth{getEncoder()} static functions are used to create homogeneous sequences from arrays or ArrayLists.
 When the elements of these vectors are not primitive, then they must be extending the abstract class \cls{ASNObjArray},
 and must be implementing the optional \mth{instance()} method of that abstract class.
 For primitive elements of the arrays one can use \mth{getBNsEncoder(), getStringsEncoder(), getStringEncoder(), 
@@ -248,7 +250,7 @@ The encoding of reals/floats is not standard!
 Each of these functions throws an exception \cls{ASNLenRuntimeException} if the encountered byte type is not the same as the native one
 for the corresponding primitive. Optionally they can get a parameter of type byte which specifies the expected type byte 
 for the data to be decoded. Some have a discouraged extra version that accepts to decode data of any type without error (and
-typically are recognized by the suffix AnyType added to the aforementioned method names). A similat type byte can be
+typically are recognized by the suffix AnyType added to the aforementioned method names). A similar type byte can be
 passed as a parameter of getFirstObject
 
 
@@ -312,7 +314,7 @@ class Message extends ASNObj {
 Objects of type Hashtable<String,String> are obtained with factory \mth{getSequenceOfHSS} that receives as parameter 
 a type of each element. These are encoded sorted by the key.
 
-Non-primitive objects that extens ASNObj are typically decoded by creating an empty instance with an empty constructor or factory,
+Non-primitive objects that extend ASNObj are typically decoded by creating an empty instance with an empty constructor or factory,
 and then calling their member method \mth{decode()} giving as parameter the decoder of the structure obtained with one of the aforementioned methods (constructor from array of bytes or extraction from a decoder with \mth{getContent()} or
 \mth{getFirstObject()}.
 
@@ -320,7 +322,7 @@ The type/tag of the object that will be extracted next can be queried on a \cls{
 \begin{itemize}
 \item
 \mth{isFirstObjectTagByte(tag)}.
-Which returns tru if the next object has the type byte eqlat to the parameter.
+Which returns true if the next object has the type byte equals to the parameter.
 \item
 \mth{getTypeByte()}, \mth{type()}
 Return the type byte.
@@ -329,7 +331,7 @@ Return the type byte.
 returns the tag value as a BigInteger, or an int strictly smaller than 31, respectively.
 \item
 \mth{typeClass()}, \mth{typePC()}
-returns the class and class type values as ints.
+returns the class and class type values as {\tt int}s.
 \end{itemize}
 
 \subsection{Streaming Threads}
@@ -370,9 +372,9 @@ so far (and which are sent on receiving the fragments or on reclaim).
 When the acknowledgements testify that all fragments were received we free the buffer.
 
 Under the tag of a reclaim, \mmb{DD.TAG\_AC16}, the peers also send a  \cls{UDPFragmentAck} after an expiration of waiting time.
-If the message reclaimed is found to be a zombi (a message believed sent and removed from the system) then a NACK is sent
-to the remote peer. Zombis may exist because either an ack was duplicated and when the latter duplicates arrive the message's
-arrival was already known, or because some fragment was duplicated and the receipient started to store it as a new message
+If the message reclaimed is found to be a zombie (a message believed sent and removed from the system) then a NACK is sent
+to the remote peer. Zombies may exist because either an ack was duplicated and when the latter duplicates arrive the message's
+arrival was already known, or because some fragment was duplicated and the recipient started to store it as a new message
 whose other fragments never arrive (having been acknowledges and received once).
 
 \chapter{Connection Data Structure}
@@ -406,16 +408,16 @@ The corresponding data structure elements are:
 \item
 \mmb{myselfPeer\_HT\_IPPORT\_CPD}. This is a hashtable mapping the string obtained by concatenating the IP and PORT
 of each of my listing directories to an object of type \cls{Connections\_Peer\_Directory} for that directory.
-The object is placed in this hashtable when an answer from a directory comes comtaining my own peerGID and instance name.
+The object is placed in this hashtable when an answer from a directory comes containing my own peerGID and instance name.
 \item
 \mmb{my\_directories\_AL}. This is an \cls{ArrayList<My\_Directory>} for all my listing directories. Its updating and usage not yet implemented as of 12/28/2014.
 \item
-\mmb{used\_peers\_AL\_CP}. Is an \cls{ArrayList<Connection\_Peer}, one for each of the peers being currently polled.
+\mmb{used\_peers\_AL\_CP}. Is an \cls{ArrayList<Connection\_Peer>}, one for each of the peers being currently polled.
 \item
-\mmb{used\_peers\_GID\_CP}. Is an \cls{Hashtable<String,Connection\_Peer}, with an entry for each of the peers being currently polled.
+\mmb{used\_peers\_GID\_CP}. Is an \cls{Hashtable<String,Connection\_Peer>}, with an entry for each of the peers being currently polled.
 It maps the global identifier (GID) of the peer to the connection data for that peer.
 \item
-\mmb{used\_peers\_GIDH\_CP}. Is an \cls{Hashtable<String,Connection\_Peer}, with an entry for each of the peers being currently polled.
+\mmb{used\_peers\_GIDH\_CP}. Is an \cls{Hashtable<String,Connection\_Peer>}, with an entry for each of the peers being currently polled.
 It maps the hash of the global identifier (GIDH) of the peer to the connection data for that peer.
 \item
 \mmb{peersAvailable} simply caches the number of peers in \mmb{used\_peers\_AL\_CP}.
@@ -445,12 +447,12 @@ Timeouts may not be really needed since any change or failure is found separatel
 
 
 When the connection manager thread updates its data structures, it does not do so concurrently with the \cls{Client2} thread
-that uses this structures, since bothe processes could be long and synchronization between them could be slow or complex.
+that uses this structures, since both processes could be long and synchronization between them could be slow or complex.
 Therefore we have opted for implementing it by having the manager create the update into a set of temporary structures,
 which are later switched with the ones actually accessed by end-user processes.
 
 \paragraph{Working Data Structures}
-Therefore the \cls{Client2} thread accesses the above data strucures while the \cls{Connections} creates the update in
+Therefore the \cls{Client2} thread accesses the above data structures while the \cls{Connections} creates the update in
 the set of similar structures:
 \begin{itemize}
 \item
@@ -568,7 +570,7 @@ status structure to easily pass them to the next updated version of the structur
  \mmb{justRequestedSupernodesAddresses}: flag set to tell that directories were just asked for addresses by UDP, and should not
  send a new request (until \cls{Client2} finds that existing addresses are not yet working, i.e. each second attempt)
 
- The flag tells that the peer's directories were just asked by UDP for addresses in the previous itteration, and for at least one iteration of usage one can have patience for the UDP answer to arrive.
+ The flag tells that the peer's directories were just asked by UDP for addresses in the previous iteration, and for at least one iteration of usage one can have patience for the UDP answer to arrive.
  \end{itemize}
 \end{itemize}
 
@@ -587,8 +589,8 @@ instance address of the peer that is of type SOCKET.
 \mmb{peer\_sockets\_transient}: the socket addresses received from directories for this instance, of type \cls{ArrayList<Connections\_Peer\_Socket>}, one for each volatile/transient
 instance address of the peer that is of type SOCKET. 
 
-Currently transient diectories are not stored in separate lists (keeping an old implementation) and thefore 
-there is a risk they can be lost when udating the structures (but we assume that transient directories will likely not exist and therefore
+Currently transient directories are not stored in separate lists (keeping an old implementation) and therefore 
+there is a risk they can be lost when updating the structures (but we assume that transient directories will likely not exist and therefore
 we do not take time now to implement a similar \mmb{peer\_directories\_transient} member).
 \item
 \mmb{status}: a structure (passed on update from old structures to new ones)  containing
@@ -601,7 +603,7 @@ we do not take time now to implement a similar \mmb{peer\_directories\_transient
  \item
  	\mmb{ping\_pending\_UDP}: flag to tell whether there was a UDP ping sent to this instance without answer so far
  \item
-	\mmb{last\_contact\_date\_UDP}: flag to tell the last date when aping reply came from this isnstance
+	\mmb{last\_contact\_date\_UDP}: flag to tell the last date when aping reply came from this instance
  \end{itemize}
 \end{itemize}
 
@@ -652,10 +654,10 @@ set to TRUE if a ping request was sent for the NAT address reported by this dire
  \end{itemize}
 \item
 \mmb{\_last\_contact\_TCP}, \mmb{contacted\_since\_start\_TCP}, \mmb{last\_contact\_successful\_TCP}: date and flags for the connection
-status via TCP to this directory when quering addresses of the current peer.
+status via TCP to this directory when querying addresses of the current peer.
 \item
 \mmb{\_last\_contact\_UDP}, \mmb{contacted\_since\_start\_UDP}, \mmb{last\_directory\_address\_request\_pending}: date and flags for the connection
-status via UDP to this directory when quering addresses of the current peer.
+status via UDP to this directory when querying addresses of the current peer.
 \item
 \mmb{address\_LID}: the local pseudokey in the database table "peer\_address" for the data associated to this directory. Set to -1
 if this is a transient directory, i.e., received from a directory.
@@ -684,7 +686,7 @@ The simplified diagram of this process is shown in Figure~\ref{fig:conn_update}.
 \strut~~$|$~~ for all \mmb{used\_peers} \\
 \strut~~$|$~~~ \mth{loadAddresses\_to\_PeerConnection} \\
 \strut~~$|$~~~~ links transient instances from old and, for all instances:\\
-\strut~~$|$~~~~~ \mth{loadInstanceAddresses}  and links transient instancies from old\\
+\strut~~$|$~~~~~ \mth{loadInstanceAddresses}  and links transient instances from old\\
 \strut~~$|$~~~~~~ \mth{loadInstanceAddresses\_certified} and link transient addresses\\
 \strut~~$|$~~~~~~~ \mth{locatePS} from old  or resolve addresses\\
 \strut~~ for all \mmb{update\_needing\_peer\_connections} \\
@@ -700,7 +702,7 @@ The connections update process consists of a loop.
 An initial initialization in \pkg{Connections}.\mth{init()} has as purpose is to make the 
 structures non-null, and loaded from the database.
 
-The loop waits on the monitor \mmb{monitor\_wait\_obj} until a change is signalled in the database, a connection fails, or until a timeout of amount \mmb{CONNECTIONS\_UPDATE\_TIMEOUT\_MSEC} (currently set to 3 minutes).
+The loop waits on the monitor \mmb{monitor\_wait\_obj} until a change is signaled in the database, a connection fails, or until a timeout of amount \mmb{CONNECTIONS\_UPDATE\_TIMEOUT\_MSEC} (currently set to 3 minutes).
 After each wake up, the method \mth{updates} is called.
 
 The method \mth{updates} initializes the \mmb{tmp\_xxx} data structures in \cls{Connections} with the data in the database 
@@ -744,7 +746,7 @@ The end of the loop is detected by comparison of the current peer index \mmb{pee
 
 Once it is decided to poll some peer, this is obtained with \mth{Connections.getConnectionAtIdx(peersToGo)},
 and handled with \mth{handlePeer}. Further each peer is handled in this method separately based on whether it was
-recentry reached or not.
+recently reached or not.
 
 The methods \mth{handlePeerNotRecentlyContacted()}, and \mth{handlePeerRecent()} work by calling 
 \mth{trySocketsListTCP()} (if \mmb{DD.ClientTCP} is set) and \mth{trySocketsListUDP()} (if \mmb{DD.ClientUDP})
@@ -752,7 +754,7 @@ is set.
 These methods attempt connections separately for each listed socket. 
 If a TCP connection is successful, further connections are not tried for that peer.
 
-In \mth{handlePeerRecent()}  the tcp sockets
+In \mth{handlePeerRecent()}  the TCP sockets
 are tried in the reversed order of the date of last connections. 
 Both methods try TCP sockets in instances giving priority to the ones with which we exchanged
 so far the largest number of items.
@@ -790,7 +792,7 @@ also the connections structure is updated announcing of the success of the conne
 When an answer is received from a directory with the list of addresses of a peer, new transient addresses are added to the
 corresponding place in the data structure. Also, NAT addresses reported are stored in the corresponding directory structure.
 The directory sending the message is identified among the directories serving the peer mentioned in the reply, based on the
-IP and port thereof, using methods \mth{Connections.getConnectionSharedPeerDirectory()} and \mth{Connections.getConnectionInstancePeerDirectory}. This can be improved in the future by adding the \mmb{address\_LID} of the directory in the exchage...
+IP and port thereof, using methods \mth{Connections.getConnectionSharedPeerDirectory()} and \mth{Connections.getConnectionInstancePeerDirectory}. This can be improved in the future by adding the \mmb{address\_LID} of the directory in the exchange...
 
 The \cls{UDPServerThread} then calls \cls{Connections}.\mth{registerIncomingDirectoryAnswer()}.
 This method iterates over all in instances in the answer. If any reports the instance of the agent receiving the message,
@@ -798,7 +800,7 @@ the result is stored in \mth{Connections.myselfPeer\_HT\_IPPORT\_CPD}.
 
 The results for each instance are stored in the corresponding \cls{Connection\_Peer} and \cls{Connections\_Peer\_Instance}s
 obtained using method \mth{Connections.getConnectionPeer()} (old versions have used \mth{Connections.getConnectionPeerInstance()}. 
-Significant code there deals with building the data structure used for visualisation in \mmb{D\_Peer.peer\_contacts},
+Significant code there deals with building the data structure used for visualization in \mmb{D\_Peer.peer\_contacts},
 and \mmb{ClientSync.peer\_contacted\_addresses}.
 
 The actual integration is done using method \mth{Connections.integrateDirAddresses()}, and is followed by waking up
@@ -808,8 +810,25 @@ The method \mth{Connections.integrateDirAddresses()} iterates over all the insta
 tries to locate previous status objects using locatePS and locatePD. New addresses are stored in \mmb{peer\_sockets\_transient}
 and \mmb{peer\_directories}. It also marks instances found, or no longer found, behind NAT.
 
+\section{Starting the Connection Processes}
+
+Each of the three main processes (UDPServerThread, Client2, Connections) can have only one instance 
+running at a time in the system. Those instances can be accessed (as long as they are running) using
+static members, and the starting/stopping of the processes should be preferably done using given static methods:
+\begin{itemize}
+\item
+\cls{Client2}: The static reference to the unique instance of \cls{Client2} is in \cls{Application}.\mmb{g\_PollingStreamingClient} which is of type \cls{IClient} since at certain moments we supported in parallel several implementations of the client (\cls{Client1} and \cls{Client2}).
+To start or stop the client use the static method \pkg{config}.\cls{DD}.\mth{startClient(boolean on)}. To wake up the client
+that sleeps between two rounds of polling, use \cls{DD}.\mth{touchClient()}.
+\item
+\cls{Connections}: A static reference to this process is found in \cls{Client2}.\mth{g\_Connections}. It is started with \cls{Client2}.\mth{startConnections()}.
+\item
+\cls{UDPServer}: This is started with \cls{DD}.\mth{startUServer(boolean on, \cls{Identity} peer\_id)}. The unique instance in the system is linked into the static
+\pkg{config}.\cls{Application}.\mth{g\_UDPServer} (where one can also find \cls{Application}.\mth{g\_TCPServer} and \cls{Application}.\mth{g\_DirectoryServer}).
+\end{itemize}
+
 \chapter{Data Objects}
-The data exchanged between peers is organized into semantically independedt units, each of them of manageable size.
+The data exchanged between peers is organized into semantically independent units, each of them of manageable size.
 Ideally this size should fit a small number of UDP datagrams, exchangeable in one round of communications between two peers found in
 adhoc wifi contact between two cars running in opposite directions on a highway. In fact, an encounter may fit one or more such data items.
 
@@ -847,33 +866,354 @@ Each of these items is identified by a unique global identifier (GID) whose cons
 Some items may have multiple interchangeable GIDs such as a public key and its secure hash with an agreed digest algorithm such as SHA1 (e.g., peers, authoritarian organizations, active constituents, tester items).
 
 Agents may locally store only the GIDs of the data units of interest (or an indication of their existence, such as a hash of a bundle of GIDs),
-while the actual data items may be stored on clound and retrieved on need based on these GIDs.
+while the actual data items may be stored on cloud and retrieved on need based on these GIDs.
 
 The GID of some items may have a scope, being unique only in the context of some other object (e.g., active constituent GIDs
 are unique only in the context of a given organization GID).
 
+\section{Object Caches}
+
+\subsection{Motivation and Status}
+A caching mechanism was developped to speed up access to frequently
+used objects such as: {\tt peers, organizations, constituents,
+  neighborhoods, motions, justifications, directory entries, and
+  recommendations of testers}.  Ideally all shared objects should be
+made cachable, mechanism that would also permit easy implementation of
+a cloud support.  In particular, if we ensure that any access to the
+database is made via a small interface in the corresponding objects
+(\cls{D\_Peer}, ...), then it is sufficient to change that interface
+for supporting a cloud.
+
+We have not yet implemented cache for some important shared objects,
+such as: {\tt news, votes and witness}. The reason these were left behind, besides 
+the lack of time, is that they are never needed except for:
+\begin{itemize}
+\item
+shipping them to other peers, or 
+\item for statistics, 
+\end{itemize}
+which is done acceptably well by database queries, when not the whole database
+can fit in memory.
+
+\paragraph{TODO:} A type of object that needs urgent cache support is the secret key.
+The system has in its database a table for secret keys and this table 
+is accessed each time signatures are generated or local ownership of a key
+is verified. Ideally, if the set of known secret keys is small, then
+it should be fully loaded into a cache, with a flag telling that
+there is nothing else on disk. A simple cache is implemented by having peers,
+organizations and constituents optionally cache their secret keys,
+but this is less efficient then if a specialized cache would be implemented.
+
+To implement caching we use a store consisting of a data structure
+based on a doubly linked list and a set of hashtables.  Each type of
+cashed object has its own such store, methods, and a thread that handles
+data in that store.
+
+\subsection{The Doubly Linked List}
+
+We need a data structure with efficient (constant):
+\begin{itemize}
+\item
+ access and removal of not recently used elements,
+\item
+ insertion of new elements as the most recently used,
+\item
+ tagging existing elements as recently used,
+\item
+ locate an item based on a key: local pseudokey (LID) or global identifier (GID).
+\end{itemize}
+
+The doubly linked list is a data structure that offers the first three properties,
+and can be combined with hashtables to obtained the fourth property.
+
+Java does not have an implementation of a standard doubly linked list.
+Therefore we provide our own implementation based on the classes:
+\begin{itemize}
+\item
+\pkg{util}.\cls{DDP2P\_DoubleLinkedList<T>} which encapsulates a
+circulat doubly linked list with at least one element (\mmb{head})
+that has an empty payload, and the \mmb{counter} of the number of used
+nodes (all nodes except for the head must have a payload). 
+
+Insertions are done in \mmb{head}.\mmb{next}, and removals of unused is done in \mmb{head}.\mmb{previous}.
+Any used element is moved at retrieval after the \mmb{head}, to be marked as recent. 
+It is expected that the type \cls{T} implements the interface
+\pkg{util}.\cls{DDP2P\_DoubleLinkedList\_Node\_Payload<T>}.
+Insertions are done with \mth{offerFirst()}, marking as recent with \mth{moveToFront()}, and removal with 
+\mth{removeTail()} and with \mth{remove()}.
+\item
+\pkg{util}.\cls{DDP2P\_DoubleLinkedList\_Node<T>}
+is a generic class defining the type of a node in the linked list. Besides the fields \mmb{next} and \mmb{previous},
+it also has the field \mmb{payload} of type \cls{T}. It is expected that the type \cls{T} implements the interface
+\pkg{util}.\cls{DDP2P\_DoubleLinkedList\_Node\_Payload<T>}.
+\item
+\pkg{util}.\cls{DDP2P\_DoubleLinkedList\_Node\_Payload<T>} is an interface for payloads of the
+doubly linked list. The interface requires two methods whic are used to set and retrieve a
+pointer from a payload to the instance of \pkg{util}.\cls{DDP2P\_DoubleLinkedList\_Node<T>} that
+holds it. This pointer is used to locate the node of a used object, such that the node could be relocated to the head of the list.
+\end{itemize}
+
+\subsection{Payloads of Doubly Linked Lists}
+
+Typically each of the cached object types such as \cls{D\_Peer}, \cls{D\_Organization}, \cls{D\_Constituent} .... 
+implements the interface pkg{util}.\cls{DDP2P\_DoubleLinkedList\_Node\_Payload<T>}.
+
+These classes have to implement the two methods of the interface pkg{util}.\cls{DDP2P\_DoubleLinkedList\_Node\_Payload<T>}.
+To group most of the the members of the payload that are related to caching, a static class member is defined in
+each of the cached objects. For example we have: 
+\begin{itemize}
+\item
+\cls{D\_Peer}.\cls{D\_Peer\_Node}, 
+\item
+\cls{D\_Organization}.\cls{D\_Organization\_Node},
+\item
+\cls{D\_Constituent}.\cls{D\_Constituent\_Node}, 
+\item
+\cls{D\_Neighborhood}.\cls{D\_Neighborhood\_Node}, 
+\item
+\cls{D\_Motion}.\cls{D\_Motion\_Node}, 
+\item
+\cls{D\_Justification}.\cls{D\_Justification\_Node}, 
+\item
+\cls{D\_RecommendationOfTester}.\cls{D\_RecommendationOfTester\_Node}, 
+\item
+\cls{DirectoryServerCache}.\cls{D\_Directory\_Storage}.
+\end{itemize}
+
+The typical members of each of these are:
+\begin{itemize}
+\item
+\mmb{loaded\_object}
+is a static member holding the cache, i.e. the doubly linked list instance of \cls{DDP2P\_DoubleLinkedList<T>}.
+\item
+\mmb{current\_space}, is a static member holding the estimated RAM size of the current cache.
+\item
+\mmb{MAX\_TRIES} is a constant with the number of attempts to remove unused elements from the cache doubly linked list
+when the size has grown more than the maximum allowed for this cache. At each attempt at most one element is removed from the
+cache, if it is not locked for writing. Those locked for writing are moved to the front of the doubly linked list of the cache.
+\item
+\mmb{my\_node\_in\_loaded}
+holds the pointer to the instance of \pkg{util}.\cls{DDP2P\_DoubleLinkedList\_Node<T>} in the doubly linked list of this cache.
+\item
+\mmb{message} is an ASN1 encoding of the cached object, to help having it ready for sending in messages.
+TODO: when calling \mth{getEncoder()} on a cached object one should send this value instead of reencoding the object.
+ \item
+\mmb{loaded\_By\_LocalID}
+is a \cls{Hashtable<Long,T>} mapping pseudokey identifiers of type \cls{Long} into cached objects found in the doubly linked list.
+\item
+\mmb{loaded\_By\_GID},
+\mmb{loaded\_By\_GIDH}
+are  \cls{Hashtable<String,T>} mapping global identifiers (GID) and their hashes (GIDH) of type \cls{String} into cached objects found in the doubly linked list.
+\item
+\mmb{loaded\_By\_GID\_ORG},
+\mmb{loaded\_By\_GIDH\_ORG},
+\mmb{loaded\_By\_ORG\_GID},
+\mmb{loaded\_By\_ORG\_GIDH} are alternatives to the data structures mmb{loaded\_By\_GID} and
+\mmb{loaded\_By\_GIDH}, that are needed for caches where the GIDs may repeat in different organizations.
+This is the case of \cls{D\_Constituent}, where the GID is a public key that can be reused in different organizations.
+
+Currently such hashtables are not needed for \cls{D\_Neighborhood}, \cls{D\_Motion} and \cls{D\_Justification}, where the
+GIDs are currently computed by hashing the data of the object including the GID of the organization for which the object is relevant.
+However these four structures are used in these cached types since we want to make it easy to experiment in the future
+with implementations where objects are shared between organizations.
+
+These alternative hashtables are of type \cls{Hashtable<String,Hashtable<Long,T>>} or \cls{Hashtable<Long,Hashtable<String,T>>} mapping global identifiers (GID) and their hashes (GIDH) of type \cls{String} into tables mapping LIDs of organizations into cached objects found in the doubly linked list.
+\end{itemize}
+
+\subsection{Locking Objects in Cache}
+
+To avoid that an object is dropped from cached while being modified and not yet saved, a locking mechanism is implemented.
+Each cached object has a member \mmb{status\_lock\_write} that is incremented by any thread that plans to modify the object
+and is decremented after the modifications were finalized (and potentially a storing activity to permanent storage was scheduled).
+This is accessed via  \mth{get\_StatusLockWrite()}, \mth{inc\_StatusLockWrite()} and \mth{dec\_StatusLockWrite()}.
+
+For \cls{D\_Peer}, \cls{D\_Organization} and \cls{D\_Constituent} objects there is an additinal locking flag that avoids removing them
+from the cache as long as they are delected as the {\em current} context for a GUI. This flag is \mmb{status\_references}
+and is managed via \mth{get\_StatusReferences()}, \mth{inc\_StatusReferences()} and \mth{dec\_StatusReferences()}.
+
+As long as one of these counters is positive, a cache does not drop the object, preventing conflics that would lead in duplicate
+objects being modified concurrently and inconsistently for the same GID.
+
+To increment the lock \mmb{status\_lock\_write} of an object, it has to be done when the object is queried from the cache (or added to the cache) via a factory of the object (generally the parameter \mmb{keep} of the factory). This lock is released by users based on calling \mmb{releaseReference()}. The \mmb{status\_references} lock can be raised while the
+\mmb{status\_lock\_write} lock is raised.
+
+If two different threads attempt to raise simultaneously the \mmb{status\_lock\_write} lock (raising it to values above 1),
+it signals a potential bug. Always the first thread locking the object has its \cls{StackTraceElement[]} data stored in the field \mmb{lastPath},
+such that it can be displayed for debugging if a second thread tries to lock the same object concurrently.
+These tests are done under the synchronization of \mmb{monitor\_reserve}.
+
+\paragraph{TODO:} Some of the caches may inverse the usage of the two locking means or use the name \mmb{status\_references} 
+instead of \mmb{status\_lock\_write}. This should be checked and the names should be standardized!
+
+\subsection{Hashtables of Cached Objects}
+The hashables shown in the previous section are used to efficiently retrieve cached objects both by their LID and by their GID.
+Whenever an object is created or read from the disk and registered in the cache, it is also linked into the corresponding hashtables.
+
+Some objects are recently received or created and have GIDs but were not yet stored on the disk and therefore have no LID pseudokey at the
+moment of their registration in the cache. Nevertheless they need to be registered in cache before saving them,
+to make sure that we can lock them to avoid that two objects with the same GID are saved in parallel leading to
+inconsistent databases or errors.
+
+When registering an object that does not yet has a LID, that object is not linked into the \mmb{loaded\_By\_LocalID}
+hashtable of the cache. As soon as the object is saved (while being locked), the method \cls{T}.\cls{T\_Node}.\mth{register\_newLID\_ifLoaded()}
+is called via the method \mth{setLID\_AndLink} of the cached payloads, and it registers the LID in the hashtable, while
+checking for potential bugs from illegal usage that would have resulted in duplications of cache for the same GID or LID.
+
+Similarly, some objects are created and while they are being edited they do not yet have a GID (e.g., organizations, motions, justifications).
+These {\em temporary} objects when they are registered in cache (to enable locking them for writing), they are not locked in
+the corresponding hashtables for the GIDs. When the object editing is finalized by generating a GID, the object is linked
+into the apropriate hashtables via the method \cls{T}.\cls{T\_Node}.\mth{register\_newGID\_ifLoaded()}, called from 
+\cls{T}.\mth{setGID\_AndLink()}.
+
+\subsection{Factories of Cached Objects}
+
+Users are expected to obtained cached objects not via the private constructors that take as parameters LIDs and GIDs,
+but via {\em factory} static methods. This is required in order to avoid duplicate instances for the same object, which could
+lead to inconsistencies, and to ensure that cached versions are found and given priority to reloading from disk/cloud.
+
+An empty constructor, available via a factory called \mth{empty()} is made available to be used when decoding
+ASN1 messages, or when building new objects from scratch in the editor. Objects created in this way and that do not yet have 
+a GID because they are temporary, are stored using the method
+\mth{storeSynchronouslyNoException()}, and can later be loaded into the cache using the factory methods \mth{getXXXByLID(LID, ...)}
+
+Objects created with empty constructors or factories and that have a GID
+are then registered in the cache and saved by following the next steps (sometimes implemented in a method called  \mth{storeRemote()}):
+\begin{enumerate}
+\item
+Query the cache by the GID using a factory with \mmb{create} and \mmb{keep} flags set, and when available in the factory, with the new object in the \mmb{storage}. If nothing was known about the requested object:
+\begin{itemize}
+\item if a no-null object is provided in parameter \mmb{storage}, then this object is linked in the cache, filled with the right GID, marked dirty, and returned. 
+\item if no storage parameter is provided by the called, them a new object is created, with the GID set to the provided value, and 
+marked dirty and temporary
+\end{itemize}
+
+Some factories can take as parameter both GIDs and GIDHs. Their types (GID vs GIDH) can be detected dynamically and GIDHs can be computed
+by the factory from a provided GID.
+\item
+If the object returned was different from the one we need to save, then the content of the one we need to store is copied
+into the one returned by the factory, e.g. using methods called \mth{loadRemote()}.
+
+Typically \mth{loadRemote()} also checks first whether the new object is really newer or more complete then the previous
+one by either checking if the old one was temporary or by comparing creation dates, quitting with false if parameter is not newer. 
+If the object is filed with the parameter, then some dirty flags are set and the temporary flag
+is also cleared.
+
+The method \mth{loadRemote()} can detect when unknown objects are being referred (e.g. a justification regering the GID
+of an unknown motion or constituent), and those GIDs are stored in the parameter \mmb{missing\_rq} bag,
+to be requested from peers. Temporary objects with those GIDs are also created using apropriate factories.
+GIDHs of newly obtained objects are returned in the parameter \mmb{sol\_rq} bag.
+\item
+If a dirty flag was set, then the cache saving threads are notified by calling \mth{storeRequest()} on the object.
+\item
+The object's lock is released using \mth{releaseReference()}. If this step is forgotten,
+then when a new operation tries to lock the object, the cache with dump debugging information with the trace of the location
+of the first locking operation to help in debugging. Also subsequent accesses are delayed for 5 seconds to try to avoid
+accidental concurency.
+\end{enumerate}
+
+For example, the code for storing newly arrived justifications in \pkg{streaming}.\cls{WB\_Messages}.\mth{store()} is:
+
+\begin{verbatim}
+if (! j.isGIDValidAndNotBlocked()) continue;
+// preparing management of missing/obtained GIDH
+rq = missing_sr.get(j.getOrgGIDH());
+if (rq == null) rq = new RequestData();
+sol_rq = new RequestData();
+new_rq = new RequestData();
+
+// actual integration of a decoded justification "j" 
+// assumed verified for signatures and blocking
+D_Justification jus = 
+       D_Justification.getJustByGID(
+                 j.getGID(), true, true, true, peer, 
+                 p_oLID, p_mLID, j);
+if (jus == j) {
+    jus.fillLocals(sol_rq, new_rq, peer);
+    config.Application_GUI.inform_arrival(jus, peer);
+    jus.storeRequest();
+} else
+  if (jus.loadRemote(j, sol_rq, new_rq, peer)) {
+    config.Application_GUI.inform_arrival(jus, peer);
+    jus.storeRequest();
+  }
+jus.releaseReference();
+
+// management of new and missing GIDH
+rq.update(sol_rq, new_rq);
+missing_sr.put(j.getOrgGIDH(), rq);			
+\end{verbatim}
+
+For only reading the content of an object, it will be loaded by calling a factory based on the known LID or GID,
+and without the \mth{keep} parameter set.
+
+For reading and writing the contect of an object, it will be loaded by calling a factory based on the known LID or GID,
+and with the \mth{keep} parameter set. After modification the user should set appropriate dirty flags, based on the parts of the object
+that were modified, and should call the \mth{storeRequest()} method, followed by the \mth{releaseReference()}.
+The \mth{storeRequest()} method should not be called if no change was made, but the \mth{releaseReference()} method must
+necessarily be called to unlock the object.
+
+If we already have a reference to an object before we decide that we need to lock it for writing, that can be achieved using
+factories of the type \mth{getXXXByXXX\_Keep()} which try the cache all LID, GID and GIDH of the object passed in parameter,
+before registering a new one. The actual such factories are called: \mth{getPeerByPeer\_Keep()}, \mth{getOrgByOrg\_Keep()}, ..., \mth{getJustByJust\_Keep()}
+
+\paragraph{TODO:} Not all the pieces of code in \pkg{streaming}.\cls{WB\_Messages}.\mth{store()} are
+so standardized as the one shown here, and the remaining ones should be brought
+to such an optimized shape. Also, not all are yet tested for blocking and signatures or GID correctness.
+With improvements, communication should be tested to see if synchronization work well after each change!
+
+\subsection{Constants to Control Caching}
+
+There are two Thread classes used for each cache type XXX: \cls{D\_XXX\_SaverThread} and 
+\cls{D\_XXX\_SaverThreadWorker}. The first type of thread has a single running instance that wakes up
+when notified by \mth{storeRequest()} or on timeouts and, when there are not too many running threads,
+will create an instance of the thread of the second type which will store a dirty object from the cache.
+Dirty objects are found in \cls{HashSet}s \mmb{\_need\_saving\_obj} and \mmb{\_need\_saving}
+where they are placed by \mth{storeRequest()}. Historically, when the object has a GID/LID  is stored in the second of those hashsets
+and otherwise in the first. 
+\paragraph{TODO:} However not the distinction is would need to be reverified.
+
+A set of constants are used to controll the behavior of the two threads that control the storing of each cache to the
+permanent support (disk/cloud).
+These constants are in class \cls{SaverThreadsConstants}. These constants control:
+\begin{itemize}
+\item
+\mmb{MAX\_LOADED\_XXX}, \mmb{MAX\_XXX\_RAM}
+ the sizes of the caches.
+\item
+\mmb{MAX\_NUMBER\_CONCURRENT\_SAVING\_THREADS}:
+ the maximum number of running saver threads instances of \cls{D\_XXX\_SaverThreadWorker}.
+\item
+\mmb{SAVER\_SLEEP\_BETWEEN\_OBJECTS\_MSEC}: delay between launching threads when there are many waiting to be saved.
+\item
+\mmb{SAVER\_SLEEP\_WAITING\_OBJECTS\_MSEC}: delay between launching threads when there is none waiting to be saved.
+\item
+\mmb{threads\_xxx} number of threads for each given type xxx of cached objects. The total count is given by \mth{getNumberRunningSaverThreads()}.
+\end{itemize}
+
 \chapter{Streaming Logic}
 
 Since each peer's database may be voluminous, we do not intend to have complete databases synchronized
-at each interractions.
+at each interaction.
 Rather we want at each TCP or UDP encounter to only exchange a token amount of information. For this purpose
 a total order is defined on all semantically independent items of information of the database. This order is given by the
 \mmb{arrival\_date} in the database, namely the date when the latest version of the item was locally defined (either by arrival 
 from another peer, or by local construction). The resolution of this date in is terms of milliseconds. Due to limited precision
 of the local clock, multiple items may have arrived at the same declared arrival time and therefore they would
 have to be shipped together. To avoid large such clusters, we tend to artificially delay saving arrival objects with delays of a millisecond.
-This is currently not done consistently, and a mechanism to ensure it accross the whole system may be designed using
+To force different items to have different arrival timestamps, the arrival timestamp of each item is generated using the
+static method: \pkg{data}.\cls{ArrivalDateStream}.\mth{getNextArrivalDate()}, which sleeps 1ms when there is a conflict.
+This is currently not done consistently, and a mechanism to ensure it across the whole system may be designed using
 a global timestamping manager to be queries by all item saving processes (e.g., intercepting \mth{Util.CalendarGetInstance()} or \mth{Util.getGeneralizedTime()}).
  
 \section{Incremental Synchronization}
 
 Each agent Alice keeps for each polled peer Bob the latest arrival time of that peer, $arrival\_time_{Bob}$, up to each it has obtained all the data.
-At each poll round Allice will send to Bob the value it has for $arrival\_time_{Bob}$ and Bob will reply
-back with bag of GIDs of sequential items (in the order given by arrrival times), and starting immediately after the arrival time,
+At each poll round Alice will send to Bob the value it has for $arrival\_time_{Bob}$ and Bob will reply
+back with bag of GIDs of sequential items (in the order given by arrival times), and starting immediately after the arrival time,
 as well as the arrival time of the last of them to be used as the new $arrival\_time_{Bob}$ of Alice.
 
 Alice also send in each poll a bag of GIDs it has obtained from Bob and which are for items that she does not have yet.
-Therefore Bob gives priority in each reply to sending some of the objects requested by alice in the poll, rather then 
+Therefore Bob gives priority in each reply to sending some of the objects requested by Alice in the poll, rather then 
 sending new GIDs. First Bob ads to the reply message requested items until it reaches an overall size
 of 3/4 of a datagram. 
 New GIDs are sent only if after adding all requested data, the overall size of the obtained message is smaller than the maximum size of a datagram.

@@ -38,7 +38,8 @@ import data.D_Peer;
  * For each piece of data store {data_hash:{peerID:date_claim_received}}
  * 
  * Currently we only use the data_hash, as we send it in specific requests in sync requests.
- * The idea is to eventually use rest of it to evaluate peers if they claim to have data they do not have.
+ * The idea is to eventually use rest of it to evaluate peers if they claim to have data they do not have,
+ * or to mark that a peer does not have it and should not  be disturbed again for it.
  * 
  * It is stored in attribute "specific_request" of table organization.
  * 
@@ -51,10 +52,37 @@ import data.D_Peer;
  *
  */
 public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claimed  
+	/**
+	 * TODO Not yet implemented (only date_first_claim_received is used!).
+	 * Should ASN encode and decode all components
+	 * At implementation one should check that all the below operations work right!
+	 * @author msilaghi
+	 *
+	 */
+	public static class PeerData extends ASNObj {
+		String date_first_claim_received;
+		String date_last_rejection_received; // to set null when a new claim comes from same peer
+		String creation_data_claimed;
+		public String toString() {
+			return date_first_claim_received;
+		}
+		@Override
+		public Encoder getEncoder() {
+			return new Encoder(date_first_claim_received);
+		}
+		@Override
+		public PeerData decode(Decoder dec) throws ASN1DecoderFail {
+			date_first_claim_received = dec.getString();
+			return this;
+		}
+		public String toLongString() {
+			return "PeerData:"+creation_data_claimed+" c="+date_first_claim_received+" r="+date_last_rejection_received;
+		}
+	}
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	int version = 2;
-	public Hashtable<String,Hashtable<Long,String>> cons=new Hashtable<String,Hashtable<Long,String>>();
+	public Hashtable<String,Hashtable<Long,Object>> cons=new Hashtable<String,Hashtable<Long,Object>>();
 	public Hashtable<String,Hashtable<Long,String>> witn=new Hashtable<String,Hashtable<Long,String>>();
 	public Hashtable<String,Hashtable<Long,String>> neig=new Hashtable<String,Hashtable<Long,String>>();
 	public Hashtable<String,Hashtable<Long,String>> moti=new Hashtable<String,Hashtable<Long,String>>();
@@ -68,11 +96,25 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 			Hashtable<String, Hashtable<Long, String>> data_peers) {
 		String result ="[";
 		if(data_peers == null) return "[null]";
-		for(String peer : data_peers.keySet()){
-			result += "\n     peer="+peer+"{";
-			Hashtable<Long, String> dta = data_peers.get(peer);
+		for(String dHash : data_peers.keySet()){
+			result += "\n     GIDH="+dHash+"{";
+			Hashtable<Long, String> dta = data_peers.get(dHash);
 			for(Long id : dta.keySet()) {
-				result += "(id="+id+":"+dta.get(id)+");";
+				result += "(pLID="+id+":"+dta.get(id)+");";
+			}
+			result+="}";
+		}
+		return result+"]";
+	}
+	private String getStringRepresentationOfHashesObj(
+			Hashtable<String, Hashtable<Long, Object>> data_peers) {
+		String result ="[";
+		if(data_peers == null) return "[null]";
+		for(String dHash : data_peers.keySet()){
+			result += "\n     GIDH="+dHash+"{";
+			Hashtable<Long, Object> dta = data_peers.get(dHash);
+			for(Long id : dta.keySet()) {
+				result += "(pLID="+id+":"+dta.get(id)+");";
 			}
 			result+="}";
 		}
@@ -82,7 +124,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	public String toString(){
 		String result = "OrgPeerDataHashes: [\n";
 		result += "    orgGIDhash = "+getOrganizationGIDH();
-		if((cons!=null)&&(cons.size()>0)) result += "\n  cons = "+getStringRepresentationOfHashes(cons);
+		if((cons!=null)&&(cons.size()>0)) result += "\n  cons = "+getStringRepresentationOfHashesObj(cons);
 		if((witn!=null)&&(witn.size()>0)) result += "\n  witn = "+getStringRepresentationOfHashes(witn);
 		if((neig!=null)&&(neig.size()>0)) result += "\n  neig = "+getStringRepresentationOfHashes(neig);
 		if((moti!=null)&&(moti.size()>0)) result += "\n  moti = "+getStringRepresentationOfHashes(moti);
@@ -124,7 +166,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 			e.printStackTrace();
 		}
 		*/
-		if(DEBUG)System.out.println("\nOrgPeerDataHashes: init: got "+requests);
+		if (DEBUG) System.out.println("\nOrgPeerDataHashes: init: got "+requests);
 		return requests;
 	}
 	/*
@@ -150,7 +192,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 
 		D_Organization or = D_Organization.getOrgByLID(orgID, true, true);
 		if (or.getSpecificRequest() != this) {
-			if (_DEBUG) System.out.println("\nOrgPeerDataHashes: save: difference \n"+this+"\nvs"+or.getSpecificRequest());			
+			if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("\nOrgPeerDataHashes: save: object is == different \n"+this+"\nvs "+or.getSpecificRequest());			
 		}
 		or.setSpecificRequest(this);
 		or.dirty_locals = true;
@@ -266,12 +308,36 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 		if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: Got "+hashes+"\n");
 		return result;
 	}
+	public static Hashtable<String, String> addFromPeerObj(
+			Hashtable<String, Hashtable<Long, Object>> hashes, Long _peer_ID,
+			Hashtable<String, String> result) {
+		if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: "+_peer_ID);
+		
+		for (String h : hashes.keySet()) {
+			if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: evaluate " + h);
+			Hashtable<Long, Object> p = hashes.get(h);
+			if (p.containsKey(_peer_ID)) {
+				if (! result.containsKey(h)) {
+					//TODO // get the most recent from that peer, vs p.get(h)
+					// result.put(h,p.get(h)); 
+					result.put(h,DD.EMPTYDATE); // in case this is from a different instance...
+					if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: result contained in peer " + _peer_ID);
+				} else {
+					if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: result not contained in " + _peer_ID);
+				}
+			} else {
+				if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: hash not containing " + _peer_ID);
+			}
+		}
+		if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: Got "+hashes+"\n");
+		return result;
+	}
 	public RequestData getRequestData(long peer_ID) {
 		Long _peer_ID = new Long(peer_ID);
 		RequestData r = new RequestData();
 		r.global_organization_ID_hash = this.getOrganizationGIDH();
 		//r.peers = addFromPeer(peers, _peer_ID, r.peers);
-		r.cons = addFromPeer(cons, _peer_ID, r.cons);
+		r.cons = addFromPeerObj(cons, _peer_ID, r.cons);
 		r.witn = addFromPeer(witn, _peer_ID, r.witn);
 		r.neig = addFromPeer(neig, _peer_ID, r.neig);
 		r.moti = addFromPeer(moti, _peer_ID, r.moti);
@@ -286,7 +352,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 		synchronized(cons){
 			//orgs = appendSet(orgs, n.orgs, _peer_ID, generalizedTime);
 			neig = appendSet(neig, n.neig, _peer_ID, generalizedTime);
-			cons = appendHash(cons, n.cons, _peer_ID, generalizedTime);
+			cons = appendHashObj(cons, n.cons, _peer_ID, generalizedTime);
 			witn = appendSet(witn, n.witn, _peer_ID, generalizedTime);
 			moti = appendSet(moti, n.moti, _peer_ID, generalizedTime);
 			just = appendSet(just, n.just, _peer_ID, generalizedTime);
@@ -311,6 +377,14 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 		if(!to.containsKey(s)) to.put(s, peers);		
 		if(DEBUG)System.out.println("OrgPeerDataHashes:add: static Got "+to);
 	}
+	static void addObj(Hashtable<String, Hashtable<Long, Object>> to, String s, long peer_ID, String generalizedTime) {
+		if(DEBUG)System.out.println("\nOrgPeerDataHashes:add: static peer="+peer_ID+" hash="+s+"\n   t="+generalizedTime+"\n    to:" +to);
+		Hashtable<Long, Object> peers = to.get(s);
+		if(peers == null) peers = new Hashtable<Long, Object>();
+		peers.put(new Long(peer_ID), generalizedTime);
+		if(!to.containsKey(s)) to.put(s, peers);		
+		if(DEBUG)System.out.println("OrgPeerDataHashes:add: static Got "+to);
+	}
 	/**
 	 * 
 	 * @param to
@@ -325,6 +399,16 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 			String generalizedTime) {
 		for (String s : from.keySet()) {
 			add(to, s, peer_ID, from.get(s));//generalizedTime);
+		}
+		if (DEBUG) System.out.println("OrgPeerDataHashes:appendSet: Got "+to);
+		return to;
+	}
+	public static Hashtable<String, Hashtable<Long, Object>> appendHashObj(
+			Hashtable<String, Hashtable<Long, Object>> to,
+			Hashtable<String, String> from, long peer_ID,
+			String generalizedTime) {
+		for (String s : from.keySet()) {
+			addObj(to, s, peer_ID, from.get(s));//generalizedTime);
 		}
 		if (DEBUG) System.out.println("OrgPeerDataHashes:appendSet: Got "+to);
 		return to;
@@ -355,7 +439,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 			return this;
 		}
 		Decoder d = dec.getContent();
-		cons = decodeData(d.getFirstObject(true));
+		cons = decodeDataObj(d.getFirstObject(true));
 		witn = decodeData(d.getFirstObject(true));
 		neig = decodeData(d.getFirstObject(true));
 		moti = decodeData(d.getFirstObject(true));
@@ -368,7 +452,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
-		enc.addToSequence(getDataEncoder(cons));
+		enc.addToSequence(getDataEncoderObj(cons));
 		enc.addToSequence(getDataEncoder(witn));
 		enc.addToSequence(getDataEncoder(neig));
 		enc.addToSequence(getDataEncoder(moti));
@@ -436,6 +520,63 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 		}
 		return result;
 	}
+	/**
+	 * TODO: here one should detect if the data is a String or an instance of PeerData!
+	 * @param dec
+	 * @return
+	 */
+	static public Hashtable<String, Hashtable<Long, Object>> decodeDataObj(Decoder dec) {
+		Hashtable<String, Hashtable<Long, Object>> result =
+			new Hashtable<String, Hashtable<Long, Object>>();
+		if(dec==null) return result;
+		if(DEBUG) dec.printHex("\nOrgPeerDataHashes:decodeData: decoding dec");
+		if(dec.getTypeByte() != DD.TAG_AC14){
+			Util.printCallPath("wrong Data tag");
+			return result;
+		}
+		Decoder _d_data;
+		try {
+			_d_data = dec.getContent();
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+			return result;
+		}
+		if(DEBUG) _d_data.printHex("OrgPeerDataHashes:decodeData: decoding _d_data content");
+		for(;;) {
+			Decoder d_item_hash = _d_data.getFirstObject(true);
+			if(d_item_hash==null) break;
+			if(DEBUG) d_item_hash.printHex("OrgPeerDataHashes:decodeData: decoding d_item_hash");
+			if(d_item_hash.getTypeByte() != DD.TAG_AC16){
+				Util.printCallPath("wrong data item tag");
+				break;
+			}
+			Decoder d_item_hash_content;
+			try {
+				d_item_hash_content = d_item_hash.getContent();
+			} catch (ASN1DecoderFail e) {
+				e.printStackTrace();
+				break;
+			}
+			if(DEBUG) d_item_hash_content.printHex("OrgPeerDataHashes:decodeData: decoding d_item_hash_content");
+			
+			Decoder _d_hash = d_item_hash_content.getFirstObject(true);
+			if(_d_hash==null) break;
+			if(DEBUG) _d_hash.printHex("OrgPeerDataHashes:decodeData: decoding _d_hash");
+			String hash = _d_hash.getString();
+			if(DEBUG) System.out.println("OrgPeerDataHashes: decodeData: peer hash/GID="+hash);
+			
+			if(DEBUG) d_item_hash_content.printHex("OrgPeerDataHashes:decodeData: decoding d_item_hash_content after hash");
+			Decoder _d_peers = d_item_hash_content.getFirstObject(true);
+			if(DEBUG) d_item_hash_content.printHex("OrgPeerDataHashes:decodeData: decoding _d_peers");
+			if(_d_peers==null){
+				Util.printCallPath("Extra peer/hash in requested data");
+				break;
+			}
+			Hashtable<Long, Object> peers = decodePeersObj(_d_peers);
+			result.put(hash, peers);
+		}
+		return result;
+	}
 	static public Encoder getDataEncoder(Hashtable<String, Hashtable<Long, String>> d) {
 		Encoder enc = new Encoder().initSequence();
 		for(String hash: d.keySet()) {
@@ -444,6 +585,21 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 			enc_item.addToSequence(new Encoder(hash));
 			if(DEBUG) System.out.println("OrgPeerDataHashes: getDataEncoder: hash="+hash);
 			enc_item.addToSequence(getPeers(peers));
+			if(DEBUG) System.out.println("OrgPeerDataHashes: getDataEncoder: peers");
+			enc_item.setASN1Type(DD.TAG_AC16);
+			enc.addToSequence(enc_item);
+		}
+		enc.setASN1Type(DD.TAG_AC14);
+		return enc;
+	}
+	static public Encoder getDataEncoderObj(Hashtable<String, Hashtable<Long, Object>> d) {
+		Encoder enc = new Encoder().initSequence();
+		for(String hash: d.keySet()) {
+			Encoder enc_item = new Encoder().initSequence();
+			Hashtable<Long, Object> peers = d.get(hash);
+			enc_item.addToSequence(new Encoder(hash));
+			if(DEBUG) System.out.println("OrgPeerDataHashes: getDataEncoder: hash="+hash);
+			enc_item.addToSequence(getPeersObj(peers));
 			if(DEBUG) System.out.println("OrgPeerDataHashes: getDataEncoder: peers");
 			enc_item.setASN1Type(DD.TAG_AC16);
 			enc.addToSequence(enc_item);
@@ -482,6 +638,48 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 		
 		return result;
 	}
+	/**
+	 * TODO should check that the data is String or PeerData...
+	 * @param _d_hash
+	 * @return
+	 */
+	static private Hashtable<Long, Object> decodePeersObj(Decoder _d_hash) {
+		Hashtable<Long, Object> result = new Hashtable<Long, Object>();
+		if(_d_hash==null) return result;
+		if(DEBUG) _d_hash.printHex("O\nrgPeerDataHashes:decodePeers: decoding data");
+		if(_d_hash.getTypeByte() != DD.TAG_AC13){
+			Util.printCallPath("wrong Peers tag");
+			return result;
+		}
+		Decoder d;
+		try {
+			d = _d_hash.getContent();
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+			return result;
+		}
+		
+		for(;;) {
+			Decoder d_peer = d.getFirstObject(true);
+			if (d_peer == null) break;
+			long peer = d_peer.getInteger().longValue();
+			if(DEBUG) System.out.println("OrgPeerDataHashes: decodePeers: peer="+peer);
+			
+			Decoder d_date = d.getFirstObject(true);
+			if (d_date == null) break;
+			// TODO: Rather than a String this may in fact be a PeerData!!
+			try {
+				PeerData pd = new PeerData().decode(d_date);
+				result.put(new Long(peer), pd);
+			}catch (Exception e){
+				String date = d_date.getString();
+				result.put(new Long(peer), date);
+				if(DEBUG) System.out.println("OrgPeerDataHashes: decodePeers: date="+date);
+			}
+		}
+		
+		return result;
+	}
 	static private Encoder getPeers(Hashtable<Long, String> peers) {
 		Encoder enc = new Encoder().initSequence();
 		for(Long peer: peers.keySet()) {
@@ -489,6 +687,19 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 			enc.addToSequence(new Encoder(peer.longValue()));
 			if(DEBUG) System.out.println("OrgPeerDataHashes: getPeers: peer="+peer);
 			enc.addToSequence(new Encoder(data));
+			if(DEBUG) System.out.println("OrgPeerDataHashes: getPeers: data="+data);
+		}
+		enc.setASN1Type(DD.TAG_AC13);
+		return enc;
+	}
+	static private Encoder getPeersObj(Hashtable<Long, Object> peers) {
+		Encoder enc = new Encoder().initSequence();
+		for(Long peer: peers.keySet()) {
+			Object data = peers.get(peer);
+			enc.addToSequence(new Encoder(peer.longValue()));
+			if(DEBUG) System.out.println("OrgPeerDataHashes: getPeers: peer="+peer);
+			if (data instanceof PeerData) enc.addToSequence(((PeerData)data).getEncoder());
+			else if (data instanceof String) enc.addToSequence(new Encoder((String)data));
 			if(DEBUG) System.out.println("OrgPeerDataHashes: getPeers: data="+data);
 		}
 		enc.setASN1Type(DD.TAG_AC13);
@@ -532,7 +743,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 		if(DEBUG)System.out.println("RequestData:updateAfterChanges: Will updateAfterChanges by "+peer_ID+" on \n"+this+
 				" with \n new="+new_rq+"\nsolved="+sol_rq);
 		//synchronized(cons) {
-			for(String s : new_rq.cons.keySet()) add(cons, s, peer_ID, crt_date);
+			for(String s : new_rq.cons.keySet()) addObj(cons, s, peer_ID, crt_date);
 			for(String s : new_rq.neig) add(neig, s, peer_ID, crt_date);
 			for(String s : new_rq.witn) add(witn, s, peer_ID, crt_date);
 			for(String s : new_rq.moti) add(moti, s, peer_ID, crt_date);
@@ -541,7 +752,7 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 			for(String s : new_rq.tran) add(tran, s, peer_ID, crt_date);
 			for(String s : new_rq.news) add(news, s, peer_ID, crt_date);
 			
-			setIntersectionFirstFromSecond(this.cons, sol_rq.cons);
+			setIntersectionFirstFromSecondObj(this.cons, sol_rq.cons);
 			setIntersectionFirstFromSecond(this.neig, sol_rq.neig);
 			setIntersectionFirstFromSecond(this.witn, sol_rq.witn);
 			setIntersectionFirstFromSecond(this.moti, sol_rq.moti);
@@ -573,6 +784,18 @@ public class OrgPeerDataHashes extends ASNObj{ // data_hash, peerID, date_claime
 	 */
 	public static void setIntersectionFirstFromSecond(
 			Hashtable<String, Hashtable<Long, String>> first,
+			Hashtable<String,String> second) {
+		ArrayList<String>  itemsToRemove = new ArrayList<String>();
+		for(String s : first.keySet()) if(!second.containsKey(s)) itemsToRemove.add(s);
+		for(String s : itemsToRemove) first.remove(s);		
+	}
+	/**
+	 * TODO
+	 * @param first
+	 * @param second
+	 */
+	public static void setIntersectionFirstFromSecondObj(
+			Hashtable<String, Hashtable<Long, Object>> first,
 			Hashtable<String,String> second) {
 		ArrayList<String>  itemsToRemove = new ArrayList<String>();
 		for(String s : first.keySet()) if(!second.containsKey(s)) itemsToRemove.add(s);

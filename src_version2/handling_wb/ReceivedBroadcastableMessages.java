@@ -326,7 +326,7 @@ public class ReceivedBroadcastableMessages {
 		RequestData sol_rq = new RequestData();
 		RequestData new_rq = new RequestData();
 		try{
-			vote_id =  vote.store(pm, sol_rq, new_rq);//pm should be passed
+			vote_id =  vote.store(pm, sol_rq, new_rq, __peer);//pm should be passed
 		}catch(Exception e){e.printStackTrace();}
 		if(DEBUG)System.out.println("vote ID : "+vote_id);
 

@@ -315,15 +315,15 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				}
 				peer = D_Peer.getPeerByGID_or_GIDhash(gid, gidHash, true, false, false, null);
 				if (DEBUG) System.out.println("   UDPServerThread: handleAnswer: Answer from "+pak.getSocketAddress()+" "+peer.getName()+":"+peer.getInstance()+" /"+Encoder.getGeneralizedTime(sa.upToDate));
-				if (_DEBUG) {
+				if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) {
 					if (sa.peer_instance == null) {
 						System.out.println("UDPServerThread: handleAnswer: Answer from "+peer.getName()+" inst=["+sa.peer_instance+"] /upto:"+Encoder.getGeneralizedTime(sa.upToDate));
 					} else {
 						System.out.println("UDPServerThread: handleAnswer: Answer from "+peer.getName()+" inst=["+sa.peer_instance.peer_instance+"] /upto:"+Encoder.getGeneralizedTime(sa.upToDate));
 					}
-					if (DEBUG) System.out.println("UDPServerThread: handleAnswer: adv=" + sa.advertised);
-					if (DEBUG) System.out.println("UDPServerThread: handleAnswer: orgs=" + sa.advertised_orgs);
-					if (DEBUG) System.out.println("UDPServerThread: handleAnswer: o_hash=" + sa.advertised_orgs_hash);
+					if (_DEBUG) System.out.println("UDPServerThread: handleAnswer: adv=" + sa.advertised);
+					if (_DEBUG) System.out.println("UDPServerThread: handleAnswer: orgs=" + sa.advertised_orgs);
+					if (_DEBUG) System.out.println("UDPServerThread: handleAnswer: o_hash=" + sa.advertised_orgs_hash);
 					
 				}
 				if (peer != null) {
@@ -412,29 +412,29 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				if (true || ! DD.RELEASE) return;
 			}
 			if (_DEBUG) System.out.println("UDPServerThread: handleRequest: Request from: "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(asr.lastSnapshot) + " len=" + msg.length);
-			if (DEBUG) System.out.println("UDPServerThread: handleRequest: specific requests=" + asr.request);
+			if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UDPServerThread: handleRequest: specific requests=" + asr.request);
 			if (asr.pushChanges != null) {
-				if (DEBUG) System.out.println("UDPServerThread: handleRequest: advertised=" + asr.pushChanges.advertised);
-				if (DEBUG) System.out.println("UDPServerThread: handleRequest: advertised_orgs=" + asr.pushChanges.advertised_orgs);
-				if (DEBUG) System.out.println("UDPServerThread: handleRequest: advertised_orgs_hash=" + asr.pushChanges.advertised_orgs_hash);
+				if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UDPServerThread: handleRequest: advertised=" + asr.pushChanges.advertised);
+				if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UDPServerThread: handleRequest: advertised_orgs=" + asr.pushChanges.advertised_orgs);
+				if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UDPServerThread: handleRequest: advertised_orgs_hash=" + asr.pushChanges.advertised_orgs_hash);
 			}
 			if (DEBUG) System.out.println("UDPServerThread: handleRequest: Received request from: "+psa);
-			if (DEBUG || DD.DEBUG_COMMUNICATION) System.out.println("UDPServer: Decoded request: "+asr.toSummaryString()+" from: "+psa);
+			if (DEBUG || DD.DEBUG_COMMUNICATION) System.out.println("UDPServerTh: Decoded request: "+asr.toSummaryString()+" from: "+psa);
 			if (DEBUG || DD.DEBUG_COMMUNICATION || DD.DEBUG_CHANGED_ORGS)
-				if (asr.pushChanges != null) System.out.println("\n\n\nUDPServer:run: Request rcv! ch_org="+Util.nullDiscrimArraySummary(asr.pushChanges.changed_orgs,"--"));
+				if (asr.pushChanges != null) System.out.println("\n\n\nUDPServerTh: handleReq: Request rcv! ch_org="+Util.nullDiscrimArraySummary(asr.pushChanges.changed_orgs,"--"));
 
 			if ( ! DD.ACCEPT_STREAMING_REQUEST_UNSIGNED && ! asr.verifySignature()) {
-				DD.ed.fireServerUpdate(new CommEvent(this, null, psa, "UDPServer", "Unsigned Sync Request received: "+asr));
-				System.err.println("UDPServer:run: Unsigned Request received: "+asr.toSummaryString());
-				System.err.println("UDPServer:run: Unsigned Request received: "+asr.toString());
+				DD.ed.fireServerUpdate(new CommEvent(this, null, psa, "UDPServerTh", "Unsigned Sync Request received: "+asr));
+				System.err.println("UDPServerTh: handleReq: Unsigned Request received: "+asr.toSummaryString());
+				System.err.println("UDPServerTh: handleReq: Unsigned Request received: "+asr.toString());
 				throw new Exception("Unsigned request");
 			}
 			
 			if ( ! Server.extractDataSyncRequest(asr, psa, this)) {
-				if (_DEBUG) System.out.println("UDPServer:run: Request Discarded ************************* \""+((asr.address == null)?"Unknown":asr.address.getName())+"\"");
+				if (_DEBUG) System.out.println("UDPServerTh: handleReq: Request Discarded ************************* \""+((asr.address == null)?"Unknown":asr.address.getName())+"\"");
 				return;
 			}
-			if (DEBUG) System.out.println("UDPServer:run: Request Data extracted *************************");
+			if (DEBUG) System.out.println("UDPServerTh: handleReq: Request Data extracted *************************");
 
 			String peerGID = null, instance = null;
 			if (asr.address != null) {
@@ -442,14 +442,14 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				instance = asr.address.getInstance();
 			}
 			else {
-				if (DEBUG) System.out.println("UDPServer:run: request from UNKNOWN abandoned");
-				if (DEBUG) System.out.println("UDPServer:run: Answer not sent!");
+				if (DEBUG) System.out.println("UDPServerTh:handleRequest: request from UNKNOWN abandoned");
+				if (DEBUG) System.out.println("UDPServerTh:handleRequest: Answer not sent!");
 				throw new Exception("Unknown peer");
 			}
 			
 			// Avoid sending in parallel answers to the same SyncRequest since they would be redundant.
 			if (UDPServer.transferringPeerAnswerMessage(peerGID, instance)) {
-				if(DEBUG)System.out.println("UDPServer:run: UDPServer Answer being sent for: "+Util.trimmed(peerGID));
+				if(DEBUG)System.out.println("UDPServerTh:handleRequest: UDPServer Answer being sent for: "+Util.trimmed(peerGID));
 				//throw new Exception("While transferring answer to same peer");
 				return;
 			}
@@ -468,7 +468,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 				return;
 			}
 			if (peer_sender != null) {
-				if (DEBUG) System.out.println("UDPServerThread:handleAnswer: request from safe: "+peer_sender.getName()+" from IP: "+psa+" from: "+Encoder.getGeneralizedTime(asr.lastSnapshot));
+				if (DEBUG) System.out.println("UDPServerThread:handleRequest: request from safe: "+peer_sender.getName()+" from IP: "+psa+" from: "+Encoder.getGeneralizedTime(asr.lastSnapshot));
 
 				ArrayList<Address> adr = ClientSync.peer_contacted_addresses.get(peer_sender.getGID());
 				if (adr == null) {
@@ -498,8 +498,11 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 			D_Peer p = data.HandlingMyself_Peer.get_myself_with_wait();
 			sa.peer_instance = p.getPeerInstance(p.getInstance());
 			
-			if (peer_sender != null) if (DEBUG) System.out.println("UDPServerThread:handleAnswer: return "+sa.elements()+" upto: "+Encoder.getGeneralizedTime(sa.upToDate));
+			if (peer_sender != null) if (DEBUG) System.out.println("UDPServerThread:handleRequest: return "+sa.elements()+" upto: "+Encoder.getGeneralizedTime(sa.upToDate));
 			if (DEBUG) System.out.println("UDPServer:run: Prepared answer!");
+			if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UDPServerTh:handleRequest: Prepared answer advertised "+sa.advertised);
+			if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UDPServerTh:handleRequest: Prepared answer advertised "+Util.concat(sa.advertised_orgs, ";\n ", null));
+			if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UDPServerTh:handleRequest: Prepared answer advertised "+Util.concat(sa.advertised_orgs_hash, ";\n ", null));
 			
 			if (DEBUG) System.out.println("\n\nPrepared answer: "+sa.toString());
 			byte[] sa_msg = sa.encode();
@@ -509,7 +512,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 			us.sendLargeMessage(psa, sa_msg, DD.MTU, peerGID, DD.MSGTYPE_SyncAnswer);
 			//if(_DEBUG || DD.DEBUG_COMMUNICATION)System.out.println("UDPServer:run: Answer sent! "+sa.toSummaryString());
 			if (DEBUG || DD.DEBUG_COMMUNICATION || DD.DEBUG_CHANGED_ORGS)
-				System.out.println("\n\n\nUDPServer:run: Answer sent! ch_org="+Util.nullDiscrimArraySummary(sa.changed_orgs,"--"));
+				System.out.println("\n\n\nUDPServerTh:handleRequest: Answer sent! ch_org="+Util.nullDiscrimArraySummary(sa.changed_orgs,"--"));
 			//System.out.println("Answer sent: "+Util.trimmed(sa.toString(),Util.MAX_UPDATE_DUMP));
 		  } catch (ASN1DecoderFail e) {
 			e.printStackTrace();
@@ -708,7 +711,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 	
 			String instance = aup.peer_instance;
 
-			if (DD.AVOID_REPEATING_AT_PING && !Application.aus.hasSyncRequests(g_peerID, instance)) {
+			if (DD.AVOID_REPEATING_AT_PING && !Application.g_UDPServer.hasSyncRequests(g_peerID, instance)) {
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Received ping confirmation already handled from peer"));
 				if (DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("UDPServer:run: Ping already handled for: "+Util.trimmed(g_peerID));
 				return false;					
@@ -722,7 +725,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 			
 			DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Received ping confirmation from peer"));
 			if (DEBUG) System.out.println("UDPServer:run: GID ping: "+aup+" from: "+pak.getSocketAddress());
-			Application.aus.delSyncRequests(g_peerID, instance);
+			Application.g_UDPServer.delSyncRequests(g_peerID, instance);
 
 			//get last snapshot for peerID
 			D_PeerInstance dpi = peer.getPeerInstance(instance);

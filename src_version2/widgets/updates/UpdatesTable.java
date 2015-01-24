@@ -2,26 +2,17 @@ package widgets.updates;
 
 import static util.Util.__;
 
-import java.io.File;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.ActionEvent;
 import java.awt.Point;
 
-import javax.swing.Action;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JTable;
-import javax.swing.JFileChooser;
 import javax.swing.ImageIcon;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
@@ -30,14 +21,7 @@ import javax.swing.table.TableColumn;
 import util.DBInterface;
 import widgets.app.DDIcons;
 import widgets.components.BulletRenderer;
-import widgets.components.DebateDecideAction;
 import config.Application;
-import config.Identity;
-import data.D_MirrorInfo;
-import data.D_Tester;
-import data.D_UpdatesKeysInfo;
-import util.P2PDDSQLException;
-import widgets.updatesKeys.UpdatesKeysTable;
 
 
 public class UpdatesTable extends JTable implements MouseListener{

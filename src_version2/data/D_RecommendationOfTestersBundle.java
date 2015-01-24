@@ -37,6 +37,7 @@ import ASN1.Encoder;
 
 public class D_RecommendationOfTestersBundle extends ASNObj{
 	public static boolean DEBUG = false;
+	public static boolean _DEBUG = true;
 	int version;
 	public String senderGIDH;
 	public ArrayList<D_TesterRatingByPeer> testersRatingList = new ArrayList<D_TesterRatingByPeer>();
@@ -91,16 +92,26 @@ public class D_RecommendationOfTestersBundle extends ASNObj{
 			// check for duplicate and store the newest recommendation
 			boolean newRecom = crt.loadRemote(testerRating, this, (k==0)?this.signature:null);
 			// ignore old recommendations based on the creation date
-			if (! newRecom){
-				if (DEBUG) System.out.println("D_RecommendationOfTestersBundle:storeMessage(): old recommendation");
-			} else {
+			if (newRecom) {
+				crt.setArrivalDate();
 				crt.storeRequest();
+			} else {
+				if (_DEBUG) System.out.println("D_RecommendationOfTestersBundle:storeMessage(): old recommendation");
 			}
 			/**
 			 * Clear the delete test flag to show that the tester is used.
 			 */
 			crt.setDeleteTestFlag(false);
 			crt.releaseReferences();
+			
+//			D_RecommendationOfTester o;
+//			long lID = crt.getLID();
+//			if (lID > 0) {
+//				o=D_RecommendationOfTester.getRecommendationOfTesterByLID(crt.getLID(), true);
+//				System.out.println("D_RecommendationOfTesterBundle: storeMessage: got "+o+" for "+crt);
+//			} else {
+//				System.out.println("D_RecommendationOfTesterBundle: storeMessage: no LID yet for "+crt);				
+//			}
 		}
 		for (D_RecommendationOfTester old : oldies) {
 			

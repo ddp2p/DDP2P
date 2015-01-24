@@ -490,7 +490,7 @@ class D_Witness extends ASNObj implements Summary {
 		}
 		
 		boolean result = Util.verifySignByID(this.getSignableEncoder().getBytes(), pk_ID, signature);
-		if (_DEBUG) {
+		if (DEBUG) {
 			System.out.println("D_Witness:verifySignature: result="+result);
 			if(result == false) System.out.println("D_Witness:verifySignature: failed for object="+this);
 			if(result == false) System.out.println("D_Witness:verifySignature: failed for pk="+pk_ID);

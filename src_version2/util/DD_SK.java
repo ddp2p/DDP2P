@@ -211,7 +211,7 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		return DD.STEGO_SK;
 	}
 	public static BigInteger getASN1Tag() {
-		return new BigInteger(DD.STEGO_SK+"");
+		return new BigInteger(DD.getPositive(DD.STEGO_SK)+"");
 	}
 
 	/**

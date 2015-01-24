@@ -1,6 +1,6 @@
+// Should be called widgets.u[datesMirrors;
 package widgets.updates;
 
-import java.util.ArrayList;
 import javax.swing.JComboBox;
 import javax.swing.JTable;
 import javax.swing.table.TableCellRenderer;
