@@ -29,6 +29,13 @@ class CipherSuit {
 		this.ciphersize = ECDSA.P_521;
 		this.hash_alg = Cipher.SHA256;
 	}
+	public static CipherSuit newCipherSuit(String _cipher, String _hash_alg, int _ciphersize) {
+		CipherSuit cs = new CipherSuit();
+		cs.cipher = _cipher;
+		cs.hash_alg = _hash_alg;
+		cs.ciphersize = _ciphersize;
+		return cs;
+	}	
 	public String toString() {
 		String result = "";
 		result += "\n\tcipher="+cipher;

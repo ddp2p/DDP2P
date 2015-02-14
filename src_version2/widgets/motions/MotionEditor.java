@@ -78,6 +78,7 @@ import data.D_Document;
 import data.D_Justification;
 import data.D_Motion;
 import data.D_MotionChoice;
+import data.D_Organization;
 import data.D_Vote;
 import data.MotionsGIDItem;
 
@@ -1644,6 +1645,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: signed:"+crt_motion);
 			long m_id = crt_motion.storeRequest_getID();
 			crt_motion.releaseReference();
+			hds.ClientSync.addToPayloadAdvertisements(crt_motion.getGID(), D_Organization.getOrgGIDHashGuess(crt_motion.getOrganizationGID_force()), null, streaming.RequestData.MOTI);
 
 			/*
 			boolean _ver = crt_motion.verifySignature();
@@ -1767,7 +1769,12 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 			if (DEBUG) System.out.println("MotionEditor: handleFieldEvent: submitting: signed:"+crt_motion);
 			long m_id = crt_motion.storeRequest_getID();
 			crt_motion.releaseReference();
-
+			
+			//if ((this.getSignature() != null) && (getGID() != null)) 
+			hds.ClientSync.addToPayloadAdvertisements(crt_motion.getGID(), D_Organization.getOrgGIDHashGuess(crt_motion.getOrganizationGID_force()), null, streaming.RequestData.MOTI);
+			//ClientSync.payload_recent.add(streaming.RequestData.MOTI, this.getGID(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID_force()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
+			
+				
 			if (m_id <= 0) {
 				Util.printCallPath("Why Error saving motion!"); 
 				return;

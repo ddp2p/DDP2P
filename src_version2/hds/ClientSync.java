@@ -290,18 +290,24 @@ public class ClientSync{
 	 * @param peer_ID
 	 * @return
 	 */
-	public static ASNSyncPayload getSyncReqPayload(String peer_ID){		
+	public static ASNSyncPayload getSyncReqPayload(String peer_ID) {		
 		ArrayList<ResetOrgInfo> changed_orgs = getChangedOrgs(peer_ID);
-		if(!ClientSync.payload_recent.empty() || !ClientSync._payload_fix.empty()
-				|| ((changed_orgs != null)&&(changed_orgs.size()>0))) {
+		if (! ClientSync.payload_recent.empty() 
+				|| ! ClientSync._payload_fix.empty()
+				|| (
+						(changed_orgs != null)
+						&& (changed_orgs.size() > 0)
+					)
+			) 
+		{
 			ASNSyncPayload _payload = new ASNSyncPayload();
-			if(ClientSync.USE_PAYLOAD_REQUESTED)_payload.requested.add(payload.requested);
+			if (ClientSync.USE_PAYLOAD_REQUESTED) _payload.requested.add(payload.requested);
 			_payload.changed_orgs = changed_orgs;
-			if(!ClientSync.payload_recent.empty() && !ClientSync._payload_fix.empty()) {
+			if (! ClientSync.payload_recent.empty() && ! ClientSync._payload_fix.empty()) {
 				_payload.advertised = ClientSync.payload_recent.clone();
 				_payload.advertised.add(ClientSync._payload_fix);
 			}
-			if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("Client: buildRequests: payload set");
+			if (DEBUG || DD.DEBUG_CHANGED_ORGS) System.out.println("Client: buildRequests: payload set");
 			return _payload;
 		}
 		return new ASNSyncPayload();
@@ -662,23 +668,32 @@ public class ClientSync{
 	 * @param org_hash
 	 * @param type
 	 */
-	public static void addToPayloadAdvertisements(String hash, String org_hash, int type) {
+	public static void addToPayloadAdvertisements(String hash, String org_hash, String date, int type) {
 		RequestData target = null;
-		for(RequestData a: payload_recent.rd) {
-			if(org_hash.equals(a.global_organization_ID_hash)) {
+		for (RequestData a: payload_recent.rd) {
+			if (org_hash.equals(a.global_organization_ID_hash)) {
 				target = a;
 			}
 		}
-		if(target == null) {
+		if (target == null) {
 			target = new RequestData();
 			payload_recent.rd.add(target);
 		}
 		
-		if (target.addHashIfNewTo(hash, type, MAX_ITEMS_PER_TYPE_PAYLOAD))
-			try {
-				DD.touchClient();
-			} catch (NumberFormatException e) {
-				e.printStackTrace();
-			}
+		if (date == null) {
+			if (target.addHashIfNewTo(hash, type, MAX_ITEMS_PER_TYPE_PAYLOAD))
+				try {
+					DD.touchClient();
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				}
+		} else {
+			if (target.addHashIfNewTo(hash, date, type, MAX_ITEMS_PER_TYPE_PAYLOAD))
+				try {
+					DD.touchClient();
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				}
+		}
 	}
 }

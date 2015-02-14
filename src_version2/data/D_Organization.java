@@ -221,7 +221,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				int tries = 0;
 				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_ORGS)
 						|| (current_space > SaverThreadsConstants.MAX_ORGS_RAM)) {
-					if (loaded_objects.size() <= SaverThreadsConstants.MIN_ORGS_RAM) break; // at least _crt_peer and _myself
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_ORGS) break; // at least _crt_peer and _myself
 	
 					if (tries > MAX_TRIES) break;
 					tries ++;
@@ -2277,11 +2277,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 */
 	public static void storeOrgParams(String orgLID, D_OrgParam[] orgParam, boolean just_created) throws P2PDDSQLException{
 		// Cannot be deleted and rewritten since we would lose references to the IDs from const values
-		if (!just_created) {
+		if (! just_created) {
 			Application.db.updateNoSync(table.field_extra.TNAME,
 					new String[]{table.field_extra.tmp},
 					new String[]{table.organization.organization_ID},
-					new String[]{"1",orgLID}, DEBUG);
+					new String[]{"1", orgLID}, DEBUG);
 		}		
 		long _orgLID = Util.lval(orgLID, -1);
 		
@@ -2290,9 +2290,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			//String[] fieldNames_extra_update = Util.trimmed(table.field_extra.org_field_extra_insert.split(","));
 			for (int k = 0; k < orgParam.length; k ++) {
 				D_OrgParam op = orgParam[k];
-				if (DEBUG) out.println("OrgHandling:updateOrg: Inserting/Updating field: "+op);
+				if (DEBUG) out.println("OrgHandling: updateOrg: Inserting/Updating field: "+op);
 				String fe;
-				if (op.field_LID <= 0 && ! just_created)
+				if (op.field_LID <= 0 && ! just_created) // happen on repeated import with DD_SK
 					fe = D_Organization.getFieldExtraLID_FromTable(op.global_field_extra_ID, _orgLID);
 				else fe = Util.getStringID(op.field_LID);
 				
@@ -2327,7 +2327,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				}
 			}
 		}
-		if (!just_created) {
+		if (! just_created) {
 			Application.db.deleteNoSync(table.field_extra.TNAME,
 				new String[]{table.field_extra.tmp, table.organization.organization_ID},
 				new String[]{"1",orgLID}, DEBUG);
@@ -2440,8 +2440,35 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @return
 	 */
 	public boolean isTemporary() {
-		return this.temporary || this.signature == null || this.signature.length == 0 || this.getGID() == null;
+		return this.temporary || this.getGID() == null || 
+				(! this.isGrassroot() && (this.signature == null || this.signature.length == 0));
 	}
+	/**
+	 * Only returns true if known to be grassroot (false for temporary)
+	 * @return
+	 */
+	public boolean isGrassroot() {
+		String GIDH = this.getGIDH_or_guess();
+		if (GIDH == null) return false;
+		if (GIDH.startsWith(D_GIDH.d_OrgGrassSign)) return true; // grass root
+		if (GIDH.startsWith(D_GIDH.d_OrgAuthSign)) return false;
+		return this.getCertifyingMethod() == table.organization._GRASSROOT;
+	}
+	/**
+	 * Only returns true if known to be authoritarian (false for temporary)
+	 * @return
+	 */
+	public boolean isAuthoritarian() {
+		String GIDH = this.getGIDH_or_guess();
+		if (GIDH == null) return false;
+		if (GIDH.startsWith(D_GIDH.d_OrgGrassSign)) return false; // grass root
+		if (GIDH.startsWith(D_GIDH.d_OrgAuthSign)) return true;
+		return this.getCertifyingMethod() == table.organization._AUTHORITARIAN;
+	}
+	public boolean isExpression() {
+		return this.getCertifyingMethod() == table.organization._EXPRESSION;
+	}
+
 	public void setHidden() {
 		this.hidden = true;
 		setPreferencesDate();
@@ -3044,7 +3071,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	public static long storeRemote(D_Organization oRG, boolean[] _changed,
 			RequestData __sol_rq, RequestData __new_rq, D_Peer provider) {
+		//boolean DEBUG = true;
 		if (DEBUG) out.println("D_Organization: storeRemote: start");
+		if (DEBUG) out.println("D_Organization: storeRemote: received="+oRG);
 /*		
 		if (oRG.getLID() == 0) { oRG.setLID(null);}
 		boolean locals = oRG.fillLocals(provider, __new_rq, true, Util.getGeneralizedTime());
@@ -3061,11 +3090,15 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			return  D_Organization.getLIDbyGID(oRG.getGID());// -1;//oRG.getLID();
 		}
 		D_Organization org = D_Organization.getOrgByGID_or_GIDhash(oRG.getGID(), oRG.getGIDH_or_guess(), true, true, true, provider);
-		if (!org.isTemporary() && org.getLID() <= 0) Util.printCallPath("Why not temporary?"+org);
+		if (DEBUG) out.println("D_Organization: storeRemote: old = "+org);
+		if (! org.isTemporary() && org.getLID() <= 0) Util.printCallPath("Why not temporary?"+org);
 		if (org.loadRemote(oRG, provider, _changed, __sol_rq, __new_rq)) {
+			if (DEBUG) out.println("D_Organization: storeRemote: loaded="+org);
 			Application_GUI.inform_arrival(org, provider);
 			//org.dirty_main = true;
 			if (org.dirty_any()) org.storeRequest_getID();
+		} else {
+			if (DEBUG) out.println("D_Organization: storeRemote: no load");
 		}
 		org.getLID_forced();
 		org.releaseReference();
@@ -3096,10 +3129,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @return
 	 */
 	private boolean loadRemote(D_Organization oRG, D_Peer provider, boolean[] changed, RequestData _sol_rq, RequestData _new_rq) {
-		if (DEBUG) out.println("D_Organization: storeVerified: Test integrate old: "+this+" vs incoming: "+oRG);
+		//boolean DEBUG = true;
+		if (DEBUG) out.println("D_Organization: loadRemote: Test integrate old: "+this+"\nvs\n incoming: "+oRG);
 		
 		if (! this.isTemporary() && ! newer(oRG, this)) {
-			if (DEBUG) out.println("D_Organization: storeVerified: Will not integrate old ["+oRG.getCreationDate_str()+"]: "+this);
+			if (DEBUG) out.println("D_Organization: loadRemote: Will not integrate old ["+oRG.getCreationDate_str()+"]: "+this);
 			if (changed != null) changed[0]=false;
 			if (this.getLID() <= 0) Util.printCallPath("Why is this not tempory?"+this);
 			this.getLID_forced();
@@ -3137,6 +3171,29 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				p.storeRequest_getID();
 				p.releaseReference();
 				this.setCreatorID(p.getLIDstr(), oRG.getCreatorGID());
+			}
+		}
+		if (this.params.orgParam != null) {
+			Hashtable<String, Long> fLIDs = new Hashtable<String, Long>();
+			if (oldParams.orgParam != null)
+				for (D_OrgParam _op : oldParams.orgParam) {
+					if (_op.global_field_extra_ID != null)
+						fLIDs.put(_op.global_field_extra_ID, _op.field_LID);
+				}
+				
+			for (D_OrgParam _p : this.params.orgParam) {
+				if (_p.global_field_extra_ID == null) continue;
+				Long old_fLID = fLIDs.get(_p.global_field_extra_ID);
+				if (old_fLID != null) _p.field_LID = old_fLID;
+					
+//					long old_fLID = -1;
+//					for (D_OrgParam _op : oldParams.orgParam) {
+//						if (Util.equalStrings_and_not_null(_p.global_field_extra_ID, _op.global_field_extra_ID)) {
+//							old_fLID = _op.field_LID;
+//							break;
+//						}
+//					}
+//					if (old_fLID > 0) _p.field_LID = old_fLID;
 			}
 		}
 		if ((creator_ID == null) && (this.params.creator_global_ID != null)) {

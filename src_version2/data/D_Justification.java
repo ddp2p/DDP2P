@@ -470,7 +470,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 				int tries = 0;
 				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_JUSTIFICATIONS)
 						|| (current_space > SaverThreadsConstants.MAX_JUSTIFICATIONS_RAM)) {
-					if (loaded_objects.size() <= SaverThreadsConstants.MIN_JUSTIFICATIONS) break; // at least _crt_peer and _myself
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_JUSTIFICATIONS) break; // at least _crt_peer and _myself
 	
 					if (tries > MAX_TRIES) break;
 					tries ++;
@@ -2730,15 +2730,18 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	}
 	/**
 	 * To be called for an arriving and decoded object that was checked for GID correctness
-	 * and no blocking, and that is saved directly, without loadRemote()
+	 * and no blocking, and that is saved directly, without loadRemote().
+	 * 
+	 * Sets Temporary to false and sets an arrival time. It also sets dirty flags.
+	 * Created temporary items are set to no blocking.
 	 * @param sol_rq
 	 * @param new_rq
 	 * @param __peer
 	 */
 	public void fillLocals(RequestData sol_rq, RequestData new_rq, D_Peer __peer) {
-		boolean default_blocked_org = false;
-		boolean default_blocked_cons = false;
-		boolean default_blocked_mot = false;
+		boolean default_blocked_org = DD.BLOCK_NEW_ARRIVING_TMP_ORGS;// false;
+		boolean default_blocked_cons = DD.BLOCK_NEW_ARRIVING_TMP_CONSTITUENT; //false;
+		boolean default_blocked_mot = DD.BLOCK_NEW_ARRIVING_TMP_MOTIONS; //false;
 
 		if (this.global_organization_ID != null && this.getOrganizationLID() <= 0) {
 			long oID = D_Organization.getLIDbyGIDorGIDH(getOrgGID(), getOrgGIDH());
@@ -2787,9 +2790,9 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	 */
 	public boolean loadRemote(D_Justification r, RequestData sol_rq,
 			RequestData new_rq, D_Peer __peer) {
-		boolean default_blocked_org = false;
-		boolean default_blocked_cons = false;
-		boolean default_blocked_mot = false;
+		boolean default_blocked_org = DD.BLOCK_NEW_ARRIVING_TMP_ORGS;// false;
+		boolean default_blocked_cons = DD.BLOCK_NEW_ARRIVING_TMP_CONSTITUENT; //false;
+		boolean default_blocked_mot = DD.BLOCK_NEW_ARRIVING_TMP_MOTIONS; //false;
 		
 		if (! this.isTemporary()) {
 			if (DEBUG) System.out.println("D_Justification: loadRemote: this not temporary! quit: "+this);

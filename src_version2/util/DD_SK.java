@@ -28,20 +28,21 @@ import ASN1.ASNObj;
 import ASN1.Decoder;
 import ASN1.Encoder;
 
-class SK_SaverThread extends Thread {
+class SK_SaverThread extends util.DDP2P_ServiceThread {
 	private static final boolean DEBUG = false;
 	DD_SK ds;
 	SK_SaverThread(DD_SK ds) {
+		super("SK_Saver", false, ds);
 		this.ds = ds;
 	}
-	public void run() {
+	public void _run() {
 		try {
-			_run();
+			__run();
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 	}
-	public void _run() throws P2PDDSQLException{
+	public void __run() throws P2PDDSQLException{
     	for (DD_SK_Entry d : ds.sk) {
     		try {
 	    		String params[] = new String[table.key.fields.length];
@@ -54,7 +55,9 @@ class SK_SaverThread extends Thread {
 	       		params[table.key.COL_IDHASH] = Util.getGIDhash((String)params[table.key.COL_PK]);
 	       		Application.db.insert(table.key.TNAME, table.key.fields, params, DEBUG);
     		} catch (Exception e) {
-    			Application_GUI.warning(__("Error saving key:")+d+"\n"+e.getLocalizedMessage(), __("Error saving key"));
+    			String localized = "";
+    			if (e.getLocalizedMessage() != null) localized = "\n"+__("Error:")+e.getLocalizedMessage();
+    			Application_GUI.warning(__("Error saving key:")+d+localized+"\nError:"+e, __("Error saving key"));
     			e.printStackTrace();
     		}
      	}
@@ -156,20 +159,20 @@ public class DD_SK extends ASNObj implements StegoStructure {
 
 	@Override
 	public void save() throws P2PDDSQLException {
-		if (DEBUG) System.out.println("DD_Testers:save");
+		if (DEBUG) System.out.println("DD_SK: save");
 		new SK_SaverThread(this).start();
-    	if(true){
-    		Application_GUI.warning(__("Adding testers:")+" \n"+this.toString(), __("Import"));
+    	if (true) {
+    		Application_GUI.warning(__("Work Launched to Add Objects:")+" \n"+this.getNiceDescription(), __("Import DD_SK"));
     		//return;
     	}
 	}
 
 	@Override
 	public void setBytes(byte[] asn1) throws ASN1DecoderFail {
-		if(DEBUG)System.out.println("DD_Testers:decode "+asn1.length);
+		if (DEBUG) System.out.println("DD_SK: setBytes "+asn1.length);
 		decode(new Decoder(asn1));
 		if (this.empty()) throw new ASN1.ASNLenRuntimeException("Empty object!");
-		if(DEBUG)System.out.println("DD_Testers:decoded");
+		if (DEBUG) System.out.println("DD_SK: setBytes");
 	}
 
 	@Override
@@ -179,7 +182,29 @@ public class DD_SK extends ASNObj implements StegoStructure {
 
 	@Override
 	public String getNiceDescription() {
-		return this.toString();
+		String result = "";
+		for (DD_SK_Entry _sk : sk)
+			result += "SK[: sk="+_sk.name+"]";//Util.concat(sk, ";;;", "NULL");
+		for (D_Peer _peer : peer)
+			result += " Safe=["+_peer.getName()+"]";
+		for (D_Organization _org : org)
+			result += " Org=["+_org.getName()+"]";
+		for (D_Constituent _constit : constit)
+			result += " Cons=["+_constit.getNameFull()+"]";
+		for (D_Witness _witn : witn)
+			result += " Witn=["+_witn.witnessed_global_constituentID+"]";
+		for (D_Motion _moti : moti)
+			result += " Moti=["+_moti.getTitleStrOrMy()+"]";
+		for (D_Justification _just : just)
+			result += " Just=["+_just.getTitleStrOrMy()+"]";
+		for (D_News _news : news)
+			result += " News=["+_news.getTitleStrOrMy()+"]";
+		for (D_Vote _vote : vote)
+			result += " Vote=["+_vote.getChoice()+" "+_vote.getMotionGID()+"]";
+		// to implement
+		if (tran.size() > 0) result += " tran="+Util.concat(tran, ",,,", "NULL");
+		result += "]";
+		return result;
 	}
 
 	@Override
@@ -246,7 +271,7 @@ public class DD_SK extends ASNObj implements StegoStructure {
 	@Override
 	public DD_SK decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();
-		if (d.getTypeByte() == DD.TAG_AP0) version = d.getFirstObject(true).getInteger().intValue();
+		if (d.getTypeByte() == DD.TAG_AP0) version = d.getFirstObject(true).getInteger(DD.TAG_AP0).intValue();
 		if (d.getTypeByte() == DD.TAG_AC0)
 			sk =  d.getFirstObject(true).getSequenceOfAL(DD_SK_Entry.getASN1Tag(), new DD_SK_Entry());
 		if (d.getTypeByte() == DD.TAG_AC1)
@@ -295,5 +320,73 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		if (sender == null) return false;
 		byte[] msg = this.getSignEncoder().getBytes();
 		return Util.verifySign(msg, sender.getPK(), signature);
+	}
+	
+	public static void addOrganizationToDSSK(DD_SK d_SK, D_Organization crt_org) {
+		if (crt_org == null) return;
+		for (D_Organization c : d_SK.org) {
+			if (c == crt_org) return;
+			if (c.getLID() == crt_org.getLID()) return;
+		}
+		d_SK.org.add(crt_org);
+	}
+	public static void addNeighborhoodToDSSK(DD_SK d_SK, D_Neighborhood neighborhood) {
+		d_SK.neigh.add(neighborhood);
+		//new D_Witness(a,b,c,e);// must avoid recursive adding of neighborhoods from constituents
+	}
+	public static void addConstituentToDSSK(DD_SK d_SK, D_Constituent constituent) {
+		if (constituent == null) return;
+		for (D_Constituent c : d_SK.constit) {
+			if (c == constituent) return;
+			if (c.getLID() == constituent.getLID()) return;
+		}
+		
+		d_SK.constit.add(constituent);
+		addOrganizationToDSSK(d_SK, constituent.getOrganization());
+		
+		constituent.loadNeighborhoods(D_Constituent.EXPAND_ALL);
+		D_Neighborhood[] n = constituent.getNeighborhood();
+		if (n != null) {
+			for (D_Neighborhood _n : n) {
+				// could also add a witness for the neighborhood (with its source... if it is me)
+				addNeighborhoodToDSSK(d_SK, _n);
+			}
+		}
+		//constituent.setNeighborhood(null);
+	}
+	public static void addJustificationToDSSK(DD_SK d_SK, D_Justification crt_justification) {
+		if (crt_justification != null) {
+			d_SK.just.add(crt_justification);
+			addConstituentToDSSK(d_SK, crt_justification.getConstituentForce());
+			addMotionToDSSK(d_SK, crt_justification.getMotionForce());
+		}
+	}
+	public static void addMotionToDSSK(DD_SK d_SK, D_Motion crt_motion) {
+		
+		d_SK.moti.add(crt_motion);
+		
+		D_Constituent constituent = crt_motion.getConstituent();
+		addConstituentToDSSK(d_SK, constituent);
+		
+		D_Organization org = crt_motion.getOrganization();
+		addOrganizationToDSSK(d_SK, org);
+		
+		D_Constituent crt_constituent = DD.getCrtConstituent(crt_motion.getOrganizationLID());
+		if (crt_constituent != null) {
+			long _constituentID = crt_constituent.getLID();
+			if (_constituentID > 0) {
+				try {
+					D_Vote my_vote = D_Vote.getOpinionForMotion(crt_motion.getLIDstr(), _constituentID);
+					if (my_vote != null) {
+						d_SK.vote.add(my_vote);
+						addConstituentToDSSK(d_SK, crt_constituent);
+						D_Justification j = my_vote.getJustificationFromObjOrLID();
+						addJustificationToDSSK(d_SK, j);
+					}
+				} catch (P2PDDSQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 }

@@ -408,10 +408,10 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 			asr.decode(dec);
 			//if (_DEBUG) System.out.println("***UDPServerThread: handleRequest: Request new from: "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(asr.lastSnapshot));
 			if (! registerASR(asr, peer_address, msg)) {
-				if (DEBUG) System.out.println("UDPServerThread: handleRequest: Drop duplicate request from: "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(asr.lastSnapshot));
+				if (DEBUG) System.out.println("UDPServerThread: handleRequest: Drop duplicate request from: "+psa+" "+Util.nullDiscrim(asr.getPeerName())+":"+asr.getInstanceDisplay_ASR_and_Peer()+" /"+Encoder.getGeneralizedTime(asr.lastSnapshot));
 				if (true || ! DD.RELEASE) return;
 			}
-			if (_DEBUG) System.out.println("UDPServerThread: handleRequest: Request from: "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(asr.lastSnapshot) + " len=" + msg.length);
+			if (_DEBUG) System.out.println("UDPServerThread: handleRequest: Request from: "+psa+" "+Util.nullDiscrim(asr.getPeerName())+":"+asr.getInstanceDisplay_ASR_and_Peer()+" /"+Encoder.getGeneralizedTime(asr.lastSnapshot) + " len=" + msg.length);
 			if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UDPServerThread: handleRequest: specific requests=" + asr.request);
 			if (asr.pushChanges != null) {
 				if (DEBUG || DD.DEBUG_TMP_GIDH_MANAGEMENT) System.out.println("UDPServerThread: handleRequest: advertised=" + asr.pushChanges.advertised);
@@ -483,7 +483,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 
 			SyncAnswer sa = UpdateMessages.buildAnswer(asr, peer_ID);
 			if (sa == null) {
-				if (_DEBUG) System.out.println("UDPServerThread: handleRequest: Null Reply to "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(null));
+				if (_DEBUG) System.out.println("UDPServerThread: handleRequest: Null Reply to "+psa+" "+asr.getPeerName()+":"+asr.getInstanceDisplay_ASR_and_Peer()+" /"+Encoder.getGeneralizedTime(null));
 				return;
 			}
 
@@ -507,7 +507,7 @@ public class UDPServerThread extends util.DDP2P_ServiceThread {
 			if (DEBUG) System.out.println("\n\nPrepared answer: "+sa.toString());
 			byte[] sa_msg = sa.encode();
 			if (DEBUG) System.out.println("\n\nPrepared answer2: "+new ASNSyncPayload().decode(new Decoder(sa_msg)).toString());
-			if (DEBUG) System.out.println("   UDPServerThread: handleRequest: Reply to "+psa+" "+asr.getPeerName()+":"+asr.getInstance()+" /"+Encoder.getGeneralizedTime(sa.upToDate)+"\n"+sa);
+			if (DEBUG) System.out.println("   UDPServerThread: handleRequest: Reply to "+psa+" "+asr.getPeerName()+":"+asr.getInstanceDisplay_ASR_and_Peer()+" /"+Encoder.getGeneralizedTime(sa.upToDate)+"\n"+sa);
 
 			us.sendLargeMessage(psa, sa_msg, DD.MTU, peerGID, DD.MSGTYPE_SyncAnswer);
 			//if(_DEBUG || DD.DEBUG_COMMUNICATION)System.out.println("UDPServer:run: Answer sent! "+sa.toSummaryString());

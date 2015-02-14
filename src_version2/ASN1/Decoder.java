@@ -406,10 +406,10 @@ class Decoder {
 		try {
 			if (DEBUG) System.out.println("Decoder: getInteger: type="+data[offset]+" vs="+Encoder.TAG_INTEGER);
 			//assert
-			if (!(data[offset]==Encoder.TAG_INTEGER)) {
+			if (! (data[offset] == Encoder.TAG_INTEGER)) {
 				Util.printCallPathTop("Encoder: getInteger: Failed Encoder:"+getTypeByte());
 			}
-		} catch(Exception e) {
+		} catch (Exception e) {
 			System.out.println("Decoder: getInteger: type="+data[offset]);
 			e.printStackTrace();
 		}

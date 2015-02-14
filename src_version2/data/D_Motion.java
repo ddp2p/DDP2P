@@ -691,7 +691,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				int tries = 0;
 				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_MOTIONS)
 						|| (current_space > SaverThreadsConstants.MAX_MOTIONS_RAM)) {
-					if (loaded_objects.size() <= SaverThreadsConstants.MIN_MOTIONS) break; // at least _crt_peer and _myself
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_MOTIONS) break; // at least _crt_peer and _myself
 	
 					if (tries > MAX_TRIES) break;
 					tries ++;
@@ -1732,9 +1732,6 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		}
 		dirty_choices = false;
 		D_MotionChoice.save(getChoices(), getLIDstr(), sync);
-		
-		if ((this.getSignature() != null) && (getGID() != null))
-			ClientSync.payload_recent.add(streaming.RequestData.MOTI, this.getGID(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID_force()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 	}
 	private void storeAct_my() {
 		//boolean DEBUG = true;
@@ -1823,6 +1820,11 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 						params,
 						DEBUG
 						);
+				
+//				if ((this.getSignature() != null) && (getGID() != null)) {
+//					hds.ClientSync.addToPayloadAdvertisements(this.getGID(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID_force()), null, streaming.RequestData.MOTI);
+//					//ClientSync.payload_recent.add(streaming.RequestData.MOTI, this.getGID(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID_force()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
+//				}
 			} else {
 				result = Application.db.insertNoSync(table.motion.TNAME,
 						table.motion.fields_noID_array, //fields_array,

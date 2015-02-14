@@ -598,6 +598,11 @@ class D_Vote extends ASNObj{
 			}
 		}
 		setSignature(Util.sign(this.getSignableEncoder().getBytes(), sk));
+		
+		hds.ClientSync.addToPayloadAdvertisements(this.getGID(),
+				D_Organization.getOrgGIDHashGuess(this.getOrganizationGID()), 
+				Encoder.getGeneralizedTime(this.getCreationDate()), 
+				streaming.RequestData.SIGN);
 		if (DEBUG) System.out.println("WB_Vote: sign: got this="+Util.byteToHexDump(getSignature()));
 		return getSignature();
 	}
@@ -1043,7 +1048,11 @@ class D_Vote extends ASNObj{
 					
 						BroadcastClient.msgs.registerRecent(pm, BroadcastQueueHandled.VOTE);
 					}
-					ClientSync.payload_recent.add(streaming.RequestData.SIGN, this.getGID(), this.getCreationDate(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
+//					hds.ClientSync.addToPayloadAdvertisements(this.getGID(),
+//							D_Organization.getOrgGIDHashGuess(this.getOrganizationGID()), 
+//							Encoder.getGeneralizedTime(this.getCreationDate()), 
+//							streaming.RequestData.SIGN);
+					//ClientSync.payload_recent.add(streaming.RequestData.SIGN, this.getGID(), this.getCreationDate(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 				}
 			}
 		}

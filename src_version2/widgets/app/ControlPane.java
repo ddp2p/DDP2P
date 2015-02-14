@@ -57,6 +57,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.BevelBorder;
@@ -199,6 +200,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	JButton saveMyAddress = new JButton(__("Save Address"));
 	JButton signUpdates = new JButton(__("Sign Updates"));
 	JButton loadPeerAddress = new JButton(__("Load Peer Address"));
+	JButton importText = new JButton(__("Import Text"));
 	JButton broadcastingProbabilities = new JButton(__("Set Broadcasting Probability"));
 	JButton broadcastingQueueProbabilities = new JButton(__("Set Broadcasting Queue Probability"));
 	JButton generationProbabilities = new JButton(__("Set Generation Probability"));
@@ -208,8 +210,32 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	JButton keepThisVersion = new JButton(__("Fix: Keep This Version"));
 	JButton setLinuxScriptsPath = new JButton(__("Set Linux Scripts Path"));
 	JButton setWindowsScriptsPath = new JButton(__("Set Windows Scripts Path"));
-	public final static JFileChooser file_chooser_address_container = new JFileChooser();
-	public final static JFileChooser file_chooser_updates_to_sign = new JFileChooser();
+	
+	JTextArea importedText = new JTextArea();
+	
+	public final static String c_importText = "importText";
+	public static final String c_import = "import";
+	public static final String c_export = "export";
+	public static final String c_peerSlogan = "peerSlogan";
+	public static final String c_peerID = "peerID";
+	public static final String c_peerName = "peerName";
+	public static final String c_broadcastable = "broadcastable";
+	private static final String c_convert = "convert";
+	private static final String c_linuxScriptsPath = "linuxScriptsPath";
+	private static final String c_adh_IP = "adh_IP";
+	private static final String c_adh_BIP = "adh_BIP";
+	private static final String c_dd_SSID = "dd_SSID";
+	private static final String c_adhoc_mask = "adhoc_mask";
+	private static final String c_server = "server";
+	private static final String c_userver = "userver";
+	private static final String c_broadcast_server = "broadcast_server";
+	private static final String c_broadcast_client = "broadcast_client";
+	private static final String c_simulator = "simulator";
+	private static final String c_keepThisVersion = "keepThisVersion";
+	private static final String c_updates_client = "updates_client";
+	private static final String c_client = "client";
+	private static final String c_t_client = "t_client";
+	private static final String c_directory = "directory";
 	private static final String exportDirectories_action = "saveDirectories";
 	private static final String setListingDirectories_action = "listingDirectories";
 	private static final String action_button_clean_SMTP = "clean_SMTP";
@@ -218,6 +244,9 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	private static final String action_clientPause = "clientPause";
 	private static final String action_natBorer = "natBorer";
 	private static final String action_textfield_EmailUsername = "emailUsername";
+	
+	public final static JFileChooser file_chooser_address_container = new JFileChooser();
+	public final static JFileChooser file_chooser_updates_to_sign = new JFileChooser();
 	public JCheckBox serveDirectly;
 	public JCheckBox tcpButton;
 	public JCheckBox udpButton;
@@ -849,7 +878,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		p.add(toggleBroadcastable,c);
 		toggleBroadcastable.addActionListener(this);
 		toggleBroadcastable.setMnemonic(KeyEvent.VK_B);
-		toggleBroadcastable.setActionCommand("broadcastable");
+		toggleBroadcastable.setActionCommand(c_broadcastable);
 		boolean val = Identity.getAmIBroadcastable();
 		this.toggleBroadcastable.setText(val?this.BROADCASTABLE_YES:this.BROADCASTABLE_NO);
 		c.gridx = 1;
@@ -857,32 +886,46 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		setPeerName.setFont(new Font("Times New Roman",Font.BOLD,14));
 		p.add(setPeerName, c);
 		setPeerName.addActionListener(this);
-		setPeerName.setActionCommand("peerName");
+		setPeerName.setActionCommand(c_peerName);
 		c.gridx = 0;
         c.gridy = 1;
         setNewPeerID.setFont(new Font("Times New Roman",Font.BOLD,14));
 		p.add(setNewPeerID, c);
 		setNewPeerID.addActionListener(this);
-		setNewPeerID.setActionCommand("peerID");
+		setNewPeerID.setActionCommand(c_peerID);
 		
 		c.gridx = 1;
         c.gridy = 1;
         setPeerSlogan.setFont(new Font("Times New Roman",Font.BOLD,14));
 		p.add(setPeerSlogan, c);
 		setPeerSlogan.addActionListener(this);
-		setPeerSlogan.setActionCommand("peerSlogan");
+		setPeerSlogan.setActionCommand(c_peerSlogan);
+		
 		c.gridx = 0;
         c.gridy = 2;
         saveMyAddress.setFont(new Font("Times New Roman",Font.BOLD,14));
 		p.add(saveMyAddress, c);
 		saveMyAddress.addActionListener(this);
-		saveMyAddress.setActionCommand("export");
+		saveMyAddress.setActionCommand(c_export);
 		c.gridx = 1;
         c.gridy = 2;
         loadPeerAddress.setFont(new Font("Times New Roman",Font.BOLD,14));
 		p.add(loadPeerAddress, c);
 		loadPeerAddress.addActionListener(this);
-		loadPeerAddress.setActionCommand("import");
+		loadPeerAddress.setActionCommand(c_import);
+		
+		c.gridx = 0;
+        c.gridy = 3;
+        // importedText.setFont(new Font("Times New Roman",Font.BOLD,14));
+		p.add(new JScrollPane(importedText), c);
+		//saveMyAddress.addActionListener(this);
+		//saveMyAddress.setActionCommand("export");
+		c.gridx = 1;
+        c.gridy = 3;
+        importText.setFont(new Font("Times New Roman",Font.BOLD,14));
+		p.add(importText, c);
+		importText.addActionListener(this);
+		importText.setActionCommand(c_importText);
 // only for test
 //        JButton convertGIT_BMP = new JButton(_("Convert GIF to BMP"));
 //        		
@@ -1290,7 +1333,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 					if("".equals(val)) val = null;
 				}
 				util.email.EmailManager.setEmailPassword(Identity.current_id_branch, val);
-			}else if ("adh_IP".equals(e.getActionCommand())) {
+			}else if (c_adh_IP.equals(e.getActionCommand())) {
 				String old = DD.WIRELESS_ADHOC_DD_NET_IP_BASE;
 				DD.WIRELESS_ADHOC_DD_NET_IP_BASE = Util.validateIPBase(this.m_area_ADHOC_IP.getText(), DD.WIRELESS_ADHOC_DD_NET_IP_BASE);
 				if(!Util.equalStrings_null_or_not(this.m_area_ADHOC_IP.getText(), DD.WIRELESS_ADHOC_DD_NET_IP_BASE))
@@ -1299,7 +1342,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				if(!Util.equalStrings_null_or_not(old, DD.WIRELESS_ADHOC_DD_NET_IP_BASE))
 					DD.setAppText("WIRELESS_ADHOC_DD_NET_IP_BASE", DD.WIRELESS_ADHOC_DD_NET_IP_BASE);
 				
-			}else if ("adh_BIP".equals(e.getActionCommand())) {
+			}else if (c_adh_BIP.equals(e.getActionCommand())) {
 				String old = DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP;
 				DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP = Util.validateIP(this.m_area_ADHOC_BIP.getText(), DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP);
 				if(!Util.equalStrings_null_or_not(this.m_area_ADHOC_BIP.getText(), DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP))
@@ -1308,7 +1351,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				if(!Util.equalStrings_null_or_not(old, DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP))
 					DD.setAppText("WIRELESS_ADHOC_DD_NET_BROADCAST_IP", DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP);
 				
-			}else if ("dd_SSID".equals(e.getActionCommand())) {
+			}else if (c_dd_SSID.equals(e.getActionCommand())) {
 				String old = DD.DD_SSID;
 				DD.DD_SSID = this.m_area_ADHOC_SSID.getText();
 				if(!Util.equalStrings_null_or_not(this.m_area_ADHOC_SSID.getText(), DD.DD_SSID))
@@ -1316,7 +1359,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				if(!Util.equalStrings_null_or_not(old, DD.DD_SSID))
 					DD.setAppText("DD_SSID", DD.DD_SSID);
 					
-			}else if ("adhoc_mask".equals(e.getActionCommand())) {
+			}else if (c_adhoc_mask.equals(e.getActionCommand())) {
 				String old = DD.WIRELESS_ADHOC_DD_NET_MASK;
 				DD.WIRELESS_ADHOC_DD_NET_MASK = Util.validateIP(this.m_area_ADHOC_Mask.getText(), DD.WIRELESS_ADHOC_DD_NET_MASK);
 				if(!Util.equalStrings_null_or_not(this.m_area_ADHOC_Mask.getText(), DD.WIRELESS_ADHOC_DD_NET_MASK))
@@ -1324,25 +1367,25 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				if(!Util.equalStrings_null_or_not(old, DD.WIRELESS_ADHOC_DD_NET_MASK))
 					DD.setAppText("WIRELESS_ADHOC_DD_NET_MASK", DD.WIRELESS_ADHOC_DD_NET_MASK);
 				
-			}else if ("broadcastable".equals(e.getActionCommand())) {
+			}else if (c_broadcastable.equals(e.getActionCommand())) {
 				boolean val = !Identity.getAmIBroadcastable();
 				this.toggleBroadcastable.setText(val?this.BROADCASTABLE_YES:this.BROADCASTABLE_NO);
 				if(DEBUG)System.out.println("Broadcastable will be toggled to ="+val);
 				HandlingMyself_Peer.setAmIBroadcastable(val);
-			}else if ("server".equals(e.getActionCommand())) {
+			}else if (c_server.equals(e.getActionCommand())) {
 				setServerStatus(Application.g_TCPServer == null);
-			}else if ("userver".equals(e.getActionCommand())) {
+			}else if (c_userver.equals(e.getActionCommand())) {
 				setUServerStatus(Application.g_UDPServer == null);
-			}else if ("broadcast_server".equals(e.getActionCommand())) {
+			}else if (c_broadcast_server.equals(e.getActionCommand())) {
 				if(DEBUG)System.out.println("Action Broadcast Server");
 				DD.setBroadcastServerStatus(Application.g_BroadcastServer == null);
-			}else if ("broadcast_client".equals(e.getActionCommand())) {
+			}else if (c_broadcast_client.equals(e.getActionCommand())) {
 				if(DEBUG)System.out.println("Action Broadcast Client");
 				DD.setBroadcastClientStatus(Application.g_BroadcastClient == null);
-			}else if ("simulator".equals(e.getActionCommand())) {
+			}else if (c_simulator.equals(e.getActionCommand())) {
 				if(DEBUG)System.out.println("Action Simulator");
 				DD.setSimulatorStatus(Application.g_Simulator == null);
-			}else if ("keepThisVersion".equals(e.getActionCommand())) {
+			}else if (c_keepThisVersion.equals(e.getActionCommand())) {
 				try {
 					ClientUpdates.fixLATEST();
 				} catch (IOException e1) {
@@ -1350,17 +1393,17 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 					Application_GUI.warning(__("Keep version failes with: "+e1.getLocalizedMessage()),
 							__("Failed Keep Version"));
 				}
-			}else if ("updates_client".equals(e.getActionCommand())) {
+			}else if (c_updates_client.equals(e.getActionCommand())) {
 				boolean _run = (ClientUpdates.clientUpdates == null);
 				if (DEBUG || ClientUpdates.DEBUG) System.out.println("ControlPane: actionPerformed: object _run = "+_run);
 				setClientUpdatesStatus(_run);
-			}else if ("client".equals(e.getActionCommand())) {
+			}else if (c_client.equals(e.getActionCommand())) {
 				setClientStatus(Application.g_PollingStreamingClient == null);
-			}else if ("t_client".equals(e.getActionCommand())) {
+			}else if (c_t_client.equals(e.getActionCommand())) {
 				DD.touchClient();
-			}else if ("directory".equals(e.getActionCommand())) {
+			}else if (c_directory.equals(e.getActionCommand())) {
 				setDirectoryStatus(Application.g_DirectoryServer == null);
-			}else if ("peerID".equals(e.getActionCommand())) {
+			}else if (c_peerID.equals(e.getActionCommand())) {
 				//MyselfHandling.createMyPeerID();
 				String name = HandlingMyself_Peer.getMyPeerName(); //Identity.current_peer_ID.name;
 				String slogan = HandlingMyself_Peer.getMyPeerSlogan(); //Identity.current_peer_ID.slogan;
@@ -1371,13 +1414,18 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				pi.slogan = slogan;
 				D_Peer me = HandlingMyself_Peer.createMyselfPeer_w_Addresses(pi, true);
 				
-			}else if("peerName".equals(e.getActionCommand())){
+			}else if(c_peerName.equals(e.getActionCommand())){
 				ControlPane.changeMyPeerName(this);
-			}else if("peerSlogan".equals(e.getActionCommand())){
+			}else if(c_peerSlogan.equals(e.getActionCommand())){
 				ControlPane.changeMyPeerSlogan(this);
-			}else if("convert".equals(e.getActionCommand())){
+			}else if(c_convert.equals(e.getActionCommand())){
 				try{GIF_Convert.main(null);}catch(Exception eee){}
-			}else if("linuxScriptsPath".equals(e.getActionCommand())){
+			}else if(c_importText.equals(e.getActionCommand())){
+				try{
+					String textObj = importedText.getDocument().getText(0, importedText.getDocument().getLength()); 
+					importedText.getDocument().remove(0, importedText.getDocument().getLength());
+					DD.importText(textObj);}catch(Exception eee){eee.printStackTrace();}
+			}else if(c_linuxScriptsPath.equals(e.getActionCommand())){
 				if(DEBUG)System.out.println("ControlPane: scripts: "+Identity.current_peer_ID.getPeerGID());
 				String SEP = ",";
 				String previous = Application.getCurrentLinuxPathsString(SEP);

@@ -264,7 +264,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				int tries = 0;
 				while((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_PEERS)
 						|| (current_space > SaverThreadsConstants.MAX_PEERS_RAM)) {
-					if(loaded_objects.size() <= SaverThreadsConstants.MIN_PEERS_RAM) break; // at least _crt_peer and _myself
+					if(loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_PEERS) break; // at least _crt_peer and _myself
 
 					if (tries > MAX_TRIES) break;
 					tries ++;
@@ -2837,6 +2837,10 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		this.storeRequest();
 		return true;
 	}
+	/**
+	 * Just returns the instance string member
+	 * @return
+	 */
 	public String getInstance() {
 		return instance;
 	}
@@ -4692,12 +4696,22 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		this.component_preferences.category = cat;
 		setPreferencesDate();
 	}
+	/**
+	 * Keeps, modifies, calls store request, and frees
+	 * @param peer
+	 * @param value
+	 */
 	public static void setHidden(D_Peer peer, Boolean value) {
 		peer = D_Peer.getPeerByPeer_Keep(peer);
 		peer.setHidden(value);
 		peer.releaseReference();
 	}
+	/**
+	 * if changed, sets dirty and Calls store request.
+	 * @param value
+	 */
 	private void setHidden(Boolean value) {
+		if (value == this.component_preferences.hidden) return;
 		assertReferenced();
 		this.component_preferences.hidden = value;
 		setPreferencesDate();
@@ -5369,7 +5383,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public void setPluginInfo(String instance, ASNPluginInfo[] _plugin_info) {
 		D_PeerInstance inst = this.getPeerInstance(instance);
 		if (inst == null) {
-			System.out.println("D_Peer: setPluginInfo: No known instance object for: \""+instance+"\"");
+			System.out.println("D_Peer: setPluginInfo: No known instance object for: \""+instance+"\" for "+Util.nullDiscrim(instance));
 			Util.printCallPath(""+this);
 			//return;
 			inst = new D_PeerInstance(instance);

@@ -709,7 +709,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 				int tries = 0;
 				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_RECOMMENDATIONS_OT)
 						|| (current_space > SaverThreadsConstants.MAX_RECOMMENDATIONS_OT_RAM)) {
-					if (loaded_objects.size() <= SaverThreadsConstants.MIN_RECOMMENDATIONS_OT) break; // at least _crt_peer and _myself
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_RECOMMENDATIONS_OT) break; // at least _crt_peer and _myself
 	
 					if (tries > MAX_TRIES) break;
 					tries ++;

@@ -45,6 +45,8 @@ import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
 
+import javax.swing.JOptionPane;
+
 import simulator.Fill_database;
 import simulator.SimulationParameters;
 import streaming.OrgHandling;
@@ -1621,6 +1623,13 @@ public class DD {
 		*/
 	}
 	final static public Object stop_monitor = new Object();
+	public static final boolean BLOCK_NEW_ARRIVING_TMP_ORGS = false;
+	public static final boolean BLOCK_NEW_ARRIVING_TMP_CONSTITUENT = false;
+	public static final boolean BLOCK_NEW_ARRIVING_TMP_MOTIONS = false;
+	
+    protected static final String SAFE_TEXT_MY_HEADER_SEP = " | ";
+    protected static final String SAFE_TEXT_MY_BODY_SEP = "||";
+    protected static final String SAFE_TEXT_ANDROID_SUBJECT_SEP = " - ";
 	/**
 	 * Stop servers and wait for the saving threads to stop, sleeping 2 seconds at a time.
 	 */
@@ -1646,4 +1655,206 @@ public class DD {
         System.out.println("Exiting...");
         System.exit(0); // exit from tray icon
 	}
+	
+	public static void importText(String strAddress) {
+        //Interpret
+        String body = extractMessage(strAddress);
+       
+        if (body == null) {
+        	if (_DEBUG) System.out.println("DD: importText: Extraction of body failed");
+//            Toast.makeText(getActivity(), "Separators not found: \""+Safe.SAFE_TEXT_MY_HEADER_SEP+Safe.SAFE_TEXT_ANDROID_SUBJECT_SEP+"\"", Toast.LENGTH_SHORT).show();
+//            FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+//            ft.detach(LoadPK.this);
+//            ft.commit();
+            return;
+        }
+
+        util.StegoStructure imported_object = interpreteASN1B64Object(body);
+       
+        if (imported_object == null) {
+            if (_DEBUG) System.out.println("DD: importText: Decoding failed");
+//            Toast.makeText(getActivity(), "Failed to decode", Toast.LENGTH_SHORT).show();
+//            FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+//            ft.detach(LoadPK.this);
+//            ft.commit();
+            return;
+        }
+       
+        String interpretation = imported_object.getNiceDescription();
+        //ask confirm
+        
+        if (0 == Application_GUI.ask(__("Do you wish to load?")+"\n"+interpretation, __("Do you wish to load?"), JOptionPane.YES_NO_OPTION)) {
+            //StegoStructure imported_object = (StegoStructure) ctx;
+            try {
+                imported_object.save();
+                Application_GUI.info("Saving successful!", "Saving successful!");
+            } catch (P2PDDSQLException e) {
+                e.printStackTrace();
+                Application_GUI.info("DD: importText: Failed to save: "+e.getLocalizedMessage(), "Failed to save!");
+            }
+        } 
+	}
+      
+/*
+        AlertDialog.Builder confirm = new AlertDialog.Builder(getActivity());
+        confirm.setTitle("Do you wish to load?");
+        confirm.setMessage(interpretation)
+            .setCancelable(false)
+            .setPositiveButton("Yes", new MyDialog_OnClickListener(imported_object) {
+                public void _onClick(DialogInterface dialog, int id) {
+//                    Log.d("PK", "LoadPK: Trying to save");
+                    StegoStructure imported_object = (StegoStructure) ctx;
+                    try {
+                        imported_object.save();
+//                        Toast.makeText(getActivity(), "Saving successful!", Toast.LENGTH_SHORT).show();
+                    } catch (P2PDDSQLException e) {
+                        e.printStackTrace();
+//                        Log.d("PK", "LoadPK: Failed to save: "+e.getLocalizedMessage());
+                    }
+
+//                    FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+//                    ft.detach(LoadPK.this);
+//                    ft.commit();
+                    dialog.cancel();
+                }
+            })
+            .setNegativeButton("No",new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,int id) {
+//                    FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+//                    ft.detach(LoadPK.this);
+//                    ft.commit();
+                    dialog.cancel();
+                }
+            });
+        */
+       
+	/**
+	 * Extracts a StegoStructure object from a String in base 64 for ASN1 encoding
+	 * @param addressASN1B64
+	 * @return
+	 */
+    public static StegoStructure interpreteASN1B64Object(String addressASN1B64) {
+    	byte[] msg = null;
+    	StegoStructure ss = null;
+    	try {
+    		if (DEBUG) System.out.println("DD: interprete: "+ addressASN1B64);
+    		msg = Util.byteSignatureFromString(addressASN1B64);
+               
+    		Decoder dec = new Decoder(msg);
+               
+//                StegoStructure s2s = getStegoStructure(dec.getTagValueBN());
+               
+    		ss = DD.getStegoStructure(dec);
+    		if (ss == null) {
+    			if (_DEBUG) System.out.println("DD: interprete: Use default stego ... DD_Address");
+    			ss = new DD_Address();
+    		}
+    		//DD_Address da =
+    		ss.setBytes(msg);
+    		return ss;
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		DD_SK dsk = new DD_SK();
+    		if (_DEBUG) System.out.println("DD: interprete: Try default... DD_SK");
+           
+    		try {
+    			dsk.setBytes(msg);
+    			if (DEBUG) System.out.println("DD: interprete: got="+dsk);
+    			return dsk;
+    		} catch (Exception e2) {
+    			e2.printStackTrace();
+    			if (_DEBUG) System.out.println("DD: interprete: failed even for DD_SK = "+e2.getLocalizedMessage());
+    		}
+    	}
+    	return null;
+    }
+    /**
+     * Break a message in a string to extract the base64 encoding
+     * @param strAddress
+     * @return
+     */
+	public static String extractMessage(String strAddress) {
+		String addressASN1B64;
+        try {
+            if (strAddress == null) {
+            	if (_DEBUG) System.out.println("DD: extractMessage: Address = null");
+                return null;
+            }
+            //strAddress = strAddress.trim();
+            if (DEBUG) System.out.println("DD: extractMessage: Address="+strAddress);
+            
+            // First try to break by body separator. If present then we are done 
+            String[] __chunks = strAddress.split(Pattern.quote(DD.SAFE_TEXT_MY_BODY_SEP));
+            if (__chunks.length == 0 || __chunks[__chunks.length - 1] == null) {
+            	if (_DEBUG) System.out.println("DD: extractMessage: My top Body chunk = null");
+                return null;
+            }
+            if (__chunks.length > 1) { // it occurred and separates
+            	addressASN1B64 = __chunks[__chunks.length - 1];
+            	addressASN1B64 = addressASN1B64.trim();
+                if (DEBUG) System.out.println("DD: extractMessage ASN1 Body=["+__chunks.length+"]=" + addressASN1B64);
+                if (DEBUG) System.out.println("DD: extractMessage ASN1 Body=[0]=" + __chunks[0]);
+                           	return Util.B64Join(addressASN1B64);
+            }
+            if (DEBUG) System.out.println("DD: extractMessage: Address after 1 attempt="+strAddress);
+            
+            // take the last chunk.
+            strAddress = __chunks[__chunks.length - 1];
+           
+            // for old versions (without body separator), try taking out headers introduced in a subject
+            String[] chunks = strAddress.split(Pattern.quote(DD.SAFE_TEXT_MY_HEADER_SEP));
+            if (chunks.length == 0 || chunks[chunks.length - 1] == null) {
+            	if (_DEBUG) System.out.println("DD: extractMessage: My Body chunk = null");
+                return null;
+            }
+           
+            String body = chunks[chunks.length - 1];
+            if (DEBUG) System.out.println("DD:extractMessage: Body="+body);
+           
+            // for old versions (without body separator), try taking out headers introduced by whatsap between subject and body
+            String[] _chunks = body.split(Pattern.quote(DD.SAFE_TEXT_ANDROID_SUBJECT_SEP));
+            if (_chunks.length == 0 || _chunks[_chunks.length - 1] == null) {
+                if (_DEBUG) System.out.println("DD: extractMessage: Android Body chunk = null");
+                return null;
+            }
+
+            addressASN1B64 = _chunks[_chunks.length - 1];
+        	addressASN1B64 = addressASN1B64.trim();
+            if (DEBUG) System.out.println("DD: extractMessage ASN1 Body final=" + addressASN1B64);
+            return Util.B64Join(addressASN1B64);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+	public static D_Constituent getCrtConstituent(long oLID) {
+		if (oLID <= 0)
+			return null;
+		// D_Organization org;
+		// org = D_Organization.getOrgByLID(oLID, true, false);
+		// if (org == null) return null;
+
+		long constituent_LID = -1;
+		D_Constituent constituent = null;
+		try {
+			Identity crt_identity = Identity.getCurrentConstituentIdentity();
+			if (crt_identity == null) {
+				//Log.d(TAG, "No identity");
+			} else
+				constituent_LID = config.Identity
+						.getDefaultConstituentIDForOrg(oLID);
+		} catch (P2PDDSQLException e1) {
+			e1.printStackTrace();
+		}
+
+		if (constituent_LID > 0) {
+			constituent = D_Constituent.getConstByLID(constituent_LID, true,
+					false);
+			//Log.d(TAG, "Got const: " + constituent);
+		}
+
+		return constituent;
+	}
+
+
 }

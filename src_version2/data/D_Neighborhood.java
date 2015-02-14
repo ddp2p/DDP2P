@@ -657,7 +657,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				int tries = 0;
 				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_NEIGHS)
 						|| (current_space > SaverThreadsConstants.MAX_NEIGHS_RAM)) {
-					if (loaded_objects.size() <= SaverThreadsConstants.MIN_NEIGHS_RAM) break; // at least _crt_peer and _myself
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_NEIGHS) break; // at least _crt_peer and _myself
 	
 					if (tries > MAX_TRIES) break;
 					tries ++;
@@ -950,7 +950,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				D_Neighborhood_Node.register_loaded(crt);
 			} catch (Exception e) {
 				if (DEBUG) System.out.println("D_Neighborhood: getNeighByGID: error loading");
-				e.printStackTrace();
+				if (create || DEBUG || ! (e instanceof P2PDDSQLException)) e.printStackTrace();
 				return null;
 			}
 			if (DEBUG) System.out.println("D_Neighborhood: getNeighByGID: Done");
@@ -1437,23 +1437,27 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public static long getLIDFromGID(String GID2, Long oID) {
 		if (GID2 == null) return -1;
 		D_Neighborhood c = D_Neighborhood.getNeighByGID(GID2, true, false, oID);
+		if (c == null) return -1;
 		return c.getLID();
 	}
 	public static String getLIDstrFromGID(String GID2, Long oID) {
 		if (GID2 == null) return null;
 		D_Neighborhood c = D_Neighborhood.getNeighByGID(GID2, true, false, oID);
+		if (c == null) return null;
 		return c.getLIDstr();
 	}
 	public static String getLIDstrFromGID_or_GIDH(
 			String GID2, String GIDH2, Long oID) {
 		if (GID2 == null) return null;
 		D_Neighborhood c = D_Neighborhood.getNeighByGID(GID2, true, false, oID);
+		if (c == null) return null;
 		return c.getLIDstr();
 	}
 	public static long getLIDFromGID_or_GIDH(
 			String GID2, String GIDH2, Long oID) {
 		if (GID2 == null) return -1;
 		D_Neighborhood c = D_Neighborhood.getNeighByGID(GID2, true, false, oID);
+		if (c == null) return -1;
 		return c.getLID();
 	}
 

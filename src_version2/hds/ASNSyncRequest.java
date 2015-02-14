@@ -754,6 +754,7 @@ NULLOCTETSTRING := CHOICE {
 ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 	version UTF8String, -- currently 2
 	lastSnapshot GeneralizedTime OPTIONAL,
+	randomID [APPLICATION 8] OCTET STRING OPTIONAL,
 	tableNames [APPLICATION 0] SEQUENCE OF TableName OPTIONAL,
 	orgFilter [APPLICATION 1] SEQUENCE OF OrgFilter OPTIONAL,
 	address [APPLICATION 2] D_PeerAddress OPTIONAL,
@@ -773,6 +774,7 @@ public class ASNSyncRequest extends ASNObj implements Summary {
 	public String version="2";
 	public Calendar lastSnapshot;
 	public byte[] randomID;
+	@Deprecated
 	public String[] tableNames;
 	public OrgFilter[] orgFilter;
 	public SpecificRequest request;
@@ -980,7 +982,7 @@ NULLOCTETSTRING := CHOICE {
 ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 	version UTF8String, -- currently 2
 	lastSnapshot GeneralizedTime OPTIONAL,
-	signature [APPLICATION 8] IMPLICIT NULLOCTETSTRING OPTIONAL,  
+	signature [APPLICATION P8] IMPLICIT NULLOCTETSTRING OPTIONAL,  
 	tableNames [APPLICATION C0] IMPLICIT SEQUENCE OF [PRIVATE 0] IMPLICIT TableName OPTIONAL,
 	orgFilter [APPLICATION C1] IMPLICIT SEQUENCE OF OrgFilter OPTIONAL,
 	address [APPLICATION C2] IMPLICIT D_PeerAddress OPTIONAL,
@@ -989,6 +991,7 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 	plugin_info [APPLICATION C6] IMPLICIT SEQUENCE OF ASNPluginInfo OPTIONAL,
 	pushChanges ASNSyncPayload OPTIONAL,
 	signature NULLOCTETSTRING, -- prior to version 2 it was [APPLICATION 5] 
+	dpi [APPLICATION C7] Implicit D_PeerInstance OPTIONAL
 }
 	 * @author msilaghi
 	 *
@@ -1210,12 +1213,16 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 		}
 		return result;
 	}
-	public String getInstance() {
+	/**
+	 * Gets the combined nice display instance "instance"+"dpi"
+	 * @return
+	 */
+	public String getInstanceDisplay_ASR_and_Peer() {
 		String result = "";
 		if (dpi != null)
-			result = "\""+dpi.get_peer_instance()+"\"";
+			result = "\""+Util.nullDiscrim(dpi.get_peer_instance())+"\"";
 		if (this.address != null)
-			result = "/\""+address.getInstance()+"\"";
+			result += "/\""+Util.nullDiscrim(address.getInstance())+"\"";
 		return result;
 	}
 	public String getPeerName() {

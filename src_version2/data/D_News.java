@@ -728,5 +728,26 @@ class D_News extends ASNObj{
 		if (this.title == null) return null;
 		return this.title.getTitleStr();
 	}
+	/**
+	 * Returns null if the title is not TXT or HTML, else return the text content
+	 * @return
+	 */
+	public String getNewsTitleStr() {
+		if (this.title == null || title.title_document == null)
+			return null;
+		if (
+				title.title_document.getFormatString() != null
+				&&
+				! D_Document.TXT_FORMAT.equals(title.title_document.getFormatString())
+				&&
+				! D_Document.HTM_BODY_FORMAT.equals(title.title_document.getFormatString())
+		) return null;
+		return title.title_document.getDocumentUTFString();
+	}
+	public String getTitleStrOrMy() {
+//		String n = mydata.name;
+//		if (n != null) return n;
+		return getNewsTitleStr();
+	}
 	
 }

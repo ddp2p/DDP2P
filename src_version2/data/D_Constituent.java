@@ -769,7 +769,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 				int tries = 0;
 				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_CONSTS)
 						|| (current_space > SaverThreadsConstants.MAX_CONSTS_RAM)) {
-					if (loaded_objects.size() <= SaverThreadsConstants.MIN_CONSTS_RAM) break; // at least _crt_peer and _myself
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_CONSTS) break; // at least _crt_peer and _myself
 	
 					if (tries > MAX_TRIES) break;
 					tries ++;

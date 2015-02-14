@@ -579,12 +579,12 @@ public class Util {
     	return result;
     }
     /**
-     * Nice printing when o is null versus when it is "null"
+     * Nice printing "null" when o is null versus "\"o\"" when it is "null"
      * @param o
      * @return
      */
     public static String nullDiscrim(Object o){
-    	if(o==null) return "null";
+    	if (o == null) return "null";
     	return "\""+o+"\"";
     }
     /**
@@ -593,16 +593,16 @@ public class Util {
      * @return
      */
     public static String nullDiscrimArray(String o[]){
-    	if(o==null) return "null";
+    	if (o == null) return "null";
     	return "["+o.length+"]\""+Util.concat(o, ":")+"\"";
     }
     /**
-     * Nice printing when o is null versus when it is "null"
+     * Nice printing when o is null, print "null" versus "\"descr\"" when it is "null"
      * @param o
      * @return
      */
     public static String nullDiscrim(Object o, String descr){
-    	if(o==null) return "null";
+    	if (o == null) return "null";
      	return "\""+descr+"\"";
     }
     public static String byteToHex(byte[] b, String sep){
@@ -2789,6 +2789,46 @@ public class Util {
 				e.printStackTrace();
 			}
 			return null;
+		}
+		/**
+		 * Removes spaces and new lines.
+		 * @param addressASN1B64
+		 * @return
+		 */
+		public static String B64Join(String addressASN1B64) {
+			String result;
+			
+			String []chunks = addressASN1B64.split(Pattern.quote(" "));
+			result = Util.concat(chunks, "");
+			
+			chunks = result.split(Pattern.quote("\n"));
+			result = Util.concat(chunks, "");
+			
+			return result;
+		}
+		/**
+		 * Adds spaces or new lines.
+		 * @param addressASN1B64
+		 * @param size
+		 * @param sep
+		 * @return
+		 */
+		public static String B64Split(String addressASN1B64, int size, String sep) {
+			ArrayList<String> results = new ArrayList<String>();
+			String result;
+			int beginIndex = 0;
+			
+			if (size <= 0) return addressASN1B64;
+			if (addressASN1B64 == null) return addressASN1B64;
+			if (addressASN1B64.length() <= size) return addressASN1B64;
+			
+			do {
+				int endIndex = Math.min(size + beginIndex, addressASN1B64.length());
+				results.add(addressASN1B64.substring(beginIndex, endIndex));
+				beginIndex += size;
+			} while (beginIndex < addressASN1B64.length());
+			result = Util.concat(results, sep, null);
+			return result;
 		}
 }
 class GetHostName extends Thread{

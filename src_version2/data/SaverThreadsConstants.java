@@ -108,29 +108,29 @@ public class SaverThreadsConstants {
 	 */
 	public static int MAX_LOADED_PEERS = 10000;
 	public static long MAX_PEERS_RAM = 10000000; 
-	static final int MIN_PEERS_RAM = 2;
+	static final int MIN_LOADED_PEERS = 2;
 	
 	public static int MAX_LOADED_ORGS = 10000;
 	public static long MAX_ORGS_RAM = 10000000;
-	static final int MIN_ORGS_RAM = 2;
+	static final int MIN_LOADED_ORGS = 2;
 	
 	public static int MAX_LOADED_CONSTS = 10000;
 	public static long MAX_CONSTS_RAM = 10000000;
-	static final int MIN_CONSTS_RAM = 2;
+	static final int MIN_LOADED_CONSTS = 2;
 	
 	public static int MAX_LOADED_NEIGHS = 10000;
 	public static long MAX_NEIGHS_RAM = 10000000;
-	static final int MIN_NEIGHS_RAM = 2;
+	static final int MIN_LOADED_NEIGHS = 2;
 	
 	public static int MAX_LOADED_MOTIONS = 10000;
 	public static long MAX_MOTIONS_RAM = 10000000;
-	static final int MIN_MOTIONS = 2;
+	static final int MIN_LOADED_MOTIONS = 2;
 	
 	public static int MAX_LOADED_JUSTIFICATIONS = 10000;
 	public static long MAX_JUSTIFICATIONS_RAM = 10000000;
-	static final int MIN_JUSTIFICATIONS = 2;
+	static final int MIN_LOADED_JUSTIFICATIONS = 2;
 	
 	public static int MAX_LOADED_RECOMMENDATIONS_OT = 10000;
 	public static long MAX_RECOMMENDATIONS_OT_RAM = 10000000;
-	static final int MIN_RECOMMENDATIONS_OT = 2;
+	static final int MIN_LOADED_RECOMMENDATIONS_OT = 2;
 }
