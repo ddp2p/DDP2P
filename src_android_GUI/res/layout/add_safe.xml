@@ -20,7 +20,7 @@
             android:id="@+id/add_name"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"   
-            android:inputType="textPersonName"              
+            android:inputType="textPersonName|textCapWords"              
         />       
     </LinearLayout>
 
@@ -55,8 +55,8 @@
         <EditText 
             android:id="@+id/add_slogan"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"  
-            android:inputType="text"
+            android:layout_height="wrap_content"
+            android:inputType="text|textCapSentences|textAutoCorrect|textAutoComplete"
         />       
     </LinearLayout>
     

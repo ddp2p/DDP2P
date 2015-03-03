@@ -24,7 +24,7 @@
                 android:id="@+id/profile_furname"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPersonName" />
+                android:inputType="textPersonName|textCapWords" />
         </LinearLayout>
 
         <LinearLayout
@@ -42,7 +42,7 @@
                 android:id="@+id/profile_surname"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPersonName" />
+                android:inputType="textPersonName|textCapWords" />
         </LinearLayout>
 
         <LinearLayout
@@ -55,13 +55,13 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/neiborhood" />
+                android:text="@string/neighborhood" />
 
             <Button
                 android:id="@+id/profile_neiborhood"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/neiborhood" />
+                android:text="@string/neighborhood" />
         </LinearLayout>
 
         <LinearLayout
@@ -129,7 +129,7 @@
                 android:id="@+id/profile_slogan"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textAutoCorrect" />
+                android:inputType="textAutoCorrect|textCapSentences|textShortMessage" />
         </LinearLayout>
 
         <LinearLayout

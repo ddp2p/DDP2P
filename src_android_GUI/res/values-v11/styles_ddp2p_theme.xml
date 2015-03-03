@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Generated with http://android-holo-colors.com -->
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <style name="AutoCompleteTextViewDDp2P_Theme" parent="android:Widget.Holo.Light.AutoCompleteTextView">
+      <item name="android:dropDownSelector">@drawable/ddp2p_theme_list_selector_holo_light</item>
+	    <item name="android:background">@drawable/ddp2p_theme_edit_text_holo_light</item>
+  </style>
+
+  <style name="ButtonDDp2P_Theme" parent="android:Widget.Holo.Light.Button">
+	  <item name="android:background">@drawable/ddp2p_theme_btn_default_holo_light</item>
+  </style>
+
+  <style name="ImageButtonDDp2P_Theme" parent="android:Widget.Holo.Light.ImageButton">
+	  <item name="android:background">@drawable/ddp2p_theme_btn_default_holo_light</item>
+  </style>
+
+  <style name="SpinnerDDp2P_Theme" parent="android:Widget.Holo.Light.Spinner">
+      <item name="android:background">@drawable/ddp2p_theme_spinner_background_holo_light</item>
+      <item name="android:dropDownSelector">@drawable/ddp2p_theme_list_selector_holo_light</item>
+  </style>
+
+  <style name="ProgressBarDDp2P_Theme" parent="android:Widget.Holo.Light.ProgressBar.Horizontal">
+      <item name="android:progressDrawable">@drawable/ddp2p_theme_progress_horizontal_holo_light</item>
+      <item name="android:indeterminateDrawable">@drawable/ddp2p_theme_progress_indeterminate_horizontal_holo_light</item>
+  </style>
+
+  <style name="SeekBarDDp2P_Theme" parent="android:Widget.Holo.Light.SeekBar">
+      <item name="android:progressDrawable">@drawable/ddp2p_theme_scrubber_progress_horizontal_holo_light</item>
+      <item name="android:indeterminateDrawable">@drawable/ddp2p_theme_scrubber_progress_horizontal_holo_light</item>
+      <item name="android:thumb">@drawable/ddp2p_theme_scrubber_control_selector_holo_light</item>
+  </style>
+
+  <style name="RatingBarDDp2P_Theme" parent="android:Widget.Holo.Light.RatingBar">
+      <item name="android:progressDrawable">@drawable/ddp2p_theme_ratingbar_full_holo_light</item>
+      <item name="android:indeterminateDrawable">@drawable/ddp2p_theme_ratingbar_full_holo_light</item>
+  </style>
+
+  <style name="RatingBarBigDDp2P_Theme" parent="android:Widget.Holo.Light.RatingBar.Indicator">
+      <item name="android:progressDrawable">@drawable/ddp2p_theme_ratingbar_holo_light</item>
+      <item name="android:indeterminateDrawable">@drawable/ddp2p_theme_ratingbar_holo_light</item>
+  </style>
+
+  <style name="RatingBarSmallDDp2P_Theme" parent="android:Widget.Holo.Light.RatingBar.Small">
+      <item name="android:progressDrawable">@drawable/ddp2p_theme_ratingbar_small_holo_light</item>
+      <item name="android:indeterminateDrawable">@drawable/ddp2p_theme_ratingbar_small_holo_light</item>
+  </style>
+
+  <style name="ToggleDDp2P_Theme" parent="android:Widget.Holo.Light.Button.Toggle">
+      <item name="android:background">@drawable/ddp2p_theme_btn_toggle_holo_light</item>
+  </style>
+
+</resources>

@@ -7,7 +7,7 @@
     <TextView
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="Please enter or paste peer&apos;s address here:" />
+        android:text="Please enter or paste address here:" />
 
     <EditText
         android:id="@+id/dialog_load_pk_editText"

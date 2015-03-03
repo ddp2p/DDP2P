@@ -19,7 +19,7 @@
             android:id="@+id/add_motion_name"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPersonName" />
+            android:inputType="textShortMessage|textCapWords|textAutoCorrect|textAutoComplete" />
     </LinearLayout>
 
     <LinearLayout
@@ -37,7 +37,7 @@
             android:id="@+id/add_motion_body"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:inputType="textLongMessage" />
+            android:inputType="textLongMessage|textCapSentences|textAutoCorrect|textAutoComplete|textMultiLine" />
     </LinearLayout>
 
     <LinearLayout

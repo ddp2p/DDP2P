@@ -9,5 +9,5 @@
 	android:paddingLeft="16dp"
 	android:paddingRight="16dp"
 	android:textAppearance="?android:attr/textAppearanceListItemSmall"
-	android:textColor="#FFFFFFFF"
+	android:textColor="#000000"
 	tools:ignore="SelectableText"/>

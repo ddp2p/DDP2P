@@ -34,7 +34,7 @@
             android:id="@+id/new_constituent_name"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:inputType="text" />
+            android:inputType="textPersonName|textCapWords" />
     </LinearLayout>
 
     <LinearLayout
@@ -52,7 +52,7 @@
             android:id="@+id/new_constituent_forename"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:inputType="text" />
+            android:inputType="textPersonName|textCapWords" />
     </LinearLayout>
 
     <LinearLayout

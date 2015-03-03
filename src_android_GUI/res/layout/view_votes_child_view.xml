@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="40dp"
+    android:background="@color/ddp2p_general"
+    android:clickable="true"
+    android:orientation="vertical"
+    android:paddingLeft="40dp" >
+
+    <TextView
+        android:id="@+id/view_votes_child_justificaion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:text="@string/hello_world"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/view_votes_child_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:text="2012-1-2-1233"
+        android:textColor="#1919A3"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+</LinearLayout>

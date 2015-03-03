@@ -1,55 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout 
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="horizontal"
-    android:layout_width="fill_parent"
-    android:layout_height="wrap_content">
-        <ImageView
-            android:id="@+id/safe_list_pic" 
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:padding="3dp"
-            android:contentDescription="@string/profile_pic_datalist"
-            /> 
-         <LinearLayout 
-         android:orientation="vertical"
-         android:layout_width="150dp"
-         android:padding="10dp"
-         android:layout_height="wrap_content"
-         android:gravity="left"
-         >     
+    android:layout_width="wrap_content"
+    android:layout_height="80dp"
+    android:layout_marginLeft="20dp"
+    android:layout_marginRight="20dp"
+    android:orientation="horizontal" >
+
+    <ImageView
+        android:id="@+id/safe_list_pic"
+        android:layout_width="55dp"
+        android:layout_height="55dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginRight="20dp"
+        android:contentDescription="@string/profile_pic_datalist"
+        android:padding="5dp" />
+
+    <LinearLayout
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:gravity="left"
+        android:orientation="vertical"
+        android:padding="5dp" >
+
         <TextView
             android:id="@+id/safe_list_name"
-            android:textSize="15sp"
-            android:padding="3dp"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" 
-            />   
-        <TextView
-            android:id="@+id/safe_list_email"
-            android:textSize="15sp"
-            android:padding="3dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" 
-            /> 
-    </LinearLayout>
-    
-    <LinearLayout 
-    android:orientation="horizontal"
-    android:layout_width="150dp"
-    android:gravity="left"
-    android:padding="10dp"    
-    android:layout_height="wrap_content">
-
-        <TextView
-            android:id="@+id/safe_list_slogan"
-            android:textSize="15sp"
-            android:padding="3dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" 
-            />   
-
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:layout_gravity="center_vertical"
+            android:textSize="15sp" />
     </LinearLayout>
 
 </LinearLayout>

@@ -1,6 +1,9 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent"
+    android:paddingLeft="20dp"
+    android:paddingRight="20dp"
+    android:scrollbars="none" >
 
     <LinearLayout
         android:id="@+id/layout_add_org"
@@ -11,7 +14,7 @@
         <LinearLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
+            android:background="@drawable/card_style_bg_no_line"
             android:orientation="vertical" >
 
             <TextView
@@ -30,7 +33,8 @@
         <LinearLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/card_style_bg"
             android:orientation="vertical" >
 
             <TextView
@@ -50,7 +54,8 @@
         <LinearLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/card_style_bg_no_line"
             android:orientation="vertical" >
 
             <TextView
@@ -64,14 +69,6 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textLongMessage" />
-        </LinearLayout>
-
-        <LinearLayout
-            style="?android:listSeparatorTextViewStyle"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            android:orientation="vertical" >
 
             <TextView
                 style="?android:listSeparatorTextViewStyle"
@@ -84,13 +81,6 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textLongMessage" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            android:orientation="vertical" >
 
             <TextView
                 style="?android:listSeparatorTextViewStyle"
@@ -105,18 +95,11 @@
                 android:inputType="textLongMessage" />
         </LinearLayout>
 
-        <Button
-            android:id="@+id/add_org_setting"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="left"
-            android:layout_marginTop="30dp"
-            android:text="Org Setting" />
-
         <LinearLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/card_style_bg_no_line"
             android:orientation="vertical" >
 
             <CheckedTextView
@@ -147,6 +130,113 @@
                     android:lines="1"
                     android:visibility="gone" />
             </LinearLayout>
+        </LinearLayout>
+
+        <CheckedTextView
+            android:id="@+id/add_org_setting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:layout_marginTop="30dp"
+            android:checkMark="?android:attr/listChoiceIndicatorMultiple"
+            android:checked="false"
+            android:text="Org Setting" />
+
+        <LinearLayout
+            android:id="@+id/add_org_cat_name"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/card_style_bg_no_line"
+            android:orientation="vertical"
+            android:visibility="gone" >
+
+            <TextView
+                style="?android:listSeparatorTextViewStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/constituents" />
+
+            <EditText
+                android:id="@+id/add_org_cat_name_constituent"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textLongMessage" />
+
+            <TextView
+                style="?android:listSeparatorTextViewStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/motion" />
+
+            <EditText
+                android:id="@+id/add_org_cat_name_motion"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textLongMessage" />
+
+            <TextView
+                style="?android:listSeparatorTextViewStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/justification" />
+
+            <EditText
+                android:id="@+id/add_org_cat_name_justification"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textLongMessage" />
+
+            <TextView
+                style="?android:listSeparatorTextViewStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/organization" />
+
+            <EditText
+                android:id="@+id/add_org_cat_name_organization"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textLongMessage" />
+
+            <TextView
+                style="?android:listSeparatorTextViewStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/forum" />
+
+            <EditText
+                android:id="@+id/add_org_cat_name_forum"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textLongMessage" />
+
+            <TextView
+                style="?android:listSeparatorTextViewStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/org_profile" />
+
+            <EditText
+                android:id="@+id/add_org_cat_name_profile"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/org_profile"
+                android:enabled="false"
+                android:inputType="textLongMessage" />
+
+            <TextView
+                style="?android:listSeparatorTextViewStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/news" />
+
+            <EditText
+                android:id="@+id/add_org_cat_name_news"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/news"
+                android:enabled="false"
+                android:inputType="textLongMessage" />
         </LinearLayout>
 
         <Button

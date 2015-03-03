@@ -4,20 +4,16 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
-
-
-    <WebView
+<!--     <WebView
         android:id="@+id/motion_detail_enhancing"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp" />
+        android:layout_height="wrap_content" /> -->
 
     <android.support.v4.view.ViewPager
         android:id="@+id/motion_detail_viewpager"
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
         android:layout_above="@+id/motion_button_relativelayout"
-        android:layout_below="@+id/motion_detail_enhancing"
         android:layout_marginTop="20dp" >
     </android.support.v4.view.ViewPager>
 

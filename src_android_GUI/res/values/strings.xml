@@ -8,18 +8,22 @@
 
     <!-- main action bar -->
     <string name="action_back" translatable="false">back</string>
-    <string name="new_safe_my" translatable="false">add a new safe my</string>
-    <string name="new_safe_other" translatable="false">add a new safe other</string>
-    <string name="new_org" translatable="false">add a new org</string>
+    <string name="new_safe_my" translatable="false">Add a New Safe Myself</string>
+    <string name="new_safe_other" translatable="false">Import Object From Picture</string>
+    <string name="new_org" translatable="false">Add a New Organization</string>
     <string name="new_icon" translatable="false">add</string>
 
     <!-- used in safe profile menu -->
+    <string name="Device">Device</string>
+    <string name="Slogan">Slogan</string>
+    <string name="LastSync">Last Sync</string>
+    <string name="LastContact">Last Contact</string>
     <string name="set_name_my" translatable="false">set name my</string>
     <string name="set_email" translatable="false">set email</string>
     <string name="set_slogan" translatable="false">set slogan</string>
     <string name="add_to_current_org" translatable="false">add to current org</string>
     <string name="export_peer_pk" translatable="false">export peer pk</string>
-    <string name="load_peer_address" translatable="false">load peer address</string>
+    <string name="load_object" translatable="false">Import Object From Text</string>
     <string name="safe_profile_drawer_open">Open safe profile drawer</string>
     <string name="safe_profile_drawer_close">Close safe profile drawer</string>
 
@@ -39,15 +43,18 @@
     <string name="input" translatable="false">input...</string>
 
     <!-- Orgs -->
+    <string name="organization">Organization</string>
+    <string name="forum">Forum</string>
+    <string name="justification">Justification</string>
     <string name="constituents" translatable="false">Constituent</string>
     <string name="motion" translatable="false">Motion</string>
     <string name="news" translatable="false">News</string>
-    <string name="org_set" translatable="false">Set</string>
+    <string name="org_set" translatable="false">Settings</string>
     <string name="org_profile" translatable="false">Profile</string>
     <string name="body" translatable="false">Body</string>
     <string name="forename" translatable="false">Forename</string>
     <string name="surname" translatable="false">Surname</string>
-    <string name="neiborhood" translatable="false">Neiborhood</string>
+    <string name="neighborhood" translatable="false">Neighborhood</string>
     <string name="keys" translatable="false">Keys</string>
     <string name="has_right_to_vote" translatable="false">Has Right To Vote</string>
     <string name="phone_number" translatable="false">Phone Number</string>

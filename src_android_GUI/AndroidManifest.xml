@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.HumanDecisionSupportSystemsLaboratory.DDP2P"
-    android:versionCode="1"
-    android:versionName="1.0" >
+    package="com.HumanDecisionSupportSystemsLaboratory.DD_P2P"
+    android:versionCode="3"
+    android:versionName="Votes" >
 
     <uses-sdk
         android:minSdkVersion="16"
@@ -16,9 +16,9 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/DDP2P" >
         <activity
-            android:name=".Main"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Main"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,143 +27,136 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".SafeProfileActivity"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.SafeProfileActivity"
             android:label="@string/app_name"
-            android:parentActivityName=".Main"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" >
+            android:parentActivityName="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Main" >
         </activity>
         <activity
-            android:name=".AddSafe"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AddSafe"
             android:label="@string/app_name"
-            android:parentActivityName=".Main"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" >
+            android:parentActivityName="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Main" >
         </activity>
         <activity
-            android:name=".AddOrg"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AddOrg"
             android:label="@string/app_name"
-            android:parentActivityName=".Main"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+            android:parentActivityName="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Main"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".AddJustification"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AddJustification"
             android:label="@string/app_name"
-            android:parentActivityName=".MotionDetail"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" >
+            android:parentActivityName="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.MotionDetail" >
         </activity>
         <activity
-            android:name=".AddMotion"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AddMotion"
             android:label="@string/app_name"
-            android:parentActivityName=".Motion"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" >
+            android:parentActivityName="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Motion" >
         </activity>
         <activity
-            android:name=".AddDirectoryServer"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AddDirectoryServer"
             android:label="@string/app_name"
-            android:parentActivityName=".Motion"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" >
+            android:parentActivityName="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Motion" >
         </activity>
         <activity
-            android:name=".AddNews"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AddNews"
             android:label="@string/app_name"
-            android:parentActivityName=".Main"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" >
+            android:parentActivityName="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Main" >
         </activity>
         <activity
-            android:name=".Chat"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Chat"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".OrgDetail"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.OrgDetail"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".Motion"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Motion"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".SelectDirectoryServer"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.SelectDirectoryServer"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".MotionDetail"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.StartDirectoryServer"
+            android:label="@string/app_name"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.MotionDetail"
             android:label="@string/app_name"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".Constituent"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Constituent"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".ConstituentFurtherLayer"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.ConstituentFurtherLayer"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".News"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.News"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".OrgSetCategoryName"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.NewsDetail"
             android:label="@string/app_name"
-            android:parentActivityName=".Main"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".OrgProfile"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.OrgSetCategoryName"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+            android:parentActivityName="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Main"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".Neighbourhood"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.OrgProfile"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".NewNeighborhood"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Neighbourhood"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".NewConstituent"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.NewNeighborhood"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".Witness"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.NewConstituent"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
-            android:name=".ViewVotes"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Witness"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.ViewVotes"
+            android:label="@string/app_name"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Setting"
+            android:label="@string/app_name"
             android:windowSoftInputMode="stateHidden" >
         </activity>
 
         <receiver
-            android:name=".Chat$MyBroadCastReceiver"
+            android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Chat$MyBroadCastReceiver"
             android:exported="false" >
             <intent-filter>
                 <action android:name="com.HumanDecisionSupportSystemsLaboratory.DDP2P.broadcast.CHAT_RECEIVER_ACTION" />

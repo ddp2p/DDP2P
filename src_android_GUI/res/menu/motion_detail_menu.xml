@@ -4,16 +4,30 @@
     <item
         android:id="@+id/view_votes"
         android:orderInCategory="1"
-        android:showAsAction="always|withText"
+        android:icon="@drawable/vote_icon"
+        android:showAsAction="ifRoom"
         android:title="@string/view_votes">
     </item>
-    
     <item
         android:id="@+id/motion_detail_add_new_motion"
-        android:icon="@drawable/ic_action_new"
-        android:orderInCategory="1"
-        android:showAsAction="always"
+        android:icon="@drawable/enhancement"
+        android:orderInCategory="2"
+        android:showAsAction="ifRoom"
         android:title="@string/new_icon">
+    </item>
+    <item
+        android:id="@+id/motion_detail_export"
+        android:orderInCategory="1"
+        android:icon="@drawable/export"
+        android:showAsAction="ifRoom|withText"
+        android:title="export">
+    </item>
+    <item
+        android:id="@+id/motion_detail_sort"
+        android:orderInCategory="1"
+        android:icon="@drawable/sort"
+        android:showAsAction="ifRoom"
+        android:title="sort">
     </item>
 
 </menu>

@@ -2,16 +2,25 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
-        android:id="@+id/action_settings"
-        android:orderInCategory="100"
-        android:showAsAction="never"
-        android:title="@string/action_settings"/>
-    <item
         android:id="@+id/action_directories"
         android:icon="@drawable/directory"
         android:orderInCategory="100"
         android:showAsAction="never|withText"
         android:title="@string/action_directories"/>
+    <item
+        android:id="@+id/action_start_directory"
+        android:icon="@drawable/directory"
+        android:orderInCategory="100"
+        android:visible="true"
+        android:enabled="false"
+        android:showAsAction="never|withText"
+        android:title="Start Local Directory"/>
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:enabled="false"
+        android:title="@string/action_settings"/>
     <!--
          <item
         android:id="@+id/action_directories_icon"
@@ -19,6 +28,7 @@
         android:orderInCategory="100"
         android:showAsAction="always"
         android:title="@string/action_directories"/>
+
     -->
 
     <item
@@ -35,23 +45,23 @@
                 android:showAsAction="ifRoom|withText"
                 android:title="@string/new_safe_my"/>
             <item
-                android:id="@+id/add_new_safe_other"
-                android:icon="@drawable/add_safe_other"
-                android:orderInCategory="3"
-                android:showAsAction="ifRoom|withText"
-                android:title="@string/new_safe_other"/>
-            <item
                 android:id="@+id/add_new_org"
                 android:icon="@drawable/add_org"
-                android:orderInCategory="4"
+                android:orderInCategory="3"
                 android:showAsAction="ifRoom|withText"
                 android:title="@string/new_org"/>
             <item
-                android:id="@+id/action_loadPeerAddresss"
-                android:orderInCategory="5"
-                android:icon="@drawable/address"
+                android:id="@+id/add_new_safe_other"
+                android:icon="@drawable/add_safe_other"
+                android:orderInCategory="4"
                 android:showAsAction="ifRoom|withText"
-                android:title="@string/load_peer_address"/>
+                android:title="@string/new_safe_other"/>
+            <item
+                android:id="@+id/action_loadAddresss"
+                android:icon="@drawable/address"
+                android:orderInCategory="5"
+                android:showAsAction="ifRoom|withText"
+                android:title="@string/load_object"/>
         </menu>
     </item>
 

@@ -19,7 +19,7 @@
             android:id="@+id/new_neiborhood_name"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPersonName" />
+            android:inputType="textPersonName|textCapWords" />
     </LinearLayout>
 
     <LinearLayout
