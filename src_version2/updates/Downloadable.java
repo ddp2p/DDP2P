@@ -68,6 +68,12 @@ public class Downloadable extends ASN1.ASNObj{
 	public String toTXT() {
 		return filename+"\r\n"+url+"\r\n"+Util.stringSignatureFromByte(digest)+"\r\n";
 	}
+	/**
+	 * Computes the SHA256 digest of the file found on the path in parameter.
+	 * Stores the result in the "digest" member
+	 * @param filepath
+	 * @throws IOException
+	 */
 	public void updateHash(String filepath) throws IOException {
     	filepath += filename;
     	FileInputStream fos = new FileInputStream(filename);
@@ -87,12 +93,12 @@ public class Downloadable extends ASN1.ASNObj{
     		
 			//crt=istream.read(message);
  			crt = fos.read(message);
- 			if(crt<=0) break;
+ 			if (crt <= 0) break;
  			_digest.update(message, 0, crt);
     		//crt=ch.transferFrom(rbc, len, 1 << 32);
     		//if(crt>0) len+=crt;
 			//if(DEBUG)System.out.println("ClientUpdates downloadNewer: done crt="+crt+" len="+len);
-    	}while((crt>0));
+    	} while((crt > 0));
     	fos.close();
     	digest = _digest.digest();
 	}

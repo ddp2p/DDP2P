@@ -53,6 +53,49 @@ The version 1 was left untouched except for a few very minor fixes (versions 0.9
 While the second version (which uses a cache of objects as point of synchronization) is pretty finalized, there are still a couple of bugs (see the Bugs section), and was not yet released as an installation package until now (Oct 2014). You can download the code from the {\tt src\_version2} folder and compile it yourself.
 
 \chapter{Development}
+\section{Generating New Releases}
+
+To generate a new release (or a new tester recommendation) first one
+needs a secret key that I typically store in a file
+``Trusted64.sk''. This file consists of two lines: the first line
+contains the secret key and the second line contains the public key.
+One can generate such a file from the software with the method
+\cls{DD}.\mth{createTrustedSKFile()} in package \pkg{config}.  It can
+also be generate from the Swing GUI using the button {\bf Sign
+  Updates} found under the tab {\bf Updates}, under the tab {\bf
+  Settings}, when one specifies an unexisting file to the popup
+requesting a file with a Trusted key.  Note that to arrive there one
+has to pass an updates file (e.g., as one generated with the following
+scripts described below).
+
+By default, the trusted key is RSA with 4k bits. That can be changed by changing the 
+implementation of the method \cls{DD}.\mth{createTrustedSKFile()}.
+
+Further, one can generate a release using the scripts in the folder {\bf installers/DD\_P2P} on the github
+repository. The sample script {\bf ./installers/DD\_P2P/mk\_dist\_full\_DD.sh} must be executed giving it as parameter the curent version of the release, which has to be identical with the String in \cls{DD}.\mmb{VERSION}.
+That script contains in fact an example of parameters for executing {\bf ./installers/DD\_P2P/mk\_dist.sh}.
+A release generation should specify the parameters for qualities of test and amount of test that the
+author of the release evaluates, rather than the values hardcoded in the script {\bf ./installers/DD\_P2P/mk\_dist\_full\_DD.sh}.
+
+The file ``Trusted64.sk'' must be placed in the same folder with these scripts, prior to running them.
+Also, the updated ``createEmptyDelib.sqlite'' file with the DDL of the database must be placed
+in the subfolder {\bf 0.0.00}, while the latest ``DD.jar'' file obtained by compiling the project 
+must be placed in {\bf 0.0.00/jars/}. Any other updated file must be placed in the relative
+folder position where it is expected to appear in the installation/update package.
+
+After all files are in placed according to these recommendations, the script {\bf mk\_dist.sh}
+is executed as per the above recommendation, and the system will generate a folder with the
+name of the release version, and two archives with the name composed of the prefix {\bf ddp2p\_}
+and followed by the version number. The folder contains the package for automatic updates,
+while the archives contains the release file for first installations.
+
+The content of the created folder can be uploaded on mirror used for automatic updates,
+while the file {\bf DD\_Updates.signed} found in that folder has to be copied outside that folder
+at the URL that is specified as mirror inside the DDP2P system.
+
+Mirrors can compose the updates folders coming from different testers by merging the tester part
+of the text files, as long as the binary files are identical.
+
 \section{Overall Structure}
 
 Instructions to work with the code in Eclipse are available in the file: {\tt instructionsEclipseSetUp.pdf} on github, prepared by Song Qin.
@@ -1177,11 +1220,12 @@ permanent support (disk/cloud).
 These constants are in class \cls{SaverThreadsConstants}. These constants control:
 \begin{itemize}
 \item
-\mmb{MAX\_LOADED\_XXX}, \mmb{MAX\_XXX\_RAM}
- the sizes of the caches.
+\mmb{MAX\_LOADED\_XXX}, \mmb{MAX\_XXX\_RAM} are user modifiable variables controlling
+ the sizes of the caches. There is also a constant  \mmb{MIN\_LOADED\_XXX}
+since it referes to the count of objects undre which the user-modifiable limit in \mmb{MAX\_LOADED\_XXX} is not considered.
 \item
 \mmb{MAX\_NUMBER\_CONCURRENT\_SAVING\_THREADS}:
- the maximum number of running saver threads instances of \cls{D\_XXX\_SaverThreadWorker}.
+ the maximum number of running saver threads instances of \cls{D\_XXX\_SaverThreadWorker}, over which new ones are not started.
 \item
 \mmb{SAVER\_SLEEP\_BETWEEN\_OBJECTS\_MSEC}: delay between launching threads when there are many waiting to be saved.
 \item
@@ -1208,7 +1252,7 @@ a global timestamping manager to be queries by all item saving processes (e.g., 
 \section{Incremental Synchronization}
 
 Each agent Alice keeps for each polled peer Bob the latest arrival time of that peer, $arrival\_time_{Bob}$, up to each it has obtained all the data.
-At each poll round Alice will send to Bob the value it has for $arrival\_time_{Bob}$ and Bob will reply
+At each poll round, Alice will send to Bob the value it has for $arrival\_time_{Bob}$ (\mmb{lastSnapshot} in the request) and Bob will reply
 back with bag of GIDs of sequential items (in the order given by arrival times), and starting immediately after the arrival time,
 as well as the arrival time of the last of them to be used as the new $arrival\_time_{Bob}$ of Alice.
 
@@ -1221,8 +1265,97 @@ New GIDs are sent only if after adding all requested data, the overall size of t
 Bob has to send back the list of GIDs that he does not have, such that Alice avoids asking them again from him (this is not implemented yet!).
 
 \section{Building SyncRequests}
+The elements of a sync request, defined in class \pkg{hds}.\cls{ASNSyncRequest}, are:
+\begin{itemize}
+\item
+\mmb{version}: the current version of the request structure is "2". It is not used since a best effort is done now at decoding.
+\item
+\mmb{lastSnapshot}: the arrival time of the last items etrieved from the destination. We want items with larger arrival times.
+A null value signifies that we want a block of items with the smallest arrival times. This time is set to null
+when we first query a peer or when we want to restart retrieving from beginnig (e.g., because we were announced by that peer
+that they have changed the policy by which it disseminates its older data). Users can also request to reset this 
+\mmb{lastSnapshot} via a GUI interface (r.g. peers and peer-instances widgets). The agent is storing the next \mmb{lastSnapshot}
+for each instance in the \cls{peer\_instance} table, based on the answered received from that peer.
+\item
+\mmb{randomID} this stores a random string to make each request different to avoid replay attacks, as well as to
+avoid replying twice to the same request that happens to arrvive simultaneously on two different paths.
+\item
+\mmb{tableNames}: is a set of names of tables that the peer supports (e.g., peers and news). In original versions of the streamming, peers
+where shiping data as tables. This is currently scrapped since it is not sufficiently flexible to ship data of various versions, and this field can be deprecated and left empty.
+\item
+\mmb{orgFilter}: is a set of filters that tell which organization and which motions/constituents in that organzation are of interest to
+this agent. The feature was implemented but was not tested in recent versions. It is currently sent empty to tell the peer that no filter
+is installed.
+\item
+\mmb{address}: the \cls{D\_Peer} object of the peer sending the request, to be used for validating the request (and its signature) at the destination.
+\item
+\mmb{request}: the set of GIDHs that this user is interested in getting from the remote peer. It is an instance of \pkg{streaming}.\cls{SpecificRequest}, where GIDHs are groupped by organization, with one entry per organization in the array \mmb{rd} of 
+\pkg{streaming}.\cls{RequestData}. The \cls{SpecificRequest} also contains lists of GIDs for global \mmb{news} and translations (\mmb{tran})
+as well as a hashtable \mmb{peers} that maps peer GIDHs into their minimal creation dates requested.
+\item
+\mmb{plugin\_msg} contains a set of messages sent to the plugins of the remote peer and generated by the plugins of the sender, tagged with the plugin \mmb{GID}. These messages are typically saved by plugins in the database of the peer, and therefore they are retrived in this database when the request is built.
+\item
+\mmb{plugin\_info} is a set of descriptions of plugins registered with the sender agent, to let the receiver peer know about
+the possibility to communicate with them.
+\item
+\mmb{pushChanges} has the structure of a \cls{ASNSyncPayload} response to a request and allows the sender of the request to push the data it
+desires to the remote peer. Typically we place in it objects (motions,votes) recently created with the GUI editors of the sender agent.
+
+This is calculated with \pkg{hds}.\cls{ClientSync}.\mth{getSyncReqPayload} which assembles the component \mmb{advertised}
+of \mmb{pushChanges} (of type \cls{SpecificRequest}) by merging the data in \cls{ClientSync}.\mmb{\_payload\_fix}
+describing items manually registered by the advertiser, with the data in  \cls{ClientSync}.\mmb{\_payload\_recent} describing
+data recently created locally.
+
+The registration of recent data is made with: \pkg{hds}.\cls{ClientSync}.\mth{addToPayloadAdvertisements()}.
+\item
+\mmb{signature}: is a signature of the whole request message, signed with the key of the agent mentioned in the field \mmb{address}.
+\item
+\mmb{dpi}: is the information of type \cls{D\_PeerInstance} about the instance of the sender peer describing the particular agent sending the message. It has its own signature.
+\end{itemize}
+
+The ASN1 description of the SyncRequest message is:
+\begin{verbatim}
+TableName := IMPLICIT [PRIVATE 0] UTF8String
+NULLOCTETSTRING := CHOICE {
+	OCTET STRING,
+	NULL
+}
+ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
+	version UTF8String, -- currently 2
+	lastSnapshot GeneralizedTime OPTIONAL,
+	signature [APPLICATION 8] IMPLICIT NULLOCTETSTRING OPTIONAL,  
+	tableNames [APPLICATION C0] IMPLICIT SEQUENCE OF [PRIVATE 0] IMPLICIT TableName OPTIONAL,
+	orgFilter [APPLICATION C1] IMPLICIT SEQUENCE OF OrgFilter OPTIONAL,
+	address [APPLICATION C2] IMPLICIT D_PeerAddress OPTIONAL,
+	request [APPLICATION C3] IMPLICIT SpecificRequest OPTIONAL,
+	plugin_msg [APPLICATION C4] IMPLICIT D_PluginData OPTIONAL,
+	plugin_info [APPLICATION C6] IMPLICIT SEQUENCE OF ASNPluginInfo OPTIONAL,
+	pushChanges ASNSyncPayload OPTIONAL,
+	signature NULLOCTETSTRING, -- prior to version 2 it was [APPLICATION 5] 
+	dpi [APPLICATION C7] Implicit D_PeerInstance OPTIONAL
+}
+\end{verbatim}
+
+The request is commonly prepared in \pkg{hds}.\cls{ClientSync}.\mth{buildRequest()} and is handled by \pkg{hds}.\cls{UDPServerThread}.\mth{handleRequest()}.
 
 \section{Replying SyncRequests}
+A limit is preestablished on the number of objects we want to ship in the response of one request.
+First a number of objects is sent to the destination based on the specific request of GIDHs received in the SyncRequest.
+
+Function of the remaining space in the answer message, the remaining part of the answer is built in two passages. First the database is scanned separately for each type of object (peer, prganization ...) for data newer than the value of \mmb{lastSnapshot} in the request.
+At each query of such data, a limit is set to the maximum number of retrieved objects, and tha maximum date is computed
+as the date of the most recent object withing that limit. The output of this first passage is a date: the date until which data is retrieved.
+
+In the second passage we gather GIDHs for all the data older than \mmb{lastSnapshot} and the at most as new as the date obtained in the 
+first pass. GIDHs harvested in this passes (filtered to only contained broascasted objects that are not temporary and have GIDHs),
+are mailed to the requesting peer.
+
+\paragraph{TODO:} If a request comes for an object that this agent does not have ready, the peer has to be informed to avoid requesting that
+object again. Otherwise we risk that future requests could be cluttered with GIDHs that I do not have and a practical DoS is acieved,
+where I can no longer send anything to this peer. An attacker can create it by somehow convincinf a peer that I have these GIDHs.
+It is therefore essential to warn the peer about the fact that they are not available at me. Recent changes were needed in the
+data structure \pkg{streaming}.\cls{OrgPeerDatHashes} used to store items to request. However, these changes were not yet
+fully implemented in the management of this data! See the MS thesis if Hussein Ihsan that has a discussion on the topic but unfortunately was not yet implemented.
 
 \section{Integrating Data}
 

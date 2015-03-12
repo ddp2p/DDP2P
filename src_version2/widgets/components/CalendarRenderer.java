@@ -26,15 +26,19 @@ import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.table.TableCellRenderer;
 
+import util.Util;
+
 import ASN1.Encoder;
 @SuppressWarnings("serial")
 public
 class CalendarRenderer extends JLabel
 implements TableCellRenderer {
+	/*
 	public static final int SPACED = 1;
 	public static final int TIME_ONLY = 2;
 	public static final int DAY_ONLY = 3;
-	int mode = SPACED;
+	*/
+	int mode = Util.CALENDAR_SPACED;
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value,
 			boolean isSelected, boolean hasFocus, int row, int column) {
@@ -43,12 +47,13 @@ implements TableCellRenderer {
 			return this;
 		}
 		if (value instanceof Calendar) {
-			String val = renderNicely((Calendar)value, mode);
+			String val = Util.renderNicely((Calendar)value, mode);
 			//System.out.println("CalendatRenderer: row="+row+" col="+column+" val="+val);
 			this.setText(val);
 		}
 		return this;
 	}
+	/*
 	static String renderNicely(Calendar value, int mode2) {
 		if (value == null) return null;
 		String result;
@@ -66,4 +71,5 @@ implements TableCellRenderer {
 			return Encoder.getGeneralizedTime(value);
 		}
 	}
+	*/
 }

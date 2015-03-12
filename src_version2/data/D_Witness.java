@@ -38,6 +38,7 @@ import util.P2PDDSQLException;
 import config.Application;
 import config.Application_GUI;
 import config.DD;
+import config.Identity;
 import streaming.RequestData;
 import util.DBInterface;
 import util.Summary;
@@ -238,9 +239,223 @@ class D_Witness extends ASNObj implements Summary {
 			+", o."+table.organization.global_organization_ID
 	 * @param w
 	 */
-	public D_Witness(ArrayList<Object> w) {
+	private D_Witness(ArrayList<Object> w) {
 		init(w);
-	}	
+	}
+	public static D_Witness getWitness(ArrayList<Object> w) {
+		D_Witness result = new D_Witness();
+		result.init(w);
+		return result;
+	}
+	/**
+	 * Get witness from myself (in this organization) for the parameter neighborhood
+	 * @param n
+	 * @return
+	 */
+	public static D_Witness getMyWitnessForNeighborhood(D_Neighborhood n) {
+		D_Constituent constituentMe = Identity.getCrtConstituent(n.getOrgLID());
+		if (constituentMe == null) return null;
+		return getWitnessForNeighborhoodLID(constituentMe.getLID(), n.getLID());
+	}
+	static String sqlWNLID = 
+			"SELECT "
+			+ Util.setDatabaseAlias(table.witness.witness_fields, "w")+" "
+			+" FROM "+table.witness.TNAME+" AS w "+
+			" WHERE w."+table.witness.source_ID+"=? AND w."+table.witness.neighborhood_ID+"=?;"
+			;
+	/**
+	 * Load the Witness from provided constituent to provided target neighborhood
+	 * @param _witnessLID
+	 * @param _targetNeighLID
+	 * @return
+	 */
+	public static D_Witness getWitnessForNeighborhoodLID(long _witnessLID, long _targetNeighLID) {
+		if (DEBUG) System.out.println("D_Witness: getWitnessForNeighborhoodLID: start meLID="+_witnessLID);
+		if (_witnessLID <= 0 || _targetNeighLID <= 0) return null; //throw new D_NoDataException("null witnessGID");
+		ArrayList<ArrayList<Object>> w = null;
+		D_Witness result; 
+		try {
+			w = Application.db.select(sqlWNLID, new String[]{Util.getStringID(_witnessLID), Util.getStringID(_targetNeighLID)}, DEBUG);
+			if (w.size() > 0) result = new D_Witness(w.get(0));
+			else return null; //throw new D_NoDataException("absent meLID:"+_witnessLID);
+			if (DEBUG) System.out.println("D_Witness: getWitnessForNeighborhoodLID: Done: "+result);
+			return result;
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	static String sqlAWNLID = 
+			"SELECT "
+			+ Util.setDatabaseAlias(table.witness.witness_fields, "w")+" "
+			+" FROM "+table.witness.TNAME+" AS w "+
+			" WHERE w."+table.witness.neighborhood_ID+"=?;"
+			;
+	/**
+	 * Use limit=0 for no limit
+	 * @param _targetNeigLID
+	 * @param limit
+	 * Maximum number of returned items
+	 * @return
+	 */
+	public static D_Witness[] getAllWitnessForNeighborhoodLID(long _targetNeigLID, int limit) {
+		if (DEBUG) System.out.println("D_Witness: getAllWitnessForNeighborhoodLID: start LID="+_targetNeigLID);
+		if (_targetNeigLID <= 0) return new D_Witness[0];//throw new D_NoDataException("null witnessGID");
+		ArrayList<ArrayList<Object>> w = null;
+		D_Witness[] result; 
+		try {
+			w = Application.db.select(sqlAWNLID+((limit > 0)?(" LIMIT "+limit+";"):";"), new String[]{Util.getStringID(_targetNeigLID)}, DEBUG);
+			result = new D_Witness[w.size()];
+			for (int i = 0; i < w.size(); i++) result[i] = new D_Witness(w.get(i));
+			//else return new D_Witness[0]; //throw new D_NoDataException("absent meLID:"+_witnessLID);
+			if(DEBUG) System.out.println("D_Witness: getAllWitnessForNeighborhoodLID: Done: "+result);
+			return result;
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return new D_Witness[0];
+	}
+	public static D_Witness getMyWitnessForConstituent(D_Constituent c) {
+		D_Constituent constituentMe = Identity.getCrtConstituent(c.getOrganizationLID());
+		if (constituentMe == null) return null;
+		return getWitnessForConstituentLID(constituentMe.getLID(), c.getLID());
+	}
+	static String sqlWCLID = 
+			"SELECT "
+			+ Util.setDatabaseAlias(table.witness.witness_fields, "w")+" "
+			+" FROM "+table.witness.TNAME+" AS w "+
+			" WHERE w."+table.witness.source_ID+"=? AND w."+table.witness.target_ID+"=?;"
+			;
+	/**
+	 * Get a witness from me (in this org) for given constituent
+	 * @param _witnessLID
+	 * @param _targetConsLID
+	 * @return
+	 */
+	public static D_Witness getWitnessForConstituentLID(long _witnessLID, long _targetConsLID) {
+		if (DEBUG) System.out.println("D_Witness: getWitnessForConstituentLID: start meLID="+_witnessLID);
+		if (_witnessLID <= 0 || _targetConsLID <= 0) return null; //throw new D_NoDataException("null witnessGID");
+		ArrayList<ArrayList<Object>> w = null;
+		D_Witness result; 
+		try {
+			w = Application.db.select(sqlWCLID, new String[]{Util.getStringID(_witnessLID), Util.getStringID(_targetConsLID)}, DEBUG);
+			if (w.size() > 0) result = new D_Witness(w.get(0));
+			else return null; //throw new D_NoDataException("absent meLID:"+_witnessLID);
+			if (DEBUG) System.out.println("D_Witness: getWitnessForConstituentLID: Done: "+result);
+			return result;
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	static String sqlAWCLID = 
+			"SELECT "
+			+ Util.setDatabaseAlias(table.witness.witness_fields, "w")+" "
+			+" FROM "+table.witness.TNAME+" AS w "+
+			" WHERE w."+table.witness.target_ID+"=?"
+			;
+	/**
+	 * use limit = 0 for no limit
+	 * @param _targetConsLID
+	 * @param limit
+	 * Maximum number of returned items
+	 * @return
+	 */
+	public static D_Witness[] getAllWitnessForConstituentLID(long _targetConsLID, int limit) {
+		if (DEBUG) System.out.println("D_Witness: getAllWitnessForConstituentLID: start meLID="+_targetConsLID);
+		if (_targetConsLID <= 0) return new D_Witness[0];//throw new D_NoDataException("null witnessGID");
+		ArrayList<ArrayList<Object>> w = null;
+		D_Witness[] result; 
+		try {
+			w = Application.db.select(sqlAWCLID+((limit > 0)?(" LIMIT "+limit+";"):";"), new String[]{Util.getStringID(_targetConsLID)}, DEBUG);
+			result = new D_Witness[w.size()];
+			for (int i=0; i < w.size(); i++) result[i] = new D_Witness(w.get(i));
+			//else return new D_Witness[0]; //throw new D_NoDataException("absent meLID:"+_witnessLID);
+			if (DEBUG) System.out.println("D_Witness: getAllWitnessForConstituentLID: Done: "+result);
+			return result;
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return new D_Witness[0];
+	}
+	public static D_Witness getSupportWitnessForConstituent(D_Constituent c) {
+		return getSupportWitnessForConstituentLID(c.getLID());
+	}
+	/**
+	 * Call with support >= "1"
+	 * @param _targetConsLID
+	 * @return
+	 */
+	public static D_Witness getSupportWitnessForConstituentLID(long _targetConsLID) {
+		return getSupportWitnessForConstituentLID("1", _targetConsLID);
+	}
+	static String sqlSWCLID = 
+			"SELECT "
+			+ Util.setDatabaseAlias(table.witness.witness_fields, "w")+" "
+			+" FROM "+table.witness.TNAME+" AS w "+
+			" WHERE w." + table.witness.sense_y_n + ">=? AND w." + table.witness.target_ID + "=? LIMIT 1;"
+			;
+	/**
+	 * Get a witness with support at equal or greater to the integer value in "supportString" (>="1")
+	 * @param supportString
+	 * @param _targetConsLID
+	 * @return
+	 */
+	public static D_Witness getSupportWitnessForConstituentLID(String supportString, long _targetConsLID) {
+		if (DEBUG) System.out.println("D_Witness: getSupportWitnessForConstituent: start targetLID="+_targetConsLID);
+		if (supportString == null || _targetConsLID <= 0) return null; //throw new D_NoDataException("null witnessGID");
+		ArrayList<ArrayList<Object>> w = null;
+		D_Witness result; 
+		try {
+			w = Application.db.select(sqlSWCLID, new String[]{supportString, Util.getStringID(_targetConsLID)}, DEBUG);
+			if (w.size() > 0) result = new D_Witness(w.get(0));
+			else return null; //throw new D_NoDataException("absent meLID:" + _targetConsLID);
+			if (DEBUG) System.out.println("D_Witness: getSupportWitnessForConstituent: Done: "+result);
+			return result;
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	public static D_Witness getSupportWitnessForNeighborhood(D_Neighborhood n) {
+		return getSupportWitnessForNeighborhoodLID(n.getLID());
+	}
+	/**
+	 * Call with support >= "1"
+	 * @param _targetNeigLID
+	 * @return
+	 */
+	public static D_Witness getSupportWitnessForNeighborhoodLID(long _targetNeigLID) {
+		return getSupportWitnessForNeigborhoodLID("1", _targetNeigLID);
+	}
+	static String sqlSWNLID = 
+			"SELECT "
+			+ Util.setDatabaseAlias(table.witness.witness_fields, "w")+" "
+			+" FROM "+table.witness.TNAME+" AS w "+
+			" WHERE w." + table.witness.sense_y_n + ">=? AND w." + table.witness.neighborhood_ID + "=? LIMIT 1;"
+			;
+	/**
+	 * Get a witness with support at equal or greater to the integer value in "supportString" (>="1")
+	 * @param supportString
+	 * @param _targetNeigLID
+	 * @return
+	 */
+	public static D_Witness getSupportWitnessForNeigborhoodLID(String supportString, long _targetNeigLID) {
+		if (DEBUG) System.out.println("D_Witness: getSupportWitnessForNeig: start targetLID="+_targetNeigLID);
+		if (supportString == null || _targetNeigLID <= 0) return null; //throw new D_NoDataException("null witnessGID");
+		ArrayList<ArrayList<Object>> w = null;
+		D_Witness result; 
+		try {
+			w = Application.db.select(sqlSWNLID, new String[]{supportString, Util.getStringID(_targetNeigLID)}, DEBUG);
+			if (w.size() > 0) result = new D_Witness(w.get(0));
+			else return null;//throw new D_NoDataException("absent meLID:" + _targetNeigLID);
+			if (DEBUG) System.out.println("D_Witness: getSupportWitnessForNeig: Done: "+result);
+			return result;
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 	/**
 			"SELECT "
 			+ Util.setDatabaseAlias(table.witness.witness_fields, "w")+" "

@@ -33,7 +33,7 @@ public class UpdatesFilterKey extends FileFilter {
 	public static final String EXT_GIF = "gif";
 	public boolean accept(File f) {
 	    if (f.isDirectory()) {
-	    	return false;
+	    	return true;
 	    }
 
 	    String extension = Util.getExtension(f);

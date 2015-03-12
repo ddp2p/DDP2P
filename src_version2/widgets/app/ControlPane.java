@@ -127,7 +127,7 @@ class DDAddressFilter extends FileFilter {
 class UpdatesFilter extends FileFilter {
 	public boolean accept(File f) {
 	    if (f.isDirectory()) {
-	    	return false;
+	    	return true;
 	    }
 
 	    String extension = Util.getExtension(f);
@@ -1002,16 +1002,16 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		*/
 		
 		SwingUtilities.invokeLater(new Runnable() {
-			public void run(){
+			public void run() {
 				file_chooser_address_container.setFileFilter(new DDAddressFilter());
-				file_chooser_updates_to_sign.setFileFilter(new UpdatesFilter());
+				// file_chooser_updates_to_sign.setFileFilter(new UpdatesFilter());
 				//filterUpdates.setSelectedFile(new File(userdir));
-				try{
+				try {
 					if(DEBUG)System.out.println("ControlPane:<init>: set Dir = "+Application.USER_CURRENT_DIR);
 					File userdir = new File(Application.USER_CURRENT_DIR);
 					if(DEBUG)System.out.println("ControlPane:<init>: set Dir FILE = "+userdir);
 					file_chooser_updates_to_sign.setCurrentDirectory(userdir);
-				}catch(Exception e){if(_DEBUG)e.printStackTrace();}
+				} catch(Exception e){if(_DEBUG)e.printStackTrace();}
 			}
 		});
 	    
@@ -1026,80 +1026,88 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 
 	}
 	void actionSignUpdates() {
-		file_chooser_updates_to_sign.setFileFilter(new UpdatesFilter());
-		file_chooser_updates_to_sign.setName(__("Select data to sign"));
-		file_chooser_updates_to_sign.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		file_chooser_updates_to_sign.setMultiSelectionEnabled(false);
-		Util_GUI.cleanFileSelector(file_chooser_updates_to_sign);
-		//filterUpdates.setSelectedFile(null);
-		int returnVal = file_chooser_updates_to_sign.showDialog(this,__("Open Input Updates File"));
+		FileFilter crtFilter = new UpdatesFilter();
+		int returnVal;
+		String _filePath = ClientUpdates.getFilePath();
+		try {
+			file_chooser_updates_to_sign.setFileFilter(crtFilter);
+			file_chooser_updates_to_sign.setName(__("Select data to sign, with Downloadables in:")+" "+_filePath);
+			//file_chooser_updates_to_sign.setFileSelectionMode(JFileChooser.FILES_ONLY);
+			file_chooser_updates_to_sign.setMultiSelectionEnabled(false);
+			Util_GUI.cleanFileSelector(file_chooser_updates_to_sign);
+			//filterUpdates.setSelectedFile(null);
+			returnVal = file_chooser_updates_to_sign.showDialog(this,__("Open Input Updates File"));
+		}
+		finally {
+			file_chooser_updates_to_sign.removeChoosableFileFilter(crtFilter);
+		}
+		
 		if (returnVal != JFileChooser.APPROVE_OPTION)  return;
 		File fileUpdates = file_chooser_updates_to_sign.getSelectedFile();
-		if(!fileUpdates.exists()) {
+		
+		if (! fileUpdates.exists()) {
 			Application_GUI.warning(__("No file: "+fileUpdates), __("No such file"));
 			return;
 		}
 		
-		file_chooser_updates_to_sign.setFileFilter(new UpdatesFilterKey());
-		file_chooser_updates_to_sign.setName(__("Select Secret Trusted Key"));
-		//filterUpdates.setSelectedFile(null);
-		Util_GUI.cleanFileSelector(file_chooser_updates_to_sign);
-		returnVal = file_chooser_updates_to_sign.showDialog(this,__("Specify Trusted Secret Key File"));
+		/**
+		 * Now the updates file is loaded in fileUpdates
+		 */
+		
+		crtFilter = new UpdatesFilterKey();
+		try {
+			file_chooser_updates_to_sign.setFileFilter(crtFilter);
+			file_chooser_updates_to_sign.setName(__("Select Secret Trusted Key (created if new)"));
+			//filterUpdates.setSelectedFile(null);
+			Util_GUI.cleanFileSelector(file_chooser_updates_to_sign);
+			returnVal = file_chooser_updates_to_sign.showDialog(this,__("Specify Trusted Secret Key File"));
+		}
+		finally {
+			file_chooser_updates_to_sign.removeChoosableFileFilter(crtFilter);
+		}
+		
 		if (returnVal != JFileChooser.APPROVE_OPTION)  return;
 		File fileTrustedSK = file_chooser_updates_to_sign.getSelectedFile();
-		SK sk;
-		PK pk;
-		if(!fileTrustedSK.exists()) {
-			Application_GUI.warning(__("No Trusted file. Will create one: "+fileTrustedSK), __("Will create new trusted file!"));
-			
-			Cipher trusted = Cipher.getCipher(Cipher.RSA, Cipher.SHA512, __("Trusted For Updates"));
-			trusted.genKey(DD.RSA_BITS_TRUSTED_FOR_UPDATES);
-			sk = trusted.getSK();
-			pk = trusted.getPK();
-			String _sk = Util.stringSignatureFromByte(sk.getEncoder().getBytes());
-			String _pk = Util.stringSignatureFromByte(pk.getEncoder().getBytes());
-			try {
-				Util.storeStringInFile(fileTrustedSK, _sk
-						+",\r\n" + 
-						_pk);
-				Util.storeStringInFile(fileTrustedSK.getAbsoluteFile()+".pk", Util.stringSignatureFromByte(pk.getEncoder().getBytes()));
-				try {
-					DD.setAppText(DD.TRUSTED_UPDATES_GID, DD.getAppText(DD.TRUSTED_UPDATES_GID)+DD.TRUSTED_UPDATES_GID_SEP+_pk);
-				} catch (P2PDDSQLException e) {
-					e.printStackTrace();
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		if (! fileTrustedSK.exists()) {
+			Application_GUI.warning(__("No Trusted file. Will create one RSA/SHA512:")+" "+fileTrustedSK+" "+__("with")+" "+DD.RSA_BITS_TRUSTED_FOR_UPDATES+" "+__("bits!"), __("Will create new trusted file!"));
+			DD.createTrustedSKFile(fileTrustedSK);
 			//return;
 		}
 		
-		file_chooser_updates_to_sign.setFileFilter(new UpdatesFilter());
-		file_chooser_updates_to_sign.setName(__("Select Output File Name"));
-		//filterUpdates.setSelectedFile(null);
-		Util_GUI.cleanFileSelector(file_chooser_updates_to_sign);
-		returnVal = file_chooser_updates_to_sign.showDialog(this,__("Specify Output File"));
+		crtFilter = new UpdatesFilter();
+		try {
+			file_chooser_updates_to_sign.setFileFilter(crtFilter);
+			file_chooser_updates_to_sign.setName(__("Select Output File Name"));
+			//filterUpdates.setSelectedFile(null);
+			Util_GUI.cleanFileSelector(file_chooser_updates_to_sign);
+			returnVal = file_chooser_updates_to_sign.showDialog(this,__("Specify Output File"));
+		}
+		finally {
+			file_chooser_updates_to_sign.removeChoosableFileFilter(crtFilter);
+		}
 		if (returnVal != JFileChooser.APPROVE_OPTION)  return;
 		File fileOutput = file_chooser_updates_to_sign.getSelectedFile();
-		if(fileOutput.exists()) {
+		if (fileOutput.exists()) {
 			int n;
 			n = JOptionPane.showConfirmDialog(this, __("Overwrite: ")+fileOutput+"?",
         			__("Overwrite?"), JOptionPane.YES_NO_OPTION,
         			JOptionPane.QUESTION_MESSAGE);
-			if(n!=0) return;
+			if (n != 0) return;
 		}
 		
 		
-		if("txt".equals(Util.getExtension(fileUpdates)) && fileUpdates.isFile()) {
+		if ("txt".equals(Util.getExtension(fileUpdates)) && fileUpdates.isFile()) {
 			//FileInputStream fis;
 			try {
 				String filePath = ClientUpdates.getFilePath();
-				if(!ClientUpdates.create_info(fileUpdates, fileTrustedSK, fileOutput, filePath))
+				if (! ClientUpdates.create_info(fileUpdates, fileTrustedSK, fileOutput, filePath))
 					Application_GUI.warning(__("Bad key or input!"+fileUpdates.getCanonicalPath()+"\n"+fileTrustedSK.getCanonicalPath()), __("Bad key or input!"));
 			} catch (IOException e) {
 				e.printStackTrace();
 				Application_GUI.warning(__("Bad key or input!"+fileUpdates.getAbsolutePath()+"\n"+fileTrustedSK.getAbsolutePath()+"\n"+e.getLocalizedMessage()), __("Bad key or input!"));
 			}
+		} else {
+			Application_GUI.warning(__("Unsupported input file type extension:"+Util.getExtension(fileUpdates)), __("Unsupported file type"));
 		}
 	}
 	

@@ -182,11 +182,11 @@ public class WitnessingHandling {
 		else params = new String[]{last_sync_date, _maxDate, org_id};
 		w = Application.db.select(sql, params, DEBUG);
 
-		if(w.size()>0) {
+		if (w.size() > 0) {
 			result = new D_Witness[w.size()];
 			for (int k = 0; k<w.size(); k++) {
 				ArrayList<Object> s = w.get(k);
-				result[k] = new D_Witness(s);
+				result[k] = D_Witness.getWitness(s);
 				result[k].global_organization_ID = null; // available
 			}
 		}

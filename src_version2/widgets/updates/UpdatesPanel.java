@@ -66,9 +66,9 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
     	GUI_Swing.panelUpdates = this;
     }
    public JPanel buildTesterControlsPanel(){
-		JButton recalculateTestersRating = new JButton("Recalculate Testers Rating");
-		JButton ConsultRecommender = new JButton("Consult the Recommender System");
-		JButton sendRecommendations = new JButton("send Recommendations");
+		JButton recalculateTestersRating = new JButton(__("Recalculate Testers Rating"));
+		JButton ConsultRecommender = new JButton(__("Consult the Recommender System"));
+		JButton sendRecommendations = new JButton(__("Send Recommendations"));
 	   
 		JPanel testerControls = new JPanel(new BorderLayout());
 		//testerControls.setBackground(Color.DARK_GRAY);

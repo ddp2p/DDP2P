@@ -190,25 +190,25 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 		String[] _trusted = new String[0];
 		try {
 				String __trusted = DD.getAppText(DD.TRUSTED_UPDATES_GID);
-				if(__trusted != null) _trusted = __trusted.split(Pattern.quote(DD.TRUSTED_UPDATES_GID_SEP));
-				if(DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: got splits PK: "+_trusted.length);
+				if (__trusted != null) _trusted = __trusted.split(Pattern.quote(DD.TRUSTED_UPDATES_GID_SEP));
+				if (DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: got splits PK: "+_trusted.length);
 		} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 		}
 		ArrayList<PK> trusted = new ArrayList<PK>();
-		for(int k=0; k<_trusted.length; k++){
-			if(_trusted[k]==null){
-				if(DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: no key: "+k+" "+_trusted[k]);
+		for (int k = 0; k < _trusted.length; k ++) {
+			if (_trusted[k] == null) {
+				if (DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: no key: "+k+" "+_trusted[k]);
 				continue;
 			}
-			if(DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: got key: "+k+" "+_trusted[k]);
+			if (DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: got key: "+k+" "+_trusted[k]);
 			PK _pk = Cipher.getPK(_trusted[k]);
-			if(_pk!=null){
-				if(DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: got key PK: "+k+" "+_pk);
+			if (_pk != null) {
+				if (DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: got key PK: "+k+" "+_pk);
 				trusted.add(_pk);
 			}
 		}
-		if(DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: got size PK: "+trusted.size());
+		if (DEBUG) System.out.println(" ClientUpdates: getTrustedKeys: got size PK: "+trusted.size());
 		return trusted.toArray(new PK[0]);
 	}
 
@@ -1329,11 +1329,15 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 	    return filepath+Application.OS_PATH_SEPARATOR;
 	
 	}
-	public static String getFilePath(){
+	/**
+	 * Returns the DD.APP_WINDOWS_INSTALLATION_PATH or DD.APP_LINUX_INSTALLATION_PATH, or home if these are not set!
+	 * @return
+	 */
+	public static String getFilePath() {
 	    String filepath=System.getProperty("user.home");
 	    //String file_sep=System.getProperty("file.separator");
 	    String userdir = System.getProperty("user.dir");
-	    if(DD.OS == DD.WINDOWS) {
+	    if (DD.OS == DD.WINDOWS) {
 			try {
 				filepath = DD.getAppText(DD.APP_WINDOWS_INSTALLATION_PATH);
 				//file_sep = "\\";
@@ -1341,7 +1345,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 				e.printStackTrace();
 			}
 	    }
-	    if(DD.OS == DD.LINUX) {
+	    if (DD.OS == DD.LINUX) {
 			try {
 				filepath = DD.getAppText(DD.APP_LINUX_INSTALLATION_PATH);
 				//file_sep = "/";
@@ -1349,7 +1353,7 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 				e.printStackTrace();
 			}
 	    }
-	    if(filepath==null){
+	    if (filepath == null) {
 	    	filepath = System.getProperty("user.home");
 	    }
 	    return filepath+Application.OS_PATH_SEPARATOR;
@@ -1384,38 +1388,38 @@ public class ClientUpdates extends util.DDP2P_ServiceThread {
 		}
 		trusted = trusted.trim();
 		String[] _trusted = trusted.split(Pattern.quote(","));
-		if(_trusted.length<1){
+		if (_trusted.length < 1) {
 			System.out.println("ClientUpdates: create_info: error no trusted");
 			return false;
 		}
 		SK sk  = null; // may contain PK after SK
-		String tested_pk=null;
-		for(int k=0; k<_trusted.length; k++) {
+		String tested_pk = null;
+		for (int k = 0; k < _trusted.length; k ++) {
 			String t = _trusted[k];
-			if(t==null) continue;
+			if (t == null) continue;
 			t = t.trim();
-			if(t.length()==0) continue;
+			if (t.length() == 0) continue;
 		 	sk = Cipher.getSK(t);
-		 	if(sk==null) continue;
-		 	if(k+1<_trusted.length){
+		 	if (sk == null) continue;
+		 	if (k+1 < _trusted.length) {
 		 		String pk=null;
 		 		pk = _trusted[k+1];
-		 		if(pk == null) break;
+		 		if (pk == null) break;
 		 		pk = pk.trim();
-		 		if(pk.length()==0) break;
-		 		try{
+		 		if (pk.length() == 0) break;
+		 		try {
 		 			PK _pk = Cipher.getPK(pk);
-		 			if(_pk != null) tested_pk=pk;//i.trusted_public_key = pk;
-		 		}catch(Exception e){e.printStackTrace();}
+		 			if (_pk != null) tested_pk=pk;//i.trusted_public_key = pk;
+		 		} catch(Exception e){e.printStackTrace();}
 		 	}
 		 	break;
 		}
-	 	if(sk==null){
+	 	if (sk == null) {
 			System.out.println("ClientUpdates: create_info: error exit no sk");
 	 		return false;
 	 	}
 
-	 	if((i.testers_data==null)||(i.testers_data.length<1)){
+	 	if ((i.testers_data == null) || (i.testers_data.length < 1)) {
 	 		Application_GUI.warning(__("Need 1 tester"), __("No tester space"));
 			System.out.println("ClientUpdates: create_info: error no testers data");
 	 		return false;

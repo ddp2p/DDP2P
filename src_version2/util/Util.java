@@ -2830,6 +2830,37 @@ public class Util {
 			result = Util.concat(results, sep, null);
 			return result;
 		}
+		public static final int CALENDAR_SPACED = 1;
+		public static final int CALENDAR_TIME_ONLY = 2;
+		public static final int CALENDAR_DAY_ONLY = 3;
+		/**
+		 *  
+		 * @param value
+		 * @param mode2
+		 * values in: <p>
+		public static final int CALENDAR_SPACED = 1; <br>
+		public static final int CALENDAR_TIME_ONLY = 2; // for H:M:S.LZ<br>
+		public static final int CALENDAR_DAY_ONLY = 3; // for Y:m:d
+		
+		 * @return
+		 */
+		public static String renderNicely(Calendar value, int mode2) {
+			if (value == null) return null;
+			String result;
+			switch (mode2) {
+			case CALENDAR_SPACED:
+				result = String.format("%1$tY/%1$tm/%1$td %1$tH:%1$tM:%1$tS.%1$tLZ",value);	
+				return result;
+			case CALENDAR_TIME_ONLY:
+				result = String.format("%1$tH:%1$tM:%1$tS.%1$tLZ",value);	
+				return result;
+			case CALENDAR_DAY_ONLY:
+				result = String.format("%1$tY/%1$tm/%1$td",value);	
+				return result;
+			default:
+				return Encoder.getGeneralizedTime(value);
+			}
+		}
 }
 class GetHostName extends Thread{
 	String hostName = null;

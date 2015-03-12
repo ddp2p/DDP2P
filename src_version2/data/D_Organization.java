@@ -1712,14 +1712,21 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	public void setBlocking(boolean val) {
 		if(DEBUG) System.out.println("Orgs:setBlocking: set="+val);
+		if (this.blocked == val) return;
 		this.blocked = val;
 		setPreferencesDate();
 		this.dirty_preferences = true;
 	}
+	/**
+	 * 
+	 * @param val
+	 */
 	public void setBroadcasting(boolean val) {
 		if(DEBUG) System.out.println("Orgs:setBlocking: set="+val);
+		if (this.broadcasted == val) return;
 		this.broadcasted = val;
-		this.reset_date = Util.CalendargetInstance();
+		if (val)
+			this.reset_date = Util.CalendargetInstance();
 		setPreferencesDate();
 		this.dirty_preferences = true;
 	}

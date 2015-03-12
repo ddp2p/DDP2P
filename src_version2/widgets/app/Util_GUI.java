@@ -299,6 +299,10 @@ public class Util_GUI {
 		}
 		return value;
 	}
+	/**
+	 * set selected file to " ", and current directory to last selected current directory
+	 * @param filterUpdates
+	 */
 	public static void cleanFileSelector(JFileChooser filterUpdates){
 		File f = filterUpdates.getCurrentDirectory();
 		filterUpdates.setSelectedFile(new File(" "));

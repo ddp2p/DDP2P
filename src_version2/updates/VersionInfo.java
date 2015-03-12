@@ -190,7 +190,7 @@ public class VersionInfo extends ASN1.ASNObj{
 		return new String(Base64Coder.encode(enc.getBytes()));
 	}
 	public void updateHash(String filePath) {
-		for(Downloadable d:data)
+		for( Downloadable d : data)
 			try {
 				d.updateHash(filePath);
 			} catch (IOException e) {
