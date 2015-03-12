@@ -3,7 +3,7 @@ DDP2P
 
 Direct Democracy P2P
 
-src contains the code of version 0.9.55
+src_version1 contains the outdated code of version 0.9.55
 
 src_android
 	    contains the code reorganized such that the whole GUI of in the package widgets.
