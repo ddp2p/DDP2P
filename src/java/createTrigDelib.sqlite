@@ -1,0 +1,10 @@
+
+/* TIMESTAMPS*/
+CREATE TRIGGER insert_peer_address_timestamp_GT AFTER INSERT ON peer_address
+BEGIN
+UPDATE peer_address SET arrival_date = strftime('%Y%m%d%H%M%fZ','now') WHERE  rowid=new.rowid;
+END;
+CREATE TRIGGER insert_peer_timestamp_GT AFTER INSERT ON peer
+BEGIN
+UPDATE peer SET arrival_date = strftime('%Y%m%d%H%M%fZ','now') WHERE  rowid=new.rowid;
+END;

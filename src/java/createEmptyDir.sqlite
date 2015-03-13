@@ -1,0 +1,38 @@
+BEGIN TRANSACTION;
+CREATE TABLE registered (
+        registeredID INTEGER PRIMARY KEY, 
+        global_peer_ID TEXT, 
+	global_peer_ID_hash TEXT,
+	instance TEXT,
+	branch TEXT,
+	agent_version TEXT,
+	name TEXT,
+	certificate BLOB,
+	addresses TEXT, 
+        signature BLOB, 
+        "timestamp" TIMESTAMP,
+	UNIQUE (global_peer_ID,instance) ON CONFLICT FAIL,
+	UNIQUE (global_peer_ID_hash,instance) ON CONFLICt FAIL	
+);
+
+
+CREATE TABLE subscriber (
+    "subscriber_ID" INTEGER PRIMARY KEY,
+    "GID" TEXT,
+    "GID_hash" TEXT,
+    "instance" TEXT,
+    "all_instances" INTEGER,
+    "name" TEXT,
+    "topic" INTEGER,
+    "token_text" TEXT,
+    "instructions_from_directory" TEXT,
+    "ad"    INTEGER,
+    "plaintext" INTEGER,
+    "payment" INTEGER,
+    "payment_amount" TEXT,
+    "mode" TEXT,
+    "expiration" TEXT,
+    UNIQUE("GID_hash","instance","all_instances","mode") ON CONFLICT FAIL
+);
+
+COMMIT;

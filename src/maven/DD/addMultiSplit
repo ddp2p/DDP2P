@@ -1,0 +1,2 @@
+mvn install:install-file -Dfile=MultiSplit.jar -DgroupId=org.jdesktop.swingx -DartifactId=MultiSplitLayout -Dversion=1.0 -Dpackaging=jar
+

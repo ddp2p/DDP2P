@@ -1,0 +1,3 @@
+mvn install:install-file -Dfile=icepdf-viewer.jar -DgroupId=org.icepdf.ri -DartifactId=viewer -Dversion=1.0 -Dpackaging=jar
+mvn install:install-file -Dfile=icepdf-core.jar -DgroupId=org.icepdf.ri -DartifactId=core -Dversion=1.0 -Dpackaging=jar
+

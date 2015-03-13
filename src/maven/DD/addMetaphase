@@ -1,0 +1,2 @@
+mvn install:install-file -Dfile=MetaphaseEditor-1.0.0.jar -DgroupId=com.metaphaseeditor.MetaphaseEditor -DartifactId=MetaphaseEditor -Dversion=1.0 -Dpackaging=jar
+
