@@ -1,23 +1,8 @@
-/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
-Florida Tech, Human Decision Support Systems Laboratory
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation; either the current version of the License, or
-(at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-You should have received a copy of the GNU Affero General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-/* ------------------------------------------------------------------------- */
-
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
-import hds.Address;
-import util.DD_DirectoryServer;
-import util.DirectoryAddress;
+import net.ddp2p.common.hds.Address;
+import net.ddp2p.common.util.DD_DirectoryServer;
+import net.ddp2p.common.util.DirectoryAddress;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -26,9 +11,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
-import config.Application_GUI;
-import config.DD;
-import data.D_Peer;
+import net.ddp2p.common.config.Application_GUI;
+import net.ddp2p.common.config.DD;
+import net.ddp2p.common.data.D_Peer;
 
 
 public class AddDirectoryServer extends ActionBarActivity {
@@ -80,7 +65,7 @@ public class AddDirectoryServer extends ActionBarActivity {
 				if (emptyS(branch) && emptyS(agentVersion) && emptyS(port) && emptyS(ip) && emptyS(name)) {
 					branch = "B";
 					agentVersion = DD.VERSION;
-					port = hds.DirectoryServer.PORT+"";
+					port = net.ddp2p.common.hds.DirectoryServer.PORT+"";
 					ip = "163.118.78.40";
 					name = "D_Default";
 				}
@@ -108,24 +93,24 @@ public class AddDirectoryServer extends ActionBarActivity {
 				if (DEBUG) Log.d("DIR", "Will Save dir: "+dirAddr);
 				if (DEBUG) {
 					DirectoryAddress.DEBUG = true;
-					util.DirectoriesSaverThread.DEBUG = true;
-					util.DD_DirectoryServer.DEBUG = true;
+                    net.ddp2p.common.util.DirectoriesSaverThread.DEBUG = true;
+                    net.ddp2p.common.util.DD_DirectoryServer.DEBUG = true;
 				}
 				ds.save();
 				if (DEBUG) Log.d("DIR", "Saved dir");
 				//dir0 = new Address(dirdd);
-			
-				hds.Address dir0 = new Address(dirAddr);
-				dir0.pure_protocol = hds.Address.DIR;
+
+                net.ddp2p.common.hds.Address dir0 = new Address(dirAddr);
+				dir0.pure_protocol = net.ddp2p.common.hds.Address.DIR;
 				dir0.branch = DD.BRANCH;
 				dir0.agent_version = DD.VERSION;
 				dir0.certified = true;
-				dir0.version_structure = hds.Address.V3;
+				dir0.version_structure = net.ddp2p.common.hds.Address.V3;
 				dir0.setPorts(_port, _port);
 				dir0.address = dir0.domain+":"+dir0.tcp_port;
 				System.out.println("Adding address: "+dir0);
 
-				D_Peer myself = data.HandlingMyself_Peer.get_myself_or_null();
+				D_Peer myself = net.ddp2p.common.data.HandlingMyself_Peer.get_myself_or_null();
 				if (myself != null) {
 					if (DEBUG) Log.d("DIR", "A myself addr");
 					myself.addAddress(dir0, true, null);

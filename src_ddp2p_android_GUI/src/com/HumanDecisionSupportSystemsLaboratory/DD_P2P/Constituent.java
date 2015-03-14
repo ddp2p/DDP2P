@@ -1,30 +1,15 @@
-/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
-Florida Tech, Human Decision Support Systems Laboratory
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation; either the current version of the License, or
-(at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-You should have received a copy of the GNU Affero General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-/* ------------------------------------------------------------------------- */
-
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import java.util.ArrayList;
 
-import config.Identity;
+import net.ddp2p.common.config.Identity;
 
-import util.P2PDDSQLException;
-import util.Util;
+import net.ddp2p.common.util.P2PDDSQLException;
+import net.ddp2p.common.util.Util;
 
-import data.D_Constituent;
-import data.D_Neighborhood;
-import data.D_Organization;
+import net.ddp2p.common.data.D_Constituent;
+import net.ddp2p.common.data.D_Neighborhood;
+import net.ddp2p.common.data.D_Organization;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -303,7 +288,7 @@ public class Constituent extends Activity {
 			crtLayer.parentItems.add(c.getNameOrMy());
 		}
 		if (crtLayer.parentItems.size() == 0) {
-			crtLayer.parentItems.add(util.Util
+			crtLayer.parentItems.add(net.ddp2p.common.util.Util
 					.__("No constituent yet. Fill your profile!"));
 		}
 	}
@@ -623,7 +608,7 @@ public class Constituent extends Activity {
 						if (crt_identity == null) {
 							Log.d(Constituent.TAG, "No identity");
 						} else
-							myself_constituent_LID = config.Identity
+							myself_constituent_LID = net.ddp2p.common.config.Identity
 									.getDefaultConstituentIDForOrg(oLID);
 					} catch (P2PDDSQLException e1) {
 						e1.printStackTrace();
@@ -647,7 +632,7 @@ public class Constituent extends Activity {
 											.show();
 									return;
 								} else {
-									config.Identity
+                                    net.ddp2p.common.config.Identity
 											.setCurrentConstituentForOrg(
 													myself_constituent_LID,
 													oLID);
@@ -729,7 +714,7 @@ public class Constituent extends Activity {
 						if (crt_identity == null) {
 							Log.d(Constituent.TAG, "No identity");
 						} else
-							myself_constituent_LID = config.Identity
+							myself_constituent_LID = net.ddp2p.common.config.Identity
 									.getDefaultConstituentIDForOrg(oLID);
 					} catch (P2PDDSQLException e1) {
 						e1.printStackTrace();

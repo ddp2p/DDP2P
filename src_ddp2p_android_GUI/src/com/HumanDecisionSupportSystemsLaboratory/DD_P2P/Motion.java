@@ -1,24 +1,9 @@
-/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
-Florida Tech, Human Decision Support Systems Laboratory
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation; either the current version of the License, or
-(at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-You should have received a copy of the GNU Affero General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-/* ------------------------------------------------------------------------- */
-
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import java.util.ArrayList;
 
-import util.P2PDDSQLException;
-import util.Util;
+import net.ddp2p.common.util.P2PDDSQLException;
+import net.ddp2p.common.util.Util;
 import android.app.ActionBar;
 import android.app.ListActivity;
 import android.content.Context;
@@ -35,8 +20,8 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import config.Application;
-import data.D_Motion;
+import net.ddp2p.common.config.Application;
+import net.ddp2p.common.data.D_Motion;
 public class Motion extends ListActivity {
 	public final static String M_MOTION_ID = "motion_ID";
 	public final static String M_MOTION_LID = "Motion_LID";
@@ -63,17 +48,17 @@ public class Motion extends ListActivity {
 	
 	public final static String sql_all_motions = 
 			"SELECT "
-					+ table.motion.motion_ID
-			+" FROM "+table.motion.TNAME+
-			" WHERE "+table.motion.organization_ID + "=? ";
+					+ net.ddp2p.common.table.motion.motion_ID
+			+" FROM "+net.ddp2p.common.table.motion.TNAME+
+			" WHERE "+net.ddp2p.common.table.motion.organization_ID + "=? ";
 	public static java.util.ArrayList<java.util.ArrayList<Object>> getAllMotions(boolean hide, String crt_enhanced_LID) {
 		ArrayList<ArrayList<Object>> moti;
 		if (Application.db == null) return new ArrayList<ArrayList<Object>>();
 		String sql = sql_all_motions;
-		if (hide)	sql	 +=	" AND "+table.motion.hidden+" != '1' ";
+		if (hide)	sql	 +=	" AND "+net.ddp2p.common.table.motion.hidden+" != '1' ";
 		try {
 			if (crt_enhanced_LID != null) {
-				sql += " AND " + table.motion.enhances_ID+" = ?;";
+				sql += " AND " + net.ddp2p.common.table.motion.enhances_ID+" = ?;";
 				moti = Application.db.select(sql, new String[]{Motion.getOrganizationLIDstr(), Motion.getEnhancedLIDstr()});
 			} else {
 				moti = Application.db.select(sql+";", new String[]{Motion.getOrganizationLIDstr()});

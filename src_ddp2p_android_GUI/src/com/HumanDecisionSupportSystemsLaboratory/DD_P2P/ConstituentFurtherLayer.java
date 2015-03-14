@@ -1,24 +1,10 @@
-/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
-Florida Tech, Human Decision Support Systems Laboratory
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation; either the current version of the License, or
-(at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-You should have received a copy of the GNU Affero General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-/* ------------------------------------------------------------------------- */
-
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import java.util.ArrayList;
 
-import util.P2PDDSQLException;
-import util.Util;
+import net.ddp2p.common.data.D_Witness;
+import net.ddp2p.common.util.P2PDDSQLException;
+import net.ddp2p.common.util.Util;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
@@ -42,15 +28,27 @@ import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import config.Identity;
-import data.D_Constituent;
-import data.D_Neighborhood;
-import data.D_Organization;
+import net.ddp2p.common.config.Identity;
+import net.ddp2p.common.data.D_Constituent;
+import net.ddp2p.common.data.D_Neighborhood;
+import net.ddp2p.common.data.D_Organization;
+
+class A_Witness {
+    int eligibility_from_me;
+    int trust_from_me;
+    int eligibility_positive;
+    int eligibility_negative;
+    A_Witness(D_Witness w) {
+        if (w == null) return;
+        this.eligibility_from_me = w.sense_y_n;
+        this.trust_from_me = w.sense_y_trustworthiness;
+    }
+}
 
 /**
  * Currently this does not model leaves (except for constituents with no email)
  * 
- * @author msilaghi
+ * @author M. Silaghi and Hang Dong
  * 
  */
 class CTreeNode {
@@ -75,6 +73,13 @@ class CTreeNode {
 }
 
 class ConstituentNode extends CTreeNode {
+    public long constituent_LID;
+    public boolean external;
+    public boolean hasSK;
+    public String name_constituent;
+    public String email;
+    public D_Witness witness;
+
     public ConstituentNode(long c_LID, String name) {
         constituent_LID = c_LID;
         name_constituent = name;
@@ -88,12 +93,6 @@ class ConstituentNode extends CTreeNode {
             hasSK = true;// (c.getSK() != null);
         }
     }
-
-	public long constituent_LID;
-    public boolean external;
-    public boolean hasSK;
-	public String name_constituent;
-	public String email;
 
 	@Override
 	public String getDisplayText(int childPosition) {
@@ -117,7 +116,10 @@ class NeighborhoodNode extends CTreeNode {
 	public ArrayList<ConstituentNode> constituents = new ArrayList<ConstituentNode>();
 	public ArrayList<String> tail = new ArrayList<String>();
 
-	public NeighborhoodNode() {
+    A_Witness my_witness;
+
+
+    public NeighborhoodNode() {
 	}
 
 	public NeighborhoodNode(long n_LID, String name) {
@@ -568,7 +570,7 @@ public class ConstituentFurtherLayer extends Activity {
 		expandableList.setGroupIndicator(null);
 		expandableList.setClickable(true);
 
-		if (!crtLayer.crt_root.loaded) { // if wanting to refresh, one has to
+		if (! crtLayer.crt_root.loaded) { // if wanting to refresh, one has to
 											// empty the existing lists!
 			crtLayer.crt_root.clean();
 			// Set the Items of Parent
@@ -853,8 +855,13 @@ public class ConstituentFurtherLayer extends Activity {
 			D_Neighborhood n = D_Neighborhood.getNeighByLID(n_LID, true, false);
 			if (n == null)
 				continue;
-			crtLayer.crt_root.neighborhoods.add(new NeighborhoodNode(n_LID, n
-					.getName_division() + ": " + n.getName()));// .parentItems.add(n.getName_division()+": "+n.getName());
+
+            NeighborhoodNode nn = new NeighborhoodNode(n_LID, n
+                    .getName_division() + ": " + n.getName());
+            D_Witness w = D_Witness.getMyWitnessForNeighborhood(n);
+            //D_Witness.getCountWitness();
+            nn.my_witness = new A_Witness(w);
+			crtLayer.crt_root.neighborhoods.add(nn);// .parentItems.add(n.getName_division()+": "+n.getName());
 		}
 		for (ArrayList<Object> _c : crtLayer.consts_LIDs) {
 			long c_LID = Util.lval(_c.get(0));
@@ -866,7 +873,7 @@ public class ConstituentFurtherLayer extends Activity {
 			crtLayer.crt_root.constituents.add(new ConstituentNode(c_LID, c));
 		}
 		if (crtLayer.crt_root.getLeavesCount() == 0) {
-			crtLayer.crt_root.header.add(util.Util.__("Nothing here yet!"));
+			crtLayer.crt_root.header.add(net.ddp2p.common.util.Util.__("Nothing here yet!"));
 		}
 	}
 
@@ -1191,7 +1198,7 @@ public class ConstituentFurtherLayer extends Activity {
                     }
 
                     try {
-                        config.Identity
+                        net.ddp2p.common.config.Identity
                                 .setCurrentConstituentForOrg(
                                         c.getLID(),
                                         oLID);
@@ -1340,7 +1347,7 @@ public class ConstituentFurtherLayer extends Activity {
 						if (crt_identity == null) {
 							Log.d(ConstituentFurtherLayer.TAG, "No identity");
 						} else
-							myself_constituent_LID = config.Identity
+							myself_constituent_LID = net.ddp2p.common.config.Identity
 									.getDefaultConstituentIDForOrg(oLID);
 					} catch (P2PDDSQLException e1) {
 						e1.printStackTrace();

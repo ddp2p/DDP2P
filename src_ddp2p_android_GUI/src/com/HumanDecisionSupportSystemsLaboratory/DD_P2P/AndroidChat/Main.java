@@ -21,15 +21,15 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
-import data.D_Peer;
-import ASN1.ASN1DecoderFail;
-import ASN1.Decoder;
+import net.ddp2p.common.data.D_Peer;
+import net.ddp2p.ASN1.ASN1DecoderFail;
+import net.ddp2p.ASN1.Decoder;
 
 //import plugin_data.PeerPluginEditor;
 //import plugin_data.PeerPluginRenderer;
 public class Main {
     private static final boolean DEBUG = true;
-	static java.util.ArrayList<plugin_data.PluginRequest> queue = new java.util.ArrayList<plugin_data.PluginRequest>();
+	static java.util.ArrayList<net.ddp2p.common.plugin_data.PluginRequest> queue = new java.util.ArrayList<net.ddp2p.common.plugin_data.PluginRequest>();
 	static String plugin_GID = "Chat_B1_v1.0.0";//"Dong Hang PUBLIC GID ANDROID CHAT version 1.0.0";
 	static String peer_GID;
 	static String plugin_name = "AndroidChat";
@@ -87,11 +87,11 @@ public class Main {
 		// confirm the sending into the GUI
 		receiver.addSentMessage(cm, peerGID, channeldata_out);
 		
-		byte[] _msg = cm.encode();	
-		plugin_data.PluginRequest  envelope = new plugin_data.PluginRequest();
+		byte[] _msg = cm.encode();
+        net.ddp2p.common.plugin_data.PluginRequest  envelope = new net.ddp2p.common.plugin_data.PluginRequest();
 		envelope.msg = _msg;
 		envelope.peer_GID = peerGID; //destination
-		envelope.type = plugin_data.PluginRequest.MSG;
+		envelope.type = net.ddp2p.common.plugin_data.PluginRequest.MSG;
 		envelope.plugin_GID=(String)Main.getPluginDataHashtable().get("plugin_GID");
 		if (DEBUG) System.out.println("PLUGIN CHAT: Main: send envelope: "+envelope);
 		Main.enqueue(envelope);
@@ -153,10 +153,10 @@ public class Main {
 	     */
 	    public static void init() {
 	    	if (false) {
-				plugin_data.PluginRequest sentMenuItem = new plugin_data.PluginRequest();
-				sentMenuItem.type = plugin_data.PluginRequest.REGISTER_MENU;
+                net.ddp2p.common.plugin_data.PluginRequest sentMenuItem = new net.ddp2p.common.plugin_data.PluginRequest();
+				sentMenuItem.type = net.ddp2p.common.plugin_data.PluginRequest.REGISTER_MENU;
 				sentMenuItem.plugin_GID = plugin_GID;
-				sentMenuItem.column = plugin_data.PluginMenus.COLUMN_MYSELF; // for a new plugin how to decide which col? 
+				sentMenuItem.column = net.ddp2p.common.plugin_data.PluginMenus.COLUMN_MYSELF; // for a new plugin how to decide which col?
 				enqueue(sentMenuItem);
 	    	}	
 	
@@ -164,7 +164,7 @@ public class Main {
 	/**
 	* Interface for communication with main system: to send, simply call enqueue()
 	*/
-	public static void enqueue(plugin_data.PluginRequest r) {
+	public static void enqueue(net.ddp2p.common.plugin_data.PluginRequest r) {
 		synchronized(queue) {
 		        queue.add(r);
 		        queue.notify();
@@ -175,7 +175,7 @@ public class Main {
 	 */
     public static void handleReceivedMessage(byte[] msg, String peer_GID) {
     	//boolean DEBUG = true;
-		if (DEBUG) System.out.println("PLUGIN CHAT: From: "+peer_GID+" got "+plugin_data.PluginRequest.byteToHex(msg,":"));
+		if (DEBUG) System.out.println("PLUGIN CHAT: From: "+peer_GID+" got "+net.ddp2p.common.plugin_data.PluginRequest.byteToHex(msg,":"));
 	    ChatMessage cmsg=null;
 	    try {
 	    	synchronized(monitor) {
@@ -247,10 +247,10 @@ public class Main {
 		
     	if (DEBUG) System.out.println("PLUGIN CHAT: sendAckMsg: sending "+cm);
 		byte[] _msg = cm.encode();
-		plugin_data.PluginRequest  envelope = new plugin_data.PluginRequest();
+        net.ddp2p.common.plugin_data.PluginRequest  envelope = new net.ddp2p.common.plugin_data.PluginRequest();
 		envelope.msg = _msg;
 		envelope.peer_GID = peer_GID; //destination
-		envelope.type = plugin_data.PluginRequest.MSG;
+		envelope.type = net.ddp2p.common.plugin_data.PluginRequest.MSG;
 		envelope.plugin_GID = (String) Main.getPluginDataHashtable().get("plugin_GID");
 		Main.enqueue(envelope);
      	if (DEBUG) System.out.println("PLUGIN CHAT: sendAckMsg: sending env "+envelope);

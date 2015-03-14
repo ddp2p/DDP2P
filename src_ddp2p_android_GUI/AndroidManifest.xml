@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.HumanDecisionSupportSystemsLaboratory.DD_P2P"
-    android:versionCode="3"
-    android:versionName="Votes" >
+    android:versionCode="4"
+    android:versionName="Global" >
 
     <uses-sdk
-        android:minSdkVersion="16"
-        android:targetSdkVersion="20" />
+        android:minSdkVersion="11"
+        android:targetSdkVersion="21" />
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />

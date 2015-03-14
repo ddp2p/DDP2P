@@ -19,7 +19,7 @@ package com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AndroidChat;
 
 import java.util.Calendar;
 
-import ASN1.Encoder;
+import net.ddp2p.ASN1.Encoder;
 
 public
 class DatedChatMessage {

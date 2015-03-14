@@ -22,13 +22,13 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Random;
 
-import ASN1.ASN1DecoderFail;
-import ASN1.Decoder;
-import ASN1.Encoder;
-import config.DD;
-import util.Util; 
+import net.ddp2p.ASN1.ASN1DecoderFail;
+import net.ddp2p.ASN1.Decoder;
+import net.ddp2p.ASN1.Encoder;
+import net.ddp2p.common.config.DD;
+import net.ddp2p.common.util.Util;
 
-public class ChatMessage extends ASN1.ASNObj {
+public class ChatMessage extends net.ddp2p.ASN1.ASNObj {
      public static final int MT_TEXT = 1;
      public static final int MT_IMAGE = 2;
      public static final int MT_EMPTY = 0; // just to inform session_id, session_id_ack, first_in_this_sequence, last_acknowledged_in_sequence, received_out_of_sequence

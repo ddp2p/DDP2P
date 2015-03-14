@@ -19,8 +19,8 @@
         android:id="@+id/action_settings"
         android:orderInCategory="100"
         android:showAsAction="never"
-        android:enabled="false"
-        android:title="@string/action_settings"/>
+        android:enabled="true"
+        android:title="Settings (Updates)"/>
     <!--
          <item
         android:id="@+id/action_directories_icon"

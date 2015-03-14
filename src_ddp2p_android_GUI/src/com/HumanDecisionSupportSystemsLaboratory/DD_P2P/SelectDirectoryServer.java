@@ -1,26 +1,11 @@
-/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
-Florida Tech, Human Decision Support Systems Laboratory
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation; either the current version of the License, or
-(at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-You should have received a copy of the GNU Affero General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-/* ------------------------------------------------------------------------- */
-
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
-import hds.Address;
+import net.ddp2p.common.hds.Address;
 
 import java.util.ArrayList;
 
-import util.DD_DirectoryServer;
-import util.DirectoryAddress;
+import net.ddp2p.common.util.DD_DirectoryServer;
+import net.ddp2p.common.util.DirectoryAddress;
 import android.app.ActionBar;
 import android.app.ListActivity;
 import android.content.Intent;
@@ -32,8 +17,8 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
-import config.DD;
-import config.Identity;
+import net.ddp2p.common.config.DD;
+import net.ddp2p.common.config.Identity;
 
 public class SelectDirectoryServer extends ListActivity {
 
@@ -140,8 +125,8 @@ public class SelectDirectoryServer extends ListActivity {
 		ds.add(dirAddr);
 		if (DEBUG) {
 			DirectoryAddress.DEBUG = true;
-			util.DirectoriesSaverThread.DEBUG = true;
-			util.DD_DirectoryServer.DEBUG = true;
+            net.ddp2p.common.util.DirectoriesSaverThread.DEBUG = true;
+            net.ddp2p.common.util.DD_DirectoryServer.DEBUG = true;
 		}
 		ds.save();
 		if (DEBUG)

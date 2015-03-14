@@ -1,24 +1,9 @@
-/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
-Florida Tech, Human Decision Support Systems Laboratory
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation; either the current version of the License, or
-(at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-You should have received a copy of the GNU Affero General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-/* ------------------------------------------------------------------------- */
-
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import java.io.File;
 
-import util.DD_SK;
-import util.P2PDDSQLException;
+import net.ddp2p.common.util.DD_SK;
+import net.ddp2p.common.util.P2PDDSQLException;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -46,9 +31,9 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.CompoundButton.OnCheckedChangeListener;
-import ciphersuits.KeyManagement;
-import config.DD;
-import data.D_Peer;
+import net.ddp2p.ciphersuits.KeyManagement;
+import net.ddp2p.common.config.DD;
+import net.ddp2p.common.data.D_Peer;
 
 public class SafeProfileActivity extends FragmentActivity {
 
@@ -301,7 +286,7 @@ public class SafeProfileActivity extends FragmentActivity {
 					break;
 
 				case SafeProfileActivity.SAFE_DRAWER_SK_SET_MYSELF: // 1:
-					data.HandlingMyself_Peer
+                    net.ddp2p.common.data.HandlingMyself_Peer
 							.setMyself_currentIdentity_announceDirs(peer, true,
 									false);
 					Toast.makeText(SafeProfileActivity.this,

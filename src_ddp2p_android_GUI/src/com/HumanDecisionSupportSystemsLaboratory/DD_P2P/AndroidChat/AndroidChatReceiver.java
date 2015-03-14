@@ -28,8 +28,8 @@ import java.util.List;
 import com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Chat;
 import com.HumanDecisionSupportSystemsLaboratory.DD_P2P.ChatEntity;
 
-import util.Util;
-import ASN1.Encoder;
+import net.ddp2p.common.util.Util;
+import net.ddp2p.ASN1.Encoder;
 
 
 

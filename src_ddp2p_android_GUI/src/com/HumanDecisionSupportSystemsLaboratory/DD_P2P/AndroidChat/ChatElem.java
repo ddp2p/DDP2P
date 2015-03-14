@@ -18,13 +18,13 @@
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AndroidChat;
 //package dd_p2p.plugin;
 
-import ASN1.ASN1DecoderFail;
-import ASN1.Decoder;
-import ASN1.Encoder;
-import config.DD;
+import net.ddp2p.ASN1.ASN1DecoderFail;
+import net.ddp2p.ASN1.Decoder;
+import net.ddp2p.ASN1.Encoder;
+import net.ddp2p.common.config.DD;
 
  
-public class ChatElem extends ASN1.ASNObj {
+public class ChatElem extends net.ddp2p.ASN1.ASNObj {
     public ChatElem instance() {
         return new ChatElem();
     }

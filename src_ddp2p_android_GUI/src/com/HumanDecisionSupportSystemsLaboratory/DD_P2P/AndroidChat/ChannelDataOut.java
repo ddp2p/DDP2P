@@ -23,8 +23,8 @@ import java.util.Calendar;
 //import dd_p2p.plugin.*;
 import java.util.Hashtable;
 
-import ASN1.Encoder;
-import util.Util;
+import net.ddp2p.ASN1.Encoder;
+import net.ddp2p.common.util.Util;
 
 /**
  * 

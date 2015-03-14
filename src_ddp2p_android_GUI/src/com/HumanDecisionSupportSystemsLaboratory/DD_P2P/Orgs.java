@@ -1,24 +1,9 @@
-/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
-Florida Tech, Human Decision Support Systems Laboratory
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation; either the current version of the License, or
-(at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-You should have received a copy of the GNU Affero General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-/* ------------------------------------------------------------------------- */
-
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import java.util.ArrayList;
 
-import util.P2PDDSQLException;
-import util.Util;
+import net.ddp2p.common.util.P2PDDSQLException;
+import net.ddp2p.common.util.Util;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -36,8 +21,8 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import config.Application;
-import data.D_Organization;
+import net.ddp2p.common.config.Application;
+import net.ddp2p.common.data.D_Organization;
 
 public class Orgs extends ListFragment{	
 	public final static String TAG = "orgs";
@@ -50,7 +35,7 @@ public class Orgs extends ListFragment{
 	static OrgItem orgName[];
 	static Orgs activ = null;
 	public static ListAdapter listAdapter;
-	public final static String sql_all_orgs = "SELECT "+table.organization.organization_ID+" FROM "+table.organization.TNAME+";";
+	public final static String sql_all_orgs = "SELECT "+net.ddp2p.common.table.organization.organization_ID+" FROM "+net.ddp2p.common.table.organization.TNAME+";";
 	
 
 	public static java.util.ArrayList<java.util.ArrayList<Object>> getAllOrganizations() {

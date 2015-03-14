@@ -1,29 +1,14 @@
-/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
-Florida Tech, Human Decision Support Systems Laboratory
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation; either the current version of the License, or
-(at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-You should have received a copy of the GNU Affero General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-/* ------------------------------------------------------------------------- */
-
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
-import hds.Address;
+import net.ddp2p.common.hds.Address;
 
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 
-import util.DD_DirectoryServer;
-import util.P2PDDSQLException;
-import util.StegoStructure;
+import net.ddp2p.common.util.DD_DirectoryServer;
+import net.ddp2p.common.util.P2PDDSQLException;
+import net.ddp2p.common.util.StegoStructure;
 import android.annotation.TargetApi;
 import android.app.ActionBar.TabListener;
 import android.app.FragmentTransaction;
@@ -46,10 +31,10 @@ import android.widget.Toast;
 
 import com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AndroidChat.AndroidChatReceiver;
 
-import config.DD;
-import config.Identity;
-import data.D_Peer;
-import data.HandlingMyself_Peer;
+import net.ddp2p.common.config.DD;
+import net.ddp2p.common.config.Identity;
+import net.ddp2p.common.data.D_Peer;
+import net.ddp2p.common.data.HandlingMyself_Peer;
 
 
 
@@ -125,7 +110,7 @@ public class Main extends FragmentActivity implements TabListener{
                     .setTabListener(this));
         }
  
-		new util.DDP2P_ServiceThread("loading icons", false, this) {
+		new net.ddp2p.common.util.DDP2P_ServiceThread("loading icons", false, this) {
 			@Override
 			public void _run() {
 				Main m = (Main) ctx;
@@ -431,7 +416,7 @@ public class Main extends FragmentActivity implements TabListener{
 		} else {
 			myself.cleanAddresses(true, null);
 			myself.cleanAddresses(false, null);
-			hds.Address dir0 = null;
+            net.ddp2p.common.hds.Address dir0 = null;
 			if (Identity.getListing_directories_addr().size() > 0) dir0 = Identity.getListing_directories_addr().get(0);
 			else {
 				String dirdd = "DIR%B%0.9.56://163.118.78.40:10000:10000:DD";
@@ -440,11 +425,11 @@ public class Main extends FragmentActivity implements TabListener{
 				ds.save();
 				dir0 = new Address(dirdd);
 			}
-			dir0.pure_protocol = hds.Address.DIR;
+			dir0.pure_protocol = net.ddp2p.common.hds.Address.DIR;
 			dir0.branch = DD.BRANCH;
 			dir0.agent_version = DD.VERSION;
 			dir0.certified = true;
-			dir0.version_structure = hds.Address.V3;
+			dir0.version_structure = net.ddp2p.common.hds.Address.V3;
 			dir0.address = dir0.domain+":"+dir0.tcp_port;
 			System.out.println("Adding address: "+dir0);
 			myself.addAddress(dir0, true, null);
@@ -467,7 +452,7 @@ public class Main extends FragmentActivity implements TabListener{
 		}	
 		//initial chat:
 		try {
-			plugin_data.PluginRegistration.loadPlugin(com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AndroidChat.Main.class, HandlingMyself_Peer.getMyPeerGID(), HandlingMyself_Peer.getMyPeerName());
+            net.ddp2p.common.plugin_data.PluginRegistration.loadPlugin(com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AndroidChat.Main.class, HandlingMyself_Peer.getMyPeerGID(), HandlingMyself_Peer.getMyPeerName());
 			com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AndroidChat.Main.receiver = new AndroidChatReceiver();
 		} catch (MalformedURLException e) {
 			Log.i("chat", "some error in chat initial!");
