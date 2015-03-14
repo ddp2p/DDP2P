@@ -10,7 +10,7 @@ src/java/
 
 src/maven
 	contains the configuration code for compiling the project with maven.
-	The source code itself is not in this folder, rathere some UNIX symbolic links are provided which have
+	The source code itself is not in this folder, rather some UNIX symbolic links are provided which have
 	to be changed to the actual folders in src/java/. Likely in Windows one needs to manually copy the
 	corresponding folders from the src/java tree...
 
