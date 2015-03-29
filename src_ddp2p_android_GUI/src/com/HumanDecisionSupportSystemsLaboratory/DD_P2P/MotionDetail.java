@@ -1,5 +1,22 @@
+/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
+Florida Tech, Human Decision Support Systems Laboratory
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation; either the current version of the License, or
+(at your option) any later version.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+You should have received a copy of the GNU Affero General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+/* ------------------------------------------------------------------------- */
+
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
+import net.ddp2p.common.config.DD;
+import net.ddp2p.common.data.D_Justification;
 import net.ddp2p.common.util.DD_Address;
 import net.ddp2p.common.util.DD_SK;
 import net.ddp2p.common.util.Util;
@@ -269,6 +286,7 @@ public class MotionDetail extends FragmentActivity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
+        Log.d("MotionDetail", "onOptionsItemSelected");
 		if (item.getItemId() == R.id.motion_detail_add_new_motion) {
 			Toast.makeText(this, "add a new Motion", Toast.LENGTH_SHORT).show();
 
@@ -303,8 +321,17 @@ public class MotionDetail extends FragmentActivity {
 		}
 
 		if (item.getItemId() == R.id.motion_detail_export) {
+            Log.d("MotionDetail", "onOptionsItemSelected: export");
 			DD_SK d_SK = new DD_SK();
+            Log.d("MotionDetail", "onOptionsItemSelected: add motion: "+crt_motion);
 			DD_SK.addMotionToDSSK(d_SK, crt_motion);
+
+            long checked_justificationLID = JustificationBySupportType.checkedJustifLID;
+            if (checked_justificationLID > 0) {
+                D_Justification checked_justification = D_Justification.getJustByLID(checked_justificationLID, false, false);
+                if (checked_justification != null)
+                    DD_SK.addJustificationWithAnySupportToDSSK(d_SK, checked_justification, DD.getCrtConstituent(crt_motion.getOrganizationLID()),false);
+            }
 			/*
 			DD_SK_Entry dsk = new DD_SK_Entry();
 			dsk.key = constituent.getSK();
@@ -313,7 +340,8 @@ public class MotionDetail extends FragmentActivity {
 			dsk.type = "Motion Detail!";
 			d_SK.sk.add(dsk);
 			*/
-			
+
+            Log.d("MotionDetail", "onOptionsItemSelected: export motion: "+d_SK);
 			String testText = Safe.getExportTextObject(d_SK.encode());
 			String testSubject = "DDP2P: Motion Detail of \""+ crt_motion.getTitleStrOrMy() + "\" in \""+ crt_motion.getOrganization().getName()+"\" " + Safe.SAFE_TEXT_MY_HEADER_SEP;
 
@@ -326,8 +354,7 @@ public class MotionDetail extends FragmentActivity {
 			Intent i = new Intent(Intent.ACTION_SEND);
 			i.setType("text/plain");
 			i.putExtra(Intent.EXTRA_TEXT, testText);
-			i.putExtra(Intent.EXTRA_SUBJECT,
-					testSubject);
+			i.putExtra(Intent.EXTRA_SUBJECT, testSubject);
 			i = Intent.createChooser(i, "send motion Public key");
 			startActivity(i);
 		}

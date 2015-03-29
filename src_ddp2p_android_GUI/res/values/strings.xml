@@ -83,7 +83,7 @@
     <!-- Motion -->
     <string name="view_votes" translatable="false">Votes</string>
 
-    <!-- Witness & Neiborhood -->
+    <!-- Witness & Neighorhood -->
     <string name="division" translatable="false">Division</string>
     <string name="subdivision" translatable="false">Subdivision</string>
     <string name="trustworthy" translatable="false">Trustworthy</string>
@@ -92,8 +92,10 @@
     <string name="voting_right" translatable="false">Voting Right</string>
     <string name="new_constituent" translatable="false">New Constituent</string>
     <string name="new_neighborhood" translatable="false">New Neighborhood</string>
+
     <!-- Server -->
     <string name="directory_empty" translatable="false">There is no directory server, please add one from top right "+" mark!</string>
     <string name="directory_instruction" translatable="false">Directory Address, such as: \nDIR%B%0.10.07://10.0.0.1:25123:25123:Name</string>
+    <string name="HintEmptyView">You can add items using the + menu above!</string>
 
 </resources>

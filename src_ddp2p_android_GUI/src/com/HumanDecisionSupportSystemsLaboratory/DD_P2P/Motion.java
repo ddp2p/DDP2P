@@ -1,7 +1,23 @@
+/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
+Florida Tech, Human Decision Support Systems Laboratory
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation; either the current version of the License, or
+(at your option) any later version.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+You should have received a copy of the GNU Affero General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+/* ------------------------------------------------------------------------- */
+
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import java.util.ArrayList;
 
+import net.ddp2p.common.data.D_MotionChoice;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 import android.app.ActionBar;
@@ -90,7 +106,23 @@ public class Motion extends ListActivity {
 				//String name = motion.getTitle();
 				_motionTitle[k].motion =  motion; //name;
 				_motionTitle[k].mot_name = Util.getString(motion.getMotionTitle().title_document.getDocumentString());
-				_motionTitle[k].body = Util.getString(motion.getMotionText().getDocumentString());
+                _motionTitle[k].body = Util.getString(motion.getMotionText().getDocumentString());
+                String date = motion.getCreationDateStr();
+                if (date != null) {
+                    _motionTitle[k].mot_date = date.substring(0, 3) + "-" + date.substring(4, 5) + "-" + date.substring(6, 7) + "-" + date.substring(8 - 11);
+                } else {_motionTitle[k].mot_date = null;/*Util.__("Undated");*/ }
+                D_MotionChoice _choices [] = motion.getActualChoices();
+                for (int c = 0; c < 3 && c < _choices.length; c ++) {
+                    D_Motion.MotionChoiceSupport mcs = motion.getMotionSupport_WithCache(c, true);
+                    switch (c) {
+                        case 0:
+                            _motionTitle[k].choice1 = _choices[c].name + " " + mcs.getCnt() + "/" + mcs.getWeight(); break;
+                        case 1:
+                            _motionTitle[k].choice2 = _choices[c].name + " " + mcs.getCnt() + "/" + mcs.getWeight(); break;
+                        case 2:
+                            _motionTitle[k].choice3 = _choices[c].name + " " + mcs.getCnt() + "/" + mcs.getWeight(); break;
+                    }
+                }
 			} else {
 				_motionTitle[k].mot_name = Util.__("Motion: ")+oLID;
 			}
@@ -235,19 +267,25 @@ public class Motion extends ListActivity {
 						.findViewById(R.id.motion_list_choice2);
 				TextView choice3 = (TextView) v
 						.findViewById(R.id.motion_list_choice3);
-				dateAndTime.setText("2015-1-4-1519");
-
+                if (item.mot_date == null) {
+                    dateAndTime.setText("Undated");//"2015-1-4-1519");
+                    dateAndTime.setVisibility(View.INVISIBLE);
+                } else {
+                    dateAndTime.setVisibility(View.VISIBLE);
+                    dateAndTime.setText(item.mot_date);//"2015-1-4-1519");
+                }
 				title.setText(item.mot_name);
 				if (item.body.length() <= 200) {
 					content.setText(item.body);
 				} else {
 					content.setText(item.body.substring(0, 200) + "...");
 				}
-				
+
+
 				//TODO fill this
-/*				choice1.setText(text);
-				choice2.setText(text);
-				choice3.setText(text);*/
+                if (item.choice1 != null) {choice1.setText(item.choice1); choice1.setVisibility(View.VISIBLE);} else {choice1.setText(""); choice1.setVisibility(View.INVISIBLE);}
+                if (item.choice2 != null) {choice2.setText(item.choice2); choice2.setVisibility(View.VISIBLE);} else {choice2.setText(""); choice2.setVisibility(View.INVISIBLE);}
+                if (item.choice3 != null) {choice3.setText(item.choice3); choice3.setVisibility(View.VISIBLE);} else {choice3.setText(""); choice3.setVisibility(View.INVISIBLE);}
 			}
 
 			return v;

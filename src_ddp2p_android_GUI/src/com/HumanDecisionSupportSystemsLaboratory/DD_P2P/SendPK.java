@@ -1,3 +1,18 @@
+/* Copyright (C) 2014,2015 Authors: Hang Dong <hdong2012@my.fit.edu>, Marius Silaghi <silaghi@fit.edu>
+Florida Tech, Human Decision Support Systems Laboratory
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation; either the current version of the License, or
+(at your option) any later version.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+You should have received a copy of the GNU Affero General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+/* ------------------------------------------------------------------------- */
+
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import java.io.File;
@@ -98,18 +113,20 @@ public class SendPK extends DialogFragment {
 					return;
 					//finish();
 				}
-				DD_Address adr = new DD_Address(peer);
+				//DD_Address adr = new DD_Address(peer);
 				
-				String msgBody = Safe.getExportTextObject(adr.getBytes());
+				String msgBody = DD.getExportTextObjectBody(peer); //adr.getBytes());
 				
 				Intent i = new Intent(Intent.ACTION_SEND);
 				i.setType("text/plain");
 				i.putExtra(Intent.EXTRA_TEXT, msgBody); //Safe.SAFE_TEXT_MY_BODY_SEP + Util.stringSignatureFromByte(adr.getBytes()));
-				
+/*
 				String slogan = peer.getSlogan_MyOrDefault();
 				if (slogan == null) slogan = "";
 				else slogan = "\""+slogan+"\"";
 				i.putExtra(Intent.EXTRA_SUBJECT, "DDP2P: Safe Address of \""+peer.getName()+"\",  "+slogan+Safe.SAFE_TEXT_MY_HEADER_SEP);
+*/
+		        i.putExtra(Intent.EXTRA_SUBJECT, DD.getExportTextObjectTitle(peer));
 				i = Intent.createChooser(i, "send Public key");
 				startActivity(i);
 		        FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();

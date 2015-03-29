@@ -10,6 +10,6 @@
         android:drawableTop="@drawable/emptyview"
         android:layout_gravity="center"
         android:textSize="20sp"
-        android:text="oops! Nothing here yet!" />
+        android:text="@string/HintEmptyView" />
 
 </LinearLayout>
