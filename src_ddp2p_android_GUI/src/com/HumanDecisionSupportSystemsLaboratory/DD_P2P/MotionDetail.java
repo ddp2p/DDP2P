@@ -189,9 +189,20 @@ public class MotionDetail extends FragmentActivity {
 				}
 				// update name dialog
 				FragmentManager fm = getSupportFragmentManager();
-				dialog = new ToAddJustificationDialog(crt_motion,
-						justification, MotionDetail.crt_motion
-								.getActualChoices()[0].short_name);
+
+                Bundle b = new Bundle();
+                if (justification != null) {
+                    b.putString(Motion.M_MOTION_ID, justification.getSupportCntStr());
+                    b.putString(Motion.J_JUSTIFICATION_LID, justification.getJustification_LIDstr());
+                }
+                if (crt_motion != null) {
+                    b.putString(Motion.M_MOTION_LID, crt_motion.getLIDstr());
+                    b.putString(Motion.M_MOTION_CHOICE, MotionDetail.crt_motion.getActualChoices()[0].short_name);
+                }
+
+				dialog = new ToAddJustificationDialog();
+                dialog.setArguments(b);
+                //crt_motion, justification, MotionDetail.crt_motion.getActualChoices()[0].short_name);
 				dialog.show(fm, "fragment_to_add_justification");
 
 			}
@@ -220,10 +231,21 @@ public class MotionDetail extends FragmentActivity {
 							.getStringID(JustificationBySupportType.checkedJustifLID));
 				}
 
-				FragmentManager fm = getSupportFragmentManager();
-				dialog = new ToAddJustificationDialog(crt_motion,
-						justification, MotionDetail.crt_motion
-								.getActualChoices()[1].short_name);
+                Bundle b = new Bundle();
+                if (justification != null) {
+                    b.putString(Motion.M_MOTION_ID, justification.getSupportCntStr());
+                    b.putString(Motion.J_JUSTIFICATION_LID, justification.getJustification_LIDstr());
+                }
+                if (crt_motion != null) {
+                    b.putString(Motion.M_MOTION_LID, crt_motion.getLIDstr());
+                    b.putString(Motion.M_MOTION_CHOICE, MotionDetail.crt_motion.getActualChoices()[1].short_name);
+                }
+
+
+                FragmentManager fm = getSupportFragmentManager();
+				dialog = new ToAddJustificationDialog();
+                dialog.setArguments(b);
+                //crt_motion,justification, MotionDetail.crt_motion.getActualChoices()[1].short_name);
 				dialog.show(fm, "fragment_to_add_justification");
 			}
 		});
@@ -250,10 +272,21 @@ public class MotionDetail extends FragmentActivity {
 					justification.setJustification_LID(Util
 							.getStringID(JustificationBySupportType.checkedJustifLID));
 				}
-				FragmentManager fm = getSupportFragmentManager();
-				dialog = new ToAddJustificationDialog(crt_motion,
-						justification, MotionDetail.crt_motion
-								.getActualChoices()[2].short_name);
+
+                Bundle b = new Bundle();
+                if (justification != null) {
+                    b.putString(Motion.M_MOTION_ID, justification.getSupportCntStr());
+                    b.putString(Motion.J_JUSTIFICATION_LID, justification.getJustification_LIDstr());
+                }
+                if (crt_motion != null) {
+                    b.putString(Motion.M_MOTION_LID, crt_motion.getLIDstr());
+                    b.putString(Motion.M_MOTION_CHOICE, MotionDetail.crt_motion.getActualChoices()[2].short_name);
+                }
+
+                FragmentManager fm = getSupportFragmentManager();
+				dialog = new ToAddJustificationDialog();
+                //crt_motion,justification, MotionDetail.crt_motion.getActualChoices()[2].short_name);
+                dialog.setArguments(b);
 				dialog.show(fm, "fragment_to_add_justification");
 			}
 		});

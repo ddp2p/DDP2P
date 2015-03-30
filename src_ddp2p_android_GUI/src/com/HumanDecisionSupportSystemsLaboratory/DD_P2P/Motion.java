@@ -109,7 +109,7 @@ public class Motion extends ListActivity {
                 _motionTitle[k].body = Util.getString(motion.getMotionText().getDocumentString());
                 String date = motion.getCreationDateStr();
                 if (date != null) {
-                    _motionTitle[k].mot_date = date.substring(0, 3) + "-" + date.substring(4, 5) + "-" + date.substring(6, 7) + "-" + date.substring(8 - 11);
+                    _motionTitle[k].mot_date = date.substring(0, 4) + "-" + date.substring(4, 6) + "-" + date.substring(6, 8) + "-" + date.substring(8, 12);
                 } else {_motionTitle[k].mot_date = null;/*Util.__("Undated");*/ }
                 D_MotionChoice _choices [] = motion.getActualChoices();
                 for (int c = 0; c < 3 && c < _choices.length; c ++) {

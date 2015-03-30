@@ -31,15 +31,15 @@ import net.ddp2p.common.data.D_Justification;
 import net.ddp2p.common.data.D_Justification.JustificationSupportEntry;
 import net.ddp2p.common.data.D_Motion;
 import net.ddp2p.common.data.D_Vote;
+import net.ddp2p.common.util.Util;
 
 public class ToAddJustificationDialog extends DialogFragment {
 	private static final boolean DEBUG = false;
-	String type;
+	String type, scnt, jLID;
 	private D_Motion crt_motion;
 	long oLID;
 	private JustificationSupportEntry crt_justification;
 	public ToAddJustificationDialog() {
-		
 //		D_Constituent myself = Identity.getCrtConstituent(oLID = crt_motion.getLID());
 //		if (myself == null) {
 //			Toast.makeText(getActivity(), "Fill your Profile!", Toast.LENGTH_LONG).show();
@@ -48,7 +48,9 @@ public class ToAddJustificationDialog extends DialogFragment {
 //		}
 		
 	}
-	public ToAddJustificationDialog(D_Motion crt_motion, String i) {
+
+//	public ToAddJustificationDialog(D_Motion crt_motion, String i) {
+    public void init(D_Motion crt_motion, String i) {
 		type = i;
 		this.crt_motion = crt_motion;
 		
@@ -65,8 +67,8 @@ public class ToAddJustificationDialog extends DialogFragment {
 		}
 	}
 
-	public ToAddJustificationDialog(D_Motion crt_motion,
-			JustificationSupportEntry justificationSupport, String short_name) {
+//	public ToAddJustificationDialog(D_Motion crt_motion, JustificationSupportEntry justificationSupport, String short_name) {
+	public void init(D_Motion crt_motion, JustificationSupportEntry justificationSupport, String short_name) {
 		type = short_name;
 		this.crt_motion = crt_motion;
 		this.crt_justification = justificationSupport;
@@ -82,13 +84,29 @@ public class ToAddJustificationDialog extends DialogFragment {
 			//detach();
 			return;
 		}
-
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 
+        Bundle b = getArguments();
+        String motion_LID = b.getString(Motion.M_MOTION_LID);
+        type = b.getString(Motion.M_MOTION_CHOICE);
+        jLID = b.getString(Motion.J_JUSTIFICATION_LID);
+        scnt = b.getString(Motion.M_MOTION_ID);
+
+        if (motion_LID != null) {
+            crt_motion = D_Motion.getMotiByLID(motion_LID, false, false);
+            if (crt_motion != null) {
+                if (jLID != null) {
+                    crt_justification = new JustificationSupportEntry(jLID, Util.ival(scnt, 0));
+                    init(crt_motion, crt_justification, type);
+                } else {
+                    init(crt_motion, type);
+                }
+            }
+        }
 		View view = inflater.inflate(R.layout.dialog_to_add_justification,
 				container);
 		final Button butYes = (Button) view

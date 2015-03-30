@@ -35,19 +35,87 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import net.ddp2p.ASN1.Encoder;
+import net.ddp2p.common.data.D_News;
+import net.ddp2p.common.data.D_Organization;
+import net.ddp2p.common.util.Util;
+
 public class News extends ListActivity {
 	private static final String TAG = "news";
+    public static final String N_LID = "NLID";
+    public static final String N_TITLE = "NT";
+    public static final String N_BODY = "NB";
 	private String[] newsTitle;
 	private ActionBar actionbar = null;
+
+    private static int organization_position;
+    private static String organization_LID;
+    private static String organization_GIDH;
+    private static String organization_name;
+    long oLID;
+    D_Organization org;
+
+    public ArrayList<NewsItem> news = new ArrayList<NewsItem>();
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+        Intent i = this.getIntent();
+        Bundle b = i.getExtras();
+
+        // top panel setting
+        organization_position = b.getInt(Orgs.O_ID);
+        organization_LID = b.getString(Orgs.O_LID);
+        organization_GIDH = b.getString(Orgs.O_GIDH);
+        organization_name = b.getString(Orgs.O_NAME);
+
+        oLID = Util.lval(organization_LID, -1);
+        if (oLID <= 0) return;
+        this.org = D_Organization.getOrgByLID(oLID, true, false);
+        if (org == null) return;
+
 		actionbar = this.getActionBar();
 		actionbar.setHomeButtonEnabled(true);
 
-		ArrayList<NewsItem> news = new ArrayList<NewsItem>();
+        String motion_LID = null;
+        String justif_LID = null;
+        boolean hide_hidden = false;
+        boolean order_creation = false;
+        int LIMIT = 100;
+        ArrayList<java.util.ArrayList<Object>> news_LIDs =
+                D_News.getAllMotions(organization_LID, hide_hidden, motion_LID, justif_LID, LIMIT, order_creation);
+
+        news = new ArrayList<NewsItem>();
+
+        for (ArrayList<Object> nobs: news_LIDs) {
+            long nLID = Util.lval(nobs.get(D_News.SELECT_ALL_NEWS_LID), -1);
+            D_News news_obj = D_News.getNewsByLID(nLID);
+            if (news_obj == null) continue;
+            NewsItem news_item = new NewsItem();
+            news_item.lid = Util.getStringID(nLID);
+            news_item.title = news_obj.getTitleStrOrMy();
+            news_item.content = news_obj.getNewsBodyStr();
+            String date = Encoder.getGeneralizedTime(news_obj.getCreationDate());
+            if (date != null)
+                news_item.date_time = date.substring(0,4)+"-"+date.substring(4,6)+"-"+date.substring(6,8)+" "+date.substring(8,12);
+            else news_item.date_time = Util.__("Unknown");
+            if (news_item.content == null) news_item.content = Util.__("No News Object Body");
+
+            net.ddp2p.common.data.D_Constituent constituent = news_obj.getConstituentForce();
+            if (constituent != null) news_item.author = constituent.getNameOrMy();
+            news.add(news_item);
+        }
+        if (news.size() == 0) {
+            NewsItem news_item = new NewsItem();
+            news_item.lid = null;
+            news_item.title = Util.__("No News Item in this Organization!");
+            news_item.content = Util.__("You can add news using the + button in the menu above!");
+            news_item.author = Util.__("Hang Dong and Marius Silaghi");
+            news_item.date_time = "2015-03-29 1800";
+            news.add(news_item);
+        }
+        /*
 		NewsItem news1 = new NewsItem();
 		news1.title = "With Torres watching, Griezmann and Mandzukic power Atletico to victory";
 		news1.content = "Atletico Madrid welcomed in 2015 and kept in the hunt to "
@@ -80,6 +148,7 @@ public class News extends ListActivity {
 		news2.author = "Sky Sports";
 		news.add(news1);
 	    news.add(news2);
+        */
 	    
 		Log.d(TAG, "news: item" + news );
 		NewsAdapter listAdapter = new NewsAdapter(this, 
@@ -106,7 +175,13 @@ public class News extends ListActivity {
 		case R.id.add_new_news:
 			Intent i = new Intent();
 			i.setClass(this, AddNews.class);
-			startActivity(i);
+
+            Bundle b = new Bundle();
+            b.putString(Orgs.O_LID, organization_LID);
+            // b.putString(News.N_LID, organization_LID);
+            i.putExtras(b);
+
+            startActivity(i);
 		}
 
 		return super.onOptionsItemSelected(item);
@@ -114,11 +189,11 @@ public class News extends ListActivity {
 
 	@Override
 	public void onListItemClick(ListView list, View v, int position, long id) {
-
+/*
 		Toast.makeText(this,
 				getListView().getItemAtPosition(position).toString(),
 				Toast.LENGTH_SHORT).show();
-
+*/
 		Intent intent = new Intent();
 		intent.setClass(this, NewsDetail.class);
 		Bundle b = new Bundle();
@@ -127,6 +202,14 @@ public class News extends ListActivity {
 		/*
 		 * b.putString("org_name",mo[position]); intent.putExtras(b);
 		 */
+
+        if (position >= news.size()) return;
+
+        b.putString(Orgs.O_LID, organization_LID);
+        b.putString(News.N_LID, news.get(position).lid);
+        b.putString(News.N_TITLE, news.get(position).title);
+        b.putString(News.N_BODY, news.get(position).content);
+        intent.putExtras(b);
 		startActivity(intent);
 
 	}
@@ -183,7 +266,10 @@ public class News extends ListActivity {
 				TextView author = (TextView) v.findViewById(R.id.news_list_author);
 				title.setText(item.title);
 				Calendar c = Calendar.getInstance();
-				dateAndTime.setText("2015-1-3-1950");
+                if (item.date_time == null)
+                    dateAndTime.setText("2015-03-29 1800");
+                else
+    				dateAndTime.setText(item.date_time);
     
 				author.setText(item.author);
 				
@@ -201,7 +287,8 @@ public class News extends ListActivity {
 	}
 
 	private class NewsItem {
-		public String dt;
+        public String date_time;
+        public String lid;
 		public String title;
 		public String content;
 		public String author;

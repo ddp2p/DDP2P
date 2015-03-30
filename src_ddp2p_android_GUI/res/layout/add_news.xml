@@ -13,13 +13,13 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/name" />
+            android:text="@string/news_title" />
 
         <EditText
             android:id="@+id/add_news_name"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPersonName" />
+            android:inputType="textCapWords|textShortMessage|textAutoCorrect|textAutoComplete" />
     </LinearLayout>
 
     <LinearLayout
@@ -37,7 +37,7 @@
             android:id="@+id/add_news_body"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:inputType="textLongMessage" />
+            android:inputType="textLongMessage|textAutoCorrect|textCapSentences|textMultiLine" />
     </LinearLayout>
 
     <Button

@@ -20,6 +20,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import net.ddp2p.common.data.D_News;
+import net.ddp2p.common.util.Util;
+
 
 public class NewsDetail extends Activity{
 
@@ -28,22 +31,39 @@ public class NewsDetail extends Activity{
 	private String title;
 	private String content;
 	private String[] review;
-	
+
+    public String organization_LID;
+    public String news_LID;
+    public String news_title;
+    public String news_body;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+        Intent i = this.getIntent();
+        Bundle b = i.getExtras();
+
+        // top panel setting
+        organization_LID = b.getString(Orgs.O_LID);
+        news_LID = b.getString(News.N_LID);
+        news_title = b.getString(News.N_TITLE);
+        news_body = b.getString(News.N_BODY);
+
 		setContentView(R.layout.news_detail);
 
 		titleTextView = (TextView) findViewById(R.id.news_detail_title);
 		contentTextView = (TextView) findViewById(R.id.news_detail_content);
-		
-		Intent intent = this.getIntent();
-		Bundle b = intent.getExtras();
-		
-		titleTextView.setText("some title");
-		
-		contentTextView.setText("something...");
-		
+
+        long iLID = Util.lval(news_LID, -1);
+        if (iLID > 0) {
+            D_News n = D_News.getNewsByLID(iLID);
+            titleTextView.setText(n.getTitleStrOrMy());
+            contentTextView.setText(n.getNewsBodyStr());
+        } else {
+            titleTextView.setText(news_title);
+            contentTextView.setText(news_body);
+        }
 	}
 
 	

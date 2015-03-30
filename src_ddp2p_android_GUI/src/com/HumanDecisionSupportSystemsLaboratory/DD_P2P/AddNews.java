@@ -15,6 +15,8 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
+import android.app.Application;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -27,38 +29,59 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 import net.ddp2p.common.config.Application_GUI;
+import net.ddp2p.common.config.DD;
+import net.ddp2p.common.data.D_News;
 import net.ddp2p.common.data.D_OrgParams;
 import net.ddp2p.common.data.D_Organization;
+import net.ddp2p.common.util.Util;
 
 
 public class AddNews extends ActionBarActivity {
-	
-	private String name;
+
+    private String name;
+    private String body;
 	private Button but;
 	private EditText add_name;
 	private EditText add_body;
+
+    public String organization_LID;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.add_news);	
+
+
+        Intent i = this.getIntent();
+        Bundle b = i.getExtras();
+
+        // top panel setting
+        organization_LID = b.getString(Orgs.O_LID);
+        net.ddp2p.common.data.D_Constituent me = DD.getCrtConstituent(Util.lval(organization_LID, -1));
+        if (me == null) {
+            Toast.makeText(AddNews.this, "Create a Profile First", Toast.LENGTH_SHORT).show();
+            //this.finalize();
+            return;
+        }
+
+		setContentView(R.layout.add_news);
 			
 		Application_GUI.dbmail = new Android_DB_Email(this);
 		Application_GUI.gui = new Android_GUI();
     	
         but = (Button) findViewById(R.id.submit_add_news);
 		add_name = (EditText) findViewById(R.id.add_news_name);
-		add_body = (EditText) findViewById(R.id.add_news_body);
-		
+        add_body = (EditText) findViewById(R.id.add_news_body);
+
     	but.setOnClickListener(new View.OnClickListener() {
   
 
 			public void onClick(View v) {
-            	
-            	name = add_name.getText().toString();
-                
-            	newOrg(name);
-            	
+
+                name = add_name.getText().toString();
+                body = add_body.getText().toString();
+
+            	newNews(name, body);
+            	finish();
             }
         });
         
@@ -78,40 +101,46 @@ public class AddNews extends ActionBarActivity {
 	}
 
 	//function for add a new peer
-	private void newOrg(String _name) {
-		Log.d("onCreatePeerCreatingThread", "AddSafe: newPeer: run: start");
+	private void newNews(String _name, String _body) {
+		Log.d("onCreateNewsCreatingThread", "AddNews: newNews: run: start");
 		
 		/*
 		 * ciphersuite did not initialize, add a new ciphersuit class
 		 */
 		
-		new OrgCreatingThread(name).start();
-		Log.d("onCreatePeerCreatingThread", "AddSafe: newPeer: run: done");
+		new NewsCreatingThread(name, body).start();
+		Log.d("onCreateNewsCreatingThread", "AddNews: newNews: run: done");
 		
 	}
-	class OrgCreatingThread extends Thread {
-		String name;
-		OrgCreatingThread(String _name) {
-			name = _name;
+	class NewsCreatingThread extends Thread {
+        String name;
+        String body;
+		NewsCreatingThread(String _name, String _body) {
+			name = _name; body = _body;
 		}
 		public void run() {
-			D_Organization new_org = D_Organization.getEmpty();
-			new_org.setName(name);
-			//new_org.concepts.name_motion=new String[]{name};
-			if (new_org.params == null)
-				new_org.params = new D_OrgParams();
-			new_org.params.certifMethods = net.ddp2p.common.table.organization._GRASSROOT;
-			new_org.setTemporary(false);
-			new_org.setCreationDate();
-			D_Organization.DEBUG = true;
-			String GID = new_org.global_organization_IDhash = new_org.global_organization_ID = new_org.getOrgGIDandHashForGrassRoot(); // sign();
-			
-			//D_Organization org = D_Organization.getOrgByGID_or_GIDhash(GID, GID, true, true, true, null);
-			D_Organization.storeRemote(new_org, null);
-			Orgs.reloadOrgs();
-			
-			Message msgObj = handler.obtainMessage();
-			handler.sendMessage(msgObj);
+			net.ddp2p.common.data.D_News new_obj = D_News.getEmpty();
+            new_obj.setTitle(name);
+            new_obj.setBody(body);
+            new_obj.setOrganizationLID(organization_LID);
+            net.ddp2p.common.data.D_Constituent me = DD.getCrtConstituent(Util.lval(organization_LID, -1));
+            if (me == null) {
+                Toast.makeText(AddNews.this, "Create a Profile First", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            new_obj.setConstituent(me);
+            new_obj.setCreationDate();
+            Log.d("AddNews", "Date="+new_obj);
+            new_obj.setGID(new_obj.make_ID());
+            new_obj.sign();
+            new_obj.setArrivalDate();
+
+            try {
+                new_obj.storeVerified();
+            } catch (Exception e){}
+            Log.d("AddNews", "Added="+new_obj);
+			// Message msgObj = handler.obtainMessage();
+			// handler.sendMessage(msgObj);
 		}
 	}
 	/*
@@ -152,6 +181,7 @@ public class AddNews extends ActionBarActivity {
 		   }
 	}
 	*/
+    /*
 	 private final Handler handler = new Handler() {
 		 
          // Create handleMessage function
@@ -160,15 +190,16 @@ public class AddNews extends ActionBarActivity {
                  
                 String aResponse = msg.getData().getString("message");
     	        Toast.makeText(AddNews.this, "Added a new news successfully!", Toast.LENGTH_LONG).show();
-    			if (Orgs.activ != null) {
+    			if (News.activ != null) {
     				@SuppressWarnings("unchecked")
 					ArrayAdapter<String> adapt = ((ArrayAdapter<String>) Orgs.activ.getListAdapter());
     				if (adapt != null) adapt.notifyDataSetChanged();
     			}
 
-    			Orgs.listAdapter = new ArrayAdapter<OrgItem>(Orgs.activ.getActivity(), android.R.layout.simple_list_item_1, Orgs.orgName);
-    			Orgs.activ.setListAdapter(Orgs.listAdapter);
+            News.listAdapter = new ArrayAdapter<OrgItem>(News.activ.getActivity(), android.R.layout.simple_list_item_1, News.orgName);
+            News.activ.setListAdapter(News.listAdapter);
     			
        }
 	 };
+    */
 }

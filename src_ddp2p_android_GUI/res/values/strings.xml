@@ -97,5 +97,6 @@
     <string name="directory_empty" translatable="false">There is no directory server, please add one from top right "+" mark!</string>
     <string name="directory_instruction" translatable="false">Directory Address, such as: \nDIR%B%0.10.07://10.0.0.1:25123:25123:Name</string>
     <string name="HintEmptyView">You can add items using the + menu above!</string>
+    <string name="news_title">News Title</string>
 
 </resources>
