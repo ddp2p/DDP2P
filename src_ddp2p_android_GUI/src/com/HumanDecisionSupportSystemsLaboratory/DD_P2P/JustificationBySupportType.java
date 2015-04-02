@@ -330,7 +330,7 @@ private static final String TAG = "JustificationBySupportType";
 
 			// get the textView reference and set the value
 			textView = (TextView) convertView.findViewById(R.id.textViewChild);
-			textView.setText(child.get(childPosition));
+			textView.setText(Html.fromHtml(child.get(childPosition)));
 
 			// set the ClickListener to handle the click event on child item
 			convertView.setOnClickListener(new OnClickListener() {

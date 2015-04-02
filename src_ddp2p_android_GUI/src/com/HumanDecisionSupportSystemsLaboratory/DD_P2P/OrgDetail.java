@@ -51,11 +51,13 @@ public class OrgDetail extends FragmentActivity{
 		orgName = null;
 		
 		Intent i = this.getIntent();
-		Bundle b = i.getExtras();		
-		orgName = b.getString(Orgs.O_NAME);
-		organization_lid = b.getString(Orgs.O_LID);
-		organization_gidh = b.getString(Orgs.O_GIDH);
-		organization_position = b.getInt(Orgs.O_ID);
+		Bundle b = i.getExtras();
+        if (b != null) {
+            orgName = b.getString(Orgs.O_NAME);
+            organization_lid = b.getString(Orgs.O_LID);
+            organization_gidh = b.getString(Orgs.O_GIDH);
+            organization_position = b.getInt(Orgs.O_ID);
+        }
 		
 		D_Organization org = D_Organization.getOrgByLID(organization_lid, true, false);
 		if (org == null) {

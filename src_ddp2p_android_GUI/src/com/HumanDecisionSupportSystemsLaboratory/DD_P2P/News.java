@@ -24,6 +24,7 @@ import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -272,11 +273,12 @@ public class News extends ListActivity {
     				dateAndTime.setText(item.date_time);
     
 				author.setText(item.author);
-				
-				if (item.content.length() <= 200) {
-					content.setText(item.content);
+
+                String text = "" + Html.fromHtml(item.content);
+                if (text.length() <= 200) {
+					content.setText(text);
 				} else {
-					content.setText(item.content.substring(0, 200) + "...");
+					content.setText(text.substring(0, 200) + "...");
 				}
 				
 			}

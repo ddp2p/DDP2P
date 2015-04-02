@@ -18,6 +18,7 @@ package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Html;
 import android.widget.TextView;
 
 import net.ddp2p.common.data.D_News;
@@ -59,10 +60,10 @@ public class NewsDetail extends Activity{
         if (iLID > 0) {
             D_News n = D_News.getNewsByLID(iLID);
             titleTextView.setText(n.getTitleStrOrMy());
-            contentTextView.setText(n.getNewsBodyStr());
+            contentTextView.setText(Html.fromHtml(n.getNewsBodyStr()));
         } else {
             titleTextView.setText(news_title);
-            contentTextView.setText(news_body);
+            contentTextView.setText(Html.fromHtml(news_body));
         }
 	}
 

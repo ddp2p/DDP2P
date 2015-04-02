@@ -25,12 +25,15 @@ import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.NavUtils;
+import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
@@ -166,13 +169,20 @@ public class Motion extends ListActivity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		if (item.getItemId() == R.id.add_new_motion) {
-			Toast.makeText(this, "add a new Motion", Toast.LENGTH_SHORT).show();
-			
-			Intent intent = new Intent();
-			intent.setClass(this, AddMotion.class);
-			
-			startActivity(intent);
+		switch (item.getItemId()) {
+            case R.id.add_new_motion:
+                Toast.makeText(this, "add a new Motion", Toast.LENGTH_SHORT).show();
+
+                Intent intent = new Intent();
+                intent.setClass(this, AddMotion.class);
+
+                startActivity(intent);
+                /*
+                // Respond to the action bar's Up/Home button
+            case android.R.id.home:
+                NavUtils.navigateUpFromSameTask(this);
+                return true;
+*/
 		}
 		return super.onOptionsItemSelected(item);
 	}
@@ -259,7 +269,7 @@ public class Motion extends ListActivity {
 						.findViewById(R.id.motion_list_date_and_time);
 				TextView title = (TextView) v
 						.findViewById(R.id.motion_list_name);
-				TextView content = (TextView) v
+				TextView content = (TextView) v // WebView
 						.findViewById(R.id.motion_list_body);
 				TextView choice1 = (TextView) v
 						.findViewById(R.id.motion_list_choice1);
@@ -275,14 +285,18 @@ public class Motion extends ListActivity {
                     dateAndTime.setText(item.mot_date);//"2015-1-4-1519");
                 }
 				title.setText(item.mot_name);
-				if (item.body.length() <= 200) {
-					content.setText(item.body);
+                String text = ""+Html.fromHtml(item.body);
+				if (text.length() <= 200) {
+					//content.loadData(item.body, "text/html",null);
+					content.setText(Html.fromHtml(item.body));
 				} else {
-					content.setText(item.body.substring(0, 200) + "...");
+
+					//content.loadData(item.body.substring(0, 200) + "...", "text/html", null);
+                    content.setText(text.substring(0, 200) + "...");
 				}
 
 
-				//TODO fill this
+
                 if (item.choice1 != null) {choice1.setText(item.choice1); choice1.setVisibility(View.VISIBLE);} else {choice1.setText(""); choice1.setVisibility(View.INVISIBLE);}
                 if (item.choice2 != null) {choice2.setText(item.choice2); choice2.setVisibility(View.VISIBLE);} else {choice2.setText(""); choice2.setVisibility(View.INVISIBLE);}
                 if (item.choice3 != null) {choice3.setText(item.choice3); choice3.setVisibility(View.VISIBLE);} else {choice3.setText(""); choice3.setVisibility(View.INVISIBLE);}

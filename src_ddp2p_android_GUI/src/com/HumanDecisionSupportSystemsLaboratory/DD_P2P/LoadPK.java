@@ -71,18 +71,18 @@ public class LoadPK extends DialogFragment {
 				strAddress = address.getText().toString();
 				
 				//Interpret
-				String body = extractMessage(strAddress);
+				String body = DD.extractMessage(strAddress); //extractMessage(strAddress);
 				
 				if (body == null) {
 					if (_DEBUG) Log.d(TAG, "LoadPK: Extraction of body failed");
-					Toast.makeText(getActivity(), "Separators not found: \""+Safe.SAFE_TEXT_MY_HEADER_SEP+Safe.SAFE_TEXT_ANDROID_SUBJECT_SEP+Safe.SAFE_TEXT_MY_BODY_SEP+"\"", Toast.LENGTH_SHORT).show();
+					Toast.makeText(getActivity(), "Separators not found: \""+DD.SAFE_TEXT_MY_HEADER_SEP+DD.SAFE_TEXT_ANDROID_SUBJECT_SEP+DD.SAFE_TEXT_MY_BODY_SEP+"\"", Toast.LENGTH_SHORT).show();
 			        FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
 			        ft.detach(LoadPK.this);
 			        ft.commit();
 					return;
 				}
 
-                net.ddp2p.common.util.StegoStructure imported_object = interprete(body);
+                net.ddp2p.common.util.StegoStructure imported_object = DD.interpreteASN1B64Object(body); //interprete(body);
 				
 				if (imported_object == null) {
 					if (_DEBUG) Log.d(TAG, "LoadPK: Decoding failed");
@@ -132,7 +132,7 @@ public class LoadPK extends DialogFragment {
                 AlertDialog confirmDialog = confirm.create();
                 confirmDialog.show();
 			}
-
+/*
 			private String extractMessage(String strAddress) {
 				//boolean DEBUG = true;
 				String addressASN1B64;
@@ -147,7 +147,7 @@ public class LoadPK extends DialogFragment {
 					//strAddress = strAddress.trim();
 					if (DEBUG) Log.d(TAG, "LoadPK: Address="+strAddress);
 					
-					String[] __chunks = strAddress.split(Pattern.quote(Safe.SAFE_TEXT_MY_BODY_SEP));
+					String[] __chunks = strAddress.split(Pattern.quote(DD.SAFE_TEXT_MY_BODY_SEP));
 					if (__chunks.length == 0 || __chunks[__chunks.length - 1] == null) {
 						if (DEBUG) Log.d(TAG, "LoadPK: My top Body chunk = null");
 				        FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
@@ -164,7 +164,7 @@ public class LoadPK extends DialogFragment {
 						return addressASN1B64;
 					}
 					
-					String[] chunks = strAddress.split(Pattern.quote(Safe.SAFE_TEXT_MY_HEADER_SEP));
+					String[] chunks = strAddress.split(Pattern.quote(DD.SAFE_TEXT_MY_HEADER_SEP));
 					if (chunks.length == 0 || chunks[chunks.length - 1] == null) {
 						if (DEBUG) Log.d(TAG, "LoadPK: My Body chunk = null");
 				        FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
@@ -176,7 +176,7 @@ public class LoadPK extends DialogFragment {
 					String body = chunks[chunks.length - 1];
 					if (DEBUG) Log.d(TAG, "LoadPK: Body="+body);
 					
-					String[] _chunks = strAddress.split(Pattern.quote(Safe.SAFE_TEXT_ANDROID_SUBJECT_SEP));
+					String[] _chunks = strAddress.split(Pattern.quote(DD.SAFE_TEXT_ANDROID_SUBJECT_SEP));
 					if (_chunks.length == 0 || _chunks[_chunks.length - 1] == null) {
 						if (DEBUG) Log.d(TAG, "LoadPK: Android Body chunk = null");
 				        FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
@@ -211,6 +211,7 @@ public class LoadPK extends DialogFragment {
 //				}
 //				return null;
 //			}
+*/
 
 			private net.ddp2p.common.util.StegoStructure interprete(String addressASN1B64) {
 				byte[] msg = null;

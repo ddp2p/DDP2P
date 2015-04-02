@@ -61,9 +61,9 @@ public class Safe extends android.support.v4.app.ListFragment implements
 	public final static String P_SAFE_PIMG = "profImg";
 	public final static String SAFE_LIST_EMAIL = "email";
 	public final static String SAFE_LIST_SLOGAN = "slogan";
-	protected static final String SAFE_TEXT_MY_HEADER_SEP = " | ";
-	protected static final String SAFE_TEXT_MY_BODY_SEP = "||";
-	protected static final String SAFE_TEXT_ANDROID_SUBJECT_SEP = " - ";
+	//protected static final String SAFE_TEXT_MY_HEADER_SEP = " | ";
+	//protected static final String SAFE_TEXT_MY_BODY_SEP = "||";
+	//protected static final String SAFE_TEXT_ANDROID_SUBJECT_SEP = " - ";
 	public static final String SAFE_TEXT_SEPARATOR = "\n";
 	public static final int SAFE_TEXT_SIZE = 16;
 	public static String data[][];
@@ -463,11 +463,12 @@ public class Safe extends android.support.v4.app.ListFragment implements
 	 * @param bytes
 	 * @return
 	 */
+    /*
 	public static String getExportTextObject(byte[] bytes) {
 		return Safe.SAFE_TEXT_MY_BODY_SEP
 				+ Safe.SAFE_TEXT_SEPARATOR 
 				+ Util.B64Split(Util.stringSignatureFromByte(bytes), Safe.SAFE_TEXT_SIZE, Safe.SAFE_TEXT_SEPARATOR);	
 		}
-	
+*/
 
 }

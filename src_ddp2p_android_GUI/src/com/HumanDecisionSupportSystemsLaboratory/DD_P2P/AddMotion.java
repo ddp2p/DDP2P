@@ -16,6 +16,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -203,23 +204,37 @@ public class AddMotion extends ActionBarActivity {
 		   }
 	}
 	*/
-	 private final Handler handler = new Handler() {
+
+	 private final static Handler handler = new Handler() {
 		 
          // Create handleMessage function
 
         public void handleMessage(Message msg) {
                  
                 String aResponse = msg.getData().getString("message");
-    	        Toast.makeText(AddMotion.this, "Added a new motion successfully!", Toast.LENGTH_LONG).show();
     			if (Motion.activ != null) {
-    				@SuppressWarnings("unchecked")
-					ArrayAdapter<MotionItem> adapt = ((ArrayAdapter<MotionItem>) Motion.activ.getListAdapter());
-    				if (adapt != null) adapt.notifyDataSetChanged();
-    			}
+                    Toast.makeText(Motion.activ, "Added a new motion successfully!", Toast.LENGTH_LONG).show();
+                    //@SuppressWarnings("unchecked")
+                    //ArrayAdapter<MotionItem> adapt = ((ArrayAdapter<MotionItem>) Motion.activ.getListAdapter());
+                    //if (adapt != null) adapt.notifyDataSetChanged();
 
-    			Motion.listAdapter = new ArrayAdapter<MotionItem>(Motion.activ, android.R.layout.simple_list_item_1, Motion.motionTitle);
-    			Motion.activ.setListAdapter(Orgs.listAdapter);
-    			
+
+                    //Motion.listAdapter = new ArrayAdapter<MotionItem>(Motion.activ, android.R.layout.simple_list_item_1, Motion.motionTitle);
+                    //Motion.activ.setListAdapter(Motion.listAdapter);
+
+                    if (Build.VERSION.SDK_INT >= 11) {
+                        Motion.activ.recreate();
+                    } else {
+                        Intent intent = Motion.activ.getIntent();
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                        Motion.activ.finish();
+                        Motion.activ.overridePendingTransition(0, 0);
+
+                        Motion.activ.startActivity(intent);
+                        Motion.activ.overridePendingTransition(0, 0);
+                    }
+                }
        }
 	 };
+
 }

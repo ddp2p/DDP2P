@@ -15,6 +15,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
+import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.DD_SK;
 import net.ddp2p.common.util.DD_SK_Entry;
 import net.ddp2p.common.util.P2PDDSQLException;
@@ -528,8 +529,9 @@ public class OrgProfile extends FragmentActivity {
 			dsk.type = "Profile!";
 			d_SK.sk.add(dsk);
 			
-			String testText = Safe.getExportTextObject(d_SK.encode());
-			String testSubject = "DDP2P: Organization \""+ this.org.getName()+"\" Profile of \""+ constituent.getNameOrMy() + " " + Safe.SAFE_TEXT_MY_HEADER_SEP;
+			String testText = net.ddp2p.common.config.DD.getExportTextObjectBody(d_SK);
+			String testSubject = DD.getExportTextObjectTitle(this.org, constituent);
+            //"DDP2P: Organization \""+ this.org.getName()+"\" Profile of \""+ constituent.getNameOrMy() + " " + Safe.SAFE_TEXT_MY_HEADER_SEP;
 /*			if (organization_gidh == null) {
 				Toast.makeText(this, "No peer. Reload!", Toast.LENGTH_SHORT).show();
 				return true;

@@ -375,14 +375,15 @@ public class MotionDetail extends FragmentActivity {
 			*/
 
             Log.d("MotionDetail", "onOptionsItemSelected: export motion: "+d_SK);
-			String testText = Safe.getExportTextObject(d_SK.encode());
-			String testSubject = "DDP2P: Motion Detail of \""+ crt_motion.getTitleStrOrMy() + "\" in \""+ crt_motion.getOrganization().getName()+"\" " + Safe.SAFE_TEXT_MY_HEADER_SEP;
+			String testText = DD.getExportTextObjectBody(d_SK);
+			String testSubject = DD.getExportTextObjectTitle(crt_motion);
+                    //"DDP2P: Motion Detail of \""+ crt_motion.getTitleStrOrMy() + "\" in \""+ crt_motion.getOrganization().getName()+"\" " + Safe.SAFE_TEXT_MY_HEADER_SEP;
 
 			/*
 			 * if (organization_gidh == null) { Toast.makeText(this,
 			 * "No peer. Reload!", Toast.LENGTH_SHORT).show(); return true; }
 			 */
-			DD_Address adr = new DD_Address();
+			//DD_Address adr = new DD_Address();
 
 			Intent i = new Intent(Intent.ACTION_SEND);
 			i.setType("text/plain");
