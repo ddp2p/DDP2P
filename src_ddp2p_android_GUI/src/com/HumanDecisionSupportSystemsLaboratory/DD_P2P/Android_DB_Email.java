@@ -23,6 +23,7 @@ import java.util.Hashtable;
 import android.app.Activity;
 
 import net.ddp2p.ciphersuits.SK;
+import net.ddp2p.common.config.Application;
 import net.ddp2p.common.updates.VersionInfo;
 import net.ddp2p.common.util.DB_Implementation;
 import net.ddp2p.common.util.DD_IdentityVerification_Answer;
@@ -51,7 +52,8 @@ class Android_DB_Email implements net.ddp2p.common.config.Vendor_DB_Email {
 
 	@Override
 	public DB_Implementation get_DB_Implementation() {
-		return new DB_Implementation_Android_SQLITE(activity, "deliberation-app.db");
+        Application.directory_status = new Android_Directories_View();
+        return new DB_Implementation_Android_SQLITE(activity, "deliberation-app.db");
 	}
 
 	@Override

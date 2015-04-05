@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.HumanDecisionSupportSystemsLaboratory.DD_P2P"
-    android:versionCode="6"
-    android:versionName="News" >
+    android:versionCode="7"
+    android:versionName="Imports" >
 
     <uses-sdk
         android:minSdkVersion="11"
@@ -75,6 +75,7 @@
         <activity
             android:name="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Motion"
             android:label="@string/app_name"
+            android:parentActivityName="com.HumanDecisionSupportSystemsLaboratory.DD_P2P.OrgDetail"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity

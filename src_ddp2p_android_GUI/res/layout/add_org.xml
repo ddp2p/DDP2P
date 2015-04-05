@@ -27,7 +27,7 @@
                 android:id="@+id/add_org_name"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPersonName" />
+                android:inputType="textCapSentences|textCapWords|textAutoComplete" />
         </LinearLayout>
 
         <LinearLayout
@@ -68,7 +68,7 @@
                 android:id="@+id/add_org_desc"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textLongMessage" />
+                android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
 
             <TextView
                 style="?android:listSeparatorTextViewStyle"
@@ -80,7 +80,7 @@
                 android:id="@+id/add_org_inst_for_motion"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textLongMessage" />
+                android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
 
             <TextView
                 style="?android:listSeparatorTextViewStyle"
@@ -92,7 +92,7 @@
                 android:id="@+id/add_org_inst_for_registration"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textLongMessage" />
+                android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
         </LinearLayout>
 
         <LinearLayout
@@ -160,7 +160,7 @@
                 android:id="@+id/add_org_cat_name_constituent"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textLongMessage" />
+                android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
 
             <TextView
                 style="?android:listSeparatorTextViewStyle"
@@ -172,7 +172,7 @@
                 android:id="@+id/add_org_cat_name_motion"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textLongMessage" />
+                android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
 
             <TextView
                 style="?android:listSeparatorTextViewStyle"
@@ -184,7 +184,7 @@
                 android:id="@+id/add_org_cat_name_justification"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textLongMessage" />
+                android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
 
             <TextView
                 style="?android:listSeparatorTextViewStyle"
@@ -196,7 +196,7 @@
                 android:id="@+id/add_org_cat_name_organization"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textLongMessage" />
+                android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
 
             <TextView
                 style="?android:listSeparatorTextViewStyle"
@@ -208,7 +208,7 @@
                 android:id="@+id/add_org_cat_name_forum"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textLongMessage" />
+                android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
 
             <TextView
                 style="?android:listSeparatorTextViewStyle"
@@ -222,7 +222,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/org_profile"
                 android:enabled="false"
-                android:inputType="textLongMessage" />
+                android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
 
             <TextView
                 style="?android:listSeparatorTextViewStyle"
@@ -236,7 +236,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/news"
                 android:enabled="false"
-                android:inputType="textLongMessage" />
+                android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
         </LinearLayout>
 
         <Button

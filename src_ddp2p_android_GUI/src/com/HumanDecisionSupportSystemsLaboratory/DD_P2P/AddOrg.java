@@ -24,6 +24,7 @@ import com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Orgs.OrgAdapter;
 import net.ddp2p.common.util.Util;
 import android.annotation.SuppressLint;
 import android.app.ActionBar.LayoutParams;
+import android.app.Application;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
@@ -551,12 +552,24 @@ public class AddOrg extends ActionBarActivity {
 			new_org.setCreationDate();
 			D_Organization.DEBUG = true;
 			// String GID =
+            Log.d(TAG, "AddOrg: OrgThread: got org before hash=" + new_org);
+            Orgs.reloadOrgs();
 			new_org.global_organization_IDhash = new_org.global_organization_ID = new_org
 					.getOrgGIDandHashForGrassRoot(); // sign();
+            if (! new_org.verifySignature()) {
+                Log.d(TAG, "AddOrg: OrgThread: bad signature after hash=" + new_org);
+                Toast.makeText(null, "Bad Signature on Creation", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
 			// D_Organization org = D_Organization.getOrgByGID_or_GIDhash(GID,
 			// GID, true, true, true, null);
 			D_Organization o = D_Organization.storeRemote(new_org, null);
+            if (! o.verifySignature()) {
+                Log.d(TAG, "AddOrg: OrgThread: bad signature after store hash=" + o);
+                Toast.makeText(null, "Bad Signature on Creation", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
 			Log.d(TAG, "AddOrg: OrgThread: got org=" + o);
 			 Orgs.reloadOrgs();

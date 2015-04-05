@@ -16,12 +16,15 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 
+import net.ddp2p.common.config.DD;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.util.DD_Address;
+import net.ddp2p.common.util.DD_SK;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -34,6 +37,8 @@ public class OrgDetail extends FragmentActivity{
 	private static String organization_lid;
 	private static String organization_gidh;
 	private static int organization_position;
+
+    D_Organization org;
 
 	private String orgName;
 	private TextView orgNameTextView;
@@ -59,7 +64,7 @@ public class OrgDetail extends FragmentActivity{
             organization_position = b.getInt(Orgs.O_ID);
         }
 		
-		D_Organization org = D_Organization.getOrgByLID(organization_lid, true, false);
+		org = D_Organization.getOrgByLID(organization_lid, true, false);
 		if (org == null) {
 			Toast.makeText(this, "Organization not found!", Toast.LENGTH_SHORT).show();
 			return;
@@ -173,19 +178,33 @@ public class OrgDetail extends FragmentActivity{
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if (item.getItemId() == R.id.org_export) {
-			String testText = "something";
-			String testSubject = "subject";
+            if (this.org == null) return false;
+
+            if (! this.org.verifySignature()) {
+                Toast.makeText(this, "Bad Signature", Toast.LENGTH_SHORT).show();
+                Log.d("ORG", "Bad signature: "+this.org);
+                return false;
+            }
+
+            DD_SK sk = new DD_SK();
+            sk.org.add(org);
+            net.ddp2p.common.data.D_Peer creator = org.getCreator();
+            if (creator != null) sk.peer.add(creator);
+
+			String testText = DD.getExportTextObjectBody(sk.encode()); // "something";
+			String testSubject = DD.getExportTextObjectTitle(this.org); //"subject";
+
 /*			if (organization_gidh == null) {
 				Toast.makeText(this, "No peer. Reload!", Toast.LENGTH_SHORT).show();
 				return true;
 			}*/
-			DD_Address adr = new DD_Address();
+			//DD_Address adr = new DD_Address();
 			
 			Intent i = new Intent(Intent.ACTION_SEND);
 			i.setType("text/plain");
 			i.putExtra(Intent.EXTRA_TEXT, testText);
-			i.putExtra(Intent.EXTRA_SUBJECT, "DDP2P: Organization Address of \""+ testSubject);
-			i = Intent.createChooser(i, "send org Public key");
+			i.putExtra(Intent.EXTRA_SUBJECT, testSubject);// "DDP2P: Organization Address of \""+ testSubject);
+			i = Intent.createChooser(i, "Send Organization");
 			startActivity(i);
 		}
 		return super.onOptionsItemSelected(item);

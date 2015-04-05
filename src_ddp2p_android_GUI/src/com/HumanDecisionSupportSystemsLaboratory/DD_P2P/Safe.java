@@ -15,6 +15,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
+import net.ddp2p.common.config.Directories_View;
 import net.ddp2p.common.hds.PeerInput;
 
 import java.util.ArrayList;
@@ -61,6 +62,7 @@ public class Safe extends android.support.v4.app.ListFragment implements
 	public final static String P_SAFE_PIMG = "profImg";
 	public final static String SAFE_LIST_EMAIL = "email";
 	public final static String SAFE_LIST_SLOGAN = "slogan";
+    public static boolean SAFE_HIDE = true; // to be changed from the menu
 	//protected static final String SAFE_TEXT_MY_HEADER_SEP = " | ";
 	//protected static final String SAFE_TEXT_MY_BODY_SEP = "||";
 	//protected static final String SAFE_TEXT_ANDROID_SUBJECT_SEP = " - ";
@@ -233,7 +235,7 @@ public class Safe extends android.support.v4.app.ListFragment implements
 				continue;
 			String p_lid = Util.getString(peer_data.get(0));
 			D_Peer peer = D_Peer.getPeerByLID(p_lid, true, false);
-			if (peer == null)
+			if (peer == null || (SAFE_HIDE && peer.getHidden()))
 				continue;
 			peers.add(peer);
 		}

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">DDP2P</string>
+    <string name="app_name">DirectDemocracyP2P (DDP2P)</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="action_directories">Manage Directories</string>
@@ -98,5 +98,6 @@
     <string name="directory_instruction" translatable="false">Directory Address, such as: \nDIR%B%0.10.07://10.0.0.1:25123:25123:Name</string>
     <string name="HintEmptyView">You can add items using the + menu above!</string>
     <string name="news_title">News Title</string>
+    <string name="motion_title">Motion Title</string>
 
 </resources>
