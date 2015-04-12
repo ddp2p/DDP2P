@@ -609,17 +609,21 @@ public class AddOrg extends ActionBarActivity {
 			String aResponse = msg.getData().getString("message");
 			Toast.makeText(AddOrg.this, "Added a new organization successfully!",
 					Toast.LENGTH_LONG).show();
-			if (Orgs.activ != null) {
-				OrgAdapter adapt = (OrgAdapter) Orgs.activ.getListAdapter();
-				if (adapt != null)
-					adapt.notifyDataSetChanged();
-			}
+
+            {
+                // this seems redundant but as safes it was required...
+                if (Orgs.activ != null) {
+                    OrgAdapter adapt = (OrgAdapter) Orgs.activ.getListAdapter();
+                    if (adapt != null)
+                        adapt.notifyDataSetChanged();
+                }
+            }
+
 
 			//this one works to refresh the list
-			Orgs.listAdapter = new OrgAdapter(Orgs.activ.getActivity(),
-					Orgs.orgName);
+			Orgs.listAdapter = new OrgAdapter(Orgs.activ.getActivity(), Orgs.orgName);
 			Orgs.activ.setListAdapter(Orgs.listAdapter);
-
+            ((OrgAdapter)Orgs.listAdapter).notifyDataSetChanged();
 		}
 	};
 }

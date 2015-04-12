@@ -32,6 +32,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Html;
+import android.text.Spanned;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -337,7 +338,9 @@ private static final String TAG = "JustificationBySupportType";
 
 				@Override
 				public void onClick(View view) {
-					Toast.makeText(activity, child.get(childPosition),
+                    String text = child.get(childPosition);
+                    Spanned _text = Html.fromHtml(text);
+					Toast.makeText(activity, _text,
 							Toast.LENGTH_SHORT).show();
 				}
 			});

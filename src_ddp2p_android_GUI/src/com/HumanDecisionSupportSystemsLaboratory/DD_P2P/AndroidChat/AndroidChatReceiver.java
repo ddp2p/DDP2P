@@ -107,6 +107,7 @@ class AndroidChatReceiver implements ChatReceiver {
 			if (DEBUG) System.out.println("PLUGIN CHAT: ChatReceiver receiveMessages: -> idx="+k+" msg="+crt.messages.get(k));
 			
     	if (DEBUG) System.out.println("PLUGIN CHAT: ChatReceiver:  receiveMessage: done inner");
+        Chat.setChatNewMessage(peerName, peer_GID, cmsg);
 		try {
 			Chat crtChat;
 			if ((crtChat = Chat.getCrtChat()) == null) return true;
@@ -117,6 +118,7 @@ class AndroidChatReceiver implements ChatReceiver {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
     	if (DEBUG) System.out.println("PLUGIN CHAT: ChatReceiver:  receiveMessage: exit");
 		return false;
 	}

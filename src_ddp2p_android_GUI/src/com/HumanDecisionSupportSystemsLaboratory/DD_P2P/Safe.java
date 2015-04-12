@@ -32,6 +32,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -41,6 +43,8 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.CipherSuit;
 import net.ddp2p.ciphersuits.PK;
@@ -51,8 +55,7 @@ import net.ddp2p.common.config.DD;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.HandlingMyself_Peer;
 
-public class Safe extends android.support.v4.app.ListFragment implements
-		OnItemClickListener{
+public class Safe extends android.support.v4.app.ListFragment implements OnItemClickListener {
 	// public final static String P_SAFE_ID = "Safe_ID";
 	public final static String TAG = "safe";
 	public final static String P_SAFE_LID = "Safe_LID";
@@ -70,6 +73,8 @@ public class Safe extends android.support.v4.app.ListFragment implements
 	public static final int SAFE_TEXT_SIZE = 16;
 	public static String data[][];
 	public static ArrayList<Bitmap> imgData;
+
+    static public PeerInput peerInput = null;
 
 	public static Safe safeItself;
 

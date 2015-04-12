@@ -39,9 +39,10 @@ public class SelectDirectoryServer extends ListActivity {
 
 	private static final boolean DEBUG = false;
 	private static final String TAG = "SelectDirectoryServer";
-	private String[] servers;
+	private String[] servers =  new String[0];
 	private int checkedPos[];
 	private ActionBar actionbar;
+    final static int RESULT_ADD_DIR = 10;
 
 	private ArrayAdapter<String> adapter;
 
@@ -55,55 +56,59 @@ public class SelectDirectoryServer extends ListActivity {
 
 		setContentView(R.layout.list_fragement);
 
-		// Getting object reference to listview of main.xml
-		ListView listView = getListView();
-		listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        updateView();
+	}
 
-		try {
-			DD.load_listing_directories();
-		} catch (Exception e) {
-			e.printStackTrace();
-			Toast.makeText(this.getApplicationContext(),
-					"Error: " + e.getLocalizedMessage(), Toast.LENGTH_LONG)
-					.show();
-			return;
-		}
-		ArrayList<Address> lda = Identity.getListing_directories_addr();
+    void updateView() {
+        // Getting object reference to listview of main.xml
+        ListView listView = getListView();
+        listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+
+        try {
+            DD.load_listing_directories();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this.getApplicationContext(),
+                    "Error: " + e.getLocalizedMessage(), Toast.LENGTH_LONG)
+                    .show();
+            return;
+        }
+        ArrayList<Address> lda = Identity.getListing_directories_addr();
 /*		servers = new String[Math.max(1, lda.size())];*/
-		servers = new String[lda.size()];
-		//Log.d(TAG, servers[0]);
-		checkedPos = new int[servers.length];
-		// servers = new String[Identity.listing_directories_addr.size()];
-		for (int k = 0; k < lda.size(); k++) {
-			Address adr = lda.get(k);
-			if (adr.name != null)
-				servers[k] = adr.name + "(" + adr.domain + " :" + adr.udp_port
-						+ ")";
-			else
-				servers[k] = adr.domain + " :" + adr.udp_port;
-		}
+        servers = new String[lda.size()];
+        //Log.d(TAG, servers[0]);
+        checkedPos = new int[servers.length];
+        // servers = new String[Identity.listing_directories_addr.size()];
+        for (int k = 0; k < lda.size(); k++) {
+            Address adr = lda.get(k);
+            if (adr.name != null)
+                servers[k] = adr.name + "(" + adr.domain + " :" + adr.udp_port
+                        + ")";
+            else
+                servers[k] = adr.domain + " :" + adr.udp_port;
+        }
 		/* if (lda.size() == 0) servers[0] = "Add a server"; */
 
-		// Instantiating array adapter to populate the listView
-		// The layout android.R.layout.simple_list_item_single_choice creates
-		// radio button for each listview item
-		adapter = new ArrayAdapter<String>(this,
-				android.R.layout.simple_list_item_single_choice, servers);
+        // Instantiating array adapter to populate the listView
+        // The layout android.R.layout.simple_list_item_single_choice creates
+        // radio button for each listview item
+        adapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_list_item_single_choice, servers);
 
-		listView.setAdapter(adapter);
-		// if (Identity.listing_directories_addr.size() == 0)
-		listView.setEmptyView(findViewById(R.layout.select_directory_server_empty));
-		for (int k = 0; k < lda.size(); k++) {
-			checkedPos[k] = lda.get(k).active ? 1 : 0;
-			if (DEBUG)
-				Log.d("DIR", "SelectDirectoryServer: crt pos=" + k + " check="
-						+ checkedPos[k]);
-			if (checkedPos[k] > 0)
-				listView.setItemChecked(k, true);
-			else
-				listView.setItemChecked(k, false);
-		}
-	}
+        listView.setAdapter(adapter);
+        // if (Identity.listing_directories_addr.size() == 0)
+        listView.setEmptyView(findViewById(R.layout.select_directory_server_empty));
+        for (int k = 0; k < lda.size(); k++) {
+            checkedPos[k] = lda.get(k).active ? 1 : 0;
+            if (DEBUG)
+                Log.d("DIR", "SelectDirectoryServer: crt pos=" + k + " check="
+                        + checkedPos[k]);
+            if (checkedPos[k] > 0)
+                listView.setItemChecked(k, true);
+            else
+                listView.setItemChecked(k, false);
+        }
+    }
 
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
@@ -164,12 +169,29 @@ public class SelectDirectoryServer extends ListActivity {
 		case R.id.add_directory_server:
 			Intent i = new Intent();
 			i.setClass(this, AddDirectoryServer.class);
-			startActivity(i);
+			startActivityForResult(i, RESULT_ADD_DIR);
 		}
 
 		return super.onOptionsItemSelected(item);
 	}
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        if (resultCode == RESULT_OK && requestCode == this.RESULT_ADD_DIR) {
 
+            Toast.makeText(this, "Result size="+servers.length, Toast.LENGTH_SHORT).show();
+
+            updateView();
+            ArrayAdapter<String> a = ((ArrayAdapter<String>)this.getListAdapter());
+            if (a != null) a.notifyDataSetChanged();
+
+
+            super.onActivityResult(requestCode, resultCode, resultData);
+            finish();
+            return;
+        }
+        Toast.makeText(this, "Result unknown", Toast.LENGTH_SHORT).show();
+        super.onActivityResult(requestCode, resultCode, resultData);
+    }
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void onResume() {

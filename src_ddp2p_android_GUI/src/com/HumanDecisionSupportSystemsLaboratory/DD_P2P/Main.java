@@ -15,23 +15,30 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
+import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.common.hds.Address;
 
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
+import net.ddp2p.common.hds.PeerInput;
 import net.ddp2p.common.util.DD_DirectoryServer;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.StegoStructure;
 import android.annotation.TargetApi;
 import android.app.ActionBar.TabListener;
+import android.app.Activity;
 import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
@@ -68,6 +75,7 @@ public class Main extends FragmentActivity implements TabListener{
 	int SELECT_PHOTO = 42;
 	int SELECT_PHOTO_KITKAT = 43;
     final static int PAGES_NB=2;
+    final static int RESULT_ADD_PEER = 11;
 	
 	private String selectedImagePath;
 
@@ -76,7 +84,39 @@ public class Main extends FragmentActivity implements TabListener{
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
+
+        {
+            // Use intent in case the app was started by another app to send messages/images
+            Intent intent = getIntent();
+            if (intent != null) {
+                Uri data = intent.getData();
+                if (intent.getType() != null) {
+                    // Figure out what to do based on the intent type
+                    if (intent.getType().contains("image/")) {
+                        // Handle intents with image data ...
+
+                        // should probably set here a window only to select contact destination
+
+                        // Create intent to deliver some kind of result data
+                        //Intent result = new Intent("net.ddp2p.RESULT_ACTION", Uri.parse("content://result_uri"));
+                        // setResult(Activity.RESULT_OK, result);
+                        setResult(Activity.RESULT_CANCELED);
+                        finish();
+                    } else if (intent.getType().equals("text/plain")) {
+                        // Handle intents with text ...
+
+                        // should probably set here a window only to select contact destination
+
+                        // Create intent to deliver some kind of result data
+                        //Intent result = new Intent("net.ddp2p.RESULT_ACTION", Uri.parse("content://result_uri"));
+                        // setResult(Activity.RESULT_OK, result);
+                        setResult(Activity.RESULT_CANCELED);
+                        finish();
+                    }
+                }
+            }
+        }
+
 		setContentView(R.layout.main);
         
 		//initial action bar
@@ -116,7 +156,7 @@ public class Main extends FragmentActivity implements TabListener{
         });
         
 		//add tabs
-		actionBar.addTab(actionBar.newTab().setText(Util.__("Safes"))
+		actionBar.addTab(actionBar.newTab().setText(Util.__("Connections"))
 				.setTabListener(this));
 		actionBar.addTab(actionBar.newTab().setText(Util.__("Organizations"))
 				.setTabListener(this));
@@ -235,7 +275,17 @@ public class Main extends FragmentActivity implements TabListener{
 		
 
 		if (item.getItemId() == R.id.add_new_safe_my) {
-			if ((Identity.getListing_directories_addr().size() <= 0)) {
+            try {
+                DD.load_listing_directories();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this.getApplicationContext(),
+                        "Error: " + e.getLocalizedMessage(), Toast.LENGTH_LONG)
+                        .show();
+                // return;
+            }
+
+            if ((Identity.getListing_directories_addr().size() <= 0)) {
 				Toast.makeText(this, "To add your safe, first add a directory from the Manage Directories top-right menu!", Toast.LENGTH_LONG).show();
 				return super.onOptionsItemSelected(item);
 			}
@@ -243,7 +293,7 @@ public class Main extends FragmentActivity implements TabListener{
 			
 			Intent intent = new Intent();
 			intent.setClass(this, AddSafe.class);
-			startActivity(intent);
+			startActivityForResult(intent, Main.RESULT_ADD_PEER);
 		}
 
 		if (item.getItemId() == R.id.add_new_safe_other) {
@@ -253,7 +303,7 @@ public class Main extends FragmentActivity implements TabListener{
 			}
 			Toast.makeText(this, "add a new safe other", Toast.LENGTH_SHORT).show();
 		    
-		    if (Build.VERSION.SDK_INT <19){
+		    if (Build.VERSION.SDK_INT < 19){
 		        Intent intent = new Intent(); 
 		        intent.setType("image/*");
 		        intent.setAction(Intent.ACTION_GET_CONTENT);
@@ -354,7 +404,17 @@ public class Main extends FragmentActivity implements TabListener{
 
 	@TargetApi(Build.VERSION_CODES.KITKAT)
 	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {        
+	protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        if (resultCode == RESULT_OK && requestCode == this.RESULT_ADD_PEER) {
+            byte[] _pi = resultData.getByteArrayExtra(AddSafe.PI);
+            net.ddp2p.common.hds.PeerInput pi = null;
+            if (_pi != null) try { pi = new PeerInput().decode(new Decoder(_pi));}catch(Exception e){e.printStackTrace();}
+            if (pi == null) pi = Safe.peerInput;
+            new PeerCreatingThread(pi).start();
+
+            super.onActivityResult(requestCode, resultCode, resultData);
+            return;
+        }
 		if (resultCode == RESULT_OK && resultData != null) {
             Uri uri = null;
             
@@ -475,5 +535,109 @@ public class Main extends FragmentActivity implements TabListener{
 		}
 		return true;
 	}
-		
+
+    class PeerCreatingThread extends Thread {
+        PeerInput pi;
+        final public String TAG = "PEER_ADD_TH";
+
+        PeerCreatingThread(PeerInput _pi) {
+            Log.d(TAG, "add safe: peerCreatingThread constructor");
+            pi = _pi;
+        }
+
+        public void run() {
+
+            Log.d("onCreatePeerCreatingTh",
+                    "PeerCreatingThread: run: start");
+            gen();
+
+            Log.d("onCreatePeerCreatingTh",
+                    "PeerCreatingThread: run: announced");
+            Log.d(TAG, "add safe: run()");
+
+            Safe.loadPeer();
+
+            Log.d("onCreatePeerCreatingTh",
+                    "PeerCreatingThread: run: generated");
+            threadMsg("a");
+
+        }
+
+        public D_Peer gen() {
+            Log.d(TAG, "add safe: gen()");
+            D_Peer peer = HandlingMyself_Peer.createMyselfPeer_w_Addresses(pi,
+                    true);
+            D_Peer myself = HandlingMyself_Peer.get_myself_or_null();
+            myself = D_Peer.getPeerByPeer_Keep(myself);
+            if (myself == null) {
+                Toast.makeText(Main.this, //getApplicationContext(),
+                        "Could not set slogan/email", Toast.LENGTH_SHORT)
+                        .show();
+                return peer;
+            }
+            Log.d("onCreatePeerCreatingTh",
+                    "PeerCreatingThread: gen: start");
+            myself.setEmail(pi.email);
+            myself.setSlogan(pi.slogan);
+            myself.storeRequest();
+
+            Log.d("onCreatePeerCreatingTh",
+                    "PeerCreatingThread: gen: inited");
+            // data.HandlingMyself_Peer.setMyself(myself, true, false);
+            if (!Main.serversStarted)
+                Main.startServers();
+            return peer;
+        }
+
+        private void threadMsg(String msg) {
+            if (! msg.equals(null) && ! msg.equals("")) {
+                Log.d(TAG, "add safe: threadMsg");
+                Message msgObj = handler.obtainMessage();
+                Bundle b = new Bundle();
+                b.putString("message", msg);
+                msgObj.setData(b);
+                handler.sendMessage(msgObj);
+                Log.d(TAG, "add safe: threadMsg finished");
+            }
+        }
+    }
+
+
+    private final Handler handler = new Handler() {
+        final static String TAG = "Main_Handler";
+
+        // Create handleMessage function
+
+        public void handleMessage(Message msg) {
+
+            //String aResponse = msg.getData().getString("message");
+            Log.d(TAG, "add safe: handler");
+            Toast.makeText(Main.this, "Added a new safe successfully!", Toast.LENGTH_LONG).show();
+
+            {
+                // Without this ist does not show first
+                if (Safe.safeItself != null) {
+                    Safe.SafeAdapter adapt = (Safe.SafeAdapter) Safe.safeItself.getListAdapter();
+                    if (adapt != null)
+                        adapt.notifyDataSetChanged();
+                }
+            }
+
+
+			Safe.safeAdapter = new Safe.SafeAdapter(Safe.safeItself.getActivity(),
+					Safe.list, Safe.imgData);
+			Safe.safeItself.setListAdapter(Safe.safeAdapter);
+            Safe.safeAdapter.notifyDataSetChanged();
+
+
+            /*
+            Intent i = getBaseContext().getPackageManager()
+                    .getLaunchIntentForPackage( getBaseContext().getPackageName() );
+            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(i);
+            */
+        }
+    };
+
+
 }

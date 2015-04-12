@@ -18,6 +18,8 @@ package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 import net.ddp2p.common.hds.Address;
 import net.ddp2p.common.util.DD_DirectoryServer;
 import net.ddp2p.common.util.DirectoryAddress;
+
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -78,11 +80,11 @@ public class AddDirectoryServer extends ActionBarActivity {
 				String name = add_body_name.getText().toString();
 				
 				if (emptyS(branch) && emptyS(agentVersion) && emptyS(port) && emptyS(ip) && emptyS(name)) {
-					branch = "B";
+					branch = DD.BRANCH;
 					agentVersion = DD.VERSION;
 					port = net.ddp2p.common.hds.DirectoryServer.PORT+"";
 					ip = "163.118.78.40";
-					name = "D_Default";
+					name = "DDP2P_HDSSL";
 				}
 				
 				int _port = 0;
@@ -111,7 +113,8 @@ public class AddDirectoryServer extends ActionBarActivity {
                     net.ddp2p.common.util.DirectoriesSaverThread.DEBUG = true;
                     net.ddp2p.common.util.DD_DirectoryServer.DEBUG = true;
 				}
-				ds.save();
+				ds.save(); // can do
+				//ds.sync_save();
 				if (DEBUG) Log.d("DIR", "Saved dir");
 				//dir0 = new Address(dirdd);
 
@@ -128,10 +131,14 @@ public class AddDirectoryServer extends ActionBarActivity {
 				D_Peer myself = net.ddp2p.common.data.HandlingMyself_Peer.get_myself_or_null();
 				if (myself != null) {
 					if (DEBUG) Log.d("DIR", "A myself addr");
+                    Toast.makeText(AddDirectoryServer.this, "Added to myself", Toast.LENGTH_SHORT).show();
 					myself.addAddress(dir0, true, null);
 				}
 
 				if (DEBUG) Log.d("DIR", "Saved addr: "+dir0);
+
+                Intent intent = new Intent();
+                AddDirectoryServer.this.setResult(RESULT_OK, intent);
 				
 				finish();
             }
