@@ -314,7 +314,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 		broadcasted.addItemListener(this);
 
 		date_field.getDocument().removeDocumentListener(this);
-		date_field.setText(Encoder.getGeneralizedTime(d_news.creation_date));
+		date_field.setText(Encoder.getGeneralizedTime(d_news.getCreationDate()));
 		date_field.getDocument().addDocumentListener(this);
 
 		String sql =
@@ -777,7 +777,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 		
 		if(this.d_news==null){
 			Util.printCallPath("No news object selected! Will create one.");
-			this.d_news = new D_News();
+			this.d_news = D_News.getEmpty();
 			d_news.organization = this.organization;
 			d_news.organization_ID = Util.getStringID(this.organization_ID);
 			d_news.motion_ID = Util.getStringID(this.motion_ID);
@@ -804,7 +804,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			String new_text = this.news_body_field.getText();
 			this.d_news.news.setDocumentString(new_text);
 			this.d_news.news.setFormatString(BODY_FORMAT);
-			this.d_news.creation_date = Util.getCalendar(creationTime);
+			this.d_news.setCreationDate(Util.getCalendar(creationTime));
 			this.d_news.setEditable();
 			try {
 				this.d_news.storeVerified();
@@ -819,7 +819,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			String new_text = this.news_title_field.getText();
 			this.d_news.title.title_document.setDocumentString(new_text);
 			this.d_news.title.title_document.setFormatString(TITLE_FORMAT);
-			this.d_news.creation_date = Util.getCalendar(creationTime);
+			this.d_news.setCreationDate(Util.getCalendar(creationTime));
 			this.d_news.setEditable();
 			try {
 				this.d_news.storeVerified();
@@ -834,7 +834,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			String new_text = this.date_field.getText();
 			Calendar cal = Util.getCalendar(new_text);
 			if(cal == null) return;
-			this.d_news.creation_date = cal;
+			this.d_news.setCreationDate(cal);
 			this.d_news.setEditable();
 			try {
 				this.d_news.storeVerified();
@@ -844,8 +844,8 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			return;			
 		}
 		if(this.dategen_field==source) {
-			this.d_news.creation_date = Util.CalendargetInstance();
-			this.date_field.setText(Encoder.getGeneralizedTime(this.d_news.creation_date));
+			this.d_news.setCreationDate(Util.CalendargetInstance());
+			this.date_field.setText(Encoder.getGeneralizedTime(this.d_news.getCreationDate()));
 			this.d_news.setEditable();
 			try {
 				this.d_news.storeVerified();
@@ -902,7 +902,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			switchMode(D_Document.TXT_BODY_FORMAT);
 			if(DEBUG) System.out.println("MotionEditor:handleFieldEvent: done");
 
-			this.d_news.creation_date = Util.getCalendar(creationTime);
+			this.d_news.setCreationDate(Util.getCalendar(creationTime));
 			this.d_news.setEditable();
 			try {
 				this.d_news.storeVerified();
@@ -915,7 +915,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			switchMode(D_Document.HTM_BODY_FORMAT);
 			if(DEBUG) System.out.println("MotionEditor:handleFieldEvent: done");
 
-			this.d_news.creation_date = Util.getCalendar(creationTime);
+			this.d_news.setCreationDate(Util.getCalendar(creationTime));
 			this.d_news.setEditable();
 			try {
 				this.d_news.storeVerified();
@@ -966,7 +966,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 	            			
 	            			if(DEBUG) System.out.println("DocumentEditor: handle: done");
 
-	            			this.d_news.creation_date = Util.getCalendar(creationTime);
+	            			this.d_news.setCreationDate(Util.getCalendar(creationTime));
 	            			this.d_news.setEditable();
 	            			try {
 	            				this.d_news.storeVerified();
@@ -990,7 +990,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 								
 								if(DEBUG) System.out.println("DocumentEditor: handle: done");
 
-		            			this.d_news.creation_date = Util.getCalendar(creationTime);
+		            			this.d_news.setCreationDate(Util.getCalendar(creationTime));
 		            			this.d_news.setEditable();
 		            			try {
 		            				this.d_news.storeVerified();
@@ -1010,7 +1010,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 									
 			            			if(DEBUG) System.out.println("DocumentEditor: handle: done");
 	
-			            			this.d_news.creation_date = Util.getCalendar(creationTime);
+			            			this.d_news.setCreationDate(Util.getCalendar(creationTime));
 			            			this.d_news.setEditable();
 			            			try {
 			            				this.d_news.storeVerified();

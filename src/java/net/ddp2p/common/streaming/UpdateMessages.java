@@ -286,8 +286,12 @@ public class UpdateMessages {
 					_peer_ID = p.getLIDstr_keep_force();
 					peer_ID = p.getLID_keep_force();
 					if (peer_ID <= 0) {
-						peer_ID = p.storeRequest_getID();
-						if (DEBUG) out.println("UpdateMessages:integrateUpdate: reget from peer p:"+p);
+						D_Peer __p = D_Peer.getPeerByPeer_Keep(p);
+						if (__p != null) {
+							peer_ID = __p.storeRequest_getID();
+							__p.releaseReference();
+						}
+						if (DEBUG) out.println("UpdateMessages:integrateUpdate: reget from peer p:"+__p);
 					}
 				} else {
 					if (DEBUG) out.println("UpdateMessages:integrateUpdate: get from null peer p");

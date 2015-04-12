@@ -305,6 +305,7 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 			throw new P2PDDSQLException(e);
 		}
 	}
+	/*
 	public static void main(String args[]) {
 		DB_Implementation_JDBC_SQLite db = new DB_Implementation_JDBC_SQLite();
 		try {
@@ -316,6 +317,7 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 			e.printStackTrace();
 		}
 	}
+	*/
 
 	public void _insert(String table, String[] fields, String[] params,
 			boolean dbg) throws P2PDDSQLException {

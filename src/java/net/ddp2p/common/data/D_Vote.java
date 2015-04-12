@@ -212,6 +212,7 @@ class D_Vote extends ASNObj{
 	 */
 	public static D_Vote getOneBroadcastedSupportForMotion(D_Motion _motion,
 			D_Constituent _constituent, String supportChoice) {
+		
 		ArrayList<ArrayList<Object>> _v;
 		if (_motion == null)
 			return null;
@@ -253,6 +254,95 @@ class D_Vote extends ASNObj{
 					_v = Application.db.select(
 							sql_one_vote_with_opinion,
 							new String[]{_motion.getLIDstr(), supportChoice},
+							DEBUG);
+				}
+			}
+			else return null;
+			
+			if (_v.size() == 0) return null;
+			
+			v.init(_v.get(0));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		return v;
+	}
+	public final static String sql_vote_for_justifID_from_constituent = 
+			"SELECT "+Util.setDatabaseAlias(net.ddp2p.common.table.signature.fields,"v")+
+			" FROM "+net.ddp2p.common.table.signature.TNAME+" AS v "+
+			" WHERE "
+			+ " v."+net.ddp2p.common.table.signature.justification_ID+"=? "
+			+ " AND v."+net.ddp2p.common.table.signature.constituent_ID+"=? "
+			+ ";";
+	public final static String sql_vote_for_justifID_from_constituent_with_opinion = 
+			"SELECT "+Util.setDatabaseAlias(net.ddp2p.common.table.signature.fields,"v")+
+			" FROM "+net.ddp2p.common.table.signature.TNAME+" AS v "+
+			" WHERE "
+			+ " v."+net.ddp2p.common.table.signature.justification_ID+"=? "
+			+ " AND v."+net.ddp2p.common.table.signature.constituent_ID+"=? "
+			+ " AND v."+net.ddp2p.common.table.signature.choice+"=? "
+			+ ";";
+	public final static String sql_one_vote_for_justifID = 
+			"SELECT "+Util.setDatabaseAlias(net.ddp2p.common.table.signature.fields,"v")+
+			" FROM "+net.ddp2p.common.table.signature.TNAME+" AS v "+
+			" WHERE "
+			+ " v."+net.ddp2p.common.table.signature.justification_ID+"=? "
+			+ " LIMIT 1;";
+	public final static String sql_one_vote_for_justif_with_opinion = 
+			"SELECT "+Util.setDatabaseAlias(net.ddp2p.common.table.signature.fields,"v")+
+			" FROM "+net.ddp2p.common.table.signature.TNAME+" AS v "+
+			" WHERE "
+			+ " v."+net.ddp2p.common.table.signature.justification_ID+"=? "
+			+ " AND v."+net.ddp2p.common.table.signature.choice+"=? "
+			+ " LIMIT 1;";
+	
+	public static D_Vote getOneBroadcastedSupportForJustification(
+			D_Motion crt_motion, D_Justification crt_justification,
+			D_Constituent voting_constituent, String supportChoice) {	
+		
+		ArrayList<ArrayList<Object>> _v;
+		if (crt_justification == null)
+			return null;
+		D_Vote v = new D_Vote();
+		v.setMotionLID(crt_motion.getLIDstr());
+		v.setJustificationLID(crt_justification.getLIDstr());
+		try {
+			if (voting_constituent == null && supportChoice == null) {
+				_v = Application.db.select(
+						sql_one_vote_for_justifID,
+						new String[]{crt_justification.getLIDstr()},
+						DEBUG);
+				
+			}  
+			else if (voting_constituent != null && supportChoice == null) {
+				_v = Application.db.select(
+						sql_vote_for_justifID_from_constituent,
+						new String[]{crt_justification.getLIDstr(), voting_constituent.getLIDstr()},
+						DEBUG);
+				if (_v.size() <= 0) {
+					_v = Application.db.select(
+							sql_one_vote_for_justifID,
+							new String[]{crt_justification.getLIDstr()},
+							DEBUG);
+				}
+			} 
+			else if (voting_constituent == null && supportChoice != null) {
+				_v = Application.db.select(
+						sql_one_vote_for_justif_with_opinion,
+						new String[]{crt_justification.getLIDstr(), supportChoice},
+						DEBUG);
+						
+			}  
+			else if (voting_constituent != null && supportChoice != null)  {
+				_v = Application.db.select(
+						sql_vote_for_justifID_from_constituent_with_opinion,
+						new String[]{crt_justification.getLIDstr(), supportChoice},
+						DEBUG);
+				if (_v.size() <= 0) {
+					_v = Application.db.select(
+							sql_one_vote_for_justif_with_opinion,
+							new String[]{crt_justification.getLIDstr(), supportChoice},
 							DEBUG);
 				}
 			}

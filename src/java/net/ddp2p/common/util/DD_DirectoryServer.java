@@ -36,7 +36,13 @@ public class DD_DirectoryServer extends ASNObj implements StegoStructure {
     		//return;
     	}
 	}
-
+	/**
+	 * SyncSaving
+	 * Call the run function of the thread directly, without starting a thread
+	 */
+	public void sync_save() {
+		new DirectoriesSaverThread(this).run();
+	}
 	@Override
 	public void setBytes(byte[] asn1) throws ASN1DecoderFail {
 		if(DEBUG)System.out.println("DD_DirectoryServer:decode "+asn1.length);

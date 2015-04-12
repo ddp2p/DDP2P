@@ -26,12 +26,6 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.SourceDataLine;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
@@ -554,62 +548,6 @@ public class ReceivedBroadcastableMessages {
 		if(DEBUG)System.out.println("New Peer ID is : "+peer_id);
 		return peer_id;
 	}
-	public static void playThanks(){
-		if(Application.CURRENT_SCRIPTS_BASE_DIR() == null) return;
-		crt = Util.CalendargetInstance().getTimeInMillis();
-		if((crt-last)<10000) return;
-		last =  Util.CalendargetInstance().getTimeInMillis();
-		
-		String wav_file = Application.CURRENT_SCRIPTS_BASE_DIR()+Application.WIRELESS_THANKS;
-		int EXTERNAL_BUFFER_SIZE = 524288;
-		File soundFile = new File(wav_file);
-		AudioInputStream audioInputStream = null;
-		try
-		{audioInputStream = AudioSystem.getAudioInputStream(soundFile);}
-		catch(Exception e) {e.printStackTrace();}
-
-		AudioFormat format = audioInputStream.getFormat();
-		SourceDataLine auline = null;
-		//Describe a desired line
-		DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
-		try
-		{
-			auline = (SourceDataLine) AudioSystem.getLine(info);
-			//Opens the line with the specified format,
-			//causing the line to acquire any required
-			//system resources and become operational.
-			auline.open(format);
-		}
-		catch(Exception e) {e.printStackTrace();}
-
-		//Allows a line to engage in data I/O
-		auline.start();
-		int nBytesRead = 0;
-		byte[] abData = new byte[EXTERNAL_BUFFER_SIZE];
-		try {
-			while (nBytesRead != -1)
-			{
-				nBytesRead = audioInputStream.read(abData, 0, abData.length);
-				if (nBytesRead >= 0)
-				{
-					//Writes audio data to the mixer via this source data line
-					//NOTE : A mixer is an audio device with one or more lines
-					auline.write(abData, 0, nBytesRead);
-				}
-			}
-		}
-		catch(Exception e) {e.printStackTrace();}
-		finally
-		{
-			//Drains queued data from the line
-			//by continuing data I/O until the
-			//data line's internal buffer has been emptied
-			auline.drain();
-			//Closes the line, indicating that any system
-			//resources in use by the line can be released
-			auline.close();
-		}		
-	}
 
 	/**
 	 * Check if it should be discarded:
@@ -638,8 +576,8 @@ public class ReceivedBroadcastableMessages {
 		if(my_bag_of_peers.size()>MY_PEER_BAG_MAX_SIZE) my_bag_of_peers.remove(0);
 		
 		//play music
-		if((msg.recent_senders!=null)&&(msg.recent_senders.contains(my_GPIDhash))){
-			playThanks();
+		if ((msg.recent_senders!=null)&&(msg.recent_senders.contains(my_GPIDhash))){
+			net.ddp2p.common.config.Application_GUI.playThanks();
 		}
 		return false;
 	}

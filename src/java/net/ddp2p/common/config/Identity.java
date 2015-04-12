@@ -858,11 +858,11 @@ public class Identity {
 		Identity.listing_directories_inet = listing_directories_inet;
 	}
 
-	static boolean isListing_directories_loaded() {
+	static public boolean isListing_directories_loaded() {
 		return listing_directories_loaded;
 	}
 
-	static void setListing_directories_loaded(boolean listing_directories_loaded) {
+	static public void setListing_directories_loaded(boolean listing_directories_loaded) {
 		Identity.listing_directories_loaded = listing_directories_loaded;
 	}
 

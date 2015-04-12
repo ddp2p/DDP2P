@@ -54,9 +54,9 @@ class D_News extends ASNObj{
 	public String global_motion_ID;
 	public D_Document_Title title = new D_Document_Title();
 	public D_Document news = new D_Document();
-	public Calendar creation_date;
+	private Calendar creation_date;
 	public byte[] signature;
-	public Calendar arrival_date;
+	private Calendar arrival_date;
 	
 	public D_Constituent constituent;
 	public D_Organization organization;
@@ -88,11 +88,11 @@ class D_News extends ASNObj{
 			" WHERE n."+net.ddp2p.common.table.news.news_ID+"=?;"
 			;
 		ArrayList<ArrayList<Object>> m = Application.db.select(sql, new String[]{news_ID}, DEBUG);
-		if(m.size() == 0) return;
+		if (m.size() == 0) return;
 		init(m.get(0));
 	}
 	public D_News(String news_GID) throws P2PDDSQLException {
-		if(news_GID == null) return;
+		if (news_GID == null) return;
 		this.global_news_ID = news_GID;
 		String sql = 
 			"SELECT "+Util.setDatabaseAlias(net.ddp2p.common.table.news.fields,"n")+
@@ -128,6 +128,42 @@ class D_News extends ASNObj{
 	public D_News instance() throws CloneNotSupportedException{
 		return new D_News();
 	}
+	public void setArrivalDate() {
+		this.setArrivalDate(Util.CalendargetInstance());
+	}
+	
+	public Calendar setArrivalDate(Calendar calendargetInstance) {
+		return this.arrival_date = calendargetInstance;
+	}
+	public Calendar getArrivalDate() {
+		return this.arrival_date;
+	}	
+	public void setCreationDate() {
+		this.setCreationDate(Util.CalendargetInstance());
+	}
+	public void setCreationDate(Calendar calendargetInstance) {
+		this.creation_date = calendargetInstance;
+	}
+	public Calendar getCreationDate() {
+		return this.creation_date;
+	}
+	public static D_News getNewsByLID(long _news_LID) {
+		try {
+			return new D_News(_news_LID);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public static D_News getNewsByGID(String _news_GID) {
+		try {
+			return new D_News(_news_GID);
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 	/**
 	 * 		"SELECT "+Util.setDatabaseAlias(table.news.fields,"n")+
 			", c."+table.constituent.global_constituent_ID+
@@ -147,8 +183,8 @@ class D_News extends ASNObj{
 		news.setFormatString(Util.getString(o.get(net.ddp2p.common.table.news.N_TEXT_FORMAT)));
 		news.setDocumentString(Util.getString(o.get(net.ddp2p.common.table.news.N_TEXT)));
 		//status = Util.ival(Util.getString(o.get(table.news.M_STATUS)), DEFAULT_STATUS);
-		creation_date = Util.getCalendar(Util.getString(o.get(net.ddp2p.common.table.news.N_CREATION)));
-		arrival_date = Util.getCalendar(Util.getString(o.get(net.ddp2p.common.table.news.N_ARRIVAL)));
+		setCreationDate(Util.getCalendar(Util.getString(o.get(net.ddp2p.common.table.news.N_CREATION))));
+		setArrivalDate(Util.getCalendar(Util.getString(o.get(net.ddp2p.common.table.news.N_ARRIVAL))));
 		signature = Util.byteSignatureFromString(Util.getString(o.get(net.ddp2p.common.table.news.N_SIGNATURE)));
 		news_ID = Util.getString(o.get(net.ddp2p.common.table.news.N_ID));
 		constituent_ID = Util.getString(o.get(net.ddp2p.common.table.news.N_CONSTITUENT_ID));
@@ -168,7 +204,7 @@ class D_News extends ASNObj{
 		//global_motion_ID = Util.getString(o.get(table.news.N_FIELDS+0)); //+2
 		
 		this.motion = D_Motion.getMotiByLID(motion_ID, true, false);
-		global_motion_ID = motion.getGID();
+		if (motion != null) global_motion_ID = motion.getGID();
 		//choices = WB_Choice.getChoices(news_ID);
 	}
 	
@@ -184,7 +220,8 @@ class D_News extends ASNObj{
 		"\n global_organization_ID="+global_organization_ID+
 		"\n global_motion_ID="+global_motion_ID+
 		//"\n status="+status+
-		"\n creation_date="+Encoder.getGeneralizedTime(creation_date)+
+		"\n creation_date="+Encoder.getGeneralizedTime(getCreationDate())+
+		"\n arrival_date="+Encoder.getGeneralizedTime(getArrivalDate())+
 		"\n signature="+Util.byteToHexDump(signature)+
 		"\n news_ID="+news_ID+
 		"\n constituent_ID="+constituent_ID+
@@ -232,7 +269,7 @@ class D_News extends ASNObj{
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_organization_ID);
 			enc.addToSequence(new Encoder(repl_GID, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
 		}
-		if (creation_date != null) enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC7));
+		if (getCreationDate() != null) enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC7));
 		if (signature != null) enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC8));
 		//if(choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC9));
 		
@@ -260,7 +297,7 @@ class D_News extends ASNObj{
 		//if(global_enhanced_newsID!=null)enc.addToSequence(new Encoder(global_enhanced_newsID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
 		if(global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC7));
 		if(global_motion_ID!=null)enc.addToSequence(new Encoder(global_motion_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC9));
-		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC8));
+		if(getCreationDate()!=null)enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC8));
 		//if(choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC9));
 		//if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC4));
@@ -276,7 +313,7 @@ class D_News extends ASNObj{
 		//if(global_enhanced_newsID!=null)enc.addToSequence(new Encoder(global_enhanced_newsID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC6));
 		if(global_organization_ID!=null)enc.addToSequence(new Encoder(global_organization_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC7));
 		if(global_motion_ID!=null)enc.addToSequence(new Encoder(global_motion_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC9));
-		if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC8));
+		if(getCreationDate()!=null)enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC8));
 		//if(choices!=null)enc.addToSequence(Encoder.getEncoder(choices).setASN1Type(DD.TAG_AC10));
 		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC9));
 		//if(constituent!=null)enc.addToSequence(constituent.getEncoder().setASN1Type(DD.TAG_AC4));
@@ -293,7 +330,7 @@ class D_News extends ASNObj{
 		if(dec.getTypeByte()==DD.TAG_AC4)global_constituent_ID = dec.getFirstObject(true).getString(DD.TAG_AC4);
 		//if(dec.getTypeByte()==DD.TAG_AC5)global_enhanced_newsID = dec.getFirstObject(true).getString(DD.TAG_AC5);
 		if(dec.getTypeByte()==DD.TAG_AC6)global_organization_ID = dec.getFirstObject(true).getString(DD.TAG_AC6);
-		if(dec.getTypeByte()==DD.TAG_AC7)creation_date = dec.getFirstObject(true).getGeneralizedTimeCalender(DD.TAG_AC7);
+		if(dec.getTypeByte()==DD.TAG_AC7)setCreationDate(dec.getFirstObject(true).getGeneralizedTimeCalender(DD.TAG_AC7));
 		if(dec.getTypeByte()==DD.TAG_AC8)signature = dec.getFirstObject(true).getBytes(DD.TAG_AC8);
 		//if(dec.getTypeByte()==DD.TAG_AC9)choices = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_SEQUENCE, new WB_Choice[0], new WB_Choice());	
 		if(dec.getTypeByte()==DD.TAG_AC10)constituent = D_Constituent.getEmpty().decode(dec.getFirstObject(true));	
@@ -303,9 +340,18 @@ class D_News extends ASNObj{
 		if(dec.getTypeByte()==DD.TAG_AC13)motion = D_Motion.getEmpty().decode(dec.getFirstObject(true));	
 		return this;
 	}
+	/**
+	 * Both store signature and returns it
+	 * @return
+	 */
 	public byte[] sign() {
 		return sign(this.global_constituent_ID);
 	}
+	/**
+	 * Both store signature and returns it
+	 * @param signer_GID
+	 * @return
+	 */
 	public byte[] sign(String signer_GID) {
 		if(DEBUG) System.out.println("WB_Motion:sign: start signer="+signer_GID);
 		net.ddp2p.ciphersuits.SK sk = net.ddp2p.common.util.Util.getStoredSK(signer_GID);
@@ -328,6 +374,9 @@ class D_News extends ASNObj{
 		signature = Util.sign(this.getSignableEncoder().getBytes(), sk);
 		if(DEBUG) System.out.println("WB_Motion:sign:got this="+Util.byteToHexDump(signature));
 		return signature;
+	}
+	public void setGID(String gid) {
+		this.global_news_ID = gid;
 	}
 	public String make_ID(){
 		try {
@@ -379,7 +428,7 @@ class D_News extends ASNObj{
 		if(this.news_ID != null ) {
 			String old_date = _old_date[0];// getDateFor(this.news_ID)
 			if(old_date != null) {
-				String new_date = Encoder.getGeneralizedTime(this.creation_date);
+				String new_date = Encoder.getGeneralizedTime(this.getCreationDate());
 				if(new_date.compareTo(old_date)<=0) return new Integer(news_ID).longValue();
 			}
 		}
@@ -518,7 +567,7 @@ class D_News extends ASNObj{
 		params[net.ddp2p.common.table.news.N_MOT_ID] = motion_ID;
 		//params[table.news.M_STATUS] = status+"";
 		params[net.ddp2p.common.table.news.N_SIGNATURE] = Util.stringSignatureFromByte(signature);
-		params[net.ddp2p.common.table.news.N_CREATION] = Encoder.getGeneralizedTime(this.creation_date);
+		params[net.ddp2p.common.table.news.N_CREATION] = Encoder.getGeneralizedTime(this.getCreationDate());
 		params[net.ddp2p.common.table.news.N_ARRIVAL] = Encoder.getGeneralizedTime(arrival_date);
 		params[net.ddp2p.common.table.news.N_BLOCKED] = Util.bool2StringInt(blocked);
 		params[net.ddp2p.common.table.news.N_REQUESTED] = Util.bool2StringInt(requested);
@@ -570,6 +619,14 @@ class D_News extends ASNObj{
 	public String getMotionLIDstr() {
 		return this.motion_ID;
 	}
+	public void setOrganizationLID(String oLID) {
+		this.organization_ID = oLID;
+		if (oLID != null) {
+			this.organization = D_Organization.getOrgByLID(oLID, false, false);
+			if (this.organization != null) this.global_organization_ID = this.organization.getGID();
+		}
+	}
+	
 	/**
 	 * News currently not oriented towards justifications
 	 * @return
@@ -658,8 +715,8 @@ class D_News extends ASNObj{
 			if(!c.verifySignature()) System.out.println("\n************Signature Failure\n**********\nread="+c);
 			else System.out.println("\n************Signature Pass\n**********\nread="+c);
 			Decoder dec = new Decoder(c.getEncoder().getBytes());
-			D_News d = new D_News().decode(dec);
-			Calendar arrival_date = d.arrival_date=Util.CalendargetInstance();
+			D_News d = D_News.getEmpty().decode(dec);
+			Calendar arrival_date = d.setArrivalDate(Util.CalendargetInstance());
 			//if(d.global_organization_ID==null) d.global_organization_ID = OrgHandling.getGlobalOrgID(d.organization_ID);
 			if(!d.verifySignature()) System.out.println("\n************Signature Failure\n**********\nrec="+d);
 			else System.out.println("\n************Signature Pass\n**********\nrec="+d);
@@ -728,6 +785,16 @@ class D_News extends ASNObj{
 		if (this.title == null) return null;
 		return this.title.getTitleStr();
 	}
+	public void setTitle(String _tit) {
+		this.title = new D_Document_Title();
+		this.title.title_document.setDocumentString(_tit);
+		this.title.title_document.setFormatString(D_Document.TXT_FORMAT);
+	}
+	public void setBody(String _body) {
+		this.news = new D_Document();
+		this.news.setDocumentString(_body);
+		this.news.setFormatString(D_Document.TXT_BODY_FORMAT);
+	}
 	/**
 	 * Returns null if the title is not TXT or HTML, else return the text content
 	 * @return
@@ -748,6 +815,87 @@ class D_News extends ASNObj{
 //		String n = mydata.name;
 //		if (n != null) return n;
 		return getNewsTitleStr();
+	}
+	public String getNewsBodyStr() {
+		if (this.news == null)
+			return null;
+		if (
+				news.getFormatString() != null
+				&&
+				! D_Document.TXT_FORMAT.equals(news.getFormatString())
+				&&
+				! D_Document.HTM_BODY_FORMAT.equals(news.getFormatString())
+		) return null;
+		return news.getDocumentUTFString();
+	}
+	public D_Constituent getConstituent() {
+		return this.constituent;
+	}
+	public void setConstituent(D_Constituent constituent) {
+		this.constituent = constituent;
+		if (constituent != null) {
+			this.constituent_ID = constituent.getLIDstr();
+			this.global_constituent_ID = constituent.getGID();
+		}
+	}
+	public D_Constituent getConstituentForce() {
+		if (this.constituent == null && this.constituent_ID != null)
+			this.constituent = D_Constituent.getConstByLID(constituent_ID, false, false);
+		return this.getConstituent();
+	}
+	public final static String sql_all_news = 
+			"SELECT " + net.ddp2p.common.table.news.news_ID
+			+ " FROM "+net.ddp2p.common.table.news.TNAME
+			+ " WHERE "+net.ddp2p.common.table.news.organization_ID + "=? ";
+	/**
+	 * The index of the motion LID in the result of getAllNews()
+	 */
+	public static final int SELECT_ALL_NEWS_LID = 0;
+	/**
+	 * 
+	 * @param hide (if true, then skip hidden)
+	 * @param o_LID (organization LID)
+	 * @param crt_motion_LID (if nonull, then set filter)
+	 * @param crt_justif_LID (if nonull, then set filter)
+	 * @param LIMIT (max entries when > 0)
+	 * @return
+	 * news_ID is at index SELECT_ALL_NEWS_LID
+	 */
+	public static java.util.ArrayList<java.util.ArrayList<Object>>
+			getAllMotions(
+					String o_LID,
+					boolean hide,
+					String crt_motion_LID,
+					String crt_justif_LID,
+					int LIMIT,
+					boolean order_creation) {
+		
+		ArrayList<ArrayList<Object>> moti;
+		if (Application.db == null) return new ArrayList<ArrayList<Object>>();
+		String sql = sql_all_news;
+		if (crt_motion_LID != null) {
+			sql += " AND " + net.ddp2p.common.table.news.motion_ID + " = ?";
+		}		
+		if (crt_justif_LID != null) {
+			sql += " AND " + net.ddp2p.common.table.news.justification_ID + " = ?";
+		}		
+		//if (hide)	sql	 +=	" AND "+net.ddp2p.common.table.news.hidden + " != '1' ";
+		if (order_creation)
+			sql	 +=	" ORDER BY "+net.ddp2p.common.table.news.creation_date+" DESC ";
+		else
+			sql	 +=	" ORDER BY "+net.ddp2p.common.table.news.arrival_date+" DESC ";
+		if (LIMIT > 0)	sql	 +=	" LIMIT " + LIMIT;
+		try {
+			if (crt_motion_LID != null) {
+				moti = Application.db.select(sql+";", new String[]{o_LID, crt_motion_LID});
+			} else {
+				moti = Application.db.select(sql+";", new String[]{o_LID});
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return new ArrayList<ArrayList<Object>>();
+		}
+		return moti;
 	}
 	
 }

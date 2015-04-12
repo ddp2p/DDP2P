@@ -4,11 +4,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Hashtable;
 
+import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.hds.PeerInput;
+import net.ddp2p.common.updates.VersionInfo;
 import net.ddp2p.common.util.DB_Implementation;
 import net.ddp2p.common.util.DD_IdentityVerification_Answer;
 import net.ddp2p.common.util.Util;
@@ -58,6 +62,7 @@ public class Application_GUI {
 	 * @param war
 	 * @param title
 	 * @param type may be: JOptionPane.OK_CANCEL_OPTION
+	 *    0 for  JOptionPane.YES_NO_OPTION
 	 * @return index of selected option
 	 */
 	public static int ask(String war, String title, int type){
@@ -274,4 +279,26 @@ public class Application_GUI {
 		dbmail.sendEmail(answer);
 	}
 
+	public static boolean playThanks() {
+		if (gui == null) return false;
+		return gui.playThanks();
+	}
+
+	public static URL isWSVersionInfoService(String url_str) {
+		if (dbmail == null) return null;
+		return dbmail.isWSVersionInfoService(url_str);
+	}
+
+	public static VersionInfo getWSVersionInfo(URL _url, String myPeerGID,
+			SK myPeerSK, Hashtable<Object, Object> ctx) {
+		if (dbmail == null) return null;
+		return dbmail.getWSVersionInfo(_url, myPeerGID, myPeerSK, ctx);
+	}
+
+	/*
+	public static boolean clipboardCopy(String exportText) {
+		if (gui == null) return false;
+		return gui.clipboardCopy();
+	}
+	*/
 }

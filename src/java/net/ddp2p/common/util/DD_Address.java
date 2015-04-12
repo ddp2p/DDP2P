@@ -129,7 +129,7 @@ public class DD_Address implements StegoStructure {
 		if (V3.equals(version)) { init_V3(dd); return;}
 	}
 	void init_V3(D_Peer dd) {
-		System.out.println("DD_Address: init_V3: peer="+dd);
+		if (DEBUG) System.out.println("DD_Address: init_V3: peer="+dd);
 		this.peer = dd;
 		init_V2(dd); // for the NiceDescription function
 		System.out.println("DD_Address: init_V3: done");
@@ -702,5 +702,13 @@ public class DD_Address implements StegoStructure {
 	}
 	public static BigInteger getASN1Tag() {
 		return new BigInteger(DD.STEGO_SIGN_PEER+"");
+	}
+	public String getSlogan_MyOrDefault() {
+		if (this.peer != null) return peer.getSlogan_MyOrDefault();
+		return slogan;
+	}
+	public String getName() {
+		if (this.peer != null) return peer.getName();
+		return name;
 	}
 }

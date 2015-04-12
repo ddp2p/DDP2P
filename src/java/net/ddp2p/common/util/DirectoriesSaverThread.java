@@ -6,6 +6,8 @@ import java.util.ArrayList;
 
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
+import net.ddp2p.common.config.DD;
+import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.HandlingMyself_Peer;
 import net.ddp2p.common.hds.UDPServer;
@@ -52,6 +54,15 @@ class DirectoriesSaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	    		Application_GUI.warning(__("Already known directory:")+new_dir, __("Added directory"));
 	    	}
     	}
+		
+		// If a list of directories was loaded, reload it!
+		if (Identity.isListing_directories_loaded()) {
+			try {
+				DD.load_listing_directories();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 		if (Application.g_TCPServer != null) {
 			//HandlingMyself_Peer.updateAddress(HandlingMyself_Peer.get_myself_with_wait());
 			D_Peer myself = HandlingMyself_Peer.get_myself_or_null();

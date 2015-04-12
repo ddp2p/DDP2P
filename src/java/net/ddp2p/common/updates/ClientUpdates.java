@@ -43,10 +43,10 @@ import java.util.regex.Pattern;
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
+//import net.ddp2p.WSupdate.HandleService;
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.PK;
 import net.ddp2p.ciphersuits.SK;
-import net.ddp2p.common.WSupdate.HandleService;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
@@ -537,7 +537,7 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		 
 			if(DEBUG) System.out.println(" ClientUpdates: will work on url: "+url_str);
 			
-			URL _url = HandleService.isWSVersionInfoService(url_str);
+			URL _url = Application_GUI.isWSVersionInfoService(url_str);
 			// old update
 			if(_url == null) {
 				URL url;
@@ -554,7 +554,7 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				SK myPeerSK = HandlingMyself_Peer.getMyPeerSK();
 				if (myPeerSK!=null) {
 					try{
-						a = HandleService.getWSVersionInfo(_url, myPeerGID, myPeerSK, ctx);
+						a = Application_GUI.getWSVersionInfo(_url, myPeerGID, myPeerSK, ctx);
 					}catch(Exception e){System.err.println("ClientUpdates:run:WSupdate:"+e.getLocalizedMessage());}
 				}
 			}
@@ -621,7 +621,7 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	 
 		if(DEBUG) System.out.println(" ClientUpdates: will work on url: "+url_str +" ver:"+ ver);
 		
-		URL _url = HandleService.isWSVersionInfoService(url_str);
+		URL _url = Application_GUI.isWSVersionInfoService(url_str);
 		// old update
 		if(_url == null) {
 			URL url;
@@ -638,7 +638,7 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			SK myPeerSK = HandlingMyself_Peer.getMyPeerSK();
 			if (myPeerSK!=null) {
 				try{
-					a = HandleService.getWSVersionInfo(_url, myPeerGID, myPeerSK, ctx);
+					a = Application_GUI.getWSVersionInfo(_url, myPeerGID, myPeerSK, ctx);
 				}catch(Exception e){System.err.println("ClientUpdates:run:WSupdate:"+e.getLocalizedMessage());}
 			}
 		}

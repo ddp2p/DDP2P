@@ -458,8 +458,8 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public D_PeerOrgs[] served_orgs = null; //OPT
 	public D_PeerOrgs[] served_orgs_orig = null;
 
-	/** */
-	public ArrayList<D_PeerOrgInferred> served_org_inferred = null;
+	/** List of organizations about which data was received from this peer */
+	public ArrayList<D_PeerOrgInferred> served_org_inferred = new ArrayList<D_PeerOrgInferred>();
 	public ArrayList<D_PeerOrgInferred> served_org_inferred_orig = null;
 	
 	// instances
@@ -719,9 +719,14 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			}
 		}
 
-		served_org_inferred = _getPeerOrgInferred(getLID());
-		if (served_org_inferred != null)
+		served_org_inferred = __getPeerOrgInferred(getLID());
+		if (served_org_inferred != null) {
 			served_org_inferred_orig = new ArrayList<D_PeerOrgInferred>( served_org_inferred);
+		} else {
+			served_org_inferred = new ArrayList<D_PeerOrgInferred>( );
+			served_org_inferred_orig = new ArrayList<D_PeerOrgInferred>( );
+			System.out.println("D_Peer <init>: missing org inferred for LID=" + getLID());
+		}
 
 		try {
 			loadInstancesToHash();
@@ -855,12 +860,17 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				"SELECT " + net.ddp2p.common.table.peer_org_inferred.fields
 				+ " FROM " + net.ddp2p.common.table.peer_org_inferred.TNAME
 				+ " WHERE " + net.ddp2p.common.table.peer_org_inferred.COL_PEER_ID + " = ?;";
-	private ArrayList<D_PeerOrgInferred> _getPeerOrgInferred(long lid) {
+	/**
+	 * Returns the list of organizations_inferred for the peer pLID in parameter
+	 * @param lid
+	 * @return
+	 */
+	private ArrayList<D_PeerOrgInferred> __getPeerOrgInferred(long pLID) {
 		if (DEBUG) System.out.println("D_Peer: _getPeerOrgInferred: start "+sql_peer_org_inf);
-		if (lid <= 0) return null;
+		if (pLID <= 0) return new ArrayList<D_PeerOrgInferred>();
 		try {
 			ArrayList<ArrayList<Object>> poi = 
-					Application.db.select(sql_peer_org_inf, new String[]{Util.getStringID(lid)}, DEBUG);
+					Application.db.select(sql_peer_org_inf, new String[]{Util.getStringID(pLID)}, DEBUG);
 			ArrayList<D_PeerOrgInferred> result = new ArrayList<D_PeerOrgInferred>();
 			for (int i = 0 ; i < poi.size() ; i ++ ) {
 				ArrayList<Object> ipoi = poi.get(i);
@@ -1656,20 +1666,21 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		}
 	}
 	/**
-	 * This function has to be called after the appropriate dirty flags are set:
-	 * dirty_main - for elements in the peer table
+	 * This function has to be called after the appropriate dirty flags are set (to be called while keeping object!):<br>
+	 * dirty_main - for elements in the peer table<br>
 	 * dirty_instances - ...
 	 * dirty_served_orgs - ...
 	 * dirty_my_data - ...
 	 * dirty_addresses - ...
+	 * <p>
+	 * calls storeRequest(); then getLID_force()
 	 * 
-	 * calls storeRequest(); then getLID_keep_force()
-	 * 
-	 * @return This returns synchronously (waiting for the storing to happen), and returns the local ID.
+	 * @return This may return synchronously (waiting for the storing to happen), and returns the local ID.
 	 */
 	public long storeRequest_getID() {
 		this.storeRequest();
-		return this.getLID_keep_force();
+		//return this.getLID_keep_force(); // no need of keeping, since we assume keeping on call
+		return this.getLID_force();
 	}
 	/**
 	 * This can be delayed saving
@@ -2200,7 +2211,11 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		}
 		return null;
 	}
-	/** Searches this organization in current orgs in served_org_inferred */
+	/** Searches this organization in current orgs in array served_org_inferred 
+	 * 
+	 * @param organization_ID
+	 * @return
+	 */
 	public D_PeerOrgInferred getPeerOrgInferred(long organization_ID) {
 		//if (DEBUG && (global_organization_IDhash == null)) Util.printCallPath("null orgs");
 		if (served_org_inferred != null) {
@@ -2778,8 +2793,10 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			}
 			if ((this.peer_ID == null) && (this.dirty_any())) {
 				D_Peer p = D_Peer.getPeerByPeer_Keep(this);
-				p.storeSynchronouslyNoException();
-				p.releaseReference();
+				if (p != null) {
+					p.storeSynchronouslyNoException();
+					p.releaseReference();
+				}
 				return this.peer_ID;
 			}
 		}
@@ -4360,9 +4377,15 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	}
 	public void setServingOrgInferred(long orgID, boolean serve) {
 		assertReferenced();
-		if (serve) setServingOrgInferred(orgID);
-		else removeServingOrgInferred(orgID);
+		synchronized(this.served_org_inferred) {
+			if (serve) setServingOrgInferred(orgID);
+			else removeServingOrgInferred(orgID);
+		}
 	}
+	/**
+	 * Called synchronized on this.served_org_inferred
+	 * @param orgID
+	 */
 	private void removeServingOrgInferred(long orgID) {
 		int idx = this.getPeerOrgInferredIdx(orgID);
 		if (idx < 0) return;
@@ -4370,13 +4393,18 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		
 		this.dirty_served_orgs_inferred = true;
 	}
+	/**
+	 * Adds the serving org and stores synchronously the peer (and the served org)
+	 * @param orgID
+	 */
 	public void setServingOrgInferred(long orgID) {
 		if ( this.getPeerOrgInferred(orgID) != null ) {
 			return;
 		}
 		D_PeerOrgInferred poi = new D_PeerOrgInferred(this.getLID(), orgID, true);
-		this.served_org_inferred.add(poi);
-		
+		synchronized(this.served_org_inferred) {
+			this.served_org_inferred.add(poi);
+		}
 		this.dirty_served_orgs_inferred = true;
 		/**
 		 * Since the thread may need to immediately answer the sender, IT MAY BE

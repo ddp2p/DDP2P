@@ -3,11 +3,16 @@ package net.ddp2p.java.db;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.util.Hashtable;
 
+import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.Application_GUI;
+import net.ddp2p.common.updates.VersionInfo;
 import net.ddp2p.common.util.DB_Implementation;
 import net.ddp2p.common.util.DD_IdentityVerification_Answer;
 import net.ddp2p.common.util.P2PDDSQLException;
+import net.ddp2p.java.WSupdate.HandleService;
 
 public class Vendor_JDBC_EMAIL_DB implements net.ddp2p.common.config.Vendor_DB_Email {
 
@@ -58,5 +63,16 @@ public class Vendor_JDBC_EMAIL_DB implements net.ddp2p.common.config.Vendor_DB_E
 
 	public static void initJDBCEmail() {
 		Application_GUI.dbmail = new Vendor_JDBC_EMAIL_DB();
+	}
+
+	@Override
+	public URL isWSVersionInfoService(String url_str) {
+		return HandleService.isWSVersionInfoService(url_str);
+	}
+
+	@Override
+	public VersionInfo getWSVersionInfo(URL _url, String myPeerGID,
+			SK myPeerSK, Hashtable<Object, Object> ctx) {
+		return HandleService.getWSVersionInfo(_url, myPeerGID, myPeerSK, ctx);
 	}
 }

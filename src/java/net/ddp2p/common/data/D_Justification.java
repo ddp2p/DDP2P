@@ -68,6 +68,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	private String global_justificationID;//Printable
 	private String global_motionID;//Printable
 	private String global_answerTo_ID;//Printable
+	private String global_subsumes_ID;//Printable
 	private String global_constituent_ID;//Printable
 	private String global_organization_ID;//Printable
 	private D_Document_Title justification_title = new D_Document_Title();
@@ -83,10 +84,12 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	private D_Motion motion;
 	private D_Constituent constituent;
 	private D_Justification answerTo;
+	private D_Justification subsumes;
 	
 	private String justification_ID;
 	private String motion_ID;
 	private String answerTo_ID;
+	private String subsumes_LID;
 	private String constituent_ID;
 	private String organization_ID;
 	
@@ -803,6 +806,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		this.motion_ID = Util.getString(o.get(net.ddp2p.common.table.justification.J_MOTION_ID));
 		this.constituent_ID = Util.getString(o.get(net.ddp2p.common.table.justification.J_CONSTITUENT_ID));
 		this.answerTo_ID = Util.getString(o.get(net.ddp2p.common.table.justification.J_ANSWER_TO_ID));
+		this.subsumes_LID = Util.getString(o.get(net.ddp2p.common.table.justification.J_SUBSUMES_LID));
 		this.last_reference_date = Util.getCalendar(Util.getString(o.get(net.ddp2p.common.table.justification.J_REFERENCE)));
 		this.justification_ID = Util.getString(o.get(net.ddp2p.common.table.justification.J_ID));
 		this.organization_ID = Util.getString(o.get(net.ddp2p.common.table.justification.J_ORG_ID));
@@ -816,6 +820,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		
 		this.global_constituent_ID = D_Constituent.getGIDFromLID(constituent_ID); //Util.getString(o.get(table.justification.J_FIELDS+0));
 		this.global_answerTo_ID = Util.getString(o.get(net.ddp2p.common.table.justification.J_FIELDS+0)); //+2
+		this.global_subsumes_ID = Util.getString(o.get(net.ddp2p.common.table.justification.J_FIELDS+1)); //+2
 		//this.global_organization_ID = Util.getString(o.get(table.justification.J_FIELDS+3));
 		
 		//this.choices = WB_Choice.getChoices(motionID);
@@ -864,8 +869,10 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	static final String cond_ID = 
 			"SELECT "+Util.setDatabaseAlias(net.ddp2p.common.table.justification.fields,"j")+
 			", a."+net.ddp2p.common.table.justification.global_justification_ID+
+			", s."+net.ddp2p.common.table.justification.global_justification_ID+
 			" FROM "+net.ddp2p.common.table.justification.TNAME+" AS j "+
 			" LEFT JOIN "+net.ddp2p.common.table.justification.TNAME+" AS a ON(a."+net.ddp2p.common.table.justification.justification_ID+"=j."+net.ddp2p.common.table.justification.answerTo_ID+")"+
+			" LEFT JOIN "+net.ddp2p.common.table.justification.TNAME+" AS s ON(s."+net.ddp2p.common.table.justification.justification_ID+"=j."+net.ddp2p.common.table.justification.subsumes_LID+")"+
 			" WHERE j."+net.ddp2p.common.table.justification.justification_ID+"=?;"
 			;
 	private void init(Long lID) throws Exception {
@@ -878,8 +885,10 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	static final String cond_GID = 
 			"SELECT "+Util.setDatabaseAlias(net.ddp2p.common.table.justification.fields,"j")+
 			", a."+net.ddp2p.common.table.justification.global_justification_ID+
+			", s."+net.ddp2p.common.table.justification.global_justification_ID+
 			" FROM "+net.ddp2p.common.table.justification.TNAME+" AS j "+
 			" LEFT JOIN "+net.ddp2p.common.table.justification.TNAME+" AS a ON(a."+net.ddp2p.common.table.justification.justification_ID+"=j."+net.ddp2p.common.table.justification.answerTo_ID+")"+
+			" LEFT JOIN "+net.ddp2p.common.table.justification.TNAME+" AS s ON(s."+net.ddp2p.common.table.justification.justification_ID+"=j."+net.ddp2p.common.table.justification.subsumes_LID+")"+
 			" WHERE j."+net.ddp2p.common.table.justification.global_justification_ID+"=?;"
 			;
 	private void init(String gID) throws Exception {
@@ -890,8 +899,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if(DEBUG) System.out.println("D_Justification: init: got="+this);//result);
 	}	
 
-	private static ArrayList<ArrayList<Object>> getJustificationArrayByGID(
-			String gID) {
+	private static ArrayList<ArrayList<Object>> getJustificationArrayByGID(String gID) {
 		ArrayList<ArrayList<Object>> a;
 		try {
 			a = Application.db.select(cond_GID, new String[]{gID});
@@ -1546,6 +1554,10 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getOrgGID());
 			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC14));
 		}
+		if (getSubsumes_GID()!=null) {
+			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getSubsumes_GID());
+			enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC15));
+		}
 		return enc;
 	}
 
@@ -1595,6 +1607,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if(dec.getTypeByte()==DD.TAG_AC12)constituent = D_Constituent.getEmpty().decode(dec.getFirstObject(true));
 		if(dec.getTypeByte()==DD.TAG_AC13)answerTo = new D_Justification().decode(dec.getFirstObject(true));
 		if(dec.getTypeByte()==DD.TAG_AC14)global_organization_ID = dec.getFirstObject(true).getString(DD.TAG_AC14);
+		if(dec.getTypeByte()==DD.TAG_AC15)global_subsumes_ID = dec.getFirstObject(true).getString(DD.TAG_AC15);
 		
 		if ((global_constituent_ID == null) && (constituent != null)) global_constituent_ID = constituent.getGID();
 		if ((global_answerTo_ID == null) && (answerTo != null)) global_answerTo_ID = answerTo.global_justificationID;
@@ -1842,6 +1855,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		params[net.ddp2p.common.table.justification.J_TITLE] = this.justification_title.title_document.getDocumentString();
 		params[net.ddp2p.common.table.justification.J_TEXT] = this.justification_text.getDocumentString();
 		params[net.ddp2p.common.table.justification.J_ANSWER_TO_ID] = this.answerTo_ID;
+		params[net.ddp2p.common.table.justification.J_SUBSUMES_LID] = this.subsumes_LID;
 		params[net.ddp2p.common.table.justification.J_CONSTITUENT_ID] = this.constituent_ID;
 		//params[table.justification.J_ORG_ID] = organization_ID;
 		//params[table.justification.J_STATUS] = status+"";
@@ -2240,6 +2254,12 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	public void setAnswerTo_GID(String global_answerTo_ID) {
 		this.global_answerTo_ID = global_answerTo_ID;
 	}
+	public String getSubsumes_GID() {
+		return global_subsumes_ID;
+	}
+	public void setSubsumes_GID(String global_subsumes_ID) {
+		this.global_subsumes_ID = global_subsumes_ID;
+	}
 	public String getConstituentGIDH() {
 		if (global_constituent_ID != null) return D_Constituent.getGIDHashFromGID(this.getConstituentGID());
 		if (this.constituent != null) return constituent.getGIDH();
@@ -2457,7 +2477,10 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if (getConstituent() != null) return getConstituent();
 		if (this.getConstituentLID() > 0)
 			return setConstituentObj(D_Constituent.getConstByLID(this.getConstituentLID(), true, false));
-		return setConstituentObj(D_Constituent.getConstByGID_or_GIDH(this.getConstituentGID(), null, true, false, this.getOrganizationLID()));
+		String cGID = this.getConstituentGID();
+		if (cGID != null)
+			return setConstituentObj(D_Constituent.getConstByGID_or_GIDH(cGID, null, true, false, this.getOrganizationLID()));
+		return null;
 	}
 	/**
 	 * Just sets the object
@@ -2510,6 +2533,36 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		// dirty set if LID is new
 		//this.dirty_main = true;
 	}
+	public D_Justification getSubsumes() {
+		return subsumes;
+	}
+	/**
+	 * Sets just the object with no check;
+	 * @param subsumes
+	 */
+	public void setSubsumes(D_Justification subsumes) {
+		this.subsumes = subsumes;
+	}
+	/**
+	 * Sets the object, the LID and the GID
+	 * 
+	 * @param subsumes
+	 */
+	public void setSubsumes_SetAll(D_Justification subsumes) {
+		this.subsumes = subsumes;
+		if (subsumes != null) {
+//			this.setSubsumes_GID(subsumes.getSubsumes_GID());
+//			this.setSubsumesLIDstr(subsumes.getSubsumesLIDstr());
+			this.setSubsumes_GID(subsumes.getGID());
+			this.setSubsumesLIDstr(subsumes.getLIDstr());
+		} else {
+			this.setSubsumes_GID(null);
+			this.setSubsumesLIDstr(null);
+		}
+		// dirty set if LID is new
+		//this.dirty_main = true;
+	}
+
 	public long getLID_force() {
 		if (this.justification_ID != null) return this.getLID();
 		return this.storeSynchronouslyNoException();
@@ -2567,6 +2620,23 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	public void setAnswerToLIDstr(String answerTo_ID) {
 		if (! Util.equalStrings_null_or_not(this.answerTo_ID, answerTo_ID)) {
 			this.answerTo_ID = answerTo_ID;
+			this.dirty_main = true;
+		}
+	}
+	public String getSubsumesLIDstr() {
+		return subsumes_LID;
+	}
+	/**
+	 * Would not work an a remote justification just decoded, (where the GID is set but not the LID)
+	 * @return
+	 */
+	public long getSubsumesLID() {
+		//if (this.loaded_locals)
+		return Util.lval(subsumes_LID);
+	}
+	public void setSubsumesLIDstr(String subsumes_LID) {
+		if (! Util.equalStrings_null_or_not(this.subsumes_LID, subsumes_LID)) {
+			this.subsumes_LID = subsumes_LID;
 			this.dirty_main = true;
 		}
 	}
@@ -2773,6 +2843,11 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			if (new_rq != null) new_rq.just.add(getAnswerTo_GID());
 			//this.answerTo = r.answerTo;
 		}
+		if (this.global_subsumes_ID != null && this.getSubsumesLID() <= 0) {
+			this.setSubsumesLIDstr(D_Justification.getLIDstrFromGID(getSubsumes_GID(), this.getOrganizationLID(), this.getMotionLID()));
+			if (new_rq != null) new_rq.just.add(getSubsumes_GID());
+			//this.subsumes = r.subsumes;
+		}
 		this.dirty_main = true;
 		if (sol_rq != null) sol_rq.just.add(this.getGID());
 		if (this.peer_source_ID <= 0 && __peer != null)
@@ -2843,6 +2918,12 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			if (new_rq != null) new_rq.just.add(r.getAnswerTo_GID());
 			//this.answerTo = r.answerTo;
 		}
+		if (! Util.equalStrings_null_or_not(this.global_subsumes_ID, r.global_subsumes_ID)) {
+			this.setSubsumes_GID(r.getSubsumes_GID());
+			this.setSubsumesLIDstr(D_Justification.getLIDstrFromGID(r.getSubsumes_GID(), this.getOrganizationLID(), this.getMotionLID()));
+			if (new_rq != null) new_rq.just.add(r.getSubsumes_GID());
+			//this.subsumes = r.subsumes;
+		}
 		this.dirty_main = true;
 		if (sol_rq != null) sol_rq.just.add(this.getGID());
 		if (this.peer_source_ID <= 0 && __peer != null)
@@ -2889,6 +2970,13 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			if (aLID == null) aLID = D_Justification.getLIDstrFromGID(r.getAnswerTo_GID(), this.getOrganizationLID(), this.getMotionLID());
 			this.setAnswerToLIDstr(aLID);
 			this.answerTo = r.answerTo;
+		}
+		if (! Util.equalStrings_null_or_not(this.global_subsumes_ID, r.global_subsumes_ID)) {
+			this.setSubsumes_GID(r.getSubsumes_GID());
+			String sLID = r.getSubsumesLIDstr();
+			if (sLID == null) sLID = D_Justification.getLIDstrFromGID(r.getSubsumes_GID(), this.getOrganizationLID(), this.getMotionLID());
+			this.setSubsumesLIDstr(sLID);
+			this.subsumes = r.subsumes;
 		}
 		this.dirty_main = true;
 		this.setCreationDate(this.setArrivalDate());
@@ -3122,6 +3210,11 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	public static class JustificationSupportEntry {
 		private String justification_LID;
 		private int support_cnt;
+		public JustificationSupportEntry() {}
+		public JustificationSupportEntry(String _justification_LID, int _support_cnt) {
+			justification_LID = _justification_LID;
+			support_cnt = _support_cnt;
+		}
 		public String toString() {
 			return "JustifSE[LID="+justification_LID+" cnt="+support_cnt+"]";
 		}
@@ -3388,13 +3481,14 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	}
 
 	/**
-	 * TODO: expand to check that there is at least one D_Vote shipped with it and refering it
+	 * TODO: expand to check that there is at least one D_Vote shipped with it and referring it. Absent constituent is assumed unblocked.
 	 * @return
 	 */
 	public boolean isGIDValidAndNotBlocked() {
 		if (! getGIDValid_WithMemory(false)) return true;
 		if (this.getConstituentGID() != null) {
-			if (this.getConstituent().isBlocked()) return false;
+			D_Constituent __constituent = this.getConstituentForce();
+			if (__constituent != null && __constituent.isBlocked()) return false;
 			if (! getSignValid_WithMemory(true)) return false;
 		}
 		if (this.getMotionForce().isBlocked()) return false;

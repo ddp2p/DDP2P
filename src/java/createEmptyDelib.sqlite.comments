@@ -512,6 +512,7 @@ CREATE TABLE justification ( # justifications -> justification
 	motion_ID INTEGER, 
 	organization_ID INTEGER,
 	answerTo_ID INTEGER, 
+	subsumes_LID INTEGER DEFAULT (-1),
 	hash_justification_alg TEXT, 
 	hash_justification BLOB, 
 	justification_title_format TEXT, 
@@ -533,6 +534,7 @@ CREATE TABLE justification ( # justifications -> justification
 	FOREIGN KEY(constituent_ID) REFERENCES constituent(constituent_ID),
 	FOREIGN KEY(motion_ID) REFERENCES motion(motion_ID),
 	FOREIGN KEY(answerTo_ID) REFERENCES justification(justification_ID),
+        FOREIGN KEY(subsumes_LID) REFERENCES justification(justification_ID),
 	FOREIGN KEY(peer_source_ID) REFERENCES peer(peer_ID)
 );
 CREATE TABLE my_justification_data (

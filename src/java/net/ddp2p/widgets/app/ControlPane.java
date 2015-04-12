@@ -27,6 +27,9 @@ import java.awt.EventQueue;
 import java.awt.GridLayout;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -209,6 +212,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	JButton signUpdates = new JButton(__("Sign Updates"));
 	JButton loadPeerAddress = new JButton(__("Load Peer Address"));
 	JButton importText = new JButton(__("Import Text"));
+	JButton exportText = new JButton(__("Export Text"));
 	JButton broadcastingProbabilities = new JButton(__("Set Broadcasting Probability"));
 	JButton broadcastingQueueProbabilities = new JButton(__("Set Broadcasting Queue Probability"));
 	JButton generationProbabilities = new JButton(__("Set Generation Probability"));
@@ -222,6 +226,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	JTextArea importedText = new JTextArea();
 	
 	public final static String c_importText = "importText";
+	public final static String c_exportText = "exportText";
 	public static final String c_import = "import";
 	public static final String c_export = "export";
 	public static final String c_peerSlogan = "peerSlogan";
@@ -926,6 +931,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
         c.gridy = 3;
         // importedText.setFont(new Font("Times New Roman",Font.BOLD,14));
 		p.add(new JScrollPane(importedText), c);
+        importedText.setText(__("Paste here a text \nencapsulating an object, \nand push the ImportText Button!"));
+        importedText.selectAll();
 		//saveMyAddress.addActionListener(this);
 		//saveMyAddress.setActionCommand("export");
 		c.gridx = 1;
@@ -934,6 +941,14 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		p.add(importText, c);
 		importText.addActionListener(this);
 		importText.setActionCommand(c_importText);
+		
+		c.gridx = 1;
+        c.gridy = 4;
+        exportText.setFont(new Font("Times New Roman",Font.BOLD,14));
+		p.add(exportText, c);
+		exportText.addActionListener(this);
+		exportText.setActionCommand(c_exportText);
+        
 // only for test
 //        JButton convertGIT_BMP = new JButton(_("Convert GIF to BMP"));
 //        		
@@ -1333,18 +1348,18 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public void actionPerformed(ActionEvent e) {
 		if(DEBUG)System.out.println("Action ="+e);
 		try {
-			if(action_button_clean_SMTP.equals(e.getActionCommand())) {
+			if (action_button_clean_SMTP.equals(e.getActionCommand())) {
 				net.ddp2p.java.email.EmailManager.setEmailPassword(Identity.current_id_branch, null);
 				net.ddp2p.java.email.EmailManager.setEmailUsername(Identity.current_id_branch, null);
 				net.ddp2p.java.email.EmailManager.setSMTPHost(Identity.current_id_branch, null);
-			}else if(action_button_clean_SMTP_password.equals(e.getActionCommand())) {
+			} else if(action_button_clean_SMTP_password.equals(e.getActionCommand())) {
 				String val = Application_GUI.input(__("You may enter a new password (it is visible!!!)"),
 						__("New password"), JOptionPane.QUESTION_MESSAGE);
-				if(val==null) {
+				if (val == null) {
 					Application_GUI.warning(__("Cleaning of password abandoned"), __("Canceled"));
 					return;
 				}
-				if(val!=null) {
+				if (val != null) {
 					val = val.trim();
 					if("".equals(val)) val = null;
 				}
@@ -1430,24 +1445,38 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				pi.slogan = slogan;
 				D_Peer me = HandlingMyself_Peer.createMyselfPeer_w_Addresses(pi, true);
 				
-			}else if(c_peerName.equals(e.getActionCommand())){
+			} else if (c_peerName.equals(e.getActionCommand())) {
 				ControlPane.changeMyPeerName(this);
-			}else if(c_peerSlogan.equals(e.getActionCommand())){
+			} else if (c_peerSlogan.equals(e.getActionCommand())) {
 				ControlPane.changeMyPeerSlogan(this);
-			}else if(c_convert.equals(e.getActionCommand())){
-				try{GIF_Convert.main(null);}catch(Exception eee){}
-			}else if(c_importText.equals(e.getActionCommand())){
-				try{
+			} else if (c_convert.equals(e.getActionCommand())) {
+				try {GIF_Convert.main(null);} catch(Exception eee){}
+			} else if (c_importText.equals(e.getActionCommand())) {
+				try {
 					String textObj = importedText.getDocument().getText(0, importedText.getDocument().getLength()); 
 					importedText.getDocument().remove(0, importedText.getDocument().getLength());
-					DD.importText(textObj);}catch(Exception eee){eee.printStackTrace();}
-			}else if(c_linuxScriptsPath.equals(e.getActionCommand())){
-				if(DEBUG)System.out.println("ControlPane: scripts: "+Identity.current_peer_ID.getPeerGID());
+					DD.importText(textObj);} catch(Exception eee) {eee.printStackTrace();}
+			} else if (c_exportText.equals(e.getActionCommand())) {
+				try {
+					DD_Address myAddress;
+					try {
+						myAddress = HandlingMyself_Peer.getMyDDAddress();
+						//System.out.println("ControlPane: actionExportPeerAddress: "+myAddress);
+					} catch (P2PDDSQLException ex2) {
+						ex2.printStackTrace();
+						return;
+					}
+					String exportText = DD.getExportTextObjectTitle(myAddress) + "\n"+ DD.getExportTextObjectBody(myAddress.getBytes());
+					//System.out.println("\n\nExporting peer object=\n"+exportText+"\n");
+					net.ddp2p.widgets.components.XUtil.clipboardCopy(exportText);
+				} catch (Exception ex) {ex.printStackTrace();}
+			} else if (c_linuxScriptsPath.equals(e.getActionCommand())) {
+				if (DEBUG) System.out.println("ControlPane: scripts: "+Identity.current_peer_ID.getPeerGID());
 				String SEP = ",";
 				String previous = Application.getCurrentLinuxPathsString(SEP);
 				System.out.println("Previous linux path: "+previous);
 				String _previous = Application.getCurrentLinuxPathsString(SEP+"\n ");
-				String val=JOptionPane.showInputDialog(this,
+				String val = JOptionPane.showInputDialog(this,
 						__("Change Linux Installation Path.")+"\n"+
 								__("V=INSTALLATION_VERSION (no default)")+"\n"+
 								__("R=INSTALLATION_ROOT (default: parent of version)")+"\n"+
@@ -1462,18 +1491,18 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 						,
 						__("Linux Installation"),
 						JOptionPane.QUESTION_MESSAGE);
-				if((val!=null)/*&&(!"".equals(val))*/){
+				if ((val != null) /*&&(!"".equals(val))*/ ) {
 					Application.parseLinuxPaths(val);
-					if(DD.OS == DD.LINUX){
+					if (DD.OS == DD.LINUX) {
 						Application.switchToLinuxPaths();
 					}
-					if(DD.OS == DD.MAC){
+					if (DD.OS == DD.MAC) {
 						Application.switchToMacOSPaths();
 					}
-					if(_DEBUG) System.out.println("ControlPane: Application.LINUX_INSTALLATION_DIR ="+ Application.LINUX_INSTALLATION_VERSION_BASE_DIR);
+					if (_DEBUG) System.out.println("ControlPane: Application.LINUX_INSTALLATION_DIR ="+ Application.LINUX_INSTALLATION_VERSION_BASE_DIR);
 				}
-			}else if("windowsScriptsPath".equals(e.getActionCommand())){
-				if(DEBUG)System.out.println("ControlPane: scripts Win: "+Identity.current_peer_ID.getPeerGID());
+			} else if ("windowsScriptsPath".equals(e.getActionCommand())) {
+				if (DEBUG) System.out.println("ControlPane: scripts Win: "+Identity.current_peer_ID.getPeerGID());
 				String SEP = ",";
 				String previous = Application.getCurrentWindowsPathsString();
 				System.out.println("Previous windows path: "+previous);
@@ -1499,15 +1528,21 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 						Application.switchToWindowsPaths();
 					}
 				}
-			}else if(exportDirectories_action.equals(e.getActionCommand())) {
+			}else if (exportDirectories_action.equals(e.getActionCommand())) {
 				DD_DirectoryServer ds = new DD_DirectoryServer();
 				/*
 				String listing_directories = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
 				if(_DEBUG)System.out.println("export directories: "+listing_directories);
 				ds.parseAddress(listing_directories);
 				*/
+				
 				ds.parseAddress(DirectoryAddress.getDirectoryAddresses());
 				net.ddp2p.widgets.app.ControlPane.actionExport(file_chooser_address_container, this, ds, null);
+				
+				String exportText = DD.getExportTextObjectTitle(ds) + "\n"+ DD.getExportTextObjectBody(ds.getBytes());
+				//System.out.println("\n\nExporting peer object=\n"+exportText+"\n");
+				net.ddp2p.widgets.components.XUtil.clipboardCopy(exportText);
+			    
 			}else if(setListingDirectories_action.equals(e.getActionCommand())){
 				String listing_directories = //DD.getAppText(DD.APP_LISTING_DIRECTORIES);
 						DirectoryAddress.getDirectoryAddressesStr();
@@ -1657,6 +1692,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			e.printStackTrace();
 			return;
 		}
+		String exportText = DD.getExportTextObjectTitle(myAddress) + "\n"+ DD.getExportTextObjectBody(myAddress.getBytes());
+		//System.out.println("\n\nExporting peer object=\n"+exportText+"\n");
+		net.ddp2p.widgets.components.XUtil.clipboardCopy(exportText);
+	    
 		DD_Address  x = new DD_Address();
 		ControlPane.actionExport(fc, parent, myAddress, x);
 	}
@@ -1899,14 +1938,14 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public static void actionExport(JFileChooser fc, Component parent,
 			StegoStructure myAddress, StegoStructure test) {
 		
-		if (EmbedInMedia.DEBUG)System.out.println("EmbedInMedia:actionExport:"+myAddress);
+		if (EmbedInMedia.DEBUG)System.out.println("EmbedInMedia: actionExport:"+myAddress);
 		if (myAddress == null) {
-			if(DEBUG) System.out.println("EmbedInMedia:actionExport: no address");
+			if(DEBUG) System.out.println("EmbedInMedia: actionExport: no address");
 			return;
 		}
-		if(DEBUG) System.out.println("EmbedInMedia:actionExport: Got to write: "+myAddress);
-		BMP[] _data=new BMP[1];
-		byte[][] _buffer_original_data=new byte[1][]; // old .bmp file 
+		if (DEBUG) System.out.println("EmbedInMedia: actionExport: Got to write: "+myAddress);
+		BMP[] _data = new BMP[1];
+		byte[][] _buffer_original_data = new byte[1][]; // old .bmp file 
 		byte[] adr_bytes = myAddress.getBytes();
 		if (test != null) {
 			try {
@@ -1917,7 +1956,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 								return;
 							}
 		}
-		if(DEBUG) System.out.println("EmbedInMedia:actionExport: Got bytes("+adr_bytes.length+"): to write: "+Util.byteToHex(adr_bytes, " "));
+		if (DEBUG) System.out.println("EmbedInMedia:actionExport: Got bytes("+adr_bytes.length+"): to write: "+Util.byteToHex(adr_bytes, " "));
 		int returnVal = fc.showSaveDialog(parent);
 	    if (returnVal == JFileChooser.APPROVE_OPTION) {
 	    	fc.setName(__("Select file with image or text containing address"));
@@ -1935,7 +1974,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	        			JOptionPane.QUESTION_MESSAGE,
 	        			JOptionPane.YES_NO_OPTION);
 	        	int n;
-	        	if("gif".equals(extension) && file.isFile()) {
+	        	if ("gif".equals(extension) && file.isFile()) {
 	        		try{
 	        			FileOutputStream fos = new FileOutputStream(file, true);
 	        			fos.write(adr_bytes);
@@ -1946,7 +1985,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 					    System.out.println("EmbedInMedia:actionExport: IOException : " + ioe);
 					}
 	        	}
-	        	if("bmp".equals(extension) && file.isFile()) {
+	        	if ("bmp".equals(extension) && file.isFile()) {
 					//FileInputStream fis;
 					boolean fail= false;
 					String _explain[]=new String[]{""};

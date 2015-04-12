@@ -162,9 +162,15 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	 * by ID=? OR GID=?
 	 */
 	static String sql_get_const_by_GID =
-		sql_get_const +
-		" WHERE c."+net.ddp2p.common.table.constituent.global_constituent_ID+" = ? "+
-		" OR c."+net.ddp2p.common.table.constituent.global_constituent_ID_hash+" = ?;";
+			sql_get_const +
+			" WHERE c."+net.ddp2p.common.table.constituent.global_constituent_ID+" = ? "+
+			" OR c."+net.ddp2p.common.table.constituent.global_constituent_ID_hash+" = ?;";
+	static String sql_get_const_by_GID_only =
+			sql_get_const +
+			" WHERE c."+net.ddp2p.common.table.constituent.global_constituent_ID+" = ?;";
+	static String sql_get_const_by_GIDH =
+			sql_get_const +
+			" WHERE c."+net.ddp2p.common.table.constituent.global_constituent_ID_hash+" = ?;";
 
 	
 	public static D_Constituent getEmpty() {return new D_Constituent();}
@@ -172,10 +178,16 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	private D_Constituent() {}
 	private D_Constituent(String gID, String gIDH, boolean load_Globals, boolean create, D_Peer __peer, long p_olID) {
 		if (DEBUG) System.out.println("D_Constituent: gID="+gID+" gIDH="+gIDH+" glob="+load_Globals+" create="+create+" peer="+__peer);
-		ArrayList<ArrayList<Object>> c;
+		ArrayList<ArrayList<Object>> c = null;
 		try {
-			c = Application.db.select(sql_get_const_by_GID, new String[]{gID, gIDH}, DEBUG);
-			if (c.size() == 0) {
+			if (gID != null && gIDH != null) {
+				c = Application.db.select(sql_get_const_by_GID, new String[]{gID, gIDH}, DEBUG);
+			} else if (gID != null) {
+				c = Application.db.select(sql_get_const_by_GID_only, new String[]{gID}, DEBUG);
+			} else if (gIDH != null) {
+				c = Application.db.select(sql_get_const_by_GIDH, new String[]{gIDH}, DEBUG);
+			};
+			if (c == null || c.size() == 0) {
 				if (! create) throw new D_NoDataException("No such constituent: c_GIDH="+gIDH+" GID="+gID);
 				this.source_peer = __peer;
 				this.setOrganization(null, p_olID);
@@ -249,7 +261,6 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			//String GID = new_constituent.getGID();
 		} else {
 		   	String now = Util.getGeneralizedTime();
-	    	
 	    	Cipher keys = null;
 	    	SK sk; //= ib.getKeys();
 //	    	keys = ib.getCipher();
@@ -274,6 +285,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			String sID = Util.getKeyedIDSK(keys);
 			gcdhash = D_Constituent.getGIDHashFromGID_NonExternalOnly(GID);
 			String type = Util.getKeyedIDType(keys);
+	    	new_constituent.setCreationDate(now);
 			new_constituent.sign();
 		}
 		
@@ -1082,6 +1094,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			keep = true;
 		}
 		if ((GID == null) && (GIDH == null)) {
+			Util.printCallPath("Why null");
 			if (_DEBUG) System.out.println("D_Constituent: getConstByGID_or_GIDH: null GID and GIDH");
 			return null;
 		}
@@ -2369,7 +2382,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			String GID2, String GIDH2, Long oID) {
 		if (GID2 == null) return -1;
 		D_Constituent c = D_Constituent.getConstByGID_or_GIDH(GID2, GIDH2, true, false, oID);
-		return c.getLID();
+		if (c == null) return -1; else return c.getLID();
 	}
 	public static void setTemporary(D_Constituent c) {
 		c = D_Constituent.getConstByConst_Keep(c);

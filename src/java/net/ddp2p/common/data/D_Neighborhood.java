@@ -2139,7 +2139,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public long storeRemoteThis(String orgGID,
 			long orgLID, String arrivalDateStr, RequestData sol_rq,
 			RequestData new_rq, D_Peer source) {
-		D_Neighborhood result = D_Neighborhood.getNeighByGID(orgGID, true, true, true, source, orgLID);
+		D_Neighborhood result = D_Neighborhood.getNeighByGID(this.getGID(), true, true, true, source, orgLID);
 		if (result.loadRemote(this, sol_rq, new_rq, source))
 			net.ddp2p.common.config.Application_GUI.inform_arrival(result, source);
 		result.fillLocals();

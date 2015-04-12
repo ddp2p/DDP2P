@@ -82,30 +82,49 @@ class D_OrgParams extends ASNObj {
 	@Override
 	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) { 
 		if(ASNSyncRequest.DEBUG)System.out.println("Encoding OrgParams: "+this);
+		boolean DEBUG = D_Organization.DEBUG;
 		Encoder enc = new Encoder().initSequence();
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_px1: "+D_Organization.hashEnc(enc));
 		enc.addToSequence(new Encoder(certifMethods));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_px2: "+D_Organization.hashEnc(enc));
 		if(hash_org_alg != null) enc.addToSequence(new Encoder(hash_org_alg, false).setASN1Type(DD.TAG_AC0));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_px3: "+D_Organization.hashEnc(enc));
 		if(creation_time != null) enc.addToSequence(new Encoder(creation_time).setASN1Type(DD.TAG_AC1));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_px4: "+D_Organization.hashEnc(enc));
 		if(creator_global_ID != null) {
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, creator_global_ID);
 			enc.addToSequence(new Encoder(repl_GID, false).setASN1Type(DD.TAG_AC2));
+			if (DEBUG) System.out.println("OrgParamSignHash = 3_px5: "+D_Organization.hashEnc(enc));
 		}
 		if(category != null) enc.addToSequence(new Encoder(category).setASN1Type(DD.TAG_AC3));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_px6: "+D_Organization.hashEnc(enc));
 		if(certificate != null) enc.addToSequence(new Encoder(certificate).setASN1Type(DD.TAG_AC4));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_px7: "+D_Organization.hashEnc(enc));
 		if(default_scoring_options != null) enc.addToSequence(Encoder.getStringEncoder(default_scoring_options, Encoder.TAG_UTF8String).setASN1Type(DD.TAG_AC5));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_px8: "+D_Organization.hashEnc(enc));
 		if(instructions_new_motions != null) enc.addToSequence(new Encoder(instructions_new_motions).setASN1Type(DD.TAG_AC6));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_px9: "+D_Organization.hashEnc(enc));
 		if(instructions_registration != null) enc.addToSequence(new Encoder(instructions_registration).setASN1Type(DD.TAG_AC7));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_p10: "+D_Organization.hashEnc(enc));
 		if(description != null) enc.addToSequence(new Encoder(description).setASN1Type(DD.TAG_AC10));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_p11: "+D_Organization.hashEnc(enc));
 		if (languages != null) enc.addToSequence(Encoder.getStringEncoder(languages, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC8));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_p12: "+D_Organization.hashEnc(enc));
 		if (orgParam != null) {
 			D_OrgParam[] _orgParam = D_Organization.getNonEphemeral(orgParam);
-			enc.addToSequence(Encoder.getEncoder(_orgParam, dictionary_GIDs).setASN1Type(DD.TAG_AC9));
+			if (_orgParam != null && _orgParam.length > 0) {
+				enc.addToSequence(Encoder.getEncoder(_orgParam, dictionary_GIDs).setASN1Type(DD.TAG_AC9));
+				if (DEBUG) System.out.println("OrgParamSignHash = 3_p13: "+D_Organization.hashEnc(enc));
+			}
 		}
 		if (mWeightsType != net.ddp2p.common.table.organization.WEIGHTS_TYPE_DEFAULT)
 			enc.addToSequence(new Encoder(mWeightsType).setASN1Type(DD.TAG_AC11));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_p14: "+D_Organization.hashEnc(enc));
 		if (mWeightsMax != net.ddp2p.common.table.organization.WEIGHTS_MAX_DEFAULT)
 			enc.addToSequence(new Encoder(mWeightsMax).setASN1Type(DD.TAG_AC12));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_p15: "+D_Organization.hashEnc(enc));
 		if (icon != null) enc.addToSequence(new Encoder(icon).setASN1Type(DD.TAG_AC14));
+		if (DEBUG) System.out.println("OrgParamSignHash = 3_p16: "+D_Organization.hashEnc(enc));
 		//enc.addToSequence(new Encoder(hash_org));
 		if (ASNSyncRequest.DEBUG)System.out.println("Encoded OrgParams: "+this);
 		return enc;

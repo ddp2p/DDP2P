@@ -104,7 +104,7 @@ public class WB_Messages extends ASNObj{
 		witn = d.getFirstObject(true).getSequenceOfAL(D_Witness.getASN1Type(), new D_Witness());
 		just = d.getFirstObject(true).getSequenceOfAL(D_Justification.getASN1Type(), D_Justification.getEmpty());
 		sign = d.getFirstObject(true).getSequenceOfAL(D_Vote.getASN1Type(), new D_Vote());
-		news = d.getFirstObject(true).getSequenceOfAL(D_News.getASN1Type(), new D_News());
+		news = d.getFirstObject(true).getSequenceOfAL(D_News.getASN1Type(), D_News.getEmpty());
 		tran = d.getFirstObject(true).getSequenceOfAL(D_Translations.getASN1Type(), new D_Translations());
 		if (d.getTypeByte() == DD.TAG_AC1) peers = d.getFirstObject(true).getSequenceOfAL(D_Peer.getASN1Type(), D_Peer.getEmpty());
 		return this;
@@ -566,7 +566,10 @@ public class WB_Messages extends ASNObj{
 			if (mot.loadRemote(m, sol_rq, new_rq, peer)) {
 				net.ddp2p.common.config.Application_GUI.inform_arrival(mot, peer);
 			}
-			long lid = mot.storeRequest_getID(); //m.store(sol_rq, new_rq);
+			long lid;
+			if (mot.dirty_any() || (mot.getLIDstr() == null))
+				lid = mot.storeRequest_getID(); //m.store(sol_rq, new_rq);
+			else lid = mot.getLID();
 			mot.releaseReference();
 			if (lid <= 0) {
 				if (_DEBUG) System.out.println("WB_Messages: store: failed to handled motion: "+m+" "+dbg_msg);

@@ -70,14 +70,17 @@ public class ConstituentHandling {
 	 */
 	public static Hashtable<String, String> getConstituentHashes(String last_sync_date, String org_id, String[] _maxDate, int BIG_LIMIT) throws P2PDDSQLException {
 		String maxDate;
-		if (DEBUG) out.println("CostituentHandling:getConstituentHashes: start");
-		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
-		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
+		if (DEBUG) out.println("CostituentHandling: getConstituentHashes: start");
+		if ((_maxDate == null) || (_maxDate.length < 1) || (_maxDate[0] == null)) maxDate = Util.getGeneralizedTime();
+		else {
+			maxDate = _maxDate[0];
+			if ((_maxDate != null) && (_maxDate.length > 0)) _maxDate[0] = maxDate;
+		}
 		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
-				new String[]{org_id, last_sync_date, maxDate}, DEBUG);
+				new String[] {org_id, last_sync_date, maxDate}, DEBUG);
 
 		Hashtable<String, String> retval = Util.AL_AL_O_2_HSS_SS(result);
-		if (DEBUG) out.println("CostituentHandling:getConstituentHashes: got retval="+retval.size());
+		if (DEBUG) out.println("CostituentHandling: getConstituentHashes: got retval="+retval.size());
 		return retval;
 	}
 	/**

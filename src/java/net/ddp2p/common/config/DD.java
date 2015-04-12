@@ -36,8 +36,6 @@ import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
 
-import javax.swing.JOptionPane;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
@@ -45,6 +43,9 @@ import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.PK;
 import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.data.D_Constituent;
+import net.ddp2p.common.data.D_Motion;
+import net.ddp2p.common.data.D_Organization;
+import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.hds.Address;
 import net.ddp2p.common.hds.Client2;
 import net.ddp2p.common.hds.ClientSync;
@@ -80,7 +81,7 @@ import net.ddp2p.common.wireless.Refresh;
 
 public class DD {
 	public static final String BRANCH = "B";//FIT_HDSSL_SILAGHI";
-	public static final String VERSION = "0.10.09";
+	public static final String VERSION = "0.10.10";
 	public static final boolean ONLY_IP4 = false;
 
 	private static final String PK_Developer = "MIIEGgwDUlNBYAEwAgMBAAECggQASKs9x2VEQH1SRxRwO43yt6HXCTnOmPJVUjN8bQQUTVBdFXhQsTpnTP1yLe/qFlA0jnIzheHT4WEcsU874N800iPMWHCjpCowQwwTj9SQLTmfbfhL8z0a7Dw6ZJQ+DnYoPVhx3JHL57CK3YeVYclZCoHetZ5PEIpcAwxaPmnL3GQaOgJiVHb6CLMi+hNHLxsjQZwTYTeoUOXQKgyTcRDE6xCvw8+q0U6/Uan3KCx/KmtdRQMEtGAXSPANv12kle84Dv8AdJxT1CJGsXm0+N6+wbbvkL77kMr+79sCR/8drZmOnrbjveQpab2pSh0vO//XqslrDRbzhniGSpqFW+YNTOixWAsCp35hNPbAx5xqPXg6DEIrysGslDGo4gC3Ew5mN/JkOQA+pd6uIzC4EgbfWqJKMvrtOQN67hJR7Ysxn7cLDXGvmhK1s7oSJcnOmhWljSZ6joviVwAWKgzdm1gMBhn5+VdgwoEE7g5Inw0dH9UmgufloNiBQMM9m2igdQPaLRuVttrAEcs55F/Z5NFtJquTeQFBLAGux3MVxrYCgivRaoAzAkUMhGOA+00KU3oh3Bds0U8GYCMuYYrwSAWTZf0Z9lvUwJv8HtLJvI6p1p53oGzIW9bo20d0PMz7XrzNDOLEME9PaXKLo6vMCAxXIj19nm/bE1HBY7e7HErKMX3M7LC2xZ8PH7wsnl5M3y0ZZ6c9quwhvz/dWcUAQ5963LtDZ6bOenAGVGBjdWLhHK8/2p9Vgu1ZNA1WWHWnafExsT5GxuwZQ/PMk8YtmxqEkgGy2+xVT19oUK+yO1ok+xRUjvSRZ0IbWUEcOfQ5FvLNmMdV/NSebB6vjQwM5DGCE1YDhix+Qghr558KokVz7BPVrGVe1pUxfPo2XPwHReF8es+vr16lvwXrVEmQNG8KrX1tN5Z5I29+ZVcR6ti4t90RXY6H6lmLtU3P/PSmfOrBQraNHVvDm9y1hnSP9+EhJzuWFaS8v4+7OnodIWuZsYd2WYQp4YcDJ+7grV3s1vvacujzxCOwx5/gosLxOau45bvKqhsFrZ+le6IRNAG7T6ZwC9wesqCGBJlIwS50DlAb/KhPyDIvf+7EH1iwckG4fBtixaK9co8FHnuddn/cEIc6fkWDEzr2Cu3HyxeMeDrcGRvjTRr78Wp/ptvRoOYElOLkxrkmanetjOCMqRl1DJvl53SQKePraRx2DpRemK/TMQ3+5TQkFjjEsI2P455Th0z6vF+JzpetZ3j1NUqx+iEZ2ArMhdDk7dE/4qcn2xwLz5nNMvHSnO2N0T9tCLi96CqZm/HTqGa6jTxFhJOP11sFCCQ9jkKhxvxubs0sww75dnqXQeffpxyolcht3KHwfwwHU0hBLTUxMg==";
@@ -1631,9 +1632,10 @@ public class DD {
 	public static final boolean BLOCK_NEW_ARRIVING_TMP_CONSTITUENT = false;
 	public static final boolean BLOCK_NEW_ARRIVING_TMP_MOTIONS = false;
 	
-    protected static final String SAFE_TEXT_MY_HEADER_SEP = " | ";
-    protected static final String SAFE_TEXT_MY_BODY_SEP = "||";
-    protected static final String SAFE_TEXT_ANDROID_SUBJECT_SEP = " - ";
+    public static final String SAFE_TEXT_MY_HEADER_SEP = " | "; // at the end of the title. Unsafe since spaces often are trimmed
+    public static final String SAFE_TEXT_MY_BODY_SEP = "|DDP2P|OBJECT|START||"; // at the beginning of the body
+    public static final String SAFE_TEXT_MY_BODY_TRAILER_SEP = "|DDP2P|OBJECT|TRAILER|"; // at the end of the body (optional)
+    public static final String SAFE_TEXT_ANDROID_SUBJECT_SEP = " - "; // inserted by 2014 versions of whatsup between title and body
 	/**
 	 * Stop servers and wait for the saving threads to stop, sleeping 2 seconds at a time.
 	 */
@@ -1687,7 +1689,7 @@ public class DD {
         String interpretation = imported_object.getNiceDescription();
         //ask confirm
         
-        if (0 == Application_GUI.ask(__("Do you wish to load?")+"\n"+interpretation, __("Do you wish to load?"), JOptionPane.YES_NO_OPTION)) {
+        if (0 == Application_GUI.ask(__("Do you wish to load?")+"\n"+interpretation, __("Do you wish to load?"), 0)) {
             //StegoStructure imported_object = (StegoStructure) ctx;
             try {
                 imported_object.save();
@@ -1772,8 +1774,84 @@ public class DD {
     	}
     	return null;
     }
+	public static final String SAFE_TEXT_SEPARATOR = "\n";
+	public static final int SAFE_TEXT_SIZE = 16;
+	/**
+	 * Used to generate the body of a text export for whatsup, skype
+	 * @param bytes
+	 * @return
+	 */
+	public static String getExportTextObjectBody(byte[] bytes) {
+		return DD.SAFE_TEXT_MY_BODY_SEP
+				+ DD.SAFE_TEXT_SEPARATOR 
+				+ DD.SAFE_TEXT_SEPARATOR 
+				+ Util.B64Split(Util.stringSignatureFromByte(bytes), DD.SAFE_TEXT_SIZE, DD.SAFE_TEXT_SEPARATOR)
+				+ DD.SAFE_TEXT_SEPARATOR 
+				+ DD.SAFE_TEXT_SEPARATOR 
+				+ DD.SAFE_TEXT_MY_BODY_TRAILER_SEP 
+				+ DD.SAFE_TEXT_SEPARATOR 
+				+ "\n"+__("Copy and paste this text in the DDP2P object import menu!");	
+	}
+	/**
+	 * Builds the string that encapsulates a peer object.
+	 * @param peer
+	 * @return
+	 */
+	public static String getExportTextObjectBody(D_Peer peer) {
+		DD_Address adr = new DD_Address(peer);
+		
+		String msgBody = DD.getExportTextObjectBody(adr.getBytes());
+		return msgBody;
+	}
+	public static String getExportTextObjectBody(DD_SK d_sk) {
+		String msgBody = DD.getExportTextObjectBody(d_sk.encode());
+		return msgBody;
+	}
+	/**
+	 * Text to be sent in the body of a message for exporting a  peer (gmail/whatsup)
+	 * @param peer
+	 * @return
+	 */
+	public static String getExportTextObjectTitle (D_Peer peer) {
+		String slogan = peer.getSlogan_MyOrDefault();
+		if (slogan == null) slogan = "";
+		else slogan = "\""+slogan+"\"";
+		return __("DDP2P: Safe Address of")+" \"" + peer.getName() + "\",  " + slogan + DD.SAFE_TEXT_MY_HEADER_SEP;
+	}
+	public static String getExportTextObjectTitle (D_Organization org) {
+		return "DDP2P: Organization Address of \""+ org.getName();
+	}
+	public static String getExportTextObjectTitle (DD_Address peer) {
+		String slogan = peer.getSlogan_MyOrDefault();
+		if (slogan == null) slogan = "";
+		else slogan = "\""+slogan+"\"";
+		return __("DDP2P: Safe Address of")+" \"" + peer.getName() + "\",  " + slogan + DD.SAFE_TEXT_MY_HEADER_SEP;
+	}
+	public static String getExportTextObjectTitle (D_Motion crt_motion) {
+		String testSubject = __("DDP2P: Motion Detail of")+" \""+ crt_motion.getTitleStrOrMy()
+				+ "\" in \""+ crt_motion.getOrganization().getName()+"\" " + DD.SAFE_TEXT_MY_HEADER_SEP;
+
+		return testSubject;
+	}
+	public static String getExportTextObjectTitle (D_Organization org, D_Constituent constituent) {
+		String testSubject = __("DDP2P: Organization")+" \""+ org.getName()+"\" "+__("Profile of")+" \""
+				+ constituent.getNameOrMy() + " " + DD.SAFE_TEXT_MY_HEADER_SEP;
+
+		return testSubject;
+	}
+	public static String getExportTextObjectTitle(DD_DirectoryServer ds) {
+		String testSubject = __("DDP2P: Directories")+" \""+ ds.getNiceDescription() + "\" " + DD.SAFE_TEXT_MY_HEADER_SEP;
+		return testSubject;
+	}
+
     /**
-     * Break a message in a string to extract the base64 encoding
+     * Break a message in a string to extract the base64 encoding.
+     * we assume it is:<p>
+     * (([Title][DD.SAFE_TEXT_MY_HEADER_SEP][DD.SAFE_TEXT_ANDROID_SUBJECT_SEP]...)|[DD.SAFE_TEXT_MY_BODY_SEP])<br>
+     * Body<br>
+     * DD.SAFE_TEXT_MY_BODY_TRAILER_SEP<br>
+     * Instructions<p>
+     * 
      * @param strAddress
      * @return
      */
@@ -1794,17 +1872,31 @@ public class DD {
                 return null;
             }
             if (__chunks.length > 1) { // it occurred and separates
-            	addressASN1B64 = __chunks[__chunks.length - 1];
+                // take the last chunk.
+            	strAddress = __chunks[__chunks.length - 1];
+                
+                // for new versions with a trailer separator:
+                String [] ___chunks = strAddress.split(Pattern.quote(DD.SAFE_TEXT_MY_BODY_TRAILER_SEP));
+                if (___chunks.length == 0 || ___chunks[0] == null) {
+                	if (_DEBUG) System.out.println("DD: extractMessage: My first untrailled Body chunk = null");
+                    return null;
+                }
+                strAddress = ___chunks[0];
+
+                // now decode
+            	addressASN1B64 = strAddress; //__chunks[__chunks.length - 1];
             	addressASN1B64 = addressASN1B64.trim();
                 if (DEBUG) System.out.println("DD: extractMessage ASN1 Body=["+__chunks.length+"]=" + addressASN1B64);
                 if (DEBUG) System.out.println("DD: extractMessage ASN1 Body=[0]=" + __chunks[0]);
-                           	return Util.B64Join(addressASN1B64);
+
+                return Util.B64Join(addressASN1B64);
             }
+            // dealing with old versions
             if (DEBUG) System.out.println("DD: extractMessage: Address after 1 attempt="+strAddress);
             
             // take the last chunk.
             strAddress = __chunks[__chunks.length - 1];
-           
+                       
             // for old versions (without body separator), try taking out headers introduced in a subject
             String[] chunks = strAddress.split(Pattern.quote(DD.SAFE_TEXT_MY_HEADER_SEP));
             if (chunks.length == 0 || chunks[chunks.length - 1] == null) {
@@ -1815,7 +1907,7 @@ public class DD {
             String body = chunks[chunks.length - 1];
             if (DEBUG) System.out.println("DD:extractMessage: Body="+body);
            
-            // for old versions (without body separator), try taking out headers introduced by whatsap between subject and body
+            // for old versions (without body separator), try taking out headers introduced by whatsup between subject and body
             String[] _chunks = body.split(Pattern.quote(DD.SAFE_TEXT_ANDROID_SUBJECT_SEP));
             if (_chunks.length == 0 || _chunks[_chunks.length - 1] == null) {
                 if (_DEBUG) System.out.println("DD: extractMessage: Android Body chunk = null");
@@ -1889,6 +1981,4 @@ public class DD {
 		}
 		return sk;
 	}
-
-
 }

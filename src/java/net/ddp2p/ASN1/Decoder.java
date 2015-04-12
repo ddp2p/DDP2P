@@ -284,12 +284,12 @@ class Decoder {
 		if (getTypeByte() == Encoder.TAG_NULL) return null;
 		Decoder dec = getContent();
 		ArrayList<T> al= new ArrayList<T>();
-		int k=0;
-		for(;;k++) {
+		int k = 0;
+		for(; ; k ++) {
 			Decoder d_t;
 			try {
 				d_t = dec.getFirstObject(true, type);
-			} catch (Exception e) {if(DEBUG)System.out.println("Decoder:getSeqOfAl:k="+k); throw e;}
+			} catch (Exception e) {if (DEBUG) System.out.println("Decoder:getSeqOfAl:k="+k); if (e instanceof ASN1DecoderFail) throw e; else throw new ASN1DecoderFail(e.getMessage());}
 			if (d_t==null) break;
 			try {
 				al.add(((T) ((ASNObjArrayable)inst).instance().decode(d_t)));

@@ -383,14 +383,14 @@ class NewsCustomAction extends DebateDecideAction {
         }
         if(cmd == M_ADD) {
         	if(DEBUG) System.out.println("NewsCAction: start ADD");
-        	D_News n_news = new D_News();
+        	D_News n_news = D_News.getEmpty();
     		n_news.title.title_document.setDocumentString(__("Newly added news"));
     		long cID = tree.getConstituentIDMyself();
     		if(cID<=0) return;
     		n_news.constituent_ID = Util.getStringID(cID);
     		n_news.organization_ID = tree.getOrganizationID();
     		n_news.global_constituent_ID = tree.getConstituentGIDMyself();
-    		n_news.creation_date = Util.CalendargetInstance();
+    		n_news.setCreationDate(Util.CalendargetInstance());
     		n_news.motion_ID = tree.getMotionID();
     		long nID;
 			try {

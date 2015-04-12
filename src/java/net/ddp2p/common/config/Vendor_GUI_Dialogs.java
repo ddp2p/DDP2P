@@ -50,4 +50,6 @@ public interface Vendor_GUI_Dialogs {
 	public D_Peer createPeer(PeerInput pi, PeerInput[] _data);
 	public void update_broadcast_client_sockets(Long msg_cnter);
 	public void inform_arrival(Object obj, D_Peer source);
+	public boolean playThanks();
+	// public boolean clipboardCopy();
 }

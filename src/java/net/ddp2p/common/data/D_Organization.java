@@ -1474,16 +1474,25 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			Util.printCallPath("No creator for this org!");
 			//return null;
 		}
+		//boolean DEBUG = true;
 		Encoder enc = new Encoder().initSequence();
+		if (DEBUG) System.out.println("signHash = 1: "+hashEnc(enc));
 		enc.addToSequence(new Encoder(version,false));
+		if (DEBUG) System.out.println("signHash = 2: "+hashEnc(enc));
 		//enc.addToSequence(new Encoder(id,false));
 		if (getName() != null) enc.addToSequence(new Encoder(getName()));
+		if (DEBUG) System.out.println("signHash = 3: "+hashEnc(enc));
 		//if (last_sync_date != null) enc.addToSequence(new Encoder(last_sync_date));
 		if (params != null) enc.addToSequence(params.getEncoder().setASN1Type(DD.TAG_AC1));
+		if (DEBUG) System.out.println("signHash = 4: "+hashEnc(enc));
 		if (concepts != null) enc.addToSequence(concepts.getEncoder().setASN1Type(DD.TAG_AC2));
+		if (DEBUG) System.out.println("signHash = 5: "+hashEnc(enc));
 		if (broadcast_rule != true) enc.addToSequence(new Encoder(broadcast_rule).setASN1Type(DD.TAG_AC15));
+		if (DEBUG) System.out.println("signHash = 6: "+hashEnc(enc));
 		if (neighborhoods_rule != true) enc.addToSequence(new Encoder(neighborhoods_rule).setASN1Type(DD.TAG_AC16));
+		if (DEBUG) System.out.println("signHash = 7: "+hashEnc(enc));
 		if (ASNSyncRequest.DEBUG || DEBUG) System.out.println("Encoded OrgData sign: "+this);
+		if (DEBUG) System.out.println("signHash = F: "+hashEnc(enc));
 		return enc;
 	}
 	/**
@@ -1631,7 +1640,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if(dec.getTypeByte()==DD.TAG_AC7){ justifications = dec.getFirstObject(true).getSequenceOf(Encoder.TYPE_SEQUENCE, new D_Justification[]{}, D_Justification.getEmpty()); if(DEBUG)System.out.println("OrgData j="+justifications);}
 		if(dec.getTypeByte()==DD.TAG_AC8){ signatures = dec.getFirstObject(true).getSequenceOf(Encoder.TYPE_SEQUENCE, new D_Vote[]{}, new D_Vote()); if(DEBUG)System.out.println("OrgData s="+signatures);}
 		if(dec.getTypeByte()==DD.TAG_AC9){ translations = dec.getFirstObject(true).getSequenceOf(Encoder.TYPE_SEQUENCE, new D_Translations[]{}, new D_Translations()); if(DEBUG)System.out.println("OrgData t="+translations);}
-		if(dec.getTypeByte()==DD.TAG_AC10){ news = dec.getFirstObject(true).getSequenceOf(Encoder.TYPE_SEQUENCE, new D_News[]{}, new D_News()); if(DEBUG)System.out.println("OrgData nw="+news);}
+		if(dec.getTypeByte()==DD.TAG_AC10){ news = dec.getFirstObject(true).getSequenceOf(Encoder.TYPE_SEQUENCE, new D_News[]{}, D_News.getEmpty()); if(DEBUG)System.out.println("OrgData nw="+news);}
 		if(dec.getTypeByte()==DD.TAG_AC11){ requested_data = dec.getFirstObject(true).getSequenceOf(Encoder.TYPE_SEQUENCE, new net.ddp2p.common.data.D_Message[]{}, new net.ddp2p.common.data.D_Message()); if(DEBUG)System.out.println("OrgData rd="+requested_data);}
 		//if(dec.getTypeByte()==DD.TAG_AC12){ availableHashes = new RequestData().decode(dec.getFirstObject(true)); if(DEBUG)System.out.println("OrgData available="+availableHashes);}
 		if(dec.getFirstObject(false)!=null) throw new ASN1DecoderFail("Extra Objects in decoder: "+dec.dumpHex()+"\n"+decoder.dumpHex());
@@ -2682,8 +2691,17 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public byte[]hash(String _h, net.ddp2p.ciphersuits.SK sk_ini) {
 		Encoder enc = getSignableEncoder();
 		byte[] msg = enc.getBytes();
-		if(sk_ini !=null)this.signature_initiator = Util.sign(msg, sk_ini);
+		if (sk_ini != null) this.signature_initiator = Util.sign(msg, sk_ini);
 		return Util.simple_hash(msg, _h);	
+	}
+	/**
+	 * Gets the hash of an encoder (for debugging) with DD.APP_ORGID_HASH
+	 * @param enc
+	 * @return
+	 */
+	public static String hashEnc(Encoder enc) {
+		byte[] msg = enc.getBytes();
+		return D_GIDH.d_OrgGrassSign+Util.stringSignatureFromByte(Util.simple_hash(msg, DD.APP_ORGID_HASH));
 	}
 	/**
 	 * Signs and sets the current creation date
@@ -2906,10 +2924,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			return false;
 		}
 		if (params.certifMethods == net.ddp2p.common.table.organization._GRASSROOT) {
-			if(!this.verifyExtraFieldGIDs()){
+			if (! this.verifyExtraFieldGIDs()) {
 				if(DEBUG) out.println("D_Organization:verifySignature: grassroot extras failed");
 				verified = false;
-			}else{
+			} else {
 				//byte[] hash = hash(DD.APP_ORGID_HASH);
 				boolean[]verif = new boolean[]{false};
 				String tmpGID = this.getOrgGIDandHashForGrassRoot(verif);
@@ -3654,6 +3672,13 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		String cLID = this.getCreatorLID();
 		if ((this.creator == null) && (cLID != null))
 			this.creator = D_Peer.getPeerByLID_NoKeep(cLID, true);
+		return this.creator;
+	}
+	/**
+	 * Returns null if not yet loaded
+	 * @return
+	 */
+	public D_Peer getCreatorIfLoaded() {
 		return this.creator;
 	}
 

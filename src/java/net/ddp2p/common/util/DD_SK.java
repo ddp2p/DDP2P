@@ -331,6 +331,11 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		d_SK.org.add(crt_org);
 	}
 	public static void addNeighborhoodToDSSK(DD_SK d_SK, D_Neighborhood neighborhood) {
+		if (neighborhood == null) return;
+		for (D_Neighborhood n : d_SK.neigh) {
+			if (n == neighborhood) return;
+			if (n.getLID() == neighborhood.getLID()) return;
+		}
 		d_SK.neigh.add(neighborhood);
 		//new D_Witness(a,b,c,e);// must avoid recursive adding of neighborhoods from constituents
 	}
@@ -354,14 +359,54 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		}
 		//constituent.setNeighborhood(null);
 	}
+	/**
+	 * This does not add a vote
+	 * @param d_SK
+	 * @param crt_justification
+	 */
 	public static void addJustificationToDSSK(DD_SK d_SK, D_Justification crt_justification) {
 		if (crt_justification != null) {
+			// skip if no GID
+			String jGID = crt_justification.getGID();
+			if (jGID == null) return;
+			// skip if already in
+			for (D_Justification old_j : d_SK.just) {
+				if (Util.equalStrings_and_not_null(old_j.getGID(), jGID)) return;
+			}
+			
 			d_SK.just.add(crt_justification);
 			addConstituentToDSSK(d_SK, crt_justification.getConstituentForce());
 			addMotionToDSSK(d_SK, crt_justification.getMotionForce());
+			
 		}
 	}
+	/**
+	 * 
+	 * @param d_SK
+	 * @param crt_justification
+	 * @param voting_constituent
+	 * @param alreadySupported
+	 */
+	public static void addJustificationWithAnySupportToDSSK(DD_SK d_SK, D_Justification crt_justification, D_Constituent voting_constituent, boolean alreadySupported) {
+		addJustificationToDSSK(d_SK, crt_justification);
+		if (alreadySupported) return;
+		D_Motion crt_motion = crt_justification.getMotionForce();
+		D_Vote my_vote = D_Vote.getOneBroadcastedSupportForJustification(crt_motion, crt_justification, voting_constituent, crt_motion.getSupportChoice());
+		if (my_vote != null) {
+			addVoteIfNew(d_SK, my_vote);
+			addConstituentToDSSK(d_SK, my_vote.getConstituent_force());
+		}		
+	}
 	public static void addMotionToDSSK(DD_SK d_SK, D_Motion crt_motion) {
+		
+		if (crt_motion == null) return;
+		// skip if no GID
+		String mGID = crt_motion.getGID();
+		if (mGID == null) return;
+		// skip if already in
+		for (D_Motion old_m : d_SK.moti) {
+			if (Util.equalStrings_and_not_null(old_m.getGID(), mGID)) return;
+		}
 		
 		d_SK.moti.add(crt_motion);
 		
@@ -371,22 +416,42 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		D_Organization org = crt_motion.getOrganization();
 		addOrganizationToDSSK(d_SK, org);
 		
+		// identify myself
 		D_Constituent crt_constituent = DD.getCrtConstituent(crt_motion.getOrganizationLID());
+		long _constituentID_myself = -1;
 		if (crt_constituent != null) {
-			long _constituentID = crt_constituent.getLID();
-			if (_constituentID > 0) {
-				try {
-					D_Vote my_vote = D_Vote.getOpinionForMotion(crt_motion.getLIDstr(), _constituentID);
-					if (my_vote != null) {
-						d_SK.vote.add(my_vote);
-						addConstituentToDSSK(d_SK, crt_constituent);
-						D_Justification j = my_vote.getJustificationFromObjOrLID();
-						addJustificationToDSSK(d_SK, j);
-					}
-				} catch (P2PDDSQLException e) {
-					e.printStackTrace();
-				}
+			_constituentID_myself = crt_constituent.getLID();
+		}
+		
+		// find a vote by me or supporters
+		D_Vote my_vote = null;
+		if (_constituentID_myself > 0) {
+			try {
+				my_vote = D_Vote.getOpinionForMotion(crt_motion.getLIDstr(), _constituentID_myself);
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
 			}
 		}
+		// if I did not vote this, find any support by someone else
+		if (my_vote == null) {
+			my_vote = D_Vote.getOneBroadcastedSupportForMotion(crt_motion, null, crt_motion.getSupportChoice());
+		}
+		
+		if (my_vote != null) {
+			addVoteIfNew(d_SK, my_vote);
+			addConstituentToDSSK(d_SK, my_vote.getConstituent_force());//crt_constituent);
+			D_Justification j = my_vote.getJustificationFromObjOrLID();
+			addJustificationToDSSK(d_SK, j);
+		}
+	}
+
+	private static void addVoteIfNew(DD_SK d_SK, D_Vote my_vote) {
+		String vGID = my_vote.getGID();
+		if (vGID == null) return;
+		// skip if already in
+		for (D_Vote old_v : d_SK.vote) {
+			if (Util.equalStrings_and_not_null(old_v.getGID(), vGID)) return;
+		}
+		d_SK.vote.add(my_vote);
 	}
 }

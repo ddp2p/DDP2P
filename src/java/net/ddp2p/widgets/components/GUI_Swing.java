@@ -16,6 +16,14 @@ import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.parser.ParserDelegator;
 import javax.swing.tree.TreePath;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.SourceDataLine;
+
+
+import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.Vendor_GUI_Dialogs;
@@ -428,6 +436,66 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 	}
 	public void inform_arrival_news(D_News obj, D_Peer source) {
 		System.out.println("GUI_Swing: IAP:news GIDH="+obj.global_news_ID+" tit="+obj.getTitle());
+	}
+
+	long lastPlayThanks;
+	@Override
+	public boolean playThanks(){
+		if (Application.CURRENT_SCRIPTS_BASE_DIR() == null) return false;
+		long crt = Util.CalendargetInstance().getTimeInMillis();
+		if ((crt - lastPlayThanks) < 10000) return false;
+		lastPlayThanks =  Util.CalendargetInstance().getTimeInMillis();
+		
+		String wav_file = Application.CURRENT_SCRIPTS_BASE_DIR()+Application.WIRELESS_THANKS;
+		int EXTERNAL_BUFFER_SIZE = 524288;
+		File soundFile = new File(wav_file);
+		AudioInputStream audioInputStream = null;
+		try
+		{audioInputStream = AudioSystem.getAudioInputStream(soundFile);}
+		catch(Exception e) {e.printStackTrace();}
+
+		AudioFormat format = audioInputStream.getFormat();
+		SourceDataLine auline = null;
+		//Describe a desired line
+		DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+		try
+		{
+			auline = (SourceDataLine) AudioSystem.getLine(info);
+			//Opens the line with the specified format,
+			//causing the line to acquire any required
+			//system resources and become operational.
+			auline.open(format);
+		}
+		catch(Exception e) {e.printStackTrace();}
+
+		//Allows a line to engage in data I/O
+		auline.start();
+		int nBytesRead = 0;
+		byte[] abData = new byte[EXTERNAL_BUFFER_SIZE];
+		try {
+			while (nBytesRead != -1)
+			{
+				nBytesRead = audioInputStream.read(abData, 0, abData.length);
+				if (nBytesRead >= 0)
+				{
+					//Writes audio data to the mixer via this source data line
+					//NOTE : A mixer is an audio device with one or more lines
+					auline.write(abData, 0, nBytesRead);
+				}
+			}
+		}
+		catch(Exception e) {e.printStackTrace();}
+		finally
+		{
+			//Drains queued data from the line
+			//by continuing data I/O until the
+			//data line's internal buffer has been emptied
+			auline.drain();
+			//Closes the line, indicating that any system
+			//resources in use by the line can be released
+			auline.close();
+		}		
+		return true;
 	}
 }
 class Html2Text extends HTMLEditorKit.ParserCallback {

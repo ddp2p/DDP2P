@@ -1212,7 +1212,7 @@ public class Util {
 	 * @return
 	 */
 	public static byte[] simple_hash(byte[] msg, String hash_alg) {
-		return simple_hash(msg,0,msg.length,hash_alg);
+		return simple_hash(msg, 0, msg.length, hash_alg);
 	}
 	/**
 	 * Return the hash of msg with the algorithm alg
@@ -1593,14 +1593,31 @@ public class Util {
 		}
 		return result;
 	}
+	/**
+	 * 
+	 * @param in
+	 * 	<(GIDH,creation_date),(GIDH,creation_date),...>
+	 * @return
+	 * <GIDH,creation_date>
+	 */
 	public static Hashtable<String, String> AL_AL_O_2_HSS_SS(
 			ArrayList<ArrayList<Object>> in) {
-		if(DEBUG && (in!=null)) out.println("Util:AL_AL_O_2_HSS_SS: in=#"+in.size());
+		if (DEBUG && (in != null)) out.println("Util:AL_AL_O_2_HSS_SS: in=#"+in.size());
 		Hashtable<String, String> result = new Hashtable<String, String>();
-		if ((in==null)||(in.size()==0)) return result;
+		if ((in == null) || (in.size() == 0)) return result;
 		
-		for(ArrayList<Object> o: in){
-			result.put(Util.getString(o.get(0)), Util.getString(o.get(1)));
+		for (ArrayList<Object> o: in) {
+			String value = Util.getString(o.get(1));
+			String key = Util.getString(o.get(0));
+			if (value == null) {
+				value = "00000000000000000Z";
+				if (DEBUG) Util.printCallPath("Null value for key=" + key);
+			}
+			if (value == null || key == null) {
+				if (DEBUG) Util.printCallPath("Null value for key=" + key + " val=" + value);
+				continue;
+			}
+			result.put(key, value);
 		}
 		return result;
 	}
@@ -2832,6 +2849,7 @@ public class Util {
 		public static final int CALENDAR_SPACED = 1;
 		public static final int CALENDAR_TIME_ONLY = 2;
 		public static final int CALENDAR_DAY_ONLY = 3;
+		public static final int CALENDAR_DASHED = 4;
 		/**
 		 *  
 		 * @param value
@@ -2840,6 +2858,7 @@ public class Util {
 		public static final int CALENDAR_SPACED = 1; <br>
 		public static final int CALENDAR_TIME_ONLY = 2; // for H:M:S.LZ<br>
 		public static final int CALENDAR_DAY_ONLY = 3; // for Y:m:d
+		public static final int CALENDAR_DASHED = 4;
 		
 		 * @return
 		 */
@@ -2856,9 +2875,20 @@ public class Util {
 			case CALENDAR_DAY_ONLY:
 				result = String.format("%1$tY/%1$tm/%1$td",value);	
 				return result;
+			case CALENDAR_DASHED:
+				result = String.format("%1$tY-%1$tm-%1$td %1$tH%1$tM",value);	
+				return result;
 			default:
 				return Encoder.getGeneralizedTime(value);
 			}
+		}
+		/**
+		 * 
+		 * @param date
+		 * @return 2015-13-13 1233 (In the format of the input, i.e. potentially GMT!)
+		 */
+		public static String renderNicely(String date) {
+			return date.substring(0, 4) + "-" + date.substring(4, 6) + "-" + date.substring(6, 8) + "-" + date.substring(8, 12);
 		}
 }
 class GetHostName extends Thread{
