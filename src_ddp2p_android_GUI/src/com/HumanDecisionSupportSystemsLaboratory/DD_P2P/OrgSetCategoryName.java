@@ -15,6 +15,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -26,7 +30,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-@Deprecated
+import net.ddp2p.common.data.D_Organization;
+
+
 public class OrgSetCategoryName extends ActionBarActivity {
 
 	private String strSetConstituents;
@@ -34,7 +40,8 @@ public class OrgSetCategoryName extends ActionBarActivity {
 	private String strSetMotion;
 	private String strSetOrganization;
 	private String strSetJustification;
-	private Button submitBut;
+    private Button submitBut;
+    private Button deleteBut;
 	private EditText setConstituents;
 	private EditText setForum;
 	private EditText setMotions;
@@ -47,16 +54,32 @@ public class OrgSetCategoryName extends ActionBarActivity {
 	private TextView OrganizationIconText;
 	private TextView JustificationIconText;
 
+    int organization_position;
+    String organization_lid;
+    String organization_gidh;
+    String organization_name;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.org_set);
+        Intent i = this.getIntent();
+        Bundle b = i.getExtras();
 
-		Toast.makeText(OrgSetCategoryName.this, "something", Toast.LENGTH_SHORT).show();
+        //top panel setting
+        organization_position = b.getInt(Orgs.O_ID);
+        organization_lid = b.getString(Orgs.O_LID);
+        organization_gidh = b.getString(Orgs.O_GIDH);
+        organization_name = b.getString(Orgs.O_NAME);
 
-		submitBut = (Button) this.findViewById(R.id.submit_org_setting);
-		
+		Toast.makeText(OrgSetCategoryName.this, "Here you can change certain settings or delete the organization.", Toast.LENGTH_SHORT).show();
+
+        submitBut = (Button) this.findViewById(R.id.submit_org_setting);
+        submitBut.setEnabled(false);
+
+        deleteBut = (Button) this.findViewById(R.id.settings_org_delete);
+
 		setConstituents = (EditText) this.findViewById(R.id.set_org_constituents_icon_title);
 		setForum = (EditText) this.findViewById(R.id.set_org_forum_icon_title);
 		setMotions = (EditText) this.findViewById(R.id.set_org_news_icon_title);
@@ -87,6 +110,30 @@ public class OrgSetCategoryName extends ActionBarActivity {
 		OrganizationIconText.setText("Organization");
 */
 		Log.d("org_set", setConstituents.getText().toString());
+
+        deleteBut.setOnClickListener(
+                new OnClickListener() {
+
+                    @Override
+                    public void onClick(View v) {
+
+                        Resources res = getResources();
+                        new AlertDialog.Builder(OrgSetCategoryName.this)
+                                .setTitle(res.getString(R.string.delete_organization))
+                                .setMessage(res.getString(R.string.wanna_delete_organization))
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+
+                                    public void onClick(DialogInterface dialog, int whichButton) {
+                                        Resources res = getResources();
+                                        Toast.makeText(OrgSetCategoryName.this,
+                                                res.getString(R.string.toast_deleting_organization), Toast.LENGTH_LONG).show();
+                                        D_Organization.deleteAllAboutOrg(organization_lid);
+                                        finish();
+                                    }})
+                                .setNegativeButton(android.R.string.no, null).show();
+                    }
+                });
 
 		submitBut.setOnClickListener(new OnClickListener() {
 

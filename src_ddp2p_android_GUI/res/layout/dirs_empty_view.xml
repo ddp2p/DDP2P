@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<TextView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:drawableTop="@drawable/emptyview"
+    android:layout_gravity="center"
+    android:textSize="20sp"
+    android:text="You can add a directory from the + menu in the action bar. \n\nMy friends are allowed to use the Submit button in that form without filling any field, to be served by my default directory :)" />
+
+</LinearLayout>

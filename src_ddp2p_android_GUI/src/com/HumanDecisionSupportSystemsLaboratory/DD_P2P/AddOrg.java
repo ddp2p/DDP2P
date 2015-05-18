@@ -554,8 +554,8 @@ public class AddOrg extends ActionBarActivity {
 			// String GID =
             Log.d(TAG, "AddOrg: OrgThread: got org before hash=" + new_org);
             Orgs.reloadOrgs();
-			new_org.global_organization_IDhash = new_org.global_organization_ID = new_org
-					.getOrgGIDandHashForGrassRoot(); // sign();
+            String newGID = new_org.getOrgGIDandHashForGrassRoot();
+			new_org.setGID(newGID, newGID); // sign();
             if (! new_org.verifySignature()) {
                 Log.d(TAG, "AddOrg: OrgThread: bad signature after hash=" + new_org);
                 Toast.makeText(null, "Bad Signature on Creation", Toast.LENGTH_SHORT).show();

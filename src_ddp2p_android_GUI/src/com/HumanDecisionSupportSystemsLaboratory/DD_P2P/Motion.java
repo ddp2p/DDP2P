@@ -18,6 +18,7 @@ package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 import java.util.ArrayList;
 
 import net.ddp2p.common.data.D_MotionChoice;
+import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 import android.app.ActionBar;
@@ -64,6 +65,9 @@ public class Motion extends ListActivity {
 	private static int motion_organization_position;
 	public static ListAdapter listAdapter;
 	static Motion activ = null;
+    D_Organization org = null;
+    String motionName = "Motion";
+    //int HEADER_LENGTH = 0;
 	
 	public final static String sql_all_motions = 
 			"SELECT "
@@ -146,6 +150,11 @@ public class Motion extends ListActivity {
 		motion_enhanced_lid = b.getString(Motion.M_MOTION_ENHANCED);
 		
 		activ = this;
+        org = D_Organization.getOrgByLID_NoKeep(motion_organization_lid, true);
+        if (org == null) {
+            finish();
+            return;
+        }
 		reloadMotions();
 		actionbar = this.getActionBar();
 		actionbar.setDisplayHomeAsUpEnabled(true);
@@ -158,6 +167,26 @@ public class Motion extends ListActivity {
 		
 		ListView listview = getListView();
 		listview.setDivider(null);
+
+        String[] mname = org.getNamesMotion();
+        if (mname != null && mname.length > 0) motionName = mname[0];
+        listview.setFooterDividersEnabled(true);
+        TextView footerView = new TextView(this);
+        footerView.setText(Html.fromHtml("Click the + menu to add a <b>\"" + motionName + "\"</b> item"));
+        footerView.setPadding(5, 30, 0, 60);
+        listview.addFooterView(footerView);
+        footerView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                addMotion();
+            }
+        });
+
+        TextView headerView = new TextView(this);
+        headerView.setText(org.getName());
+        listview.setHeaderDividersEnabled(true);
+        listview.addHeaderView(headerView);
+        //HEADER_LENGTH ++;
 	}
 	
 	@Override
@@ -171,12 +200,7 @@ public class Motion extends ListActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
             case R.id.add_new_motion:
-                Toast.makeText(this, "add a new Motion", Toast.LENGTH_SHORT).show();
-
-                Intent intent = new Intent();
-                intent.setClass(this, AddMotion.class);
-
-                startActivity(intent);
+                addMotion();
                 /*
                 // Respond to the action bar's Up/Home button
             case android.R.id.home:
@@ -187,12 +211,26 @@ public class Motion extends ListActivity {
 		return super.onOptionsItemSelected(item);
 	}
 
+    void addMotion() {
+        Toast.makeText(this, "add a new Motion", Toast.LENGTH_SHORT).show();
 
+        Intent intent = new Intent();
+        intent.setClass(this, AddMotion.class);
+        Bundle b = new Bundle();
+        //b.putString(M_MOTION_LID, m.getLIDstr());
+        if (org != null) b.putString(Orgs.O_LID, org.getLIDstr());
+        intent.putExtras(b);
+
+        startActivity(intent);
+    }
 
 	@Override
-	public void onListItemClick(ListView list, View v, int position, long id) {
-		
-		Toast.makeText(this, getListView().getItemAtPosition(position).toString(), Toast.LENGTH_SHORT).show();
+	public void onListItemClick(ListView list, View v, int _position, long id) {
+		int position = _position - this.getListView().getHeaderViewsCount();// HEADER_LENGTH;
+        if (position < 0) return;
+        Object o = getListView().getItemAtPosition(_position);
+        if (o == null) o = "None";
+		Toast.makeText(this, o.toString(), Toast.LENGTH_SHORT).show();
 		MotionItem[] p = Motion.motionTitle;
 		D_Motion m = null;
 		try {

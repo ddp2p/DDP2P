@@ -24,6 +24,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -33,6 +34,7 @@ import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.data.D_Document;
 import net.ddp2p.common.data.D_Document_Title;
 import net.ddp2p.common.data.D_Motion;
+import net.ddp2p.common.data.D_Organization;
 
 
 public class AddMotion extends ActionBarActivity {
@@ -41,7 +43,10 @@ public class AddMotion extends ActionBarActivity {
 	private String body;
 	private String enhancedLID;
 	private D_Motion enhanced;
-
+    TextView motionOrgName;
+    WebView motionInstructions;
+    D_Organization org;
+    String orgLID;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -55,12 +60,28 @@ public class AddMotion extends ActionBarActivity {
 		Intent i = this.getIntent();
 		Bundle b = i.getExtras();	
 		if (b != null) {
-			enhancedLID = b.getString(Motion.M_MOTION_LID);
-			if (enhancedLID != null)
-				enhanced = D_Motion.getMotiByLID(enhancedLID, true, false);
-		}
-		
-    	final Button but = (Button) findViewById(R.id.submit_add_motion);
+            enhancedLID = b.getString(Motion.M_MOTION_LID);
+            if (enhancedLID != null)
+                enhanced = D_Motion.getMotiByLID(enhancedLID, true, false);
+
+            orgLID = b.getString(Orgs.O_LID);
+            if (orgLID != null)
+                org = D_Organization.getOrgByLID(orgLID, true, false);
+        }
+
+        this.motionInstructions = (WebView) findViewById(R.id.motion_instructions);
+        this.motionOrgName = (TextView) findViewById(R.id.motion_orgname);
+        if (org != null && org.getName() != null) {
+            motionOrgName.setText(org.getName());
+            motionOrgName.setVisibility(View.VISIBLE);
+        }
+        if (org != null && org.getInstructionsNewMotions() != null) {
+            //profileInstructions.loadData(org.getInstructionsRegistration(), "text/html", null);
+            motionInstructions.loadUrl("data:text/html;charset=UTF-8,"+org.getInstructionsNewMotions());
+            motionInstructions.setVisibility(View.VISIBLE);
+        }
+
+        final Button but = (Button) findViewById(R.id.submit_add_motion);
     	final EditText add_name = (EditText) findViewById(R.id.add_motion_name);
     	final EditText add_body = (EditText) findViewById(R.id.add_motion_body);
     	if (enhanced != null) {

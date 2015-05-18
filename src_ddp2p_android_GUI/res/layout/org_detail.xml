@@ -143,7 +143,7 @@
                 android:layout_width="100dp"
                 android:layout_height="100dp"
                 android:layout_centerHorizontal="true"
-                android:contentDescription="@string/org_profile"
+                android:contentDescription="@string/org_register"
                 android:src="@drawable/org_profile" />
 
             <TextView
@@ -152,7 +152,7 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/org_profile_img"
                 android:layout_centerHorizontal="true"
-                android:text="@string/org_profile" />
+                android:text="@string/org_register" />
         </RelativeLayout>
     </GridLayout>
 

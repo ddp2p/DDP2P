@@ -18,6 +18,31 @@
         android:layout_height="wrap_content"
         android:gravity="left" />
 
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:gravity="center"
+        android:background="@color/gray"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:src="@android:drawable/ic_media_previous"
+            />
+        <TextView
+            android:id="@+id/justification_header_instr"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+             android:background="@drawable/abc_ic_commit_search_api_holo_dark"
+            android:text="@string/swipe"
+            android:gravity="center" />
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:src="@android:drawable/ic_media_play"
+            />
+
+    </LinearLayout>
+
     <TextView
         android:id="@+id/label_justification"
         android:layout_width="fill_parent"

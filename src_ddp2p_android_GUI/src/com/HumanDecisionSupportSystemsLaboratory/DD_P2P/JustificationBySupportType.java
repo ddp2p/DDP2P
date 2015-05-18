@@ -123,6 +123,8 @@ private static final String TAG = "JustificationBySupportType";
 		label_justification = (TextView) header.findViewById(R.id.label_justification);
 		if (invalidChoice(crt_choice)) {
 			label_justification.setText(Util.__("ALL JUSTIFICATIONS").toUpperCase());
+			TextView instr = (TextView) header.findViewById(R.id.justification_header_instr);
+			instr.setVisibility(View.INVISIBLE);
 		} else {
 			label_justification.setText(MotionDetail.crt_motion.getActualChoices()[crt_choice].name.toUpperCase());
 		}

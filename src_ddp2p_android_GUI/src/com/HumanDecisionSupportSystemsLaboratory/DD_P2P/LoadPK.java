@@ -25,6 +25,8 @@ import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.StegoStructure;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.ASN1.Decoder;
+
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -45,8 +47,25 @@ public class LoadPK extends DialogFragment {
 	protected static final String TAG = null;
 	private Button load;
 	private EditText address;
-
 	private String strAddress;
+	Activity activity;
+	StegoStructure message;
+
+	interface  LoadPKListener {
+		void getPKResult(StegoStructure parameter);
+	}
+	@Override
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
+		this.activity = activity;
+	}
+
+	@Override
+	public void onDetach() {
+		super.onDetach();
+
+		//activity.onDismiss();
+	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -99,39 +118,43 @@ public class LoadPK extends DialogFragment {
                 
 
                 AlertDialog.Builder confirm = new AlertDialog.Builder(getActivity());
-                confirm.setTitle("Do you wish to load?");
-                confirm.setMessage(interpretation)
-                    .setCancelable(false)
-				    .setPositiveButton("Yes", new MyDialog_OnClickListener(imported_object) {
-					    public void _onClick(DialogInterface dialog, int id) {
-					    	Log.d("PK", "LoadPK: Trying to save");
-					    	StegoStructure imported_object = (StegoStructure) ctx;
-					    	try {
-								imported_object.save();
-								Toast.makeText(getActivity(), "Saving successful!", Toast.LENGTH_SHORT).show();
-							} catch (P2PDDSQLException e) {
+                confirm.setTitle(getResources().getString(R.string.LoadQuestion));
+                confirm.setMessage(interpretation).setIcon(android.R.drawable.ic_input_add)
+                    //.setCancelable(false)
+				    .setPositiveButton(getResources().getString(R.string.Yes), new MyDialog_OnClickListener(imported_object) {
+						public void _onClick(DialogInterface dialog, int id) {
+							Log.d("PK", "LoadPK: Trying to save");
+							StegoStructure imported_object = (StegoStructure) ctx;
+							LoadPK.this.message = imported_object;
+							if (message != null)
+								((Main) activity).getPKResult(message);
+							try {
+								//imported_object.saveSync(); //.save();
+								//Toast.makeText(getActivity(), getResources().getString(R.string.SaveSuccess), Toast.LENGTH_SHORT).show();
+							} catch (Exception e) {
 								e.printStackTrace();
-						    	Log.d("PK", "LoadPK: Failed to save: "+e.getLocalizedMessage());
+								Log.d("PK", "LoadPK: Failed to save: " + e.getLocalizedMessage());
 							}
 
-					        FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
-					        ft.detach(LoadPK.this);
-					        ft.commit();
-					    	dialog.cancel();
-					    }
-				    })
-				    .setNegativeButton("No",new DialogInterface.OnClickListener() {
-					    public void onClick(DialogInterface dialog,int id) {
-					        FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
-					        ft.detach(LoadPK.this);
-					        ft.commit();
-					    	dialog.cancel();
-					    }
-				    });
+							FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+							ft.detach(LoadPK.this);
+							ft.commit();
+							dialog.cancel();
+						}
+					})
+				    .setNegativeButton(getResources().getString(R.string.Cancel), new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int id) {
+							FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+							ft.detach(LoadPK.this);
+							ft.commit();
+							dialog.cancel();
+						}
+					});
                 
                 AlertDialog confirmDialog = confirm.create();
                 confirmDialog.show();
 			}
+
 /*
 			private String extractMessage(String strAddress) {
 				//boolean DEBUG = true;

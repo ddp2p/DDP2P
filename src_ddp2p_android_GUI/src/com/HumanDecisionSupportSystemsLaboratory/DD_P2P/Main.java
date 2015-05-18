@@ -23,8 +23,10 @@ import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import net.ddp2p.common.hds.PeerInput;
+import net.ddp2p.common.util.DDP2P_ServiceThread;
 import net.ddp2p.common.util.DD_DirectoryServer;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.StegoStructure;
@@ -32,9 +34,11 @@ import android.annotation.TargetApi;
 import android.app.ActionBar.TabListener;
 import android.app.Activity;
 import android.app.FragmentTransaction;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -60,7 +64,7 @@ import net.ddp2p.common.data.HandlingMyself_Peer;
 import net.ddp2p.common.util.Util;
 
 
-public class Main extends FragmentActivity implements TabListener{
+public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPKListener {
 	
 	public static boolean serversStarted = false;
 
@@ -74,13 +78,100 @@ public class Main extends FragmentActivity implements TabListener{
 	
 	int SELECT_PHOTO = 42;
 	int SELECT_PHOTO_KITKAT = 43;
-    final static int PAGES_NB=2;
+    final static int PAGES_NB = 2;
+	final static int POSITION_SAFE = 0;
+	final static int POSITION_ORGS = 1;
     final static int RESULT_ADD_PEER = 11;
 	
 	private String selectedImagePath;
 
 	private File selectImageFile;
-	
+	public Fragment findFragmentByPosition(int position) {
+		FragmentPagerAdapter fragmentPagerAdapter = mAdapter;
+		return getSupportFragmentManager().findFragmentByTag(
+				"android:switcher:" + mViewPager.getId() + ":"
+						+ fragmentPagerAdapter.getItemId(position));
+	}
+	private static String makeFragmentName(int viewPagerId, int index) {
+		return "android:switcher:" + viewPagerId + ":" + index;
+	}
+	@Override
+	public void getPKResult(StegoStructure param) {
+		if (param == null) return;
+
+		new DDP2P_ServiceThread("SavingImports", true, param) {
+			@Override
+			public void _run() {
+				StegoStructure imported_object = (StegoStructure)ctx;
+				try {
+					imported_object.saveSync(); //.save();
+					Log.d("Import", "Main saved stego");
+					Orgs.reloadOrgs();
+					Safe.loadPeer();
+					Log.d("Import", "Main reloaded data");
+					handler.sendMessage(handler.obtainMessage(Main.REFRESH_ALL));
+				} catch(Exception e) {}
+
+			}
+		}.start();
+
+//		new AsyncTask<StegoStructure,Object, Object>(){
+//			@Override
+//			protected Object doInBackground(StegoStructure... param) {
+//				StegoStructure imported_object = param[0];
+//				try {
+//					imported_object.saveSync(); //.save();
+//					Log.d("Import", "Main saved stego");
+//					Orgs.reloadOrgs();
+//					Safe.loadPeer();
+//					Log.d("Import", "Main reloaded data");
+//
+//				} catch(Exception e) {}
+//				return null;
+//			}
+//			protected void onPostExecute(Long result) {
+//				Toast.makeText(Main.this.getApplicationContext(), getResources().getString(R.string.SaveSuccess), Toast.LENGTH_SHORT).show();
+//				//Safe.safeAdapter.notifyDataSetChanged();
+//				{
+//					Orgs o = (Orgs) Main.this.findFragmentByPosition(0);
+//					//o.reloadOrgs();
+//					Orgs.listAdapter = new Orgs.OrgAdapter(o.getActivity(),
+//							Orgs.orgName);
+//					o.setListAdapter(Orgs.listAdapter);
+//					Orgs.OrgAdapter adapt = ((Orgs.OrgAdapter) o.getListAdapter());
+//					adapt.notifyDataSetChanged();
+//					Log.d("Import", "Main updated org");
+//				}
+//				{
+//					//Safe.loadPeer();
+//					Safe.safeAdapter = new Safe.SafeAdapter(Safe.safeItself.getActivity(),
+//							Safe.list, Safe.imgData);
+//					Safe.safeItself.setListAdapter(Safe.safeAdapter);
+//					Safe.SafeAdapter adapt = ((Safe.SafeAdapter) ((Safe) Main.this.findFragmentByPosition(0)).getListAdapter());
+//					adapt.notifyDataSetChanged();
+//					Log.d("Import", "Main updated safe");
+//				}
+//				/*
+//				List<Fragment> f = Main.this.getSupportFragmentManager().getFragments();
+//				for (Fragment _f: f) {
+//					if (_f == null) continue;
+//					if (_f instanceof Orgs) {
+//						Log.d("Import", "Main found org");
+//						Orgs.OrgAdapter adapt = ((Orgs.OrgAdapter)((Orgs) _f).getListAdapter());
+//						adapt.notifyDataSetChanged();
+//					}
+//					if (_f instanceof Safe) {
+//						Log.d("Import", "Main found safe");
+//						Safe.SafeAdapter adapt = ((Safe.SafeAdapter)((Safe) _f).getListAdapter());
+//						adapt.notifyDataSetChanged();
+//					}
+//				}
+//				*/
+//				//mViewPager.getChildAt(1);
+//			}
+//		}.execute(param);
+	}
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -156,9 +247,9 @@ public class Main extends FragmentActivity implements TabListener{
         });
         
 		//add tabs
-		actionBar.addTab(actionBar.newTab().setText(Util.__("Connections"))
+		actionBar.addTab(actionBar.newTab().setText(Util.__(getString(R.string.users)))
 				.setTabListener(this));
-		actionBar.addTab(actionBar.newTab().setText(Util.__("Organizations"))
+		actionBar.addTab(actionBar.newTab().setText(Util.__(getString(R.string.organizations)))
 				.setTabListener(this));
         if (PAGES_NB > 2) {
             actionBar.addTab(actionBar.newTab().setText("Acts")
@@ -335,6 +426,7 @@ public class Main extends FragmentActivity implements TabListener{
 			
 			FragmentManager fm = getSupportFragmentManager();
 		    LoadPK loadPKDialog = new LoadPK();
+			//loadPKDialog.setTargetFragment(this,0);
 		    loadPKDialog.show(fm, "fragment_send_public_key");
 
 
@@ -371,14 +463,14 @@ public class Main extends FragmentActivity implements TabListener{
 
             switch (pos) {   
             
-            case 0:
+            case POSITION_SAFE:
             	Safe mainAct = new Safe();
                 bun.putInt("pageNo", pos+1);
             	mainAct.setArguments(bun);
             	
                 return mainAct;
             	
-            case 1:  
+            case POSITION_ORGS:
                 Orgs orgs = new Orgs();       
                 bun.putInt("pageNo", pos+1);
                 orgs.setArguments(bun);
@@ -598,10 +690,57 @@ public class Main extends FragmentActivity implements TabListener{
                 msgObj.setData(b);
                 handler.sendMessage(msgObj);
                 Log.d(TAG, "add safe: threadMsg finished");
+
+				handler.sendMessage(handler.obtainMessage(Main.REFRESH_ALL));
             }
         }
     }
+	void refreshOrg() {
+		if (Orgs.activ == null) {
+			Log.d("Main", "refresh Safe none");
+			return;
+		}
+		Orgs o = (Orgs) Main.this.findFragmentByPosition(POSITION_ORGS);
+		//o.reloadOrgs();
+		if (o == null) {
+			Log.d("Main", "refresh Orgs none now");
+			return;
+		}
+		if (o != Orgs.activ) Log.d("Main", "refresh Orgs changed");
 
+		// Without this ist does not show first
+		Orgs.OrgAdapter _adapt = (Orgs.OrgAdapter) o.getListAdapter();
+		if (_adapt != null) _adapt.notifyDataSetChanged();
+
+		Orgs.OrgAdapter newAdapter = new Orgs.OrgAdapter(o.getActivity(), Orgs.orgName);
+		o.setListAdapter(newAdapter);
+		Orgs.OrgAdapter adapt = ((Orgs.OrgAdapter) o.getListAdapter());
+		adapt.notifyDataSetChanged();
+		Orgs.listAdapter = newAdapter;
+	}
+	void refreshSafe() {
+		if (Safe.safeItself == null) {
+			Log.d("Main", "refresh Safe none");
+			return;
+		}
+		Safe s = (Safe) Main.this.findFragmentByPosition(POSITION_SAFE);
+		if (s == null) {
+			Log.d("Main", "refresh Safe none now");
+			return;
+		}
+		if (s != Safe.safeItself) Log.d("Main", "refresh Safe changed");
+
+		// Without this ist does not show first
+		Safe.SafeAdapter _adapt = (Safe.SafeAdapter) s.getListAdapter();
+		if (_adapt != null) _adapt.notifyDataSetChanged();
+
+		Safe.SafeAdapter newAdapter = new Safe.SafeAdapter(s.getActivity(), Safe.list, Safe.imgData);
+
+		s.setListAdapter(newAdapter);
+		newAdapter.notifyDataSetChanged();
+		Safe.safeAdapter = newAdapter;
+	}
+	final static int REFRESH_ALL = 10;
 
     private final Handler handler = new Handler() {
         final static String TAG = "Main_Handler";
@@ -610,25 +749,14 @@ public class Main extends FragmentActivity implements TabListener{
 
         public void handleMessage(Message msg) {
 
+			if (msg.what == Main.REFRESH_ALL) {
+				refreshOrg();
+			}
             //String aResponse = msg.getData().getString("message");
             Log.d(TAG, "add safe: handler");
             Toast.makeText(Main.this, "Added a new safe successfully!", Toast.LENGTH_LONG).show();
 
-            {
-                // Without this ist does not show first
-                if (Safe.safeItself != null) {
-                    Safe.SafeAdapter adapt = (Safe.SafeAdapter) Safe.safeItself.getListAdapter();
-                    if (adapt != null)
-                        adapt.notifyDataSetChanged();
-                }
-            }
-
-
-			Safe.safeAdapter = new Safe.SafeAdapter(Safe.safeItself.getActivity(),
-					Safe.list, Safe.imgData);
-			Safe.safeItself.setListAdapter(Safe.safeAdapter);
-            Safe.safeAdapter.notifyDataSetChanged();
-
+		 	refreshSafe();
 
             /*
             Intent i = getBaseContext().getPackageManager()

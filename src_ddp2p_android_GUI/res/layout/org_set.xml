@@ -95,13 +95,30 @@
     </LinearLayout>
 
 
-    <Button
-        android:id="@+id/submit_org_setting"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="right"
-        android:layout_marginRight="30dp"
         android:layout_marginTop="30dp"
-        android:text="@string/submit" />
+        android:orientation="horizontal" >
+        <Button
+            android:id="@+id/settings_org_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:layout_marginLeft="30dp"
+            android:layout_marginRight="30dp"
+            android:layout_marginTop="30dp"
+            android:text="Delete Organization" />
+
+        <Button
+            android:id="@+id/submit_org_setting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginLeft="30dp"
+            android:layout_marginRight="30dp"
+            android:layout_marginTop="30dp"
+            android:text="@string/submit" />
+    </LinearLayout>
 
 </LinearLayout>

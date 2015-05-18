@@ -21,15 +21,18 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBarActivity;
+import android.text.Html;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.data.D_Justification;
 import net.ddp2p.common.data.D_Motion;
+import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Vote;
 
 
@@ -37,6 +40,8 @@ public class AddJustification extends ActionBarActivity {
 	
 	private String name;
 	private String body;
+	D_Motion motion;
+	D_Justification justification;
 
 	String mLID = null;
 	String jLID = null;
@@ -55,7 +60,13 @@ public class AddJustification extends ActionBarActivity {
     	final Button but = (Button) findViewById(R.id.submit_add_justification);
     	final EditText add_name = (EditText) findViewById(R.id.add_justification_title);
     	final EditText add_body = (EditText) findViewById(R.id.add_justification_body);
- 
+		final TextView motion_title = (TextView) findViewById(R.id.adding_justification_motion_title);
+		final TextView justification_title = (TextView) findViewById(R.id.adding_justification_justification_title);
+		final TextView motion_body = (TextView) findViewById(R.id.adding_justification_motion_body);
+		final TextView justification_body = (TextView) findViewById(R.id.adding_justification_justification_body);
+		final TextView motion_label = (TextView) findViewById(R.id.adding_justification_motion_label);
+		final TextView justification_label = (TextView) findViewById(R.id.adding_justification_justification_label);
+
 		Intent intent = this.getIntent();
 		Bundle b = intent.getExtras();
 
@@ -66,6 +77,23 @@ public class AddJustification extends ActionBarActivity {
 		jLID = b.getString(Motion.J_JUSTIFICATION_LID);
 		if ("".equals(jLID)) jLID = null;
 		Log.d("VOTE", "jLID="+jLID);
+
+		motion = D_Motion.getMotiByLID(mLID, true, false);
+		motion_title.setText(motion.getTitleStrOrMy());
+		motion_body.setText(Html.fromHtml(motion.getMotionText().getDocumentUTFString()));
+
+		D_Organization org = D_Organization.getOrgByLID_NoKeep(motion.getOrganizationLIDstr(), true);
+		motion_label.setText(org.getNamesMotion_Default());
+
+		if (jLID != null) {
+			justification = D_Justification.getJustByLID(jLID, true, false);
+			justification_title.setText(justification.getTitleStrOrMy());
+			justification_body.setText(Html.fromHtml(justification.getJustificationBodyText()));
+			justification_label.setText(getString(R.string.refute)+" "+org.getNamesJustification_Default());
+			justification_body.setVisibility(View.VISIBLE);
+			justification_title.setVisibility(View.VISIBLE);
+			justification_label.setVisibility(View.VISIBLE);
+		}
 
     	but.setOnClickListener(new View.OnClickListener() {
   

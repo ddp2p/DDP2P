@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources  xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
     <string name="app_name">DirectDemocracyP2P (DDP2P)</string>
     <string name="hello_world">Hello world!</string>
@@ -8,7 +8,7 @@
 
     <!-- main action bar -->
     <string name="action_back" translatable="false">back</string>
-    <string name="new_safe_my" translatable="false">Add a New Safe Myself</string>
+    <string name="new_safe_my" translatable="false">Add a New Identity Myself</string>
     <string name="new_safe_other" translatable="false">Import Object From Picture</string>
     <string name="new_org" translatable="false">Add a New Organization</string>
     <string name="new_icon" translatable="false">add</string>
@@ -38,9 +38,17 @@
     <string name="submit_new" translatable="false">submit new</string>
     <string name="ok" translatable="false">OK</string>
 
+    <string name="Yes">YES</string>
+    <string name="Cancel">CANCEL</string>
+    <string name="LoadQuestion">Do you wish to load?</string>
+    <string name="SaveSuccess">Saving successful!</string>
+
     <!-- chat -->
     <string name="send" translatable="false">Send</string>
     <string name="input" translatable="false">input...</string>
+
+    <string name="org_register">Register</string>
+    <string name="org_register_need">First Register in Organization!</string>
 
     <!-- Orgs -->
     <string name="organization">Organization</string>
@@ -72,6 +80,18 @@
     <string name="max_voting_level" translatable="false">Max voting level</string>
     <string name="org_icon" translatable="false">Organization icon</string>
 
+    <string name="rebuttal_or_answer">Do you want to create a rebuttal to this \"<xliff:g id="dialog_justification1" example="Proposal">Justification</xliff:g>\" rather than use it?"</string>
+    <string name="reffered_label">You are referring to <i>\"<xliff:g id="dialog_justification1" example="Proposal">Justification</xliff:g>\"</i>:</string>
+    <string name="justification_add">Add New <xliff:g id="dialog_justification1" example="Proposal">Justification</xliff:g>?</string>
+    <string name="justification_add_">Add New</string>
+    <string name="justification_add_justification">Add New Justification?</string>
+    <string name="refute">Refute</string>
+    <string name="reuse_justification">Reuse</string>
+    <string name="swipe">Swipe sideway for other views!</string>
+
+    <string name="users">Users</string>
+    <string name="organizations">Organizations</string>
+
     <!-- Justification -->
     <string name="support" translatable="false">Support</string>
     <string name="against" translatable="false">Against</string>
@@ -96,8 +116,12 @@
     <!-- Server -->
     <string name="directory_empty" translatable="false">There is no directory server, please add one from top right "+" mark!</string>
     <string name="directory_instruction" translatable="false">Directory Address, such as: \nDIR%B%0.10.07://10.0.0.1:25123:25123:Name</string>
-    <string name="HintEmptyView">You can add items using the + menu above!</string>
+    <string name="HintEmptyView">You can add items (e.g. identities for communication, organizations, etc.) using the + menu above! \n\nManage your listing directories from the standard menu!</string>
     <string name="news_title">News Title</string>
     <string name="motion_title">Motion Title</string>
 
+    <!-- Dialogs -->
+    <string name="delete_organization">Delete <xliff:g id="organization_in_delete">Organization</xliff:g></string>
+    <string name="wanna_delete_organization">Do you really want to delete organization?</string>
+    <string name="toast_deleting_organization">Deleting Organization… Exit Program to Refresh!</string>
 </resources>

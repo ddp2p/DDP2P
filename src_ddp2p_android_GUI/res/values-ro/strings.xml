@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources  xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="app_name">DirectDemocracyP2P (DDP2P)</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_directories">Manage Directories</string>
+
+
+    <!-- used in safe profile menu -->
+    <string name="Device">Device</string>
+    <string name="Slogan">Slogan</string>
+    <string name="LastSync">Last Sync</string>
+    <string name="LastContact">Last Contact</string>
+    <string name="safe_profile_drawer_open">Open safe profile drawer</string>
+    <string name="safe_profile_drawer_close">Close safe profile drawer</string>
+
+    <string name="Yes">DA</string>
+    <string name="Cancel">ABANDONEAZĂ</string>
+    <string name="LoadQuestion">Vreți să importați?</string>
+    <string name="SaveSuccess">Salvare efectuată cu success!</string>
+
+    <string name="rebuttal_or_answer">Vrei să contrazici aceast \"<xliff:g id="dialog_justification1" example="Proposal">Justification</xliff:g>\" mai degrabă decît să-l citezi?"</string>
+    <string name="reffered_label">Vă referiți la \"<xliff:g id="dialog_justification1" example="Proposal">Justification</xliff:g>\":</string>
+    <string name="justification_add">Adaugi o Nouă <xliff:g id="dialog_justification1" example="Proposal">Justification</xliff:g>?</string>
+    <string name="justification_add_">Adaugi o Nouă</string>
+    <string name="justification_add_justification">Adaugi o Nouă Justificare?</string>
+    <string name="refute">Contrazic</string>
+    <string name="reuse_justification">Refolosesc</string>
+    <string name="swipe">Șterge lateral pentru alte opinii!</string>
+
+    <string name="users">Oameni</string>
+    <string name="organizations">Organizații</string>
+
+    <string name="org_register">Înregistrare</string>
+    <string name="org_register_need">Mai Întîi Înregistrează-te în Organizație!</string>
+    <!-- Orgs -->
+    <string name="organization">Organization</string>
+    <string name="forum">Forum</string>
+    <string name="justification">Justification</string>
+
+
+
+  <string name="HintEmptyView">You can add items (e.g. identities for communication, organizations, etc.) using the + menu above! \n\nManage your listing directories from the standard menu!</string>
+    <string name="news_title">News Title</string>
+    <string name="motion_title">Motion Title</string>
+
+    <!-- Dialogs -->
+    <string name="delete_organization">Șterge <xliff:g id="organization_in_delete">Organizația</xliff:g></string>
+    <string name="wanna_delete_organization">Chiar vreți să ștergeți organizația?</string>
+    <string name="toast_deleting_organization">Ștergînd Organizația… Reporniți programul să terminați Ștergerea!</string>
+</resources>

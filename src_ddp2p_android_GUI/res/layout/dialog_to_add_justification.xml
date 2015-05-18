@@ -5,9 +5,26 @@
     android:orientation="vertical" >
 
     <TextView
+        android:id="@+id/dialog_add_new_justification_refering_label"
+        android:visibility="gone"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="Do you want to add a new justification?" />
+        android:text="Refering:" />
+    <TextView
+        android:id="@+id/dialog_add_new_justification_refering"
+        android:visibility="gone"
+        android:layout_margin="20dp"
+        android:typeface="monospace"
+        android:textStyle="bold|italic"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Answered justification" />
+
+    <TextView
+        android:id="@+id/dialog_add_new_justification_question_label"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Do you want to add a justification for your action?" />
 
     <LinearLayout
         android:layout_width="wrap_content"

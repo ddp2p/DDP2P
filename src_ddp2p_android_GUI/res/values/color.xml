@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <color name="gray">#BBBBBB</color>
+    <color name="lightgray">#DBDBDB</color>
     <color name="ddp2p_general">#00cc00</color>
     <color name="ddp2p_general_text">#CFCFCF</color>
     <color name="ddp2p_drawer">#FFFFCC</color>
@@ -8,4 +10,5 @@
     <color name="text_tab_unselected">#CFCFCF</color>
     <color name="ddp2p_profile">#E5E5E5</color>
     <color name="ddp2p_profile_text">#999999</color>
-</resources>
+
+</resources>

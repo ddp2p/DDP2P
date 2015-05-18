@@ -25,11 +25,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Justification;
 import net.ddp2p.common.data.D_Justification.JustificationSupportEntry;
 import net.ddp2p.common.data.D_Motion;
+import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Vote;
 import net.ddp2p.common.util.Util;
 
@@ -39,6 +41,13 @@ public class ToAddJustificationDialog extends DialogFragment {
 	private D_Motion crt_motion;
 	long oLID;
 	private JustificationSupportEntry crt_justification;
+	TextView mRelatedJustification;
+	TextView mRelatedJustificationLabel;
+	TextView mQuestionLabel;
+	Button butYes;
+	Button butNo;
+	D_Organization org;
+
 	public ToAddJustificationDialog() {
 //		D_Constituent myself = Identity.getCrtConstituent(oLID = crt_motion.getLID());
 //		if (myself == null) {
@@ -72,7 +81,14 @@ public class ToAddJustificationDialog extends DialogFragment {
 		type = short_name;
 		this.crt_motion = crt_motion;
 		this.crt_justification = justificationSupport;
-		
+		D_Justification crt_just = D_Justification.getJustByLIDNoKeep(this.crt_justification.getJustification_LIDstr(), true);
+		this.mRelatedJustification.setText(crt_just.getTitleStrOrMy());
+		this.mRelatedJustification.setVisibility(View.VISIBLE);
+		this.mRelatedJustificationLabel.setText(getString(R.string.reffered_label, org.getNamesJustification_Default()));
+		this.mRelatedJustificationLabel.setVisibility(View.VISIBLE);
+		this.mQuestionLabel.setText(getString(R.string.rebuttal_or_answer, org.getNamesJustification_Default()));
+		this.mQuestionLabel.setVisibility(View.VISIBLE);
+
 		D_Constituent myself = Identity.getCrtConstituent(oLID = crt_motion.getOrganizationLID());
 		if (DEBUG) Log.d("CONST", "ToAddJust<init 3>: oLID="+oLID+" c="+myself);
 		if (myself == null) {
@@ -90,6 +106,13 @@ public class ToAddJustificationDialog extends DialogFragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 
+		View view = inflater.inflate(R.layout.dialog_to_add_justification, container);
+		butYes = (Button) view.findViewById(R.id.dialog_add_new_justification);
+		butNo = (Button) view.findViewById(R.id.do_not_add_new_justification);
+		this.mQuestionLabel = (TextView) view.findViewById(R.id.dialog_add_new_justification_question_label);
+		this.mRelatedJustification = (TextView) view.findViewById(R.id.dialog_add_new_justification_refering);
+		this.mRelatedJustificationLabel = (TextView) view.findViewById(R.id.dialog_add_new_justification_refering_label);
+
         Bundle b = getArguments();
         String motion_LID = b.getString(Motion.M_MOTION_LID);
         type = b.getString(Motion.M_MOTION_CHOICE);
@@ -97,26 +120,25 @@ public class ToAddJustificationDialog extends DialogFragment {
         scnt = b.getString(Motion.M_MOTION_ID);
 
         if (motion_LID != null) {
-            crt_motion = D_Motion.getMotiByLID(motion_LID, false, false);
-            if (crt_motion != null) {
+			crt_motion = D_Motion.getMotiByLID(motion_LID, false, false);
+			org = D_Organization.getOrgByLID_NoKeep(crt_motion.getOrganizationLID(), true);
+			//getDialog().setTitle(getString(R.string.justification_add_)+" "+ org.getNamesJustification_Default()+"?");
+			getDialog().setTitle(getString(R.string.justification_add_justification));//getString(R.string.justification_add, "Justification"));
+			if (crt_motion != null) {
                 if (jLID != null) {
+					butYes.setText(getString(R.string.refute));
+					butNo.setText(getString(R.string.reuse_justification));
                     crt_justification = new JustificationSupportEntry(jLID, Util.ival(scnt, 0));
                     init(crt_motion, crt_justification, type);
                 } else {
                     init(crt_motion, type);
                 }
             }
-        }
-		View view = inflater.inflate(R.layout.dialog_to_add_justification,
-				container);
-		final Button butYes = (Button) view
-				.findViewById(R.id.dialog_add_new_justification);
-		final Button butNo = (Button) view
-				.findViewById(R.id.do_not_add_new_justification);
+        } else {
+			getDialog().setTitle(getString(R.string.justification_add_justification));//getString(R.string.justification_add, "Justification"));
+		}
 
-		
-		
-		getDialog().setTitle("Justification");
+
 
 		// add a new justification
 		butYes.setOnClickListener(new View.OnClickListener() {

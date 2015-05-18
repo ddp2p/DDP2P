@@ -34,6 +34,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
@@ -79,7 +80,9 @@ public class OrgProfile extends FragmentActivity {
 	private Button neiborhood;
 	private Button submit;
 	private Button submit_new;
-	private TextView profilePic;
+    private TextView profilePic;
+    private TextView profileOrgName;
+    private WebView profileInstructions;
 	private ImageView profilePicImg;
 	private Spinner keys;
 	// private Spinner eligibility;
@@ -148,7 +151,19 @@ public class OrgProfile extends FragmentActivity {
 
 		setContentView(R.layout.org_profile);
 
-		forename = (EditText) findViewById(R.id.profile_furname);
+        this.profileInstructions = (WebView) findViewById(R.id.profile_instructions);
+        this.profileOrgName = (TextView) findViewById(R.id.profile_orgname);
+        if (org.getName() != null) {
+            profileOrgName.setText(org.getName());
+            profileOrgName.setVisibility(View.VISIBLE);
+        }
+        if (org.getInstructionsRegistration() != null) {
+            //profileInstructions.loadData(org.getInstructionsRegistration(), "text/html", null);
+            profileInstructions.loadUrl("data:text/html;charset=UTF-8,"+org.getInstructionsRegistration());
+            profileInstructions.setVisibility(View.VISIBLE);
+        }
+
+        forename = (EditText) findViewById(R.id.profile_furname);
 		surname = (EditText) findViewById(R.id.profile_surname);
 		neiborhood = (Button) findViewById(R.id.profile_neiborhood);
 		submit = (Button) findViewById(R.id.submit_profile);

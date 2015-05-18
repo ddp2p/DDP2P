@@ -130,6 +130,12 @@ public class OrgDetail extends FragmentActivity{
 			public void onClick(View v) {
 				Intent intent = new Intent();
 				intent.setClass(OrgDetail.this, OrgSetCategoryName.class);
+                Bundle b = new Bundle();
+                b.putInt(Orgs.O_ID, organization_position);
+                b.putString(Orgs.O_GIDH, organization_gidh);
+                b.putString(Orgs.O_LID, organization_lid);
+                b.putString(Orgs.O_NAME, orgName);
+                intent.putExtras(b);
 		        startActivity(intent);
 			}
 		});
@@ -209,7 +215,4 @@ public class OrgDetail extends FragmentActivity{
 		}
 		return super.onOptionsItemSelected(item);
 	}
-	
-	
-	
 }

@@ -47,10 +47,10 @@ import android.widget.Toast;
 
 public class MotionDetail extends FragmentActivity {
 
-	private WebView enhancingView;
+	//private WebView enhancingView;
 	private String title;
 	private String body;
-	private String e_title;
+	private String e__title;
 	private String lid;
 	// private String[] review;
 	private Button choice_0;
@@ -108,15 +108,15 @@ public class MotionDetail extends FragmentActivity {
 			// String bdy = body;
 			if (enhanced != null) {
 				Object obj = enhanced.getTitleOrMy();
-				e_title = null;
+				e__title = null;
 				if (obj instanceof D_Document)
-					e_title = ((D_Document) obj).getDocumentUTFString();
+					e__title = ((D_Document) obj).getDocumentUTFString();
 				if (obj instanceof D_Document_Title)
-					e_title = ((D_Document_Title) obj).title_document
+					e__title = ((D_Document_Title) obj).title_document
 							.getDocumentUTFString();
 				// if (obj instanceof String) e_title = (String)obj;
 				if (obj instanceof String)
-					e_title = obj.toString();
+					e__title = obj.toString();
 
 				// bdy = //body + "\n\nEnhanced: " + "Enhancing: " + e_title;
 				// enhancingView.setText("Enhancing: " + e_title);
@@ -172,7 +172,7 @@ public class MotionDetail extends FragmentActivity {
 					if (DEBUG)
 						Log.d("CONST", "MotionDetail ToAddJust: oLID=" + oLID
 								+ " c=" + myself);
-					Toast.makeText(MotionDetail.this, "Fill your Profile!",
+					Toast.makeText(MotionDetail.this, getResources().getString(R.string.org_register_need),
 							Toast.LENGTH_LONG).show();
 					return;
 				}
@@ -220,7 +220,7 @@ public class MotionDetail extends FragmentActivity {
 					if (DEBUG)
 						Log.d("CONST", "MotionDetail ToAddJust: oLID=" + oLID
 								+ " c=" + myself);
-					Toast.makeText(MotionDetail.this, "Fill your Profile!",
+					Toast.makeText(MotionDetail.this,  getResources().getString(R.string.org_register_need),
 							Toast.LENGTH_LONG).show();
 					return;
 				}
@@ -262,7 +262,7 @@ public class MotionDetail extends FragmentActivity {
 					if (DEBUG)
 						Log.d("CONST", "MotionDetail ToAddJust: oLID=" + oLID
 								+ " c=" + myself);
-					Toast.makeText(MotionDetail.this, "Fill your Profile!",
+					Toast.makeText(MotionDetail.this,  getResources().getString(R.string.org_register_need),
 							Toast.LENGTH_LONG).show();
 					return;
 				}
@@ -357,7 +357,13 @@ public class MotionDetail extends FragmentActivity {
             Log.d("MotionDetail", "onOptionsItemSelected: export");
 			DD_SK d_SK = new DD_SK();
             Log.d("MotionDetail", "onOptionsItemSelected: add motion: "+crt_motion);
-			DD_SK.addMotionToDSSK(d_SK, crt_motion);
+//            if (crt_motion.getOrganizationGIDH() == null) {
+//                crt_motion.setOrganizationGID();
+//            }
+			if (! DD_SK.addMotionToDSSK(d_SK, crt_motion)) {
+                Toast.makeText(this.getApplicationContext(), "Unable to load Motion", Toast.LENGTH_SHORT).show();
+                return super.onOptionsItemSelected(item);
+            }
 
             long checked_justificationLID = JustificationBySupportType.checkedJustifLID;
             if (checked_justificationLID > 0) {
@@ -414,12 +420,12 @@ public class MotionDetail extends FragmentActivity {
 			Log.d(TAG, "MotionDetail: getPos " + pos + " ->title=" + title);
 			if (pos == MotionDetail.crt_motion.getActualChoices().length)
 				return JustificationBySupportType.newInstance(title, body,
-						e_title, "FirstFragment, Instance", pos);
+						e__title, "FirstFragment, Instance", pos);
 			// return
 			// JustificationsAll.newInstance("SecondFragment, Instance 1");
 			if (pos < MotionDetail.crt_motion.getActualChoices().length)
 				return JustificationBySupportType.newInstance(title, body,
-						e_title, "FirstFragment, Instance", pos);
+						e__title, "FirstFragment, Instance", pos);
 			return null;
 		}
 

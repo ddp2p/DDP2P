@@ -214,13 +214,13 @@
                 style="?android:listSeparatorTextViewStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/org_profile" />
+                android:text="Register" />
 
             <EditText
                 android:id="@+id/add_org_cat_name_profile"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/org_profile"
+                android:text="Register"
                 android:enabled="false"
                 android:inputType="textLongMessage|textAutoComplete|textCapSentences|textAutoCorrect" />
 

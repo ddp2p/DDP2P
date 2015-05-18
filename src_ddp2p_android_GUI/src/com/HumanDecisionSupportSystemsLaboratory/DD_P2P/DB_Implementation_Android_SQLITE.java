@@ -26,6 +26,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import net.ddp2p.common.util.DB_Implementation;
@@ -191,8 +192,34 @@ class DB_Implementation_Android_SQLITE implements DB_Implementation {
 	}
 
 	@Override
-	public void delete(String table, String[] arg1, boolean arg2)
+	public void delete(String sql, String[] params, boolean DEBUG)
 			throws P2PDDSQLException {
+        int table_start, table_end;
+        //TODO this is really needed
+        sql = sql.trim();
+        while (sql.endsWith(";")) sql = sql.substring(0, sql.length() - 1);
+
+        Pattern pattern1 = Pattern.compile("FROM", Pattern.CASE_INSENSITIVE);
+        Matcher matcher1 = pattern1.matcher(sql);
+        // Check all occurrences
+        if (matcher1.find()) {
+            table_start = matcher1.end()+1;
+        } else {
+            throw new RuntimeException("");
+            //return;
+        }
+
+        Pattern pattern = Pattern.compile("WHERE",  Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(sql);
+        // Check all occurrences
+        if (matcher.find()) {
+            table_end = matcher.start();
+            if (table_end > table_start) {
+                String table = sql.substring(table_start, table_end).trim();
+                this.db.delete(table, sql.substring(matcher.end()+1), params);
+                return;
+            }
+        }
 		throw new RuntimeException("");
 	}
 
