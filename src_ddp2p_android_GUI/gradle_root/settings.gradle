@@ -1,0 +1,2 @@
+include ':DDP2PAndroidV2'
+include ':appcompat_v7'
