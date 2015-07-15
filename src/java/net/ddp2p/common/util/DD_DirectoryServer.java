@@ -40,7 +40,16 @@ public class DD_DirectoryServer extends ASNObj implements StegoStructure {
 	 * SyncSaving
 	 * Call the run function of the thread directly, without starting a thread
 	 */
+	@Deprecated
 	public void sync_save() {
+		try {
+			saveSync();
+		} catch (P2PDDSQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	public void saveSync() throws P2PDDSQLException {
 		new DirectoriesSaverThread(this).run();
 	}
 	@Override

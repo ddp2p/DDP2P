@@ -46,8 +46,8 @@ public class Identity {
 	// Lists with detected local domains for interfaces
 	public static ArrayList<InetAddress> my_server_domains = new ArrayList<InetAddress>();
 	public static ArrayList<InetAddress> my_server_domains_loopback = new ArrayList<InetAddress>();
-	public static int port = -1;		// the port where the peer is listening
-	public static int udp_server_port = -1; // the port where the udp is listening
+	private static int port = -1;		// the port where the peer is listening
+	private static int udp_server_port = -1; // the port where the udp is listening
 	public static Object default_id_branch; // for Identities tree widget
 	public static Object current_id_branch;	// for Identities tree widget
 	
@@ -179,7 +179,7 @@ public class Identity {
 		
 		// probably we should not set the port artificially... (but should not hurt)
 		// It is set similarly in detectDomain()
-		int port = Identity.port, udp_server_port = Identity.udp_server_port;
+		int port = Identity.getPeerTCPPort(), udp_server_port = Identity.getPeerUDPPort();
 		if (port <= 0 ) port = Server.PORT;
 		if (port <= 0 ) udp_server_port = Server.PORT;
 		
@@ -864,6 +864,22 @@ public class Identity {
 
 	static public void setListing_directories_loaded(boolean listing_directories_loaded) {
 		Identity.listing_directories_loaded = listing_directories_loaded;
+	}
+
+	public static int getPeerTCPPort() {
+		return port;
+	}
+
+	public static void setPeerTCPPort(int port) {
+		Identity.port = port;
+	}
+
+	public static int getPeerUDPPort() {
+		return udp_server_port;
+	}
+
+	public static void setPeerUDPPort(int udp_server_port) {
+		Identity.udp_server_port = udp_server_port;
 	}
 
 }

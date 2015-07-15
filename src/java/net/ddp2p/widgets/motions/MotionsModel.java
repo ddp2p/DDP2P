@@ -1273,7 +1273,7 @@ public class MotionsModel extends AbstractTableModel implements TableModel, DBLi
 	public void advertise(int row) {
 		D_Motion _m = this.getMotion(row);
 		String hash = _m.getGID(); // Util.getString(this._hash[row]);
-		String org_hash = this.organization.global_organization_IDhash;
+		String org_hash = this.organization.getGIDH();
 		ClientSync.addToPayloadFix(RequestData.MOTI, hash, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 		if (ClientSync.payload.requested == null)ClientSync.payload.requested = new WB_Messages();
 		try {

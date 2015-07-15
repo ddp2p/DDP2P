@@ -44,6 +44,7 @@ public class RPC extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	String controlIP;
 	private static final byte CMD_START_UDPSERVER = 0;
 	private static final byte CMD_SET_DIRSERVER = 1;
+	private static final byte CMD_START_NATSERVER = 2;
 	public RPC(String _controlIP) {
 		super("RPC", true);
 		controlIP = _controlIP;
@@ -68,6 +69,14 @@ public class RPC extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			byte []cmd = new byte[1000];
 			int sz = is.read(cmd);
 			switch(cmd[0]) {
+			case CMD_START_NATSERVER:
+				try {
+					DD.startNATServer(cmd[1] != 0);
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				} catch (P2PDDSQLException e) {
+					e.printStackTrace();
+				}
 			case CMD_START_UDPSERVER:
 				try {
 					DD.startUServer(cmd[1] != 0, Identity.current_peer_ID);

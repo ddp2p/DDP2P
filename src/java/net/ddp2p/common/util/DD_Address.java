@@ -287,6 +287,9 @@ public class DD_Address implements StegoStructure {
 		if(DEBUG)System.err.println("DDAddress: getNiceDescription: end ");
 		return result+END;
 	}
+	public void saveSync() throws P2PDDSQLException {
+		save();
+	}
 	
 	public void save() throws P2PDDSQLException {
 		if (V0.equals(this.version)) save_V2();

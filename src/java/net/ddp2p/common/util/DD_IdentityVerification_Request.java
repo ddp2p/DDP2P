@@ -91,6 +91,10 @@ public class DD_IdentityVerification_Request extends ASNObj implements StegoStru
 		return __("DirectDemocracyP2P:")+Util.trimmed(verified.getForename(), 10)+" "+Util.trimmed(verified.getSurname(), 10)+" -- " +__("Identity verification");
 	}
 
+	@Override
+	public void saveSync() throws P2PDDSQLException {
+		save();
+	}
 
 	@Override
 	public void save() throws P2PDDSQLException {

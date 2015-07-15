@@ -187,6 +187,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	private static final String STOP_USERVER = __("Stop UDP Server");
 	private static final String STARTING_USERVER = __("Starting UDP Server");
 	private static final String STOPPING_USERVER = __("Stopping UDP Server");
+	private static final String START_NSERVER = __("Start NAT Server");
+	private static final String STOP_NSERVER = __("Stop NAT Server");
+	private static final String STARTING_NSERVER = __("Starting NAT Server");
+	private static final String STOPPING_NSERVER = __("Stopping NAT Server");
 	private static final String BROADCASTABLE_YES = __("Stop broadcastable");
 	private static final String BROADCASTABLE_NO = __("Start broadcastable");
 	public static final boolean DEBUG = false;
@@ -197,6 +201,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public JButton m_startBroadcastClient=new JButton(START_BROADCAST_CLIENT);
 	JButton startServer=new JButton(START_SERVER);
 	JButton startUServer=new JButton(START_USERVER);
+	JButton startNATServer=new JButton(START_NSERVER);
 	JButton toggleBroadcastable=new JButton(BROADCASTABLE_NO);
 	JButton startClient=new JButton(START_CLIENT);
 	public JButton startClientUpdates=new JButton(START_CLIENT_UPDATES);
@@ -241,6 +246,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	private static final String c_adhoc_mask = "adhoc_mask";
 	private static final String c_server = "server";
 	private static final String c_userver = "userver";
+	private static final String c_nserver = "nserver";
 	private static final String c_broadcast_server = "broadcast_server";
 	private static final String c_broadcast_client = "broadcast_client";
 	private static final String c_simulator = "simulator";
@@ -263,6 +269,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public JCheckBox serveDirectly;
 	public JCheckBox tcpButton;
 	public JCheckBox udpButton;
+	public JCheckBox natButton;
 	public JTextField natBorer;
 	public JButton m_startSimulator = new JButton(this.START_SIMULATOR);
 	
@@ -723,6 +730,13 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    udpButton.setMnemonic(KeyEvent.VK_U); 
 	    udpButton.setSelected(DD.ClientUDP);
 	    udpButton.addItemListener(this);
+	    c.add(cli);
+
+	    natButton = new JCheckBox("NAT Client");
+		cli.add(natButton);
+	    natButton.setMnemonic(KeyEvent.VK_N); 
+	    natButton.setSelected(DD.ClientNAT);
+	    natButton.addItemListener(this);
 	    c.add(cli);
 	    
 	    JPanel intervals = new JPanel();
@@ -1234,6 +1248,57 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		if(DEBUG)System.err.println("ControlPane:userv:done");
 
 	}
+	public void setNServerStatus(boolean _run) throws NumberFormatException, P2PDDSQLException  {
+		if(DEBUG)System.out.println("ControlPane:Setting nserver running status to: "+_run);
+		if(DD.GUI){
+			if(EventQueue.isDispatchThread()) {
+				if(_run)startNATServer.setText(STARTING_NSERVER);
+				else startNATServer.setText(STOPPING_NSERVER);	
+			}else{
+				if(_run)
+					EventQueue.invokeLater(new Runnable() {
+						public void run(){
+							startNATServer.setText(STARTING_NSERVER);
+						}
+					});
+				else
+					EventQueue.invokeLater(new Runnable() {
+						public void run(){
+							startNATServer.setText(STOPPING_NSERVER);	
+						}
+					});
+			}
+		}
+		if(DEBUG)System.out.println("ControlPanel: nserver started");
+
+		if(_run){
+			if(DEBUG)System.err.println("Setting nserver id: "+Identity.current_peer_ID);
+			DD.startNATServer(true);
+		}else{
+			DD.startNATServer(false);
+		}
+		if(DEBUG)System.err.println("Done Setting: "+_run);
+		if(DD.GUI) {
+			if(EventQueue.isDispatchThread()) {
+				if(Application.g_NATServer!=null) startNATServer.setText(STOP_NSERVER);
+				else startNATServer.setText(START_NSERVER);		
+			}
+			else
+				EventQueue.invokeLater(new Runnable(){
+					public void run(){
+						if(Application.g_NATServer!=null) startNATServer.setText(STOP_NSERVER);
+						else startNATServer.setText(START_NSERVER);		
+					}
+				});
+		}
+		
+		if(DEBUG)System.err.println("Save Setting: "+Application.g_NATServer);
+		
+		DD.setAppBoolean(DD.DD_DATA_NSERVER_INACTIVE_ON_START, DD.DD_DATA_NSERVER_ON_START_DEFAULT^(Application.g_NATServer!=null));
+
+		if(DEBUG)System.err.println("ControlPane:nserv:done");
+
+	}
 	public void setClientUpdatesStatus(boolean _run) {
 		boolean DEBUG = ControlPane.DEBUG || ClientUpdates.DEBUG;
 		if (DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: got servers status: updates="+_run);
@@ -1407,6 +1472,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				setServerStatus(Application.g_TCPServer == null);
 			}else if (c_userver.equals(e.getActionCommand())) {
 				setUServerStatus(Application.g_UDPServer == null);
+			}else if (c_nserver.equals(e.getActionCommand())) {
+				setNServerStatus(Application.g_NATServer == null);
 			}else if (c_broadcast_server.equals(e.getActionCommand())) {
 				if(DEBUG)System.out.println("Action Broadcast Server");
 				DD.setBroadcastServerStatus(Application.g_BroadcastServer == null);
@@ -1727,6 +1794,14 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				e1.printStackTrace();
 			}
 	    	
+	    } else if (source == natButton) {
+	    	DD.ClientNAT = (e.getStateChange() == ItemEvent.SELECTED);
+	    	try {
+	    		if(DD.ClientNAT) MainFrame.controlPane.setNServerStatus(true);
+				DD.setAppText(DD.APP_NON_ClientNAT, Util.bool2StringInt(DD.ClientNAT));
+			} catch (P2PDDSQLException e1) {
+				e1.printStackTrace();
+			}
 	    } if (source == this.m_const_orphans_show_with_neighbors) {
 	    	boolean val = (e.getStateChange() == ItemEvent.SELECTED);
 	    	DD.CONSTITUENTS_ORPHANS_SHOWN_BESIDES_NEIGHBORHOODS = val;

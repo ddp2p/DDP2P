@@ -93,8 +93,8 @@ public class OrgHandling {
 		}
 		*/
 		
-		if (od.global_organization_IDhash == null)
-			od.global_organization_IDhash = od.getOrgGIDHashFromGID();
+		if (od.getGIDH() == null)
+			od.setGIDH(od.getOrgGIDHashFromGID());
 		
 		boolean _changed[] = new boolean[1];
 		if (od.creator != null) {
@@ -157,7 +157,7 @@ public class OrgHandling {
 		
 		if(DEBUG)System.out.println("OrgHandling:updateOrg: org id="+id+" name="+od.getName());
 		if (id <= 0) {
-			id = D_Organization.getLIDbyGID(od.global_organization_ID);
+			id = D_Organization.getLIDbyGID(od.getGID());
 			if (DEBUG)System.out.println("OrgHandling:updateOrg: org id(GID)="+id+" name="+od.getName());
 			if (id <= 0) {
 				if (od.signature != null) {
@@ -177,13 +177,13 @@ public class OrgHandling {
 										__("You can disable such warnings from Control Panel, GUI"),
 										__("Failure signature organization"));
 						// might have been created while waiting for user
-						id = D_Organization.getLIDbyGID(od.global_organization_ID);
+						id = D_Organization.getLIDbyGID(od.getGID());
 					}
 				}
 				// created blocked on bad signature
 				String name = od.getName();
 				if (id <= 0)
-					id = D_Organization.insertTemporaryGID(od.global_organization_ID, od.global_organization_IDhash, od.blocked, od.getName(), peer);
+					id = D_Organization.insertTemporaryGID(od.getGID(), od.getGIDH(), od.blocked, od.getName(), peer);
 				if(DEBUG)System.out.println("OrgHandling:updateOrg: tmp id="+id+" name="+name);
 			}
 			od.setLID(id);
@@ -203,18 +203,18 @@ public class OrgHandling {
 			RequestData _sol_rq, RequestData new_rq, D_Peer peer) throws P2PDDSQLException {
 		boolean result = false;
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed start="+result);
-		result |= net.ddp2p.common.streaming.ConstituentHandling.integrateNewData(od.constituents, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
+		result |= net.ddp2p.common.streaming.ConstituentHandling.integrateNewData(od.constituents, od.getGID(), org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed cons="+result);
-		result |= net.ddp2p.common.streaming.NeighborhoodHandling.integrateNewData(od.neighborhoods, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
+		result |= net.ddp2p.common.streaming.NeighborhoodHandling.integrateNewData(od.neighborhoods, od.getGID(), org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed neig="+result);
-		result |= net.ddp2p.common.streaming.WitnessingHandling.integrateNewData(od.witnesses, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
+		result |= net.ddp2p.common.streaming.WitnessingHandling.integrateNewData(od.witnesses, od.getGID(), org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed witn="+result);
-		result |= net.ddp2p.common.streaming.MotionHandling.integrateNewData(od.motions, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
+		result |= net.ddp2p.common.streaming.MotionHandling.integrateNewData(od.motions, od.getGID(), org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
 		if(DEBUG) out.println("OrgHandling:integrateOtherOrgData: changed moti="+result);
-		result |= net.ddp2p.common.streaming.JustificationHandling.integrateNewData(od.justifications, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
-		result |= net.ddp2p.common.streaming.SignatureHandling.integrateNewData(od.signatures, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
-		result |= net.ddp2p.common.streaming.TranslationHandling.integrateNewData(od.translations, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
-		result |= net.ddp2p.common.streaming.NewsHandling.integrateNewData(od.news, od.global_organization_ID, org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
+		result |= net.ddp2p.common.streaming.JustificationHandling.integrateNewData(od.justifications, od.getGID(), org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
+		result |= net.ddp2p.common.streaming.SignatureHandling.integrateNewData(od.signatures, od.getGID(), org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
+		result |= net.ddp2p.common.streaming.TranslationHandling.integrateNewData(od.translations, od.getGID(), org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq, peer);
+		result |= net.ddp2p.common.streaming.NewsHandling.integrateNewData(od.news, od.getGID(), org_local_ID, arrival_time, recent_org_data?od:null, _sol_rq, new_rq);
 		return result;
 	}
 	/**
@@ -597,8 +597,7 @@ public class OrgHandling {
 					if (!DD.STREAM_SEND_ALL_FUTURE_ORG || all.arrival_date.before(Util.getCalendar(last_sync_date))){
 						crt_org = D_Organization.getEmpty();
 						_orgData.add(crt_org);//[of]
-						crt_org.global_organization_ID = org_gid;
-						crt_org.global_organization_IDhash = all.global_organization_IDhash;
+						crt_org.setGID(org_gid, all.getGIDH());
 						crt_org.params.certifMethods = all.params.certifMethods;
 					}else{
 						crt_org = all;
@@ -626,7 +625,7 @@ public class OrgHandling {
 					if(DEBUG) out.println("OrgHandling:getOrgData: SERVE_INDIRECTLY:"+_maxDate[0]);
 					//SpecificRequest availableHashes = new SpecificRequest();
 					RequestData rq = new RequestData();
-					rq.global_organization_ID_hash = crt_org.global_organization_IDhash;
+					rq.global_organization_ID_hash = crt_org.getGIDH();
 					if(rq.global_organization_ID_hash==null) rq.global_organization_ID_hash = D_Organization.getOrgGIDHashGuess(org_gid);
 					int BIG_LIMIT = 300;
 					if(DEBUG) out.println("\n\b******OrgHandling:getOrgData: get indirectly");

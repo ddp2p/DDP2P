@@ -1481,7 +1481,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		}
 		/**
 		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
-		 * available at the destination from enclosing fields, and will be filled out at explansion
+		 * available at the destination from enclosing fields, and will be filled out at expansion
 		 * by ASNSyncPayload.expand at decoding.
 		 * However, it is not that damaging when using compression, and can be stored without much overhead.
 		 * So it is left here for now.  Test if you comment out!

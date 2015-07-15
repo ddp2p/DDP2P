@@ -19,6 +19,7 @@ public class StartUp {
 
 	public static boolean directory_server_on_start;
 	public static boolean data_userver_on_start;
+	public static boolean data_nserver_on_start;
 	public static boolean data_server_on_start;
 	public static boolean data_client_on_start;
 	public static boolean data_client_updates_on_start;
@@ -253,7 +254,7 @@ public class StartUp {
 		if (directory_server_on_start){
 			DD.startDirectoryServer(true, -1);
 		}
-	
+		
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat dir");
 		if (data_userver_on_start){
 			DD.startUServer(true, Identity.current_peer_ID);
@@ -272,6 +273,11 @@ public class StartUp {
 		if (data_client_updates_on_start) {
 			ClientUpdates.startClient(true);
 		}
+		
+		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat nat");
+		if (data_nserver_on_start){
+			DD.startNATServer(true);
+		}
 	}
 	/**
 	 * Establishes whether the servers/clients should be running or not, based on database
@@ -281,12 +287,14 @@ public class StartUp {
 		DD.RELEASE = false;
 		DD.ClientTCP=DD.getAppBoolean(DD.APP_ClientTCP);
 		DD.ClientUDP=!DD.getAppBoolean(DD.APP_NON_ClientUDP);
+		DD.ClientNAT=!DD.getAppBoolean(DD.APP_NON_ClientNAT);
 		Broadcasting_Probabilities.initFromDB();
 	
 		DD.serveDataDirectly(DD.getAppBoolean(DD.SERVE_DIRECTLY));
 			
 		directory_server_on_start = DD.getAppBoolean(DD.DD_DIRECTORY_SERVER_ON_START);
 		data_userver_on_start = DD.DD_DATA_USERVER_ON_START_DEFAULT^DD.getAppBoolean(DD.DD_DATA_USERVER_INACTIVE_ON_START);
+		data_nserver_on_start = DD.DD_DATA_NSERVER_ON_START_DEFAULT^DD.getAppBoolean(DD.DD_DATA_NSERVER_INACTIVE_ON_START);
 		data_server_on_start = DD.getAppBoolean(DD.DD_DATA_SERVER_ON_START);
 		data_client_on_start = DD.DD_DATA_CLIENT_ON_START_DEFAULT^DD.getAppBoolean(DD.DD_DATA_CLIENT_INACTIVE_ON_START);
 		data_client_updates_on_start = DD.DD_DATA_CLIENT_UPDATES_ON_START_DEFAULT^DD.getAppBoolean(DD.DD_DATA_CLIENT_UPDATES_INACTIVE_ON_START);
@@ -298,6 +306,7 @@ public class StartUp {
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: got servers status: updates="+Util.bool2StringInt(data_client_updates_on_start));
 		
 		if(DD.ClientUDP) data_userver_on_start = true;
+		if(DD.ClientNAT) data_nserver_on_start = true;
 	}
 	
 }

@@ -267,9 +267,9 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		case TABLE_COL_DOMAIN:
 			return Identity.my_server_domains_loopback.get(row).getHostAddress();
 		case TABLE_COL_UDP:
-			return new Integer(Identity.udp_server_port);
+			return new Integer(Identity.getPeerUDPPort());
 		case TABLE_COL_TCP:
-			return new Integer(Identity.port);
+			return new Integer(Identity.getPeerTCPPort());
 		case TABLE_COL_CERTIFIED:
 			return Boolean.FALSE;
 		case TABLE_COL_PRIORITY:
@@ -290,9 +290,9 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		case TABLE_COL_DOMAIN:
 			return Identity.my_server_domains.get(row).getHostAddress();
 		case TABLE_COL_UDP:
-			return new Integer(Identity.udp_server_port);
+			return new Integer(Identity.getPeerUDPPort());
 		case TABLE_COL_TCP:
-			return new Integer(Identity.port);
+			return new Integer(Identity.getPeerTCPPort());
 		case TABLE_COL_CERTIFIED:
 			return Boolean.FALSE;
 		case TABLE_COL_PRIORITY:

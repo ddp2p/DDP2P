@@ -71,6 +71,10 @@ public class DD_Mirrors extends ASNObj implements StegoStructure {
 		return mirrors == null || mirrors.size() == 0;
 	}
 	@Override
+	public void saveSync() throws P2PDDSQLException {
+		new MirrorsSaverThread(this).run();
+	}
+	@Override
 	public void save() {
 		if(DEBUG) System.out.println("DD_Mirrors:save");
 		new MirrorsSaverThread(this).start();

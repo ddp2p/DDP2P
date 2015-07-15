@@ -511,7 +511,7 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 						Application_GUI.warning(__("Select organization!"), __("Generating data"));
 						return;
 			}
-			String global_organization_id = org.global_organization_ID;
+			String global_organization_id = org.getGID();
 			int sizeActiveHonestConsts = 100;
 			int nbAttackersIneligibleIDs_1 = 10;
 			int nbAttackersWitnessForIneligible_2 = 20;

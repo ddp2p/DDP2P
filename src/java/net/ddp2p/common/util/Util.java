@@ -51,9 +51,12 @@ import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -92,6 +95,39 @@ public class Util {
     public static String usedCipherGenkey = Cipher.RSA;
     public static String usedMDGenkey = Cipher.SHA256;
 
+    /**
+     * 
+     * @param site
+     * @return
+     */
+    public static ArrayList<InetAddress> getLocalIPs(boolean site) {
+    	ArrayList<InetAddress> result = new ArrayList<InetAddress>();
+    	Enumeration<NetworkInterface> e;
+		try {
+			e = NetworkInterface.getNetworkInterfaces();
+	    	while(e.hasMoreElements())
+	    	{
+	    	    NetworkInterface n = (NetworkInterface) e.nextElement();
+    	        if (DEBUG) System.out.println("Util: "+n);
+	    	    Enumeration<InetAddress> ee = n.getInetAddresses();
+	    	    while (ee.hasMoreElements())
+	    	    {
+	    	        InetAddress i = (InetAddress) ee.nextElement();
+	    	        if (DEBUG) System.out.println("Util: getLocalIP: "+i+" is site="+i.isSiteLocalAddress()+" link="+i.isLinkLocalAddress()+" local="+i.isAnyLocalAddress()+" loop="+i.isLoopbackAddress());
+	    	        if (i.isLoopbackAddress()) continue;
+	    	        if (i.isLinkLocalAddress() || i.isSiteLocalAddress()) {
+	    	        	if (site) result.add(i);
+	    	        } else {
+	    	        	if (!site) result.add(i);
+	    	        }
+	    	        //System.out.println(i.getHostAddress());
+	    	    }
+	    	}
+		} catch (SocketException e1) {
+			e1.printStackTrace();
+		}
+    	return result;
+    }
 
     public static String concat(String[] array, String sep) {
 		return concat(array, sep, "null");
@@ -418,6 +454,51 @@ public class Util {
 		src[1]=(byte) ((int16>>8) & 0xff);
 		copyBytes(results, offset, src, 2, 0);
 	}
+	
+	public static void copyBytes(byte[] results, int offset, byte[]src, int length, int src_offset){
+		if(results.length<length+offset)
+			System.err.println("Destination too short: "+results.length+" vs "+offset+"+"+length);
+		if(src.length<length+src_offset)
+			System.err.println("Source too short: "+src.length+" vs "+src_offset+"+"+length);
+		
+		for(int k=0; k<length; k++) {
+			results[k+offset] = src[src_offset+k];
+		}
+	}
+	public static void copyBytes(byte[] results, int offset, byte[]src, int length){
+		copyBytes(results, offset, src,length,0);
+	}
+	public static boolean copyBytes_src_dst( byte[] source, int sourceOffset, byte[] destination, int destinationOffset, int size ) {
+		if( size > (destination.length - destinationOffset) ) {
+			System.out.println("Destination buffer is too small for input: " + source.length + " : " + (destination.length - destinationOffset) );
+			return false;
+		}
+
+		for( int i = 0; i < source.length && i < size; i++ ) {
+			destination[ i + destinationOffset ] = source[ sourceOffset + i ];
+		}
+
+		return true;
+	}
+
+	public static boolean copyBytes( byte[] source, byte[] destination, int destinationOffset, int size ) {
+		return copyBytes_src_dst( source, 0, destination, destinationOffset, size );
+	}
+
+	public static boolean copyBytes( byte source, byte[] destination, int destinationOffset, int size ) {
+		byte[] tmp = ByteBuffer.allocate( 1 ).put( source ).array();
+		return copyBytes( tmp, destination, destinationOffset, size );
+	}
+
+	public static boolean copyBytes( short source, byte[] destination, int destinationOffset, int size ) {
+		byte[] tmp = ByteBuffer.allocate( 2 ).putShort( source ).array();
+		return copyBytes( tmp, destination, destinationOffset, size );
+	}
+
+	public static boolean copyBytes( int source, byte[] destination, int destinationOffset, int size ) {
+		byte[] tmp = ByteBuffer.allocate( 4 ).putInt( source ).array();
+		return copyBytes( tmp, destination, destinationOffset, size );
+	}
 	public static int ceil(double a){
 		return (int)Math.round(Math.ceil(a));
 	}
@@ -440,19 +521,6 @@ public class Util {
 		int32 |= (src[offset+0] & 0xff);
 		//System.out.println("Extract from: "+Util.byteToHex(src, " ")+" to: "+int32);
 		return int32;
-	}
-	public static void copyBytes(byte[] results, int offset, byte[]src, int length){
-		copyBytes(results, offset, src,length,0);
-	}
-	public static void copyBytes(byte[] results, int offset, byte[]src, int length, int src_offset){
-		if(results.length<length+offset)
-			System.err.println("Destination too short: "+results.length+" vs "+offset+"+"+length);
-		if(src.length<length+src_offset)
-			System.err.println("Source too short: "+src.length+" vs "+src_offset+"+"+length);
-		
-		for(int k=0; k<length; k++) {
-			results[k+offset] = src[src_offset+k];
-		}
 	}
     public static ResourceBundle getResourceBundle(){
     	try{
@@ -614,6 +682,21 @@ public class Util {
     public static String byteToHex(byte[] b){
     	return Util.byteToHex(b,"");
     }
+	/**
+	 *  Added by Chip Widmer
+	 * 
+	 * Equivalent to toHex()
+	 * @param bytes
+	 * @return
+	 */
+    public static String getDecimalString( byte[] bytes )
+    {
+        String s = "";
+        for ( byte b : bytes )
+            s += String.format( "%d ", b & 0xff );
+        return s;
+    }
+    
     public static String byteToHexDump(byte[] b){
     	if(b==null) return "NULL";
     	return Util.byteToHex(b,0,Math.min(b.length, Util.MAX_DUMP)," ")+((b.length>MAX_DUMP)?"...":"");
@@ -2890,6 +2973,36 @@ public class Util {
 		public static String renderNicely(String date) {
 			return date.substring(0, 4) + "-" + date.substring(4, 6) + "-" + date.substring(6, 8) + "-" + date.substring(8, 12);
 		}
+		/**
+		 * Transforms in binary, 8 bits per byte
+		 * @param bytes
+		 * @return
+		 */
+		public static String getBitString( byte[] bytes ) {
+			String s = "";
+			for( byte b : bytes ) {
+				s += Integer.toBinaryString( ( b & 255 | 256 ) ).substring( 1 );
+			}
+			return s;
+		}
+		/**
+		 * Transforms parameter into binary
+		 * @param integer
+		 * @param useShort
+		 * @return
+		 */
+		public static String getBitString( int integer, boolean useShort ) {
+			String s = "";
+			if( useShort ) {
+				// Zero out the first bits and only take the last 16.
+				s += Integer.toBinaryString( 0xFFFF & integer );
+			}
+			else {
+				s += Integer.toBinaryString( integer );
+			}
+			return s;
+		}
+
 }
 class GetHostName extends Thread{
 	String hostName = null;

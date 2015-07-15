@@ -1389,7 +1389,7 @@ class ConstituentsAddressNode extends ConstituentsBranch {
 
 	public void advertise(ConstituentsTree tree) {
 		String hash = D_Constituent.getGIDHashFromGID(this.n_data.global_nID);
-		String org_hash = tree.getModel().getOrganization().global_organization_IDhash;
+		String org_hash = tree.getModel().getOrganization().getGIDH();
 	//	String org_hash = D_Organization.getOrgGIDHashGuess(tree.getModel().getOrgGID());
 		ClientSync.addToPayloadFix(net.ddp2p.common.streaming.RequestData.NEIG, hash, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 	}
@@ -2185,7 +2185,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 				e.printStackTrace();
 				return null;
 			}
-		return crt_org.global_organization_ID;
+		return crt_org.getGID();
 	}
 	public void enableRefresh() {
 		this.refreshListener.enableRefresh();

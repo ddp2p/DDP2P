@@ -733,9 +733,9 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			if(DEBUG) System.out.println("UDPServer:<init>: start, connected port:"+_port);
 			try_connect(_port);
 			getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
-			Identity.udp_server_port = getUDPSocket().getLocalPort();
+			Identity.setPeerUDPPort(getUDPSocket().getLocalPort());
 			Application.g_UDPServer = this;
-			if(DEBUG)System.out.println("UDP Local port obtained is: "+Identity.udp_server_port);
+			if(DEBUG)System.out.println("UDP Local port obtained is: "+Identity.getPeerUDPPort());
 			//Server.detectDomain(Identity.udp_server_port);
 
 //			Identity peer_ID = new Identity();
@@ -766,9 +766,9 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			try_connect(_port);
 			if (DEBUG) System.out.println("UDPServer:<init>: start, connected");
 			getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
-			Identity.udp_server_port = getUDPSocket().getLocalPort();
+			Identity.setPeerUDPPort(getUDPSocket().getLocalPort());
 			Application.g_UDPServer = this;
-			if (DEBUG) System.out.println("UDPServer:<init>: Local port obtained is: "+Identity.udp_server_port);
+			if (DEBUG) System.out.println("UDPServer:<init>: Local port obtained is: "+Identity.getPeerUDPPort());
 			//Server.detectDomain(Identity.udp_server_port);
 			if (DEBUG) System.out.println("UDPServer:<init>: domain detected");
 			////MyselfHandling.set_my_peer_ID_UDP (id, ds);
@@ -804,7 +804,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		DirectoryAnnouncement da;
 		synchronized (UDPServer.directoryAnnouncementLock) {
 			if ((UDPServer.directoryAnnouncement == null) 
-					|| (UDPServer.directoryAnnouncement.address.udp_port != Identity.udp_server_port)) {
+					|| (UDPServer.directoryAnnouncement.address.udp_port != Identity.getPeerUDPPort())) {
 				da = new DirectoryAnnouncement();
 				da.branch = DD.BRANCH;
 				da.agent_version = DD.getMyVersion();
@@ -813,7 +813,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				da.instance = HandlingMyself_Peer.getMyPeerInstance();//Identity.current_peer_ID.instance;
 				//da.address.domain=Identity.domain.toString().split("/")[1];
 				da.address.setAddresses(Identity.current_server_addresses_list());
-				da.address.udp_port=Identity.udp_server_port;
+				da.address.udp_port=Identity.getPeerUDPPort();
 				//if (da.address.udp_port <= 0)	Util.printCallPath("UDPServer: "+da);
 				UDPServer.directoryAnnouncement = da;
 				if (DEBUG) out.println("UDPServer:prepDirAnn: da="+da);
@@ -1055,7 +1055,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	public int _name;
 	public void __run() {
 		try {
-			Server.detectDomain(Identity.udp_server_port);
+			Server.detectDomain(Identity.getPeerUDPPort());
 			if(DEBUG) System.out.println("UDPServer:<init>: domain detected");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -1073,7 +1073,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 //				Client2.conn  = new Connections(Application.db);
 //		}
 
-		DD.ed.fireServerUpdate(new CommEvent(this, null, null, "LOCAL", "UDPServer starting at:"+Identity.udp_server_port));
+		DD.ed.fireServerUpdate(new CommEvent(this, null, null, "LOCAL", "UDPServer starting at:"+Identity.getPeerUDPPort()));
 		//this.announceMyselfToDirectories();
 		int cnt = 0;
 		for (;;) {
@@ -1281,8 +1281,8 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	public static DatagramSocket getUDPSocket() {
 		return ds;
 	}
-	public static void setUDPSocket(DatagramSocket ds) {
-		UDPServer.ds = ds;
+	public static void setUDPSocket(DatagramSocket _ds) {
+		ds = _ds;
 	}
 }
 class AnnouncingThread extends net.ddp2p.common.util.DDP2P_ServiceThread {

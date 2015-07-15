@@ -1,4 +1,5 @@
 DIRS = scripts
+FOLDERS= net/ddp2p/common/network/*.java net/ddp2p/common/network/natpmp/*.java net/ddp2p/common/network/pcp/*.java net/ddp2p/common/network/stun/stun/*.java net/ddp2p/common/network/stun/keepalive/*.java  net/ddp2p/common/network/upnp/*.java 
 all:
 	-rm net/ddp2p/*/*.class
 	-rm net/ddp2p/common/*/*.class
@@ -7,7 +8,7 @@ all:
 	-rm */*.class
 	-rm util/tools/*.class
 	-rm widgets/app/*.class
-	javac -source 1.7 -target 1.7 -Xlint:unchecked -cp "jars/MultiSplit.jar:jars/javax.mail.jar:jars/sqlite4java.jar:jars/icepdf-viewer.jar:jars/icepdf-core.jar:jars/MetaphaseEditor-1.0.0.jar:./ "  net/ddp2p/ASN1/*.java  net/ddp2p/ciphersuits/*.java net/ddp2p/common/MCMC/*.java net/ddp2p/common/handling_wb/*.java net/ddp2p/common/updates/*.java net/ddp2p/common/plugin_data/*.java net/ddp2p/common/streaming/*.java net/ddp2p/common/data/*.java net/ddp2p/common/table/*.java net/ddp2p/common/util/*.java net/ddp2p/common/hds/*.java net/ddp2p/common/config/*.java net/ddp2p/common/wireless/*.java net/ddp2p/common/simulator/*.java net/ddp2p/java/WSupdate/*.java net/ddp2p/common/recommendationTesters/*.java net/ddp2p/common/examplePlugin/*.java  net/ddp2p/widgets/*/*.java  net/ddp2p/java/*/*.java tools/*.java util/tools/*.java util/db/*.java widgets/app/*.java
+	javac -source 1.7 -target 1.7 -Xlint:unchecked -cp "jars/MultiSplit.jar:jars/javax.mail.jar:jars/sqlite4java.jar:jars/icepdf-viewer.jar:jars/icepdf-core.jar:jars/MetaphaseEditor-1.0.0.jar:./ " ${FOLDERS}  net/ddp2p/ASN1/*.java  net/ddp2p/ciphersuits/*.java net/ddp2p/common/MCMC/*.java net/ddp2p/common/handling_wb/*.java net/ddp2p/common/updates/*.java net/ddp2p/common/plugin_data/*.java net/ddp2p/common/streaming/*.java net/ddp2p/common/data/*.java net/ddp2p/common/table/*.java net/ddp2p/common/util/*.java net/ddp2p/common/hds/*.java net/ddp2p/common/config/*.java net/ddp2p/common/wireless/*.java net/ddp2p/common/simulator/*.java net/ddp2p/java/WSupdate/*.java net/ddp2p/common/recommendationTesters/*.java net/ddp2p/common/examplePlugin/*.java  net/ddp2p/widgets/*/*.java  net/ddp2p/java/*/*.java tools/*.java util/tools/*.java util/db/*.java widgets/app/*.java
 	-xgettext -k_ tools/*.java util/tools/*.java net/ddp2p/*/*.java widgets/app/*.java net/ddp2p/widgets/*/*.java net/ddp2p/java/*/*.java net/ddp2p/common/*/*.java
 	-rm DD.jar
 	echo "Main-Class: net.ddp2p.widgets.app.MainFrame" > MANIFEST.MF

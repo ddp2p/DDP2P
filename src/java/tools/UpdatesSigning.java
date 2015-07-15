@@ -13,7 +13,7 @@ public class UpdatesSigning {
 	public static void main(String args[]) {
 		try {
 			//System.out.println("ClientUpdates: main: start");
-			if(args.length != 4) {System.err.println("Call with parameters: input key output install: ["+args.length+"] "+Util.concat(args, ",")); return;}
+			if (args.length != 4) {System.err.println("Call with parameters: input key output install: ["+args.length+"] "+Util.concat(args, ",")); return;}
 			String input = args[0];
 			String key = args[1];
 			String output = args[2];

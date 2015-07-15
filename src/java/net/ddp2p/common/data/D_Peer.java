@@ -3653,6 +3653,35 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				arrival_date, certified, priority, 
 				keep_old_priority_if_exists, dpi);
 	}
+	/**
+	 * 
+	 * @param addresses
+	 * @param dpi
+	 */
+	public void cleanOldSocketAddressesOtherThan(ArrayList<Address> addresses, D_PeerInstance dpi) {
+		if (dpi == null) { // add to root
+			for (int k = this.shared_addresses.size() - 1; k >= 0; k--) {
+				Address a = shared_addresses.get(k);
+				if (a.pure_protocol != Address.SOCKET) continue;
+				Address e = locateAddress(addresses, a, Address.SOCKET);
+				if (e == null) {
+					shared_addresses.remove(a);
+					this.dirty_addresses = true;
+					this.dirty_main = true;
+				}
+			}
+			return;
+		}
+		for (int k = dpi.addresses.size() - 1; k >= 0; k--) {
+			Address a = dpi.addresses.get(k);
+			if (a.pure_protocol != Address.SOCKET) continue;
+			Address e = locateAddress(addresses, a, Address.SOCKET);
+			if (e == null) {
+				dpi.addresses.remove(a);
+				this.dirty_addresses = true;
+			}
+		}
+	}
 	public void
 	addAddress(Address _address, String type, Calendar _creation_date,
 			String arrival_date, boolean certified, int priority, 

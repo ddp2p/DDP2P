@@ -225,9 +225,9 @@ public class ASNSyncPayload extends ASNObj{
 			}
 		}
 
-		if(o.global_organization_ID != null) 
+		if(o.getGID() != null) 
 			//o.global_organization_ID = 
-			addToDictionaryGetIdxS(dictionary_GIDs, o.global_organization_ID);
+			addToDictionaryGetIdxS(dictionary_GIDs, o.getGID());
 		//if(o.global_organization_IDhash != null) 
 		//	o.global_organization_IDhash = addToDictionaryGetIdxS(dictionary_GIDs, o.global_organization_IDhash);
 		if((o.params != null) && (o.params.creator_global_ID != null))
@@ -245,68 +245,68 @@ public class ASNSyncPayload extends ASNObj{
 			for(net.ddp2p.common.data.ASNConstituentOP c : o.constituents) {
 				if(c.constituent==null) continue;
 				expandConstDictionariesAtDecoding(c.constituent);
-				c.constituent.setOrganizationGID(o.global_organization_ID);
+				c.constituent.setOrganizationGID(o.getGID());
 				//c.constituent.neighborhood = ;// cannot reconstruct
 			}
 		if(o.neighborhoods != null)
 			for(ASNNeighborhoodOP n : o.neighborhoods) {
 				if(n.neighborhood==null) continue;
 				expandNeigDictionariesAtDecoding(n.neighborhood);
-				n.neighborhood.setOrgGID(o.global_organization_ID);
+				n.neighborhood.setOrgGID(o.getGID());
 			}
 		if(o.witnesses!=null) 
 			for(D_Witness w : o.witnesses) {
 				expandWitnDictionariesAtDecoding(w);
-				w.global_organization_ID = o.global_organization_ID;
+				w.global_organization_ID = o.getGID();
 			}
 		if(o.motions!=null)
 			for(D_Motion m : o.motions) {
 				expandMotiDictionariesAtDecoding(m);
-				m.setOrganizationGID(o.global_organization_ID);
+				m.setOrganizationGID(o.getGID());
 			}
 		if(o.signatures!=null)
 			for(D_Vote v : o.signatures) {
 				expandVoteDictionariesAtDecoding(v);
-				v.setOrganizationGID(o.global_organization_ID);
+				v.setOrganizationGID(o.getGID());
 			}
 		if(o.justifications!=null)
 			for(D_Justification j : o.justifications) {
 				expandJustDictionariesAtDecoding(j);
-				j.setOrgGID(o.global_organization_ID);
+				j.setOrgGID(o.getGID());
 			}
 		if(o.news!=null)
 			for(D_News e : o.news) {
 				expandNewsDictionariesAtDecoding(e);
-				e.global_organization_ID = o.global_organization_ID;
+				e.global_organization_ID = o.getGID();
 			}
 		if(o.translations!=null)
 			for(D_Translations t : o.translations) {
 				expandTranDictionariesAtDecoding(t);
-				t.global_organization_ID = o.global_organization_ID;
+				t.global_organization_ID = o.getGID();
 			}
 	}
 	public static void expandOrgDictionariesAtDecoding(D_Organization o, ArrayList<String> dictionary_GIDs) {
 		if(o.creator!=null){
 			expandPeerDictionariesAtDecoding(o.creator, dictionary_GIDs);
 		}
-		if(o.global_organization_ID != null) 
-			o.global_organization_ID = getDictionaryValueOrKeep(dictionary_GIDs, (o.global_organization_ID));
-		if(o.global_organization_IDhash != null) 
-			o.global_organization_IDhash = getDictionaryValueOrKeep(dictionary_GIDs, (o.global_organization_IDhash));
+		if(o.getGID() != null) 
+			o.setGID(getDictionaryValueOrKeep(dictionary_GIDs, (o.getGID())), null);
+		if(o.getGIDH() != null) 
+			o.setGIDH(getDictionaryValueOrKeep(dictionary_GIDs, (o.getGIDH())));
 		if((o.params != null) && (o.params.creator_global_ID != null))
 			o.params.creator_global_ID = getDictionaryValueOrKeep(dictionary_GIDs, (o.params.creator_global_ID));
 
 		// reconstruct hash
-		if(o.global_organization_ID!=null){
-			o.global_organization_IDhash = o.getOrgGIDHashFromGID();
+		if(o.getGID()!=null){
+			o.setGIDH(o.getOrgGIDHashFromGID());
 			if(DEBUG){
-				String guess = D_Organization.getOrgGIDHashGuess(o.global_organization_ID);
-				String fix = o.global_organization_IDhash;
+				String guess = D_Organization.getOrgGIDHashGuess(o.getGID());
+				String fix = o.getGIDH();
 				if(guess.compareTo(fix)!=0){
 					Util.printCallPath("assumption failed: probably the org method is not passed");
 					System.err.println("ASNSyncPayload:expandOrgDictionariesAtDecoding: guess is="+guess);
 					System.err.println("ASNSyncPayload:expandOrgDictionariesAtDecoding: fix is="+fix);
-					System.err.println("ASNSyncPayload:expandOrgDictionariesAtDecoding: orig is="+o.global_organization_ID);
+					System.err.println("ASNSyncPayload:expandOrgDictionariesAtDecoding: orig is="+o.getGID());
 					System.err.println("ASNSyncPayload:expandOrgDictionariesAtDecoding: org is="+o);
 				}
 			}

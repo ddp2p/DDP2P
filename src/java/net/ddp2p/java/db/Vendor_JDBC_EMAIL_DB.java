@@ -32,7 +32,7 @@ public class Vendor_JDBC_EMAIL_DB implements net.ddp2p.common.config.Vendor_DB_E
 	@Override
 	public boolean db_copyData(File database_old, File database_new,
 			BufferedReader DDL, String[] _DDL, boolean _SQLITE4JAVA) {
-		if(_SQLITE4JAVA){
+		if (_SQLITE4JAVA) {
 			try{
 				boolean result = DBAlter_Implementation_Sqlite4Java._copyData(database_old, database_new, DDL, _DDL);
 				if (result) return result;

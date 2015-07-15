@@ -74,6 +74,11 @@ public class DD_Testers extends ASNObj implements StegoStructure {
 		return testers == null || testers.size() == 0;
 	}
 	@Override
+	public void saveSync() throws P2PDDSQLException {
+		new TesterSaverThread(this).run();
+	}
+
+	@Override
 	public void save() {
 		if(DEBUG) System.out.println("DD_Testers:save");
 		new TesterSaverThread(this).start();

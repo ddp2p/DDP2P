@@ -260,10 +260,13 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 			
 		MainFrame.controlPane.tcpButton.removeItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.udpButton.removeItemListener(MainFrame.controlPane);
+		MainFrame.controlPane.natButton.removeItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.tcpButton.setSelected(DD.ClientTCP);
 		MainFrame.controlPane.udpButton.setSelected(DD.ClientUDP);
+		MainFrame.controlPane.natButton.setSelected(DD.ClientNAT);
 		MainFrame.controlPane.tcpButton.addItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.udpButton.addItemListener(MainFrame.controlPane);
+		MainFrame.controlPane.natButton.addItemListener(MainFrame.controlPane);
 			
 			
 		MainFrame.controlPane.serveDirectly.removeItemListener(MainFrame.controlPane);
@@ -285,6 +288,9 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat dir");
 		if (StartUp.data_userver_on_start){
 			MainFrame.controlPane.setUServerStatus(true);
+		}
+		if (StartUp.data_nserver_on_start){
+			MainFrame.controlPane.setNServerStatus(true);
 		}
 		
 		if (StartUp.data_userver_on_start){

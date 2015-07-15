@@ -111,16 +111,16 @@ public class WB_Messages extends ASNObj{
 	}
 	public String toString() {
 		String result = "\n WB_Messages[";
-		if(peers != null) result += "\n  peers = "+ Util.concat(peers, "\n", "null");
-		if(orgs != null) result += "\n  orgs = "+ Util.concat(orgs, "\n", "null");
-		if(cons != null) result += "\n  cons = "+ Util.concat(cons, "\n", "null");
-		if(neig != null) result += "\n  neig = "+ Util.concat(neig, "\n", "null");
-		if(moti != null) result += "\n  moti = "+ Util.concat(moti, "\n", "null");
-		if(witn != null) result += "\n  witn = "+ Util.concat(witn, "\n", "null");
-		if(just != null) result += "\n  just = "+ Util.concat(just, "\n", "null");
-		if(sign != null) result += "\n  sign = "+ Util.concat(sign, "\n", "null");
-		if(news != null) result += "\n  news = "+ Util.concat(news, "\n", "null");
-		if(tran != null) result += "\n  tran = "+ Util.concat(tran, "\n", "null");
+		if(peers != null) result += "\n  WM peers = ["+ Util.concat(peers, "\n", "null")+" WM]";
+		if(orgs != null) result += "\n  WM orgs = ["+ Util.concat(orgs, "\n", "null"+" WM]");
+		if(cons != null) result += "\n  WM cons = ["+ Util.concat(cons, "\n", "null")+" WM]";
+		if(neig != null) result += "\n  WM neig = ["+ Util.concat(neig, "\n", "null")+" WM]";
+		if(moti != null) result += "\n  WM moti = ["+ Util.concat(moti, "\n", "null")+" WM]";
+		if(witn != null) result += "\n  WM witn = ["+ Util.concat(witn, "\n", "null")+" WM]";
+		if(just != null) result += "\n  WM just = ["+ Util.concat(just, "\n", "null")+" WM]";
+		if(sign != null) result += "\n  WM sign = ["+ Util.concat(sign, "\n", "null")+" WM]";
+		if(news != null) result += "\n  WM news = ["+ Util.concat(news, "\n", "null")+" WM]";
+		if(tran != null) result += "\n  WM tran = ["+ Util.concat(tran, "\n", "null")+" WM]";
 		result += "\n]";
 		return result;
 	}
@@ -435,7 +435,7 @@ public class WB_Messages extends ASNObj{
 			//org.store(rq);
 			///_obtained.orgs.add(org.global_organization_ID);
 			//obtained.orgs.add(org.global_organization_ID_hash);
-			orgs.add(org.global_organization_ID);
+			orgs.add(org.getGID());
 
 			boolean _changed[] = new boolean[1];
 			//RequestData _new_rq = missing_sr.get(org.getGID());
@@ -550,7 +550,15 @@ public class WB_Messages extends ASNObj{
 		for(D_Motion m: r.moti) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle moti: "+m);
 			if(DEBUG) System.out.println("WB_Messages: store: handle moti: "+m.getGID()+" "+m.getMotionTitle());
-			rq = missing_sr.get(m.getOrganizationGID_force());
+
+			String oGID = m.getOrganizationGID_force();
+			if (oGID == null) {
+				if (_DEBUG) System.out.println("WB_Messages: store: no GID handling moti: "+m);
+				if (_DEBUG) System.out.println("WB_Messages: store: faulty: "+r);
+				continue;
+			}
+			rq = null;
+			if (missing_sr != null) rq = missing_sr.get(oGID);
 			if (rq == null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();

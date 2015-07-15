@@ -1,6 +1,27 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2015 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.ASN1;
 
 import java.math.BigInteger;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -47,6 +68,30 @@ public class ASN1_Util {
 	public static Calendar getCalendar(String gdate) {
 		return getCalendar(gdate, null);
 	}
+	/**
+	 * uses format "yyyy-MM-dd:hh'h'mm'm'ss's'SSS'Z'"
+	 * @param cal
+	 * @return
+	 */
+	public static String getStringDate(Calendar cal) {
+		SimpleDateFormat dFormat=new SimpleDateFormat ("yyyy-MM-dd:hh'h'mm'm'ss's'SSS'Z'"); /*set the date format*/
+		dFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+		return dFormat.format(cal.getTime());
+	}
+    /**
+     * ses format "yyyy-MM-dd:hh'h'mm'm'ss's'SSS'Z'"
+     * @param date
+     * @return
+     */
+	public static Calendar getCalendarFromNice(String date){
+		date = date.replace("h", "");
+		date = date.replace("m", "");
+		date = date.replace("s", ".");
+		date = date.replace(":", "");
+		date = date.replace("-", "");
+		return getCalendar(date, null);
+	}
+
 	/**
 	 * Get a Calendar for this gdate, or ndef in case of failure
 	 * @param gdate

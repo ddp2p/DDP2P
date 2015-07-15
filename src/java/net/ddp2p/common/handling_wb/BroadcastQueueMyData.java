@@ -774,7 +774,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 			if(!asn1.organization.verifySignature())//asn1.organization.signature))
 				if(_DEBUG)System.out.println("Fail to verify signature!");
 		}
-		if(DEBUG)System.out.println("ORG_ID : "+asn1.organization.getLIDbyGID(asn1.organization.global_organization_ID));
+		if(DEBUG)System.out.println("ORG_ID : "+asn1.organization.getLIDbyGID(asn1.organization.getGID()));
 		Encoder enc = asn1.getEncoder();
 		byte msg [] = enc.getBytes();
 		Decoder d = new Decoder(msg);

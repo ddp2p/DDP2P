@@ -107,6 +107,7 @@ class SK_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 
 public class DD_SK extends ASNObj implements StegoStructure {
 	private static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
 	public final int V0 = 0;
 	int version = V0;
 	
@@ -162,6 +163,16 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		if (DEBUG) System.out.println("DD_SK: save");
 		new SK_SaverThread(this).start();
     	if (true) {
+    		Application_GUI.warning(__("Work Launched to Add Objects:")+" \n"+this.getNiceDescription(), __("Import DD_SK"));
+    		//return;
+    	}
+	}
+	
+	@Override
+	public void saveSync() throws P2PDDSQLException {
+		if (DEBUG) System.out.println("DD_SK: save");
+		new SK_SaverThread(this).run();
+    	if (false) {
     		Application_GUI.warning(__("Work Launched to Add Objects:")+" \n"+this.getNiceDescription(), __("Import DD_SK"));
     		//return;
     	}
@@ -270,22 +281,39 @@ public class DD_SK extends ASNObj implements StegoStructure {
 	}
 	@Override
 	public DD_SK decode(Decoder dec) throws ASN1DecoderFail {
+		String default_orgGID = null;
+		String default_orgGIDH = null;
 		Decoder d = dec.getContent();
 		if (d.getTypeByte() == DD.TAG_AP0) version = d.getFirstObject(true).getInteger(DD.TAG_AP0).intValue();
 		if (d.getTypeByte() == DD.TAG_AC0)
 			sk =  d.getFirstObject(true).getSequenceOfAL(DD_SK_Entry.getASN1Tag(), new DD_SK_Entry());
 		if (d.getTypeByte() == DD.TAG_AC1)
 			peer =  d.getFirstObject(true).getSequenceOfAL(D_Peer.getASN1Type(), D_Peer.getEmpty());
-		if (d.getTypeByte() == DD.TAG_AC2)
+		if (d.getTypeByte() == DD.TAG_AC2) {
 			org =  d.getFirstObject(true).getSequenceOfAL(D_Organization.getASN1Type(), D_Organization.getEmpty());
+			if (org.size() == 1) {
+				default_orgGID = org.get(0).getGID(); 
+				default_orgGIDH = org.get(0).getGIDH();
+				if (DEBUG) System.out.println("DD_SK: has a GID for orgs: " + default_orgGID+" H="+default_orgGIDH);
+			}
+		}
 		if (d.getTypeByte() == DD.TAG_AC3)
 			neigh =  d.getFirstObject(true).getSequenceOfAL(D_Neighborhood.getASN1Type(), D_Neighborhood.getEmpty());
 		if (d.getTypeByte() == DD.TAG_AC4)
 			constit =  d.getFirstObject(true).getSequenceOfAL(D_Constituent.getASN1Type(), D_Constituent.getEmpty());
 		if (d.getTypeByte() == DD.TAG_AC5)
 			witn =  d.getFirstObject(true).getSequenceOfAL(D_Witness.getASN1Type(), D_Witness.getEmpty());
-		if (d.getTypeByte() == DD.TAG_AC6)
+		if (d.getTypeByte() == DD.TAG_AC6) {
 			moti =  d.getFirstObject(true).getSequenceOfAL(D_Motion.getASN1Type(), D_Motion.getEmpty());
+			for (D_Motion m : moti) {
+				if (m.getOrganizationGIDH() == null) {
+					if (_DEBUG) System.out.println("DD_SK: put a GIDH for "+m);
+					m.setOrganizationGID(default_orgGIDH);
+					if (_DEBUG) System.out.println("DD_SK: did put a GIDH for "+m);
+				} else
+					if (DEBUG) System.out.println("DD_SK: had a GIDH for "+m);
+			}
+		}
 		if (d.getTypeByte() == DD.TAG_AC7)
 			just =  d.getFirstObject(true).getSequenceOfAL(D_Justification.getASN1Type(), D_Justification.getEmpty());
 		if (d.getTypeByte() == DD.TAG_AC8)
@@ -397,23 +425,25 @@ public class DD_SK extends ASNObj implements StegoStructure {
 			addConstituentToDSSK(d_SK, my_vote.getConstituent_force());
 		}		
 	}
-	public static void addMotionToDSSK(DD_SK d_SK, D_Motion crt_motion) {
+	public static boolean addMotionToDSSK(DD_SK d_SK, D_Motion crt_motion) {
 		
-		if (crt_motion == null) return;
+		if (crt_motion == null) return false;
 		// skip if no GID
 		String mGID = crt_motion.getGID();
-		if (mGID == null) return;
+		if (mGID == null) return false;
 		// skip if already in
 		for (D_Motion old_m : d_SK.moti) {
-			if (Util.equalStrings_and_not_null(old_m.getGID(), mGID)) return;
+			if (Util.equalStrings_and_not_null(old_m.getGID(), mGID)) return false;
 		}
+		
+		D_Organization org = crt_motion.getOrganization();
+		if (org == null) return false;
 		
 		d_SK.moti.add(crt_motion);
 		
 		D_Constituent constituent = crt_motion.getConstituent();
 		addConstituentToDSSK(d_SK, constituent);
 		
-		D_Organization org = crt_motion.getOrganization();
 		addOrganizationToDSSK(d_SK, org);
 		
 		// identify myself
@@ -443,6 +473,7 @@ public class DD_SK extends ASNObj implements StegoStructure {
 			D_Justification j = my_vote.getJustificationFromObjOrLID();
 			addJustificationToDSSK(d_SK, j);
 		}
+		return true;
 	}
 
 	private static void addVoteIfNew(DD_SK d_SK, D_Vote my_vote) {

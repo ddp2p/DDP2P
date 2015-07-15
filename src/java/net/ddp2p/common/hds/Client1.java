@@ -221,7 +221,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 					DD.ed.fireClientUpdate(new CommEvent(this, null, null,"FAIL ADDRESS", sock_addr+" Peer is Myself"));
 					continue; //return false;
 				}
-				if(ClientSync.isMyself(Identity.port, sock_addr,sad)){
+				if(ClientSync.isMyself(Identity.getPeerTCPPort(), sock_addr,sad)){
 					if(DEBUG) out.println("Client: Peer is myself!");
 					continue;
 				}
@@ -294,7 +294,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 				sock_addr=sad.isa_tcp;//getSockAddress(address);
 				if(DEBUG) out.println("UClient:try_connect: checkMyself");
 				
-				if(ClientSync.isMyself(Identity.udp_server_port, sock_addr, sad)){
+				if(ClientSync.isMyself(Identity.getPeerUDPPort(), sock_addr, sad)){
 					if(DEBUG) out.println("Client:try_connect: UPeer "+peer_name+" is myself!"+sock_addr);
 					//System.out.print("#3");
 					continue;
@@ -314,7 +314,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 				aup.senderIsInitiator=true;
 				aup.initiator_domain = Identity.get_a_server_domain();//client.getInetAddress().getHostAddress();
 				aup.initiator_globalID=Identity.current_peer_ID.getPeerGID(); //dr.initiator_globalID;
-				aup.initiator_port = Identity.udp_server_port;//dr.UDP_port;
+				aup.initiator_port = Identity.getPeerUDPPort();//dr.UDP_port;
 				aup.peer_globalID=global_peer_ID;
 				aup.peer_domain=sad.getAddress().domain;//;
 				if(DEBUG) System.out.println("Client:try_connect: domain ping = \""+aup.peer_domain+"\" vs \""+Util.getNonBlockingHostName(sock_addr)+"\"");
@@ -401,7 +401,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 				    global_peer_ID,
 				    Identity.current_peer_ID.getPeerGID(),
 				    Identity.current_peer_ID.peerInstance,
-				    Identity.udp_server_port,
+				    Identity.getPeerUDPPort(),
 				     peer_ID, 
 					new Address(dir_address));
 			byte[] msg = dr.encode();

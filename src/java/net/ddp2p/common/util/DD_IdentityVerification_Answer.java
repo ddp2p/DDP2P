@@ -57,6 +57,9 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 
 	public DD_IdentityVerification_Answer() {
 	}
+	public void saveSync() throws P2PDDSQLException {
+		save();
+	}
 	@Override
 	public void save() throws P2PDDSQLException {
 		long constituent_id = -1;

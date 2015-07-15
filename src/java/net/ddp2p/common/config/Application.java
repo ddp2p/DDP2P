@@ -27,6 +27,7 @@ import net.ddp2p.common.hds.DirectoryServer;
 import net.ddp2p.common.hds.IClient;
 import net.ddp2p.common.hds.Server;
 import net.ddp2p.common.hds.UDPServer;
+import net.ddp2p.common.network.NATServer;
 import net.ddp2p.common.simulator.Fill_database;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.Util;
@@ -44,6 +45,7 @@ public class Application{
 	static public DirectoryServer g_DirectoryServer;
 	static public Server g_TCPServer;
 	static public UDPServer g_UDPServer; //have to unify with the one in DD
+	static public NATServer g_NATServer;
 	static public BroadcastServer g_BroadcastServer = null; // reference to the unique BroadcastServer
 	static public BroadcastClient g_BroadcastClient = null; // reference to the unique BroadcastClient
 	static public IClient g_PollingStreamingClient;

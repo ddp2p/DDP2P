@@ -954,10 +954,41 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			return getJustByLID_AttemptCacheOnly(LID.longValue(), load_Globals);
 		}
 	}
-
+	/**
+	 * 
+	 * @param LID
+	 * @param load_Globals
+	 * @param keep
+	 * @return
+	 */
 	static public D_Justification getJustByLID(String LID, boolean load_Globals, boolean keep) {
 		return getJustByLID(Util.Lval(LID), load_Globals, keep);
 	}
+	/**
+	 * 
+	 * @param LID
+	 * @param load_Globals
+	 * @return
+	 */
+	static public D_Justification getJustByLIDNoKeep(String LID, boolean load_Globals) {
+		return getJustByLID(Util.Lval(LID), load_Globals, false);
+	}
+	/**
+	 * 
+	 * @param LID
+	 * @param load_Globals
+	 * @return
+	 */
+	static public D_Justification getJustByLIDNoKeep(Long LID, boolean load_Globals) {
+		return getJustByLID(LID, load_Globals, false);
+	}
+	/**
+	 * 
+	 * @param LID
+	 * @param load_Globals
+	 * @param keep
+	 * @return
+	 */
 	static public D_Justification getJustByLID(Long LID, boolean load_Globals, boolean keep) {
 		// boolean DEBUG = true;
 		if (DEBUG) System.out.println("D_Justification: getJustByLID: "+LID+" glob="+load_Globals);

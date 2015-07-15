@@ -69,8 +69,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 
 	// Data signed
 	public String version=V0; //PrintableString
-	public String global_organization_ID; //PrintableString
-	public String global_organization_IDhash;
+	private String global_organization_ID; //PrintableString
+	private String global_organization_IDhash;
 	private String name; //UTF8String OPTIONAL
 	public Calendar reset_date;
 	public Calendar last_sync_date;
@@ -521,7 +521,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public String toString() {
 		String result = "OrgData: [tmp="+temporary;
 		result += ";\n  ver = "+version;
-		result += ";\n  id  = "+global_organization_ID;
+		result += ";\n  id  = "+getGID();
 		result += ";\n  name="+getName();
 		result += ";\n  broadcast_rule="+broadcast_rule;
 		result += ";\n  neighborhoods_rule="+neighborhoods_rule;
@@ -627,7 +627,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		new_org.setTemporary(false);
 		new_org.setCreationDate();
 		//D_Organization.DEBUG = true;
-		String GID = new_org.global_organization_IDhash = new_org.global_organization_ID = new_org.getOrgGIDandHashForGrassRoot(); // sign();
+		String GID = new_org.getOrgGIDandHashForGrassRoot();
+		//String GID = 
+				new_org.setGID(GID, GID); // sign();
 		
 		//D_Organization org = D_Organization.getOrgByGID_or_GIDhash(GID, GID, true, true, true, null);
 		D_Organization o = D_Organization.storeRemote(new_org, null);
@@ -914,7 +916,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	
 	
 	private D_Organization initNew(String gID, String gIDH, D_Peer __peer) {
-		if (this.global_organization_ID != null)
+		if (this.getGID() != null)
 			assert(this.getGID().equals(gID));
 		gIDH = D_Organization.getOrgGIDHashGuess(gIDH);
 		gID = D_Organization.getOrgGIDGuess(gID);
@@ -1306,8 +1308,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	private void init(ArrayList<Object> row, boolean extra_fields, boolean extra_creator) throws P2PDDSQLException {
 		setLID(Util.getString(row.get(net.ddp2p.common.table.organization.ORG_COL_ID),null));
 		this.arrival_date = Util.getCalendar(Util.getString(row.get(net.ddp2p.common.table.organization.ORG_COL_ARRIVAL)),null);
-		this.global_organization_ID = Util.getString(row.get(net.ddp2p.common.table.organization.ORG_COL_GID),null);
-		this.global_organization_IDhash = Util.getString(row.get(net.ddp2p.common.table.organization.ORG_COL_GID_HASH),null);
+		this.setGID(Util.getString(row.get(net.ddp2p.common.table.organization.ORG_COL_GID),null),
+				Util.getString(row.get(net.ddp2p.common.table.organization.ORG_COL_GID_HASH),null));
 		this.setName(Util.getString(row.get(net.ddp2p.common.table.organization.ORG_COL_NAME),null));
 		this.params = new D_OrgParams();
 		this.params.languages = D_OrgConcepts.stringArrayFromString(Util.getString(row.get(net.ddp2p.common.table.organization.ORG_COL_LANG)));
@@ -1503,7 +1505,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (ASNSyncRequest.DEBUG) System.out.println("Encoding OrgData: "+this);
 		Encoder enc = new Encoder().initSequence();
 		//enc.addToSequence(new Encoder(version,false));
-		enc.addToSequence(new Encoder(global_organization_ID,false));
+		enc.addToSequence(new Encoder(getGID(),false));
 		if (getName() != null) enc.addToSequence(new Encoder(getName()));
 		//if (last_sync_date != null) enc.addToSequence(new Encoder(last_sync_date));
 		if (params != null) enc.addToSequence(params.getEncoder().setASN1Type(DD.TAG_AC1));
@@ -1550,7 +1552,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if (ASNSyncRequest.DEBUG) System.out.println("Encoding OrgData: "+this);
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(version,false));
-		String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_organization_ID);
+		String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getGID());
 		enc.addToSequence(new Encoder(repl_GID,false));
 		if (getName() != null) enc.addToSequence(new Encoder(getName()));
 		if (last_sync_date != null) enc.addToSequence(new Encoder(last_sync_date));
@@ -1617,9 +1619,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if((decoder==null)||(decoder.getTypeByte()==Encoder.TAG_NULL)) return null;
 		Decoder dec = decoder.getContent();
 		version = dec.getFirstObject(true, Encoder.TAG_PrintableString).getString(Encoder.TAG_PrintableString);
-		global_organization_ID = dec.getFirstObject(true, Encoder.TAG_PrintableString).getString(Encoder.TAG_PrintableString);
+		setGID(dec.getFirstObject(true, Encoder.TAG_PrintableString).getString(Encoder.TAG_PrintableString), null);
 		
-		if (DEBUG) System.out.println("OrgData id="+global_organization_ID);
+		if (DEBUG) System.out.println("OrgData id="+getGID());
 		if (dec.getTypeByte() == Encoder.TAG_UTF8String) {
 			setName(dec.getFirstObject(true, Encoder.TAG_UTF8String).getString(Encoder.TAG_UTF8String));
 			if (DEBUG) System.out.println("OrgData name="+getName());
@@ -1778,9 +1780,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @return
 	 */
 	public String getGIDH_or_guess() {
-		if ((global_organization_IDhash == null) && (global_organization_ID != null))
-			global_organization_IDhash = D_Organization.getOrgGIDHashGuess(global_organization_ID);
-		return this.global_organization_IDhash;
+		if ((getGIDH() == null) && (getGID() != null))
+			setGIDH(D_Organization.getOrgGIDHashGuess(getGID()));
+		return this.getGIDH();
 	}
 	/**
 	 * Returns the GIDH variables as is
@@ -1827,9 +1829,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		String result = null;
 		if (params == null) return null;
 		if (params.certifMethods == net.ddp2p.common.table.organization._GRASSROOT) {
-			result = global_organization_ID;
+			result = getGID();
 		} else if (params.certifMethods == net.ddp2p.common.table.organization._AUTHORITARIAN) {
-			result = getOrgGIDHashAuthoritarian(global_organization_ID);
+			result = getOrgGIDHashAuthoritarian(getGID());
 		} else result = null;
 		return  result;
 	}
@@ -1884,12 +1886,13 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			if (DEBUG) System.out.println("D_Organization:setGID: change GID");
 //			if (oldGID != null)
 //				loaded_in_cache |= (null!=D_Organization_Node.loaded_By_GID.remove(oldGID));
+			//this.setGID (gID);
 			this.global_organization_ID = gID;
 			this.dirty_main = true;
 		}
 		if ((gID != null) && (gIDH == null)) {
 			if (DEBUG) System.out.println("D_Organization:setGID: compute GIDH");
-			if (!D_GIDH.isCompactedGID(gID)) {
+			if (! D_GIDH.isCompactedGID(gID)) {
 				gIDH = D_Organization.getOrgGIDHashGuess(gID);
 			} else {
 				// the next would be wrong if this si authoritarian!
@@ -1898,11 +1901,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			if (gIDH == null) Util.printCallPath("D_Organization: setGID:"+gID+" for: "+this);
 		}
 
-		if ( ! Util.equalStrings_null_or_not(global_organization_IDhash, gIDH)) {		
+		if ( ! Util.equalStrings_null_or_not(getGIDH(), gIDH)) {		
 			if (DEBUG) System.out.println("D_Organization:setGID: change GIDH");
 //			if (this.global_organization_IDhash != null)
 //				loaded_in_cache |= (null!=D_Organization_Node.loaded_By_GIDhash.remove(this.getGIDH_or_guess()));
-			this.global_organization_IDhash = gIDH;
+			this.setGIDH(gIDH);
 			this.dirty_main = true;
 		}
 		
@@ -1928,7 +1931,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			if (DEBUG) System.out.println("D_Organization:setGID: change GID");
 			if (oldGID != null)
 				loaded_in_cache |= (null!=D_Organization_Node.loaded_By_GID.remove(oldGID));
-			this.global_organization_ID = gID;
+			this.setGID(gID);
 			this.dirty_main = true;
 		}
 		if ((gID != null) && (gIDH == null)) {
@@ -1941,11 +1944,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			if (gIDH == null) Util.printCallPath("D_Organization: setGID:"+gID+" for: "+this);
 		}
 
-		if ( ! Util.equalStrings_null_or_not(global_organization_IDhash, gIDH)) {		
+		if ( ! Util.equalStrings_null_or_not(getGIDH(), gIDH)) {		
 			if (DEBUG) System.out.println("D_Organization:setGID: change GIDH");
-			if (this.global_organization_IDhash != null)
+			if (this.getGIDH() != null)
 				loaded_in_cache |= (null!=D_Organization_Node.loaded_By_GIDhash.remove(this.getGIDH_or_guess()));
-			this.global_organization_IDhash = gIDH;
+			this.setGIDH(gIDH);
 			this.dirty_main = true;
 		}
 		
@@ -2072,10 +2075,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 */
 	private long _storeAct() throws P2PDDSQLException {
 		// final boolean DEBUG = true;
-		if (DEBUG) out.println("D_Organization: storeAct: start "+this.global_organization_IDhash);
+		if (DEBUG) out.println("D_Organization: storeAct: start "+this.getGIDH());
 		//D_Peer source_peer = null;
 		synchronized(D_Organization.lock_organization_GID_storage ) {
-			if (DEBUG) out.println("D_Organization: storeAct: synced "+this.global_organization_IDhash);
+			if (DEBUG) out.println("D_Organization: storeAct: synced "+this.getGIDH());
 			long result = -1;
 			/*
 			//this.arrival_date = Util.getCalendar(arrival_time);
@@ -2114,8 +2117,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				if (getLIDstr() != null) filter = 1;
 				
 				String[] p = new String[net.ddp2p.common.table.organization.FIELDS_NOID + filter];
-				p[net.ddp2p.common.table.organization.ORG_COL_GID] = global_organization_ID;
-				p[net.ddp2p.common.table.organization.ORG_COL_GID_HASH] = global_organization_IDhash;
+				p[net.ddp2p.common.table.organization.ORG_COL_GID] = getGID();
+				p[net.ddp2p.common.table.organization.ORG_COL_GID_HASH] = getGIDH();
 				p[net.ddp2p.common.table.organization.ORG_COL_NAME] = getName();
 				p[net.ddp2p.common.table.organization.ORG_COL_NAME_CONS] = D_OrgConcepts.stringFromStringArray(concepts.name_constituent);
 				p[net.ddp2p.common.table.organization.ORG_COL_NAME_ORG] = D_OrgConcepts.stringFromStringArray(concepts.name_organization);
@@ -2671,12 +2674,17 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	*/
 	/**
-	 * makeGID
+	 * makeGID for grassroot without setting it
 	 * @return
 	 */
 	public String getOrgGIDandHashForGrassRoot() {
 		return getOrgGIDandHashForGrassRoot(null);
 	}
+	/**
+	 * Makes the GID for grassroot without setting it
+	 * @param verif
+	 * @return
+	 */
 	public String getOrgGIDandHashForGrassRoot(boolean[] verif){
 		byte[] hash = this.hash(DD.APP_ORGID_HASH);
 		if (verif != null)
@@ -2888,7 +2896,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * @return
 	 */
 	public boolean verifySignAuthoritarian() {
-		if(DEBUG) System.out.println("OrgData:verifySign: KEY=="+global_organization_ID);
+		if(DEBUG) System.out.println("OrgData:verifySign: KEY=="+getGID());
 		if(DEBUG) System.out.println("OrgData:verifySign: sign="+Util.byteToHex(signature, ":"));
 		this.loadGlobals();
 		Encoder enc = getSignableEncoder();
@@ -2897,7 +2905,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		
 		if ((! this.isAnonymous()) && !this.verifySignInitiator(msg)) return false;
 		
-		PK org_pk = Cipher.getPK(global_organization_ID);
+		PK org_pk = Cipher.getPK(getGID());
 		boolean result = Util.verifySign(msg, org_pk, signature);
 		if (! result) {
 			if(DEBUG) System.out.println("D_Organization:Failed Org verification:");
@@ -2932,10 +2940,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				boolean[]verif = new boolean[]{false};
 				String tmpGID = this.getOrgGIDandHashForGrassRoot(verif);
 				//if(!Util.equalBytes(hash, getHashFromGrassrootGID(global_organization_ID))) {
-				if (! verif[0] || (tmpGID == null) || (global_organization_ID == null) || (tmpGID.compareTo(global_organization_ID)!=0)) {
+				if (! verif[0] || (tmpGID == null) || (getGID() == null) || (tmpGID.compareTo(getGID())!=0)) {
 					verified = false;
 					if (_DEBUG) out.println("D_Organization:verifySignatureAllTypes: recomp hash="+tmpGID);
-					if (_DEBUG) out.println("D_Organization:verifySignatureAllTypes:      IDhash="+global_organization_ID);
+					if (_DEBUG) out.println("D_Organization:verifySignatureAllTypes:      IDhash="+getGID());
 					if (_DEBUG) out.println("D_Organization:verifySignatureAllTypes: exit grassroot signature verification failed:\n"+this);
 					if (_DEBUG) Util.printCallPath("");
 				}
@@ -3175,8 +3183,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.signature_initiator = oRG.signature_initiator;
 		this.concepts = oRG.concepts.getClone();
 		
-		if (! Util.equalStrings_null_or_not(this.global_organization_ID, oRG.global_organization_ID)) {
-			this.global_organization_ID = oRG.global_organization_ID;
+		if (! Util.equalStrings_null_or_not(this.getGID(), oRG.getGID())) {
+			this.setGID(oRG.getGID(), null);
 			this.setLID(null);
 		}
 		
@@ -3263,7 +3271,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 
 	public boolean readyToSend() {
-		if(this.global_organization_ID==null) return false;
+		if(this.getGID()==null) return false;
 		if(this.params.certifMethods == net.ddp2p.common.table.organization._AUTHORITARIAN)
 			if((this.signature == null)||(this.signature.length==0)) return false;
 		return true;
@@ -3272,7 +3280,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 * Fill locals (lID/blocked/broadcasted/requested/temporary) of this based on its GID
 	 */
 	public void getLocalIDfromGIDandBlock() {
-		D_Organization org = D_Organization.getOrgByGID_or_GIDhash_NoCreate(this.global_organization_ID, this.global_organization_IDhash, true, false);
+		D_Organization org = D_Organization.getOrgByGID_or_GIDhash_NoCreate(this.getGID(), this.getGIDH(), true, false);
 		if (org == null) {
 			this.blocked = DD.BLOCK_NEW_ARRIVING_ORGS;
 			return;
@@ -3509,6 +3517,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.dirty_main = true;
 	}
 	
+	public String getNamesMotion_Default() {
+		if  (this.concepts.name_motion == null || this.concepts.name_motion.length < 1) return __(DD.DEFAULT_MOTION);
+		return this.concepts.name_motion[0];
+	}
+	
 	public String[] getNamesMotion() {
 		return this.concepts.name_motion;
 	}
@@ -3522,6 +3535,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public void setNamesMotion(String new_text, String[] _names_motion) {
 		this.concepts.name_motion = _names_motion;
 		this.dirty_main = true;
+	}
+	
+	public String getNamesJustification_Default() {
+		if  (this.concepts.name_justification == null || this.concepts.name_justification.length < 1) return __(DD.DEFAULT_JUSTIFICATION);
+		return this.concepts.name_justification[0];
 	}
 	
 	public String[] getNamesJustification() {
@@ -4487,6 +4505,24 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 
 	public static int getNumberItemsNeedSaving() {
 		return _need_saving.size() + _need_saving_obj.size();
+	}
+	/**
+	 * Returns the new value
+	 * @param global_organization_IDhash
+	 * @return
+	 */
+	public String setGIDH(String global_organization_IDhash) {
+		this.global_organization_IDhash = global_organization_IDhash;
+		return global_organization_IDhash;
+	}
+	/**
+	 * Returns the new value
+	 * @param global_organization_ID
+	 * @return
+	 */
+	public String setGID(String global_organization_ID) {
+		this.global_organization_ID = global_organization_ID;
+		return global_organization_ID;
 	}
 }
 

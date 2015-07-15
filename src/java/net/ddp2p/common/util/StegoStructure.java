@@ -25,6 +25,7 @@ import net.ddp2p.ASN1.ASN1DecoderFail;
 
 public interface StegoStructure{
 	public void save() throws P2PDDSQLException;
+	public void saveSync() throws P2PDDSQLException;
 	/**
 	 * Method to decode from an ASN1 representation
 	 * @param asn1

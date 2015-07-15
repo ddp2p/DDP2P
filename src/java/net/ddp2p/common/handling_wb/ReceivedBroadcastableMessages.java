@@ -111,7 +111,7 @@ public class ReceivedBroadcastableMessages {
 				all_msg_received++;
 				if(net.ddp2p.common.handling_wb.BroadcastQueueRequested.myInterests!=null && msg.organization!=null)
 				{
-					pm.org_ID_hash = msg.organization.global_organization_IDhash;
+					pm.org_ID_hash = msg.organization.getGIDH();
 					boolean exists = false;
 					
 					if(net.ddp2p.common.handling_wb.BroadcastQueueRequested.myInterests.org_ID_hashes!=null)
@@ -148,9 +148,9 @@ public class ReceivedBroadcastableMessages {
 
 				if((msg.organization!=null)&&(msg.constituent==null)&&(msg.witness==null)&&(msg.vote==null)) { 
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:RECEIVE ORGANIZATION ONLY"); 
-					int result = D_Organization.isOrgAvailableForGIDH(msg.organization.global_organization_IDhash, false);
+					int result = D_Organization.isOrgAvailableForGIDH(msg.organization.getGIDH(), false);
 					//added_org=handle_org(msg.organization);
-					pm.org_ID_hash = msg.organization.global_organization_IDhash;
+					pm.org_ID_hash = msg.organization.getGIDH();
 					added_org=handle_org(pm, msg.organization);
 					WirelessLog.RCV_logging(WirelessLog.org_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
@@ -164,7 +164,7 @@ public class ReceivedBroadcastableMessages {
 					long added_Org=-1;
 					String goid = null;
 					if(msg.organization!=null) {
-						pm.org_ID_hash = msg.organization.global_organization_IDhash;
+						pm.org_ID_hash = msg.organization.getGIDH();
 						added_Org = handle_org(pm, msg.organization); 
 					//goid = GOID_by_local(added_Org);
 					}
@@ -192,7 +192,7 @@ public class ReceivedBroadcastableMessages {
 					long added_witnessing_cons = -1;
 					String goid = null;
 					if(msg.organization!=null){
-						pm.org_ID_hash=msg.organization.global_organization_IDhash;
+						pm.org_ID_hash=msg.organization.getGIDH();
 						added_Org = handle_org(pm, msg.organization); 
 					}
 					//String goid = GOID_by_local(added_Org);
@@ -223,12 +223,12 @@ public class ReceivedBroadcastableMessages {
 				if(msg.vote!=null) { 
 					if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:RECEIVE VOTE in ReceivedBroacastableMessage:integrateMessage"); 
 					if(msg.organization!=null) { 
-						pm.org_ID_hash=msg.organization.global_organization_IDhash;
+						pm.org_ID_hash=msg.organization.getGIDH();
 						//System.out.println("ReceivedBroacastableMessage:integrateMessage(): msg.organization.ID:"+msg.organization.global_organization_ID);				
 						long added_Org = handle_org(pm, msg.organization);
 						//System.exit(1);
 						if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:ORG ID : "+added_Org);
-						long added_cons =  handle_constituent(pm, msg.vote.getConstituent_force(),msg.organization.global_organization_ID,added_Org, __peer);
+						long added_cons =  handle_constituent(pm, msg.vote.getConstituent_force(),msg.organization.getGID(),added_Org, __peer);
 						if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:CONS ID : "+added_cons);
 					}
 					//else{System.out.println("ReceivedBroacastableMessage:integrateMessage ms.organization is null");}
@@ -388,7 +388,7 @@ public class ReceivedBroadcastableMessages {
 		String sql = "select "+net.ddp2p.common.table.organization.organization_ID+
 				" from "+net.ddp2p.common.table.organization.TNAME+" WHERE "+net.ddp2p.common.table.organization.global_organization_ID+
 				"=?;";
-		orgs = Application.db.select(sql, new String[]{ORG.global_organization_ID});
+		orgs = Application.db.select(sql, new String[]{ORG.getGID()});
 
 		if(orgs.isEmpty()) 
 		{

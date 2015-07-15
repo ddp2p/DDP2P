@@ -55,6 +55,7 @@ import net.ddp2p.common.hds.EventDispatcher;
 import net.ddp2p.common.hds.IClient;
 import net.ddp2p.common.hds.Server;
 import net.ddp2p.common.hds.UDPServer;
+import net.ddp2p.common.network.NATServer;
 import net.ddp2p.common.simulator.Fill_database;
 import net.ddp2p.common.simulator.SimulationParameters;
 import net.ddp2p.common.streaming.OrgHandling;
@@ -81,7 +82,7 @@ import net.ddp2p.common.wireless.Refresh;
 
 public class DD {
 	public static final String BRANCH = "B";//FIT_HDSSL_SILAGHI";
-	public static final String VERSION = "0.10.10";
+	public static final String VERSION = "0.10.11";
 	public static final boolean ONLY_IP4 = false;
 
 	private static final String PK_Developer = "MIIEGgwDUlNBYAEwAgMBAAECggQASKs9x2VEQH1SRxRwO43yt6HXCTnOmPJVUjN8bQQUTVBdFXhQsTpnTP1yLe/qFlA0jnIzheHT4WEcsU874N800iPMWHCjpCowQwwTj9SQLTmfbfhL8z0a7Dw6ZJQ+DnYoPVhx3JHL57CK3YeVYclZCoHetZ5PEIpcAwxaPmnL3GQaOgJiVHb6CLMi+hNHLxsjQZwTYTeoUOXQKgyTcRDE6xCvw8+q0U6/Uan3KCx/KmtdRQMEtGAXSPANv12kle84Dv8AdJxT1CJGsXm0+N6+wbbvkL77kMr+79sCR/8drZmOnrbjveQpab2pSh0vO//XqslrDRbzhniGSpqFW+YNTOixWAsCp35hNPbAx5xqPXg6DEIrysGslDGo4gC3Ew5mN/JkOQA+pd6uIzC4EgbfWqJKMvrtOQN67hJR7Ysxn7cLDXGvmhK1s7oSJcnOmhWljSZ6joviVwAWKgzdm1gMBhn5+VdgwoEE7g5Inw0dH9UmgufloNiBQMM9m2igdQPaLRuVttrAEcs55F/Z5NFtJquTeQFBLAGux3MVxrYCgivRaoAzAkUMhGOA+00KU3oh3Bds0U8GYCMuYYrwSAWTZf0Z9lvUwJv8HtLJvI6p1p53oGzIW9bo20d0PMz7XrzNDOLEME9PaXKLo6vMCAxXIj19nm/bE1HBY7e7HErKMX3M7LC2xZ8PH7wsnl5M3y0ZZ6c9quwhvz/dWcUAQ5963LtDZ6bOenAGVGBjdWLhHK8/2p9Vgu1ZNA1WWHWnafExsT5GxuwZQ/PMk8YtmxqEkgGy2+xVT19oUK+yO1ok+xRUjvSRZ0IbWUEcOfQ5FvLNmMdV/NSebB6vjQwM5DGCE1YDhix+Qghr558KokVz7BPVrGVe1pUxfPo2XPwHReF8es+vr16lvwXrVEmQNG8KrX1tN5Z5I29+ZVcR6ti4t90RXY6H6lmLtU3P/PSmfOrBQraNHVvDm9y1hnSP9+EhJzuWFaS8v4+7OnodIWuZsYd2WYQp4YcDJ+7grV3s1vvacujzxCOwx5/gosLxOau45bvKqhsFrZ+le6IRNAG7T6ZwC9wesqCGBJlIwS50DlAb/KhPyDIvf+7EH1iwckG4fBtixaK9co8FHnuddn/cEIc6fkWDEzr2Cu3HyxeMeDrcGRvjTRr78Wp/ptvRoOYElOLkxrkmanetjOCMqRl1DJvl53SQKePraRx2DpRemK/TMQ3+5TQkFjjEsI2P455Th0z6vF+JzpetZ3j1NUqx+iEZ2ArMhdDk7dE/4qcn2xwLz5nNMvHSnO2N0T9tCLi96CqZm/HTqGa6jTxFhJOP11sFCCQ9jkKhxvxubs0sww75dnqXQeffpxyolcht3KHwfwwHU0hBLTUxMg==";
@@ -167,6 +168,15 @@ public class DD {
 	public static final byte TYPE_SignSyncReq = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5);
 	public static final byte MSGTYPE_EmptyPing = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)20);;
 	public static final byte TYPE_ORG_DATA = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)29);
+	
+	public static String DEFAULT_PEER = "Peer";
+	public static String DEFAULT_ORGANIZATION = "Organization";
+	public static String DEFAULT_CONSTITUENT = "Constituent";
+	public static String DEFAULT_NEIGHBORHOOD = "Neighborhood";
+	public static String DEFAULT_WITNESS = "Witness";
+	public static String DEFAULT_JUSTIFICATION = "Justification";
+	public static String DEFAULT_MOTION = "Motion";
+	public static String DEFAULT_VOTE = "Vote";
 	/*
 	 * TYPES OF IMAGES
 	 * should never go over 30 for the type value in one byte
@@ -320,6 +330,7 @@ public class DD {
 	public static final String DD_DATA_CLIENT_INACTIVE_ON_START = "data_client_on_start";
 	public static final String DD_DATA_SERVER_ON_START = "data_server_on_start";
 	public static final String DD_DATA_USERVER_INACTIVE_ON_START = "data_userver_on_start";
+	public static final String DD_DATA_NSERVER_INACTIVE_ON_START = "data_nserver_on_start";
 	public static final String DD_DIRECTORY_SERVER_ON_START = "directory_server_on_start";
 	public static final String COMMAND_NEW_ORG = "COMMAND_NEW_ORG";
 	public static final int MSGTYPE_SyncAnswer = 10;
@@ -327,6 +338,7 @@ public class DD {
 
 	public static final String APP_NET_INTERFACES = "INTERFACES";
 	public static final String APP_NON_ClientUDP = "!ClientUDP";
+	public static final String APP_NON_ClientNAT = "!ClientNAT";
 	public static final String APP_ClientTCP = "ClientTCP";
 	public static final String APP_LISTING_DIRECTORIES = "listing_directories";
 	public static final String APP_LISTING_DIRECTORIES_SEP = ",";
@@ -426,6 +438,7 @@ public class DD {
 	/**
 	 * Use ClientUDP?
 	 */
+	public static boolean ClientNAT = true;
 	public static boolean ClientUDP = true;
 	public static boolean ClientTCP = false; //Should the client try TCP?
 	
@@ -434,6 +447,7 @@ public class DD {
 	public static final boolean DD_DATA_CLIENT_ON_START_DEFAULT = true;
 	public static final boolean DD_DATA_CLIENT_UPDATES_ON_START_DEFAULT = true;
 	public static final boolean DD_DATA_USERVER_ON_START_DEFAULT = true;
+	public static final boolean DD_DATA_NSERVER_ON_START_DEFAULT = true;
 	public static final boolean ORG_UPDATES_ON_ANY_ORG_DATABASE_CHANGE = false;
 	public static final String CONSTITUENT_PICTURE_FORMAT = "jpg";
 	public static final String WIRELESS_SELECTED_INTERFACES = "WIRELESS_SELECTED_INTERFACES";
@@ -991,6 +1005,36 @@ public class DD {
 			Application.g_UDPServer = new UDPServer(peer_id);
 			if(DEBUG) System.err.println("DD:startUServ: <init> done, start");
 			Application.g_UDPServer.start();
+		} catch (Exception e) {
+			if(DEBUG) System.err.println("Error:"+e);
+			//e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	static public boolean startNATServer(boolean on) throws NumberFormatException, P2PDDSQLException {
+		//boolean DEBUG = true;
+		NATServer aus = Application.g_NATServer;
+		if(DEBUG) System.err.println("Will set server nat_s="+aus);
+		if (on == false) {
+			if (aus != null) {
+				aus.turnOff(); Application.g_NATServer=null;
+				if(DEBUG) System.err.println("Turned off");
+				return true;
+			} else {
+				return false;
+			}
+		}
+		// if on = true
+		if (aus != null) {
+			if (DEBUG) System.err.println("Was not null");
+			return false;
+		}
+		try {
+			if(DEBUG) System.err.println("DD:startNATServ: <init>");
+			Application.g_NATServer = new NATServer();
+			if(DEBUG) System.err.println("DD:startNATServ: <init> done, start");
+			Application.g_NATServer.start();
 		} catch (Exception e) {
 			if(DEBUG) System.err.println("Error:"+e);
 			//e.printStackTrace();
@@ -1643,6 +1687,7 @@ public class DD {
         System.out.println("Exiting attempt...");
         // Here should first stop servers!
         try {
+            DD.startNATServer(false);
             DD.startUServer(false, null);
             DD.startServer(false, null);
             DD.startClient(false);
@@ -1782,15 +1827,17 @@ public class DD {
 	 * @return
 	 */
 	public static String getExportTextObjectBody(byte[] bytes) {
-		return DD.SAFE_TEXT_MY_BODY_SEP
+		return 
+				__("Copy and paste the following text in the DDP2P object import menu! In fact you may copy the surrounding text as well (e.g., using Select All).") + "\n"
 				+ DD.SAFE_TEXT_SEPARATOR 
+				+ DD.SAFE_TEXT_MY_BODY_SEP
 				+ DD.SAFE_TEXT_SEPARATOR 
 				+ Util.B64Split(Util.stringSignatureFromByte(bytes), DD.SAFE_TEXT_SIZE, DD.SAFE_TEXT_SEPARATOR)
 				+ DD.SAFE_TEXT_SEPARATOR 
-				+ DD.SAFE_TEXT_SEPARATOR 
 				+ DD.SAFE_TEXT_MY_BODY_TRAILER_SEP 
 				+ DD.SAFE_TEXT_SEPARATOR 
-				+ "\n"+__("Copy and paste this text in the DDP2P object import menu!");	
+				+ DD.SAFE_TEXT_SEPARATOR 
+				+ "\n"+__("Copy and paste the above text in the DDP2P object import menu! In fact you may copy the surrounding text as well (e.g., using Select All).");	
 	}
 	/**
 	 * Builds the string that encapsulates a peer object.

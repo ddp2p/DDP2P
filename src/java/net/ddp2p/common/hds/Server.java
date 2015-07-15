@@ -311,7 +311,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	static ArrayList<InetSocketAddress> serv_sock_addresses = new ArrayList<InetSocketAddress>();
 	ServerSocket ss;
 	//DatagramSocket ds;
-	int port;
+	
 	int threads = 0;
 	static int MAX_THREADS = 10;
 	void incThreads(){
@@ -474,7 +474,6 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				ss = new ServerSocket(port);
 				if(DEBUG) out.println("BEGIN Server.try_connect: serversocket done");
 				connected = true;
-				this.port = port;
 			}catch(Exception e) {
 				try{ss.close();}catch(Exception ex){}
 				e.printStackTrace();
@@ -486,7 +485,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		if(DEBUG) out.println("BEGIN Server.try_connect: synchronized on dir:"+UDPServer.directoryAnnouncementLock);
 		synchronized (UDPServer.directoryAnnouncementLock){
 			if(DEBUG) out.println("BEGIN Server.try_connect: synchronized");
-			Identity.port = this.port = ss.getLocalPort();
+			Identity.setPeerTCPPort(ss.getLocalPort());
 			UDPServer.directoryAnnouncement = null;
 		}
 		if(DEBUG) out.println("END Server.try_connect");
@@ -572,7 +571,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	 * @throws SocketException
 	 */
 	public static void detectDomain() throws SocketException{
-		detectDomain(Identity.port);
+		detectDomain(Identity.getPeerTCPPort());
 	}
 	private final static Object domainsDetectionThread_monitor = new Object();
 	public static Thread domainsDetectionThread = null;
@@ -619,7 +618,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 								if (DEBUG) System.out.println("Server:<Thread>run: detectDomain");
 								//Server.detectDomain();
 								try {
-									prepareLocalDomainsLists(Identity.port);
+									prepareLocalDomainsLists(Identity.getPeerTCPPort());
 								} catch(Exception e) {e.printStackTrace();}
 								
 								net.ddp2p.common.data.HandlingMyself_Peer.updateAddress(net.ddp2p.common.data.HandlingMyself_Peer.get_myself_with_wait());

@@ -645,6 +645,90 @@ public class HandlingMyself_Peer {
 		return true;
 	}
 	/**
+	 * Procedure to add an address (e.g., new Socket address) to the list of my addresses
+	 * @param me
+	 * @param add
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	static public boolean updateAddress(D_Peer me, ArrayList<Address> addresses) throws P2PDDSQLException {
+		//boolean DEBUG = true;
+		if (DEBUG) out.println("HandlingMyself: updateAddress: start");
+		if ((me == null)) { // || (me.hasAddresses())) {
+			if (DEBUG) out.println("HandlingMyself: updateAddress: exit null or have: "+me);
+			return false; 
+		}
+		//ArrayList<Address> addresses = Identity.current_server_addresses_list();
+		Calendar _creation_date = Util.CalendargetInstance();
+		String creation_date = Encoder.getGeneralizedTime(_creation_date);
+		
+		// try to detect domains
+		/*
+		if ((Identity.getListing_directories_string().size() == 0) &&
+				((addresses == null)
+						|| (addresses.size() == 0)
+						//|| (addresses.split(Pattern.quote(DirectoryServer.ADDR_SEP)).length == 0)
+						)
+				) {
+			try {
+				Server.detectDomain();
+				addresses = Identity.current_server_addresses_list();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		*/
+		if ((addresses != null) && (addresses.size() > 0)) { // (Identity.getListing_directories_string().size() == 0)) {
+			if (DEBUG) out.println("HandlingMyself: updateAddress: addresses");
+			//String address[] = addresses.split(Pattern.quote(DirectoryServer.ADDR_SEP));
+			
+			D_PeerInstance dpi = me.getPeerInstance(me.getInstance());
+			boolean toSign = false;
+			if (dpi == null) {
+				me.putPeerInstance_setDirty(me.getInstance(), dpi = new D_PeerInstance());
+				dpi.peer_instance = me.getInstance();
+				dpi.setLID(me.getLIDstr_keep_force(), me.getLID_keep_force());
+
+				dpi.dirty = true;
+				dpi.createdLocally = true;
+				dpi.setCreationDate();
+				me.dirty_instances = true;
+				toSign = true;
+			}
+			else if (!dpi.createdLocally()) {
+				dpi.dirty = true;
+				dpi.createdLocally = true;
+				me.dirty_instances = true;
+			}
+			
+			if (addresses.size() > 0) {
+				me.cleanOldSocketAddressesOtherThan(addresses, dpi);
+				if (DEBUG) out.println("HandlingMyself: updateAddress: addrs ="+addresses.size());
+				for (int k = 0; k < addresses.size(); k ++) {
+					me.addAddress(addresses.get(k), Address.SOCKET,
+							_creation_date, creation_date, true, k, true,
+							dpi);
+				}
+				me.dirty_addresses = true;
+				me.dirty_instances = true;
+				dpi.dirty = true;
+				toSign = true;
+			}
+			if (toSign) dpi.sign(me.getSK());
+			//if (peer.dirty_main) peer.sign();
+			//if (peer.dirty_any()) peer.storeRequest();
+		}
+		if (DEBUG) out.println("HandlingMyself: updateAddress: added sock addresses");
+		if (me.dirty_any()) {
+			me.storeRequest();
+		}
+		
+		Application_GUI.setMePeer(me);
+		if (DEBUG) out.println("HandlingMyself: updateAddress: start");
+		return true;
+	}
+	
+	/**
 	 * Get the hash of my peer ID from application table
 	 * @return
 	 */

@@ -845,7 +845,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		String creator_global_ID = Util.getString(p_data.get(0).get(0));
 		
 		D_Organization od = D_Organization.getEmpty(); //.getOrgByGID(gID, true, true);
-		od.global_organization_ID = gID;
+		od.setGID(gID, null);
 		od.setName(name);
 		od.setLastSyncDate(_creation_date);
 		od.creator = get_peer_by_ID(p_ID); 
