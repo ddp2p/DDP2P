@@ -7,11 +7,11 @@
     <string name="action_directories">Manage Directories</string>
 
     <!-- main action bar -->
-    <string name="action_back" translatable="false">back</string>
-    <string name="new_safe_my" translatable="false">Add a New Identity Myself</string>
-    <string name="new_safe_other" translatable="false">Import Object From Picture</string>
-    <string name="new_org" translatable="false">Add a New Organization</string>
-    <string name="new_icon" translatable="false">add</string>
+    <string name="action_back">Back</string>
+    <string name="new_safe_my">Define a New Identity Myself</string>
+    <string name="new_safe_other">Import From Picture</string>
+    <string name="new_org">Define a New Organization</string>
+    <string name="new_icon">Add</string>
 
     <!-- used in safe profile menu -->
     <string name="Device">Device</string>
@@ -124,4 +124,24 @@
     <string name="delete_organization">Delete <xliff:g id="organization_in_delete">Organization</xliff:g></string>
     <string name="wanna_delete_organization">Do you really want to delete organization?</string>
     <string name="toast_deleting_organization">Deleting Organization… Exit Program to Refresh!</string>
+    <string name="DDP2P">DDP2P</string>
+    <string name="browse_web_object">Browse web objects</string>
+    <string name="help_import_web_object">\tNavigate the webpage loaded in the below browser (in the blue frame) to the data that you want to import.\n\tYou can inspect the existence of legitimate data in the current webpage by pressing the \'Decode Content\' button.\n\tIf the detected data is what you are looking for, then you can import it by pressing the button \'Import Current Object\'.</string>
+    <string name="label_root">Root:</string>
+    <string name="import_current_object">Import Current Object</string>
+    <string name="decode_content">Decode Content</string>
+    <string name="quit_ddp2p">Quit DDP2P</string>
+    <string name="menu_settings_update">Settings (Updates)</string>
+    <string name="menu_start_local_directory">Start Local Directory</string>
+    <string name="start_up_wizzard">Identity\n\nDo you want to import your DDP2P identity from another device, or to create a new identity?</string>
+    <string name="skip">Skip</string>
+    <string name="create_new">Create New</string>
+    <string name="import_identity">Import</string>
+    <string name="dialog_label_enter_data_to_import">Please enter or paste encoded information here:</string>
+    <string name="dialog_wizard_title">StartUp Wizard</string>
+    <string name="announcement_import_successful">Successfully Imported Existing:</string>
+    <string name="refresh">Refresh</string>
+    <string name="import_web_object">Import Web Object</string>
+    <string name="import_web_object_instr_dir">For your new identity to be useful, it has to be registered with globally accessible \'Meeting Points\' who direct your friends to you while you travel. Here you can select and adopt such \'Meeting Points\' by navigating the embedded browser and clicking \'Import Current Object\'. You may inspect the selections by clicking the button \'Decode Content\'.</string>
+    <string name="continue_create_new_peer">Continue Creation New Peer</string>
 </resources>

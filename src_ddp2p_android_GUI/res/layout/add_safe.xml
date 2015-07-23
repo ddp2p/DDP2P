@@ -14,7 +14,8 @@
         <TextView 
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/name" 
+            android:text="@string/name"
+            style="@android:style/TextAppearance"
         />
         <EditText 
             android:id="@+id/add_name"
@@ -26,20 +27,22 @@
 
     <LinearLayout 
         android:orientation="horizontal"
-        android:layout_width="wrap_content"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp">   
         <TextView 
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/email" 
+            android:text="@string/email"
+            style="@android:style/TextAppearance"
         />
         <EditText 
             android:id="@+id/add_email"
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:inputType="textEmailAddress"                 
-        />       
+            android:text="\@"
+            android:inputType="textEmailAddress"
+        />
     </LinearLayout>
     
     <LinearLayout 
@@ -50,12 +53,15 @@
         <TextView 
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/slogan" 
+            android:text="@string/slogan"
+            style="@android:style/TextAppearance"
         />
         <EditText 
             android:id="@+id/add_slogan"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
+            style="@android:style/Widget.EditText"
+            android:text=""
             android:inputType="text|textCapSentences|textAutoCorrect|textAutoComplete"
         />       
     </LinearLayout>
@@ -68,6 +74,7 @@
         android:layout_marginRight="30dp"
         android:layout_marginTop="30dp"
         android:text="@string/submit"
+        style="@android:style/Widget.Button"
         />
 </LinearLayout>
 

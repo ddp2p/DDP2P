@@ -7,7 +7,7 @@
     <TextView
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="Please enter or paste address here:" />
+        android:text="@string/dialog_label_enter_data_to_import" />
 
     <EditText
         android:id="@+id/dialog_load_pk_editText"
@@ -16,7 +16,7 @@
 
     <Button
         android:id="@+id/dialog_load_pk_load"
-        style="@android:attr/buttonBarButtonStyle"
+        style="@android:style/Widget.Button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="right"

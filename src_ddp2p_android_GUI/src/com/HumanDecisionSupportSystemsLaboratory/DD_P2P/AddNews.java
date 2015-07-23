@@ -102,14 +102,14 @@ public class AddNews extends ActionBarActivity {
 
 	//function for add a new peer
 	private void newNews(String _name, String _body) {
-		Log.d("onCreateNewsCreatingThread", "AddNews: newNews: run: start");
+		Log.d("onCreateNewsCT", "AddNews: newNews: run: start");
 		
 		/*
 		 * ciphersuite did not initialize, add a new ciphersuit class
 		 */
 		
 		new NewsCreatingThread(name, body).start();
-		Log.d("onCreateNewsCreatingThread", "AddNews: newNews: run: done");
+		Log.d("onCreateNewsCT", "AddNews: newNews: run: done");
 		
 	}
 	class NewsCreatingThread extends Thread {

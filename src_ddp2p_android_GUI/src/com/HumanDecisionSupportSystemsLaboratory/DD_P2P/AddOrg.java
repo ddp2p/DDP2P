@@ -441,7 +441,7 @@ public class AddOrg extends ActionBarActivity {
 		new OrgCreatingThread(name, efd_list, b_variedVotingRight,
 				i_maxVotingLevel, description, instructions_motion,
 				instructions_registration, oIcon).start();
-		Log.d("onCreatePeerCreatingThread", "AddSafe: newPeer: run: done");
+		Log.d("onCreatePeerCT", "AddSafe: newPeer: run: done");
 
 	}
 

@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+<ScrollView android:id="@+id/ScrlView_ibwo" android:layout_width="fill_parent" android:layout_height="fill_parent" >
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="fill_parent"
+    android:layout_height="match_parent">
+    <TextView
+        android:id="@+id/import_web_object_import_instructions"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="3dp"
+        android:layout_marginRight="7dp"
+        android:layout_marginLeft="7dp"
+        android:visibility="gone"
+        />
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/import_web_object_root_button"
+            style="@android:style/Widget.Button"
+            android:layout_margin="2dp"
+            android:padding="0dp"
+            android:text="@string/label_root"/>
+        <EditText
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="http://DDP2P.net/objects"
+            android:id="@+id/import_web_object_url"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="5dp"
+            android:focusable="true"
+            android:enabled="true"
+            android:editable="true"
+            android:inputType="textUri" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/import_current_object"
+            android:id="@+id/import_web_object_import_top_button"
+            style="@android:style/Widget.Button"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp" />
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/decode_content"
+            android:id="@+id/import_web_object_decode_button"
+            style="@android:style/Widget.Button"
+            android:layout_gravity="right"
+            android:layout_marginLeft="10dp"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+    <Button
+            android:layout_width="40dp"
+            android:layout_height="match_parent"
+            android:id="@+id/import_web_object_back"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="1dp"
+            android:layout_marginLeft="0dp"
+            android:paddingLeft="0dp"
+            android:paddingRight="0dp"
+            android:background="@drawable/ic_action_back" />
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:id="@+id/import_web_object_url_crt"
+            android:layout_marginTop="0dp"
+            android:text="No current directories!"
+            android:layout_marginBottom="15dp"
+            android:inputType="textUri" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <View
+            android:layout_width="40dp"
+            android:layout_height="0dp"
+            android:layout_weight="0"
+            android:background="@color/red"
+            />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/yellow"
+            android:layout_marginRight="4dp"
+            android:text=
+                "@string/help_import_web_object"
+            android:id="@+id/import_web_object_description" />
+    </LinearLayout>
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        android:paddingLeft="2dp"
+        android:paddingRight="2dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:background="@color/blue"
+        android:layout_height="match_parent">
+        <WebView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/import_web_object_webview"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="0dp" />
+    </LinearLayout>
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Import Current Object"
+            android:id="@+id/import_web_object_import_bottom_button"
+            style="@android:style/Widget.Button"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp" />
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Decode Content"
+            android:id="@+id/import_web_object_decode_bottom_button"
+            style="@android:style/Widget.Button"
+            android:layout_marginLeft="10dp"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp" />
+    </LinearLayout>
+</LinearLayout>
+</ScrollView>
+</LinearLayout>

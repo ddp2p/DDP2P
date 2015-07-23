@@ -6,6 +6,12 @@
     <string name="action_settings">Settings</string>
     <string name="action_directories">Manage Directories</string>
 
+    <!-- main action bar -->
+    <string name="action_back">Înapoi</string>
+    <string name="new_safe_my">Definește-me Noua Identitate</string>
+    <string name="new_safe_other">Încarcă Informație din Fișier Imagine</string>
+    <string name="new_org">Definește o Nouă Organizație</string>
+    <string name="new_icon">Adaugă</string>
 
     <!-- used in safe profile menu -->
     <string name="Device">Device</string>
@@ -49,4 +55,24 @@
     <string name="delete_organization">Șterge <xliff:g id="organization_in_delete">Organizația</xliff:g></string>
     <string name="wanna_delete_organization">Chiar vreți să ștergeți organizația?</string>
     <string name="toast_deleting_organization">Ștergînd Organizația… Reporniți programul să terminați Ștergerea!</string>
+    <string name="DDP2P">DDP2P</string>
+    <string name="browse_web_object">Vizualizează obiecte Web</string>
+    <string name="help_import_web_object">\tParcurge-ți pagina web încărcată în browser-ul de mai jos (din cadrul albastru) pînă la informația dorită.\n\tPute-ți verifica existența informației formatate corect în pagina Web curentă apăsînd pe butonul \'Decodează Conținutul\'.\n\tDacă informația detectată este ceea ce căutați, atunci puteți să o adoptați apăsînd butonul \'Adoptă Conținutul\'.</string>
+    <string name="label_root">Start:</string>
+    <string name="import_current_object">Adoptă Conținutul</string>
+    <string name="decode_content">Decodează Conținutul</string>
+    <string name="quit_ddp2p">Termină DDP2P</string>
+    <string name="menu_settings_update">Setări (Puneri la zi)</string>
+    <string name="menu_start_local_directory">Pornește Punct de Întîlnire Local</string>
+    <string name="start_up_wizzard">Identitate\n\nVreți să adoptați o identitate DDP2P de pe un alt aparat, sau să vă creați o nouă identitate?</string>
+    <string name="skip">Avansat</string>
+    <string name="create_new">Crează Nou</string>
+    <string name="import_identity">Adoptă</string>
+    <string name="dialog_label_enter_data_to_import">Scrieți sau Copiați aici informația codificată ce va fi adoptată:</string>
+    <string name="dialog_wizard_title">Ajutor de Pornire</string>
+    <string name="announcement_import_successful">Successfully Imported Existing:</string>
+    <string name="refresh">Refresh</string>
+    <string name="import_web_object">Descarcă Informații din Internet</string>
+    <string name="import_web_object_instr_dir">Pentru ca noua ta identitate să fie utilă, trebuie să fie înregistrată cu \'Puncte de Întîlnire\' accesibile global, care îți direcționează prietenii spre tine cînd călătorești. Aici poți selecționa și adopta astfel de \'Puncte de Întîlnire\' din navigatorul integrat în cadrul albastru de mai jos, și apăsînd butonul \'Adoptă Conținutul\'. Puteți inspecta selecțiile apăsînd butonul \'Decodează Conținutul\'.</string>
+    <string name="continue_create_new_peer">Continuă Crearea Noii Identități</string>
 </resources>

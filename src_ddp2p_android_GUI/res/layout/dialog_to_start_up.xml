@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@color/black"
+    android:padding="2dp"
+    >
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/yellow">
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/start_up_wizzard"
+        android:layout_margin="30dp"
+        android:textStyle="italic"
+        android:textAlignment="center"
+        />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/dialog_startup_import"
+            style="@android:style/Widget.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginLeft="30dp"
+            android:text="@string/import_identity" />
+        <View
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"></View>
+
+        <Button
+            android:id="@+id/dialog_startup_createNew"
+            style="@android:style/Widget.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginRight="3dp"
+            android:layout_marginLeft="3dp"
+            android:text="@string/create_new" />
+        <View
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"></View>
+
+        <Button
+            android:id="@+id/dialog_startup_skip"
+            style="@android:style/Widget.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginRight="30dp"
+            android:text="@string/skip" />
+    </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

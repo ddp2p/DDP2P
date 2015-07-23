@@ -3,10 +3,17 @@
 
     <item
         android:id="@+id/add_directory_server"
-        android:icon="@drawable/ic_action_new"
+        android:icon="@android:drawable/ic_menu_edit"
         android:orderInCategory="1"
         android:showAsAction="always"
         android:title="@string/new_icon">
+    </item>
+    <item
+        android:id="@+id/add_directory_server_web_object"
+        android:icon="@android:drawable/ic_menu_search"
+        android:orderInCategory="1"
+        android:showAsAction="always"
+        android:title="@string/browse_web_object">
     </item>
 
 </menu>

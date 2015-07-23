@@ -3,6 +3,12 @@
 
     <color name="gray">#BBBBBB</color>
     <color name="lightgray">#DBDBDB</color>
+    <color name="black">#000000</color>
+    <color name="pink">#FFAAAA</color>
+    <color name="red">#FF0000</color>
+    <color name="yellow">#FFFF00</color>
+    <color name="blue">#0000FF</color>
+    <color name="darkblue">#000077</color>
     <color name="ddp2p_general">#00cc00</color>
     <color name="ddp2p_general_text">#CFCFCF</color>
     <color name="ddp2p_drawer">#FFFFCC</color>

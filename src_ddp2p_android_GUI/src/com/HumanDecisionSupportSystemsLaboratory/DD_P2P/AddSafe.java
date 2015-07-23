@@ -69,7 +69,7 @@ public class AddSafe extends ActionBarActivity {
 		but.setOnClickListener(new View.OnClickListener() {
 
 			public void onClick(View v) {
-
+				Log.d("AddSafe", "AddSafe: inited name: start");
 				name = add_name.getText().toString();
 				email = add_email.getText().toString();
 				slogan = add_slogan.getText().toString();
@@ -85,6 +85,7 @@ public class AddSafe extends ActionBarActivity {
 					hash = Cipher.SHA1;
 				}
 
+				Log.d("AddSafe", "AddSafe: inited name: "+name);
 				PeerInput pi = newPeer(name, email, slogan, cipher, keysize, hash);
 /*				Safe.loadPeer();
 				Safe.safeAdapter.notifyDataSetChanged();*/
@@ -92,6 +93,7 @@ public class AddSafe extends ActionBarActivity {
                 Safe.peerInput = pi; // no longer needed
                 intent.putExtra(AddSafe.PI, pi.encode());
                 AddSafe.this.setResult(RESULT_OK, intent);
+				Log.d("AddSafe", "AddSafe: inited name: stop with result "+pi);
 				finish();
 			}
 		});
@@ -102,6 +104,7 @@ public class AddSafe extends ActionBarActivity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if (item.getItemId() == android.R.id.home) {
+			Log.d("AddSafe", "AddSafe: inited name: quit home");
 			finish();
 			return true;
 		}

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import net.ddp2p.common.util.DD_DirectoryServer;
 import net.ddp2p.common.util.DirectoryAddress;
 import android.app.ActionBar;
+import android.app.Activity;
 import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -56,24 +57,41 @@ public class SelectDirectoryServer extends ListActivity {
 
 		setContentView(R.layout.list_fragement);
 
-        updateView();
+        boolean restart = false;
+		//while
+		if ((restart = _updateView(! restart))) {
+			Log.d("SelectDirectoryServer", "SelectDirectoryServer: onCreate: restart");
+		}
+		Log.d("SelectDirectoryServer", "SelectDirectoryServer: onCreate: done");
 	}
 
-    void updateView() {
+    boolean _updateView(boolean first) {
+		Log.d("SelectDirectoryServer", "SelectDirectoryServer: updateView: start");
         // Getting object reference to listview of main.xml
         ListView listView = getListView();
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 
         try {
+			Log.d("SelectDirectoryServer", "SelectDirectoryServer: updateView: will load dirs");
             DD.load_listing_directories();
+			Log.d("SelectDirectoryServer", "SelectDirectoryServer: updateView: did load dirs");
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this.getApplicationContext(),
                     "Error: " + e.getLocalizedMessage(), Toast.LENGTH_LONG)
                     .show();
-            return;
+            return false;
         }
         ArrayList<Address> lda = Identity.getListing_directories_addr();
+
+		Log.d("SelectDirectoryServer", "SelectDirectoryServer: updateView: dirs #"+lda.size());
+		if (lda.size() == 0) {
+			Log.d("SelectDirectoryServer", "SelectDirectoryServer: updateView: start ImportBrowseWebObjects_Dirs");
+			Intent i = new Intent().setClass(this, ImportBrowseWebObjects_Dirs.class); //AddDirectoryServer.class);
+			startActivityForResult(i, RESULT_ADD_DIR);
+			if (first) return true; // do not try more than once to reload
+		}
+
 /*		servers = new String[Math.max(1, lda.size())];*/
         servers = new String[lda.size()];
         //Log.d(TAG, servers[0]);
@@ -108,6 +126,8 @@ public class SelectDirectoryServer extends ListActivity {
             else
                 listView.setItemChecked(k, false);
         }
+		Log.d("SelectDirectoryServer", "SelectDirectoryServer: updateView: done");
+		return false;
     }
 
 	@Override
@@ -167,9 +187,16 @@ public class SelectDirectoryServer extends ListActivity {
 		switch (item.getItemId()) {
 
 		case R.id.add_directory_server:
-			Intent i = new Intent();
-			i.setClass(this, AddDirectoryServer.class);
+			Log.d("SelectDirectoryServer", "SelectDirectoryServer: onOptionsItemSelected: start AddDirectoryServer");
+			Intent i = new Intent().setClass(this, AddDirectoryServer.class);
 			startActivityForResult(i, RESULT_ADD_DIR);
+			break;
+
+		case R.id.add_directory_server_web_object:
+			Log.d("SelectDirectoryServer", "SelectDirectoryServer: onOptionsItemSelected: start ImportBrowseWebObjects_Dirs");
+			Intent j = new Intent().setClass(this, ImportBrowseWebObjects_Dirs.class);
+			startActivityForResult(j, RESULT_ADD_DIR);
+			break;
 		}
 
 		return super.onOptionsItemSelected(item);
@@ -180,7 +207,7 @@ public class SelectDirectoryServer extends ListActivity {
 
             Toast.makeText(this, "Result size="+servers.length, Toast.LENGTH_SHORT).show();
 
-            updateView();
+            //_updateView(true);
             ArrayAdapter<String> a = ((ArrayAdapter<String>)this.getListAdapter());
             if (a != null) a.notifyDataSetChanged();
 

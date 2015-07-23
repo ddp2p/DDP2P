@@ -15,7 +15,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
-import net.ddp2p.common.config.Directories_View;
 import net.ddp2p.common.hds.PeerInput;
 
 import java.util.ArrayList;
@@ -32,8 +31,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -43,7 +40,6 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.CipherSuit;
@@ -202,8 +198,8 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 		 */
 		list.clear();
 		peers.clear();
-
-		synchronized (Orgs.monitor) {
+/*
+		synchronized (DDP2P_Service.monitorDatabaseInitialization) {
 			// pull out all safes from database
 			if (Application_GUI.dbmail == null)
 				Application_GUI.dbmail = new Android_DB_Email(
@@ -220,6 +216,10 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 				}
 			}
 		}
+		*/
+		ArrayList<ArrayList<Object>> peer_IDs = DDP2P_Service.startDDP2P(Safe.safeItself.getActivity());
+		/*
+		DDP2P_Service.ensureDatabaseIsInited(Safe.safeItself.getActivity());
 		Log.d("onCreateView", "Safe: loadPeer: database loaded");
 
 		ArrayList<ArrayList<Object>> peer_IDs = D_Peer.getAllPeers();
@@ -232,9 +232,9 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 			// Log.d("onCreateView", "Safe: onCreateView: re-found peers: #" +
 			// peer_IDs.size());
 		} else {
-			Main.startServers();
+			DDP2P_Service.startServers();
 		}
-
+		*/
 		for (ArrayList<Object> peer_data : peer_IDs) {
 			if (peer_data.size() <= 0)
 				continue;

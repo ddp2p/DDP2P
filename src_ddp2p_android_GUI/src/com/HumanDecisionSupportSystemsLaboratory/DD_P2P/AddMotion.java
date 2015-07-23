@@ -125,14 +125,14 @@ public class AddMotion extends ActionBarActivity {
 
 	//function for add a new peer
 	private void newMot(String _name, String _body, D_Motion _enhanced) {
-		Log.d("onCreateMotCreatingThread", "AddMotion: newMot: run: start tit="+_name+" b="+_body);
+		Log.d("onCreateMotCT", "AddMotion: newMot: run: start tit="+_name+" b="+_body);
 		
 		/*
 		 * ciphersuite did not initialize, add a new ciphersuit class
 		 */
 		
 		new MotCreatingThread(_name, _body).start();
-		Log.d("onCreateMotCreatingThread", "AddMotion: newMot: run: done");
+		Log.d("onCreateMotCT", "AddMotion: newMot: run: done");
 		
 	}
 	class MotCreatingThread extends Thread {

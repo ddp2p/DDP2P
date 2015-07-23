@@ -105,7 +105,7 @@ public class Orgs extends ListFragment{
 		
 		//orgName_alist.clear();
 	}
-	public static final Object monitor = new Object();
+
 	public Orgs() {
 		/*
 		synchronized(monitor) {

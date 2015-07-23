@@ -71,7 +71,7 @@ public class JustificationBySupportType extends Fragment {
 	
     final static Object checked_Monitor = new Object();
 
-private static final String TAG = "JustificationBySupportType";
+private static final String TAG = "JustByST";
 
     // The justification currently selected
     static long checkedJustifLID = -1;

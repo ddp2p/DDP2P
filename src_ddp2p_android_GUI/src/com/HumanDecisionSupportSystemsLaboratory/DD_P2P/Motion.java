@@ -86,14 +86,14 @@ public class Motion extends ListActivity {
 			} else {
 				moti = Application.db.select(sql+";", new String[]{Motion.getOrganizationLIDstr()});
 			}
-			Log.d("onCreateMotCreatingThread", "Motion select asked: "+sql);
+			Log.d("onCreateMotCT", "Motion select asked: "+sql);
 
 			//moti = new ArrayList<ArrayList<Object>>();
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return new ArrayList<ArrayList<Object>>();
 		}
-		Log.d("onCreateMotCreatingThread", "Motion select gets: "+moti.size());
+		Log.d("onCreateMotCT", "Motion select gets: "+moti.size());
 		return moti;
 	}
 	public static void reloadMotions() {

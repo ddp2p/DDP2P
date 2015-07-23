@@ -21,6 +21,7 @@ import java.net.URL;
 import java.util.Hashtable;
 
 import android.app.Activity;
+import android.content.Context;
 
 import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.Application;
@@ -32,10 +33,10 @@ public
 class Android_DB_Email implements net.ddp2p.common.config.Vendor_DB_Email {
 
 	//add a new parameter to pass the context
-	private Activity activity;
+	private Context activity;
 	
 	//alter the constructor to allow passing context
-	public Android_DB_Email(Activity act) {
+	public Android_DB_Email(Context act) {
 		this.activity = act;
 	}
 	

@@ -126,14 +126,14 @@ public class AddJustification extends ActionBarActivity {
 
 	//function for add a new peer
 	private void newJustification(String _name, String _body) {
-		Log.d("onCreateJustCreatingThread", "AddJustification: newJust: run: start tit="+_name+" b="+_body);
+		Log.d("onCreateJustCT", "AddJustification: newJust: run: start tit="+_name+" b="+_body);
 		
 		/*
 		 * ciphersuite did not initialize, add a new ciphersuit class
 		 */
 		
 		new JustificationsCreatingThread(_name, _body, jLID, mLID, choice).start();
-		Log.d("onCreateJustCreatingThread", "AddJustification: newJust: run: done");
+		Log.d("onCreateJustCT", "AddJustification: newJust: run: done");
 		
 	}
 	class JustificationsCreatingThread extends Thread {

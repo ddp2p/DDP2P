@@ -14,13 +14,19 @@
         android:visible="true"
         android:enabled="false"
         android:showAsAction="never|withText"
-        android:title="Start Local Directory"/>
+        android:title="@string/menu_start_local_directory"/>
     <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
         android:showAsAction="never"
         android:enabled="true"
-        android:title="Settings (Updates)"/>
+        android:title="@string/menu_settings_update"/>
+    <item
+        android:id="@+id/action_quit"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:enabled="true"
+        android:title="@string/quit_ddp2p"/>
     <!--
          <item
         android:id="@+id/action_directories_icon"
@@ -51,17 +57,29 @@
                 android:showAsAction="ifRoom|withText"
                 android:title="@string/new_org"/>
             <item
+                android:id="@+id/import_new_web_object"
+                android:icon="@android:drawable/ic_menu_search"
+                android:orderInCategory="4"
+                android:showAsAction="ifRoom|withText"
+                android:title="@string/import_web_object"/>
+            <item
                 android:id="@+id/add_new_safe_other"
                 android:icon="@drawable/add_safe_other"
-                android:orderInCategory="4"
+                android:orderInCategory="5"
                 android:showAsAction="ifRoom|withText"
                 android:title="@string/new_safe_other"/>
             <item
                 android:id="@+id/action_loadAddresss"
                 android:icon="@drawable/address"
-                android:orderInCategory="5"
+                android:orderInCategory="6"
                 android:showAsAction="ifRoom|withText"
                 android:title="@string/load_object"/>
+            <item
+                android:id="@+id/action_main_refresh"
+                android:icon="@android:drawable/ic_menu_revert"
+                android:orderInCategory="7"
+                android:showAsAction="ifRoom|withText"
+                android:title="@string/refresh"/>
         </menu>
     </item>
 

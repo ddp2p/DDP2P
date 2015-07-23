@@ -16,32 +16,30 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import net.ddp2p.ASN1.Decoder;
-import net.ddp2p.common.hds.Address;
 
 import java.io.File;
-import java.net.MalformedURLException;
-import java.net.UnknownHostException;
+import java.net.URLConnection;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 import net.ddp2p.common.hds.PeerInput;
 import net.ddp2p.common.util.DDP2P_ServiceThread;
-import net.ddp2p.common.util.DD_DirectoryServer;
-import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.StegoStructure;
 import android.annotation.TargetApi;
 import android.app.ActionBar.TabListener;
 import android.app.Activity;
+import android.os.AsyncTask;
+import android.support.v4.app.DialogFragment;
 import android.app.FragmentTransaction;
-import android.content.DialogInterface;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -50,12 +48,15 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v7.app.ActionBar;
+import android.util.AttributeSet;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.Toast;
-
-import com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AndroidChat.AndroidChatReceiver;
 
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.Identity;
@@ -65,8 +66,6 @@ import net.ddp2p.common.util.Util;
 
 
 public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPKListener {
-	
-	public static boolean serversStarted = false;
 
 	public static byte[] icon_org;
 
@@ -76,13 +75,17 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 
 	TabFragmentPagerAdapter mAdapter;
 	
-	int SELECT_PHOTO = 42;
-	int SELECT_PHOTO_KITKAT = 43;
+	final static int SELECT_PHOTO = 42;
+	final static int SELECT_PHOTO_KITKAT = 43;
+	final static int RESULT_ADD_PEER = 11;
+	final static int RESULT_STARTUP_DIRS = 20;
+
+	final static String DD_WIZARD_SKIP = "DD_WIZARD_SKIP";
+
     final static int PAGES_NB = 2;
 	final static int POSITION_SAFE = 0;
 	final static int POSITION_ORGS = 1;
-    final static int RESULT_ADD_PEER = 11;
-	
+
 	private String selectedImagePath;
 
 	private File selectImageFile;
@@ -172,42 +175,212 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 //		}.execute(param);
 	}
 
+	public static class StartUp extends DialogFragment {
+		private Button butImport;
+		private Button butAbandon;
+		private Button butCreate;
+
+		@Override
+		public void onActivityResult(int requestCode, int resultCode, Intent data) {
+			switch (requestCode & 0x0FFFF) {
+				case Main.RESULT_STARTUP_DIRS:
+					Toast.makeText(getActivity(), "Defining My Identity", Toast.LENGTH_SHORT).show();
+
+					Log.d("Main", "Main:StartUp:onActivityResult: create: add peer request=" + Main.RESULT_ADD_PEER);
+					Intent intent = new Intent();
+					intent.setClass(getActivity(), AddSafe.class);
+					getActivity().startActivityForResult(intent, Main.RESULT_ADD_PEER);
+					Log.d("Main", "Main:StartUp:onActivityResult: create: added peer");
+
+					android.support.v4.app.FragmentTransaction ft = getFragmentManager()
+							.beginTransaction();
+					ft.detach(StartUp.this);
+					ft.commit();
+			}
+			super.onActivityResult(requestCode, resultCode, data);
+		}
+
+		@Override
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+			Log.d("Main", "Main:StartUp:onCreateView: start");
+
+			View view = inflater.inflate(R.layout.dialog_to_start_up, container);
+			butImport = (Button) view.findViewById(R.id.dialog_startup_import);
+			butAbandon = (Button) view.findViewById(R.id.dialog_startup_skip);
+			butCreate = (Button) view.findViewById(R.id.dialog_startup_createNew);
+			getDialog().setTitle(getString(R.string.dialog_wizard_title));
+
+			butImport.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View view) {
+					Log.d("Main", "Main:StartUp:onCreateView: import");
+
+					//Intent intent = new Intent().setClass(getActivity(), ImportBrowseWebObjects.class);
+					//startActivity(intent);
+
+					FragmentManager fm = getActivity().getSupportFragmentManager();
+					LoadPK loadPKDialog = new LoadPK();
+					//loadPKDialog.setTargetFragment(this,0);
+					loadPKDialog.show(fm, "fragment_load_public_key");
+
+					android.support.v4.app.FragmentTransaction ft = getFragmentManager()
+							.beginTransaction();
+					ft.detach(StartUp.this);
+					ft.commit();
+				}
+			});
+
+			butCreate.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View view) {
+					Log.d("Main", "Main:StartUp:onCreateView: create");
+
+					try {
+						DD.load_listing_directories();
+					} catch (Exception e) {
+						e.printStackTrace();
+						Toast.makeText(getActivity(),
+								"Error: " + e.getLocalizedMessage(), Toast.LENGTH_LONG)
+								.show();
+						return;
+					}
+
+					Log.d("Main", "Main:StartUp:onCreateView: create: loaded dirs");
+					if ((Identity.getListing_directories_addr().size() <= 0)) {
+						butCreate.setText(getString(R.string.continue_create_new_peer));
+						butImport.setVisibility(View.GONE);
+						butAbandon.setVisibility(View.GONE);
+						//Toast.makeText(getActivity(), "To add your safe, first add a directory from the Manage Directories top-right menu!", Toast.LENGTH_LONG).show();
+						Log.d("Main", "Main:StartUp:onCreateView: create: import dirs");
+						Intent intent = new Intent().setClass(getActivity(), ImportBrowseWebObjects_Dirs.class);
+						intent.putExtra(ImportBrowseWebObjects.PARAM_INSTRUCTION,
+								getText(R.string.import_web_object_instr_dir));
+						startActivityForResult(intent, Main.RESULT_STARTUP_DIRS);
+						Log.d("Main", "Main:StartUp:onCreateView: create: imported dirs");
+						return;
+					}
+					Toast.makeText(getActivity(), "Defining My Identity", Toast.LENGTH_SHORT).show();
+
+					Log.d("Main", "Main:StartUp:onCreateView: create: add peer request=" + Main.RESULT_ADD_PEER);
+					Intent intent = new Intent();
+					intent.setClass(getActivity(), AddSafe.class);
+					getActivity().startActivityForResult(intent, Main.RESULT_ADD_PEER);
+					Log.d("Main", "Main:StartUp:onCreateView: create: added peer");
+
+					android.support.v4.app.FragmentTransaction ft = getFragmentManager()
+							.beginTransaction();
+					ft.detach(StartUp.this);
+					ft.commit();
+				}
+			});
+
+			butAbandon.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View view) {
+					DD.setAppTextNoException(Main.DD_WIZARD_SKIP, "Y");
+					Log.d("Main", "Main:StartUp:onCreateView: abandon");
+					android.support.v4.app.FragmentTransaction ft = getFragmentManager()
+							.beginTransaction();
+					ft.detach(StartUp.this);
+					ft.commit();
+				}
+			});
+
+			Log.d("Main", "Main:StartUp:onCreateView: stop");
+			//return super.onCreateView(inflater, container, savedInstanceState);
+			return view;
+		}
+	}
+	/*
+	@Override
+	public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
+		Log.d("Main", "Main:onCreateView: start");
+		View v = super.onCreateView(parent, name, context, attrs);
+		Log.d("Main", "Main:onCreateView: stop");
+		return v;
+	}
+	*/
+	public void askStartUp() {
+		Log.d("Main", "Main:askStartUp: start");
+		// update name dialog
+		FragmentManager fm = getSupportFragmentManager();
+		StartUp dialog;
+		dialog = new StartUp();
+		//dialog.setArguments(b);
+		dialog.show(fm, "fragment_startup");
+		Log.d("Main", "Main:askStartUp: stop");
+	}
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
         {
+			Log.d("Main", "Main: onCreate: start");
             // Use intent in case the app was started by another app to send messages/images
             Intent intent = getIntent();
             if (intent != null) {
                 Uri data = intent.getData();
-                if (intent.getType() != null) {
-                    // Figure out what to do based on the intent type
-                    if (intent.getType().contains("image/")) {
-                        // Handle intents with image data ...
+				String urlData = intent.getDataString();
+				Log.d("Main", "Main: onCreate: URI is: "+data+" str="+urlData);
+				if (data != null) {
+					String type = intent.getType();
+					Log.d("Main", "Main: onCreate: intent type=" + type);
+					if (type != null) {
+						// Figure out what to do based on the intent type
+						if (type.contains("image/")) {
+							Log.d("Main", "Main: onCreate: image intent: start ImportBrowseWebObjects");
+							// Handle intents with image data ...
 
-                        // should probably set here a window only to select contact destination
+							// should probably set here a window only to select contact destination
+							Intent browser = new Intent();
+							browser.setClass(this, ImportBrowseWebObjects.class);
+							//browser.putExtra(ImportBrowseWebObjects.PARAM_BROWSER_URL, data);
+							browser.setData(data);
+							startActivity(browser);
 
-                        // Create intent to deliver some kind of result data
-                        //Intent result = new Intent("net.ddp2p.RESULT_ACTION", Uri.parse("content://result_uri"));
-                        // setResult(Activity.RESULT_OK, result);
-                        setResult(Activity.RESULT_CANCELED);
-                        finish();
-                    } else if (intent.getType().equals("text/plain")) {
-                        // Handle intents with text ...
+							// Create intent to deliver some kind of result data
+							//Intent result = new Intent("net.ddp2p.RESULT_ACTION", Uri.parse("content://result_uri"));
+							// setResult(Activity.RESULT_OK, result);
+							//// setResult(Activity.RESULT_CANCELED);
+							//// finish();
+						} else if (type.equals("text/plain")) {
+							Log.d("Main", "Main: onCreate: text intent: start ImportBrowseWebObjects");
+							// Handle intents with text ...
 
-                        // should probably set here a window only to select contact destination
+							// should probably set here a window only to select contact destination
+							Intent browser = new Intent();
+							browser.setClass(this, ImportBrowseWebObjects.class);
+							//browser.putExtra(ImportBrowseWebObjects.PARAM_BROWSER_URL, data);
+							browser.setData(data);
+							startActivity(browser);
 
-                        // Create intent to deliver some kind of result data
-                        //Intent result = new Intent("net.ddp2p.RESULT_ACTION", Uri.parse("content://result_uri"));
-                        // setResult(Activity.RESULT_OK, result);
-                        setResult(Activity.RESULT_CANCELED);
-                        finish();
-                    }
-                }
+							//// Create intent to deliver some kind of result data
+							////Intent result = new Intent("net.ddp2p.RESULT_ACTION", Uri.parse("content://result_uri"));
+							//// setResult(Activity.RESULT_OK, result);
+
+							//setResult(Activity.RESULT_CANCELED);
+							//finish();
+						}
+					} else {
+						Log.d("Main", "Main: onCreate: null type intent: start ImportBrowseWebObjects");
+						Intent browser = new Intent();
+						browser.setClass(this, ImportBrowseWebObjects.class);
+						//browser.putExtra(ImportBrowseWebObjects.PARAM_BROWSER_URL, data);
+						browser.setData(data);
+						startActivity(browser);
+					}
+				} else {
+					Log.d("Main", "Main: onCreate: no data");
+				}
             }
         }
 
+		Log.d("Main", "Main: onCreate: start service");
+		Intent serviceIntent = new Intent(this, DDP2P_Service.class);
+		startService(serviceIntent);
+
+		Log.d("Main", "Main: onCreate: setContentView");
 		setContentView(R.layout.main);
         
 		//initial action bar
@@ -224,28 +397,31 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
         //add adapter
         mAdapter = new TabFragmentPagerAdapter(getSupportFragmentManager());  
             
-        mViewPager.setAdapter(mAdapter);  
-            
-        mViewPager.setOnPageChangeListener(new OnPageChangeListener() {
-			
+        mViewPager.setAdapter(mAdapter);
+
+		Log.d("Main", "Main: onCreate: set Page Viewer");
+
+		mViewPager.setOnPageChangeListener(new OnPageChangeListener() {
+
 			@Override
 			public void onPageSelected(int position) {
-                // if (position > 1) position = 1;
+				// if (position > 1) position = 1;
 				actionBar.setSelectedNavigationItem(position);
 			}
-			
+
 			@Override
 			public void onPageScrolled(int arg0, float arg1, int arg2) {
-				
+
 			}
-			
+
 			@Override
 			public void onPageScrollStateChanged(int arg0) {
-				
+
 			}
-		
-        });
-        
+
+		});
+		Log.d("Main", "Main: onCreate: will init actionBar");
+
 		//add tabs
 		actionBar.addTab(actionBar.newTab().setText(Util.__(getString(R.string.users)))
 				.setTabListener(this));
@@ -255,15 +431,21 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
             actionBar.addTab(actionBar.newTab().setText("Acts")
                     .setTabListener(this));
         }
- 
+
+		Log.d("Main", "Main: onCreate: will preload icon_org");
 		new net.ddp2p.common.util.DDP2P_ServiceThread("loading icons", false, this) {
 			@Override
 			public void _run() {
 				Main m = (Main) ctx;
 				Bitmap bmp = PhotoUtil.decodeSampledBitmapFromResource(getResources(), R.drawable.organization_default_img, 55, 55);
 				icon_org = PhotoUtil.BitmapToByteArray(bmp, 100);
+				Log.d("Main", "MainTh: onCreate: preloaded icon_org");
 			}
 		}.start();
+
+
+		new CheckStartUp().execute();
+		Log.d("Main", "Main: onCreate: stop");
    }//end of onCreate()
 
 		
@@ -295,75 +477,53 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		 //menu.add(0, MENU_PAUSE, 0, "Pause").setIcon(android.R.drawable.sym_action_email);
-		/*
-		//initial the server:
-		//Identity.init_Identity();
-		System.out.println("Main: onCreateOptionsMenu: inited");
-		//HandlingMyself_Peer.loadIdentity(null);
-		System.out.println("Main: loaded identity");
-		
-		try {
-			DD.load_listing_directories();
-		} catch (NumberFormatException e){
-			Log.i("server", "some error in server initial!");
-			e.printStackTrace();
-		} catch (UnknownHostException e){
-			Log.i("server", "some error in server initial!");
-			e.printStackTrace();
-		} catch (P2PDDSQLException e) {
-			Log.i("server", "some error in server initial!");
-			e.printStackTrace();
-		}
-		D_Peer myself = HandlingMyself_Peer.get_myself();
-		myself.cleanAddresses(true, null);
-		myself.cleanAddresses(false, null);
-		hds.Address dir0 = Identity.listing_directories_addr.get(0);
-		dir0.pure_protocol = hds.Address.DIR;
-		dir0.branch = DD.BRANCH;
-		dir0.agent_version = DD.VERSION;
-		dir0.certified = true;
-		dir0.version_structure = hds.Address.V3;
-		dir0.address = dir0.domain+":"+dir0.tcp_port;
-		System.out.println("Adding address: "+dir0);
-		myself.addAddress(dir0, true, null);
-		System.out.println("Myself After Adding address: "+myself);
-		Log.i("myself", myself.toString());
 
-		
-		try {
-			DD.startUServer(true, Identity.current_peer_ID);
-			DD.startServer(false, Identity.current_peer_ID);
-			DD.startClient(true);
-			
-		} catch (NumberFormatException e) {
-		} catch (P2PDDSQLException e) {
-			System.err.println("Safe: onCreateView: error");
-			e.printStackTrace();
-		}
-		
-		Log.i("Test peer", "test peer...");
-
-		//initial chat:
-		try {
-			plugin_data.PluginRegistration.loadPlugin(com.HumanDecisionSupportSystemsLaboratory.DDP2P.AndroidChat.Main.class, HandlingMyself_Peer.getMyPeerGID(), HandlingMyself_Peer.getMyPeerName());
-			com.HumanDecisionSupportSystemsLaboratory.DDP2P.AndroidChat.Main.receiver = new AndroidChatReceiver();
-		} catch (MalformedURLException e) {
-			Log.i("chat", "some error in chat initial!");
-			e.printStackTrace();
-		}
-		*/
-		
 		Log.d("onCreateOptionsMenu", "Main: onCreateOptionsMenu: almost done");
 		boolean result = super.onCreateOptionsMenu(menu);
 		Log.d("onCreateOptionsMenu", "Main: onCreateOptionsMenu: done");
 		return result;
 	}
-	
-    //the plus mark, add a new safe
+
+	/** Defines callbacks for service binding, passed to bindService(). Currently not used */
+	DDP2P_Service mService;
+	boolean mBound = false;
+	private ServiceConnection mConnection = new ServiceConnection() {
+
+		@Override
+		public void onServiceConnected(ComponentName className,
+									   IBinder service) {
+			// We've bound to LocalService, cast the IBinder and get LocalService instance
+			DDP2P_Service.LocalBinder binder = (DDP2P_Service.LocalBinder) service;
+			mService = binder.getService();
+			mBound = true;
+			unbindService(this);
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName arg0) {
+			mBound = false;
+		}
+	};
+
+
+	//the plus mark, add a new safe
 	@TargetApi(Build.VERSION_CODES.KITKAT)
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		
+
+		if (item.getItemId() == R.id.action_quit) {
+			Log.d("Main", "Main: onCreate: start service");
+			Intent serviceIntent = new Intent(this, DDP2P_Service.class);
+			stopService(serviceIntent);
+			//bindService(serviceIntent, mConnection, Context.BIND_AUTO_CREATE); // may bind to send commands
+			finish();
+		}
+
+		if (item.getItemId() == R.id.import_new_web_object) {
+			Log.d("Main", "Main: onOptionsItemSelected: null type intent: start ImportBrowseWebObjects");
+			Intent j = new Intent().setClass(this, ImportBrowseWebObjects.class);
+			this.startActivityForResult(j, Main.RESULT_ADD_PEER);
+		}
 
 		if (item.getItemId() == R.id.add_new_safe_my) {
             try {
@@ -384,14 +544,15 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 			
 			Intent intent = new Intent();
 			intent.setClass(this, AddSafe.class);
-			startActivityForResult(intent, Main.RESULT_ADD_PEER);
+			this.startActivityForResult(intent, Main.RESULT_ADD_PEER);
 		}
 
 		if (item.getItemId() == R.id.add_new_safe_other) {
-			if ((Identity.getListing_directories_addr().size() <= 0)) {
-				Toast.makeText(this, "To add a safe, first add a directory from the Manage Directories top-right menu!", Toast.LENGTH_LONG).show();
-				return super.onOptionsItemSelected(item);
-			}
+
+//			if ((Identity.getListing_directories_addr().size() <= 0)) {
+//				Toast.makeText(this, "To add a safe, first add a directory from the Manage Directories top-right menu!", Toast.LENGTH_LONG).show();
+//				return super.onOptionsItemSelected(item);
+//			}
 			Toast.makeText(this, "add a new safe other", Toast.LENGTH_SHORT).show();
 		    
 		    if (Build.VERSION.SDK_INT < 19){
@@ -400,10 +561,10 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		        intent.setAction(Intent.ACTION_GET_CONTENT);
 		        startActivityForResult(intent, SELECT_PHOTO);
 		    } else {
-		        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-		        intent.setType("image/*");
-		        startActivityForResult(intent, SELECT_PHOTO_KITKAT);
-		    }
+				Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+				intent.setType("image/*");
+				startActivityForResult(intent, SELECT_PHOTO_KITKAT);
+			}
 		}
 		
 		if (item.getItemId() == R.id.add_new_org) {
@@ -428,8 +589,11 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		    LoadPK loadPKDialog = new LoadPK();
 			//loadPKDialog.setTargetFragment(this,0);
 		    loadPKDialog.show(fm, "fragment_send_public_key");
+		}
 
-
+		if (item.getItemId() == R.id.action_main_refresh) {
+			//threadMsg("b");
+			new ReloadSafe().execute();
 		}
 
         // not yet implemented!
@@ -497,138 +661,84 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 	@TargetApi(Build.VERSION_CODES.KITKAT)
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        if (resultCode == RESULT_OK && requestCode == this.RESULT_ADD_PEER) {
-            byte[] _pi = resultData.getByteArrayExtra(AddSafe.PI);
-            net.ddp2p.common.hds.PeerInput pi = null;
-            if (_pi != null) try { pi = new PeerInput().decode(new Decoder(_pi));}catch(Exception e){e.printStackTrace();}
-            if (pi == null) pi = Safe.peerInput;
-            new PeerCreatingThread(pi).start();
-
-            super.onActivityResult(requestCode, resultCode, resultData);
-            return;
-        }
-		if (resultCode == RESULT_OK && resultData != null) {
-            Uri uri = null;
-            
-            if (requestCode == SELECT_PHOTO) {
-                uri = resultData.getData();
-                Log.i("Uri", "Uri: " + uri.toString());
-            } else if (requestCode == SELECT_PHOTO_KITKAT) {
-                uri = resultData.getData();
-                Log.i("Uri_kitkat", "Uri: " + uri.toString());
-                final int takeFlags = resultData.getFlags()
-                        & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                // Check for the freshest data.
-                getContentResolver().takePersistableUriPermission(uri, takeFlags);
-            }
-            
- 
-            selectedImagePath = FileUtils.getPath(this,uri);
-            Log.i("path", "path: " + selectedImagePath); 
-                
-            selectImageFile = new File(selectedImagePath);
-            String error;    
-            StegoStructure adr[] = DD.getAvailableStegoStructureInstances();
-            int[] selected = new int[1];
-            try {
-            	error = DD.loadBMP(selectImageFile, adr, selected);
-            	Log.i("error", "error: " + error); 
-			    if (error == "") {
-			        adr[selected[0]].save();
-			        Toast.makeText(this, "add new safe other successfully!", Toast.LENGTH_SHORT).show();
-			    }						
-            }
-		    catch (Exception e) {
-		    	Toast.makeText(this, "Unable to load safe from this photo!", Toast.LENGTH_SHORT).show();
-			    e.printStackTrace();
-		    } 
-                	
+		Log.d("Main", "Main: onActivityResult: start r=" + resultCode+"vs(ok="+RESULT_OK+")" + " q=" + requestCode+"(ok=" + (requestCode&0x0FFFF) + ")");
+		if (resultCode != RESULT_OK) {
+			super.onActivityResult(requestCode, resultCode, resultData);
+			Log.d("Main", "oAR: stop");
+			return;
 		}
-		super.onActivityResult(requestCode, resultCode, resultData);
+		switch (requestCode & 0x0FFFF) // string the fragment information which is in upper bits
+		{
+			case RESULT_STARTUP_DIRS:
+				super.onActivityResult(requestCode, resultCode, resultData);
+				return;
+			case SELECT_PHOTO:
+			case SELECT_PHOTO_KITKAT:
+				if (resultData != null) {
+					Uri uri = null;
+
+					if (requestCode == SELECT_PHOTO) {
+						uri = resultData.getData();
+						Log.i("Main", "oAR: Uri: " + uri.toString());
+					} else if (requestCode == SELECT_PHOTO_KITKAT) {
+						uri = resultData.getData();
+						Log.i("Main", "oAR: Uri kitkat: " + uri.toString());
+						final int takeFlags = resultData.getFlags()
+								& (Intent.FLAG_GRANT_READ_URI_PERMISSION
+								| Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+						// Check for the freshest data.
+						getContentResolver().takePersistableUriPermission(uri, takeFlags);
+					}
+
+					if (uri != null) {
+						selectedImagePath = FileUtils.getPath(this, uri);
+						Log.i("Main", "oAR: path: " + selectedImagePath);
+
+						selectImageFile = new File(selectedImagePath);
+						String mimeType= URLConnection.guessContentTypeFromName(selectImageFile.getName());
+						String error;
+						StegoStructure adr[] = DD.getAvailableStegoStructureInstances();
+						int[] selected = new int[1];
+						try {
+							//error = DD.loadBMP(selectImageFile, adr, selected);
+							error = DD.loadFromMedia(selectImageFile, mimeType, adr, selected);
+							Log.i("Main", "oAR: error: " + error);
+							if (error == "") {
+								adr[selected[0]].save();
+								Toast.makeText(this, "add new safe other successfully!", Toast.LENGTH_SHORT).show();
+							}
+						} catch (Exception e) {
+							Toast.makeText(this, "Unable to load safe from this photo!", Toast.LENGTH_SHORT).show();
+							e.printStackTrace();
+						}
+					}
+				}
+				super.onActivityResult(requestCode, resultCode, resultData);
+				Log.d("Main", "oAR: stop");
+
+			case RESULT_ADD_PEER:
+			default:
+			{
+				byte[] _pi = resultData.getByteArrayExtra(AddSafe.PI);
+				net.ddp2p.common.hds.PeerInput pi = null;
+				if (_pi != null) try {
+					pi = new PeerInput().decode(new Decoder(_pi));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if (pi == null) pi = Safe.peerInput;
+				new PeerCreatingThread(pi).start();
+
+				super.onActivityResult(requestCode, resultCode, resultData);
+				return;
+			}
+		}
 	}
 
 
 
-	private static final Object monitorServers = new Object();
-	public static boolean startServers() {
-		synchronized (monitorServers) {
-			if (serversStarted) return true;
-			serversStarted = true;
-		}
-		//initial the server:
-		Identity.init_Identity(false, true, false);
-		System.out.println("Main: onCreateOptionsMenu: inited");
-		HandlingMyself_Peer.loadIdentity(null);
-		System.out.println("Main: loaded identity");
-		
-		try {
-			DD.load_listing_directories();
-		} catch (NumberFormatException e){
-			Log.i("server", "some error in server initial!");
-			e.printStackTrace();
-		} catch (UnknownHostException e){
-			Log.i("server", "some error in server initial!");
-			e.printStackTrace();
-		} catch (P2PDDSQLException e) {
-			Log.i("server", "some error in server initial!");
-			e.printStackTrace();
-		}
-		D_Peer myself = HandlingMyself_Peer.get_myself_or_null();
-		if (myself == null) {
-			Log.i("server", "Safe: startServers: no myself available!");
-			//AddSafe.h Toast
-			serversStarted = false;
-			return false;
-		} else {
-			myself.cleanAddresses(true, null);
-			myself.cleanAddresses(false, null);
-            net.ddp2p.common.hds.Address dir0 = null;
-			if (Identity.getListing_directories_addr().size() > 0) dir0 = Identity.getListing_directories_addr().get(0);
-			else {
-				String dirdd = "DIR%B%0.9.56://163.118.78.40:10000:10000:DD";
-				DD_DirectoryServer ds = new DD_DirectoryServer();
-				ds.parseAddress(dirdd);
-				ds.save();
-				dir0 = new Address(dirdd);
-			}
-			dir0.pure_protocol = net.ddp2p.common.hds.Address.DIR;
-			dir0.branch = DD.BRANCH;
-			dir0.agent_version = DD.VERSION;
-			dir0.certified = true;
-			dir0.version_structure = net.ddp2p.common.hds.Address.V3;
-			dir0.address = dir0.domain+":"+dir0.tcp_port;
-			System.out.println("Adding address: "+dir0);
-			myself.addAddress(dir0, true, null);
-			System.out.println("Myself After Adding address: "+myself);
-			Log.i("myself", myself.toString());
-		
-			
-			try {
-				DD.startUServer(true, Identity.current_peer_ID);
-				DD.startServer(false, Identity.current_peer_ID);
-				DD.startClient(true);
-				
-			} catch (NumberFormatException e) {
-			} catch (P2PDDSQLException e) {
-				System.err.println("Safe: onCreateView: error");
-				e.printStackTrace();
-			}
-			
-			Log.i("Test peer", "test peer...");
-		}	
-		//initial chat:
-		try {
-            net.ddp2p.common.plugin_data.PluginRegistration.loadPlugin(com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AndroidChat.Main.class, HandlingMyself_Peer.getMyPeerGID(), HandlingMyself_Peer.getMyPeerName());
-			com.HumanDecisionSupportSystemsLaboratory.DD_P2P.AndroidChat.Main.receiver = new AndroidChatReceiver();
-		} catch (MalformedURLException e) {
-			Log.i("chat", "some error in chat initial!");
-			e.printStackTrace();
-		}
-		return true;
-	}
 
-    class PeerCreatingThread extends Thread {
+	class PeerCreatingThread extends Thread {
         PeerInput pi;
         final public String TAG = "PEER_ADD_TH";
 
@@ -640,12 +750,12 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
         public void run() {
 
             Log.d("onCreatePeerCreatingTh",
-                    "PeerCreatingThread: run: start");
-            gen();
+					"PeerCreatingThread: run: start");
+			gen();
 
-            Log.d("onCreatePeerCreatingTh",
-                    "PeerCreatingThread: run: announced");
-            Log.d(TAG, "add safe: run()");
+			Log.d("onCreatePeerCreatingTh",
+					"PeerCreatingThread: run: announced");
+			Log.d(TAG, "add safe: run()");
 
             Safe.loadPeer();
 
@@ -668,33 +778,37 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
                 return peer;
             }
             Log.d("onCreatePeerCreatingTh",
-                    "PeerCreatingThread: gen: start");
+					"PeerCreatingThread: gen: start");
             myself.setEmail(pi.email);
             myself.setSlogan(pi.slogan);
-            myself.storeRequest();
+            //myself.storeRequest();
+			myself.storeRequest_getID(); // should sync to guarantee visibility
+			myself.releaseReference();
 
             Log.d("onCreatePeerCreatingTh",
                     "PeerCreatingThread: gen: inited");
             // data.HandlingMyself_Peer.setMyself(myself, true, false);
-            if (!Main.serversStarted)
-                Main.startServers();
+            if (!DDP2P_Service.serversStarted)
+                DDP2P_Service.startServers();
             return peer;
         }
 
-        private void threadMsg(String msg) {
-            if (! msg.equals(null) && ! msg.equals("")) {
-                Log.d(TAG, "add safe: threadMsg");
-                Message msgObj = handler.obtainMessage();
-                Bundle b = new Bundle();
-                b.putString("message", msg);
-                msgObj.setData(b);
-                handler.sendMessage(msgObj);
-                Log.d(TAG, "add safe: threadMsg finished");
-
-				handler.sendMessage(handler.obtainMessage(Main.REFRESH_ALL));
-            }
-        }
     }
+	private void threadMsg(String msg) {
+		if (! msg.equals(null) && ! msg.equals("")) {
+			Log.d("Main", "add safe: threadMsg");
+			Message msgObj = handler.obtainMessage();
+			Bundle b = new Bundle();
+			b.putString("message", msg);
+			msgObj.setData(b);
+			handler.sendMessage(msgObj);
+			Log.d("Main", "add safe: threadMsg finished");
+
+			handler.sendMessage(handler.obtainMessage(Main.REFRESH_ALL));
+		} else {
+			Log.d("Main", "Main: threadMsg: msg empty");
+		}
+	}
 	void refreshOrg() {
 		if (Orgs.activ == null) {
 			Log.d("Main", "refresh Safe none");
@@ -719,6 +833,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		Orgs.listAdapter = newAdapter;
 	}
 	void refreshSafe() {
+		Log.d("Main", "Main: refreshSafe start");
 		if (Safe.safeItself == null) {
 			Log.d("Main", "refresh Safe none");
 			return;
@@ -735,10 +850,12 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		if (_adapt != null) _adapt.notifyDataSetChanged();
 
 		Safe.SafeAdapter newAdapter = new Safe.SafeAdapter(s.getActivity(), Safe.list, Safe.imgData);
+		Log.d("Main", "Main: refreshSafe setAdapter: #"+Safe.list.size());
 
 		s.setListAdapter(newAdapter);
 		newAdapter.notifyDataSetChanged();
 		Safe.safeAdapter = newAdapter;
+		Log.d("Main", "Main: refreshSafe setAdapter: quit");
 	}
 	final static int REFRESH_ALL = 10;
 
@@ -766,6 +883,58 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
             */
         }
     };
+	public class ReloadSafe extends AsyncTask<Void, Void, Void> {
+		@Override
+		protected Void doInBackground(Void... voids) {
+			Safe.loadPeer();
+			Orgs.reloadOrgs();
+
+			Log.d("ReloadSafe",
+					"PeerCreatingThread: run: generated");
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void _void) {
+			refreshSafe();
+			refreshOrg();
+		}
+	}
+	public class CheckStartUp extends AsyncTask<Void, Void, Boolean> {
+
+		@Override
+		protected Boolean doInBackground(Void... params) {
+
+			ArrayList<ArrayList<Object>> peers = DDP2P_Service.startDDP2P(getApplicationContext());
+			try {
+				DD.load_listing_directories();
+			} catch (Exception e) {
+				e.printStackTrace();
+				Log.d("Main", "Main: CheckStartup:doInBack: fail to get dirs");
+				return Boolean.TRUE;
+			}
+			String str = DD.getAppTextNoException("DD_WIZARD_SKIP");
+			if (str != null && !"".equals(str.trim())) return Boolean.TRUE;
+
+			if ((Identity.getListing_directories_addr().size() > 0)) {
+				Log.d("Main", "Main: CheckStartup:doInBack: dir");
+				return Boolean.TRUE;
+			}
+			if (peers.size() > 0) {
+				Log.d("Main", "Main: CheckStartup:doInBack:  peers");
+				return Boolean.TRUE;
+			}
+			Log.d("Main", "Main: CheckStartup:doInBack:wizzard");
+			return Boolean.FALSE;
+		}
+
+		@Override
+		protected void onPostExecute(Boolean o) {
+			if (!o) {
+				askStartUp();
+			}
+		}
+	}
 
 
 }
