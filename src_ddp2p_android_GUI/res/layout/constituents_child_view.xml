@@ -17,6 +17,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="+Neighborhood"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            style="@style/ButtonDDp2P_Theme"
             android:textSize="15sp" />
 
         <Button
@@ -24,8 +27,38 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="+Constituent"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            style="@style/ButtonDDp2P_Theme"
             android:textSize="15sp" />
 
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/rowChildText"
+        android:layout_width="match_parent"
+        android:layout_height="39dp"
+        android:gravity="center_vertical" >
+
+        <ImageView
+            android:id="@+id/childImage"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:background="@drawable/ic_launcher"
+            android:contentDescription="Icon" />
+
+        <TextView
+            android:id="@+id/textViewChild"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:text="@string/hello_world"
+            android:textColor="#1919A3"
+            android:textSize="16sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <LinearLayout
@@ -38,12 +71,18 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Myself"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            style="@style/ButtonDDp2P_Theme"
             android:textSize="15sp" />
         <Button
             android:id="@+id/constituent_child_view_move_here"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Move"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            style="@style/ButtonDDp2P_Theme"
             android:textSize="15sp" />
 
         <Button
@@ -51,31 +90,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Witness"
-            android:textSize="15sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="39dp"
-        android:gravity="center_vertical" >
-
-        <ImageView
-            android:id="@+id/childImage"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_margin="5dp"
-            android:background="@drawable/ic_launcher"
-            android:contentDescription="@string/hello_world" />
-
-        <TextView
-            android:id="@+id/textViewChild"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            style="@style/ButtonDDp2P_Theme"
             android:layout_marginLeft="5dp"
-            android:text="@string/hello_world"
-            android:textColor="#1919A3"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:layout_marginRight="5dp"
+            android:textSize="15sp" />
     </LinearLayout>
 
     <View

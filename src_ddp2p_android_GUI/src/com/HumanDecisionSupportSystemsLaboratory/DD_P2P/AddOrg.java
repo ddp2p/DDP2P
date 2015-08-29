@@ -107,7 +107,8 @@ public class AddOrg extends ActionBarActivity {
 		setContentView(R.layout.add_org);
 
 		Application_GUI.dbmail = new Android_DB_Email(this);
-		Application_GUI.gui = new Android_GUI();
+		if (Application_GUI.gui == null)
+			Application_GUI.gui = new Android_GUI(this);
 
 		mainLayout = (LinearLayout) findViewById(R.id.layout_add_org);
 		extraFileds = new ArrayList<ExtraFields>();
@@ -260,11 +261,15 @@ public class AddOrg extends ActionBarActivity {
 						efd_list.add(efd);
 					}
 				}
-
-				newOrg(name, efd_list, b_variedVotingRight, i_maxVotingLevel,
+				D_Organization new_org =
+					fillOrg(name, efd_list, b_variedVotingRight, i_maxVotingLevel,
 						description, instructions_motion,
 						instructions_registration, icon);
 
+				Intent intent = new Intent();
+				if (new_org != null)
+					intent.putExtra(Main.RESULT_ORG, new_org.encode());
+				AddOrg.this.setResult(RESULT_OK, intent);
 				finish();
 
 			}
@@ -426,17 +431,129 @@ public class AddOrg extends ActionBarActivity {
 			Log.i(TAG, "SafeProfile: Icon length=" + icon.length);
 		}
 	}
+	private D_Organization fillOrg(String _name, ArrayList<ExtraFieldData> _efd_list,
+						boolean _b_variedVotingRight, int _i_maxVotingLevel,
+						String _description, String _instructions_motion,
+						String _instructions_registration, byte[] _oIcon) {
+		String name;
+		String description;
+		String instructions_motion;
+		String instructions_registration;
+		ArrayList<ExtraFieldData> efd_list;
+		boolean b_variedVotingRight;
+		int i_maxVotingLevel;
+		byte[] oIcon;
 
+		name = _name;
+		b_variedVotingRight = _b_variedVotingRight;
+		i_maxVotingLevel = _i_maxVotingLevel;
+		description = _description;
+		instructions_motion = _instructions_motion;
+		instructions_registration = _instructions_registration;
+		efd_list = _efd_list;
+		oIcon = _oIcon;
+
+		D_OrgParam[] params = new D_OrgParam[efd_list.size()];
+		for (int k = 0; k < efd_list.size(); k++) {
+			ExtraFieldData ef = efd_list.get(k);
+			net.ddp2p.common.data.D_OrgParam dop = new D_OrgParam();
+			dop.label = ef.f_default;
+			dop.tip = ef.f_hint;
+			dop.partNeigh = ef.f_level;
+			if (ef.f_values != null)
+				dop.list_of_values = Util.trimmed(ef.f_values.split(Pattern
+						.quote(",")));
+			params[k] = dop;
+		}
+		// This can be used instead of the next sequence...
+		// D_Organization o =
+		// D_Organization.createGrassrootOrganization(name, params);
+
+		D_Organization new_org = D_Organization.getEmpty();
+		new_org.setName(name);
+		// if (new_org.params == null) new_org.params = new D_OrgParams();
+		new_org.setOrgParams(params);
+		// new_org.updateExtraGIDs();
+
+		// use the following to set concepts (default names plus list of
+		// translations in official languages of the org):
+		// new_org.setNamesOrg(null, new String[]{"Country","Pays","Land"});
+		// new_org.setNamesForum(null, new
+		// String[]{"Forum","Forum","Sura"});
+		// new_org.setNamesMotion(null, new
+		// String[]{"Petition","Initiative Populaire","Gesetz"});
+		// new_org.setNamesJustification(null, new String[]{"Justification",
+		// "Explication", "Erklarung"});
+
+		if (AddOrg.settings.name_org != null)
+			new_org.setNamesOrg(null,
+					new String[] { AddOrg.settings.name_org });
+		if (AddOrg.settings.name_forum != null)
+			new_org.setNamesForum(null,
+					new String[] { AddOrg.settings.name_forum });
+		if (AddOrg.settings.name_motion != null)
+			new_org.setNamesMotion(null,
+					new String[] { AddOrg.settings.name_motion });
+		if (AddOrg.settings.name_justification != null)
+			new_org.setNamesJustification(null,
+					new String[] { AddOrg.settings.name_justification });
+		if (AddOrg.settings.name_constituent != null)
+			new_org.setNamesConstituent(null,
+					new String[] { AddOrg.settings.name_constituent });
+
+		new_org.setDescription(description);
+		new_org.setInstructionsNewMotions(instructions_motion);
+		new_org.setInstructionsRegistration(instructions_registration);
+
+		// TODO
+		if (oIcon != null)
+			Log.d(TAG, "Setting icon #" + oIcon.length);
+		else
+			Log.d(TAG, "Setting null icon");
+
+		new_org.setIcon(oIcon);
+
+		if (!b_variedVotingRight) {
+
+			new_org.setWeightsType(net.ddp2p.common.table.organization.WEIGHTS_TYPE_NONE);
+
+		} else {
+
+			if (i_maxVotingLevel == 1) {
+				new_org.setWeightsType(net.ddp2p.common.table.organization.WEIGHTS_TYPE_0_1);
+			} else {
+				new_org.setWeightsType(net.ddp2p.common.table.organization.WEIGHTS_TYPE_INT);
+			}
+
+			new_org.setWeightsMax(i_maxVotingLevel);
+		}
+
+		// new_org.concepts.name_motion=new String[]{name};
+		new_org.params.certifMethods = net.ddp2p.common.table.organization._GRASSROOT;
+
+		new_org.setTemporary(false);
+		new_org.setCreationDate();
+		D_Organization.DEBUG = true;
+		// String GID =
+		Log.d(TAG, "AddOrg: OrgThread: got org before hash=" + new_org);
+		//Orgs.reloadOrgs();
+		String newGID = new_org.getOrgGIDandHashForGrassRoot();
+		new_org.setGID(newGID, newGID); // sign();
+		if (! new_org.verifySignature()) {
+			Log.d(TAG, "AddOrg: OrgThread: bad signature after hash=" + new_org);
+			Toast.makeText(null, "Bad Signature on Creation", Toast.LENGTH_SHORT).show();
+			return null;
+		}
+		return new_org;
+	}
+	/*
 	// function for add a new peer
 	private void newOrg(String _name, ArrayList<ExtraFieldData> efd_list,
 			boolean b_variedVotingRight, int i_maxVotingLevel,
 			String description2, String instructions_motion2,
 			String instructions_registration2, byte[] oIcon) {
 
-
-		/*
-		 * ciphersuite did not initialize, add a new ciphersuit class
-		 */
+		 // ciphersuite did not initialize, add a new ciphersuit class
 
 		new OrgCreatingThread(name, efd_list, b_variedVotingRight,
 				i_maxVotingLevel, description, instructions_motion,
@@ -576,9 +693,11 @@ public class AddOrg extends ActionBarActivity {
 
 			Message msgObj = handler.obtainMessage();
 			handler.sendMessage(msgObj);
+
+
 		}
 	}
-
+*/
 	/*
 	 * class PeerCreatingThread extends Thread { PeerInput pi;
 	 * PeerCreatingThread(PeerInput _pi) { pi = _pi; } public void run() {
@@ -600,6 +719,7 @@ public class AddOrg extends ActionBarActivity {
 	 * b.putString("message", msg); msgObj.setData(b);
 	 * handler.sendMessage(msgObj); } } }
 	 */
+	/*
 	private final Handler handler = new Handler() {
 
 		// Create handleMessage function
@@ -626,4 +746,5 @@ public class AddOrg extends ActionBarActivity {
             ((OrgAdapter)Orgs.listAdapter).notifyDataSetChanged();
 		}
 	};
+	*/
 }

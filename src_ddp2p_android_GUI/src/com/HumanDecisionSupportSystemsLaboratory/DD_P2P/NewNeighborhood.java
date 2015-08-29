@@ -156,13 +156,17 @@ public class NewNeighborhood extends Activity{
 					neighborhood.setParentLIDstr(neighborhood_parent_LIDstr);
 				}
 				neighborhood.setGID(neighborhood.make_ID());
-				
+				Log.d(TAG, "Created neighborhood: " + neighborhood);
+
 				D_Neighborhood n = D_Neighborhood.getNeighByGID(neighborhood.getGID(), true, true, true, null, oLID);
+				Log.d(TAG, "Created new neighborhood: "+oLID+" "+neighborhood.getGID()+" old="+n);
 				n.loadRemote(neighborhood, null, null, null);
+				Log.d(TAG, "Created new neighborhood: " + oLID + " " + neighborhood.getGID() + " loaded=" + n);
 				long nID = n.storeSynchronouslyNoException();
 				n.releaseReference();
+				neighborhood = n;
 				
-				Log.d(TAG, "Breated neighborhood: "+neighborhood);
+				Log.d(TAG, "Created neighborhood: "+n);
 				Toast.makeText(NewNeighborhood.this, "Neighborhood created: "+ _name, Toast.LENGTH_SHORT);
 				
 				D_Witness w = new D_Witness();
@@ -174,7 +178,7 @@ public class NewNeighborhood extends Activity{
 				//w.witnessing_global_constituentID = constituent_GID;
 				
 				//w.witnessed_global_constituentID = constituent_GID;
-				w.witnessed_global_neighborhoodID = neighborhood.getGID();
+				w.witnessed_global_neighborhoodID = n.getGID();
 				
 				int eligibility_position = 0;
 				int trustworthy_position = 0;

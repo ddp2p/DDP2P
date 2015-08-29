@@ -82,12 +82,14 @@ public class Util_GUI {
 		signature_val=Util.extBytes(signature, 0, signature_val);
 		if((content_type!=null)&&(content_type.length>0)) content_type[0] = signature_val;
 		if(Util.contains(content_types, signature_val) == -1){
-			Application_GUI.warning(
+			//Application_GUI.warning (
+			System.out.println ("Util_GUI: _setSteganoImage: "+
 	    			__("When trying to use locally saved image got Wrong Signature: ")+signature_val+
-	    			"\n"+__("The source of the drag might have changed the image content (like Safari / use Firefox!).") +
+	    			"\n"+__("The source of the drag might have changed the image content (like Safari / Firefox!).") +
 	    			"\n"+__("We will try other methods: test your Internet connection")+
-	    			"\n"+__("You can also save the file and drag/load it as a file."),
-	    			__("Wrong signature"));
+	    			"\n"+__("You can also save the file and drag/load it as a file.")
+	    			//,__("Wrong signature")
+	    			);
 			return null;
 		}
 		

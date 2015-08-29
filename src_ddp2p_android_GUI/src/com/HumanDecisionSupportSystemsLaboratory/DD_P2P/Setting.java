@@ -16,6 +16,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
@@ -35,8 +36,16 @@ public class Setting extends FragmentActivity {
 			ft.add(R.id.setting_container, settingMain);
 			ft.commit();
 		}
+		Intent intent = new Intent();
+		//intent.putExtra(Main.RESULT_SETTINGS, pi.encode());
+		this.setResult(RESULT_OK, intent);
 	}
-	
-	
 
+	@Override
+	protected void onDestroy() {
+		Intent intent = new Intent();
+		//intent.putExtra(Main.RESULT_SETTINGS, pi.encode());
+		this.setResult(RESULT_OK, intent);
+		super.onDestroy();
+	}
 }

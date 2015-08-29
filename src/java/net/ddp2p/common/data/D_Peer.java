@@ -1630,6 +1630,9 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	
 	/** Storing */
 	public static D_Peer_SaverThread saverThread = new D_Peer_SaverThread();
+	public static void stopSaver() {
+		saverThread.turnOff();
+	}
 	/**
 	 * This function has to be called after the appropriate dirty flags are set:
 	 * dirty_main - for elements in the peer table
@@ -1962,7 +1965,9 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 					//Address pi = this.getPeerAddress(adr.domain, adr.tcp_port, adr.udp_port, shared_addresses_orig);
 					//if (pi != null) adr.peer_address_ID = pi.peer_address_ID;
 					adr.dirty = false;
-					adr.store(getLIDstr(), null);
+					try {//exists already exception?
+						adr.store(getLIDstr(), null);
+					} catch(Exception e){e.printStackTrace();}
 					if (DEBUG) System.out.println("D_Peer: storeAddresses shared new saved ="+adr.toLongString());
 				}
 			}
@@ -2440,8 +2445,15 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		}
 		this.keys = null;
 	}
+	public static void setBroadcastable(D_Peer peer, boolean val) {
+		peer = D_Peer.getPeerByPeer_Keep(peer);
+		peer.setBroadcastable(val);
+		peer.storeRequest();
+		peer.releaseReference();
+	}
 	public void setBroadcastable(boolean val) {
 		this.component_basic_data.broadcastable = val;
+		this.dirty_main = true;
 	}
 	public boolean getBroadcastable() {
 		return this.component_basic_data.broadcastable;
@@ -4825,6 +4837,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		String peerID = this.getLIDstr_keep_force();
     	try {
 			Application.db.deleteNoSync(net.ddp2p.common.table.peer_address.TNAME, new String[]{net.ddp2p.common.table.peer_address.peer_ID}, new String[]{peerID}, DEBUG);
+			Application.db.deleteNoSync(net.ddp2p.common.table.peer_instance.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{peerID}, DEBUG); // never loaded
 			Application.db.deleteNoSync(net.ddp2p.common.table.peer_my_data.TNAME, new String[]{net.ddp2p.common.table.peer_my_data.peer_ID}, new String[]{peerID}, DEBUG);
 			Application.db.deleteNoSync(net.ddp2p.common.table.org_distribution.TNAME, new String[]{net.ddp2p.common.table.org_distribution.peer_ID}, new String[]{peerID}, DEBUG);
 			Application.db.deleteNoSync(net.ddp2p.common.table.peer_org.TNAME, new String[]{net.ddp2p.common.table.peer_org.peer_ID}, new String[]{peerID}, DEBUG);
@@ -4837,19 +4850,25 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			e1.printStackTrace();
 		}
 	}
-	static public void delete(D_Peer peer) throws P2PDDSQLException {
+	static public boolean delete(D_Peer peer) throws P2PDDSQLException {
 		synchronized(monitor_object_factory) {
 			if (peer == null) {
 				Util.printCallPath("Why delete null?");
-				return;
+				return false;
 			}
 			if (peer.getStatusLockWrite() > 1) {
 				int i = Application_GUI.ask(__("The peer cannot be deleted because it is in use! Force?\nUsers: ")+peer.getStatusLockWrite(), __("Deleting peer failed"), Application_GUI.OK_CANCEL_OPTION);
 				if (i != 0)
-					return;
+					return false;
 			}
-			Application.db.deleteNoSync(net.ddp2p.common.table.peer.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{peer.getLIDstr_keep_force()}, DEBUG); // never loaded
+			String pLID = peer.getLIDstr_keep_force();
+//			Application.db.deleteNoSync(net.ddp2p.common.table.peer_address.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{pLID}, DEBUG); // never loaded
+//			Application.db.deleteNoSync(net.ddp2p.common.table.peer_my_data.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{pLID}, DEBUG); // never loaded
+//			Application.db.deleteNoSync(net.ddp2p.common.table.peer_org_inferred.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{pLID}, DEBUG); // never loaded
+//			Application.db.deleteNoSync(net.ddp2p.common.table.peer_org.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{pLID}, DEBUG); // never loaded
+			Application.db.deleteNoSync(net.ddp2p.common.table.peer.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{pLID}, DEBUG); // never loaded
 			D_Peer_Node.unregister_loaded(peer);
+			return true;
 		}
 	}
 	/**
@@ -5348,7 +5367,8 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	}
 	public static String getGIDfromLID(String creator_ID) {
 		D_Peer p = D_Peer.getPeerByLID_NoKeep(creator_ID, false);
-		return p.getGID();
+		if (p!=null) return p.getGID();
+		return null;
 	}
 	public static ArrayList<CreatorGIDItem> getExistingPeerKeys(boolean creator_selected) {
 		ArrayList<ArrayList<Object>> c_available;
@@ -5515,31 +5535,37 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	 */
 	public void cleanAddresses(boolean global, String instance) {
 		D_Peer peer = getPeerByPeer_Keep(this);
+		cleanAddressesKept(peer, global, instance);
+		peer.releaseReference();
+	}
+	/**
+	 * remove addresse (global or from an instance)
+	 * @param global
+	 * @param instance
+	 */
+	public static void cleanAddressesKept(D_Peer peer, boolean global, String instance) {
 		if (! global) {
 			D_PeerInstance dpi = peer.getPeerInstance(peer.getInstance());
 			if (dpi != null) {
 				if (dpi.addresses == null || dpi.addresses.size() == 0) {
-					peer.releaseReference();
 					return;
 				}
 				dpi.addresses = new ArrayList<Address>();
 				dpi.setCreationDate();
-				this.dirty_addresses = true;
-				this.dirty_instances = true;
+				peer.dirty_addresses = true;
+				peer.dirty_instances = true;
 				dpi.sign(peer.getSK());
 				peer.storeRequest();
 			}
-			peer.releaseReference();
 			return;
 		}
-		if (shared_addresses == null || shared_addresses.size() == 0) return;
-		this.shared_addresses = new ArrayList<Address>();
-		this.setCreationDate();
-		this.dirty_addresses = true;
+		if (peer.shared_addresses == null || peer.shared_addresses.size() == 0) return;
+		peer.shared_addresses = new ArrayList<Address>();
+		peer.setCreationDate();
+		peer.dirty_addresses = true;
 		peer.sign();
-		this.dirty_main = true;
+		peer.dirty_main = true;
 		peer.storeRequest();
-		peer.releaseReference();
 	}
 	/**
 	 * Using this.getInstance()
@@ -5561,9 +5587,25 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	 * @return
 	 */
 	public boolean addAddress(Address addr, boolean global, String instance) {
-			D_PeerInstance dpi = null;
+		D_Peer peer = getPeerByPeer_Keep(this);
+		boolean result = addAddressKept(peer, addr, global, instance);
+		peer.releaseReference();
+		return result;
+	}
+	/**
+	 * 
+	 * @param addr (an address, e.g., one of the directories from
+	 *   		Identity.listing_directories_string
+				Identity.listing_directories_inet
+				Identity.listing_directories_addr
+	 *        )
+	 * @param global (true for adding to glabal addresses: directories)
+	 * @param instance (only used if global is false)
+	 * @return
+	 */
+	public static boolean addAddressKept(D_Peer peer, Address addr, boolean global, String instance) {
+		D_PeerInstance dpi = null;
 			//try {
-				D_Peer peer = getPeerByPeer_Keep(this);
 				if (! global) {
 					dpi = peer.getPeerInstance(peer.getInstance());
 					if (dpi == null) {
@@ -5597,7 +5639,6 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 					if (DEBUG) System.out.println("PeerAddresses: not dirty main!");
 				}
 				if (peer.dirty_any()) peer.storeRequest();
-				peer.releaseReference();
 	//		} catch (P2PDDSQLException e) {
 	//			e.printStackTrace();
 	//			return false;
@@ -5814,18 +5855,18 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			return;
 		}
 		this.status_lock_write--;
-		Application_GUI.ThreadsAccounting_ping("Drop peer lock references for "+getName());
+		//Application_GUI.ThreadsAccounting_ping("Drop peer lock references for "+getName());
 		synchronized(monitor_reserve) {
 			monitor_reserve.notify();
 		}
-		Application_GUI.ThreadsAccounting_ping("Dropped peer lock references for "+getName());
+		//Application_GUI.ThreadsAccounting_ping("Dropped peer lock references for "+getName());
 	}
 	public int get_StatusReferences() {
 		return status_references;
 	}
 	public int inc_StatusReferences() {
 		this.assertReferenced(); // keep it in the process to avoid it being dropped before inc
-		Application_GUI.ThreadsAccounting_ping("Raised peer status references for "+getName());
+		//Application_GUI.ThreadsAccounting_ping("Raised peer status references for "+getName());
 		return status_references++;
 	}
 	public void dec_StatusReferences() {
@@ -5850,6 +5891,10 @@ class D_Peer_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	 */
 	public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
+	public void turnOff() {
+		stop = true;
+		this.interrupt();
+	}
 	D_Peer_SaverThread() {
 		super("D_Peer Saver", true);
 		//start ();

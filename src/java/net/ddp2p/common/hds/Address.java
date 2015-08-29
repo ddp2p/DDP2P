@@ -564,7 +564,7 @@ public class Address extends ASNObj {
 		//else port = "" + tcp_port;
 		String __address = domain+":"+port;
 		String ___address = pure_protocol+"://"+domain+":"+port;
-		if (!Util.equalStrings_null_or_not(__address, address)
+		if ((address != null) && !Util.equalStrings_null_or_not(__address, address)
 				&&!Util.equalStrings_null_or_not(__address+":"+udp_port, address)
 				&&
 			!Util.equalStrings_null_or_not(___address, address)
@@ -623,15 +623,18 @@ Address ::= SEQUENCE {
 		//else port = "" + tcp_port;
 		String __address = domain+":"+port;
 		String ___address = pure_protocol+"://"+domain+":"+port;
-		if (!Util.equalStrings_null_or_not(__address, address)
-				&&!Util.equalStrings_null_or_not(__address+":"+udp_port, address)
+		String enc_address = address;
+		if (address == null) enc_address = __address;
+		if (address != null && 
+				! Util.equalStrings_null_or_not(__address, address)
+				&& ! Util.equalStrings_null_or_not(__address+":"+udp_port, address)
 				&&
-			!Util.equalStrings_null_or_not(___address, address)
+			! Util.equalStrings_null_or_not(___address, address)
 				) { // eventually I want to migrate to __address from address
 			System.out.println("Address:getEncoder_V0: computed="+__address+" vs expected="+address+" in="+this.toLongString());
 			Util.printCallPath("Address:"+this.toLongString());
 		}
-		enc.addToSequence(new Encoder(address).setASN1Type(Encoder.TAG_UTF8String));
+		enc.addToSequence(new Encoder(enc_address).setASN1Type(Encoder.TAG_UTF8String));
 		enc.addToSequence(new Encoder(pure_protocol).setASN1Type(Encoder.TAG_PrintableString));
 		if (certified) {
 			enc.addToSequence(new Encoder(priority));

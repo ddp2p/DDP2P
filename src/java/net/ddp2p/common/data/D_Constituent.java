@@ -2788,6 +2788,33 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		this.dirty_locals = true;
 		return this.broadcasted;
 	}
+	public static void delConstituent(long constituentID) {
+		boolean DEBUG = false;
+		if(DEBUG) System.err.println("Deleting ID = "+constituentID);
+		try{
+			Application.db.delete(net.ddp2p.common.table.field_value.TNAME, new String[]{net.ddp2p.common.table.field_value.constituent_ID}, new String[]{constituentID+""});
+			Application.db.delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.source_ID}, new String[]{constituentID+""});
+			Application.db.delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.target_ID}, new String[]{constituentID+""});
+			Application.db.delete(net.ddp2p.common.table.identity_ids.TNAME, new String[]{net.ddp2p.common.table.identity_ids.constituent_ID}, new String[]{constituentID+""});
+			Application.db.delete(net.ddp2p.common.table.motion.TNAME, new String[]{net.ddp2p.common.table.motion.constituent_ID}, new String[]{constituentID+""});
+			Application.db.delete(net.ddp2p.common.table.justification.TNAME, new String[]{net.ddp2p.common.table.justification.constituent_ID}, new String[]{constituentID+""});
+			Application.db.delete(net.ddp2p.common.table.signature.TNAME, new String[]{net.ddp2p.common.table.signature.constituent_ID}, new String[]{constituentID+""});
+			Application.db.delete(net.ddp2p.common.table.news.TNAME, new String[]{net.ddp2p.common.table.news.constituent_ID}, new String[]{constituentID+""});
+			Application.db.delete(net.ddp2p.common.table.translation.TNAME, new String[]{net.ddp2p.common.table.translation.submitter_ID}, new String[]{constituentID+""});
+			Application.db.delete(net.ddp2p.common.table.constituent.TNAME, new String[]{net.ddp2p.common.table.constituent.constituent_ID}, new String[]{constituentID+""});
+			Application.db.delete(net.ddp2p.common.table.constituent.TNAME, new String[]{net.ddp2p.common.table.constituent.submitter_ID}, new String[]{constituentID+""});
+			
+			String cID = Util.getStringID(constituentID);
+			unlinkMemory(cID);
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	/**
+	 * Delete object and witnesses (but not its motions, etc)
+	 * @param constituentID
+	 * @return
+	 */
 	public static D_Constituent zapp(long constituentID) {
 		String cID = Util.getStringID(constituentID);
 		try {
@@ -2815,6 +2842,11 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		return null;
 	}
+	/**
+	 * Delete just object and its memory copy (not witnesses and all)
+	 * @param constituentID
+	 * @return
+	 */
 	public static D_Constituent deleteConsDescription(String constituentID) {
 		try {
 			Application.db.delete(net.ddp2p.common.table.field_value.TNAME,
@@ -2831,14 +2863,19 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		return null;
 	}
-	private static D_Constituent unlinkMemory(String orgID) {
-		Long lID = new Long(orgID);
+	/**
+	 * Forget object from memory
+	 * @param cLID
+	 * @return
+	 */
+	private static D_Constituent unlinkMemory(String cLID) {
+		Long lID = new Long(cLID);
 		D_Constituent constit = D_Constituent_Node.loaded_By_LocalID.get(lID);
 		if (constit == null) { 
-			System.out.println("D_Constituent: unlinkMemory: referred null org for: "+orgID);
+			System.out.println("D_Constituent: unlinkMemory: referred null const for: "+cLID);
 			return null;
 		}
-		if (DEBUG) System.out.println("D_Constituent: unlinkMemory: dropped org");
+		if (DEBUG) System.out.println("D_Constituent: unlinkMemory: dropped const");
 		if (!D_Constituent_Node.dropLoaded(constit, true)) {
 			if (DEBUG) System.out.println("D_Constituent: unlinkMemory: referred = "+constit.get_StatusLockWrite());
 		} else {
@@ -3067,25 +3104,6 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 				return field_values[k];
 		}
 		return null;
-	}
-	public static void delConstituent(long constituentID) {
-		boolean DEBUG = false;
-		if(DEBUG) System.err.println("Deleting ID = "+constituentID);
-		try{
-			Application.db.delete(net.ddp2p.common.table.field_value.TNAME, new String[]{net.ddp2p.common.table.field_value.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.source_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.target_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.identity_ids.TNAME, new String[]{net.ddp2p.common.table.identity_ids.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.motion.TNAME, new String[]{net.ddp2p.common.table.motion.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.justification.TNAME, new String[]{net.ddp2p.common.table.justification.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.signature.TNAME, new String[]{net.ddp2p.common.table.signature.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.news.TNAME, new String[]{net.ddp2p.common.table.news.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.translation.TNAME, new String[]{net.ddp2p.common.table.translation.submitter_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.constituent.TNAME, new String[]{net.ddp2p.common.table.constituent.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.constituent.TNAME, new String[]{net.ddp2p.common.table.constituent.submitter_ID}, new String[]{constituentID+""});
-		}catch(Exception e) {
-			e.printStackTrace();
-		}
 	}
 	public String getSlogan() {
 		return this.slogan;
@@ -3485,6 +3503,9 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public static int getNumberItemsNeedSaving() {
 		return _need_saving.size() + _need_saving_obj.size();
 	}
+	public static void stopSaver() {
+		saverThread.turnOff();
+	}
 }
 class D_Constituent_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	boolean stop = false;
@@ -3496,6 +3517,10 @@ class D_Constituent_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThrea
 	 */
 	public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
+	public void turnOff() {
+		stop = true;
+		this.interrupt();
+	}
 	D_Constituent_SaverThread() {
 		super("D_Constituent Saver", true);
 		//start ();

@@ -101,7 +101,7 @@ public class JFrameDropCatch extends JFrame {
            	
            	DataFlavor urlFlavor=null, textURIList=null, mozFilePromise=null, mozFilePromiseURL=null,
            	imageBMP=null, chromeNamed=null, textHTML=null;
-           	try{
+           	try {
            		textURIList = new DataFlavor("text/uri-list; class=java.lang.String");
              	urlFlavor = new DataFlavor("application/x-java-url; class=java.net.URL");
            		mozFilePromiseURL = new DataFlavor("application/x-moz-file-promise-url; class=java.net.URL");
@@ -109,7 +109,7 @@ public class JFrameDropCatch extends JFrame {
            		imageBMP = new DataFlavor("image/bmp; class=java.io.InputStream");
            		chromeNamed = new DataFlavor("application/x-chrome-named-url; class=java.io.InputStream");
            		textHTML = new DataFlavor("text/html; class=java.lang.String");
-           	}catch(Exception e){e.printStackTrace();}
+           	} catch(Exception e){e.printStackTrace();}
 
             if ((!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor))&&
             		(!support.isDataFlavorSupported(DataFlavor.imageFlavor))&&

@@ -499,17 +499,17 @@ public class EmbedInMedia {
 	 */
 	public static void setSteganoBytes(StegoStructure d[], int[]selected, byte[]buffer, int offset, int word_bytes, int bits) throws ASN1DecoderFail{
 		//boolean DEBUG = true;
-		if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes: start");
+		if (DEBUG) System.out.println("EmbedInMedia:setSteganoBytes: start");
 		verif_steg_sign(d, selected, buffer, offset, word_bytes, bits);
 		int bytes_len=verif_steg_length(buffer, offset, word_bytes, bits);
 		short _off=verif_steg_offset(buffer, offset, word_bytes, bits);
-		if(!verif_offset_interactive(_off)) return;
+		if (!verif_offset_interactive(_off)) return;
 		int final_offset = offset+_off*word_bytes;
 		
-		if(selected[0] != -1) {
+		if (selected[0] != -1) {
 			EmbedInMedia.setSteganoBytes(d[selected[0]], buffer, final_offset, word_bytes, bits, bytes_len);
 			if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes: set");
-		}else{
+		} else {
 			if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes: empty");			
 		}
 		if(DEBUG) System.out.println("EmbedInMedia:setSteganoBytes: end");

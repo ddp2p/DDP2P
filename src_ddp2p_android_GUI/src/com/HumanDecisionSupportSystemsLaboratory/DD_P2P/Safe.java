@@ -20,7 +20,6 @@ import net.ddp2p.common.hds.PeerInput;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 import android.app.Activity;
@@ -31,6 +30,10 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,15 +41,18 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Swipe.SwipeDismissListViewTouchListener;
 
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.CipherSuit;
 import net.ddp2p.ciphersuits.PK;
 import net.ddp2p.ciphersuits.SK;
-import net.ddp2p.common.config.Application;
-import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.HandlingMyself_Peer;
@@ -61,7 +67,9 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 	public final static String P_SAFE_PIMG = "profImg";
 	public final static String SAFE_LIST_EMAIL = "email";
 	public final static String SAFE_LIST_SLOGAN = "slogan";
-    public static boolean SAFE_HIDE = true; // to be changed from the menu
+	public final static int RESULT_DEL = 1;
+    public static boolean SHOW_HIDDEN = true; // to be changed from the menu
+	public static final String DD_SHOW_HIDDEN = "SHOW_HIDDEN";
 	//protected static final String SAFE_TEXT_MY_HEADER_SEP = " | ";
 	//protected static final String SAFE_TEXT_MY_BODY_SEP = "||";
 	//protected static final String SAFE_TEXT_ANDROID_SUBJECT_SEP = " - ";
@@ -159,6 +167,11 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 	}
 
 	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+	}
+
+	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		Log.d(TAG, "safe:onCreateView");
@@ -167,6 +180,7 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 				false);
 
 		Log.d("onCreateView", "Safe: onCreateView: almost done");
+		SHOW_HIDDEN = DD.getAppBoolean(DD_SHOW_HIDDEN, false);
 
 		Log.d("onCreateView", "Safe: onCreateView: done");
 
@@ -187,6 +201,8 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 
 		/* this.setListAdapter(simpleAdapter); */
 		setListAdapter(safeAdapter);
+
+
 		return result;
 	}
 
@@ -240,7 +256,7 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 				continue;
 			String p_lid = Util.getString(peer_data.get(0));
 			D_Peer peer = D_Peer.getPeerByLID(p_lid, true, false);
-			if (peer == null || (SAFE_HIDE && peer.getHidden()))
+			if (peer == null || ((!SHOW_HIDDEN) && peer.getHidden()))
 				continue;
 			peers.add(peer);
 		}
@@ -335,17 +351,74 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 	}
 
 	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		safeAdapter.notifyDataSetChanged();
+		super.onActivityResult(requestCode, resultCode, data);
+	}
+
+	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 
 		getListView().setOnItemClickListener(this);
+		ListView listView = getListView();
+
+		SwipeDismissListViewTouchListener touchListener =
+				new SwipeDismissListViewTouchListener(
+						listView,
+						new SwipeDismissListViewTouchListener.DismissCallbacks() {
+							@Override
+							public boolean canDismiss(int position) {
+								// do not dismiss myself!
+								D_Peer myself = HandlingMyself_Peer.get_myself_or_null();
+								if (myself == null) return true;
+								if (position >= Safe.peers.size()) {
+									Toast.makeText(Safe.this.getActivity(), "Deleting: inexistent position "+position, Toast.LENGTH_LONG).show();
+									return false;
+								}
+								D_Peer crt = Safe.peers.get(position);
+								if (crt == myself) {
+									Toast.makeText(Safe.this.getActivity(), "Cannot delete myself", Toast.LENGTH_LONG).show();
+									return false;
+								}
+								if (crt.getLID() != myself.getLID()) return true;
+								Toast.makeText(Safe.this.getActivity(), "Cannot delete myself's GID!", Toast.LENGTH_LONG).show();
+								return true;
+							}
+
+							@Override
+							public void onDismiss(ListView listView, int[] reverseSortedPositions) {
+								askDeleteConfirmation(reverseSortedPositions);
+							}
+						});
+		listView.setOnTouchListener(touchListener);
+		// Setting this scroll listener is required to ensure that during ListView scrolling,
+		// we don't look for swipes.
+		listView.setOnScrollListener(touchListener.makeScrollListener());
 
 		super.onActivityCreated(savedInstanceState);
+	}
+	public void askDeleteConfirmation(int[] reverseSortedPositions) {
+		Log.d("DeleteConfirmation", "DeleteConfirmation:askStartUp: start");
+		// update name dialog
+		FragmentManager fm = getActivity().getSupportFragmentManager();
+		DeleteConfirmation dialog;
+
+		dialog = new DeleteConfirmation();
+		dialog.setTargetFragment(this, RESULT_DEL);
+		Bundle args = new Bundle();
+		args.putIntArray("P", reverseSortedPositions);
+		dialog.setArguments(args);
+
+		//dialog.setArguments(b);
+		dialog.show(fm, "fragment_startup");
+		Log.d("DeleteConfirmation", "DeleteConfirmation:askStartUp: stop");
 	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		safeItself = this;
+
 	}
 
 	@Override
@@ -408,6 +481,7 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			View v = convertView;
+			if (position >= Safe.peers.size()) return null;// convertView;
 
 			if (convertView == null)
 				v = inflater.inflate(R.layout.safe_list, null);
@@ -427,6 +501,7 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 			if (myself != null && myself.getLID() == Safe.peers.get(position).getLID()) {
 				name.setBackgroundColor(Color.RED);
 				name.setTextColor(Color.WHITE);
+				name.setText(text.get(SAFE_LIST_NAME) + " (myself)");
 			} else {
 				if (Safe.peers.get(position).getSK() != null) {
 					name.setBackgroundColor(Color.GREEN);
@@ -447,35 +522,197 @@ public class Safe extends android.support.v4.app.ListFragment implements OnItemC
 	@Override
 	public void onResume() {
 		super.onResume();
-/*		Log.d(TAG, "safe:onResume");
-		Log.d(TAG, "safe size: " + list.size());
 
-		Log.d("onCreateView", "Safe: onResume: set adapter");
-		safeAdapter = new SafeAdapter(getActivity(), list, imgData);
-		setListAdapter(safeAdapter);*/
-
-	}
-
-	public class a extends AsyncTask<Object, Object, Object> {
-
-		@Override
-		protected Object doInBackground(Object... params) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-		
 	}
 	/**
 	 * Used to generate the body for whatsup, skype
-	 * @param bytes
+	 * @param
 	 * @return
 	 */
-    /*
-	public static String getExportTextObject(byte[] bytes) {
-		return Safe.SAFE_TEXT_MY_BODY_SEP
-				+ Safe.SAFE_TEXT_SEPARATOR 
-				+ Util.B64Split(Util.stringSignatureFromByte(bytes), Safe.SAFE_TEXT_SIZE, Safe.SAFE_TEXT_SEPARATOR);	
-		}
-*/
+	public static class DeleteConfirmation extends DialogFragment {
+		private Button butZapp;
+		private Button butAbandon;
+		private Button butBlock;
+		int reverseSortedPositions[];
+		public class DelayedDelete extends AsyncTask<int[], Void, int[]> {
+			SafeAdapter mAdapter;
 
+			@Override
+			protected int[] doInBackground(int[]... params) {
+				Thread th = Thread.currentThread();
+				Log.d("Safe", "Safe: DeleteConfirmation:doInBack: start "+th.getName());
+				th.setName("Safe:DeleteConfirmation");
+
+				mAdapter = safeAdapter;
+				int[] reverseSortedPositions = params[0];
+				//Toast.makeText(getActivity(), "Deleting #"+reverseSortedPositions.length, Toast.LENGTH_LONG).show();
+				for (int position : reverseSortedPositions) {
+					Object item = mAdapter.getItem(position);
+
+					//mAdapter.remove(item);
+					D_Peer crt = Safe.peers.get(position);
+					//D_Peer.delete(crt);
+					crt.purge();
+					Safe.peers.remove(position);
+					list.remove(position);
+					imgData.remove(position);
+				}
+				return reverseSortedPositions;
+			}
+
+			@Override
+			protected void onPostExecute(int[] reverseSortedPositions) {
+//				for (int position : reverseSortedPositions) {
+//					Safe.peers.remove(position);
+//				}
+				mAdapter.notifyDataSetChanged();
+				//handler.sendMessage(handler.obtainMessage());
+				super.onPostExecute(reverseSortedPositions);
+
+				getTargetFragment().onActivityResult(Safe.RESULT_DEL, Activity.RESULT_OK, getActivity().getIntent());
+				dismiss();
+				android.support.v4.app.FragmentTransaction ft = getFragmentManager()
+						.beginTransaction();
+				ft.detach(DeleteConfirmation.this);
+				ft.commit();
+			}
+		}
+
+		@Override
+		public void onCreate(Bundle savedInstanceState) {
+			super.onCreate(savedInstanceState);
+			reverseSortedPositions = getArguments().getIntArray("P");
+		}
+/*
+		@Override
+		public void onActivityResult(int requestCode, int resultCode, Intent data) {
+			switch (requestCode & 0x0FFFF) {
+				case Main.RESULT_STARTUP_DIRS:
+					Toast.makeText(getActivity(), "Defining My Identity", Toast.LENGTH_SHORT).show();
+
+					Log.d("DeleteConfirmation", "DeleteConfirmation:StartUp:onActivityResult: create: add peer request=" + Main.RESULT_ADD_PEER);
+					Intent intent = new Intent();
+					intent.setClass(getActivity(), AddSafe.class);
+					getActivity().startActivityForResult(intent, Main.RESULT_ADD_PEER);
+					Log.d("DeleteConfirmation", "DeleteConfirmation:StartUp:onActivityResult: create: added peer");
+
+					android.support.v4.app.FragmentTransaction ft = getFragmentManager()
+							.beginTransaction();
+					ft.detach(DeleteConfirmation.this);
+					ft.commit();
+			}
+			super.onActivityResult(requestCode, resultCode, data);
+		}
+		*/
+
+		@Override
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+			Log.d("DeleteConfirmation", "DeleteConfirmation:StartUp:onCreateView: start");
+
+			View view = inflater.inflate(R.layout.dialog_to_start_up, container);
+			butZapp = (Button) view.findViewById(R.id.dialog_startup_import);
+			butAbandon = (Button) view.findViewById(R.id.dialog_startup_skip);
+			butBlock = (Button) view.findViewById(R.id.dialog_startup_createNew);
+			TextView question = (TextView) view.findViewById(R.id.dialog_startup_question);
+
+			getDialog().setTitle(getString(R.string.dialog_delete_title));
+			butZapp.setText(getString(R.string.delete));
+			butBlock.setText(getString(R.string.block));
+			butAbandon.setText(getString(R.string.cancel));
+			question.setText(getString(R.string.dialog_delete_question));
+
+			butZapp.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View view) {
+					SafeAdapter mAdapter = safeAdapter;
+					Log.d("DeleteConfirmation", "DeleteConfirmation:StartUp:onCreateView: import");
+					new DelayedDelete().execute(reverseSortedPositions);
+					/*
+					mAdapter = safeAdapter;
+					//int[] reverseSortedPositions = params[0];
+					//Toast.makeText(getActivity(), "Deleting #"+reverseSortedPositions.length, Toast.LENGTH_LONG).show();
+					for (int position : reverseSortedPositions) {
+						Object item = mAdapter.getItem(position);
+
+						//mAdapter.remove(item);
+						D_Peer crt = Safe.peers.get(position);
+						crt.purge();
+						try {
+							D_Peer.delete(crt);
+						} catch (P2PDDSQLException e) {
+							e.printStackTrace();
+						}
+						Safe.peers.remove(position);
+						list.remove(position);
+						imgData.remove(position);
+					}
+					mAdapter.notifyDataSetChanged();
+					android.support.v4.app.FragmentTransaction ft = getFragmentManager()
+							.beginTransaction();
+					ft.detach(DeleteConfirmation.this);
+					ft.commit();
+					*/
+				}
+			});
+
+			butBlock.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View view) {
+					SafeAdapter mAdapter = safeAdapter;
+					Toast.makeText(getActivity(), "Blocking elements", Toast.LENGTH_SHORT).show();
+					for (int position : reverseSortedPositions) {
+						Object item = mAdapter.getItem(position);
+
+						//mAdapter.remove(item);
+						D_Peer crt = Safe.peers.get(position);
+						D_Peer.setBlocked(crt, true);
+						// May want to also clean it
+					}
+					mAdapter.notifyDataSetChanged();
+/*
+					Log.d("DeleteConfirmation", "DeleteConfirmation:StartUp:onCreateView: create: add peer request=" + Main.RESULT_ADD_PEER);
+					Intent intent = new Intent();
+					intent.setClass(getActivity(), AddSafe.class);
+					getActivity().startActivityForResult(intent, Main.RESULT_ADD_PEER);
+					Log.d("DeleteConfirmation", "DeleteConfirmation:StartUp:onCreateView: create: added peer");
+*/
+					android.support.v4.app.FragmentTransaction ft = getFragmentManager()
+							.beginTransaction();
+					ft.detach(DeleteConfirmation.this);
+					ft.commit();
+				}
+			});
+
+			butAbandon.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View view) {
+					Log.d("DeleteConfirmation", "DeleteConfirmation:onCreateView: abandon");
+					android.support.v4.app.FragmentTransaction ft = getFragmentManager()
+							.beginTransaction();
+					ft.detach(DeleteConfirmation.this);
+					ft.commit();
+				}
+			});
+
+			Log.d("DeleteConfirmation", "DeleteConfirmation:StartUp:onCreateView: stop");
+			//return super.onCreateView(inflater, container, savedInstanceState);
+			return view;
+		}
+	}
+	/*
+	@Override
+	public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
+		Log.d("Main", "Main:onCreateView: start");
+		View v = super.onCreateView(parent, name, context, attrs);
+		Log.d("Main", "Main:onCreateView: stop");
+		return v;
+	}
+	*/
+	Handler handler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			safeAdapter.notifyDataSetChanged();
+		}
+	};
 }

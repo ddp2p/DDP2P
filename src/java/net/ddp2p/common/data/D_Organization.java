@@ -4524,6 +4524,9 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		this.global_organization_ID = global_organization_ID;
 		return global_organization_ID;
 	}
+	public static void stopSaver() {
+		saverThread.turnOff();
+	}
 }
 
 class D_Organization_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
@@ -4535,6 +4538,10 @@ class D_Organization_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThre
 	 */
 	public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
+	public void turnOff() {
+		stop = true;
+		this.interrupt();
+	}
 	D_Organization_SaverThread() {
 		super("D_Organization Saver", true);
 		//start ();

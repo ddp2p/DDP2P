@@ -54,7 +54,8 @@ public class AddMotion extends ActionBarActivity {
 		setContentView(R.layout.add_motion);	
 			
 		Application_GUI.dbmail = new Android_DB_Email(this);
-		Application_GUI.gui = new Android_GUI();
+		if (Application_GUI.gui == null)
+			Application_GUI.gui = new Android_GUI(this);
 
 		
 		Intent i = this.getIntent();

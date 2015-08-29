@@ -533,9 +533,14 @@ public class PluginRegistration {
 			e.printStackTrace();
 		}
 	}
-
+	/**
+	 * 
+	 */
 	public static void removePlugins() {
-		// TODO Auto-generated method stub
-		
+		for (String plugin: threads.keySet()) {
+			PluginThread pt = threads.get(plugin);
+			pt.turnOff();
+			unRegisterPlugin(plugin);
+		}
 	}
 }

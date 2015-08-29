@@ -40,7 +40,7 @@ public class Client2 extends net.ddp2p.common.util.DDP2P_ServiceThread  implemen
 	public Object wait_lock = new Object();
 	public static Connections g_Connections = null;
 	public void turnOff() {
-		if(ClientSync.DEBUG) System.out.println("Client2: turnOff");
+		if (ClientSync.DEBUG) System.out.println("Client2: turnOff");
 		turnOff = true;
 		this.interrupt();
 	}
@@ -135,9 +135,17 @@ public class Client2 extends net.ddp2p.common.util.DDP2P_ServiceThread  implemen
 				if(ClientSync.DEBUG) System.out.println("Client2: _run: turnOff 1");
 				break;
 			}
+			if (Application.g_UDPServer == null) {
+				if (ClientSync._DEBUG) System.out.println("Client2: _run: why no server I?");
+				break;
+			}
 			if (try_wait(peersToGo)) continue; // too many busy threads
 			if (turnOff) {
 				if (ClientSync.DEBUG) System.out.println("Client2: _run: turnOff 2");
+				break;
+			}
+			if (Application.g_UDPServer == null) {
+				if (ClientSync._DEBUG) System.out.println("Client2: _run: why no server II?");
 				break;
 			}
 
@@ -422,6 +430,10 @@ public class Client2 extends net.ddp2p.common.util.DDP2P_ServiceThread  implemen
 						//pd.last_contact_successful_UDP = false;
 						pd.setPeerPingPendingUDP(ci.dpi.peer_instance);
 						try_UDP_connection_directory(pc, pd, aup, ci.dpi.peer_instance);
+						if (Application.g_UDPServer != null) {
+							if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: no server");
+							return false;
+						}
 					}
 				}
 				for (int k = 0; k < ci.peer_directories.size(); k ++) {
@@ -735,7 +747,11 @@ public class Client2 extends net.ddp2p.common.util.DDP2P_ServiceThread  implemen
 		try {
 			if(DEBUG)System.out.print("Client2:sendUDP:#_"+dp.getSocketAddress());
 			if (Application.g_UDPServer != null) Application.g_UDPServer.send(dp);
-			else if(ClientSync._DEBUG)System.out.println("Client2: sendUDP: fail due to absent UDP Server");
+			else {
+				if(ClientSync._DEBUG)System.out.println("Client2: sendUDP: fail due to absent UDP Server");
+				Util.printCallPath("no server?");
+				return false;
+			}
 		} catch (IOException e) {
 			if(ClientSync.DEBUG)System.out.println("Client2: sendUDP: Fail to send ping to peer \""+peer_name+"\" at "+sock_addr);
 			return false;

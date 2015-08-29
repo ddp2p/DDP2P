@@ -73,6 +73,13 @@
     <string name="announcement_import_successful">Successfully Imported Existing:</string>
     <string name="refresh">Refresh</string>
     <string name="import_web_object">Descarcă Informații din Internet</string>
-    <string name="import_web_object_instr_dir">Pentru ca noua ta identitate să fie utilă, trebuie să fie înregistrată cu \'Puncte de Întîlnire\' accesibile global, care îți direcționează prietenii spre tine cînd călătorești. Aici poți selecționa și adopta astfel de \'Puncte de Întîlnire\' din navigatorul integrat în cadrul albastru de mai jos, și apăsînd butonul \'Adoptă Conținutul\'. Puteți inspecta selecțiile apăsînd butonul \'Decodează Conținutul\'.</string>
+    <string name="import_web_object_instr_dir">Pentru ca noua ta identitate să fie utilă, trebuie să fie înregistrată cu \'Puncte de Întîlnire\' accesibile global, care îți direcționează prietenii spre tine cînd călătorești. Aici poți selecționa și adopta astfel de \'Puncte de Întîlnire\' din navigatorul integrat în cadrul albastru de mai jos, și apăsînd butonul \'Adoptă Conținutul\'. Puteți inspecta selecțiile apăsînd butonul \'Decodează Conținutul\'. Cînd ați terminat, folosiți butonul Android \'înapoi\' să vă întoarceți la DDP2P!</string>
+    <string name="import_web_object_instr">Acum poți găsi și încărca contacte, grupuri și elemente din dezbateri din navigatorul integrat în cadrul albastru de mai jos, și apăsînd butonul \'Adoptă Conținutul\'. Puteți inspecta selecțiile apăsînd butonul \'Decodează Conținutul\'. Cînd ați terminat, folosiți butonul Android \'înapoi\' să vă întoarceți la DDP2P!</string>
     <string name="continue_create_new_peer">Continuă Crearea Noii Identități</string>
+    <string name="dialog_delete_question">Chiar vreți să ștergeți obiectul? Dacă prietenii voștri îl au, s-ar putea să îl primiți înapoi în mod automatic! Să nu mai fiți deranjați de el, cîteodată e mai bine să-l blocați și să-l ascundeți!</string>
+    <string name="dialog_delete_title">Confirmă Ștergerea</string>
+    <string name="block">Blochează</string>
+    <string name="delete">Șterge</string>
+    <string name="cancel">Abandonează</string>
+    <string name="settings_show_hidden">Show Hidden</string>
 </resources>

@@ -348,6 +348,9 @@ public class ImportBrowseWebObjects extends Activity {
         String thread_description;
 
         protected String doInBackground(String... urls) {
+            Thread th = Thread.currentThread();
+            Log.d("IBWO", "ImportBrowseObjects: RetrieveURLDescription:doInBack: start "+th.getName());
+            th.setName("ImportBrowseObjects:RetrieveURLDescription");
             try {
                 thread_urls = urls;
                 if (urls.length == 2

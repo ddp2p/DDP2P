@@ -55,7 +55,7 @@ public class AddJustification extends ActionBarActivity {
 		if (Application_GUI.dbmail == null)
 			Application_GUI.dbmail = new Android_DB_Email(this);
 		if (Application_GUI.gui == null)
-			Application_GUI.gui = new Android_GUI();
+			Application_GUI.gui = new Android_GUI(this);
 		
     	final Button but = (Button) findViewById(R.id.submit_add_justification);
     	final EditText add_name = (EditText) findViewById(R.id.add_justification_title);

@@ -1852,63 +1852,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 					if ((selected != null) && (selected.length > 0)) selected[0] = _selected;
 				} else if ("gif".equals(Util.getExtension(file))) {
 						if (DEBUG) System.err.println("ControlPane:actionImport: Got: gif");
-						FileInputStream fis=new FileInputStream(file);
-						boolean found = false;
-						byte[] b = new byte[(int) file.length()];  
-						fis.read(b);
-				    	fis.close();
-				    	int i = 0;
-						int _selected = -1;
-						if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif len="+b.length);
-						do {
-							while (i < b.length) {
-								if (b[i] == (byte) 0x3B) {
-									found = true;
-									i ++;
-									break;
-								}
-								i++;
-							}
-							if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif position="+i);
-							if (! found || i >= b.length) {
-								JOptionPane.showMessageDialog(parent,
-											__("Cannot Extract address in: ")+file+__("No valid data in the picture!"),
-											__("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
-										return;
-							}
-							byte[] addBy = new byte[b.length-i]; 
-							System.arraycopy(b,i,addBy,0,b.length-i);
-							// System.out.println("Got bytes ("+addBy.length+") to write: "+Util.byteToHex(addBy, " "));
-							
-							for (int k = 0; k < adr.length; k ++) {
-								if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif try adr#="+k+"/"+adr.length);
-								try {
-									BigInteger expected = new BigInteger(""+adr[k].getSignShort());
-									BigInteger _found = new Decoder(addBy).getTagValueBN();
-									if (! expected.equals(_found)) {
-										if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif not ASN1 tag of ="+adr[k].getClass()+" "+expected+" vs "+_found);
-										continue;
-									}
-									adr[k].setBytes(addBy);
-									_selected = k;
-									if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif success adr#="+k+"/"+adr.length+" val="+adr[k]);
-									break;
-								} catch (Exception e1) { // ASN1DecoderFail | ASN1.ASNLenRuntimeException | 
-									if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif failed adr#="+k+"/"+adr.length);
-									if (EmbedInMedia.DEBUG){
-										e1.printStackTrace();
-										Application_GUI.warning(__("Failed to parse gif file: "+file+"\n"+"at : "+i+"/"+b.length+"\n"+e1.getMessage()+"\nstego="+adr[k]), __("Failed to parse address!"));
-									}
-								}
-							}
-						} while (i < b.length && _selected < 0);
-						if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif done at i#="+i+" adr="+_selected+" val="+adr[_selected]);
-						if (_selected == -1) {
-							Application_GUI.warning(__("Failed to parse file: "+file+"\n"), __("Failed to parse address!"));
-							return;							
-						}
-						if ((selected != null) && (selected.length > 0))
-							selected[0] = _selected;
+				    	String err = DD.loadGIF(file, adr, selected);
+				    	if (err != null) {
+							Application_GUI.warning(__("Error parsing file:")+file+"\n"+err, __("Failed to parse GIF!"));
+				    	}
 				}
 				else
 				if("ddb".equals(Util.getExtension(file))){

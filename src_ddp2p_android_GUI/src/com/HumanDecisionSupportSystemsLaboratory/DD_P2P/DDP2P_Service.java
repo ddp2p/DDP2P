@@ -170,7 +170,9 @@ public class DDP2P_Service extends Service {
         stopSelf();
         Log.d("Service", "DDP2P_Service: terminateForeground: stop");
         //System.exit(0);
-
+        try {
+            Thread.currentThread().wait(1);
+        }catch (Exception e){}
         ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
         ThreadGroup parent;
         while ((parent = rootGroup.getParent()) != null) {
@@ -217,7 +219,7 @@ public class DDP2P_Service extends Service {
 
             //Safe.safeItself.getActivity());
             if (Application_GUI.gui == null)
-                Application_GUI.gui = new Android_GUI();
+                Application_GUI.gui = new Android_GUI(activity);
             else
                 Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: gui was already here");
             if (Application.db == null) {

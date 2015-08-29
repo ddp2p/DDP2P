@@ -104,7 +104,13 @@ public class Connections extends net.ddp2p.common.util.DDP2P_ServiceThread imple
 	private final static Object lock_used_structures = new Object();
 	/** locked while calling "integrateDirAddresses" */
 	private static final Object monitor_integrateDirAddresses = new Object();
-
+	public boolean _turnOff = false;
+	
+	public void turnOff() {
+		_turnOff = true;
+		this.interrupt();
+		Client2.g_Connections = null;
+	}
 	
 	public void _run() {
 		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Connections Start"));
@@ -117,7 +123,7 @@ public class Connections extends net.ddp2p.common.util.DDP2P_ServiceThread imple
 	 */
 	private void __run() {
 		init();
-		for (;;) {
+		for (;!_turnOff;) {
 			if (DEBUG) System.out.println("Connections: _run: will wait_obj");
 			try {
 				synchronized (monitor_wait_obj) { // waked up by updates (from DB) and by updates request from client
@@ -125,6 +131,7 @@ public class Connections extends net.ddp2p.common.util.DDP2P_ServiceThread imple
 					if (! updates_available()) {
 						Application_GUI.ThreadsAccounting_ping("No updates available");
 						monitor_wait_obj.wait(CONNECTIONS_UPDATE_TIMEOUT_MSEC); //3*60*1000);
+						if (_turnOff) return;
 					}
 				}
 				Application_GUI.ThreadsAccounting_ping("Updates");

@@ -41,6 +41,7 @@ import android.widget.CheckedTextView;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import net.ddp2p.common.config.Identity;
@@ -674,6 +675,7 @@ public class ConstituentFurtherLayer extends Activity {
 	public final int MENU_ID_BROADCAST = 7;
 	public final int MENU_ID_HIDE = 8;
 	public final int MENU_ID_PSEUDONYM = 9;
+	public final int MENU_ID_ZAPP = 10;
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
 		super.onCreateContextMenu(menu, v, menuInfo);
@@ -694,6 +696,7 @@ public class ConstituentFurtherLayer extends Activity {
 			menu.add(1, MENU_ID_NEIG, Menu.NONE, "Add neighborhood here");
 			menu.add(1, MENU_ID_CONST, Menu.NONE, "Add constituent here"); // v.getID()
 			menu.add(1, MENU_ID_PSEUDONYM, Menu.NONE, "Change Pseudonym"); // v.getID()
+			menu.add(3, MENU_ID_ZAPP, Menu.NONE, "Delete Locally"); // v.getID()
 		}
 		if (constituent) {
 			menu.setHeaderTitle("action on constituent");
@@ -703,6 +706,7 @@ public class ConstituentFurtherLayer extends Activity {
 			menu.add(0, MENU_ID_BROADCAST, Menu.NONE, "set broadcasting");
 			menu.add(0, MENU_ID_HIDE, Menu.NONE, "Hide");
 			menu.add(1, MENU_ID_PSEUDONYM, Menu.NONE, "Change Pseudonym"); // v.getID()
+			menu.add(2, MENU_ID_ZAPP, Menu.NONE, "Delete Locally"); // v.getID()
 			//menu.add(2, MENU_ID_HERE, Menu.NONE, "Move here");
 			//menu.add(1, MENU_ID_NEIG, Menu.NONE, "add neighborhood here");
 			//menu.add(1, MENU_ID_CONST, Menu.NONE, "add constituent here"); // v.getID()
@@ -756,6 +760,10 @@ public class ConstituentFurtherLayer extends Activity {
 			Toast.makeText(this, "Action 9 invoked", Toast.LENGTH_SHORT).show();
 			if (_neighborhood) action_pseudonym(neighborhood.neighborhood_LID, neighborhood);
 			if (_constituent) action_pseudonym(constituent.constituent_LID, constituent);
+		}  else if (item.getItemId() == MENU_ID_ZAPP) {
+			//Toast.makeText(this, "Action zapp invoked", Toast.LENGTH_SHORT).show();
+			if (_neighborhood) action_zapp(neighborhood.neighborhood_LID, neighborhood);
+			if (_constituent) action_zapp(constituent.constituent_LID, constituent);
 		} else {
 			return false;
 		}
@@ -810,15 +818,26 @@ public class ConstituentFurtherLayer extends Activity {
 	}
 
 	private void action_pseudonym(long constituent_LID,
-			ConstituentNode constituent) {
+								  ConstituentNode constituent) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	private void action_pseudonym(long neighborhood_LID,
-			NeighborhoodNode neighborhood) {
+								  NeighborhoodNode neighborhood) {
 		// TODO Auto-generated method stub
-		
+
+	}
+	private void action_zapp(long constituent_LID,
+								  ConstituentNode constituent) {
+		D_Constituent.delConstituent(constituent_LID);
+	}
+
+	private void action_zapp(long neighborhood_LID,
+								  NeighborhoodNode neighborhood) {
+		Log.d("CFL", "CFL: action_zapp");
+		D_Neighborhood n = D_Neighborhood.getNeighByLID(neighborhood_LID, false, false);
+		D_Neighborhood.delNeighborhood(neighborhood_LID, n.getOrgLID());
 	}
 
 	private void action_witness(long neighborhood_LID, NeighborhoodNode neighborhood) {
@@ -1014,39 +1033,61 @@ public class ConstituentFurtherLayer extends Activity {
 						R.layout.constituents_child_view, null);
 			}
 
-			/*
-			 * boolean is_parent_constituent =
-			 * this.crt_root.isConstituent(groupPosition);
-			 * 
-			 * boolean is_child_constituent = true; if (! is_parent_constituent)
-			 * { if (groupPosition < crtLayer.neighs_neighs_number.size() &&
-			 * childPosition < crtLayer.neighs_neighs_number.get(groupPosition))
-			 * { is_child_constituent = false; } }
-			 * 
-			 * boolean isConstituent = is_parent_constituent ||
-			 * is_child_constituent;
-			 */
-
 			// get the textView reference and set the value
 			textView = (TextView) convertView.findViewById(R.id.textViewChild);
             textView.setTextColor(Color.BLUE);
 			textView.setText(group_node.getDisplayText(childPosition));
 
-            if (crt_root.isNeighborhood(groupPosition) && crt_root.isConstituent(groupPosition, childPosition)) {
-                ConstituentNode constituentNode = crt_root.getConstituentNode(groupPosition, childPosition);
 
+			ImageView childImg = (ImageView) convertView.findViewById(R.id.childImage);
+
+			LinearLayout childTextRow = (LinearLayout) convertView.findViewById(R.id.rowChildText);
+
+
+			if (crt_root.isNeighborhood(groupPosition) && crt_root.isParentNeighborhoodArea(groupPosition, childPosition)) {
+				childTextRow.setVisibility(View.GONE);
+			} else {
+				childTextRow.setVisibility(View.VISIBLE);
+			}
+			if (crt_root.isNeighborhood(groupPosition) && crt_root.isConstituent(groupPosition, childPosition)) {
+				int x = (childPosition*100)%255;
+				String _x = Integer.toHexString(x).toUpperCase();
+				if (_x.length() == 1) _x = "0" + _x;
+                ConstituentNode constituentNode = crt_root.getConstituentNode(groupPosition, childPosition);
+				//childImg.setBackgroundResource(R.drawable.org_profile);//.constitutent_person_icon); // .setImageResource(R.drawable.constitutent_person_icon);
+				childImg.setBackgroundColor(Color.parseColor("#"+_x+_x+_x));
+				childImg.setImageResource(R.drawable.org_profile);
+				/*
+				BadgeView badge = new BadgeView(this.activity, childImg);
+				badge.setText("1");
+				badge.setBadgePosition(BadgeView.POSITION_TOP_RIGHT);
+				badge.setBadgeMargin(0, 0);
+				badge.setBadgeBackgroundColor(Color.parseColor("#"+_x+_x+_x));
+				badge.show();
+*/
                 D_Constituent _constituent_me = Identity.getCrtConstituent(ConstituentFurtherLayer.organization_LID);
                 if (_constituent_me != null && _constituent_me.getLID() == constituentNode.constituent_LID) {
                     textView.setTextColor(ConstituentFurtherLayer.Color_Myself);
                 } else {
-                    //D_Constituent c = D_Constituent.getConstByLID(constituentNode.constituent_LID, true, true);
-                    //if (c == null || c.isExternal() || c.getSK() == null) {
-                    if (constituentNode != null && !constituentNode.external && constituentNode.hasSK) {
+                     if (constituentNode != null && !constituentNode.external && constituentNode.hasSK) {
                         textView.setTextColor(ConstituentFurtherLayer.Color_Has_SK);
                     } else
                         textView.setTextColor(ConstituentFurtherLayer.Color_Others);
                 }
+				//childImg.setVisibility(View.VISIBLE);
             }
+			if (crt_root.isNeighborhood(groupPosition) && crt_root.isNeighborhood(groupPosition, childPosition)) {
+				childImg.setImageResource(R.drawable.constituent_neighborhood_icon);
+				//childImg.setVisibility(View.VISIBLE);
+				BadgeView badge = new BadgeView(this.activity, childImg);
+				badge.setText("?");
+				//badge.setBackgroundColor(Color.parseColor("#AAAAAA"));
+				badge.setBadgePosition(BadgeView.POSITION_TOP_RIGHT);
+				badge.setBadgeMargin(0,0);
+				//badge.setBackgroundColor(Color.YELLOW);
+				//badge.setTextColor(Color.BLUE);
+				badge.show();
+			}
 
             Button addNeiborhood = (Button) convertView
 					.findViewById(R.id.constituent_child_view_add_neiborhood);
@@ -1098,9 +1139,6 @@ public class ConstituentFurtherLayer extends Activity {
 				addConstituent.setVisibility(Button.VISIBLE);
 			else
 				addConstituent.setVisibility(Button.GONE);
-			// if (isConstituent || childPosition != 0)
-			// addConstituent.setVisibility(Button.GONE);
-			// else addConstituent.setVisibility(Button.VISIBLE);
 
 			addConstituent
 					.setOnClickListener(new My_OnClickListener(
@@ -1181,28 +1219,6 @@ public class ConstituentFurtherLayer extends Activity {
 					c = D_Constituent.getConstByLID(
 							Util.getStringID(constituentNode.constituent_LID),
 							true, false);
-					/*
-					 * int n_idx = _ctx.groupPosition; if (n_idx <
-					 * crtLayer.neighs_LIDs.size()) { // Cannot be a
-					 * neighborhood if (_ctx.childPosition <
-					 * crtLayer.neighs_neighs_number.get(n_idx)) return; int
-					 * c_idx = _ctx.childPosition -
-					 * crtLayer.neighs_neighs_number.get(n_idx); c =
-					 * D_Constituent
-					 * .getConstByLID(Util.getString(crtLayer.neighs_consts_LIDs
-					 * .get(n_idx).get(c_idx)), true, false); } else { int c_idx
-					 * = n_idx - crtLayer.neighs_LIDs.size(); c =
-					 * D_Constituent.getConstByLID
-					 * (Util.getString(crtLayer.consts_LIDs.get(c_idx).get(0)),
-					 * true, false); }
-					 */
-					// String parentLID =
-					// Util.getString(neighs.get(n_idx).get(0));
-					// //long parentLID = Util.lval(neighs.get(n_idx).get(0));
-					// Log.d(TAG, "setting myself to: "+parentLID);
-					//
-					// D_Neighborhood neighborhood =
-					// D_Neighborhood.getNeighByLID(parentLID, true, false);
 					Log.d(TAG, "setting myself to: " + c);
 					if (c == null) {
                         Toast.makeText(getApplicationContext(), "Constituent Not Found In Database!", Toast.LENGTH_SHORT).show(); return;
@@ -1231,92 +1247,6 @@ public class ConstituentFurtherLayer extends Activity {
                         return;
                     }
                     return;
-/*
-                    //Toast.makeText(getApplicationContext(), "New Myself: \""+c.getNameOrMy()+"\"", Toast.LENGTH_SHORT).show();
-
-
-					String myself_constituent_GID;
-					String myself_constituent_GIDH;
-					D_Constituent myself_constituent = null;
-					long myself_constituent_LID = -1;
-
-					try {
-						myself_constituent_LID = Identity
-								.getDefaultConstituentIDForOrg(oLID);
-					} catch (P2PDDSQLException e) {
-						e.printStackTrace();
-					}
-					// try {
-					// Identity crt_identity = Identity.getCurrentIdentity();
-					// if (crt_identity == null) {
-					// Log.d(ConstituentFurtherLayer.TAG, "No identity");
-					// } else
-					// myself_constituent_LID =
-					// config.Identity.getDefaultConstituentIDForOrg(oLID);
-					// } catch (P2PDDSQLException e1) {
-					// e1.printStackTrace();
-					// }
-					if (myself_constituent_LID > 0) {
-						Log.d(TAG, "setting myself that exists");
-						myself_constituent = D_Constituent.getConstByLID(
-								myself_constituent_LID, true, true);
-						Log.d(TAG, "setting myself old was: " + myself_constituent);
-						myself_constituent_GID = myself_constituent.getGID();
-						myself_constituent_GIDH = myself_constituent.getGIDH();
-
-						if (myself_constituent.getSK() != null) {
-							try {
-								Identity crt_identity = Identity
-										.getCurrentConstituentIdentity();
-								if (crt_identity == null) {
-									Log.d(ConstituentFurtherLayer.TAG,
-											"No identity");
-									Toast.makeText(
-											ConstituentFurtherLayer.this,
-											"No Identity!", Toast.LENGTH_SHORT)
-											.show();
-									return;
-								} else {
-									config.Identity
-											.setCurrentConstituentForOrg(
-													myself_constituent_LID,
-													oLID);
-									Toast.makeText(
-											ConstituentFurtherLayer.this,
-											"Set Myself!", Toast.LENGTH_SHORT)
-											.show();
-									Log.d(TAG, "setting const: "
-											+ myself_constituent);
-									return;
-								}
-							} catch (P2PDDSQLException e1) {
-								e1.printStackTrace();
-								Toast.makeText(ConstituentFurtherLayer.this,
-										"Fail: " + e1.getLocalizedMessage(),
-										Toast.LENGTH_SHORT).show();
-								return;
-							}
-						} else {
-							Toast.makeText(ConstituentFurtherLayer.this,
-									"Fail: Unknown Keys!", Toast.LENGTH_SHORT)
-									.show();
-							return;
-						}
-						// myself_constituent.setNeighborhood_LID(parentLID);
-						// myself_constituent.setNeighborhoodGID(neighborhood.getGID());
-						// myself_constituent.sign();
-						// myself_constituent.storeRequest();
-						// myself_constituent.releaseReference();
-
-					} else {
-						Toast.makeText(ConstituentFurtherLayer.this,
-								"Register First!", Toast.LENGTH_SHORT).show();
-						Log.d(TAG, "no const: " + myself_constituent);
-						return;
-					}
-					// Toast.makeText(Constituent.this, "Failure!",
-					// Toast.LENGTH_SHORT).show();
-*/
 				}
 			});
 
@@ -1397,12 +1327,6 @@ public class ConstituentFurtherLayer extends Activity {
 			Button witness = (Button) convertView
 					.findViewById(R.id.constituent_child_view_witness);
 			witness.setFocusable(false);
-			/*
-			 * if (! isConstituent && childPosition != 0)
-			 * witness.setVisibility(Button.GONE); else
-			 * witness.setVisibility(Button.VISIBLE);
-			 */
-
 			witness.setOnClickListener(new My_OnClickListener(
 					new CtxConstituent(null, null, groupPosition, childPosition)) {
 				@Override
@@ -1417,41 +1341,6 @@ public class ConstituentFurtherLayer extends Activity {
 					b.putString(Orgs.O_NAME,
 							ConstituentFurtherLayer.organization_name);
 
-					/*
-					 * if (crtLayer.crt_root.isConstituent(_ctx.groupPosition))
-					 * { ConstituentNode constituentNode =
-					 * crtLayer.crt_root.getConstituentNode(_ctx.groupPosition,
-					 * _ctx.childPosition); if (constituentNode == null) return;
-					 * D_Constituent c =
-					 * D_Constituent.getConstByLID(Util.getString
-					 * (constituentNode.constituent_LID), true, false);
-					 * b.putString(ConstituentFurtherLayer.C_TYPE,
-					 * ConstituentFurtherLayer.C_TYPE_C);
-					 * b.putString(ConstituentFurtherLayer.C_GIDH, c.getGIDH());
-					 * b.putString(ConstituentFurtherLayer.C_GID, c.getGID());
-					 * b.putString(ConstituentFurtherLayer.C_LID,
-					 * c.getLIDstr());
-					 * b.putString(ConstituentFurtherLayer.C_NAME,
-					 * c.getNameOrMy()); } else { if (!
-					 * crtLayer.crt_root.isNeighborhood(_ctx.groupPosition))
-					 * return; NeighborhoodNode neighborhoodNode =
-					 * crtLayer.crt_root
-					 * .getNeighborhoodNode(_ctx.groupPosition);//,
-					 * _ctx.childPosition); D_Neighborhood n =
-					 * D_Neighborhood.getNeighByLID
-					 * (Util.getString(neighborhoodNode.neighborhood_LID), true,
-					 * false);
-					 * 
-					 * if (_ctx.childPosition == 0) {
-					 * b.putString(ConstituentFurtherLayer.C_TYPE,
-					 * ConstituentFurtherLayer.C_TYPE_N);
-					 * b.putString(ConstituentFurtherLayer.N_GIDH, n.getGIDH());
-					 * b.putString(ConstituentFurtherLayer.N_GID, n.getGID());
-					 * b.putString(ConstituentFurtherLayer.N_LID,
-					 * n.getLIDstr());
-					 * b.putString(ConstituentFurtherLayer.N_NAME,
-					 * n.getNameOrMy()); } else { // moved from here below } }
-					 */
 					/**
 					 * Elements of the neighborhood. The remaining code should
 					 * work without the above code
@@ -1510,10 +1399,6 @@ public class ConstituentFurtherLayer extends Activity {
 						@Override
 						public void _onClick(View view) {
 							CtxConstituent _ctx = (CtxConstituent) ctx;
-							// Toast.makeText(activity,
-							// "clicked",//child.get(childPosition),
-							// Toast.LENGTH_SHORT).show();
-
 							ConstituentFurtherLayer.this
 									.pushLayer(_ctx.groupPosition);
 
@@ -1538,6 +1423,9 @@ public class ConstituentFurtherLayer extends Activity {
 
 			ImageView parentImg = (ImageView) convertView
 					.findViewById(R.id.constituents_parent_view_img);
+			BadgeView badge = new BadgeView(this.activity, (View) parentImg);
+			badge.setText("?");
+			badge.show();
 
             parentCheckedTextView.setTextColor(Color.WHITE);
 			if (crt_root.isConstituent(groupPosition)) {
@@ -1552,8 +1440,6 @@ public class ConstituentFurtherLayer extends Activity {
                     Log.d(TAG, "constituent me color LID="+constituentNode.constituent_LID+" e="+constituentNode.external+" k="+constituentNode.hasSK);
                     parentCheckedTextView.setTextColor(ConstituentFurtherLayer.Color_Myself);
                 } else {
-                    //D_Constituent c = D_Constituent.getConstByLID(constituentNode.constituent_LID, true, true);
-                    //if (c == null || c.isExternal() || c.getSK() == null) {
                     if (constituentNode != null && !constituentNode.external && constituentNode.hasSK) {
                         parentCheckedTextView.setTextColor(ConstituentFurtherLayer.Color_Has_SK);
                     } else
@@ -1564,9 +1450,6 @@ public class ConstituentFurtherLayer extends Activity {
 				parentImg
 						.setImageResource(R.drawable.constituent_neighborhood_icon);
 			}
-
-			// if (!is_parent_constituent) witness.setVisibility(Button.GONE);
-			// else witness.setVisibility(Button.VISIBLE);
 
 			parentCheckedTextView.setText(this.crt_root
                     .getDisplayText(groupPosition));
@@ -1587,9 +1470,6 @@ public class ConstituentFurtherLayer extends Activity {
 
 		@Override
 		public int getChildrenCount(int groupPosition) {
-			// if (childtems == null || childtems.size() <= groupPosition)
-			// return 0;
-			// return ((ArrayList<String>) childtems.get(groupPosition)).size();
 			CTreeNode branch = this.crt_root.getBranch(groupPosition);
 			if (branch == null)
 				return 0;

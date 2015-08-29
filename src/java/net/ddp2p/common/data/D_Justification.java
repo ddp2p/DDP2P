@@ -3526,6 +3526,9 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		if (this.getOrganizationForce().getBlocked()) return false;
 		return true;
 	}
+	public static void stopSaver() {
+		saverThread.turnOff();
+	}
 }
 
 class D_Justification_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
@@ -3537,6 +3540,10 @@ class D_Justification_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThr
 	 */
 	public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
+	public void turnOff() {
+		stop = true;
+		this.interrupt();
+	}
 	D_Justification_SaverThread() {
 		super("D_Justification Saver", true);
 		//start ();

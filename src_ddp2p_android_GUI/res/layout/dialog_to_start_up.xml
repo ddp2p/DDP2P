@@ -12,6 +12,7 @@
         android:background="@color/yellow">
 
     <TextView
+        android:id="@+id/dialog_startup_question"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:text="@string/start_up_wizzard"

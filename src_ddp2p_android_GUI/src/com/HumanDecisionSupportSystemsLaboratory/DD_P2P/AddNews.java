@@ -66,7 +66,8 @@ public class AddNews extends ActionBarActivity {
 		setContentView(R.layout.add_news);
 			
 		Application_GUI.dbmail = new Android_DB_Email(this);
-		Application_GUI.gui = new Android_GUI();
+		if (Application_GUI.gui == null)
+			Application_GUI.gui = new Android_GUI(this);
     	
         but = (Button) findViewById(R.id.submit_add_news);
 		add_name = (EditText) findViewById(R.id.add_news_name);

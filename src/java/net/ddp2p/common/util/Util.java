@@ -21,6 +21,7 @@
 import static java.lang.System.out;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -90,11 +91,13 @@ public class Util {
 	public static final boolean _DEBUG = true;
 	public static final int MAX_DUMP = 20;
 	public static final int MAX_UPDATE_DUMP = 400;
+	private static final int MAX_CONTAINER_SIZE = 1000000;
 	static Random rnd = new Random(); // for simulation
 	
     public static String usedCipherGenkey = Cipher.RSA;
     public static String usedMDGenkey = Cipher.SHA256;
 
+    
     /**
      * 
      * @param site
@@ -1359,6 +1362,26 @@ public class Util {
 		if(v.booleanValue()) return "1";
 		return "0";
 	}
+	public static byte[] readAllBytes(InputStream in) throws IOException {
+		byte[] buffer = new byte[Util.MAX_CONTAINER_SIZE];
+		return readAllBytes(in, buffer);
+	}
+	/**
+	 * returns an array filled with data read (of the size of the data read
+	 * @param in
+	 * @param buffer
+	 * @return
+	 * @throws IOException
+	 */
+	public static byte[] readAllBytes(InputStream in, byte[] buffer) throws IOException {
+		int len = readAll(in, buffer);
+		while (len == buffer.length) {
+			buffer = Arrays.copyOf(buffer, len*2);
+			len = readAll(in, len, buffer, len);
+		}
+		byte[] result =	Arrays.copyOf(buffer, len);
+		return result;		
+	}
 	/**
 	 * Read all the expected data from a stream, in a buffer
 	 * @param in : stream
@@ -1379,15 +1402,27 @@ public class Util {
 	 */
 	public static int readAll(InputStream in, byte[] stg, int length) throws IOException {
 		int got = 0;
+		return readAll(in, got, stg, length);
+	}
+	/**
+	 * Read at most "length" bytes starting from address got into buffer
+	 * @param in
+	 * @param got
+	 * @param stg
+	 * @param length
+	 * @return
+	 * @throws IOException
+	 */
+	public static int readAll(InputStream in, int got, byte[] stg, int length) throws IOException {
 		int remaining = length;
 		int crt;
-		if(length > stg.length) throw new IOException("Buffer too small!");
-		do{
+		if (length > stg.length) throw new IOException("Buffer too small!");
+		do {
 			crt = in.read(stg, got, remaining);
 			if(crt < 0) return got;
 			got += crt;
 			remaining -= crt;
-		}while(remaining > 0);
+		} while(remaining > 0);
 		return got;
 	}
 	static char b64 = '_';

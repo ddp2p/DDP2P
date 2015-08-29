@@ -187,6 +187,9 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			neigh.setName_lang(parent.getName_lang());
 			neigh.setName_charset(parent.getName_charset());
 		}
+		if (org != null) {
+			neigh.setOrgIDs(org.getGID(), org.getLID());
+		}
 		neigh.setBroadcasted(true);
 		neigh.setName(_name);
 		neigh.setName_division(division);
@@ -318,7 +321,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		"]";
 	}
 	public String toString() {
-		return "D_Neighborhood: ["+
+		return "D_Neighborhood: ["+this.getLID()+
 		";\n creation_date*="+Encoder.getGeneralizedTime(creation_date)+
 		";\n name*="+name+
 		";\n name_lang*="+name_lang+
@@ -519,14 +522,14 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			if (DEBUG) System.out.println("D_Neighborhood: register_newLID_ifLoaded: start crt = "+crt);
 			synchronized (loaded_objects) {
 				//String gid = crt.getGID();
-				String gidh = crt.getGIDH();
-				long lid = crt.getLID();
-				if (gidh == null) {
+				String nGIDH = crt.getGIDH();
+				long nLID = crt.getLID();
+				if (nGIDH == null) {
 					if (_DEBUG) { System.out.println("D_Neighborhood: register_newLID_ifLoaded: had no gidh! no need of this call.");
 					Util.printCallPath("Path");}
 					return false;
 				}
-				if (lid <= 0) {
+				if (nLID <= 0) {
 					Util.printCallPath("Why call without LID="+crt);
 					return false;
 				}
@@ -536,7 +539,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 					Util.printCallPath("No orgLID="+crt);
 					return false;
 				}
-				D_Neighborhood old = getByGIDH(gidh, organizationLID);
+				D_Neighborhood old = getByGIDH(nGIDH, organizationLID);
 				if (old == null) {
 					if (DEBUG) System.out.println("D_Neighborhood: register_newLID_ifLoaded: was not registered.");
 					return false;
@@ -547,14 +550,14 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 					return false;
 				}
 				
-				Long oLID = new Long(lid);
-				D_Neighborhood _old = loaded_By_LID.get(oLID);
+				Long o_nLID = new Long(nLID);
+				D_Neighborhood _old = loaded_By_LID.get(o_nLID);
 				if (_old != null && _old != crt) {
-					Util.printCallPath("Double linking of: old="+_old+" vs crt="+crt);
+					Util.printCallPath("Double linking of: old="+_old+" vs crt="+crt+"\n with nLID=s"+o_nLID);
 					return false;
 				}
-				loaded_By_LID.put(oLID, crt);
-				if (DEBUG) System.out.println("D_Neighborhood: register_newLID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
+				loaded_By_LID.put(o_nLID, crt);
+				if (DEBUG) System.out.println("D_Neighborhood: register_newLID_ifLoaded: store lid="+nLID+" crt="+crt.getGIDH());
 
 				return true;
 			}
@@ -1859,7 +1862,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public void setOrgLID(long organization_ID) {
 		this.organization_ID = organization_ID;
 		this.dirty_main = true;
-	}
+	}	
 	public long getSubmitterLID() {
 		return Util.lval(this.getSubmitterLIDstr(),-1);
 	}
@@ -2292,14 +2295,19 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if (r.compareTo(o) > 0) return true;
 		return false;
 	}
-	public void setOrgIDs(String giDbyLID, long organization_ID2) {
-		if (giDbyLID == null && organization_ID2 > 0)
-			giDbyLID = D_Organization.getGIDbyLID(organization_ID2);
-		if (giDbyLID != null && organization_ID2 <= 0) {
-			organization_ID2 = D_Organization.getLIDbyGID(giDbyLID);
+	/**
+	 * 
+	 * @param giD
+	 * @param organization_ID2
+	 */
+	public void setOrgIDs(String giD, long _organization_ID) {
+		if (giD == null && _organization_ID > 0)
+			giD = D_Organization.getGIDbyLID(_organization_ID);
+		if (giD != null && _organization_ID <= 0) {
+			_organization_ID = D_Organization.getLIDbyGID(giD);
 		}
-		this.setGID(giDbyLID);
-		this.setOrgLID(organization_ID2);
+		this.setGID(giD);
+		this.setOrgLID(_organization_ID);
 	}
 	/**
 	 * Sets the temporary flag
@@ -2592,6 +2600,9 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public static int getNumberItemsNeedSaving() {
 		return _need_saving.size() + _need_saving_obj.size();
 	}
+	public static void stopSaver() {
+		saverThread.turnOff();
+	}
 }
 class D_Neighborhood_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	//private static final long SAVER_SLEEP_ON_ERROR = 2000;
@@ -2602,6 +2613,10 @@ class D_Neighborhood_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThre
 	 */
 	public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
+	public void turnOff() {
+		stop = true;
+		this.interrupt();
+	}
 	D_Neighborhood_SaverThread() {
 		super("D_Neighborhood Saver", true);
 		//start ();

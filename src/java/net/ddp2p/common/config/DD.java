@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -36,6 +37,8 @@ import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
 
+import javax.swing.JOptionPane;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
@@ -43,12 +46,15 @@ import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.PK;
 import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.data.D_Constituent;
+import net.ddp2p.common.data.D_Justification;
 import net.ddp2p.common.data.D_Motion;
+import net.ddp2p.common.data.D_Neighborhood;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.hds.Address;
 import net.ddp2p.common.hds.Client2;
 import net.ddp2p.common.hds.ClientSync;
+import net.ddp2p.common.hds.Connections;
 import net.ddp2p.common.hds.DirectoryAnswerMultipleIdentities;
 import net.ddp2p.common.hds.DirectoryServer;
 import net.ddp2p.common.hds.EventDispatcher;
@@ -56,6 +62,7 @@ import net.ddp2p.common.hds.IClient;
 import net.ddp2p.common.hds.Server;
 import net.ddp2p.common.hds.UDPServer;
 import net.ddp2p.common.network.NATServer;
+import net.ddp2p.common.plugin_data.PluginRegistration;
 import net.ddp2p.common.simulator.Fill_database;
 import net.ddp2p.common.simulator.SimulationParameters;
 import net.ddp2p.common.streaming.OrgHandling;
@@ -63,6 +70,7 @@ import net.ddp2p.common.table.HashConstituent;
 import net.ddp2p.common.util.BMP;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.DB_Implementation;
+import net.ddp2p.common.util.DDP2P_ServiceThread;
 import net.ddp2p.common.util.DD_Address;
 import net.ddp2p.common.util.DD_DirectoryServer;
 import net.ddp2p.common.util.DD_IdentityVerification_Answer;
@@ -72,7 +80,9 @@ import net.ddp2p.common.util.DD_SK;
 import net.ddp2p.common.util.DD_Testers;
 import net.ddp2p.common.util.DirectoryAddress;
 import net.ddp2p.common.util.EmbedInMedia;
+import net.ddp2p.common.util.JPEG;
 import net.ddp2p.common.util.P2PDDSQLException;
+import net.ddp2p.common.util.PNG;
 import net.ddp2p.common.util.StegoStructure;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.common.wireless.BroadcastClient;
@@ -1283,6 +1293,7 @@ public class DD {
 	public static final String APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS = "APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS";
 	public static final String AUTOMATIC_TESTERS_RATING_BY_SYSTEM = "AUTOMATIC_TESTERS_RATING_BY_SYSTEM";
 	public static final boolean DEBUG_TMP_GIDH_MANAGEMENT = false;
+	public static final int MAX_CONTAINER_SIZE = 5000000; // max size of an image containing an object
 	public static boolean DEBUG_COMMUNICATION_ADDRESSES = false;
 	public static boolean DEBUG_COMMUNICATION_STUN = false;
 	public static int MAX_ORG_ICON_LENGTH = 20000;
@@ -1383,6 +1394,137 @@ public class DD {
 		
 		return true;
 	}
+	public static int findStegoIndex(StegoStructure[] adr, StegoStructure ss) {
+		for (int i = 0; i < adr.length; i ++) {
+			if (ss.getClass().equals(adr[i].getClass())) return i;
+		}
+		return -1;
+	}
+	/**
+	 * 
+	 * @param is
+	 * @param mime
+	 * @param adr
+	 * @param selected (should have length 1, and inited to -1)
+	 * @return (returns error message)
+	 * @throws IOException
+	 */
+	public static String loadFromMedia(InputStream is, String mime, StegoStructure[] adr, int[] selected) throws IOException {
+		byte[] buffer = new byte[DD.MAX_CONTAINER_SIZE];
+
+		if (selected != null && selected.length > 0) selected[0] = -1;
+		int len = Util.readAll(is, buffer);
+		if (DEBUG) System.out.println("Util: readAll: got n="+len+"/"+buffer.length);
+		if (len == buffer.length)
+			if (_DEBUG) System.out.println("Util: readAll: !got n="+len+"/"+buffer.length);
+		return loadFromMedia(buffer, len, mime, adr, selected);
+	}
+	public static String loadFromMedia(File file, String mime, StegoStructure[] adr, int[] selected) throws IOException {
+		FileInputStream fis=new FileInputStream(file);
+		byte[] b = new byte[(int) file.length()];
+		fis.read(b);
+		fis.close();
+		return loadFromMedia(b, b.length, mime, adr, selected);
+	}
+	/**
+	 * 
+	 * @param is
+	 * @param adr
+	 * @param selected
+	 * @return
+	 * @throws IOException
+	 */
+	public static String loadFromMedia(byte[] buffer, int len, String mime, StegoStructure[] adr, int[] selected) throws IOException {
+		if (selected != null && selected.length > 0) selected[0] = -1;
+		if ("image/bmp".equalsIgnoreCase(mime) || "image/x-ms-bmp".equalsIgnoreCase(mime)) {
+			return loadBMP(buffer, adr, selected);
+		}
+		if ("image/gif".equalsIgnoreCase(mime)) {
+			return loadGIF(buffer, adr, selected);
+		}
+		if ("image/jpeg".equalsIgnoreCase(mime)) {
+			JPEG file = new JPEG();
+			file.load(buffer, len);
+			if (selected != null && selected.length > 0) selected[0] = -1;
+			return "Not implemented";
+		}
+		if ("image/png".equalsIgnoreCase(mime)) {
+			PNG file = new PNG();
+			file.load(buffer, len);
+			if (selected != null && selected.length > 0) selected[0] = -1;
+			return "Not implemented";
+		}
+		if (mime.contains("text/")) {
+			StegoStructure ss[] = new StegoStructure[1];
+			String err = extractStegoObject(new String(buffer, 0, len), ss);
+			if (ss[0] == null) return __("Extracting from text:")+" "+err;
+			selected[0] = findStegoIndex(adr, ss[0]);
+		}
+		return null;
+	}
+	public static String loadGIF(File file, StegoStructure[] adr, int[] selected) throws IOException {
+		FileInputStream fis=new FileInputStream(file);
+		byte[] b = new byte[(int) file.length()];  
+		fis.read(b);
+    	fis.close();
+    	return DD.loadGIF(b, adr, selected);
+	}
+	public static String loadGIF(byte[] b, StegoStructure[] adr, int[] selected) throws IOException {
+		boolean found = false;
+    	int i = 0;
+		int _selected = -1;
+		if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif len="+b.length);
+		do {
+			while (i < b.length) {
+				if (b[i] == (byte) 0x3B) {
+					found = true;
+					i ++;
+					break;
+				}
+				i++;
+			}
+			if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif position="+i);
+			if (! found || i >= b.length) {
+//				JOptionPane.showMessageDialog(parent,
+//							__("Cannot Extract address in: ")+file+__("No valid data in the picture!"),
+//							__("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
+						return __("Cannot Extract address in GIF file.")+" "+__("No valid data in the picture!");
+			}
+			byte[] addBy = new byte[b.length-i]; 
+			System.arraycopy(b,i,addBy,0,b.length-i);
+			// System.out.println("Got bytes ("+addBy.length+") to write: "+Util.byteToHex(addBy, " "));
+			
+			for (int k = 0; k < adr.length; k ++) {
+				if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif try adr#="+k+"/"+adr.length);
+				try {
+					BigInteger expected = new BigInteger(""+adr[k].getSignShort());
+					BigInteger _found = new Decoder(addBy).getTagValueBN();
+					if (! expected.equals(_found)) {
+						if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif not ASN1 tag of ="+adr[k].getClass()+" "+expected+" vs "+_found);
+						continue;
+					}
+					adr[k].setBytes(addBy);
+					_selected = k;
+					if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif success adr#="+k+"/"+adr.length+" val="+adr[k]);
+					break;
+				} catch (Exception e1) { // ASN1DecoderFail | ASN1.ASNLenRuntimeException | 
+					if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif failed adr#="+k+"/"+adr.length);
+					if (EmbedInMedia.DEBUG){
+						e1.printStackTrace();
+						//Application_GUI.warning(__("Failed to parse gif file: "+file+"\n"+"at : "+i+"/"+b.length+"\n"+e1.getMessage()+"\nstego="+adr[k]), __("Failed to parse address!"));
+					}
+				}
+			}
+		} while (i < b.length && _selected < 0);
+		if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif done at i#="+i+" adr="+_selected+" val="+adr[_selected]);
+		if (_selected == -1) {
+			//Application_GUI.warning(__("Failed to parse file: ")+file+"\n", __("Failed to parse address!"));
+			return __("Failed to parse GIF file");
+		}
+		if ((selected != null) && (selected.length > 0))
+			selected[0] = _selected;
+		return null;
+	}
 	/**
 		StegoStructure adr[] = DD.getAvailableStegoStructureInstances();
 		int[] selected = new int[1];
@@ -1402,12 +1544,15 @@ public class DD {
 	 * @throws IOException
 	 */
 	public static String loadBMP(File file, StegoStructure[] adr, int[] selected) throws IOException {
-		String explain = null;
-		boolean fail = false;
 		FileInputStream fis=new FileInputStream(file);
 		byte[] b = new byte[(int) file.length()];
 		fis.read(b);
 		fis.close();
+		return loadBMP(b, adr, selected);
+	}
+	public static String loadBMP(byte[] b, StegoStructure[] adr, int[] selected) throws IOException {
+		String explain = null;
+		boolean fail = false;
 		BMP data = new BMP(b, 0);
 	
 		if ((data.compression != BMP.BI_RGB) || (data.bpp < 24)) {
@@ -1680,21 +1825,30 @@ public class DD {
     public static final String SAFE_TEXT_MY_BODY_SEP = "|DDP2P|OBJECT|START||"; // at the beginning of the body
     public static final String SAFE_TEXT_MY_BODY_TRAILER_SEP = "|DDP2P|OBJECT|TRAILER|"; // at the end of the body (optional)
     public static final String SAFE_TEXT_ANDROID_SUBJECT_SEP = " - "; // inserted by 2014 versions of whatsup between title and body
-	/**
-	 * Stop servers and wait for the saving threads to stop, sleeping 2 seconds at a time.
-	 */
-	public static void clean_exit() {
-        System.out.println("Exiting attempt...");
-        // Here should first stop servers!
+	public static void stop_servers() {
         try {
             DD.startNATServer(false);
             DD.startUServer(false, null);
             DD.startServer(false, null);
+            
+            DDP2P_ServiceThread domainsDetectionThread = Server.domainsDetectionThread;
+            if (domainsDetectionThread != null) {
+            	domainsDetectionThread.turnOff();
+            	domainsDetectionThread = null;
+            }
+
             DD.startClient(false);
+            Connections c = Client2.g_Connections;
+            if (c != null) c.turnOff(); // used both by UDPServer and Client2
+            
             DD.startDirectoryServer(false, 0);
+            
+            PluginRegistration.removePlugins();
+			
             System.out.println("Servers Closed...");
         }catch (Exception er){er.printStackTrace();}
-       	System.out.println("StartUpThread: exitingIcon: items to save: "+net.ddp2p.common.data.SaverThreadsConstants.getNumberRunningSaverWaitingItems());
+	}
+	public static void clean_before_exit() {
         while (net.ddp2p.common.data.SaverThreadsConstants.getNumberRunningSaverWaitingItems() > 0) {
         	System.out.println("StartUpThread: exitingIcon: still items to save: "+net.ddp2p.common.data.SaverThreadsConstants.getNumberRunningSaverWaitingItems());
         	synchronized(stop_monitor){try {
@@ -1703,27 +1857,57 @@ public class DD {
 				e1.printStackTrace();
 			}}
         }
+        D_Peer.stopSaver();
+        D_Organization.stopSaver();
+        D_Constituent.stopSaver();
+        D_Neighborhood.stopSaver();
+        D_Motion.stopSaver();
+        D_Justification.stopSaver();
+	}
+	/**
+	 * Stop servers and wait for the saving threads to stop, sleeping 2 seconds at a time.
+	 */
+	public static void clean_exit() {
+        System.out.println("Exiting attempt...");
+        // Here should first stop servers!
+        stop_servers();
+       	System.out.println("StartUpThread: exitingIcon: items to save: "+net.ddp2p.common.data.SaverThreadsConstants.getNumberRunningSaverWaitingItems());
+       	clean_before_exit();
         System.out.println("Exiting...");
         System.exit(0); // exit from tray icon
 	}
-	
-	public static void importText(String strAddress) {
-        //Interpret
-        String body = extractMessage(strAddress);
-       
+	/**
+	 * Extracts an object from this text (or null).
+	 * Assume the object was encoded with ASN1B64, and included between separators
+	 * @param text
+	 * @return
+	 */
+	public static String extractStegoObject(String text, StegoStructure[] result) {
+        String body = extractMessage(text);       
         if (body == null) {
         	if (_DEBUG) System.out.println("DD: importText: Extraction of body failed");
 //            Toast.makeText(getActivity(), "Separators not found: \""+Safe.SAFE_TEXT_MY_HEADER_SEP+Safe.SAFE_TEXT_ANDROID_SUBJECT_SEP+"\"", Toast.LENGTH_SHORT).show();
 //            FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
 //            ft.detach(LoadPK.this);
 //            ft.commit();
-            return;
+            return __("Extraction of body failed");
         }
-
         net.ddp2p.common.util.StegoStructure imported_object = interpreteASN1B64Object(body);
-       
+        if (imported_object == null) return __("Error decoding text object");
+        if(result != null && result.length > 0) result[0] = imported_object;
+        return null;
+	}
+	/**
+	 * Extracts the message, decodes ASN1B64, and saves it
+	 * @param strAddress
+	 */
+	public static void importText(String strAddress) {
+		StegoStructure[] imported_objects = new StegoStructure[1];
+		String error = extractStegoObject(strAddress, imported_objects);
+        net.ddp2p.common.util.StegoStructure imported_object = imported_objects[0];
+        
         if (imported_object == null) {
-            if (_DEBUG) System.out.println("DD: importText: Decoding failed");
+            if (_DEBUG) System.out.println("DD: importText: Decoding failed: "+error);
 //            Toast.makeText(getActivity(), "Failed to decode", Toast.LENGTH_SHORT).show();
 //            FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
 //            ft.detach(LoadPK.this);

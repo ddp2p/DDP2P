@@ -4,6 +4,7 @@ import net.ddp2p.common.config.Application_GUI;
 
 abstract public class DDP2P_ServiceThread extends Thread {
 	public Object ctx = null;
+	public boolean stop = false;
 	Object getContext() {
 		return ctx;
 	}
@@ -15,6 +16,10 @@ abstract public class DDP2P_ServiceThread extends Thread {
 		if (name != null) this.setName(name);
 		this.setDaemon(daemon);
 		this.ctx = ctx;
+	}
+	public void turnOff() {
+		stop = true;
+		interrupt();
 	}
 	public static void ping(String msg) {
 		Application_GUI.ThreadsAccounting_ping(msg);

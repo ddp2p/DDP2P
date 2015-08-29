@@ -118,12 +118,16 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				addr.pure_protocol = Address.SOCKET;
 				ArrayList<Address> addrs = new ArrayList<Address>();
 				addrs.add(addr);
+				me = D_Peer.getPeerByPeer_Keep(me);
+				if (me == null) continue;
 				try {
 					HandlingMyself_Peer.updateAddress(me, addrs); // currently adds new addresses besides old, but may want to drop old ones!
 				} catch (P2PDDSQLException e) {
+					me.releaseReference();
 					e.printStackTrace();
 					continue;
 				}
+				me.releaseReference();
 				//on success, add address to myself
 				UDPServer.announceMyselfToDirectories();
 			}
@@ -307,6 +311,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 
 	public void turnOff() {
 		stop = true;
+		this.interrupt();
 	}
 }
 

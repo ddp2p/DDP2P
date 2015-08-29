@@ -15,13 +15,19 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.TextView;
+
+import net.ddp2p.common.config.DD;
 
 public class SettingMain extends Fragment{
 	
@@ -37,6 +43,7 @@ public class SettingMain extends Fragment{
 		getActivity().getActionBar().setTitle("Setting");
 				
 		adhoc = (TextView) v.findViewById(R.id.setting_main_adhoc);
+		CheckBox showHidden = (CheckBox) v.findViewById(R.id.show_hidden);
 		
 		adhoc.setOnClickListener(new View.OnClickListener() {
 			
@@ -65,7 +72,24 @@ public class SettingMain extends Fragment{
 				ft.commit();
 			}
 		});
+		showHidden.setChecked(Safe.SHOW_HIDDEN);
+		showHidden.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				DD.setAppBoolean(Safe.DD_SHOW_HIDDEN, Safe.SHOW_HIDDEN = ((CheckBox) view).isChecked());
+				//new Main.ReloadSafe().execute(void);
+				Log.d("SettingMain", "SettingMain: oCW: hidden ="+Safe.SHOW_HIDDEN);
+			}
+		});
 		
 		return v;
+	}
+
+	@Override
+	public void onDestroyView() {
+		Intent intent = new Intent();
+		//intent.putExtra(Main.RESULT_SETTINGS, pi.encode());
+		this.getActivity().setResult(Activity.RESULT_OK, intent);
+		super.onDestroyView();
 	}
 }

@@ -48,7 +48,10 @@ public class PhotoUtil {
 			return;
 
 		BitmapDrawable b = (BitmapDrawable) iv.getDrawable();
-		b.getBitmap().recycle();
+		if (b == null) return;
+		Bitmap bi = b.getBitmap();
+		if (bi == null) return;
+		bi.recycle();
 		iv.setImageDrawable(null);
 	}
 

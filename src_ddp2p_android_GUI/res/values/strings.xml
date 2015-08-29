@@ -142,6 +142,13 @@
     <string name="announcement_import_successful">Successfully Imported Existing:</string>
     <string name="refresh">Refresh</string>
     <string name="import_web_object">Import Web Object</string>
-    <string name="import_web_object_instr_dir">For your new identity to be useful, it has to be registered with globally accessible \'Meeting Points\' who direct your friends to you while you travel. Here you can select and adopt such \'Meeting Points\' by navigating the embedded browser and clicking \'Import Current Object\'. You may inspect the selections by clicking the button \'Decode Content\'.</string>
+    <string name="import_web_object_instr_dir">For your new identity to be useful, it has to be registered with globally accessible \'Meeting Points\' who direct your friends to you while you travel. Here you can select and adopt such \'Meeting Points\' by navigating the embedded browser and clicking \'Import Current Object\'. You may inspect the selections by clicking the button \'Decode Content\'.  When you are done, use the android back button to return to DDP2P!</string>
+    <string name="import_web_object_instr">Now you can select and load friends, groups and debate items by navigating the embedded browser and clicking \'Import Current Object\'. You may inspect the selections by clicking the button \'Decode Content\'. When you are done, use the android back button to return to DDP2P!</string>
     <string name="continue_create_new_peer">Continue Creation New Peer</string>
+    <string name="dialog_delete_question">Do you really want to delete the item? If your connections have it you may get it back! To avoid getting botherred by it again you should sometimes rather block and hide it!</string>
+    <string name="dialog_delete_title">Deleting Confirmation</string>
+    <string name="block">Block</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="settings_show_hidden">Show Hidden</string>
 </resources>

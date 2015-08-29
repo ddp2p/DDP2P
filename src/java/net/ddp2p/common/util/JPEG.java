@@ -19,8 +19,6 @@
 /* ------------------------------------------------------------------------- */
 package net.ddp2p.common.util;
 
-
-import java.io.BufferedReader;
 import java.io.File;
 import java.util.ArrayList;
 
@@ -740,7 +738,7 @@ public class JPEG {
 	final public static byte COM = (byte) 0xFE;
 	ArrayList<JPEG_Chunk> chunks = new ArrayList<JPEG_Chunk>();
 	String filename;
-	JPEG() {
+	public JPEG() {
 	}
 	public String toString() {
 		String result = "";
@@ -767,13 +765,21 @@ public class JPEG {
 			off = c.save(buf, off, limit);
 		}
 	}
+	/**
+	 * 
+	 * @param _filename
+	 */
 	void load(String _filename) {
 		filename = _filename;
-		int cnt = 0, off = 0;
+		int cnt = 0;
 		File f = new File(filename);
 		byte[] data = Util.readAll(f);
 		if (data == null) return;
 		cnt = data.length;
+		load(data, cnt);
+	}
+	public void load(byte[] data, int cnt) {
+		int off = 0;
 		while (off < cnt) {
 			if (JPEG.DEBUG) System.out.println(" loop="+off);
 			if ( ! isMarker(data, off) ) {

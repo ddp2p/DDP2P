@@ -59,7 +59,8 @@ public class AddSafe extends ActionBarActivity {
 		setContentView(R.layout.add_safe);
 
 		Application_GUI.dbmail = new Android_DB_Email(this);
-		Application_GUI.gui = new Android_GUI();
+		if (Application_GUI.gui == null)
+			Application_GUI.gui = new Android_GUI(this);
 
 		final Button but = (Button) findViewById(R.id.submit);
 		final EditText add_name = (EditText) findViewById(R.id.add_name);

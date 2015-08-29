@@ -370,7 +370,7 @@ class PNG {
 			0x1A, 0x0A}; // EOF, LF
 	private byte[] end_data = new byte[0];
 
-	PNG() {
+	public PNG() {
 		//CRC.make_crc_table();
 		/*
 		long crc = CRC.crc(new byte[]{'I','E','N','D'}, 4);
@@ -388,16 +388,29 @@ class PNG {
 		if (!Util.isAsciiAlpha(marker[off+3])) return false;
 		return true;
 	}
+	/**
+	 * 
+	 * @param _filename
+	 */
 	void load(String _filename) {
 		filename = _filename;
-		int cnt = 0, off = 0;
+		int cnt = 0;
 		File f = new File(filename);
 		byte[] data = Util.readAll(f);
 		if (data == null) return;
 		cnt = data.length;
+		load(data, cnt);
+	}
+	/**
+	 * 
+	 * @param data
+	 * @param cnt (length of useful data)
+	 */
+	public void load(byte[] data, int cnt) {
+		int off = 0;
 		byte header_read[] = new byte[header.length];
 		Util.copyBytes(header_read, 0, data, header.length, 0);
-		if (!Util.equalBytes(header, header_read))
+		if (! Util.equalBytes(header, header_read))
 			throw new RuntimeException("Wrong header");
 		off += header.length;
 		while (off < cnt) {

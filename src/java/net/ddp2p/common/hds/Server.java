@@ -574,7 +574,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		detectDomain(Identity.getPeerTCPPort());
 	}
 	private final static Object domainsDetectionThread_monitor = new Object();
-	public static Thread domainsDetectionThread = null;
+	public static DDP2P_ServiceThread domainsDetectionThread = null;
 	/**
 	 * Fill the domain cache: 
 	 * Identity.my_server_domains
@@ -605,10 +605,13 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					public void _run() {
 						//this.setName("Domain detection: "+Util.getGeneralizedTime());
 						//ThreadsAccounting.registerThread();
-						for (;;) {
+						for (;!stop;) {
 							try {
 								synchronized(this) {
 									this.wait(DD.DOMAINS_UPDATE_WAIT);
+									if (stop) {
+										return;
+									}
 								}
 							} catch (InterruptedException e) {
 								e.printStackTrace();

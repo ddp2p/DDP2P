@@ -94,7 +94,7 @@ class PluginThread extends DDP2P_ServiceThread {
 		}
 		*/
 		int cnt = 0;
-		for (;;) {
+		for (;!stop;) {
 			cnt ++;
 			//System.out.print("_0");
 			if(DEBUG) System.out.println("PluginThread:_run: loop DBGPLUG="+DD.DEBUG_PLUGIN);
@@ -108,6 +108,7 @@ class PluginThread extends DDP2P_ServiceThread {
 			} catch (InvocationTargetException e) {
 				e.printStackTrace();
 			}
+			if (stop) return;
 			if(DEBUG) System.out.println("PluginThread:_run: got =" +request);
 			if(request == null) continue;
 			ping(__("Will handle request")+" ("+cnt+")");

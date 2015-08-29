@@ -17,6 +17,7 @@ package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import java.io.File;
 
+import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.util.DD_SK;
 import net.ddp2p.common.util.P2PDDSQLException;
 
@@ -66,6 +67,9 @@ public class SafeProfileActivity extends FragmentActivity {
 	private ImageView imgbut;
 	private String selectedImagePath;
 	private File selectImageFile;
+	private boolean hasSK;
+	SK sk;
+	SafeProfileAdapter sAdapter;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +87,8 @@ public class SafeProfileActivity extends FragmentActivity {
 				R.id.safe_profile_drawer_content) == null) {
 			showSafeProfile();
 		}
-		drawerContent = prepareDrawer(peer.getSK() != null);
+		sk = peer.getSK();
+		drawerContent = prepareDrawer(hasSK = (sk != null));
 
 		Log.d(TAG, drawerContent[0]);
 		drawerLayout = (DrawerLayout) findViewById(R.id.safe_profile_drawer_layout);
@@ -98,7 +103,8 @@ public class SafeProfileActivity extends FragmentActivity {
 
 		ListView drawer = (ListView) findViewById(R.id.safe_profile_drawer_listview);
 
-		drawer.setAdapter(new SafeProfileAdapter(this, drawerContent, drawerState));
+		sAdapter = new SafeProfileAdapter(this, drawerContent, drawerState);
+		drawer.setAdapter(sAdapter);
 
 		SafeProfileOnItemClickListener drawerListener = new SafeProfileOnItemClickListener();
 		drawer.setOnItemClickListener(drawerListener);
@@ -292,8 +298,10 @@ public class SafeProfileActivity extends FragmentActivity {
 			s_id.putString(Safe.P_SAFE_LID, safe_lid);
 
 			if (peer.getSK() != null) {
+				Log.d(TAG, "SafeProfileAct: onClick: hasSK");
 				switch (position) {
 				case SafeProfileActivity.SAFE_DRAWER_SK_SET_NAME: // 0
+					Log.d(TAG, "SafeProfileAct: onClick: position setName");
 					// update name dialog
 					UpdateSafeName nameDialog = new UpdateSafeName();
 					nameDialog.setArguments(s_id);
@@ -301,6 +309,7 @@ public class SafeProfileActivity extends FragmentActivity {
 					break;
 
 				case SafeProfileActivity.SAFE_DRAWER_SK_SET_MYSELF: // 1:
+					Log.d(TAG, "SafeProfileAct: onClick: position setMyself");
                     net.ddp2p.common.data.HandlingMyself_Peer
 							.setMyself_currentIdentity_announceDirs(peer, true,
 									false);
@@ -310,6 +319,7 @@ public class SafeProfileActivity extends FragmentActivity {
 					break;
 
 				case SafeProfileActivity.SAFE_DRAWER_SK_EXPORT_ADDR: // 2:
+					Log.d(TAG, "SafeProfileAct: onClick: position export Addr");
 					// update name dialog
 					SendPK sendPKDialog = new SendPK();
 					sendPKDialog.setArguments(s_id);
@@ -317,6 +327,7 @@ public class SafeProfileActivity extends FragmentActivity {
 					break;
 
 				case SafeProfileActivity.SAFE_DRAWER_SK_SELECT_DIRS: // 3:
+					Log.d(TAG, "SafeProfileAct: onClick: position select dirs");
 					Intent i = new Intent();
 					i.setClass(SafeProfileActivity.this,
 							SelectDirectoryServer.class);
@@ -324,12 +335,41 @@ public class SafeProfileActivity extends FragmentActivity {
 					break;
 
 				case SafeProfileActivity.SAFE_DRAWER_SK_SERVE: // 4
+				{
+					Log.d(TAG, "SafeProfileAct: onClick: position sk serve");
+					boolean served = peer.getBroadcastable();
+					Log.d(TAG, "SafeProfileAct: onClick: position served old=" + served);
+					D_Peer.setBroadcastable(peer, served = !served);
+					Toast.makeText(SafeProfileActivity.this, "Served = " + served, Toast.LENGTH_LONG).show();
+					drawerContent = prepareDrawer(hasSK);
+					sAdapter.setData(drawerContent);
+				}
+					break;
 				case SafeProfileActivity.SAFE_DRAWER_SK_SET_INSTANCE: // 5
+				{
+					Log.d(TAG, "SafeProfileAct: onClick: position set instance");
+					D_Peer p = D_Peer.getPeerByPeer_Keep(peer);
+					//p.addInstanceElem(instance, true);
+					p.makeNewInstance();
+					p.releaseReference();
+					break;
+				}
 				case SafeProfileActivity.SAFE_DRAWER_SK_HIDE_TOGGLE: // 6
+				{
+					boolean hidden = peer.getHidden();
+					Log.d(TAG, "SafeProfileAct: onClick: position hide old=" + hidden);
+					D_Peer.setHidden(peer, hidden = !hidden);
+					Toast.makeText(SafeProfileActivity.this, "Hidden = " + hidden, Toast.LENGTH_LONG).show();
+					drawerContent = prepareDrawer(hasSK);
+					sAdapter.setData(drawerContent);
+				}
+					break;
 				default:
+					Log.d(TAG, "SafeProfileAct: onClick: position default (not impl)");
 					break;
 				}
 			} else {
+				Log.d(TAG, "SafeProfileAct: onClick: no SK");
 				/*
 				switch (position) {
 				case SafeProfileActivity.SAFE_DRAWER____RESET_SYNC: // 0:
@@ -448,6 +488,8 @@ public class SafeProfileActivity extends FragmentActivity {
 			
 			drawerState[SAFE_DRAWER_SK_HIDE_TOGGLE] = this.peer.getHidden();
 			drawerState[SAFE_DRAWER_SK_SERVE] = this.peer.getBroadcastable();
+			if (drawerState[SAFE_DRAWER_SK_HIDE_TOGGLE]) drawer[SAFE_DRAWER_SK_HIDE_TOGGLE] = "UnHide This Safe";
+			if (drawerState[SAFE_DRAWER_SK_SERVE]) drawer[SAFE_DRAWER_SK_SERVE] = "Stop Serving This Safe";
 		}
 
 		if (! hasSafeSk) {
@@ -487,6 +529,11 @@ public class SafeProfileActivity extends FragmentActivity {
 			inflater = (LayoutInflater) activity
 					.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
+		}
+
+		public void setData(String[] _data) {
+			data = _data;
+			this.notifyDataSetChanged();
 		}
 
 		@Override

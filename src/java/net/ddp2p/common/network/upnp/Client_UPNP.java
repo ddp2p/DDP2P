@@ -569,7 +569,7 @@ public class Client_UPNP
         if( read > 0 )
         {
             logger.info("TCP Received data from "
-                + socket.getRemoteSocketAddress().toString() );
+                + socket.getRemoteSocketAddress() );
         }
 
         // Parse response (verify status code).

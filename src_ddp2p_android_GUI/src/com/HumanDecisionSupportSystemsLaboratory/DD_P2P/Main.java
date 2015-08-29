@@ -21,12 +21,15 @@ import java.io.File;
 import java.net.URLConnection;
 import java.util.ArrayList;
 
+import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.hds.PeerInput;
 import net.ddp2p.common.util.DDP2P_ServiceThread;
 import net.ddp2p.common.util.StegoStructure;
 import android.annotation.TargetApi;
 import android.app.ActionBar.TabListener;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.support.v4.app.DialogFragment;
 import android.app.FragmentTransaction;
@@ -45,6 +48,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v7.app.ActionBar;
@@ -78,7 +82,11 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 	final static int SELECT_PHOTO = 42;
 	final static int SELECT_PHOTO_KITKAT = 43;
 	final static int RESULT_ADD_PEER = 11;
+	final static int RESULT_ADD_ORG = 12;
+	final static int RESULT_SETTINGS = 13;
 	final static int RESULT_STARTUP_DIRS = 20;
+
+	final static String RESULT_ORG = "RESULT_ORG";
 
 	final static String DD_WIZARD_SKIP = "DD_WIZARD_SKIP";
 
@@ -300,7 +308,10 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		return v;
 	}
 	*/
+
+	boolean wizard_started = false;
 	public void askStartUp() {
+		wizard_started = true;
 		Log.d("Main", "Main:askStartUp: start");
 		// update name dialog
 		FragmentManager fm = getSupportFragmentManager();
@@ -310,6 +321,26 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		dialog.show(fm, "fragment_startup");
 		Log.d("Main", "Main:askStartUp: stop");
 	}
+	BroadcastReceiver resultReceiver;
+	final static public String BROADCAST_MAIN_RECEIVER = "net.ddp2p.local";
+	final static public String BROADCAST_PARAM_TOAST = "toast";
+	private BroadcastReceiver createBroadcastReceiver() {
+		return new BroadcastReceiver() {
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				String toast = intent.getStringExtra(Main.BROADCAST_PARAM_TOAST);
+				Toast.makeText(Main.this, toast, Toast.LENGTH_LONG).show();
+			}
+		};
+	}
+	@Override
+	protected void onDestroy() {
+		if (resultReceiver != null) {
+			LocalBroadcastManager.getInstance(this).unregisterReceiver(resultReceiver);
+		}
+		Log.d("Main", "Main: onDestroy: done");
+		super.onDestroy();
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -317,6 +348,9 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 
         {
 			Log.d("Main", "Main: onCreate: start");
+			resultReceiver = createBroadcastReceiver();
+			LocalBroadcastManager.getInstance(this).registerReceiver(resultReceiver, new IntentFilter(Main.BROADCAST_MAIN_RECEIVER));
+
             // Use intent in case the app was started by another app to send messages/images
             Intent intent = getIntent();
             if (intent != null) {
@@ -525,6 +559,14 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 			this.startActivityForResult(j, Main.RESULT_ADD_PEER);
 		}
 
+		if (item.getItemId() == R.id.add_new_org) {
+			Toast.makeText(this, "add a new organization", Toast.LENGTH_SHORT).show();
+
+			Intent intent = new Intent();
+			intent.setClass(this, AddOrg.class);
+			this.startActivityForResult(intent, Main.RESULT_ADD_ORG);
+		}
+
 		if (item.getItemId() == R.id.add_new_safe_my) {
             try {
                 DD.load_listing_directories();
@@ -566,15 +608,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 				startActivityForResult(intent, SELECT_PHOTO_KITKAT);
 			}
 		}
-		
-		if (item.getItemId() == R.id.add_new_org) {
-			Toast.makeText(this, "add a new organization", Toast.LENGTH_SHORT).show();
-			
-			Intent intent = new Intent();
-			intent.setClass(this, AddOrg.class);
-			startActivity(intent);
-		}
-		
+
 		if (item.getItemId() == R.id.action_directories) {
 			Toast.makeText(this, "adding a directory", Toast.LENGTH_SHORT).show();
 			
@@ -607,7 +641,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		if (item.getItemId() == R.id.action_settings) {		
 			Intent intent = new Intent();
 			intent.setClass(this, Setting.class);
-			startActivity(intent);
+			startActivityForResult(intent, RESULT_SETTINGS);
 		}
 		
 		return super.onOptionsItemSelected(item);
@@ -663,8 +697,10 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 	protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
 		Log.d("Main", "Main: onActivityResult: start r=" + resultCode+"vs(ok="+RESULT_OK+")" + " q=" + requestCode+"(ok=" + (requestCode&0x0FFFF) + ")");
 		if (resultCode != RESULT_OK) {
+			Log.d("Main", "oAR: result nok");
+			new ReloadSafe().execute();
 			super.onActivityResult(requestCode, resultCode, resultData);
-			Log.d("Main", "oAR: stop");
+			Log.d("Main", "oAR: result nok stop");
 			return;
 		}
 		switch (requestCode & 0x0FFFF) // string the fragment information which is in upper bits
@@ -715,8 +751,29 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 				}
 				super.onActivityResult(requestCode, resultCode, resultData);
 				Log.d("Main", "oAR: stop");
+			case RESULT_SETTINGS:
+			{
+				Log.d("Main", "Main: oCW: resultSettings hidden ="+Safe.SHOW_HIDDEN);
+				new ReloadSafe().execute();
+				super.onActivityResult(requestCode, resultCode, resultData);
+				return;
+			}
+			case RESULT_ADD_ORG:
+			{
+				byte[] _new_org = resultData.getByteArrayExtra(Main.RESULT_ORG);
+				D_Organization new_org = null;
+				if (_new_org != null) try {
+					new_org = D_Organization.getEmpty().decode(new Decoder(_new_org));
+					new OrgCreatingThread(new_org).start();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 
+				super.onActivityResult(requestCode, resultCode, resultData);
+				return;
+			}
 			case RESULT_ADD_PEER:
+
 			default:
 			{
 				byte[] _pi = resultData.getByteArrayExtra(AddSafe.PI);
@@ -735,9 +792,33 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		}
 	}
 
+	class OrgCreatingThread extends Thread {
+		D_Organization new_org;
 
+		OrgCreatingThread(D_Organization _org) {
+			new_org = _org;
+		}
 
+		public void run() {
+			D_Organization o = D_Organization.storeRemote(new_org, null);
 
+			if (! o.verifySignature()) {
+				Log.d("OrgCreatingThread", "AddOrg: OrgThread: bad signature after store hash=" + o);
+				Toast.makeText(null, "Bad Signature on Creation", Toast.LENGTH_SHORT).show();
+				return;
+			}
+			o = D_Organization.getOrgByOrg_Keep(o);
+			o.storeRequest_getID();
+			o.releaseReference();
+			Log.d("OrgCreatingThread", "AddOrg: OrgThread: got org=" + o);
+			Orgs.reloadOrgs();
+
+			//Message msgObj = handler.obtainMessage();
+			//handler.sendMessage(msgObj);
+			handler.sendMessage(handler.obtainMessage(Main.REFRESH_ORG));
+
+		}
+	}
 	class PeerCreatingThread extends Thread {
         PeerInput pi;
         final public String TAG = "PEER_ADD_TH";
@@ -794,14 +875,17 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
         }
 
     }
-	private void threadMsg(String msg) {
+	public void threadMsg(String msg) {
 		if (! msg.equals(null) && ! msg.equals("")) {
 			Log.d("Main", "add safe: threadMsg");
+/*
 			Message msgObj = handler.obtainMessage();
 			Bundle b = new Bundle();
 			b.putString("message", msg);
 			msgObj.setData(b);
 			handler.sendMessage(msgObj);
+			*/
+
 			Log.d("Main", "add safe: threadMsg finished");
 
 			handler.sendMessage(handler.obtainMessage(Main.REFRESH_ALL));
@@ -858,6 +942,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		Log.d("Main", "Main: refreshSafe setAdapter: quit");
 	}
 	final static int REFRESH_ALL = 10;
+	final static int REFRESH_ORG = 11;
 
     private final Handler handler = new Handler() {
         final static String TAG = "Main_Handler";
@@ -865,14 +950,19 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
         // Create handleMessage function
 
         public void handleMessage(Message msg) {
+			if (msg.what == Main.REFRESH_ORG) {
+				refreshOrg();
+				Log.d(TAG, "add org: handler");
+				Toast.makeText(Main.this, "Added a new organization successfully!", Toast.LENGTH_LONG).show();
+				return;
+			}
 
 			if (msg.what == Main.REFRESH_ALL) {
 				refreshOrg();
 			}
             //String aResponse = msg.getData().getString("message");
             Log.d(TAG, "add safe: handler");
-            Toast.makeText(Main.this, "Added a new safe successfully!", Toast.LENGTH_LONG).show();
-
+            //Toast.makeText(Main.this, "Added a new safe successfully!", Toast.LENGTH_LONG).show();
 		 	refreshSafe();
 
             /*
@@ -881,11 +971,23 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
             i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(i);
             */
+
+			if (wizard_started) {
+				wizard_started = false;
+
+				Intent intent = new Intent().setClass(getApplicationContext(), ImportBrowseWebObjects.class);
+				intent.putExtra(ImportBrowseWebObjects.PARAM_INSTRUCTION,
+						getText(R.string.import_web_object_instr));
+				startActivityForResult(intent, Main.RESULT_STARTUP_DIRS);
+			}
         }
     };
 	public class ReloadSafe extends AsyncTask<Void, Void, Void> {
 		@Override
 		protected Void doInBackground(Void... voids) {
+			Thread th = Thread.currentThread();
+			Log.d("MainCS", "Main: ReloadSafe:doInBack: start "+th.getName());
+			th.setName("Main:ReloadSafe");
 			Safe.loadPeer();
 			Orgs.reloadOrgs();
 
@@ -904,27 +1006,33 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 
 		@Override
 		protected Boolean doInBackground(Void... params) {
+			Thread th = Thread.currentThread();
+			Log.d("MainCS", "Main: CheckStartup:doInBack: start "+th.getName());
+			th.setName("Main:CheckStartUp");
 
 			ArrayList<ArrayList<Object>> peers = DDP2P_Service.startDDP2P(getApplicationContext());
 			try {
 				DD.load_listing_directories();
 			} catch (Exception e) {
 				e.printStackTrace();
-				Log.d("Main", "Main: CheckStartup:doInBack: fail to get dirs");
+				Log.d("MainCS", "Main: CheckStartup:doInBack: fail to get dirs");
 				return Boolean.TRUE;
 			}
 			String str = DD.getAppTextNoException("DD_WIZARD_SKIP");
-			if (str != null && !"".equals(str.trim())) return Boolean.TRUE;
+			if (str != null && !"".equals(str.trim())) {
+				Log.d("MainCS", "Main: CheckStartup:doInBack: str: "+str);
+				return Boolean.TRUE;
+			}
 
 			if ((Identity.getListing_directories_addr().size() > 0)) {
-				Log.d("Main", "Main: CheckStartup:doInBack: dir");
+				Log.d("MainCS", "Main: CheckStartup:doInBack: dir");
 				return Boolean.TRUE;
 			}
 			if (peers.size() > 0) {
-				Log.d("Main", "Main: CheckStartup:doInBack:  peers");
+				Log.d("MainCS", "Main: CheckStartup:doInBack:  peers");
 				return Boolean.TRUE;
 			}
-			Log.d("Main", "Main: CheckStartup:doInBack:wizzard");
+			Log.d("MainCS", "Main: CheckStartup:doInBack:wizzard");
 			return Boolean.FALSE;
 		}
 
