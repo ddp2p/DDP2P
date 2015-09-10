@@ -20,32 +20,23 @@
  package net.ddp2p.widgets.constituent;
 import javax.swing.*;
 import javax.swing.tree.*;
-import javax.swing.event.*;
 
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.*;
-import java.awt.*;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
 
 import static net.ddp2p.common.util.Util.__;
 
 import javax.swing.AbstractCellEditor;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JDialog;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JTextField;
 import javax.swing.JTree;
-import javax.swing.UIManager;
 import javax.swing.WindowConstants;
-import javax.swing.plaf.basic.BasicComboBoxRenderer;
 
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
@@ -56,12 +47,8 @@ import net.ddp2p.widgets.components.DDCountrySelector;
 import net.ddp2p.widgets.components.DDLanguageSelector;
 import net.ddp2p.widgets.components.DDTranslation;
 import net.ddp2p.widgets.components.DivisionSelector;
-import net.ddp2p.widgets.components.IconedItem;
-import net.ddp2p.widgets.components.JTextFieldIconed;
-import net.ddp2p.widgets.components.LabelRenderer;
 import net.ddp2p.widgets.components.LanguageItem;
 import net.ddp2p.widgets.components.Translation;
-import util.*;
 
 class NeighborhoodRegistration extends JPanel{
 	GridBagConstraints c = new GridBagConstraints();

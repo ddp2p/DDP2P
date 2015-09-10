@@ -40,6 +40,7 @@ import net.ddp2p.common.hds.PeerInput;
 import net.ddp2p.common.util.DDP2P_ServiceRunnable;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+import net.ddp2p.tools.Directories;
 import net.ddp2p.widgets.app.ControlPane;
 import net.ddp2p.widgets.app.JFrameDropCatch;
 import net.ddp2p.widgets.app.MainFrame;
@@ -52,7 +53,6 @@ import net.ddp2p.widgets.peers.CreatePeer;
 import net.ddp2p.widgets.peers.DataHashesPanel;
 import net.ddp2p.widgets.peers.PeerContacts;
 import net.ddp2p.widgets.updates.UpdatesPanel;
-import tools.Directories;
 
 public class GUI_Swing implements Vendor_GUI_Dialogs {
 

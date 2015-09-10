@@ -13,14 +13,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 
 import net.ddp2p.common.config.Application;
-import net.ddp2p.common.data.D_Witness;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
-import util.*;
 //Assumption: A constituent can only have one witness stance against another constituent.
 class witnessGraph extends JFrame{
 	int allID=0, trueId=0,falseID=0,tieID=0;

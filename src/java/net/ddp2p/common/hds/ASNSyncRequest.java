@@ -777,7 +777,7 @@ public class ASNSyncRequest extends ASNObj implements Summary {
 	@Deprecated
 	public String[] tableNames;
 	public OrgFilter[] orgFilter;
-	public SpecificRequest request;
+	public SpecificRequest request;  // GIDs I want to get
 	public D_PluginData plugin_msg;
 	public ASNPluginInfo plugin_info[];
 	public D_Peer address=null; //requester

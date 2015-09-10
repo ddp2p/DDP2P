@@ -18,37 +18,10 @@
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 /* ------------------------------------------------------------------------- */
  package net.ddp2p.widgets.components;
-import javax.swing.*;
-import javax.swing.tree.*;
-import javax.swing.event.*;
-
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.event.*;
-import java.awt.*;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
 
-import static net.ddp2p.common.util.Util.__;
-
-import javax.swing.AbstractCellEditor;
-import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JTextField;
-import javax.swing.JTree;
-import javax.swing.UIManager;
-import javax.swing.WindowConstants;
-import javax.swing.plaf.basic.BasicComboBoxRenderer;
-
-import net.ddp2p.common.util.Util;
-import util.*;
 
 public
 class DDCountrySelector extends JComboBox  implements ActionListener{

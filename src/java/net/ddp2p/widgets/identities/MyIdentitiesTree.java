@@ -34,7 +34,6 @@ import javax.swing.event.*;
 import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.widgets.app.Util_GUI;
-import util.*;
 import static net.ddp2p.common.util.Util.__;
 
 class MyIdentitiesTreeCellRenderer extends DefaultTreeCellRenderer {

@@ -37,8 +37,9 @@ net/ddp2p/ASN1/*.java  net/ddp2p/ciphersuits/*.java  net/ddp2p/common/config/*.j
 	-cd scripts; $(MAKE) $(MFLAGS)
 
 translations:
-	msgcat --properties-output messages.po >DebateDecide.properties
+	#msgcat --properties-output messages.po >DebateDecide.properties
 	msgcat --properties-output ./translations_path/ro_RO/LC_MESSAGES/DebateDecide.po >DebateDecide_ro.properties
+	msgcat --properties-output ./translations_path/ar_SA/LC_MESSAGES/DebateDecide.po >DebateDecide_ar.properties
 
 force_look :
 	true

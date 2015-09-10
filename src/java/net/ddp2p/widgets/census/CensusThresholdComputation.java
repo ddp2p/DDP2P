@@ -22,12 +22,10 @@ package net.ddp2p.widgets.census;
 import java.util.ArrayList;
 
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
-import util.*;
 
 
 @SuppressWarnings("serial")

@@ -82,7 +82,7 @@ public class ASNSyncPayload extends ASNObj{
 	public ASNPluginInfo plugins[]; //AC11 OPTIONAL
 	//ASNPluginData plugin_data[]; //AC12 OPTIONAL
 	public D_PluginData plugin_data_set; //AC12 OPTIONAL
-	public WB_Messages requested;
+	public WB_Messages requested; // the data requested in a previous ASNSyncRequest
 	public ArrayList<String> dictionary_GIDs =  new ArrayList<String>();
 	
 	public SpecificRequest advertised;   // the GIDhash of all data that I have upToDate (from last_sync_Date), grouped by org
