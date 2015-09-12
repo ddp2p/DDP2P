@@ -47,6 +47,7 @@ import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
 
+import net.ddp2p.common.data.DDTranslation;
 import net.ddp2p.common.util.Util;
 
 public class DDLanguageSelector extends JComboBox{

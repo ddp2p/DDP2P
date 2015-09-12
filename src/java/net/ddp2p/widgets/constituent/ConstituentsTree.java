@@ -31,6 +31,10 @@ import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Witness;
+import net.ddp2p.common.population.ConstituentsAddressNode;
+import net.ddp2p.common.population.ConstituentsBranch;
+import net.ddp2p.common.population.ConstituentsIDNode;
+import net.ddp2p.common.population.ConstituentsPropertyNode;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.app.MainFrame;
@@ -66,7 +70,7 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
     	ip = (ConstituentsPropertyNode)value;
     	setToolTipText(ip.getTip());   
     	if(ip!=null){
-    		setText(ip.property.label+":"+ip.toString());
+    		setText(ip.getProperty().label+":"+ip.toString());
     	}
     }
     public void getTreeCellRendererComponentCAN(Object value){
@@ -74,9 +78,9 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 	    	ib = (ConstituentsAddressNode)value;
 	    	setToolTipText(ib.getTip());
 	    	
-	    	if((ib!=null) && (ib.location!=null)){
-	    		String ibvalue = ib.location.value;
-	    		boolean censused = ib.location.censusDone;
+	    	if((ib!=null) && (ib.getLocation()!=null)){
+	    		String ibvalue = ib.getLocation().value;
+	    		boolean censused = ib.getLocation().censusDone;
 	    		if(ibvalue==null){
 	    			ibvalue=__("Unspecified Yet!");
 //	    			System.out.println("ConstituentsTree:Constituent node missing for: "+ib);
@@ -90,9 +94,9 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 	    		String str = "<html>"+ibvalue+
 	    		(censused?
 	    		    (" <img src='"+DDIcons.getResourceURL(DDIcons.I_NEIGHS19)+"' style='vertical-align: middle;' align='middle' title='"+__("Neighborhoods")+"'>"+
-	    			ib.neighborhoods+
+	    			ib.getNeighborhoods()+
 	    			" <img src='"+DDIcons.getResourceURL(DDIcons.I_INHAB19)+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>"+
-	    			ib.location.inhabitants):""
+	    			ib.getLocation().inhabitants):""
 	    			)+
 	    			"</html>";
 	    		//String str = "<html>"+ib.location.value+" <img src='file:icons/neighs19.gif'>"+" "+
@@ -113,9 +117,9 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
      */
  	public void getTreeCellRendererComponentCIN(Object value){
 	    		ConstituentsIDNode il = (ConstituentsIDNode)value;
-	    		String name = il.constituent.surname;
-	    		if (name == null) name = il.constituent.given_name;
-	    		else if(il.constituent.given_name != null) name+=", "+il.constituent.given_name;
+	    		String name = il.getConstituent().surname;
+	    		if (name == null) name = il.getConstituent().given_name;
+	    		else if(il.getConstituent().given_name != null) name+=", "+il.getConstituent().given_name;
 	    		String color="", fgcolor="", sfg="", sbg="";
 	    		/*
 	    		if((il.constituent.witnessed_by_me==1)){
@@ -133,35 +137,35 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 	    			sfg = " style='color:Blue;'" ;
 	    		}
 	    		*/
-	    		if (il.constituent.external) {
+	    		if (il.getConstituent().external) {
 	    			fgcolor=" fgcolor='Blue'";
 	    			sfg = " style='color:Blue;'" ;
 	    		}
-	    		if ((il.constituent.witnessed_by_me==D_Witness.UNKNOWN)&&(!il.constituent.external)){
+	    		if ((il.getConstituent().witnessed_by_me==D_Witness.UNKNOWN)&&(!il.getConstituent().external)){
 	    			color=" bgcolor='#F0E68C'"; // khaki
 	    			sbg = " style='background-color:#F0E68C;'";
 	    		}
-	    		if((il.constituent.witnessed_by_me==D_Witness.FAVORABLE)&&(!il.constituent.external)){
+	    		if((il.getConstituent().witnessed_by_me==D_Witness.FAVORABLE)&&(!il.getConstituent().external)){
 	    			color=" bgcolor='#7FFFD4'"; // Aquamarine
 	    			sbg = " style='background-color:#7FFFD4;'";
 	    		}
-	    		if((il.constituent.witnessed_by_me==D_Witness.UNFAVORABLE)&&(!il.constituent.external)){
+	    		if((il.getConstituent().witnessed_by_me==D_Witness.UNFAVORABLE)&&(!il.getConstituent().external)){
 	    			color=" bgcolor='#EE82EE'"; // Violet
 	    			sbg = " style='background-color:EE82EE;'";
 	    		}
-	    		if((il.constituent.witnessed_by_me==D_Witness.UNKNOWN)&&(il.constituent.external)){
+	    		if((il.getConstituent().witnessed_by_me==D_Witness.UNKNOWN)&&(il.getConstituent().external)){
 	    			color=" fgcolor='Blue' bgcolor='#F0E68C'"; // khaki
 	    			sbg = " style='background-color:#F0E68C;color:Blue;'";
 	    		}
-	    		if((il.constituent.witnessed_by_me==D_Witness.FAVORABLE)&&(il.constituent.external)){
+	    		if((il.getConstituent().witnessed_by_me==D_Witness.FAVORABLE)&&(il.getConstituent().external)){
 	    			color=" fgcolor='Blue' bgcolor='#7FFFD4'"; // Aquamarine
 	    			sbg = " style='background-color:#7FFFD4;color:Blue;'";
 	    		}
-	    		if((il.constituent.witnessed_by_me==D_Witness.UNFAVORABLE)&&(il.constituent.external)){
+	    		if((il.getConstituent().witnessed_by_me==D_Witness.UNFAVORABLE)&&(il.getConstituent().external)){
 	    			color=" fgcolor='Blue' bgcolor='EE82EE'"; //Violet
 	    			sbg = " style='background-color:EE82EE;color:Blue;'";
 	    		}
-	    		if(il.constituent.myself==1){
+	    		if(il.getConstituent().myself==1){
 	    			color=" bgcolor='Red'";
 	    			sbg = " style='background-color:Red;'";
 	    			fgcolor=""; sfg="";
@@ -173,24 +177,27 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 	    		//if(_DEBUG) System.err.println("ConstituentsTree:getTreeCellRendererComponentCIN up="+up);
 	    		//if(_DEBUG) System.err.println("ConstituentsTree:getTreeCellRendererComponentCIN down="+down);
 	    		String str = "<html><body"+color+fgcolor+sfg+sbg+">"+
-	    				(il.constituent.blocked?(" <img src='"+block+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>"):("")) +
-	    				(il.constituent.broadcast?(""):(" <img src='"+broadcast+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>")) +
+	    				(il.getConstituent().blocked?(" <img src='"+block+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>"):("")) +
+	    				(il.getConstituent().broadcast?(""):(" <img src='"+broadcast+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>")) +
 	    			name +
 	    			//((!il.constituent.external && (il.constituent.email!=null))?("&lt;"+il.constituent.email+"&gt;"):"")+
 	    			" <img src='"+up+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>"+
-	    			il.constituent.witness_for+
+	    			il.getConstituent().witness_for+
 	    			" <img src='"+down+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>"+
-	    			il.constituent.witness_against+	 
-	    			((!il.constituent.external && (il.constituent.slogan!=null))?" <span style='background-color:yellow'>"+il.constituent.slogan+"</span>":"")+
+	    			il.getConstituent().witness_against+	 
+	    			((!il.getConstituent().external && (il.getConstituent().getSlogan()!=null))?" <span style='background-color:yellow'>"+il.getConstituent().getSlogan()+"</span>":"")+
 	    			"</body></html>";
 	    		//System.err.println(str);
 	    		setText(str);
 				//setIcon(getDefaultLeafIcon());
 				//setIcon(getDefaultClosedIcon());
-				if(il.constituent.icon==null){
+				if (il.getConstituent().icon == null) {
 					setIcon(anonym);
-				}else
-					setIcon(il.constituent.icon);
+				}else{
+					Object icon = il.getConstituent().icon;
+					if (icon instanceof Icon)
+						setIcon((Icon) icon);
+				}
 				setToolTipText(il.getTip());
     }
 }
@@ -395,16 +402,16 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
 		if (target != null && target instanceof ConstituentsIDNode) {
 			if (_DEBUG) System.out.println("ConstituentTree: preparePopup: target");
 			ConstituentsIDNode cid = (ConstituentsIDNode) target;
-			if (cid.constituent != null) {
-				if (cid.constituent.constituent == null) {
-					cid.constituent.constituent = D_Constituent.getConstByLID(cid.constituent.constituentID, true, false);
+			if (cid.getConstituent() != null) {
+				if (cid.getConstituent().constituent == null) {
+					cid.getConstituent().constituent = D_Constituent.getConstByLID(cid.getConstituent().getC_LID(), true, false);
 				}
-				if (cid.constituent.constituent != null) {
-					broadcasted = cid.constituent.constituent.broadcasted;
-					blocked = cid.constituent.constituent.blocked;
+				if (cid.getConstituent().constituent != null) {
+					broadcasted = cid.getConstituent().constituent.broadcasted;
+					blocked = cid.getConstituent().constituent.blocked;
 					if (_DEBUG) System.out.println("ConstituentTree: preparePopup: target cid "+broadcasted);
 				} else {
-					if (_DEBUG) System.out.println("ConstituentTree: preparePopup: target null cid "+cid.constituent);
+					if (_DEBUG) System.out.println("ConstituentTree: preparePopup: target null cid "+cid.getConstituent());
 				}
 			}
 		}
@@ -542,8 +549,8 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
 		if(obj instanceof ConstituentsBranch) {
 	    	ConstituentsBranch branch = (ConstituentsBranch)obj;
 	    	branch.populate();
-	    	if (branch.nchildren==0){
-	    		branch.nchildren = 1;
+	    	if (branch.getNchildren()==0){
+	    		branch.setNchildren(1);
 	    		if(DEBUG) System.err.println("ConstituentsTree:treeWillExpand: Veto expansion of: "+branch);
 	    		throw new ExpandVetoException(new TreeExpansionEvent(this,tp),"No child!");
 	    	}

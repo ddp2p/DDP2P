@@ -18,19 +18,20 @@
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 /* ------------------------------------------------------------------------- */
  package net.ddp2p.widgets.components;
-import java.io.File;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 
 import javax.swing.ImageIcon;
 
+import net.ddp2p.common.config.Language;
+import net.ddp2p.common.data.DDTranslation;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.DDIcons;
 
 
 public
-class Translation implements IconedItem{
+class Translation implements IconedItem {
 	public static String DEFAULT_TEXT_LANG = "en";
 	String original;
 	String text;
@@ -68,6 +69,15 @@ class Translation implements IconedItem{
 		this.text = text;
 		this.lang = Translation.DEFAULT_TEXT_LANG;
 		this.flavor = null;
+	}
+	public static Translation translated(String source, Language from) {
+		ArrayList<ArrayList<Object>> sel =
+			DDTranslation.translates(source, from);
+		if (sel == null) return new Translation(source,null,null,source);
+		return new Translation(Util.sval(sel.get(0).get(0),""),
+				Util.sval(sel.get(0).get(1),""),
+				Util.sval(sel.get(0).get(2),""),
+				source);
 	}
 	public String getOriginal(){return (original==null)?text:original;}
 	public static String getTip(String ietf){

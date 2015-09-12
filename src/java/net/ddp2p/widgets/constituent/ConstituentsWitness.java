@@ -32,6 +32,7 @@ import javax.swing.tree.*;
 import javax.swing.event.*;
 
 import net.ddp2p.common.data.D_Witness;
+import net.ddp2p.common.population.ConstituentsIDNode;
 import net.ddp2p.widgets.app.Util_GUI;
 
 public class ConstituentsWitness extends JDialog {

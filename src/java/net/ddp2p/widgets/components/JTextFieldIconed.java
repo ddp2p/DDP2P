@@ -33,6 +33,8 @@ import javax.swing.border.Border;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import net.ddp2p.common.data.DDTranslation;
+
 
 public
 class JTextFieldIconed  extends JTextField implements ComboBoxEditor,/* ActionListener,*/ DocumentListener {

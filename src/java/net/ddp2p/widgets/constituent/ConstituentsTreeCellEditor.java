@@ -41,11 +41,15 @@ import javax.swing.WindowConstants;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.Language;
+import net.ddp2p.common.data.DDTranslation;
+import net.ddp2p.common.population.ConstituentsAddressNode;
+import net.ddp2p.common.population.ConstituentsIDNode;
+import net.ddp2p.common.population.ConstituentsPropertyNode;
+import net.ddp2p.common.population.Constituents_NeighborhoodData;
 import net.ddp2p.widgets.app.Util_GUI;
 import net.ddp2p.widgets.components.Country;
 import net.ddp2p.widgets.components.DDCountrySelector;
 import net.ddp2p.widgets.components.DDLanguageSelector;
-import net.ddp2p.widgets.components.DDTranslation;
 import net.ddp2p.widgets.components.DivisionSelector;
 import net.ddp2p.widgets.components.LanguageItem;
 import net.ddp2p.widgets.components.Translation;
@@ -143,7 +147,7 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
 		       	if(DEBUG)System.out.println("ok actionPerformed: "+evt);
 				dialog.setVisible(false);
 				
-				nd=new NeighborhoodData();
+				nd=new Constituents_NeighborhoodData();
 				nd.name_lang=new Language(null,null);
 				nd.name_division_lang=new Language(null,null);
 				nd.name_subdivisions_lang=new Language(null,null);
@@ -162,7 +166,7 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
 		dialog.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
 		dialog.validate();
 	}
-	NeighborhoodData nd=null;
+	Constituents_NeighborhoodData nd=null;
 	//@Override
 	public Object getCellEditorValue() {
 		if(DEBUG)System.out.println("getValue: "+nd);//+" data="+data);
@@ -193,24 +197,24 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
 			in_leaf = false;
 			nd = null;//node.n_data;
 			panel.init();
-			panel.divisionEditor.init(model.subdivisions,
-					((ConstituentsAddressNode)node.parent).n_data.names_subdivisions,
-					((ConstituentsAddressNode)node.parent).n_data.name_subdivisions_lang);
-			panel.divisionEditor.setSelectedItem(DDTranslation.translate(node.n_data.name_division,
-					node.n_data.name_division_lang));
-			panel.subdivisionsEditor.setText(node.n_data.names_subdivisions);
-			panel.nameEditor.setText(node.n_data.name);
-			if(node.n_data.name_lang!=null) {
-				panel.nameLanguageSelector.setChoice(node.n_data.name_lang.lang);
-				panel.nameCountrySelector.setChoice(node.n_data.name_lang.flavor);
+			panel.divisionEditor.init(model.getSubDivisions(),
+					((ConstituentsAddressNode)node.getParent()).getNeighborhoodData().names_subdivisions,
+					((ConstituentsAddressNode)node.getParent()).getNeighborhoodData().name_subdivisions_lang);
+			panel.divisionEditor.setSelectedItem(DDTranslation.translate(node.getNeighborhoodData().name_division,
+					node.getNeighborhoodData().name_division_lang));
+			panel.subdivisionsEditor.setText(node.getNeighborhoodData().names_subdivisions);
+			panel.nameEditor.setText(node.getNeighborhoodData().name);
+			if(node.getNeighborhoodData().name_lang!=null) {
+				panel.nameLanguageSelector.setChoice(node.getNeighborhoodData().name_lang.lang);
+				panel.nameCountrySelector.setChoice(node.getNeighborhoodData().name_lang.flavor);
 			}
-			if(node.n_data.name_division_lang!=null) {
-				panel.divisionLanguageSelector.setChoice(node.n_data.name_division_lang.lang);
-				panel.divisionCountrySelector.setChoice(node.n_data.name_division_lang.flavor);
+			if(node.getNeighborhoodData().name_division_lang!=null) {
+				panel.divisionLanguageSelector.setChoice(node.getNeighborhoodData().name_division_lang.lang);
+				panel.divisionCountrySelector.setChoice(node.getNeighborhoodData().name_division_lang.flavor);
 			}
-			if(node.n_data.name_subdivisions_lang!=null) {
-				panel.subdivisionsLanguageSelector.setChoice(node.n_data.name_subdivisions_lang.lang);
-				panel.subdivisionsCountrySelector.setChoice(node.n_data.name_subdivisions_lang.flavor);
+			if(node.getNeighborhoodData().name_subdivisions_lang!=null) {
+				panel.subdivisionsLanguageSelector.setChoice(node.getNeighborhoodData().name_subdivisions_lang.lang);
+				panel.subdivisionsCountrySelector.setChoice(node.getNeighborhoodData().name_subdivisions_lang.flavor);
 			}
 			dialog.pack();
 			return button;
@@ -237,8 +241,8 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
      		TreePath selPath = tree.getPathForLocation(mouseEvent.getX(), mouseEvent.getY());
      		if(!(selPath.getLastPathComponent() instanceof ConstituentsAddressNode)) return false;
      		ConstituentsAddressNode node = (ConstituentsAddressNode) selPath.getLastPathComponent();
-     		if((node.n_data==null)||(node.n_data.neighborhoodID<0)) return false;
-      		if(node.n_data.global_nID == null)	return true;
+     		if((node.getNeighborhoodData()==null)||(node.getNeighborhoodData().neighborhoodID<0)) return false;
+      		if(node.getNeighborhoodData().global_nID == null)	return true;
       		else{
       			if(DD.EDIT_VIEW_UNEDITABLE_NEIGHBORHOODS)
       				Application_GUI.warning(__("Cannot edit signed neighborhoods! Create a new one."), __("Not editable"));

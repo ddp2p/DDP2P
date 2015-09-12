@@ -1,6 +1,8 @@
 package net.ddp2p.common.config;
 
 
+import net.ddp2p.ciphersuits.Cipher;
+import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Peer;
@@ -52,4 +54,6 @@ public interface Vendor_GUI_Dialogs {
 	public void inform_arrival(Object obj, D_Peer source);
 	public boolean playThanks();
 	// public boolean clipboardCopy();
+	public SK getCrtIdentityKeys();
+	public Cipher getCrtIdentityCipher();
 }

@@ -30,13 +30,13 @@ import javax.swing.JTree;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Language;
 import net.ddp2p.common.config.OrgListener;
+import net.ddp2p.common.data.DDTranslation;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.MainFrame;
-import net.ddp2p.widgets.components.DDTranslation;
 import static net.ddp2p.common.util.Util.__;
 
 import java.awt.BorderLayout;

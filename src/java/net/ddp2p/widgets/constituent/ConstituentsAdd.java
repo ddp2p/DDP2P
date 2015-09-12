@@ -46,6 +46,7 @@ import net.ddp2p.common.data.D_Document;
 import net.ddp2p.common.data.D_Neighborhood;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Witness;
+import net.ddp2p.common.population.ConstituentsAddressNode;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.MainFrame;
 import net.ddp2p.widgets.app.Util_GUI;
@@ -698,11 +699,11 @@ public class ConstituentsAdd extends JDialog {
 		model = (ConstituentsModel) _tree.getModel();
 		tp = _tp;
 		ConstituentsAddressNode can = (ConstituentsAddressNode)tp.getLastPathComponent();
-		if(DEBUG) System.out.println("ConstituentAdd: Extending: "+can+" level="+can.level);
+		if(DEBUG) System.out.println("ConstituentAdd: Extending: "+can+" level="+can.getLevel());
 		long lastPN = -1;
 		int cnt_subdivisions = -1;
-		String subdivisions = can.n_data.names_subdivisions;
-		Language sub_lang = can.n_data.name_subdivisions_lang;
+		String subdivisions = can.getNeighborhoodData().names_subdivisions;
+		Language sub_lang = can.getNeighborhoodData().name_subdivisions_lang;
 		// If subdivisions are  present, then use them rather than field_extra
 		String sub_divisions[]=null;
 		if(DEBUG)System.out.println("ConstituentAdd: subdivisions="+subdivisions);
@@ -730,11 +731,11 @@ public class ConstituentsAdd extends JDialog {
 			
 			if(DEBUG)System.out.println("ConstituentAdd: _ sub_divisions="+Util.concat(sub_divisions,":"));
 		}
-		if((sub_divisions==null)&&can.n_data.neighborhoodID>0){
+		if((sub_divisions==null)&&can.getNeighborhoodData().neighborhoodID>0){
 			sub_divisions=new String[0];
 			cnt_subdivisions = 0;
 		}
-		if(can.location!=null) lastPN = can.location.partNeigh;//can.location.fieldID;
+		if(can.getLocation()!=null) lastPN = can.getLocation().partNeigh;//can.location.fieldID;
 		/**
 		 * Here we create and initialize the static fields in the panel, like:
 		 *  - name, weight, crypto-system, cipher-sizes
@@ -742,7 +743,7 @@ public class ConstituentsAdd extends JDialog {
 		static_rows = initStaticFields();
 		
 		// If current neighborhood has explicit subdivisions, disregard neighborhood extra-fields
-		if((sub_divisions==null)||(can.parent==null)) { // non-explicit subdivisions
+		if((sub_divisions==null)||(can.getParent()==null)) { // non-explicit subdivisions
 			if(DEBUG)System.out.println("ConstituentAdd: neigh+non-neigh: null sub="+sub_divisions);
 			initDynamicFields(static_rows,lastPN);
 		}else{ // explicit sub-divisions
@@ -752,19 +753,19 @@ public class ConstituentsAdd extends JDialog {
 			int array_sizes = cnt_subdivisions+fe.size();
 			initArrays(array_sizes); // space for remaining neigh and others
 			if(DEBUG)System.out.println("ConstituentAdd: arrays="+array_sizes+" fe_size="+fe.size()+
-					" can.fields="+Util.concat(can.fieldIDs,":","null"));
+					" can.fields="+Util.concat(can.getFieldIDs(),":","null"));
 			if(lastPN < cnt_subdivisions) lastPN=sub_divisions.length;
 			for(int i=0;i<cnt_subdivisions;i++) {
 				int ii = i+1; // the actual subdivision considered (starting at 1)
 				int k= cnt_subdivisions -1 -i; // from the smallest subdivision, backwards in arrays
-				int new_fieldID_idx = can.fieldIDs.length-cnt_subdivisions+i;//can.level+i; // idx in field_extra_id
-				if((new_fieldID_idx<0)||(new_fieldID_idx>=can.fieldIDs.length)) new_fieldID_idx = 0; //fail grace?
+				int new_fieldID_idx = can.getFieldIDs().length-cnt_subdivisions+i;//can.level+i; // idx in field_extra_id
+				if((new_fieldID_idx<0)||(new_fieldID_idx>=can.getFieldIDs().length)) new_fieldID_idx = 0; //fail grace?
 				if(DEBUG) System.out.println("ConstituentAdd: sub="+i+".."+k+"="+sub_divisions[ii]+"\" idx="+new_fieldID_idx);
 				can_be_provided_later[k]=false;
 				required[k]=true;
 				certificated[k]=true;
 				entry_size[k]=50;
-				fieldID[k]=can.fieldIDs[new_fieldID_idx];
+				fieldID[k]=can.getFieldIDs()[new_fieldID_idx];
 				label[k]=sub_divisions[i+1];
 				partNeigh[k]=(int)lastPN-i-1;
 				label_lang[k]=sub_lang.lang;

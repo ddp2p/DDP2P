@@ -54,6 +54,7 @@ import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.Language;
+import net.ddp2p.common.data.DDTranslation;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Translations;

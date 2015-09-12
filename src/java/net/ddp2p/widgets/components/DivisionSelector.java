@@ -23,6 +23,7 @@ import java.awt.event.*;
 import javax.swing.JComboBox;
 
 import net.ddp2p.common.config.Language;
+import net.ddp2p.common.data.DDTranslation;
 
 /**
  * Implement the selection & editing of Neighborhood subdivisions
@@ -56,7 +57,7 @@ class DivisionSelector extends JComboBox{
 		String[]splits = divisions.split(":");
 		//for(int k=1;k<splits.length;k++) addItem(DDTranslation.translate(splits[k],lang));
 		for(int k=1;k<splits.length;k++)
-			addItem(DDTranslation.translated(splits[k],lang));
+			addItem(Translation.translated(splits[k],lang));
 		//addItem(new Translation(DDTranslation.translate(splits[k],lang),lang.lang,lang.flavor,splits[k]));
 	}
 	public Object getSelectedItem(){

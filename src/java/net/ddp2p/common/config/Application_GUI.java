@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Hashtable;
 
+import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Organization;
@@ -293,6 +294,16 @@ public class Application_GUI {
 			SK myPeerSK, Hashtable<Object, Object> ctx) {
 		if (dbmail == null) return null;
 		return dbmail.getWSVersionInfo(_url, myPeerGID, myPeerSK, ctx);
+	}
+
+	public static SK getCrtIdentityKeys() {
+		if (gui == null) return null;
+		return gui.getCrtIdentityKeys();
+	}
+
+	public static Cipher getCrtIdentityCipher() {
+		if (gui == null) return null;
+		return gui.getCrtIdentityCipher();
 	}
 
 	/*

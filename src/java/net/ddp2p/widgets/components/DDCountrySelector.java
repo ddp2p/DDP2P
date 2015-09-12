@@ -23,6 +23,8 @@ import java.util.*;
 
 import javax.swing.JComboBox;
 
+import net.ddp2p.common.data.DDTranslation;
+
 public
 class DDCountrySelector extends JComboBox  implements ActionListener{
 	private static final boolean _DEBUG = true;

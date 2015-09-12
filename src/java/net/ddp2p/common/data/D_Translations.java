@@ -20,7 +20,6 @@
 
 package net.ddp2p.common.data;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -32,10 +31,6 @@ import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.hds.ASNSyncPayload;
-import net.ddp2p.common.streaming.ConstituentHandling;
-import net.ddp2p.common.streaming.JustificationHandling;
-import net.ddp2p.common.streaming.MotionHandling;
-import net.ddp2p.common.streaming.OrgHandling;
 import net.ddp2p.common.streaming.RequestData;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;

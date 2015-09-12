@@ -17,16 +17,13 @@
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 /* ------------------------------------------------------------------------- */
-package net.ddp2p.widgets.constituent;
+package net.ddp2p.common.population;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 
 import static net.ddp2p.common.util.Util.__;
 
-import javax.swing.event.TreeModelEvent;
-
-import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Neighborhood;
@@ -34,18 +31,22 @@ import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 
 public
-class ConstituentsCensus extends Thread {
+class ConstituentsCensus extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	public ConstituentsAddressNode root;
-	public ConstituentsModel model, done_model;
+	//public ConstituentsModel model, done_model;
+	public ConstituentsInterfaceInput model;
+	public ConstituentsInterfaceDone done_model;
 	boolean running = true;
-	public ConstituentsCensus(ConstituentsModel constituentsModel,
+	public ConstituentsCensus(ConstituentsInterfaceInput constituentsModel, ConstituentsInterfaceDone done,
 			ConstituentsAddressNode _root) {
-		done_model = model = constituentsModel;
+		super("ConstituentsCensus", true);
+		done_model =  done;
+		model = constituentsModel;
 		root = _root;
 	}
-	public void run() {
+	public void _run() {
 		if(DEBUG) System.err.println("ConstituentsModel:run: start");
 		long result = 0;
 		try {
@@ -62,13 +63,13 @@ class ConstituentsCensus extends Thread {
 		if(DEBUG) System.err.println("ConstituentsModel:censusRoot: start");
 		long result = 0;
 		if(root==null) return 0;
-		if(root.children == null) return 0;
-		for(int k=0; k<root.children.length; k++) {
+		if(root.getChildren() == null) return 0;
+		for(int k=0; k<root.getChildren().length; k++) {
 			if(!running){
 				if(DEBUG) System.err.println("ConstituentsModel:censusRoot: end abandon");
 				return 0;
 			}
-			ConstituentsNode crt = root.children[k];
+			ConstituentsNode crt = root.getChildren()[k];
 			if(crt instanceof ConstituentsAddressNode) 
 				result += census((ConstituentsAddressNode)crt);
 			if(crt instanceof ConstituentsIDNode)
@@ -85,11 +86,11 @@ class ConstituentsCensus extends Thread {
 	 */
 	private long census(ConstituentsAddressNode crt) throws P2PDDSQLException {
 		if(DEBUG) System.err.println("ConstituentsModel:census: start");
-		if((crt==null)||(crt.n_data==null)){
+		if((crt==null)||(crt.getNeighborhoodData()==null)){
 			if(DEBUG) System.err.println("ConstituentsModel:census: end no ID");
 			return 0;
 		}
-		long n_ID = crt.n_data.neighborhoodID;
+		long n_ID = crt.getNeighborhoodData().neighborhoodID;
 		if(DEBUG) System.err.println("ConstituentsModel:census: start nID="+n_ID);
 		if(n_ID <= 0){
 			if(DEBUG) System.err.println("ConstituentsModel:census: start nID="+n_ID+" abandon");		
@@ -104,12 +105,12 @@ class ConstituentsCensus extends Thread {
 			if(DEBUG) System.err.println("ConstituentsModel:census: this is colapsed");
 			result = censusColapsed(crt, neighborhoods);
 		}else{
-			for(int k=0; k<crt.children.length; k++) {
+			for(int k=0; k<crt.getChildren().length; k++) {
 				if(!running){
 					if(DEBUG) System.err.println("ConstituentsModel:census: start nID="+n_ID+" abandon request");		
 					return 0;
 				}
-				ConstituentsNode child = crt.children[k];
+				ConstituentsNode child = crt.getChildren()[k];
 				if(child instanceof ConstituentsAddressNode)  {
 					result += census((ConstituentsAddressNode)child);
 					neighborhoods[0]++;
@@ -119,9 +120,9 @@ class ConstituentsCensus extends Thread {
 			}
 		}
 		
-		crt.neighborhoods = neighborhoods[0];
-		crt.location.inhabitants = (int)result;
-		crt.location.censusDone = true;
+		crt.setNeighborhoods(neighborhoods[0]);
+		crt.getLocation().inhabitants = (int)result;
+		crt.getLocation().censusDone = true;
 		
 		announce(crt);
 		
@@ -138,8 +139,8 @@ class ConstituentsCensus extends Thread {
 	private long censusColapsed(ConstituentsAddressNode crt, int[]neighborhoods) throws P2PDDSQLException {
 		if(DEBUG) System.err.println("ConstituentsModel:censusColapsed: start");
 		long result = 0;
-		if((crt==null)||(crt.n_data==null)) return 0;
-		long n_ID = crt.n_data.neighborhoodID;
+		if((crt==null)||(crt.getNeighborhoodData()==null)) return 0;
+		long n_ID = crt.getNeighborhoodData().neighborhoodID;
 		if(DEBUG) System.err.println("ConstituentsModel:censusColapsed: start nID="+n_ID);
 		if(n_ID <= 0) return 0;
 		
@@ -190,23 +191,16 @@ class ConstituentsCensus extends Thread {
 	 */
 	private void announce(ConstituentsAddressNode crt) {
 		if(DEBUG) System.err.println("ConstituentsModel:announce: start");
-		if(DEBUG) if((crt!=null) && (crt.n_data!=null)) System.err.println("ConstituentsModel:announce: start nID="+crt.n_data.neighborhoodID);
-		ConstituentsModel cm;
+		if(DEBUG) if((crt!=null) && (crt.getNeighborhoodData()!=null)) System.err.println("ConstituentsModel:announce: start nID="+crt.getNeighborhoodData().neighborhoodID);
 		Object[] path=null;
 		synchronized(this) {
 			if(!running || (model==null)){
 				if(DEBUG) System.err.println("ConstituentsModel:announce: irrelevant");
 				return;
 			}
-			cm = model;
 			path = crt.getPath();
 		}
-		try{
-			cm.fireTreeNodesChanged(new TreeModelEvent(this, path));
-		}catch(Exception e){
-			System.err.println("ConstituentsCensus: announce: "+e.getLocalizedMessage());
-			System.err.println("ConstituentsCensus: announce: path="+Util.concat(path, " ; "));
-		}
+		model.updateCensus(this, path);
 	}
 	public void giveUp() {
 		if(DEBUG) System.err.println("ConstituentsModel:giveUp: start");
@@ -216,7 +210,7 @@ class ConstituentsCensus extends Thread {
 		}
 	}
 	private void done(long result){
-		if(done_model!=null)
+		if (done_model != null)
 			done_model.censusDone(this, result);
 		done_model = null;
 	}

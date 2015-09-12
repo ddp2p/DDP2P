@@ -23,9 +23,12 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
 
 
+import net.ddp2p.ciphersuits.Cipher;
+import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
+import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.config.Vendor_GUI_Dialogs;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Justification;
@@ -496,6 +499,18 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 			auline.close();
 		}		
 		return true;
+	}
+
+	@Override
+	public SK getCrtIdentityKeys() {
+		net.ddp2p.widgets.identities.IdentityBranch ib = ((net.ddp2p.widgets.identities.IdentityBranch)Identity.current_id_branch);
+		return ib.getKeys();
+	}
+
+	@Override
+	public Cipher getCrtIdentityCipher() {
+		net.ddp2p.widgets.identities.IdentityBranch ib = ((net.ddp2p.widgets.identities.IdentityBranch)Identity.current_id_branch);
+		return ib.getCipher();
 	}
 }
 class Html2Text extends HTMLEditorKit.ParserCallback {

@@ -17,43 +17,17 @@
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 /* ------------------------------------------------------------------------- */
- package net.ddp2p.widgets.components;
-import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ComponentListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
+ package net.ddp2p.common.data;
 import java.util.ArrayList;
-
-import javax.imageio.ImageIO;
-import javax.swing.BorderFactory;
-import javax.swing.ComboBoxEditor;
-import javax.swing.ImageIcon;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JTextField;
-import javax.swing.UIManager;
-import javax.swing.border.Border;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.plaf.basic.BasicComboBoxEditor;
-import javax.swing.plaf.basic.BasicComboBoxRenderer;
 
 import net.ddp2p.common.config.Language;
 import net.ddp2p.common.util.DBInterface;
-import net.ddp2p.common.util.Util;
-import static net.ddp2p.common.util.Util.__;
 
+/**
+ * Class to query the database about translations of given texts in given languages
+ * @author msilaghi
+ *
+ */
 public class DDTranslation {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -65,22 +39,26 @@ public class DDTranslation {
 	public static long constituentID;
 	public static long organizationID;
 	public static Language org_language=new Language("en","US");
-	public static Translation translated(String source, Language from) {
-		ArrayList<ArrayList<Object>> sel =
-			translates(source, from);
-		if(sel==null) return new Translation(source,null,null,source);
-		return new Translation(Util.sval(sel.get(0).get(0),""),
-				Util.sval(sel.get(0).get(1),""),
-				Util.sval(sel.get(0).get(2),""),
-				source);
-	}
+	/**
+	 * Translated into the first preferred_languages
+	 * 
+	 * @param source
+	 * @param from
+	 * @return
+	 */
 	public static String translate(String source, Language from) {
 		ArrayList<ArrayList<Object>> sel =
 			translates(source, from);
-		if(sel==null) return source;
+		if (sel==null || sel.size() == 0) return source;
 		return (String)sel.get(0).get(0);
 	}
-	static ArrayList<ArrayList<Object>> translates(String source, Language from) {
+	/**
+	 * Translated into preferred_languages
+	 * @param source
+	 * @param from
+	 * @return
+	 */
+	public static ArrayList<ArrayList<Object>> translates(String source, Language from) {
 		ArrayList<ArrayList<Object>> sel;
 		String where = "";
 		String params[]=new String[]{};

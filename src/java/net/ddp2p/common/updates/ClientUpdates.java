@@ -539,7 +539,7 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			
 			URL _url = Application_GUI.isWSVersionInfoService(url_str);
 			// old update
-			if(_url == null) {
+			if (_url == null) {
 				URL url;
 				try {
 					url = new URL(url_str);
@@ -547,19 +547,23 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					e.printStackTrace();
 					continue;
 				}
-				if(url==null) continue;
+				if (url == null) continue;
 				a = fetchLastVersionNumberAndSiteTXT(url);
-			}else{
+			} else {
 				String myPeerGID = HandlingMyself_Peer.getMyPeerGID();
 				SK myPeerSK = HandlingMyself_Peer.getMyPeerSK();
-				if (myPeerSK!=null) {
-					try{
+				if (myPeerSK != null) {
+					try {
 						a = Application_GUI.getWSVersionInfo(_url, myPeerGID, myPeerSK, ctx);
-					}catch(Exception e){System.err.println("ClientUpdates:run:WSupdate:"+e.getLocalizedMessage());}
+					} catch(Exception e)
+					{
+						// System.err.println("ClientUpdates:run:WSupdate:getVerInfo:"+e.getLocalizedMessage());
+						ping("VersionInfo: "+e.getLocalizedMessage());
+					}
 				}
 			}
 			// a is null if 1) invalid Mirror Signature 2) receive fault(s) from Mirror server
-			if(a==null){
+			if (a == null) {
 				if(DEBUG) System.out.println(" ClientUpdates: got : null from "+url_str);
 				continue;
 			}
@@ -631,27 +635,30 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				e.printStackTrace();
 				return null;
 			}
-			if(url==null) return null;
+			if (url == null) return null;
 			a = fetchLastVersionNumberAndSiteTXT(url);
-		}else{
+		} else {
 			String myPeerGID = HandlingMyself_Peer.getMyPeerGID();
 			SK myPeerSK = HandlingMyself_Peer.getMyPeerSK();
-			if (myPeerSK!=null) {
-				try{
+			if (myPeerSK != null) {
+				try {
 					a = Application_GUI.getWSVersionInfo(_url, myPeerGID, myPeerSK, ctx);
-				}catch(Exception e){System.err.println("ClientUpdates:run:WSupdate:"+e.getLocalizedMessage());}
+				} catch(Exception e) {
+						//System.err.println("ClientUpdates:run:WSupdate:getNewerVI:"+e.getLocalizedMessage());
+						ping("VersionInfo: "+e.getLocalizedMessage());
+				}
 			}
 		}
-		if(!a.version.equals(ver))
+		// a is null if 1) invalid Mirror Signature 2) receive fault(s) from Mirror server
+		if (a == null) {
+			if (DEBUG) System.out.println(" ClientUpdates: got : null from "+url_str);
+			return null;
+		}
+		if (! a.version.equals(ver))
 			{
 				Application_GUI.warning(Util.__("No update available from url: "+url_str), Util.__("No update available"));
 				return null;
 			}
-		// a is null if 1) invalid Mirror Signature 2) receive fault(s) from Mirror server
-		if(a==null){
-			if(DEBUG) System.out.println(" ClientUpdates: got : null from "+url_str);
-			return null;
-		}
 		// This used to be displayed all the time: will be in GUI
 		if(DEBUG) System.out.println(" ClientUpdates: got : "+a.version+" from "+url_str);
 		if(DEBUG) {
