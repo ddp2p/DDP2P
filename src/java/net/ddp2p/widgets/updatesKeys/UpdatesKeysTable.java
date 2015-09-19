@@ -44,7 +44,7 @@ public class UpdatesKeysTable extends JTable implements MouseListener{
 	private DefaultTableCellRenderer centerRenderer;
 
 	public UpdatesKeysTable() {
-		super(new UpdatesKeysModel(Application.db));
+		super(new UpdatesKeysModel(Application.getDB()));
 		init();
 	}
 	public UpdatesKeysTable(DBInterface _db) {

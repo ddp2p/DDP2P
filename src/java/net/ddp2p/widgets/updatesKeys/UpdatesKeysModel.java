@@ -252,7 +252,7 @@ public class UpdatesKeysModel extends AbstractTableModel implements TableModel, 
 	public static void main(String args[]) {
 		JFrame frame = new JFrame();
 		try {
-			Application.db = new DBInterface(Application.DEFAULT_DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DEFAULT_DELIBERATION_FILE));
 			JPanel test = new JPanel();
 			//frame.add(test);
 			test.setLayout(new BorderLayout());

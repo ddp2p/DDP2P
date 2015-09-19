@@ -81,7 +81,7 @@ public class RequestData extends ASNObj implements Summary{
 			" FROM "+net.ddp2p.common.table.organization.TNAME+
 			" WHERE "+net.ddp2p.common.table.organization.organization_ID+"=?;";
 		ArrayList<ArrayList<Object>> r =
-			Application.db.select(sql, new String[]{Util.getStringID(orgID)}, DEBUG);
+			Application.getDB().select(sql, new String[]{Util.getStringID(orgID)}, DEBUG);
 		if(r.size()==0) return;
 		String s = Util.getString(r.get(0).get(0));
 		this.global_organization_ID_hash = Util.getString(r.get(0).get(1));

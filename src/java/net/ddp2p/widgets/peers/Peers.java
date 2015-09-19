@@ -234,7 +234,7 @@ public class Peers extends JTable implements Peers_View, MouseListener, PeerList
 	 * Uses Application.db
 	 */
 	public Peers() {
-		super(new PeersModel(Application.db));
+		super(new PeersModel(Application.getDB()));
 		this.initPopupItems();
 		init();
 	}
@@ -618,8 +618,8 @@ public class Peers extends JTable implements Peers_View, MouseListener, PeerList
 	 */
 	public static void main(String[] args) throws P2PDDSQLException {
 		String dfname = Application.DELIBERATION_FILE;
-		Application.db = new DBInterface(dfname);
-		PeersTest.createAndShowGUI(Application.db);
+		Application.setDB(new DBInterface(dfname));
+		PeersTest.createAndShowGUI(Application.getDB());
 	}
 	@Override
 	public void mouseClicked(MouseEvent arg0) {

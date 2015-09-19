@@ -547,12 +547,11 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 			boolean external = c.isExternal(); //"1".equals(Util.getString(identities_i.get(3)));
 			//boolean external = Util.ival(identities.get(i).get(3),-1);
 			long submitterID = c.getSubmitterLID(); //Util.lval(identities_i.get(5),-1);
-			ConstituentData data = new ConstituentData();
-			data.constituent = c;
+			ConstituentData data = new ConstituentData(c);
 			data.setC_GID(c.getGID()); ////Util.sval(identities_i.get(4),null);
 			data.setC_LID(c.getLID()); //Integer.parseInt(constituentID);
-			data.given_name = forename;
-			data.surname = name;
+			data.setGivenName(forename);
+			data.setSurname(name);
 			//data.inserted_by_me=(model.constituentID == external);
 			data.inserted_by_me=((getConstituentIDMyself() == submitterID)&&(getConstituentIDMyself()>=0));
 			data.external = external;

@@ -417,7 +417,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
     		dir_port=dirAddr2.split(":")[1];
     	}	
     		
-		Application.db.updateNoSync(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
+		Application.getDB().updateNoSync(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
 				new String[]{
 					net.ddp2p.common.table.directory_forwarding_terms.dir_domain,
 					net.ddp2p.common.table.directory_forwarding_terms.dir_tcp_port,
@@ -435,7 +435,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
     		dir_domain=dirAddr2.split(":")[0];
     		dir_port=dirAddr2.split(":")[1];
     	}
-		Application.db.updateNoSync(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
+		Application.getDB().updateNoSync(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
 				new String[]{
 					net.ddp2p.common.table.directory_forwarding_terms.peer_ID,
 					net.ddp2p.common.table.directory_forwarding_terms.dir_domain,
@@ -453,7 +453,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
 //				" WHERE "+table.directory_forwarding_terms.peer_ID+" =? AND "+
 //				table.directory_forwarding_terms.dir_addr+" IS NULL;",
 //				new String[]{"0"}, DEBUG);
-		Application.db.deleteNoSyncNULL(
+		Application.getDB().deleteNoSyncNULL(
 				net.ddp2p.common.table.directory_forwarding_terms.TNAME,
 				new String[]{
 						net.ddp2p.common.table.directory_forwarding_terms.peer_ID,
@@ -467,7 +467,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
 //				" WHERE "+table.directory_forwarding_terms.peer_ID+" =? AND "+
 //				table.directory_forwarding_terms.dir_addr+" IS NULL;",
 //				new String[]{""+peerID2}, DEBUG);
-		Application.db.deleteNoSyncNULL(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
+		Application.getDB().deleteNoSyncNULL(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
 				new String[]{
 					net.ddp2p.common.table.directory_forwarding_terms.peer_ID,
 					net.ddp2p.common.table.directory_forwarding_terms.dir_domain,
@@ -482,7 +482,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
     		dir_domain=dirAddr2.split(":")[0];
     		dir_port=dirAddr2.split(":")[1];
     	}
-		Application.db.deleteNoSync(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
+		Application.getDB().deleteNoSync(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
 				new String[]{
 					net.ddp2p.common.table.directory_forwarding_terms.peer_ID,
 					net.ddp2p.common.table.directory_forwarding_terms.dir_domain,
@@ -497,7 +497,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
     		dir_domain=dirAddr2.split(":")[0];
     		dir_port=dirAddr2.split(":")[1];
     	}
-		Application.db.deleteNoSync(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
+		Application.getDB().deleteNoSync(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
 				new String[]{
 					net.ddp2p.common.table.directory_forwarding_terms.peer_ID,
 					net.ddp2p.common.table.directory_forwarding_terms.dir_domain,
@@ -511,7 +511,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
     		dir_domain=dirAddr2.split(":")[0];
     		dir_port=dirAddr2.split(":")[1];
     	}
-		Application.db.updateNoSync(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
+		Application.getDB().updateNoSync(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
 				new String[]{
 					net.ddp2p.common.table.directory_forwarding_terms.peer_ID},
 				new String[]{
@@ -537,7 +537,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
 	}
 	public void init(){
     	add(getHeaderPanel(), BorderLayout.NORTH);
-    	termsTable = new TermsTable(Application.db, this);
+    	termsTable = new TermsTable(Application.getDB(), this);
     	termsTableScroll = termsTable.getScrollPane();
     	add(termsTableScroll);
 		addMouseListener(termsTable);
@@ -579,7 +579,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
 		
 		
 		try{
-			Application.db.updateNoSyncNULL(
+			Application.getDB().updateNoSyncNULL(
 					directory_tokens.TNAME, 
 					new String[]{directory_tokens.token},
 					new String[]{directory_tokens.directory_tokens_ID},
@@ -598,7 +598,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
 		params = new String[]{""+peerID2, ""+selectedInstanceID , dir_domain2, dir_port2, newToken, null, null};
 		
 		try{
-			Application.db.insertNoSync(
+			Application.getDB().insertNoSync(
 							net.ddp2p.common.table.directory_tokens.TNAME,
 							net.ddp2p.common.table.directory_tokens.fields_noID_list,
 							params, _DEBUG); 
@@ -631,7 +631,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
     				" WHERE "+peer_instance.peer_ID+" = ? ;";
     				
 		String[]params = new String[]{""+peerID};
-		DBInterface db = Application.db; 
+		DBInterface db = Application.getDB(); 
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = db.select(sql, params, DEBUG);
@@ -685,7 +685,7 @@ public class TermsPanel extends JPanel implements  ActionListener,DocumentListen
 				" AND ("+peer_address.instance+" IS NULL "+ // is it instance or instance_ID??
 				" OR "+peer_address.instance+" < '1' )"+
 				" AND peer_address.type = ? ;";
-		DBInterface db = Application.db; 
+		DBInterface db = Application.getDB(); 
 		ArrayList<ArrayList<Object>> u;
 		try {
 			if (selectedInstanceID > 0)

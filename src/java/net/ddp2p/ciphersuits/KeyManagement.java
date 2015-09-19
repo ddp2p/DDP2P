@@ -58,7 +58,7 @@ public class KeyManagement {
 			"SELECT "+net.ddp2p.common.table.key.secret_key+","+net.ddp2p.common.table.key.name+","+net.ddp2p.common.table.key.type+","+net.ddp2p.common.table.key.creation_date+
 			" FROM "+net.ddp2p.common.table.key.TNAME+
 			" WHERE "+net.ddp2p.common.table.key.public_key+"=?;";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{gid});
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(sql, new String[]{gid});
 		if (a.size() == 0) return false;
 		String sk = Util.getString(a.get(0).get(0));
 		String name = Util.getString(a.get(0).get(1));
@@ -92,7 +92,7 @@ public class KeyManagement {
 				"SELECT "+net.ddp2p.common.table.key.secret_key+","+net.ddp2p.common.table.key.name+","+net.ddp2p.common.table.key.type+","+net.ddp2p.common.table.key.creation_date+
 				" FROM "+net.ddp2p.common.table.key.TNAME+
 				" WHERE "+net.ddp2p.common.table.key.public_key+"=?;";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{gid}, _DEBUG);
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(sql, new String[]{gid}, _DEBUG);
 		if (a.size() == 0) {
 			System.out.println("KeyManagement: fillsk: not finding key for: "+gid);
 			return false;
@@ -193,7 +193,7 @@ public class KeyManagement {
 			} while(date.length() == 0);
 		
 		if(DEBUG) System.out.println("KeyManagement:loadSecretKey: check existance");
-		ArrayList<ArrayList<Object>> p = Application.db.select(
+		ArrayList<ArrayList<Object>> p = Application.getDB().select(
 				"SELECT "+net.ddp2p.common.table.key.public_key+" FROM "+net.ddp2p.common.table.key.TNAME+" WHERE "+net.ddp2p.common.table.key.public_key+"=?;",
 				new String[]{pk}, DEBUG);
 		if (is_new != null)
@@ -216,7 +216,7 @@ public class KeyManagement {
 //		ArrayList<ArrayList<Object>> ok = Application.db.select(sql_selkey, new String[]{pk}, _DEBUG);
 //		if (_DEBUG) System.out.println("KeyManagement:loadSecretKey: select #"+ok.size());
 //		if (ok.size() == 0)
-			Application.db.insert (net.ddp2p.common.table.key.TNAME,
+			Application.getDB().insert (net.ddp2p.common.table.key.TNAME,
 					new String[]{net.ddp2p.common.table.key.secret_key,net.ddp2p.common.table.key.public_key,
 					net.ddp2p.common.table.key.type,net.ddp2p.common.table.key.name, net.ddp2p.common.table.key.ID_hash,net.ddp2p.common.table.key.creation_date},
 					new String[]{sk,pk,type,name,hash,date},

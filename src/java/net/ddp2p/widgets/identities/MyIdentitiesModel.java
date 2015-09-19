@@ -128,7 +128,7 @@ public class MyIdentitiesModel extends TreeModelSupport implements TreeModel {
     	if(ib==null) return;
     	String sql = sql_identities_view +
     	" WHERE "+net.ddp2p.common.table.identity.default_id+"=?;";
-    	ArrayList<ArrayList<Object>> sel = Application.db.select(sql, new String[]{ib.identityID+""}, DEBUG);
+    	ArrayList<ArrayList<Object>> sel = Application.getDB().select(sql, new String[]{ib.identityID+""}, DEBUG);
     	if (sel.size()<1) return;
     	setCurrent(sel.get(0), tree, ib);
     }

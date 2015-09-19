@@ -36,7 +36,7 @@ public class UpdatePeerSKMyself {
 				System.out.println("Usage: prog db sk setMyself.\n\n Improper db="+db+"\nerror="+err);
 				return;				
 			}
-			Application.db = new DBInterface(db);
+			Application.setDB(new DBInterface(db));
 			File fileLoadSK = new File(sk);
 			if(!fileLoadSK.exists()) {
 				Application_GUI.warning(__("Inexisting file: "+fileLoadSK.getPath()), __("Inexisting file!"));

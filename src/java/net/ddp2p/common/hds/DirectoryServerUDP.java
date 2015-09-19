@@ -184,9 +184,9 @@ public class DirectoryServerUDP extends net.ddp2p.common.util.DDP2P_ServiceThrea
 						ans.setSocketAddress(isa);
 						if(DEBUG) System.out.println("\nDirectoryServerUDP:run: DirectoryServerUDP:  forwards: "+aup+" to: "+isa);
 						int localPort = -1;
-						if ((net.ddp2p.common.config.Application.g_DirectoryServer != null))
-							if(net.ddp2p.common.config.Application.g_DirectoryServer.udp_socket!=null)
-								localPort = net.ddp2p.common.config.Application.g_DirectoryServer.udp_socket.getLocalPort();
+						if ((net.ddp2p.common.config.Application.getG_DirectoryServer() != null))
+							if(net.ddp2p.common.config.Application.getG_DirectoryServer().udp_socket!=null)
+								localPort = net.ddp2p.common.config.Application.getG_DirectoryServer().udp_socket.getLocalPort();
 						try {
 							if(true || (aup.peer_port != localPort)) {
 								ds.udp_socket.send(ans);

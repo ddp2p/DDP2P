@@ -53,7 +53,7 @@ public class directory_tokens {
 		      " AND   "+directory_tcp_port+" =? "+";";
 		params = new String[]{""+peer_ID2, ""+instance_ID2, dirAddr2, port};
 		
-		DBInterface db = Application.db;
+		DBInterface db = Application.getDB();
 		
 		ArrayList<ArrayList<Object>> u;
 		try {

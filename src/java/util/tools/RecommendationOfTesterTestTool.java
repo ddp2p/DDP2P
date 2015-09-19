@@ -37,7 +37,7 @@ public class RecommendationOfTesterTestTool {
 		boolean _DEBUG = true;
 		try {
 			Vendor_JDBC_EMAIL_DB.initJDBCEmail();
-			Application.db = new net.ddp2p.common.util.DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new net.ddp2p.common.util.DBInterface(Application.DELIBERATION_FILE));
 		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -17,7 +17,7 @@ public class Test_Motion {
 	}
 	public static void _main(String args[]) throws P2PDDSQLException {
 		net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
-		Application.db = new DBInterface(Application.DELIBERATION_FILE);
+		Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 		System.out.println("D_Motion: main: prog pID, verify, sign, store");
 		long pID = Long.parseLong(args[0]);
 		int verif = Integer.parseInt(args[1]);

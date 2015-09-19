@@ -325,7 +325,7 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 
 	private D_Peer currentPeer;
 	public InstancesModel() {
-		Application.db.addListener(this, new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.peer_instance.TNAME)), null);
+		Application.getDB().addListener(this, new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.peer_instance.TNAME)), null);
 	}
 	public void setTable(Instances threadsView) {
 		tables.add(threadsView);

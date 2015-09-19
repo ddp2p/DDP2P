@@ -39,6 +39,7 @@ import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Neighborhood;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Witness;
+import net.ddp2p.common.data.IconObject;
 import net.ddp2p.common.hds.ClientSync;
 import net.ddp2p.common.hds.Server;
 import net.ddp2p.common.population.ConstituentData;
@@ -535,7 +536,7 @@ class ConstituentsCustomAction extends DebateDecideAction {
     					"SELECT "+net.ddp2p.common.table.witness.target_ID+","+net.ddp2p.common.table.witness.neighborhood_ID+
     					" FROM "+net.ddp2p.common.table.witness.TNAME+
     					" WHERE "+net.ddp2p.common.table.witness.source_ID+"=?;";
-    				ArrayList<ArrayList<Object>> w = Application.db.select(sql, new String[]{""+cID}, DEBUG);
+    				ArrayList<ArrayList<Object>> w = Application.getDB().select(sql, new String[]{""+cID}, DEBUG);
     				for(ArrayList<Object> W : w) {
        					String tID = Util.getString(W.get(0));
     					if ((tID != null)&&(Integer.parseInt(tID) > 0)) model.expandConstituentID(tree, tID, false);
@@ -638,6 +639,7 @@ class ConstituentsAddAction extends DebateDecideAction {
     		boolean inserting_field_values, boolean inserting_neighborhoods) {
     	if(DEBUG) System.out.println("ConstituentsActions:ConstituentsAddAction:storeNewConstituentData");
       	String gcd;   		// the global_constituent_id of the neighbor
+      	D_Constituent con = null;
     	boolean inserted_neigh = false;
     	ConstituentsModel model = (ConstituentsModel)tree.getModel();
     	TreePath tp=dialog.tp;
@@ -646,7 +648,7 @@ class ConstituentsAddAction extends DebateDecideAction {
     	Object[] otp = tp.getPath();
     	ConstituentsAddressNode can = (ConstituentsAddressNode) target;
     	long constituentID=-1;
-    	Icon imageicon=null;
+    	IconObject imageicon=null;
     	boolean noChild = true; // true is the next level is constituents (leaf)
     	String witness_category=dialog.witness_category;
     	String witness_category_trustworthiness=dialog.witness_category_trustworthiness;
@@ -951,7 +953,7 @@ class ConstituentsAddAction extends DebateDecideAction {
     				new String[]{table.constituent.constituent_ID},
     				new String[]{""+_parent_nID,""+constituentID}, DEBUG);
     		*/
-    		D_Constituent con = D_Constituent.getConstByLID(constituentID, true, true);
+    		con = D_Constituent.getConstByLID(constituentID, true, true);
     		con.setNeighborhoodIDs(parent_nGID, _parent_nID);
     		if(dialog.sign)
     			gcd=net.ddp2p.common.data.D_Constituent.readSignSave(constituentID, model.getConstituentIDMyself());
@@ -999,15 +1001,15 @@ class ConstituentsAddAction extends DebateDecideAction {
     	}
     	if(DEBUG) System.out.println("NoChildren="+noChild+" cID="+constituentID);
     	if(noChild && (constituentID!=-1)) {// if no neigh step added, then show constituent
-    		ConstituentData data = new ConstituentData();
+    		ConstituentData data = new ConstituentData(con);
     		data.setC_GID(gcd);
     		data.setC_LID(constituentID);
-    		data.given_name = dialog.gnEditor;
-    		data.surname = dialog.snEditor;
+    		data.setGivenName(dialog.gnEditor);
+    		data.setSurname(dialog.snEditor);
     		data.witness_against = 0;
     		data.witness_for = 1;
     		data.witnessed_by_me = 2;
-    		data.icon = imageicon;
+    		data.setIcon(imageicon);
     		data.inserted_by_me = true;
     		data.external = true;
     		data.blocked = false;
@@ -1175,7 +1177,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	Object[] otp = tp.getPath();
     	ConstituentsAddressNode can = (ConstituentsAddressNode) target;
     	long constituentID=-1;
-    	Icon imageicon=null;
+    	IconObject imageicon=null;
     	boolean noChild = true; // true is the next level is constituents (leaf), set to false on first neighborhood
     	String witness_category = dialog.witness_category;
     	byte[] byteArray=null;
@@ -1183,6 +1185,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	long field_above=-1; //  The ID of the current "previous fieldID"
     	long parent_nID=-1;
     	String subdivisions=model.getSubDivisions();
+		D_Constituent cn = null;
 		if(DEBUG)System.out.println("ConstituemtActions:AddMyself:storeMyConst: subdivs="+subdivisions);
     	//String gcd=Util.getGlobalID("constituentID",dialog.emailEditor+":"+dialog.gnEditor);  
      	if("".equals(dialog.gnEditor)&&"".equals(dialog.snEditor)) return constituentID;
@@ -1554,7 +1557,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     				new String[]{""+parent_nID,""+constituentID}, DEBUG);
     		data.D_Constituent.readSignSave(constituentID, model.getConstituentIDMyself());
     		*/
-    		D_Constituent cn = D_Constituent.getConstByLID(constituentID, true, true);
+    		cn = D_Constituent.getConstByLID(constituentID, true, true);
     		cn.setNeighborhoodIDs(null, parent_nID);
     		cn.sign();
     		cn.storeRequest();
@@ -1566,15 +1569,15 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	}
     	if(DEBUG) System.out.println("NoChildren="+noChild+" cID="+constituentID);
     	if(noChild && (constituentID!=-1)) {// if no neigh step added, then show constituent
-    		ConstituentData data = new ConstituentData();
+    		ConstituentData data = new ConstituentData(cn);
     		data.setC_GID(gcd);
     		data.setC_LID(constituentID);
-    		data.given_name = dialog.gnEditor;
-    		data.surname = dialog.snEditor;
+    		data.setGivenName(dialog.gnEditor);
+    		data.setSurname(dialog.snEditor);
     		data.witness_against = 0;
     		data.witness_for = 1;
     		data.witnessed_by_me = 2;
-    		data.icon = imageicon;
+    		data.setIcon(imageicon);
     		data.inserted_by_me = true;
     		data.external = false;
     		data.blocked = false;

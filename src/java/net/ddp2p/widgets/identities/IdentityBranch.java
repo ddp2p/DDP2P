@@ -106,7 +106,7 @@ public class IdentityBranch extends IdentityNode{
     		String sql = "SELECT i."+net.ddp2p.common.table.identity.constituent_ID + ", i." + net.ddp2p.common.table.identity.organization_ID +
 					" FROM "+net.ddp2p.common.table.identity.TNAME+" AS i" +
 					" WHERE i."+net.ddp2p.common.table.identity.identity_ID+"==? LIMIT 1;";
-			id = Application.db.select(sql,
+			id = Application.getDB().select(sql,
 					new String[]{identityID+""});
 			if (id.size() == 0) {
 				if (DEBUG) System.err.println("No default identity found!");

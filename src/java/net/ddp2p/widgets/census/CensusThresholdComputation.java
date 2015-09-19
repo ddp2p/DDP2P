@@ -58,7 +58,7 @@ public class CensusThresholdComputation{
 					"		 group by target_ID"+
 					"		)t1, constituent where t1.target_ID=constituent.constituent_ID;";
 //			c = Application.db.select(sql2, new String[]{pco,nco,t});
-			c = Application.db.select(sql2, new String[]{});
+			c = Application.getDB().select(sql2, new String[]{});
 			System.out.println("[Target_ID, Negative Count, Positive Count, ValidityOfIdentity,Constituent Name]");
 			System.out.println(c);
 
@@ -78,12 +78,12 @@ public static void populateWitnessData1(){
 			String source_ID_str=""+source_ID;
 			String target_ID_str=""+target_ID;
 			try {
-				Application.db.delete("DELETE FROM witness", new String[]{});
-				Application.db.insert(insertSql, new String[] {""+0,""+2,""+0});
-				Application.db.insert(insertSql, new String[] {""+0,""+3,""+1});
-				Application.db.insert(insertSql, new String[] {""+0,""+4,""+1});
-				Application.db.insert(insertSql, new String[] {""+3,""+1,""+0});
-				Application.db.insert(insertSql, new String[] {""+4,""+1,""+1});
+				Application.getDB().delete("DELETE FROM witness", new String[]{});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+2,""+0});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+3,""+1});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+4,""+1});
+				Application.getDB().insert(insertSql, new String[] {""+3,""+1,""+0});
+				Application.getDB().insert(insertSql, new String[] {""+4,""+1,""+1});
 			} catch (P2PDDSQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -100,12 +100,12 @@ public static void populateWitnessData2(){
 			String source_ID_str=""+source_ID;
 			String target_ID_str=""+target_ID;
 			try {
-				Application.db.delete("DELETE FROM witness", new String[]{});
-				Application.db.insert(insertSql, new String[] {""+0,""+2,""+1});
-				Application.db.insert(insertSql, new String[] {""+0,""+3,""+1});
-				Application.db.insert(insertSql, new String[] {""+0,""+4,""+1});
-				Application.db.insert(insertSql, new String[] {""+3,""+1,""+0});
-				Application.db.insert(insertSql, new String[] {""+4,""+1,""+1});
+				Application.getDB().delete("DELETE FROM witness", new String[]{});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+2,""+1});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+3,""+1});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+4,""+1});
+				Application.getDB().insert(insertSql, new String[] {""+3,""+1,""+0});
+				Application.getDB().insert(insertSql, new String[] {""+4,""+1,""+1});
 			} catch (P2PDDSQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -115,7 +115,7 @@ public static void populateWitnessData2(){
 
 	public static void main(String[] args) {
 		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

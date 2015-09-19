@@ -88,7 +88,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 		String[]params = new String[]{_url};// where clause?
 		ArrayList<ArrayList<Object>> u;
 		try {
-			u = Application.db.select(sql, params, DEBUG);
+			u = Application.getDB().select(sql, params, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
@@ -103,7 +103,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 		String[]params = new String[]{Util.getStringID(id)};// where clause?
 		ArrayList<ArrayList<Object>> u;
 		try {
-			u = Application.db.select(sql, params, DEBUG);
+			u = Application.getDB().select(sql, params, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
@@ -190,7 +190,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 	static public ArrayList<String> getUpdateURLs() throws P2PDDSQLException{
     	ArrayList<String> result =new ArrayList<String>() ;
     	ArrayList<ArrayList<Object>> urls;
-    	urls=Application.db.select(sql_upd,
+    	urls=Application.getDB().select(sql_upd,
     			new String[]{"1"}, DEBUG);
     	if(urls.size()==0){
     		if(DEBUG) System.err.println(__("No URLs found in table: ")+net.ddp2p.common.table.mirror.TNAME);
@@ -209,7 +209,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 	static public D_MirrorInfo getUpdateInfo(String url) throws P2PDDSQLException{
     	D_MirrorInfo result =null ;
     	ArrayList<ArrayList<Object>> updateInfo;
-    	updateInfo=Application.db.select("SELECT "+net.ddp2p.common.table.mirror.fields_updates +
+    	updateInfo=Application.getDB().select("SELECT "+net.ddp2p.common.table.mirror.fields_updates +
     			" FROM "+net.ddp2p.common.table.mirror.TNAME+
     			" WHERE "+net.ddp2p.common.table.mirror.url+"= ? ;",
     			new String[]{url}, DEBUG);
@@ -248,7 +248,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 		return this;
 	}
 	public void store() throws P2PDDSQLException {
-		if(this.existsInDB(Application.db)) this.store(action_update); 
+		if(this.existsInDB(Application.getDB())) this.store(action_update); 
 		else this.store(action_insert);
 	}
 	public void store(DBInterface db) throws P2PDDSQLException {
@@ -270,7 +270,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 		if(this.last_version_info!=null)params[net.ddp2p.common.table.mirror.F_LAST_VERSION_INFO] = new String(net.ddp2p.common.util.Base64Coder.encode(this.last_version_info));
 		params[net.ddp2p.common.table.mirror.F_ID] = Util.getStringID(this.mirror_ID);
 	    if(cmd.equals(action_update))
-		Application.db.updateNoSync(net.ddp2p.common.table.mirror.TNAME, net.ddp2p.common.table.mirror._fields_updates_no_ID,
+		Application.getDB().updateNoSync(net.ddp2p.common.table.mirror.TNAME, net.ddp2p.common.table.mirror._fields_updates_no_ID,
 				new String[]{net.ddp2p.common.table.mirror.mirror_ID},
 				params,DEBUG);
 		if(cmd.equals(action_insert)){
@@ -278,13 +278,13 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 		String params2[]=new String[net.ddp2p.common.table.mirror.F_FIELDS_NOID];
 		System.arraycopy(params,0,params2,0,params2.length);
 		//System.out.println("params2[last]: "+ params2[table.mirror.F_FIELDS_NOID-1]);
-		this.mirror_ID = Application.db.insertNoSync(net.ddp2p.common.table.mirror.TNAME, net.ddp2p.common.table.mirror._fields_updates_no_ID,params2);
+		this.mirror_ID = Application.getDB().insertNoSync(net.ddp2p.common.table.mirror.TNAME, net.ddp2p.common.table.mirror._fields_updates_no_ID,params2);
 		}
 	}
 	public static boolean hasTrustedTesters() {
 		ArrayList<ArrayList<Object>> a;
 		try {
-			a = Application.db.select("SELECT "+net.ddp2p.common.table.tester.trusted_as_tester+","+net.ddp2p.common.table.tester.trust_weight+" FROM "+net.ddp2p.common.table.tester.TNAME+
+			a = Application.getDB().select("SELECT "+net.ddp2p.common.table.tester.trusted_as_tester+","+net.ddp2p.common.table.tester.trust_weight+" FROM "+net.ddp2p.common.table.tester.TNAME+
 					" WHERE "+net.ddp2p.common.table.tester.trusted_as_tester+"='1' AND "+net.ddp2p.common.table.tester.trust_weight+"!='0'",
 					new String[]{});
 		} catch (P2PDDSQLException e) {
@@ -321,7 +321,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 	private static boolean isTestersWeightOrNumberSatisfactory(HashSet<String> testers, Hashtable<String, VersionInfo> available) {
 		ArrayList<ArrayList<Object>> a;
 		try {
-			a = Application.db.select(
+			a = Application.getDB().select(
 					"SELECT "+net.ddp2p.common.table.tester.public_key_hash+","+net.ddp2p.common.table.tester.trust_weight+","+net.ddp2p.common.table.tester.expected_test_thresholds+
 					" FROM "+net.ddp2p.common.table.tester.TNAME+
 					" ;", new String[]{}, DEBUG);
@@ -403,7 +403,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 	private static boolean areRequiredTestersPresent(HashSet<String> testers, Hashtable<String, VersionInfo> available) {
 		ArrayList<ArrayList<Object>> a;
 		try {
-			a = Application.db.select(
+			a = Application.getDB().select(
 					"SELECT "+net.ddp2p.common.table.tester.public_key_hash+","+net.ddp2p.common.table.tester.expected_test_thresholds+
 					" FROM "+net.ddp2p.common.table.tester.TNAME+
 					" WHERE "+net.ddp2p.common.table.tester.reference_tester+"='1';", new String[]{}, DEBUG);
@@ -489,7 +489,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 					return;		
 				}
 			}
-			Application.db.sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.mirror.TNAME,net.ddp2p.common.table.tester.TNAME)));		
+			Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.mirror.TNAME,net.ddp2p.common.table.tester.TNAME)));		
 		}
 		if(DEBUG)System.out.println("end store_QoTs_and_RoTs()");
 	}
@@ -502,7 +502,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 				" FROM  " + net.ddp2p.common.table.mirror.TNAME+";";
 		ArrayList<ArrayList<Object>> list=null;
 		try{
-			list = Application.db.select(sql, new String[]{}, DEBUG);
+			list = Application.getDB().select(sql, new String[]{}, DEBUG);
 		}catch(net.ddp2p.common.util.P2PDDSQLException e){
 			System.out.println(e);
 		}

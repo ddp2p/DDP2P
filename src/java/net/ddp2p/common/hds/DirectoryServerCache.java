@@ -255,7 +255,7 @@ class DirectoryServerCache{
 			try {
 				
 				//if (d == null || d.size()==0) {
-					any = Application.db_dir.select(sql, new String[]{}, DEBUG);
+					any = Application.getDB_Dir().select(sql, new String[]{}, DEBUG);
 					if ((any == null) || (any.size() == 0)) {
 						DIR_Terms_Requested[] terms_any = new DIR_Terms_Requested[1];
 						DIR_Terms_Requested t = new DIR_Terms_Requested();
@@ -274,21 +274,21 @@ class DirectoryServerCache{
 					params[1] = instance;
 				}
 				params[0] = this.globalID;
-				d = Application.db_dir.select(sql1, params, DEBUG);
+				d = Application.getDB_Dir().select(sql1, params, DEBUG);
 				
 				if (d == null || d.size()==0) {
 					params[0] = this.globalIDhash;
-					d = Application.db_dir.select(sql2, params, DEBUG);
+					d = Application.getDB_Dir().select(sql2, params, DEBUG);
 				}
 				
 				if (d == null || d.size()==0)
-					d = Application.db_dir.select(sql11, new String[]{this.globalID}, DEBUG);	
+					d = Application.getDB_Dir().select(sql11, new String[]{this.globalID}, DEBUG);	
 				
 				if (d == null || d.size()==0)
-					d = Application.db_dir.select(sql22, new String[]{this.globalIDhash}, DEBUG);
+					d = Application.getDB_Dir().select(sql22, new String[]{this.globalIDhash}, DEBUG);
 				
 				if (d == null || d.size()==0)
-					d = Application.db_dir.select(sql111, new String[]{}, DEBUG);	
+					d = Application.getDB_Dir().select(sql111, new String[]{}, DEBUG);	
 					
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
@@ -445,7 +445,7 @@ class DirectoryServerCache{
 			params[net.ddp2p.common.table.registered.REG_TIME] = Encoder.getGeneralizedTime(timestamp); // (Util.CalendargetInstance().getTimeInMillis()/1000)+"";
 			params[net.ddp2p.common.table.registered.REG_ID] = Util.getStringID(this.registered_ID);
 			
-			Application.db_dir.update
+			Application.getDB_Dir().update
 					(
 							net.ddp2p.common.table.registered.TNAME,
 							net.ddp2p.common.table.registered.fields_noID_list,
@@ -476,7 +476,7 @@ class DirectoryServerCache{
 				timestamp = Util.CalendargetInstance(); //.getTimeInMillis()/1000)+"";
 			params[net.ddp2p.common.table.registered.REG_TIME] = Encoder.getGeneralizedTime(timestamp);
 			
-			registered_ID=Application.db_dir.insert(net.ddp2p.common.table.registered.TNAME, net.ddp2p.common.table.registered.fields_noID_list,
+			registered_ID=Application.getDB_Dir().insert(net.ddp2p.common.table.registered.TNAME, net.ddp2p.common.table.registered.fields_noID_list,
 					params);
 //					new String[]{table.registered.global_peer_ID,table.registered.certificate,table.registered.addresses,table.registered.signature,table.registered.timestamp},
 			return registered_ID;
@@ -608,7 +608,7 @@ class DirectoryServerCache{
 					" WHERE "+net.ddp2p.common.table.registered.global_peer_ID_hash+" = ?;";
 			ArrayList<ArrayList<Object>> d;
 			try {
-				d = Application.db_dir.select(sql, new String[]{_globalIDH}, DEBUG);
+				d = Application.getDB_Dir().select(sql, new String[]{_globalIDH}, DEBUG);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				this.globalIDhash = _globalIDH;
@@ -650,7 +650,7 @@ class DirectoryServerCache{
 					" WHERE "+net.ddp2p.common.table.registered.global_peer_ID+" = ?;";
 			ArrayList<ArrayList<Object>> d;
 			try {
-				d = Application.db_dir.select(sql, new String[]{_globalID}, DEBUG);
+				d = Application.getDB_Dir().select(sql, new String[]{_globalID}, DEBUG);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				this.globalID = _globalID;

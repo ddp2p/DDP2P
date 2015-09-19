@@ -1181,21 +1181,21 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 
 		if(DD.GUI){
 			if(EventQueue.isDispatchThread()) {
-				if(Application.g_TCPServer!=null) startServer.setText(STOP_SERVER);
+				if(Application.getG_TCPServer()!=null) startServer.setText(STOP_SERVER);
 				else startServer.setText(START_SERVER);		
 			}else{
 				if(run)
 					EventQueue.invokeLater(new Runnable() {
 						public void run(){
-							if(Application.g_TCPServer!=null) startServer.setText(STOP_SERVER);
+							if(Application.getG_TCPServer()!=null) startServer.setText(STOP_SERVER);
 							else startServer.setText(START_SERVER);		
 						}
 					});
 			}
 		}
-		if(DEBUG)System.err.println("Save Setting: "+Application.g_TCPServer);
+		if(DEBUG)System.err.println("Save Setting: "+Application.getG_TCPServer());
 
-		DD.setAppText(DD.DD_DATA_SERVER_ON_START, (Application.g_TCPServer==null)?"0":"1");
+		DD.setAppText(DD.DD_DATA_SERVER_ON_START, (Application.getG_TCPServer()==null)?"0":"1");
 	}
 	public void setUServerStatus(boolean _run) throws NumberFormatException, P2PDDSQLException  {
 		if(DEBUG)System.out.println("ControlPane:Setting userver running status to: "+_run);
@@ -1229,21 +1229,21 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		if(DEBUG)System.err.println("Done Setting: "+_run);
 		if(DD.GUI) {
 			if(EventQueue.isDispatchThread()) {
-				if(Application.g_UDPServer!=null) startUServer.setText(STOP_USERVER);
+				if(Application.getG_UDPServer()!=null) startUServer.setText(STOP_USERVER);
 				else startUServer.setText(START_USERVER);		
 			}
 			else
 				EventQueue.invokeLater(new Runnable(){
 					public void run(){
-						if(Application.g_UDPServer!=null) startUServer.setText(STOP_USERVER);
+						if(Application.getG_UDPServer()!=null) startUServer.setText(STOP_USERVER);
 						else startUServer.setText(START_USERVER);		
 					}
 				});
 		}
 		
-		if(DEBUG)System.err.println("Save Setting: "+Application.g_UDPServer);
+		if(DEBUG)System.err.println("Save Setting: "+Application.getG_UDPServer());
 		
-		DD.setAppBoolean(DD.DD_DATA_USERVER_INACTIVE_ON_START, DD.DD_DATA_USERVER_ON_START_DEFAULT^(Application.g_UDPServer!=null));
+		DD.setAppBoolean(DD.DD_DATA_USERVER_INACTIVE_ON_START, DD.DD_DATA_USERVER_ON_START_DEFAULT^(Application.getG_UDPServer()!=null));
 
 		if(DEBUG)System.err.println("ControlPane:userv:done");
 
@@ -1280,21 +1280,21 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		if(DEBUG)System.err.println("Done Setting: "+_run);
 		if(DD.GUI) {
 			if(EventQueue.isDispatchThread()) {
-				if(Application.g_NATServer!=null) startNATServer.setText(STOP_NSERVER);
+				if(Application.getG_NATServer()!=null) startNATServer.setText(STOP_NSERVER);
 				else startNATServer.setText(START_NSERVER);		
 			}
 			else
 				EventQueue.invokeLater(new Runnable(){
 					public void run(){
-						if(Application.g_NATServer!=null) startNATServer.setText(STOP_NSERVER);
+						if(Application.getG_NATServer()!=null) startNATServer.setText(STOP_NSERVER);
 						else startNATServer.setText(START_NSERVER);		
 					}
 				});
 		}
 		
-		if(DEBUG)System.err.println("Save Setting: "+Application.g_NATServer);
+		if(DEBUG)System.err.println("Save Setting: "+Application.getG_NATServer());
 		
-		DD.setAppBoolean(DD.DD_DATA_NSERVER_INACTIVE_ON_START, DD.DD_DATA_NSERVER_ON_START_DEFAULT^(Application.g_NATServer!=null));
+		DD.setAppBoolean(DD.DD_DATA_NSERVER_INACTIVE_ON_START, DD.DD_DATA_NSERVER_ON_START_DEFAULT^(Application.getG_NATServer()!=null));
 
 		if(DEBUG)System.err.println("ControlPane:nserv:done");
 
@@ -1374,18 +1374,18 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 
 		if(DD.GUI){
 			if(EventQueue.isDispatchThread()) {
-				if(Application.g_PollingStreamingClient!=null) startClient.setText(STOP_CLIENT);
+				if(Application.getG_PollingStreamingClient()!=null) startClient.setText(STOP_CLIENT);
 				else startClient.setText(START_CLIENT);
 			}else{
 				EventQueue.invokeLater(new Runnable() {
 					public void run(){
-						if(Application.g_PollingStreamingClient!=null) startClient.setText(STOP_CLIENT);
+						if(Application.getG_PollingStreamingClient()!=null) startClient.setText(STOP_CLIENT);
 						else startClient.setText(START_CLIENT);
 					}
 				});
 			}
 		}
-		DD.setAppBoolean(DD.DD_DATA_CLIENT_INACTIVE_ON_START, DD.DD_DATA_CLIENT_ON_START_DEFAULT^(Application.g_PollingStreamingClient!=null));	
+		DD.setAppBoolean(DD.DD_DATA_CLIENT_INACTIVE_ON_START, DD.DD_DATA_CLIENT_ON_START_DEFAULT^(Application.getG_PollingStreamingClient()!=null));	
 	}
 	public void setDirectoryStatus(boolean run) throws NumberFormatException, P2PDDSQLException {
 				if(run) DD.startDirectoryServer(true, -1);
@@ -1395,19 +1395,19 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 
 				if(DD.GUI){
 					if(EventQueue.isDispatchThread()) {
-						if(Application.g_DirectoryServer!=null) startDirectoryServer.setText(STOP_DIR);
+						if(Application.getG_DirectoryServer()!=null) startDirectoryServer.setText(STOP_DIR);
 						else startDirectoryServer.setText(START_DIR);
 					}
 					else
 						EventQueue.invokeLater(new Runnable() {
 							public void run(){
-								if(Application.g_DirectoryServer!=null) startDirectoryServer.setText(STOP_DIR);
+								if(Application.getG_DirectoryServer()!=null) startDirectoryServer.setText(STOP_DIR);
 								else startDirectoryServer.setText(START_DIR);
 							}
 						});
 				}
-				DD.setAppText(DD.DD_DIRECTORY_SERVER_ON_START, (Application.g_DirectoryServer==null)?"0":"1");		
-				if(DEBUG) System.out.println("ControlPanel:setDirStatus:DS running="+Application.g_DirectoryServer);
+				DD.setAppText(DD.DD_DIRECTORY_SERVER_ON_START, (Application.getG_DirectoryServer()==null)?"0":"1");		
+				if(DEBUG) System.out.println("ControlPanel:setDirStatus:DS running="+Application.getG_DirectoryServer());
 	}
 	//@Override
 	public void actionPerformed(ActionEvent e) {
@@ -1469,17 +1469,17 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				if(DEBUG)System.out.println("Broadcastable will be toggled to ="+val);
 				HandlingMyself_Peer.setAmIBroadcastable(val);
 			}else if (c_server.equals(e.getActionCommand())) {
-				setServerStatus(Application.g_TCPServer == null);
+				setServerStatus(Application.getG_TCPServer() == null);
 			}else if (c_userver.equals(e.getActionCommand())) {
-				setUServerStatus(Application.g_UDPServer == null);
+				setUServerStatus(Application.getG_UDPServer() == null);
 			}else if (c_nserver.equals(e.getActionCommand())) {
-				setNServerStatus(Application.g_NATServer == null);
+				setNServerStatus(Application.getG_NATServer() == null);
 			}else if (c_broadcast_server.equals(e.getActionCommand())) {
 				if(DEBUG)System.out.println("Action Broadcast Server");
-				DD.setBroadcastServerStatus(Application.g_BroadcastServer == null);
+				DD.setBroadcastServerStatus(Application.getG_BroadcastServer() == null);
 			}else if (c_broadcast_client.equals(e.getActionCommand())) {
 				if(DEBUG)System.out.println("Action Broadcast Client");
-				DD.setBroadcastClientStatus(Application.g_BroadcastClient == null);
+				DD.setBroadcastClientStatus(Application.getG_BroadcastClient() == null);
 			}else if (c_simulator.equals(e.getActionCommand())) {
 				if(DEBUG)System.out.println("Action Simulator");
 				DD.setSimulatorStatus(Application.g_Simulator == null);
@@ -1496,11 +1496,11 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				if (DEBUG || ClientUpdates.DEBUG) System.out.println("ControlPane: actionPerformed: object _run = "+_run);
 				setClientUpdatesStatus(_run);
 			}else if (c_client.equals(e.getActionCommand())) {
-				setClientStatus(Application.g_PollingStreamingClient == null);
+				setClientStatus(Application.getG_PollingStreamingClient() == null);
 			}else if (c_t_client.equals(e.getActionCommand())) {
 				DD.touchClient();
 			}else if (c_directory.equals(e.getActionCommand())) {
-				setDirectoryStatus(Application.g_DirectoryServer == null);
+				setDirectoryStatus(Application.getG_DirectoryServer() == null);
 			}else if (c_peerID.equals(e.getActionCommand())) {
 				//MyselfHandling.createMyPeerID();
 				String name = HandlingMyself_Peer.getMyPeerName(); //Identity.current_peer_ID.name;

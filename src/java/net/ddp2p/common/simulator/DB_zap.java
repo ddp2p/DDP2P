@@ -11,7 +11,7 @@ public class DB_zap {
 	
 	@SuppressWarnings("static-access")
 	public static void main (String[] args) throws ASN1DecoderFail, InterruptedException, P2PDDSQLException{
-		Application.db = new DBInterface("deliberation-app.db");
+		Application.setDB(new DBInterface("deliberation-app.db"));
 		Fill_database f = new Fill_database();
 		f.cleanDatabase();
 		System.out.println("db_deleted");

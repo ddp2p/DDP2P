@@ -116,7 +116,7 @@ public class D_TesterIntroducer extends ASNObj implements Comparable<D_TesterInt
 			ArrayList<D_TesterIntroducer> result = new ArrayList<D_TesterIntroducer>();
 			ArrayList<ArrayList<Object>> obj;
 			try {
-				obj = Application.db.select(sql_load_testerIntroducers, new String[] {tLID}, DEBUG);
+				obj = Application.getDB().select(sql_load_testerIntroducers, new String[] {tLID}, DEBUG);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return result;
@@ -197,7 +197,7 @@ public class D_TesterIntroducer extends ASNObj implements Comparable<D_TesterInt
 //			params[table.tester_introducer.F_ID] = Util.getStringID(testerIntroducer.testerIntroducerID);
 			
 			try {
-				Application.db.insert(net.ddp2p.common.table.tester_introducer.TNAME,
+				Application.getDB().insert(net.ddp2p.common.table.tester_introducer.TNAME,
 						net.ddp2p.common.table.tester_introducer._fields_tester_introducer_no_ID,
 						params,
 						DEBUG);
@@ -223,7 +223,7 @@ public class D_TesterIntroducer extends ASNObj implements Comparable<D_TesterInt
 			params[net.ddp2p.common.table.tester_introducer.F_ID] = Util.getStringID(testerIntroducerID);
 			
 			try {
-				Application.db.update(net.ddp2p.common.table.tester_introducer.TNAME, net.ddp2p.common.table.tester_introducer._fields_tester_introducer_no_ID,
+				Application.getDB().update(net.ddp2p.common.table.tester_introducer.TNAME, net.ddp2p.common.table.tester_introducer._fields_tester_introducer_no_ID,
 						new String[]{net.ddp2p.common.table.tester_introducer.testerIntroducerID},
 						params, DEBUG);
 			} catch (P2PDDSQLException e) {

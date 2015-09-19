@@ -36,7 +36,7 @@ public class UnitSetImport {
 			Vendor_JDBC_EMAIL_DB.initJDBCEmail();
 			
 			String db_to_import = args[0];
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 			DD.setAppText(DD.APP_DB_TO_IMPORT, db_to_import);
 			System.out.println("UnitSetImport: Saved in application field="+DD.APP_DB_TO_IMPORT+" value="+args[0]);
 		} catch (P2PDDSQLException e) {

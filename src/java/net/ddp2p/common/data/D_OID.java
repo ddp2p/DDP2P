@@ -27,7 +27,7 @@ public class D_OID {
 			" FROM "+
 					net.ddp2p.common.table.oid.TNAME +";";
 			try {
-				ArrayList<ArrayList<Object>> oids = Application.db.select(sql, new String[]{},DEBUG);
+				ArrayList<ArrayList<Object>> oids = Application.getDB().select(sql, new String[]{},DEBUG);
 				for (ArrayList<Object> o : oids) {
 					
 					D_OID param = new D_OID(); 

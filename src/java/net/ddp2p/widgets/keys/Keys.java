@@ -57,7 +57,7 @@ public class Keys extends JTable implements MouseListener {
 	private static final int DIM_Y = 50;
 
 	public Keys() {
-		super(new KeysModel(Application.db));
+		super(new KeysModel(Application.getDB()));
 		if(DEBUG) System.out.println("Orgs: constr from db");
 		init();
 	}

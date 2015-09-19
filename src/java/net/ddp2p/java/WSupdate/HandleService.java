@@ -371,7 +371,7 @@ public class HandleService {
     	URL url = isWSVersionInfoService(args[0]);
     
 		try {
-			net.ddp2p.common.config.Application.db = new net.ddp2p.common.util.DBInterface("deliberation-app.db"/*args[1]*/);
+			net.ddp2p.common.config.Application.setDB(new net.ddp2p.common.util.DBInterface("deliberation-app.db"/*args[1]*/));
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;

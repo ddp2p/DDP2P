@@ -283,7 +283,7 @@ class IdentityCustomAction extends DebateDecideAction {
     			//long pID = il.id;
     			il.sequence = 0;
     			try {
-    				Application.db.update(net.ddp2p.common.table.identity_value.TNAME,
+    				Application.getDB().update(net.ddp2p.common.table.identity_value.TNAME,
     						new String[]{net.ddp2p.common.table.identity_value.sequence_ordering},
     						new String[]{net.ddp2p.common.table.identity_value.identity_value_ID},
     						new String[]{""+il.sequence, Util.getStringID(il.id)}, DEBUG);
@@ -311,7 +311,7 @@ class IdentityCustomAction extends DebateDecideAction {
 					" JOIN "+net.ddp2p.common.table.identity_value.TNAME+" AS oi ON(iv."+net.ddp2p.common.table.identity_value.identity_ID+" = oi."+net.ddp2p.common.table.identity_value.identity_ID+") "+
     						" WHERE oi."+net.ddp2p.common.table.identity_value.identity_value_ID+"="+"?;";
     			try {
-					ArrayList<ArrayList<Object>> s = Application.db.select(sql_max, new String[]{Util.getStringID(il.id)}, DEBUG);
+					ArrayList<ArrayList<Object>> s = Application.getDB().select(sql_max, new String[]{Util.getStringID(il.id)}, DEBUG);
 					if(s.size()==0) il.sequence=0;
 					else il.sequence = Util.lval(s.get(0).get(0), -1)+1;
 				} catch (P2PDDSQLException e2) {
@@ -319,7 +319,7 @@ class IdentityCustomAction extends DebateDecideAction {
 					il.sequence++;
 				}
     			try {
-    				Application.db.update(net.ddp2p.common.table.identity_value.TNAME,
+    				Application.getDB().update(net.ddp2p.common.table.identity_value.TNAME,
     						new String[]{net.ddp2p.common.table.identity_value.sequence_ordering},
     						new String[]{net.ddp2p.common.table.identity_value.identity_value_ID},
     						new String[]{""+il.sequence, Util.getStringID(il.id)}, DEBUG);

@@ -142,7 +142,7 @@ public class D_FieldValue extends ASNObj{
 	
 	static public D_FieldValue[] getFieldValues(String constituentID) throws P2PDDSQLException{
 		D_FieldValue[] result = null;
-		ArrayList<ArrayList<Object>> all = Application.db.select(sql_get_const_fields, new String[]{constituentID}, DEBUG);
+		ArrayList<ArrayList<Object>> all = Application.getDB().select(sql_get_const_fields, new String[]{constituentID}, DEBUG);
 		int asz = all.size();
 		if(asz==0) return null;
 		result = new D_FieldValue[asz];
@@ -177,7 +177,7 @@ public class D_FieldValue extends ASNObj{
 	public static void store(boolean sync, D_FieldValue[] address, String constituent_ID, 
 			long org_ID, boolean accept_new_fields, D_Organization org) throws P2PDDSQLException, ExtraFieldException {
 		if (address == null) return;
-		Application.db.delete(sync, net.ddp2p.common.table.field_value.TNAME, new String[]{net.ddp2p.common.table.field_value.constituent_ID}, new String[]{constituent_ID}, DEBUG);
+		Application.getDB().delete(sync, net.ddp2p.common.table.field_value.TNAME, new String[]{net.ddp2p.common.table.field_value.constituent_ID}, new String[]{constituent_ID}, DEBUG);
 		for (int k = 0; k < address.length; k ++)
 			store(sync, address[k], constituent_ID, org_ID, accept_new_fields, org);
 	}
@@ -195,7 +195,7 @@ public class D_FieldValue extends ASNObj{
 		params[net.ddp2p.common.table.field_value.VAL_COL_NEIGH_ID] = D_Neighborhood.getLIDstrFromGID(wf.global_neighborhood_ID, org_ID);
 		if(params[net.ddp2p.common.table.field_value.VAL_COL_NEIGH_ID]==null) // table contraint refuses null;
 			params[net.ddp2p.common.table.field_value.VAL_COL_NEIGH_ID] = net.ddp2p.common.table.field_extra.NEIGHBORHOOD_ID_NA;
-		long id=Application.db.insert(net.ddp2p.common.table.field_value.TNAME, fields, params, DEBUG);
+		long id=Application.getDB().insert(net.ddp2p.common.table.field_value.TNAME, fields, params, DEBUG);
 		if(DEBUG) System.out.println("D_FieldValue:store: end result="+id);
 		return id;
 	}

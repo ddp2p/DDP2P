@@ -40,7 +40,7 @@ class Directory_Client {
 		String addr=null;
 		String dir_address = null;
 		DBInterface db = new DBInterface(Application.DELIBERATION_FILE);
-		Application.db = db;
+		Application.setDB(db);
 		if (args.length > 0) hash = D_Peer.DB_getPeerGIDforID(args[0]);
 		System.out.println("Try: hash="+hash);
 		if(hash == null) return;

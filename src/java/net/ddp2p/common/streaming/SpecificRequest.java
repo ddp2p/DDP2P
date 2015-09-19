@@ -142,7 +142,7 @@ public class SpecificRequest extends ASNObj implements Summary{
 		long _peer_ID = Util.lval(peer_ID, -1);
 		if (_peer_ID == -1) return null;
 		SpecificRequest result = new SpecificRequest();
-		ArrayList<ArrayList<Object>> s = Application.db.select(sql_orgs_all_queried, new String[]{peer_ID, peer_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> s = Application.getDB().select(sql_orgs_all_queried, new String[]{peer_ID, peer_ID}, DEBUG);
 		
 		//if(s.size()==0) return null; // comment since there are also some global ones...
 		//RequestData rq = new RequestData();

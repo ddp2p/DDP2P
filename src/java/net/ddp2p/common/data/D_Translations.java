@@ -78,7 +78,7 @@ class D_Translations extends ASNObj{
 			//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=t."+table.translation.organization_ID+") "+
 			" WHERE t."+net.ddp2p.common.table.translation.translation_ID+"=?;"
 			;
-		ArrayList<ArrayList<Object>> w = Application.db.select(sql, new String[]{""+translationID}, _DEBUG);
+		ArrayList<ArrayList<Object>> w = Application.getDB().select(sql, new String[]{""+translationID}, _DEBUG);
 		if(w.size()>0) init(w.get(0));
 		if(_DEBUG) System.out.println("WB_Translations:WB_Translations: Done");
 	}
@@ -95,7 +95,7 @@ class D_Translations extends ASNObj{
 				//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=t."+table.translation.organization_ID+") "+
 				" WHERE t."+net.ddp2p.common.table.translation.global_translation_ID+"=?;"
 				;
-		ArrayList<ArrayList<Object>> w = Application.db.select(sql, new String[]{translationGID}, _DEBUG);
+		ArrayList<ArrayList<Object>> w = Application.getDB().select(sql, new String[]{translationGID}, _DEBUG);
 		if(w.size()>0) init(w.get(0));
 		if(_DEBUG) System.out.println("WB_Translations:WB_Translations: Done");
 	}
@@ -358,7 +358,7 @@ class D_Translations extends ASNObj{
 		String sql = "SELECT "+net.ddp2p.common.table.translation.translation_ID+
 		" FROM "+net.ddp2p.common.table.translation.TNAME+
 		" WHERE "+net.ddp2p.common.table.translation.global_translation_ID+"=?;";
-		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{global_translation_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> n = Application.getDB().select(sql, new String[]{global_translation_ID}, DEBUG);
 		if(n.size()==0) return null;
 		return Util.getString(n.get(0).get(0));
 	}
@@ -368,14 +368,14 @@ class D_Translations extends ASNObj{
 		String sql = "SELECT "+net.ddp2p.common.table.translation.translation_ID+","+net.ddp2p.common.table.translation.creation_date+
 		" FROM "+net.ddp2p.common.table.translation.TNAME+
 		" WHERE "+net.ddp2p.common.table.translation.global_translation_ID+"=?;";
-		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{global_translation_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> n = Application.getDB().select(sql, new String[]{global_translation_ID}, DEBUG);
 		if(n.size()==0) return null;
 		date[0] = Util.getString(n.get(0).get(1));
 		return Util.getString(n.get(0).get(0));
 	}
 	public static long insertTemporaryGID(String trans_GID, String org_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Transl:insertTemporaryGID: start");
-		return Application.db.insert(net.ddp2p.common.table.translation.TNAME,
+		return Application.getDB().insert(net.ddp2p.common.table.translation.TNAME,
 				new String[]{net.ddp2p.common.table.translation.global_translation_ID, net.ddp2p.common.table.translation.organization_ID},
 				new String[]{trans_GID, org_ID},
 				_DEBUG);
@@ -383,7 +383,7 @@ class D_Translations extends ASNObj{
 	private static String getDateFor(String transID) throws P2PDDSQLException {
 		String sql = "SELECT "+net.ddp2p.common.table.translation.creation_date+" FROM "+net.ddp2p.common.table.translation.TNAME+
 		" WHERE "+net.ddp2p.common.table.translation.translation_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{""+transID}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{""+transID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
@@ -479,7 +479,7 @@ class D_Translations extends ASNObj{
 		params[net.ddp2p.common.table.translation.T_ARRIVAL_DATE] = Encoder.getGeneralizedTime(arrival_date);
 		if(this.translation_ID == null) {
 			if(DEBUG) System.out.println("WB_Translations:storeVerified:inserting");
-			result = Application.db.insert(net.ddp2p.common.table.translation.TNAME,
+			result = Application.getDB().insert(net.ddp2p.common.table.translation.TNAME,
 					net.ddp2p.common.table.translation.fields_array,
 					params,
 					DEBUG
@@ -488,7 +488,7 @@ class D_Translations extends ASNObj{
 		}else{
 			if(DEBUG) System.out.println("WB_Translations:storeVerified:inserting");
 			params[net.ddp2p.common.table.translation.T_ID] = translation_ID;
-			Application.db.update(net.ddp2p.common.table.translation.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.translation.TNAME,
 					net.ddp2p.common.table.translation.fields_noID_array,
 					new String[]{net.ddp2p.common.table.translation.translation_ID},
 					params,
@@ -515,7 +515,7 @@ class D_Translations extends ASNObj{
 	public static String getLocalID(String global_translation_ID) throws P2PDDSQLException {
 		String sql = "SELECT "+net.ddp2p.common.table.translation.translation_ID+" FROM "+net.ddp2p.common.table.translation.TNAME+
 		" WHERE "+net.ddp2p.common.table.translation.global_translation_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_translation_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{global_translation_ID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
@@ -541,7 +541,7 @@ class D_Translations extends ASNObj{
 			" WHERE "+net.ddp2p.common.table.translation.global_translation_ID+"=? "+
 			" AND "+net.ddp2p.common.table.translation.organization_ID+"=? "+
 			" AND "+net.ddp2p.common.table.translation.signature + " IS NOT NULL ;";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{hash, orgID}, DEBUG);
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(sql, new String[]{hash, orgID}, DEBUG);
 		boolean result = true;
 		if(a.size()==0) result = false;
 		if(DEBUG||DBG) System.out.println("D_Translation:available: "+hash+" in "+orgID+" = "+result);

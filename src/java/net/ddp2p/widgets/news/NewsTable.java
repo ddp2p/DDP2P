@@ -64,7 +64,7 @@ public class NewsTable extends JTable implements MouseListener {
 	private static final boolean DEBUG = false;
 	private DocumentTitleRenderer titleRenderer;
 	public NewsTable() {
-		super(new NewsModel(Application.db));
+		super(new NewsModel(Application.getDB()));
 		init();
 	}
 	public NewsTable(DBInterface _db) {

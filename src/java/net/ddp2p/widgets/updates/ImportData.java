@@ -100,14 +100,14 @@ public class ImportData {
 //				    			if(ukeys.existsInDB()) ukeys.store("update"); 
 //				    			else ukeys.store("insert");
 				    			line=3;
-				    			Application.db.sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.tester.TNAME)));
+				    			Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.tester.TNAME)));
 			    			}catch(P2PDDSQLException e){}
 			             }
 				}//switch
 			}// loop
 			if(testerDef.size()!=0)result.testerDef = testerDef.toArray(new D_Tester[0]);
 			
-			if(result.existsInDB(Application.db)) result.store(D_MirrorInfo.action_update); 
+			if(result.existsInDB(Application.getDB())) result.store(D_MirrorInfo.action_update); 
 			else result.store(D_MirrorInfo.action_insert);
 			
 			

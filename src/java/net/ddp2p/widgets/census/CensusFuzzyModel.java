@@ -117,7 +117,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 	protected Double t3 = new Double(0);// Threshold Value
 
 	public CensusFuzzyModel(int sign, long orgID) {
-		Application.db.addListener(
+		Application.getDB().addListener(
 				this,
 				new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.witness.TNAME,
 						net.ddp2p.common.table.constituent.TNAME)), null);
@@ -193,7 +193,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 		String sqlTestEmptyTable = "Select * from witness";
 		boolean empty = true;// The table:witness is empty or not
 		try {
-			sqlResult = Application.db.select(sqlTestEmptyTable,
+			sqlResult = Application.getDB().select(sqlTestEmptyTable,
 					new String[] {});
 			if (sqlResult.size() != 0)
 				empty = false;
@@ -204,13 +204,13 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			String sql_witness_stances = "SELECT source_ID, target_ID,sense_y_n,witness_ID from witness,constituent "
 					+ "where constituent.organization_ID=? and constituent.constituent_ID=witness.target_ID";
 			try {
-				sqlResult = Application.db.select(
+				sqlResult = Application.getDB().select(
 						"SELECT max(source_ID) FROM witness", new String[] {});
 				if (sqlResult != null) {
 					maxRow = Integer.parseInt(net.ddp2p.common.util.Util.getString(sqlResult
 							.get(0).get(0)));
 				}
-				sqlResult = Application.db.select(
+				sqlResult = Application.getDB().select(
 						"SELECT max(target_ID) FROM witness", new String[] {});
 				if (sqlResult != null) {
 					maxColumn = Integer.parseInt(net.ddp2p.common.util.Util.getString(sqlResult
@@ -224,7 +224,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 						}
 					}
 				}
-				witness_stances = Application.db.select(sql_witness_stances,
+				witness_stances = Application.getDB().select(sql_witness_stances,
 						new String[] { Util.getString(organizationID) });
 				for (ArrayList witnessStance : witness_stances) {
 					sourceID = Integer.parseInt(net.ddp2p.common.util.Util
@@ -341,7 +341,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			ConstituentStatictics statistic = viewDataBuffer.get(constituentID);
 			ArrayList<Object> rowData = new ArrayList<Object>();
 			try {
-				constituentName = Application.db.select(
+				constituentName = Application.getDB().select(
 						"SELECT name from constituent where constituent_ID=?",
 						new String[] { Util.getString(constituentID) });
 			} catch (P2PDDSQLException e1) {
@@ -422,7 +422,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 					+ "		)"
 					+ "		 group by target_ID"
 					+ "		)t1, constituent where t1.target_ID=constituent.constituent_ID and constituent.organization_ID=?;";
-			sqlResult = Application.db.select(sql,
+			sqlResult = Application.getDB().select(sql,
 					new String[] { currentOrgID }, DEBUG);
 			for (ArrayList rowData : sqlResult) {
 				int constituentID = Integer.parseInt(net.ddp2p.common.util.Util

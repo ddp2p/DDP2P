@@ -294,7 +294,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				" WHERE "+net.ddp2p.common.table.key.secret_key+" IS NOT NULL;";
 			ArrayList<ArrayList<Object>> c;
 			try {
-				c = Application.db.select(sql_gid, new String[]{}, DEBUG);
+				c = Application.getDB().select(sql_gid, new String[]{}, DEBUG);
 				for(ArrayList<Object> i: c){
 					String gid = Util.getString(i.get(0));
 					String hash = Util.getString(i.get(1));
@@ -1590,10 +1590,10 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				//String sign = "";//sign hash with secret key
 				try {
 					//String _date = Util.getGeneralizedTime();
-					ArrayList<ArrayList<Object>> a = Application.db.select("SELECT * FROM "+net.ddp2p.common.table.key.TNAME+" WHERE "+net.ddp2p.common.table.key.ID_hash+"=?;",
+					ArrayList<ArrayList<Object>> a = Application.getDB().select("SELECT * FROM "+net.ddp2p.common.table.key.TNAME+" WHERE "+net.ddp2p.common.table.key.ID_hash+"=?;",
 							new String[]{gIDhash}, DEBUG);
 					if (a.size() <= 0) {
-						Application.db.insert(net.ddp2p.common.table.key.TNAME, 
+						Application.getDB().insert(net.ddp2p.common.table.key.TNAME, 
 								new String[]{net.ddp2p.common.table.key.ID_hash,net.ddp2p.common.table.key.public_key,net.ddp2p.common.table.key.secret_key,net.ddp2p.common.table.key.type,net.ddp2p.common.table.key.creation_date},
 								new String[]{gIDhash, gID, sID, type, date});
 					}

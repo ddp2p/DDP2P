@@ -111,8 +111,8 @@ public class TranslatedLabel extends JComboBox implements ActionListener, MouseL
 		addMouseListener(this); /// listening on editor
     	if(!this.isFocusable())
     		setToolTipText(block_tip);
-    	if(Application.db != null) {
-    		Application.db.addListener(this, new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.translation.TNAME)),
+    	if(Application.getDB() != null) {
+    		Application.getDB().addListener(this, new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.translation.TNAME)),
     				DBSelector.getHashTable(net.ddp2p.common.table.translation.TNAME, net.ddp2p.common.table.translation.value, _text));
     	}
 	}

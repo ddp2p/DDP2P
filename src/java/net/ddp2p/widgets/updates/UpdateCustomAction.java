@@ -99,10 +99,10 @@ public class UpdateCustomAction extends DebateDecideAction {
         if(cmd == M_DELETE) {
         	if((row>=0)&&(mirror_ID!=null))
 				try {
-					Application.db.delete(net.ddp2p.common.table.mirror.TNAME,
+					Application.getDB().delete(net.ddp2p.common.table.mirror.TNAME,
 							new String[]{net.ddp2p.common.table.mirror.mirror_ID},
 							new String[]{mirror_ID}, _DEBUG);
-					Application.db.sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.mirror.TNAME)));
+					Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.mirror.TNAME)));
 					model.update(null,null);
 					
     	    	    ((UpdatesTable)tree).repaint();

@@ -35,7 +35,7 @@ public class UpdatesTable extends JTable implements MouseListener{
 	private UpdatesPanel updatesPanel;
 
 	public UpdatesTable(UpdatesPanel updatesPanel) {
-		super(new UpdatesModel(Application.db));
+		super(new UpdatesModel(Application.getDB()));
 		this.updatesPanel = updatesPanel;
 		init();
 	}

@@ -97,7 +97,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		ArrayList<Long> result = new ArrayList<Long>();
 		ArrayList<ArrayList<Object>> obj;
 		try {
-			obj = Application.db.select(sql_load_all_senderPeerIDs_from_RecOT, new String[] {}, DEBUG);
+			obj = Application.getDB().select(sql_load_all_senderPeerIDs_from_RecOT, new String[] {}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return result;
@@ -124,7 +124,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		ArrayList<Long> result = new ArrayList<Long>();
 		ArrayList<ArrayList<Object>> obj;
 		try {
-			obj = Application.db.select(sql_load_all_testersIDs_from_RecOT, new String[] {}, DEBUG);
+			obj = Application.getDB().select(sql_load_all_testersIDs_from_RecOT, new String[] {}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return result;
@@ -150,7 +150,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		ArrayList<Long> result = new ArrayList<Long>();
 		ArrayList<ArrayList<Object>> obj;
 		try {
-			obj = Application.db.select(sql_load_allRecOT, new String[] {}, DEBUG);
+			obj = Application.getDB().select(sql_load_allRecOT, new String[] {}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return result;
@@ -172,7 +172,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		ArrayList<Long> result = new ArrayList<Long>();
 		ArrayList<ArrayList<Object>> obj;
 		try {
-			obj = Application.db.select(sql_load_allRecOTByPeer, new String[] {pLID}, DEBUG);
+			obj = Application.getDB().select(sql_load_allRecOTByPeer, new String[] {pLID}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return result;
@@ -209,7 +209,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			+ " WHERE "+net.ddp2p.common.table.recommendation_of_tester.senderPeerLID+"=? "
 			+ " AND "+net.ddp2p.common.table.recommendation_of_tester.testerLID+"=?;";
 	public void init(long peer_LID, long tester_LID) throws Exception {
-		ArrayList<ArrayList<Object>> obj = Application.db.select(sql_load_recOT, new String[] {Util.getStringID(peer_LID), Util.getStringID(tester_LID)}, DEBUG);
+		ArrayList<ArrayList<Object>> obj = Application.getDB().select(sql_load_recOT, new String[] {Util.getStringID(peer_LID), Util.getStringID(tester_LID)}, DEBUG);
 		if (obj.size() <= 0) throw new  Exception("D_RecommendationOfTester: init:None for GID="+peer_LID+","+tester_LID);
 		init(obj.get(0));
 		if(DEBUG) System.out.println("D_RecommendationOfTester: init: got="+this);//result);
@@ -219,7 +219,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			+ " FROM "+net.ddp2p.common.table.recommendation_of_tester.TNAME
 			+ " WHERE "+net.ddp2p.common.table.recommendation_of_tester.recommendationID+"=?;";
 	private void init(long recommendation_LID) throws Exception {
-		ArrayList<ArrayList<Object>> obj = Application.db.select(sql_load_recOTBtLID, new String[] {Util.getStringID(recommendation_LID)}, DEBUG);
+		ArrayList<ArrayList<Object>> obj = Application.getDB().select(sql_load_recOTBtLID, new String[] {Util.getStringID(recommendation_LID)}, DEBUG);
 		if (obj.size() <= 0) throw new  Exception("D_RecommendationOfTester: init: None for LID="+recommendation_LID);
 		init(obj.get(0));
 		if(DEBUG) System.out.println("D_RecommendationOfTester: init: got="+this);//result);
@@ -403,7 +403,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		if (this.isDeleteFlag()) {
 			if(DEBUG)System.out.println("Try to delete:"+ recommendationID);
 			if (recommendationID > 0)
-				Application.db.delete(true, net.ddp2p.common.table.recommendation_of_tester.TNAME,
+				Application.getDB().delete(true, net.ddp2p.common.table.recommendation_of_tester.TNAME,
 						new String[] {net.ddp2p.common.table.recommendation_of_tester.recommendationID},
 						new String[]{this.recommendationID+""}, DEBUG);
 			this.releaseReference();
@@ -434,7 +434,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		
 		
 		if (update) {
-			Application.db.update(net.ddp2p.common.table.recommendation_of_tester.TNAME, net.ddp2p.common.table.recommendation_of_tester._fields_recommendationOfTester_no_ID,
+			Application.getDB().update(net.ddp2p.common.table.recommendation_of_tester.TNAME, net.ddp2p.common.table.recommendation_of_tester._fields_recommendationOfTester_no_ID,
 					new String[]{net.ddp2p.common.table.recommendation_of_tester.recommendationID},
 					params,DEBUG);
 		}else{
@@ -443,7 +443,7 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			String params2[]=new String[net.ddp2p.common.table.recommendation_of_tester.F_FIELDS_NOID];
 			System.arraycopy(params,0,params2,0,params2.length);
 			if(DEBUG)System.out.println("params2[last]: "+ params2[net.ddp2p.common.table.recommendation_of_tester.F_FIELDS_NOID-1]);
-			setLID_AndLink(Application.db.insert(net.ddp2p.common.table.recommendation_of_tester.TNAME, net.ddp2p.common.table.recommendation_of_tester._fields_recommendationOfTester_no_ID,params2, DEBUG));
+			setLID_AndLink(Application.getDB().insert(net.ddp2p.common.table.recommendation_of_tester.TNAME, net.ddp2p.common.table.recommendation_of_tester._fields_recommendationOfTester_no_ID,params2, DEBUG));
 			if(DEBUG)System.out.println("this.recommendationID: "+ this.recommendationID);
 		}
 		

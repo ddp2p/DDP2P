@@ -121,7 +121,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
     	} else {
     		MainFrame.status.setMeConstituent(D_Constituent.getConstByLID(constituentID, true, false));
     	}
-    	ConstituentsModel cm = new ConstituentsModel(Application.db, organizationID, constituentID, global_constituentID, org, this);
+    	ConstituentsModel cm = new ConstituentsModel(Application.getDB(), organizationID, constituentID, global_constituentID, org, this);
      	tree = new ConstituentsTree(cm);
     	long cID = cm.getConstituentIDMyself();
 		cm.expandConstituentID(tree, ( (cID <= 0) ? null:(""+cID)), true);

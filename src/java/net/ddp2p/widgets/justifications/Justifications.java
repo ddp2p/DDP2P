@@ -81,14 +81,14 @@ public class Justifications extends JTable implements MouseListener, Justificati
 	DefaultTableCellRenderer centerRenderer;
 	BulletRenderer hotRenderer;
 	public Justifications(int dim_x) {
-		super(new JustificationsModel(Application.db));
+		super(new JustificationsModel(Application.getDB()));
 		DIM_X = dim_x;
 		//getModel().columnNames = getModel().getCrtColumns();
 		init();
 		//getModel().setCrtChoice(null);
 	}
 	public Justifications() {
-		super(new JustificationsModel(Application.db));
+		super(new JustificationsModel(Application.getDB()));
 		//getModel().columnNames = getModel().getCrtColumns();
 		init();
 		//getModel().setCrtChoice(null);
@@ -643,10 +643,10 @@ class JustificationsCustomAction extends DebateDecideAction {
     		String _j_ID = model.getJustificationID(row);
     		if(_j_ID == null) return;
     		try {
-				Application.db.delete(net.ddp2p.common.table.justification.TNAME,
+				Application.getDB().delete(net.ddp2p.common.table.justification.TNAME,
 						new String[]{net.ddp2p.common.table.justification.justification_ID},
 						new String[]{_j_ID}, DEBUG);
-				Application.db.delete(net.ddp2p.common.table.signature.TNAME,
+				Application.getDB().delete(net.ddp2p.common.table.signature.TNAME,
 						new String[]{net.ddp2p.common.table.signature.justification_ID},
 						new String[]{_j_ID}, DEBUG);
 			} catch (P2PDDSQLException e1) {
@@ -655,15 +655,15 @@ class JustificationsCustomAction extends DebateDecideAction {
     	}
     	if(cmd == J_DEL_PARTIAL) {
     		try {
-				Application.db.delete(
+				Application.getDB().delete(
 						"DELETE FROM "+net.ddp2p.common.table.justification.TNAME+
 						" WHERE "+net.ddp2p.common.table.justification.signature+" IS NULL OR "+net.ddp2p.common.table.justification.global_justification_ID+" IS NULL",
 						new String[]{}, DEBUG);
-				Application.db.delete(
+				Application.getDB().delete(
 						"DELETE FROM "+net.ddp2p.common.table.signature.TNAME+
 						" WHERE "+net.ddp2p.common.table.signature.signature+" IS NULL OR "+net.ddp2p.common.table.signature.global_signature_ID+" IS NULL",
 						new String[]{}, DEBUG);
-				Application.db.sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.justification.TNAME,net.ddp2p.common.table.signature.TNAME)));
+				Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.justification.TNAME,net.ddp2p.common.table.signature.TNAME)));
 			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}

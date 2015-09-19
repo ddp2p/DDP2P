@@ -76,7 +76,7 @@ public class ConstituentHandling {
 			maxDate = _maxDate[0];
 			if ((_maxDate != null) && (_maxDate.length > 0)) _maxDate[0] = maxDate;
 		}
-		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
+		ArrayList<ArrayList<Object>> result = Application.getDB().select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
 				new String[] {org_id, last_sync_date, maxDate}, DEBUG);
 
 		Hashtable<String, String> retval = Util.AL_AL_O_2_HSS_SS(result);
@@ -118,7 +118,7 @@ public class ConstituentHandling {
 	public static ASNConstituentOP[] getConstituentOPs(ASNSyncRequest asr, String last_sync_date, String gid, String org_id, String[] _maxDate) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("\n************\nConstituentHandling: getConstituentOPs: from date="+last_sync_date+" orgID="+org_id+" to:"+_maxDate[0]);
 		
-		ArrayList<ArrayList<Object>> al = Application.db.select(sql_get_const_ops_min_max_no_terminator+" LIMIT "+BIG_LIMIT+";",
+		ArrayList<ArrayList<Object>> al = Application.getDB().select(sql_get_const_ops_min_max_no_terminator+" LIMIT "+BIG_LIMIT+";",
 				new String[]{org_id, last_sync_date, _maxDate[0]}, DEBUG);
 		
 		int constits = al.size();
@@ -153,7 +153,7 @@ public class ConstituentHandling {
 	public static ASNConstituentOP[] getConstituentsModifs(String local_id, String last_sync_date) throws P2PDDSQLException {
 		if(DEBUG) out.println("\n********\nConstituentHandling:getConstituentsModifs: id="+local_id+" from="+last_sync_date);
 		ArrayList<ArrayList<Object>> al = 
-			Application.db.select(sql_get_const_ops_min_no_terminator+" LIMIT "+BIG_LIMIT+";", new String[]{local_id, last_sync_date});
+			Application.getDB().select(sql_get_const_ops_min_no_terminator+" LIMIT "+BIG_LIMIT+";", new String[]{local_id, last_sync_date});
 		ASNConstituentOP result[] = new ASNConstituentOP[al.size()];
 		for(int k=0; k < al.size(); k++) {
 			result[k] = new ASNConstituentOP();
@@ -197,11 +197,11 @@ public class ConstituentHandling {
 	
 		ArrayList<ArrayList<Object>> constit;
 		if(ofi==null){
-			constit = Application.db.select(sql_no_filter, new String[]{last_sync_date, maxDate}, DEBUG);			
+			constit = Application.getDB().select(sql_no_filter, new String[]{last_sync_date, maxDate}, DEBUG);			
 		}else{
 			long orgID = D_Organization.getLIDbyGIDorGIDH(ofi.orgGID, ofi.orgGID_hash);
 					//UpdateMessages.getonly_organizationID(ofi.orgGID, ofi.orgGID_hash);
-			constit = Application.db.select(sql_filter, new String[]{""+orgID, last_sync_date, maxDate}, DEBUG);
+			constit = Application.getDB().select(sql_filter, new String[]{""+orgID, last_sync_date, maxDate}, DEBUG);
 		}
 		for (ArrayList<Object> a : constit) {
 				orgs.add(Util.getString(a.get(3)));
@@ -247,12 +247,12 @@ public class ConstituentHandling {
 		ArrayList<ArrayList<Object>> constit;
 		if (ofi == null) {
 			if (DEBUG) System.out.println("ConstituentHandling: getConstituentOPsDate':  null ofi");
-			constit = Application.db.select(sql_no_filter, new String[]{last_sync_date}, DEBUG);			
+			constit = Application.getDB().select(sql_no_filter, new String[]{last_sync_date}, DEBUG);			
 		} else {
 			if (DEBUG) System.out.println("ConstituentHandling: getConstituentOPsDate':  ofi");
 			long orgID = D_Organization.getLIDbyGIDorGIDH(ofi.orgGID, ofi.orgGID_hash);
 			//UpdateMessages.getonly_organizationID(ofi.orgGID, ofi.orgGID_hash);
-			constit = Application.db.select(sql_filter, new String[]{""+orgID, last_sync_date}, DEBUG);
+			constit = Application.getDB().select(sql_filter, new String[]{""+orgID, last_sync_date}, DEBUG);
 		}
 		/*
 		 * Get the list of involved organization, except for the uppmost, if the limit was reached

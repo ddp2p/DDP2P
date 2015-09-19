@@ -300,7 +300,7 @@ public class DD_IdentityVerification_Answer extends ASNObj implements StegoStruc
 			
 			String database = Application.DELIBERATION_FILE;
 			if(args.length>0) database = args[0];
-			Application.db = new DBInterface(database);
+			Application.setDB(new DBInterface(database));
 
 			//util.DD_IdentityVerification_Request r = new DD_IdentityVerification_Request();
 			net.ddp2p.common.util.DD_IdentityVerification_Answer a = new DD_IdentityVerification_Answer();

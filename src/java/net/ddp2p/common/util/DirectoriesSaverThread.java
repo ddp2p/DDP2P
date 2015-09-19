@@ -63,7 +63,7 @@ class DirectoriesSaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				e.printStackTrace();
 			}
 		}
-		if (Application.g_TCPServer != null) {
+		if (Application.getG_TCPServer() != null) {
 			//HandlingMyself_Peer.updateAddress(HandlingMyself_Peer.get_myself_with_wait());
 			D_Peer myself = HandlingMyself_Peer.get_myself_or_null();
 			if (myself != null) {

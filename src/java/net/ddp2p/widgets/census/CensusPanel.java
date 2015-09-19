@@ -480,7 +480,7 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 
 	public static void main(String[] args) {
 		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 		} catch (P2PDDSQLException e) {
 		}
 		JFrame wg = new CensusFuzzy(-1, -1).getCensusFuzzyFrame();

@@ -83,7 +83,7 @@ public class OrgExtra extends JTable implements MouseListener, ActionListener {
 	public OIDComboBox comboBox;
 	// private ColorRenderer colorRenderer;
 	public OrgExtra() {
-		super(new OrgExtraModel(Application.db));
+		super(new OrgExtraModel(Application.getDB()));
 		init();
 	}
 	public OrgExtra(DBInterface _db) {

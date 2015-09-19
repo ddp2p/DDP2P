@@ -354,7 +354,7 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 			String ID = getLocalPluginIDforGID(pluginGID);
 			
 			if(data == null){
-				Application.db.delete(net.ddp2p.common.table.plugin_local_storage.TNAME,
+				Application.getDB().delete(net.ddp2p.common.table.plugin_local_storage.TNAME,
 						new String[]{net.ddp2p.common.table.plugin_local_storage.plugin_ID, net.ddp2p.common.table.plugin_local_storage.plugin_key},
 						new String[]{ID, key},
 						DEBUG);
@@ -365,16 +365,16 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 				"SELECT "+net.ddp2p.common.table.plugin_local_storage.data+
 				" FROM "+net.ddp2p.common.table.plugin_local_storage.TNAME+
 				" WHERE "+net.ddp2p.common.table.plugin_local_storage.plugin_ID+"=? AND "+net.ddp2p.common.table.plugin_local_storage.plugin_key+"=?;";
-			ArrayList<ArrayList<Object>> d = Application.db.select(sql, new String[]{ID, key}, DEBUG);
+			ArrayList<ArrayList<Object>> d = Application.getDB().select(sql, new String[]{ID, key}, DEBUG);
 			if(d.size()!=0) {
-				Application.db.update(net.ddp2p.common.table.plugin_local_storage.TNAME,
+				Application.getDB().update(net.ddp2p.common.table.plugin_local_storage.TNAME,
 						new String[]{net.ddp2p.common.table.plugin_local_storage.data}, 
 						new String[]{net.ddp2p.common.table.plugin_local_storage.plugin_ID,net.ddp2p.common.table.plugin_local_storage.plugin_key}, 
 						new String[]{_data, ID, key}, DEBUG);
 				
 				return true;
 			}else{
-				Application.db.insert(net.ddp2p.common.table.plugin_local_storage.TNAME,
+				Application.getDB().insert(net.ddp2p.common.table.plugin_local_storage.TNAME,
 					new String[]{net.ddp2p.common.table.plugin_local_storage.plugin_ID,net.ddp2p.common.table.plugin_local_storage.plugin_key,net.ddp2p.common.table.plugin_local_storage.data}, 
 					new String[]{ID, key, _data}, DEBUG);
 			}
@@ -388,7 +388,7 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 	private static String getLocalPluginIDforGID(String pluginGID) throws P2PDDSQLException {
 		String sql = "SELECT "+net.ddp2p.common.table.plugin.plugin_ID+" FROM "+net.ddp2p.common.table.plugin.TNAME+
 		" WHERE "+net.ddp2p.common.table.plugin.global_plugin_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{pluginGID}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{pluginGID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
@@ -426,7 +426,7 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 			"SELECT "+net.ddp2p.common.table.plugin_local_storage.data+
 			" FROM "+net.ddp2p.common.table.plugin_local_storage.TNAME+
 			" WHERE "+net.ddp2p.common.table.plugin_local_storage.plugin_ID+"=? AND "+net.ddp2p.common.table.plugin_local_storage.plugin_key+"=?;";
-		ArrayList<ArrayList<Object>> d = Application.db.select(sql, new String[]{pluginID, key}, DEBUG);
+		ArrayList<ArrayList<Object>> d = Application.getDB().select(sql, new String[]{pluginID, key}, DEBUG);
 		if(d.size()==0) return null;
 		String data = Util.getString(d.get(0).get(0));
 		return Util.byteSignatureFromString(data);

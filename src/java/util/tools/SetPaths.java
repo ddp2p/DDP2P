@@ -21,7 +21,7 @@ public class SetPaths {
 			if(!linux_path.endsWith(Application.LINUX_PATH_SEPARATOR)) linux_path += Application.LINUX_PATH_SEPARATOR;
 			String _linux_parent=Util.getParent(linux_path);
 			if((_linux_parent!=null) && !_linux_parent.endsWith(Application.LINUX_PATH_SEPARATOR)) _linux_parent += Application.LINUX_PATH_SEPARATOR;
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 			DD.setAppText(DD.APP_LINUX_INSTALLATION_PATH, linux_path);
 			DD.setAppText(DD.APP_LINUX_INSTALLATION_ROOT_PATH, _linux_parent);
 			System.out.println("Saved in application field="+DD.APP_LINUX_INSTALLATION_PATH+" value=\""+args[0]+"\"\nparent: \""+_linux_parent+"\"");

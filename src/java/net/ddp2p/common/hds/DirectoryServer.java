@@ -109,10 +109,10 @@ public class DirectoryServer extends net.ddp2p.common.util.DDP2P_ServiceThread{
 		}
 		udp_socket.setSoTimeout(Server.TIMEOUT_Server);
 		dsu = new DirectoryServerUDP(this);
-		if (Application.db_dir == null) {
+		if (Application.getDB_Dir() == null) {
 			db_dir = getDirDB(Application.CURRENT_DATABASE_DIR()+Application.DIRECTORY_FILE);
-			Application.db_dir = db_dir;
-		}else db_dir = Application.db_dir;
+			Application.setDB_Dir(db_dir);
+		}else db_dir = Application.getDB_Dir();
 		do {
 			try {
 				if (port <= 0) port = Server.getRandomPort();

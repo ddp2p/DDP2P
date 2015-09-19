@@ -133,7 +133,7 @@ public class PrivateOrgPanel extends JPanel implements  OrgListener{
     	if(DEBUG)System.out.println("PrivateOrgPanel:init: start");
     	try{
 	    	add(getNorthComponent(), BorderLayout.NORTH);
-	    	privateOrgTable = new PrivateOrgTable(Application.db, this);
+	    	privateOrgTable = new PrivateOrgTable(Application.getDB(), this);
 	    	privateOrgTableScroll = privateOrgTable.getScrollPane();
 	    	add(privateOrgTableScroll);
 			//addMouseListener(privateOrgTable);

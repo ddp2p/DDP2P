@@ -93,7 +93,7 @@ class D_MotionChoice extends ASNObj{
 	 */
 	public long save(String motionID, boolean sync) throws P2PDDSQLException {
 		long result = -1;
-		ArrayList<ArrayList<Object>> c = Application.db.select(sql_choice_IDs, new String[]{motionID, name, short_name}, DEBUG);
+		ArrayList<ArrayList<Object>> c = Application.getDB().select(sql_choice_IDs, new String[]{motionID, name, short_name}, DEBUG);
 		if(c.size()!=0){
 			String old = Util.getString(c.get(0).get(0));
 			Application_GUI.warning(Util.__("Duplicate motion choice:")+" "+old+"\n"+this, Util.__("Duplicate motion choice"));
@@ -104,9 +104,9 @@ class D_MotionChoice extends ASNObj{
 			params[net.ddp2p.common.table.motion_choice.CH_NAME] = name;
 			params[net.ddp2p.common.table.motion_choice.CH_SHORT_NAME] = short_name;
 			if(sync){
-				result = Application.db.insert(net.ddp2p.common.table.motion_choice.TNAME, net.ddp2p.common.table.motion_choice.fields_array,params,DEBUG);
+				result = Application.getDB().insert(net.ddp2p.common.table.motion_choice.TNAME, net.ddp2p.common.table.motion_choice.fields_array,params,DEBUG);
 			}else{
-				result = Application.db.insertNoSync(net.ddp2p.common.table.motion_choice.TNAME, net.ddp2p.common.table.motion_choice.fields_array,params,DEBUG);
+				result = Application.getDB().insertNoSync(net.ddp2p.common.table.motion_choice.TNAME, net.ddp2p.common.table.motion_choice.fields_array,params,DEBUG);
 			}
 			choice_ID = result+"";
 		}
@@ -125,7 +125,7 @@ class D_MotionChoice extends ASNObj{
 	public static D_MotionChoice[] getChoices(String motionID) throws P2PDDSQLException {
 		D_MotionChoice[] result;
 		String[] params=new String[]{motionID};
-		ArrayList<ArrayList<Object>> ch = Application.db.select(sql_get_choices, params, DEBUG);
+		ArrayList<ArrayList<Object>> ch = Application.getDB().select(sql_get_choices, params, DEBUG);
 		if (ch.size() == 0) return null;
 		result = new D_MotionChoice[ch.size()];
 		for(int k=0; k<result.length; k++) {

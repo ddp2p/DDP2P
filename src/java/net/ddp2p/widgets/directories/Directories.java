@@ -122,7 +122,7 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
 	MyDirComboBoxRenderer myDirComboBoxRenderer;
 	private XTableColumnModel yourColumnModel;
 	public Directories() {
-		super(new DirectoriesModel(Application.db));
+		super(new DirectoriesModel(Application.getDB()));
 		getModel().setTable(this);
 		init();
 	}
@@ -313,13 +313,13 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
 	 */
 	public static void main(String[] args) throws P2PDDSQLException {
 		String dfname = Application.DELIBERATION_FILE;
-		Application.db = new DBInterface(dfname);
+		Application.setDB(new DBInterface(dfname));
 		//DirectoriesTest dT = new DirectoriesTest(Application.db);
 		//DirectoriesModel dirsM = new DirectoriesModel(Application.db);
 		//Directories dirs = new Directories(dirsM);
 		//JScrollPane scrollPane = new JScrollPane(dirs);
 		//dirs.setFillsViewportHeight(true);
-		DirectoriesTest.createAndShowGUI(Application.db);
+		DirectoriesTest.createAndShowGUI(Application.getDB());
 	}
 	@Override
 	public void mouseClicked(MouseEvent arg0) {
@@ -701,7 +701,7 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	ArrayList<Address> askAddressUDP(InetSocketAddress _sock_addr, String global_peer_ID, String GIDH, 
 			String peer_ID, Address dir_address) {
 		if (DEBUG) System.out.println("Directories:askAddressUDP: enter dir_address = "+dir_address);
-		if ((Application.g_UDPServer == null) || (UDPServer.getUDPSocket() == null)) return null;
+		if ((Application.getG_UDPServer() == null) || (UDPServer.getUDPSocket() == null)) return null;
 		int udp_port = dir_address.udp_port;
 		if (udp_port <= 0) Util.printCallPath("udp_port="+dir_address.toLongString()); 
 		if (udp_port <= 0) udp_port = dir_address.getTCPPort();

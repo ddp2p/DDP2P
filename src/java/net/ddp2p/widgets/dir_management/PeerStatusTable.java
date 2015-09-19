@@ -56,7 +56,7 @@ public class PeerStatusTable extends JTable implements MouseListener{
 	private DirPanel dirPanel;
 
 	public PeerStatusTable(DirPanel dirPanel) {
-		super(new PeerStatusModel(Application.db, dirPanel));
+		super(new PeerStatusModel(Application.getDB(), dirPanel));
 		this.dirPanel = dirPanel;
 		init();
 	}

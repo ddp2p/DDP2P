@@ -87,7 +87,7 @@ class D_News extends ASNObj{
 			//" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=n."+table.news.motion_ID+")"+
 			" WHERE n."+net.ddp2p.common.table.news.news_ID+"=?;"
 			;
-		ArrayList<ArrayList<Object>> m = Application.db.select(sql, new String[]{news_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> m = Application.getDB().select(sql, new String[]{news_ID}, DEBUG);
 		if (m.size() == 0) return;
 		init(m.get(0));
 	}
@@ -105,7 +105,7 @@ class D_News extends ASNObj{
 			//" LEFT JOIN "+table.motion.TNAME+" AS m ON(m."+table.motion.motion_ID+"=n."+table.news.motion_ID+")"+
 			" WHERE n."+net.ddp2p.common.table.news.global_news_ID+"=?;"
 			;
-		ArrayList<ArrayList<Object>> m = Application.db.select(sql, new String[]{news_GID}, DEBUG);
+		ArrayList<ArrayList<Object>> m = Application.getDB().select(sql, new String[]{news_GID}, DEBUG);
 		if(m.size() == 0) return;
 		init(m.get(0));
 	}
@@ -457,7 +457,7 @@ class D_News extends ASNObj{
 	}
 	static long insertTemporaryGID(String const_GID, String org_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_News:insertTemporaryGID: start");
-		return Application.db.insert(net.ddp2p.common.table.news.TNAME,
+		return Application.getDB().insert(net.ddp2p.common.table.news.TNAME,
 				new String[]{net.ddp2p.common.table.news.global_news_ID, net.ddp2p.common.table.news.organization_ID},
 				new String[]{const_GID, org_ID},
 				DEBUG);
@@ -465,7 +465,7 @@ class D_News extends ASNObj{
 	private static String getDateFor(String newsID) throws P2PDDSQLException {
 		String sql = "SELECT "+net.ddp2p.common.table.news.creation_date+" FROM "+net.ddp2p.common.table.news.TNAME+
 		" WHERE "+net.ddp2p.common.table.news.news_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{""+newsID}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{""+newsID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
@@ -586,7 +586,7 @@ class D_News extends ASNObj{
 				if (o != null) o.resetCache(); // removing cached memory of statistics about justifications!
 			}
 			if (DEBUG) System.out.println("WB_Motion:storeVerified:inserting");
-			result = Application.db.insert(net.ddp2p.common.table.news.TNAME,
+			result = Application.getDB().insert(net.ddp2p.common.table.news.TNAME,
 					net.ddp2p.common.table.news.fields_array,
 					params,
 					DEBUG
@@ -595,7 +595,7 @@ class D_News extends ASNObj{
 		} else {
 			if(DEBUG) System.out.println("WB_Motion:storeVerified:updating");
 			params[net.ddp2p.common.table.news.N_ID] = news_ID;
-			Application.db.update(net.ddp2p.common.table.news.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.news.TNAME,
 					net.ddp2p.common.table.news.fields_no_ID_array,
 					new String[]{net.ddp2p.common.table.news.news_ID},
 					params,
@@ -651,7 +651,7 @@ class D_News extends ASNObj{
 	private static String getLocalIDandDate(String global_newsID,	String[] _old_date) throws P2PDDSQLException {
 		String sql = "SELECT "+net.ddp2p.common.table.news.news_ID+","+net.ddp2p.common.table.news.creation_date+" FROM "+net.ddp2p.common.table.news.TNAME+
 		" WHERE "+net.ddp2p.common.table.news.global_news_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_newsID}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{global_newsID}, DEBUG);
 		if(o.size()==0) return null;
 		_old_date[0] = Util.getString(o.get(0).get(1));
 		return Util.getString(o.get(0).get(0));
@@ -659,14 +659,14 @@ class D_News extends ASNObj{
 	public static String getLocalID(String global_newsID) throws P2PDDSQLException {
 		String sql = "SELECT "+net.ddp2p.common.table.news.news_ID+" FROM "+net.ddp2p.common.table.news.TNAME+
 		" WHERE "+net.ddp2p.common.table.news.global_news_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_newsID}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{global_newsID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
 	public static String getGlobalID(String newsID) throws P2PDDSQLException {
 		String sql = "SELECT "+net.ddp2p.common.table.news.global_news_ID+" FROM "+net.ddp2p.common.table.news.TNAME+
 		" WHERE "+net.ddp2p.common.table.news.news_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{newsID}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{newsID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
@@ -700,7 +700,7 @@ class D_News extends ASNObj{
 			" WHERE "+net.ddp2p.common.table.news.global_news_ID+"=? "+
 			" AND "+net.ddp2p.common.table.news.organization_ID+"=? "+
 			" AND "+net.ddp2p.common.table.news.signature + " IS NOT NULL;";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{hash, orgID}, DEBUG);
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(sql, new String[]{hash, orgID}, DEBUG);
 		boolean result = true;
 		if(a.size()==0) result = false;
 		if(DEBUG||DBG) System.out.println("D_News:available: "+hash+" in "+orgID+" = "+result);
@@ -708,7 +708,7 @@ class D_News extends ASNObj{
 	}
 	public static void main(String[] args) {
 		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 			if(args.length>0){readSignSave(3,1); if(true) return;}
 			
 			D_News c=new D_News(3);
@@ -753,9 +753,9 @@ class D_News extends ASNObj{
 		long result = 0;
 		try {
 			ArrayList<ArrayList<Object>> orgs;
-			if (days == 0) orgs = Application.db.select(sql_new, new String[]{orgID});
-			else if (days > 0) orgs = Application.db.select(sql_new_crea, new String[]{orgID, Util.getGeneralizedDate(days)});
-			else orgs = Application.db.select(sql_new_arriv, new String[]{orgID, Util.getGeneralizedDate(-days)});
+			if (days == 0) orgs = Application.getDB().select(sql_new, new String[]{orgID});
+			else if (days > 0) orgs = Application.getDB().select(sql_new_crea, new String[]{orgID, Util.getGeneralizedDate(days)});
+			else orgs = Application.getDB().select(sql_new_arriv, new String[]{orgID, Util.getGeneralizedDate(-days)});
 			if (orgs.size() > 0) result = Util.get_long(orgs.get(0).get(0));
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -771,8 +771,8 @@ class D_News extends ASNObj{
 		long result = 0;
 		try {
 			ArrayList<ArrayList<Object>> orgs;
-			if (days == 0) orgs = Application.db.select(sql_just, new String[]{j.getLIDstr()});
-			else orgs = Application.db.select(sql_just2, new String[]{j.getLIDstr(), Util.getGeneralizedDate(days)});
+			if (days == 0) orgs = Application.getDB().select(sql_just, new String[]{j.getLIDstr()});
+			else orgs = Application.getDB().select(sql_just2, new String[]{j.getLIDstr(), Util.getGeneralizedDate(days)});
 			
 			if (orgs.size() > 0)
 				result = Util.lval(orgs.get(0).get(0),0);
@@ -871,7 +871,7 @@ class D_News extends ASNObj{
 					boolean order_creation) {
 		
 		ArrayList<ArrayList<Object>> moti;
-		if (Application.db == null) return new ArrayList<ArrayList<Object>>();
+		if (Application.getDB() == null) return new ArrayList<ArrayList<Object>>();
 		String sql = sql_all_news;
 		if (crt_motion_LID != null) {
 			sql += " AND " + net.ddp2p.common.table.news.motion_ID + " = ?";
@@ -887,9 +887,9 @@ class D_News extends ASNObj{
 		if (LIMIT > 0)	sql	 +=	" LIMIT " + LIMIT;
 		try {
 			if (crt_motion_LID != null) {
-				moti = Application.db.select(sql+";", new String[]{o_LID, crt_motion_LID});
+				moti = Application.getDB().select(sql+";", new String[]{o_LID, crt_motion_LID});
 			} else {
-				moti = Application.db.select(sql+";", new String[]{o_LID});
+				moti = Application.getDB().select(sql+";", new String[]{o_LID});
 			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();

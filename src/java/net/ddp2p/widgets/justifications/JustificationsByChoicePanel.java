@@ -75,7 +75,7 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 	}
 	public void disconnectWidget() {
 		MainFrame.status.removeMotListener(this);
-		Application.db.delListener(this);
+		Application.getDB().delListener(this);
 	}
 	JustificationViewer _jedit = null;
 	//JPanel
@@ -101,7 +101,7 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 		Hashtable<String,DBSelector[]> h = new Hashtable<String,DBSelector[]>();
 		DBSelector s = new DBSelector(net.ddp2p.common.table.signature.motion_ID, motion_ID);
 		h.put(net.ddp2p.common.table.signature.TNAME, new DBSelector[]{s});
-		Application.db.addListener(this,
+		Application.getDB().addListener(this,
 				new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.signature.TNAME)),
 				h);
 	}
@@ -110,7 +110,7 @@ public class JustificationsByChoicePanel extends JPanel implements MotionsListen
 	public void motion_update(String motID, int col, D_Motion d_motion) {
 		if(DEBUG) System.out.println("JBC:motion_update motID="+motID);
 		if((motID==null) || (d_motion==null)) {
-			Application.db.delListener(this);
+			Application.getDB().delListener(this);
 			this.clean();
 			this.moti = d_motion;
 			motion_ID = motID;

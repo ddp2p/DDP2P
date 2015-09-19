@@ -209,7 +209,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 
 	private void init(Long lID) throws Exception {
 		ArrayList<ArrayList<Object>> a;
-		a = Application.db.select(cond_ID, new String[]{Util.getStringID(lID)});
+		a = Application.getDB().select(cond_ID, new String[]{Util.getStringID(lID)});
 		if (a.size() == 0) throw new Exception("D_Motion:init:None for lID="+lID);
 		init (a.get(0));
 		if(DEBUG) System.out.println("D_Motion: init: got="+this);//result);
@@ -217,7 +217,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public static ArrayList<ArrayList<Object>> getMotionArrayByGID(String gID) {
 		ArrayList<ArrayList<Object>> a;
 		try {
-			a = Application.db.select(cond_GID, new String[]{gID});
+			a = Application.getDB().select(cond_GID, new String[]{gID});
 			return a;
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -231,7 +231,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	 */
 	private void init(String gID) throws Exception {
 		ArrayList<ArrayList<Object>> db_data;
-		db_data = Application.db.select(cond_GID, new String[]{gID});
+		db_data = Application.getDB().select(cond_GID, new String[]{gID});
 		if (db_data.size() == 0) throw new Exception("D_Motion:init:None for GID="+gID);
 		init (db_data.get(0));
 		if(DEBUG) System.out.println("D_Motion: init: got="+this);//result);
@@ -304,7 +304,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		String my_const_sql = "SELECT "+net.ddp2p.common.table.my_motion_data.fields_list+
 				" FROM "+net.ddp2p.common.table.my_motion_data.TNAME+
 				" WHERE "+net.ddp2p.common.table.my_motion_data.motion_ID+" = ?;";
-		ArrayList<ArrayList<Object>> my_org = Application.db.select(my_const_sql, new String[]{getLIDstr()}, DEBUG);
+		ArrayList<ArrayList<Object>> my_org = Application.getDB().select(my_const_sql, new String[]{getLIDstr()}, DEBUG);
 		if (my_org.size() != 0) {
 			ArrayList<Object> my_data = my_org.get(0);
 			mydata.name = Util.getString(my_data.get(net.ddp2p.common.table.my_motion_data.COL_NAME));
@@ -1101,11 +1101,11 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		ArrayList<ArrayList<Object>> sel;
 		try {
 			if (parent_nID <= 0)
-				sel = Application.db.select("select  "+net.ddp2p.common.table.motion.fields+
+				sel = Application.getDB().select("select  "+net.ddp2p.common.table.motion.fields+
 						" from "+net.ddp2p.common.table.motion.TNAME+
 						" where "+net.ddp2p.common.table.motion.organization_ID+" = ? and ( "+net.ddp2p.common.table.motion.enhances_ID+" ISNULL OR "+net.ddp2p.common.table.motion.enhances_ID+" < 0 ) and "+net.ddp2p.common.table.motion.motion_title+" = ?;",
 						new String[]{Util.getStringID(organizationID), name});
-			else sel = Application.db.select("select " + net.ddp2p.common.table.motion.fields +
+			else sel = Application.getDB().select("select " + net.ddp2p.common.table.motion.fields +
 					" from "+net.ddp2p.common.table.motion.TNAME+" where "+net.ddp2p.common.table.motion.organization_ID+" = ? and "+net.ddp2p.common.table.motion.enhances_ID+" = ? and "+net.ddp2p.common.table.motion.motion_title+" = ?;",
 					new String[]{Util.getStringID(organizationID), Util.getStringID(parent_nID), name});
 			if (sel.size() != 0)
@@ -1120,7 +1120,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		   String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.motion.TNAME+" where "+net.ddp2p.common.table.motion.organization_ID+"=?;";
 		   ArrayList<ArrayList<Object>> count;
 		try {
-			count = Application.db.select(sql, new String[]{Util.getString(oID)});
+			count = Application.getDB().select(sql, new String[]{Util.getString(oID)});
 			   int nbrs = Integer.parseInt(Util.getString(count.get(0).get(0)));
 			   return nbrs;
 		} catch (P2PDDSQLException e) {
@@ -1726,9 +1726,9 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	private void storeAct_choices() throws P2PDDSQLException {
 		boolean sync = true;
 		if (sync) {
-			Application.db.delete(net.ddp2p.common.table.motion_choice.TNAME, new String[]{net.ddp2p.common.table.motion_choice.motion_ID}, new String[]{this.getLIDstr()}, DEBUG);
+			Application.getDB().delete(net.ddp2p.common.table.motion_choice.TNAME, new String[]{net.ddp2p.common.table.motion_choice.motion_ID}, new String[]{this.getLIDstr()}, DEBUG);
 		} else {
-			Application.db.deleteNoSync(net.ddp2p.common.table.motion_choice.TNAME, new String[]{net.ddp2p.common.table.motion_choice.motion_ID}, new String[]{this.getLIDstr()}, DEBUG);
+			Application.getDB().deleteNoSync(net.ddp2p.common.table.motion_choice.TNAME, new String[]{net.ddp2p.common.table.motion_choice.motion_ID}, new String[]{this.getLIDstr()}, DEBUG);
 		}
 		dirty_choices = false;
 		D_MotionChoice.save(getChoices(), getLIDstr(), sync);
@@ -1751,11 +1751,11 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			
 			if (this.mydata.row <= 0) {
 				this.mydata.row =
-						Application.db.insert(true, net.ddp2p.common.table.my_motion_data.TNAME,
+						Application.getDB().insert(true, net.ddp2p.common.table.my_motion_data.TNAME,
 								net.ddp2p.common.table.my_motion_data.fields_noID, param, DEBUG);
 			} else {
 				param[net.ddp2p.common.table.my_motion_data.COL_ROW] = this.mydata.row+"";
-				Application.db.update(true, net.ddp2p.common.table.my_motion_data.TNAME,
+				Application.getDB().update(true, net.ddp2p.common.table.my_motion_data.TNAME,
 						net.ddp2p.common.table.my_motion_data.fields_noID,
 						new String[]{net.ddp2p.common.table.my_motion_data.row}, param, DEBUG);
 			}
@@ -1815,7 +1815,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		if (inserting) {
 			if (DEBUG) System.out.println("D_Motion: storeAct_main: inserting");
 			if (sync) {
-				result = Application.db.insert(net.ddp2p.common.table.motion.TNAME,
+				result = Application.getDB().insert(net.ddp2p.common.table.motion.TNAME,
 						net.ddp2p.common.table.motion.fields_noID_array, //fields_array,
 						params,
 						DEBUG
@@ -1826,7 +1826,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 //					//ClientSync.payload_recent.add(streaming.RequestData.MOTI, this.getGID(), D_Organization.getOrgGIDHashGuess(this.getOrganizationGID_force()), ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 //				}
 			} else {
-				result = Application.db.insertNoSync(net.ddp2p.common.table.motion.TNAME,
+				result = Application.getDB().insertNoSync(net.ddp2p.common.table.motion.TNAME,
 						net.ddp2p.common.table.motion.fields_noID_array, //fields_array,
 						params,
 						DEBUG
@@ -1837,14 +1837,14 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			if (DEBUG) System.out.println("D_Motion: storeAct_main: updating");
 			params[net.ddp2p.common.table.motion.M_MOTION_ID] = getLIDstr();
 			if (sync) {
-				Application.db.update(net.ddp2p.common.table.motion.TNAME,
+				Application.getDB().update(net.ddp2p.common.table.motion.TNAME,
 						net.ddp2p.common.table.motion.fields_noID_array,
 						new String[]{net.ddp2p.common.table.motion.motion_ID},
 						params,
 						DEBUG
 						);
 			} else {
-				Application.db.updateNoSync(net.ddp2p.common.table.motion.TNAME,
+				Application.getDB().updateNoSync(net.ddp2p.common.table.motion.TNAME,
 						net.ddp2p.common.table.motion.fields_noID_array,
 						new String[]{net.ddp2p.common.table.motion.motion_ID},
 						params,
@@ -2637,7 +2637,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		ArrayList<ArrayList<Object>> count;
 		long motions = 0;
 		try {
-			count = Application.db.select(sql, new String[]{Util.getStringID(organization_ID2)});
+			count = Application.getDB().select(sql, new String[]{Util.getStringID(organization_ID2)});
 			motions = Integer.parseInt(count.get(0).get(0).toString());
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -2659,7 +2659,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 			ArrayList<ArrayList<Object>> j;
 			ArrayList<MotionsGIDItem> r = new ArrayList<MotionsGIDItem>();
 			try {
-				j = Application.db.select(sql_answer, new String[]{organizationLIDstr}, DEBUG);
+				j = Application.getDB().select(sql_answer, new String[]{organizationLIDstr}, DEBUG);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return r;
@@ -2680,7 +2680,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		ArrayList<Object> r = new ArrayList<Object>();
 		ArrayList<ArrayList<Object>> c;
 		try {
-			c = Application.db.select(sql_categories, new String[]{organizationLIDstr});
+			c = Application.getDB().select(sql_categories, new String[]{organizationLIDstr});
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return r;
@@ -2692,16 +2692,16 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public static void zapp(String _m_ID) {
    		try {
-				Application.db.delete(net.ddp2p.common.table.justification.TNAME,
+				Application.getDB().delete(net.ddp2p.common.table.justification.TNAME,
 						new String[]{net.ddp2p.common.table.justification.motion_ID},
 						new String[]{_m_ID}, DEBUG);
-				Application.db.delete(net.ddp2p.common.table.signature.TNAME,
+				Application.getDB().delete(net.ddp2p.common.table.signature.TNAME,
 						new String[]{net.ddp2p.common.table.signature.motion_ID},
 						new String[]{_m_ID}, DEBUG);
-				Application.db.delete(net.ddp2p.common.table.news.TNAME,
+				Application.getDB().delete(net.ddp2p.common.table.news.TNAME,
 						new String[]{net.ddp2p.common.table.news.motion_ID},
 						new String[]{_m_ID}, DEBUG);
-				Application.db.delete(net.ddp2p.common.table.motion.TNAME,
+				Application.getDB().delete(net.ddp2p.common.table.motion.TNAME,
 						new String[]{net.ddp2p.common.table.motion.motion_ID},
 						new String[]{_m_ID}, DEBUG);
 			} catch (P2PDDSQLException e1) {
@@ -2710,19 +2710,19 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public static void zappPartial() {
 		try {
-			Application.db.delete(
+			Application.getDB().delete(
 					"DELETE FROM "+net.ddp2p.common.table.motion.TNAME+
 					" WHERE "+net.ddp2p.common.table.motion.signature+" IS NULL OR "+net.ddp2p.common.table.motion.global_motion_ID+" IS NULL",
 					new String[]{}, DEBUG);
-			Application.db.delete(
+			Application.getDB().delete(
 					"DELETE FROM "+net.ddp2p.common.table.justification.TNAME+
 					" WHERE "+net.ddp2p.common.table.justification.signature+" IS NULL OR "+net.ddp2p.common.table.justification.global_justification_ID+" IS NULL",
 					new String[]{}, DEBUG);
-			Application.db.delete(
+			Application.getDB().delete(
 					"DELETE FROM "+net.ddp2p.common.table.signature.TNAME+
 					" WHERE "+net.ddp2p.common.table.signature.signature+" IS NULL OR "+net.ddp2p.common.table.signature.global_signature_ID+" IS NULL",
 					new String[]{}, DEBUG);
-			Application.db.sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.justification.TNAME,net.ddp2p.common.table.signature.TNAME)));
+			Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.justification.TNAME,net.ddp2p.common.table.signature.TNAME)));
 		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
@@ -2755,8 +2755,8 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		long result = 0;
 		try {
 			ArrayList<ArrayList<Object>> orgs;
-			if (days == 0) orgs = Application.db.select(sql_activity_count, new String[]{this.getLIDstr()});
-			else orgs = Application.db.select(sql_activity_count_creationdate, new String[]{this.getLIDstr(), Util.getGeneralizedDate(days)});
+			if (days == 0) orgs = Application.getDB().select(sql_activity_count, new String[]{this.getLIDstr()});
+			else orgs = Application.getDB().select(sql_activity_count_creationdate, new String[]{this.getLIDstr(), Util.getGeneralizedDate(days)});
 			
 			if (orgs.size() > 0) result = Util.lval(orgs.get(0).get(0), 0);
 			else result = new Integer("0");
@@ -2802,9 +2802,9 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		long result = 0;
 		try {
 			ArrayList<ArrayList<Object>> orgs;
-			if (days == 0) orgs = Application.db.select(sql_new, new String[]{this.getLIDstr()});
-			else if (days > 0) orgs = Application.db.select(sql_new_cr, new String[]{this.getLIDstr(), Util.getGeneralizedDate(days)});
-			else orgs = Application.db.select(sql_new_cr, new String[]{this.getLIDstr(), Util.getGeneralizedDate(-days)});
+			if (days == 0) orgs = Application.getDB().select(sql_new, new String[]{this.getLIDstr()});
+			else if (days > 0) orgs = Application.getDB().select(sql_new_cr, new String[]{this.getLIDstr(), Util.getGeneralizedDate(days)});
+			else orgs = Application.getDB().select(sql_new_cr, new String[]{this.getLIDstr(), Util.getGeneralizedDate(-days)});
 			if (orgs.size() > 0) result = Util.lval(orgs.get(0).get(0), 0); //new Integer(""+((Util.get_long(result))+(Util.get_long(orgs.get(0).get(0)))));
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -3002,7 +3002,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		MotionChoiceSupport result = new MotionChoiceSupport();
 		try {
 			ArrayList<ArrayList<Object>> l =
-					Application.db.select(sql_motion_choice_support,
+					Application.getDB().select(sql_motion_choice_support,
 							new String[]{short_name, motion_LID}, DEBUG);
 			if (l.size() > 0) {
 				result.setCnt(Util.ival(l.get(0).get(0), 0));
@@ -3086,15 +3086,15 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 	public static java.util.ArrayList<java.util.ArrayList<Object>>
 	getAllMotions(String o_LID, boolean hide, String crt_enhanced_LID) {
 		ArrayList<ArrayList<Object>> moti;
-		if (Application.db == null) return new ArrayList<ArrayList<Object>>();
+		if (Application.getDB() == null) return new ArrayList<ArrayList<Object>>();
 		String sql = sql_all_motions;
 		if (hide)	sql	 +=	" AND "+net.ddp2p.common.table.motion.hidden+" != '1' ";
 		try {
 			if (crt_enhanced_LID != null) {
 				sql += " AND " + net.ddp2p.common.table.motion.enhances_ID+" = ?;";
-				moti = Application.db.select(sql, new String[]{o_LID, crt_enhanced_LID});
+				moti = Application.getDB().select(sql, new String[]{o_LID, crt_enhanced_LID});
 			} else {
-				moti = Application.db.select(sql+";", new String[]{o_LID});
+				moti = Application.getDB().select(sql+";", new String[]{o_LID});
 			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -3171,7 +3171,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		ArrayList<ArrayList<Object>> j;
 		ArrayList<JustGIDItem> r = new ArrayList<JustGIDItem>();
 		try {
-			j = Application.db.select(sql_list_of_justifications_for_motion, new String[]{motionLID}, DEBUG);
+			j = Application.getDB().select(sql_list_of_justifications_for_motion, new String[]{motionLID}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return r;

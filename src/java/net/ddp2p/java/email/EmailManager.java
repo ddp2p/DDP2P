@@ -58,7 +58,7 @@ class EmailManager {
 			
 			String database = Application.DELIBERATION_FILE;
 			if(args.length>0) database = args[0];
-			Application.db = new DBInterface(database);
+			Application.setDB(new DBInterface(database));
 
 			String password = null;
 			String host = null;

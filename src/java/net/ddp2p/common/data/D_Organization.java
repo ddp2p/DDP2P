@@ -562,7 +562,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		String currentTime = Util.getGeneralizedTime();
 		long org_id = -1;
 		try {
-			org_id = Application.db.insert(net.ddp2p.common.table.organization.TNAME,
+			org_id = Application.getDB().insert(net.ddp2p.common.table.organization.TNAME,
 					new String[]{net.ddp2p.common.table.organization.creation_date, net.ddp2p.common.table.organization.creation_date, net.ddp2p.common.table.organization.hash_org_alg},
 					new String[]{currentTime, currentTime, net.ddp2p.common.table.organization.hash_org_alg_crt});
 		} catch (P2PDDSQLException e) {
@@ -1174,7 +1174,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	private void init_ByLID(String __organization_ID) throws P2PDDSQLException {
 		ArrayList<ArrayList<Object>> p_data;
 
-		p_data = Application.db.select(sql_getOrgByLID, new String[]{getLIDstr()}, DEBUG);
+		p_data = Application.getDB().select(sql_getOrgByLID, new String[]{getLIDstr()}, DEBUG);
 		if (p_data.size() >= 1) {
 				ArrayList<Object> row = p_data.get(0);
 				init(row);
@@ -1220,7 +1220,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		assert (orgGIDhash != null);
 
 		
-		ArrayList<ArrayList<Object>> p = Application.db.select(sql_getOrgByGIDH, new String[]{orgGIDhash}, DEBUG);
+		ArrayList<ArrayList<Object>> p = Application.getDB().select(sql_getOrgByGIDH, new String[]{orgGIDhash}, DEBUG);
 		if (p.size() == 0) {
 			if (!create) throw new RuntimeException("Absent org hash "+orgGIDhash);
 			this.setGID(gID, orgGIDhash);
@@ -1245,7 +1245,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	static ArrayList<ArrayList<Object>> getOrganizationArrayByGID(
 			String gID, String orgGIDhash) {
 		try {
-			ArrayList<ArrayList<Object>> p = Application.db.select(sql_getOrgByGIDH, new String[]{orgGIDhash}, DEBUG);
+			ArrayList<ArrayList<Object>> p = Application.getDB().select(sql_getOrgByGIDH, new String[]{orgGIDhash}, DEBUG);
 			return p;
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -1389,7 +1389,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			//if (sk != null) {
 			//	this.signature_initiator = Util.sign(msg, sk);
 			if (signIni(false) != null) {
-				Application.db.updateNoSync(net.ddp2p.common.table.organization.TNAME,
+				Application.getDB().updateNoSync(net.ddp2p.common.table.organization.TNAME,
 						new String[]{net.ddp2p.common.table.organization.signature_initiator},
 						new String[]{net.ddp2p.common.table.organization.organization_ID},
 						new String[]{Util.stringSignatureFromByte(this.signature_initiator), this.getLIDstr()}, _DEBUG);
@@ -1400,7 +1400,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		String my_org_sql = "SELECT "+net.ddp2p.common.table.my_organization_data.fields_list+
 				" FROM "+net.ddp2p.common.table.my_organization_data.TNAME+
 				" WHERE "+net.ddp2p.common.table.my_organization_data.organization_ID+" = ?;";
-		ArrayList<ArrayList<Object>> my_org = Application.db.select(my_org_sql, new String[]{getLIDstr_forced()}, DEBUG);
+		ArrayList<ArrayList<Object>> my_org = Application.getDB().select(my_org_sql, new String[]{getLIDstr_forced()}, DEBUG);
 		if (my_org.size() != 0) {
 			ArrayList<Object> my_data = my_org.get(0);
 			mydata.name = Util.getString(my_data.get(net.ddp2p.common.table.my_organization_data.COL_NAME));
@@ -2160,18 +2160,18 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				
 				//String orgID;
 				if (filter == 0) {//organization_ID == null) {
-					setLID_AndLink(result = Application.db.insertNoSync(net.ddp2p.common.table.organization.TNAME, net.ddp2p.common.table.organization.fields_noID, p, DEBUG));//changed = true;
+					setLID_AndLink(result = Application.getDB().insertNoSync(net.ddp2p.common.table.organization.TNAME, net.ddp2p.common.table.organization.fields_noID, p, DEBUG));//changed = true;
 					if (DEBUG) out.println("D_Organization: storeVerified: Inserted: "+this);
 				} else {
 					//orgID = Util.getString(p_data.get(0).get(table.organization.ORG_COL_ID));
 					p[net.ddp2p.common.table.organization.ORG_COL_ID] = getLIDstr();
 					//if (filter > 0) p[table.organization.FIELDS] = organization_ID;
-					Application.db.updateNoSync(net.ddp2p.common.table.organization.TNAME,  net.ddp2p.common.table.organization.fields_noID, new String[]{net.ddp2p.common.table.organization.organization_ID}, p, DEBUG);//changed = true;
+					Application.getDB().updateNoSync(net.ddp2p.common.table.organization.TNAME,  net.ddp2p.common.table.organization.fields_noID, new String[]{net.ddp2p.common.table.organization.organization_ID}, p, DEBUG);//changed = true;
 					result = Util.lval(getLIDstr(), -1);
 					if (DEBUG) out.println("\nD_Organization: storeVerified: Updated: "+this);
 				}
 				//if (sync) 
-				Application.db.sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.organization.TNAME)));
+				Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.organization.TNAME)));
 				//organization_ID = orgID;
 				if (params != null) D_Organization.storeOrgParams(getLIDstr(), params.orgParam, filter == 0);
 				this.setLID(result);
@@ -2191,11 +2191,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				p[net.ddp2p.common.table.my_organization_data.COL_CREATOR] = mydata.creator;
 				p[net.ddp2p.common.table.my_organization_data.COL_NAME] = mydata.name;
 				if (mydata.row <= 0) {
-					mydata.row = Application.db.insertNoSync(net.ddp2p.common.table.my_organization_data.TNAME, net.ddp2p.common.table.my_organization_data.fields_noID, p, DEBUG);//changed = true;
+					mydata.row = Application.getDB().insertNoSync(net.ddp2p.common.table.my_organization_data.TNAME, net.ddp2p.common.table.my_organization_data.fields_noID, p, DEBUG);//changed = true;
 					if (DEBUG) out.println("D_Organization: storeVerified: Inserted: "+mydata);
 				} else {
 					p[net.ddp2p.common.table.my_organization_data.COL_ROW] = mydata.row + "";
-					Application.db.updateNoSync(
+					Application.getDB().updateNoSync(
 							net.ddp2p.common.table.my_organization_data.TNAME,
 							net.ddp2p.common.table.my_organization_data.fields_noID,
 							new String[]{net.ddp2p.common.table.my_organization_data.row},
@@ -2237,7 +2237,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				" WHERE "+net.ddp2p.common.table.field_extra.organization_ID+" = ?" +
 						// " AND ("+table.field_extra.tmp+" IS NULL OR "+table.field_extra.tmp+"='0' )" +
 				" ORDER BY "+net.ddp2p.common.table.field_extra.field_extra_ID+";";
-		ArrayList<ArrayList<Object>>p_org = Application.db.select(psql, new String[]{local_id}, DEBUG);
+		ArrayList<ArrayList<Object>>p_org = Application.getDB().select(psql, new String[]{local_id}, DEBUG);
 		if (p_org.size() > 0) {
 			result = new D_OrgParam[p_org.size()];
 			for (int p_i = 0; p_i < p_org.size(); p_i ++) {
@@ -2297,7 +2297,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public static void storeOrgParams(String orgLID, D_OrgParam[] orgParam, boolean just_created) throws P2PDDSQLException{
 		// Cannot be deleted and rewritten since we would lose references to the IDs from const values
 		if (! just_created) {
-			Application.db.updateNoSync(net.ddp2p.common.table.field_extra.TNAME,
+			Application.getDB().updateNoSync(net.ddp2p.common.table.field_extra.TNAME,
 					new String[]{net.ddp2p.common.table.field_extra.tmp},
 					new String[]{net.ddp2p.common.table.organization.organization_ID},
 					new String[]{"1", orgLID}, DEBUG);
@@ -2337,17 +2337,17 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				p_extra[net.ddp2p.common.table.field_extra.OPARAM_VERSION] = op.version;
 				p_extra[net.ddp2p.common.table.field_extra.OPARAM_TMP] = op.tmp;
 				if (fe == null) {
-					Application.db.insertNoSync(net.ddp2p.common.table.field_extra.TNAME, fieldNames_extra, p_extra, DEBUG);
+					Application.getDB().insertNoSync(net.ddp2p.common.table.field_extra.TNAME, fieldNames_extra, p_extra, DEBUG);
 				} else {
 					p_extra[net.ddp2p.common.table.field_extra.OPARAM_EXTRA_FIELD_ID] = fe;
-					Application.db.updateNoSync(net.ddp2p.common.table.field_extra.TNAME, fieldNames_extra,
+					Application.getDB().updateNoSync(net.ddp2p.common.table.field_extra.TNAME, fieldNames_extra,
 							new String[]{net.ddp2p.common.table.field_extra.field_extra_ID},
 							p_extra, DEBUG);
 				}
 			}
 		}
 		if (! just_created) {
-			Application.db.deleteNoSync(net.ddp2p.common.table.field_extra.TNAME,
+			Application.getDB().deleteNoSync(net.ddp2p.common.table.field_extra.TNAME,
 				new String[]{net.ddp2p.common.table.field_extra.tmp, net.ddp2p.common.table.organization.organization_ID},
 				new String[]{"1",orgLID}, DEBUG);
 		}
@@ -3343,7 +3343,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			D_Peer _creator = D_Peer.getPeerByLID_NoKeep(cID, true);
 			ArrayList<ArrayList<Object>> a;
 			try {
-				a = Application.db.select(sql, new String[]{_creator.getGID()});
+				a = Application.getDB().select(sql, new String[]{_creator.getGID()});
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return false;
@@ -3357,7 +3357,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		ArrayList<ArrayList<Object>> a;
 		try {
 			if(DEBUG) System.out.println("D_Organization:isEditable: check authoritarian GID");
-			a = Application.db.select(gsql, new String[]{GID}, DEBUG);
+			a = Application.getDB().select(gsql, new String[]{GID}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return false;
@@ -3648,7 +3648,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		ArrayList<ArrayList<Object>> c;
 		ArrayList<String> result = new ArrayList<String>();
 		try {
-			c = Application.db.select(sql_cat, new String[]{});
+			c = Application.getDB().select(sql_cat, new String[]{});
 			for (ArrayList<Object> i: c) {
 				String crt = Util.getString(i.get(0));
 				result.add(crt);
@@ -3791,7 +3791,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			long extra_ID;
 			try {
 				String new_global_extra = null;
-	 			extra_ID = Application.db.insert(net.ddp2p.common.table.field_extra.TNAME,
+	 			extra_ID = Application.getDB().insert(net.ddp2p.common.table.field_extra.TNAME,
 						new String[]{net.ddp2p.common.table.field_extra.organization_ID, net.ddp2p.common.table.field_extra.global_field_extra_ID, net.ddp2p.common.table.field_extra.partNeigh},
 						new String[]{this.getLIDstr_forced(), new_global_extra, partNeigh
 						}, DEBUG);
@@ -3832,7 +3832,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			long extra_ID;
 			try {
 				//String new_global_extra = null;
-	 			extra_ID = Application.db.insert(net.ddp2p.common.table.field_extra.TNAME,
+	 			extra_ID = Application.getDB().insert(net.ddp2p.common.table.field_extra.TNAME,
 						new String[]{
 	 					net.ddp2p.common.table.field_extra.organization_ID,
 	 					net.ddp2p.common.table.field_extra.global_field_extra_ID,
@@ -3875,7 +3875,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			}
 			params.orgParam = nou;
 	    	try {
-				Application.db.delete(net.ddp2p.common.table.field_extra.TNAME, new String[]{net.ddp2p.common.table.field_extra.field_extra_ID}, new String[]{Util.getStringID(old[row].field_LID)}, DEBUG);
+				Application.getDB().delete(net.ddp2p.common.table.field_extra.TNAME, new String[]{net.ddp2p.common.table.field_extra.field_extra_ID}, new String[]{Util.getStringID(old[row].field_LID)}, DEBUG);
 			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
@@ -3945,38 +3945,38 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			
 			//Application.db.delete(table.field_value.TNAME, new String[]{table.field_value.organization_ID}, new String[]{orgID}, DEBUG);
 			//Application.db.delete(table.witness.TNAME, new String[]{table.witness.organization_ID}, new String[]{orgID}, DEBUG);
-			Application.db.delete(net.ddp2p.common.table.justification.TNAME, new String[]{net.ddp2p.common.table.justification.organization_ID}, new String[]{orgID}, DEBUG);
-			Application.db.delete(net.ddp2p.common.table.motion.TNAME, new String[]{net.ddp2p.common.table.motion.organization_ID}, new String[]{orgID}, DEBUG);
+			Application.getDB().delete(net.ddp2p.common.table.justification.TNAME, new String[]{net.ddp2p.common.table.justification.organization_ID}, new String[]{orgID}, DEBUG);
+			Application.getDB().delete(net.ddp2p.common.table.motion.TNAME, new String[]{net.ddp2p.common.table.motion.organization_ID}, new String[]{orgID}, DEBUG);
 			//Application.db.delete(table.signature.TNAME, new String[]{table.signature.organization_ID}, new String[]{orgID}, DEBUG);
 			String sql="SELECT "+net.ddp2p.common.table.constituent.constituent_ID+" FROM "+net.ddp2p.common.table.constituent.TNAME+" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=?;";
-			ArrayList<ArrayList<Object>> constits = Application.db.select(sql, new String[]{orgID}, DEBUG);
+			ArrayList<ArrayList<Object>> constits = Application.getDB().select(sql, new String[]{orgID}, DEBUG);
 			for (ArrayList<Object> a: constits) {
 				String cID = Util.getString(a.get(0));
-				Application.db.delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.source_ID}, new String[]{cID}, DEBUG);
-				Application.db.delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.target_ID}, new String[]{cID}, DEBUG);
+				Application.getDB().delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.source_ID}, new String[]{cID}, DEBUG);
+				Application.getDB().delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.target_ID}, new String[]{cID}, DEBUG);
 	
-	   			Application.db.delete(net.ddp2p.common.table.signature.TNAME, new String[]{net.ddp2p.common.table.signature.constituent_ID}, new String[]{cID}, DEBUG);
-				Application.db.delete(net.ddp2p.common.table.justification.TNAME, new String[]{net.ddp2p.common.table.justification.constituent_ID}, new String[]{cID}, DEBUG);
-				Application.db.delete(net.ddp2p.common.table.motion.TNAME, new String[]{net.ddp2p.common.table.motion.constituent_ID}, new String[]{cID}, DEBUG);
+	   			Application.getDB().delete(net.ddp2p.common.table.signature.TNAME, new String[]{net.ddp2p.common.table.signature.constituent_ID}, new String[]{cID}, DEBUG);
+				Application.getDB().delete(net.ddp2p.common.table.justification.TNAME, new String[]{net.ddp2p.common.table.justification.constituent_ID}, new String[]{cID}, DEBUG);
+				Application.getDB().delete(net.ddp2p.common.table.motion.TNAME, new String[]{net.ddp2p.common.table.motion.constituent_ID}, new String[]{cID}, DEBUG);
 	   			// Application.db.delete(table.news.TNAME, new String[]{table.news.constituent_ID}, new String[]{cID}, DEBUG);
 	   		}
-			Application.db.delete(net.ddp2p.common.table.news.TNAME, new String[]{net.ddp2p.common.table.news.organization_ID}, new String[]{orgID}, DEBUG);
+			Application.getDB().delete(net.ddp2p.common.table.news.TNAME, new String[]{net.ddp2p.common.table.news.organization_ID}, new String[]{orgID}, DEBUG);
 			String sql_del_fv_fe =
 					"DELETE FROM "+net.ddp2p.common.table.field_value.TNAME+
 					" WHERE "+net.ddp2p.common.table.field_value.field_extra_ID+
 					" IN ( SELECT "+net.ddp2p.common.table.field_extra.field_extra_ID+" FROM "+net.ddp2p.common.table.field_extra.TNAME+" WHERE "+net.ddp2p.common.table.field_extra.organization_ID+"=? )";
-			Application.db.delete(sql_del_fv_fe, new String[]{orgID}, DEBUG);
+			Application.getDB().delete(sql_del_fv_fe, new String[]{orgID}, DEBUG);
 			String sql_del_fv =
 					"DELETE FROM "+net.ddp2p.common.table.field_value.TNAME+
 					" WHERE "+net.ddp2p.common.table.field_value.constituent_ID+
 					" IN ( SELECT DISTINCT c."+net.ddp2p.common.table.constituent.constituent_ID+" FROM "+net.ddp2p.common.table.constituent.TNAME+" AS c " +
 							" JOIN "+net.ddp2p.common.table.field_value.TNAME+" AS v ON (c."+net.ddp2p.common.table.constituent.constituent_ID+"=v."+net.ddp2p.common.table.field_value.constituent_ID+") " +
 									" WHERE c."+net.ddp2p.common.table.constituent.organization_ID+"=? GROUP BY c."+net.ddp2p.common.table.constituent.constituent_ID+" ) ";
-			Application.db.delete(sql_del_fv, new String[]{orgID}, DEBUG);
-			Application.db.delete(net.ddp2p.common.table.constituent.TNAME, new String[]{net.ddp2p.common.table.constituent.organization_ID}, new String[]{orgID}, DEBUG);
-			Application.db.delete(net.ddp2p.common.table.neighborhood.TNAME, new String[]{net.ddp2p.common.table.neighborhood.organization_ID}, new String[]{orgID}, DEBUG);
-			Application.db.delete(net.ddp2p.common.table.identity_ids.TNAME, new String[]{net.ddp2p.common.table.identity_ids.organization_ID}, new String[]{orgID}, DEBUG);
-			Application.db.update(net.ddp2p.common.table.identity.TNAME, new String[]{net.ddp2p.common.table.identity.organization_ID}, new String[]{net.ddp2p.common.table.identity.organization_ID}, new String[]{"-1",orgID}, DEBUG);
+			Application.getDB().delete(sql_del_fv, new String[]{orgID}, DEBUG);
+			Application.getDB().delete(net.ddp2p.common.table.constituent.TNAME, new String[]{net.ddp2p.common.table.constituent.organization_ID}, new String[]{orgID}, DEBUG);
+			Application.getDB().delete(net.ddp2p.common.table.neighborhood.TNAME, new String[]{net.ddp2p.common.table.neighborhood.organization_ID}, new String[]{orgID}, DEBUG);
+			Application.getDB().delete(net.ddp2p.common.table.identity_ids.TNAME, new String[]{net.ddp2p.common.table.identity_ids.organization_ID}, new String[]{orgID}, DEBUG);
+			Application.getDB().update(net.ddp2p.common.table.identity.TNAME, new String[]{net.ddp2p.common.table.identity.organization_ID}, new String[]{net.ddp2p.common.table.identity.organization_ID}, new String[]{"-1",orgID}, DEBUG);
 
 			return deleteOrgDescription(orgID);
 		} catch (P2PDDSQLException e1) {
@@ -3986,8 +3986,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	public static D_Organization deleteOrgDescription(String orgID) {
 		try {
-			Application.db.delete(net.ddp2p.common.table.field_extra.TNAME, new String[]{net.ddp2p.common.table.field_extra.organization_ID}, new String[]{orgID}, DEBUG);
-			Application.db.delete(net.ddp2p.common.table.organization.TNAME, new String[]{net.ddp2p.common.table.organization.organization_ID}, new String[]{orgID}, DEBUG);
+			Application.getDB().delete(net.ddp2p.common.table.field_extra.TNAME, new String[]{net.ddp2p.common.table.field_extra.organization_ID}, new String[]{orgID}, DEBUG);
+			Application.getDB().delete(net.ddp2p.common.table.organization.TNAME, new String[]{net.ddp2p.common.table.organization.organization_ID}, new String[]{orgID}, DEBUG);
 			return unlinkMemory(orgID);
 		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
@@ -4079,7 +4079,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		if ("".equals(fieldGID)) return null;
 		
 		
-		ArrayList<ArrayList<Object>> n = Application.db.select(sql_getFieldsExtraByGID, new String[]{fieldGID, Util.getStringID(org_LID)}, DEBUG);
+		ArrayList<ArrayList<Object>> n = Application.getDB().select(sql_getFieldsExtraByGID, new String[]{fieldGID, Util.getStringID(org_LID)}, DEBUG);
 		if (n.size() != 0) {// happeded on savind orgs from DD_SK
 			if (_DEBUG) Util.printCallPath("D_Organization: getFieldExtraID: unexpectedly found "+fieldGID+" ("+org_LID+") as "+Util.getString(n.get(0).get(0)));
 			return Util.getString(n.get(0).get(0));
@@ -4108,7 +4108,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				" FROM "+net.ddp2p.common.table.organization.TNAME+
 				" WHERE "+net.ddp2p.common.table.organization.signature+" IS NOT NULL AND "+
 				net.ddp2p.common.table.organization.reset_date+" IS NOT NULL AND "+net.ddp2p.common.table.organization.broadcasted+"='1';";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{});
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(sql, new String[]{});
 		if(a.size()==0) return null;
 		ArrayList<ResetOrgInfo> changed_orgs = new ArrayList<ResetOrgInfo>();
 		for(ArrayList<Object> o: a) {
@@ -4144,7 +4144,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		
 		subdivisions = net.ddp2p.common.table.neighborhood.SEP_names_subdivisions;
 		try {
-			fields_neighborhood = Application.db.select(sql_extra_fields_RootSubdivisions,	new String[] {"" + organizationID}, DEBUG);
+			fields_neighborhood = Application.getDB().select(sql_extra_fields_RootSubdivisions,	new String[] {"" + organizationID}, DEBUG);
 			
 			fieldIDs = new long[fields_neighborhood.size()];
 			for (int i = 0; i < fields_neighborhood.size(); i ++) {
@@ -4315,8 +4315,8 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	public static java.util.ArrayList<java.util.ArrayList<Object>> getAllOrganizations() {
 		ArrayList<ArrayList<Object>> result;
 		try {
-			if (Application.db != null)
-				result = Application.db.select(sql_all_orgs, new String[0]);
+			if (Application.getDB() != null)
+				result = Application.getDB().select(sql_all_orgs, new String[0]);
 			else result = new ArrayList<ArrayList<Object>>();
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();

@@ -20,7 +20,7 @@ public class DumpOrgPeerHashes {
 		System.out.println("Running DumpOrgPeerHashes parameters="+args.length);
 		if (args.length == 0) return;
 		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 			long oLID = -1;
 			
 			char c;

@@ -130,13 +130,13 @@ public class D_PeerOrgs extends ASNObj {
 			//long peers_orgs_ID = get_peers_orgs_ID(peer_ID, organizationID, adding_date);
 			dirty = false;
 			if (peer_org_ID > 0) {
-				Application.db.update(net.ddp2p.common.table.peer_org.TNAME,
+				Application.getDB().update(net.ddp2p.common.table.peer_org.TNAME,
 						new String[]{net.ddp2p.common.table.peer_org.peer_ID, net.ddp2p.common.table.peer_org.organization_ID, net.ddp2p.common.table.peer_org.served, net.ddp2p.common.table.peer_org.last_sync_date},
 						new String[]{net.ddp2p.common.table.peer_org.peer_org_ID},
 						new String[]{p.getLIDstr(), Util.getStringID(organization_ID), "1", last_sync_date, Util.getStringID(peer_org_ID)},
 						DEBUG);
 			}else{
-				peer_org_ID = Application.db.insert(net.ddp2p.common.table.peer_org.TNAME,
+				peer_org_ID = Application.getDB().insert(net.ddp2p.common.table.peer_org.TNAME,
 					new String[]{net.ddp2p.common.table.peer_org.peer_ID, net.ddp2p.common.table.peer_org.organization_ID, net.ddp2p.common.table.peer_org.served, net.ddp2p.common.table.peer_org.last_sync_date},
 					new String[]{p.getLIDstr(), Util.getStringID(organization_ID), "1", last_sync_date}, DEBUG);
 			}

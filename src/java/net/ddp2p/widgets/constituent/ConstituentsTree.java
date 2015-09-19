@@ -117,9 +117,9 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
      */
  	public void getTreeCellRendererComponentCIN(Object value){
 	    		ConstituentsIDNode il = (ConstituentsIDNode)value;
-	    		String name = il.getConstituent().surname;
-	    		if (name == null) name = il.getConstituent().given_name;
-	    		else if(il.getConstituent().given_name != null) name+=", "+il.getConstituent().given_name;
+	    		String name = il.getConstituent().getSurname();
+	    		if (name == null) name = il.getConstituent().getGivenName();
+	    		else if(il.getConstituent().getGivenName() != null) name+=", "+il.getConstituent().getGivenName();
 	    		String color="", fgcolor="", sfg="", sbg="";
 	    		/*
 	    		if((il.constituent.witnessed_by_me==1)){
@@ -191,10 +191,10 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 	    		setText(str);
 				//setIcon(getDefaultLeafIcon());
 				//setIcon(getDefaultClosedIcon());
-				if (il.getConstituent().icon == null) {
+				if (il.getConstituent().getIcon() == null) {
 					setIcon(anonym);
 				}else{
-					Object icon = il.getConstituent().icon;
+					Object icon = il.getConstituent().getIcon();
 					if (icon instanceof Icon)
 						setIcon((Icon) icon);
 				}

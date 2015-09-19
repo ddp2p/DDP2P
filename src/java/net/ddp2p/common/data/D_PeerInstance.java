@@ -117,7 +117,7 @@ public class D_PeerInstance extends ASNObj {
 		if (DEBUG) System.out.println("D_PeerInstance: store peer_ID="+_peer_ID);
 		if (_peer_ID == null) return;
 		try {
-			Application.db.delete(net.ddp2p.common.table.peer_instance.TNAME,
+			Application.getDB().delete(net.ddp2p.common.table.peer_instance.TNAME,
 					new String[]{net.ddp2p.common.table.peer_instance.peer_ID},
 					new String[]{_peer_ID}, DEBUG);
 			if (instances == null) return;
@@ -159,7 +159,7 @@ public class D_PeerInstance extends ASNObj {
 		try {
 			if (this.peer_instance_ID == null) {
 				this._peer_instance_ID =
-						Application.db.insert(net.ddp2p.common.table.peer_instance.TNAME,
+						Application.getDB().insert(net.ddp2p.common.table.peer_instance.TNAME,
 								net.ddp2p.common.table.peer_instance.fields_noID_list,
 								params, DEBUG);
 				this.peer_instance_ID = Util.getStringID(this._peer_instance_ID);
@@ -168,7 +168,7 @@ public class D_PeerInstance extends ASNObj {
 				params[net.ddp2p.common.table.peer_instance.PI_PEER_INSTANCE_ID] = this.peer_instance_ID;
 				this._peer_instance_ID = Util.lval(this.peer_instance_ID);
 				
-				Application.db.update(net.ddp2p.common.table.peer_instance.TNAME,					
+				Application.getDB().update(net.ddp2p.common.table.peer_instance.TNAME,					
 						net.ddp2p.common.table.peer_instance.fields_noID_list,
 						new String[]{net.ddp2p.common.table.peer_instance.peer_instance_ID},
 						params, DEBUG);
@@ -178,7 +178,7 @@ public class D_PeerInstance extends ASNObj {
 			System.out.println("D_PeerInstance: error storing: "+this);
 			if (this.peer_instance_ID == null) {
 				this._peer_instance_ID =
-						Application.db.insert(net.ddp2p.common.table.peer_instance.TNAME,
+						Application.getDB().insert(net.ddp2p.common.table.peer_instance.TNAME,
 								net.ddp2p.common.table.peer_instance.fields_noID_list,
 								params, _DEBUG);
 				this.peer_instance_ID = Util.getStringID(this._peer_instance_ID);
@@ -186,7 +186,7 @@ public class D_PeerInstance extends ASNObj {
 			} else {
 				params[net.ddp2p.common.table.peer_instance.PI_PEER_INSTANCE_ID] = this.peer_instance_ID;
 				
-				Application.db.update(net.ddp2p.common.table.peer_instance.TNAME,					
+				Application.getDB().update(net.ddp2p.common.table.peer_instance.TNAME,					
 						net.ddp2p.common.table.peer_instance.fields_noID_list,
 						new String[]{net.ddp2p.common.table.peer_instance.peer_instance_ID},
 						params, _DEBUG);
@@ -238,7 +238,7 @@ public class D_PeerInstance extends ASNObj {
 			if (i != null) return i;
 		}
 		try {
-			ArrayList<ArrayList<Object>> insts = Application.db.select(sql_peer_instance, new String[]{peer_ID, instance}, DEBUG);
+			ArrayList<ArrayList<Object>> insts = Application.getDB().select(sql_peer_instance, new String[]{peer_ID, instance}, DEBUG);
 			if (insts.size() > 0) return null;
 			i = new D_PeerInstance(insts.get(0));
 			if (dpa != null) dpa.putPeerInstance_setDirty(i.peer_instance, i);

@@ -101,10 +101,10 @@ class ConstituentsCensus extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		long result = 0;
 		int neighborhoods[] = {0};
 		
-		if(crt.isColapsed()){
+		if (crt.isColapsed()) {
 			if(DEBUG) System.err.println("ConstituentsModel:census: this is colapsed");
 			result = censusColapsed(crt, neighborhoods);
-		}else{
+		} else {
 			for(int k=0; k<crt.getChildren().length; k++) {
 				if(!running){
 					if(DEBUG) System.err.println("ConstituentsModel:census: start nID="+n_ID+" abandon request");		
@@ -145,20 +145,13 @@ class ConstituentsCensus extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		if(n_ID <= 0) return 0;
 		
 		result = D_Constituent.getConstNBinNeighborhood(n_ID);//c.size();
-		
-		
-//		String sql_n =
-//			"SELECT "+table.neighborhood.neighborhood_ID+
-//			" FROM "+table.neighborhood.TNAME+
-//			" WHERE "+table.neighborhood.parent_nID+"=?;";
-//		ArrayList<ArrayList<Object>> n = Application.db.select(sql_n, new String[]{n_ID+""}, DEBUG);
 		ArrayList<Long> n = D_Neighborhood.getNeighborhoodChildrenIDs(n_ID);
 		neighborhoods[0] += n.size();
 		
 		HashSet<String> visited = new HashSet<String>();
 		visited.add(""+n_ID);
-		for(int k=0; k<n.size(); k++) {
-			if(!running) return 0;
+		for(int k = 0; k < n.size(); k ++) {
+			if (! running) return 0;
 			result += censusHiddenNeighborhoods(Util.lval(n.get(k), -1), visited);
 		}
 		

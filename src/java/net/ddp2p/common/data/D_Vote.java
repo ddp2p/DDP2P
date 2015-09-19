@@ -108,7 +108,7 @@ class D_Vote extends ASNObj{
 	public D_Vote(long _vote_LID) throws P2PDDSQLException {
 		if(_vote_LID<=0) return;
 		setLID(Util.getStringID(_vote_LID));
-		ArrayList<ArrayList<Object>> v = Application.db.select(sql_get_vote_by_LID, new String[]{getLIDstr()}, DEBUG);
+		ArrayList<ArrayList<Object>> v = Application.getDB().select(sql_get_vote_by_LID, new String[]{getLIDstr()}, DEBUG);
 		if(v.size() == 0) return;
 		init(v.get(0));
 	}
@@ -135,7 +135,7 @@ class D_Vote extends ASNObj{
 	public D_Vote(String vote_GID) throws P2PDDSQLException {
 		if(vote_GID == null) return;
 		this.setGID(vote_GID);
-		ArrayList<ArrayList<Object>> v = Application.db.select(sql_get_vote_by_GID, new String[]{vote_GID}, DEBUG);
+		ArrayList<ArrayList<Object>> v = Application.getDB().select(sql_get_vote_by_GID, new String[]{vote_GID}, DEBUG);
 		if (v.size() == 0) return;
 		init(v.get(0));
 	}
@@ -170,7 +170,7 @@ class D_Vote extends ASNObj{
 		D_Vote v = new D_Vote();
 		v.setMotionLID(motionID);
 		ArrayList<ArrayList<Object>> _v =
-				Application.db.select(
+				Application.getDB().select(
 						sql_vote_for_motionID_from_constituent,
 						new String[]{motionID, Util.getStringID(_constituentID)},
 						DEBUG);
@@ -220,38 +220,38 @@ class D_Vote extends ASNObj{
 		v.setMotionLID(_motion.getLIDstr());
 		try {
 			if (_constituent == null && supportChoice == null) {
-				_v = Application.db.select(
+				_v = Application.getDB().select(
 						sql_one_vote_for_motionID,
 						new String[]{_motion.getLIDstr()},
 						DEBUG);
 				
 			}  
 			else if (_constituent != null && supportChoice == null) {
-				_v = Application.db.select(
+				_v = Application.getDB().select(
 						sql_vote_for_motionID_from_constituent,
 						new String[]{_motion.getLIDstr(), _constituent.getLIDstr()},
 						DEBUG);
 				if (_v.size() <= 0) {
-					_v = Application.db.select(
+					_v = Application.getDB().select(
 							sql_one_vote_for_motionID,
 							new String[]{_motion.getLIDstr()},
 							DEBUG);
 				}
 			} 
 			else if (_constituent == null && supportChoice != null) {
-				_v = Application.db.select(
+				_v = Application.getDB().select(
 						sql_one_vote_with_opinion,
 						new String[]{_motion.getLIDstr(), supportChoice},
 						DEBUG);
 						
 			}  
 			else if (_constituent != null && supportChoice != null)  {
-				_v = Application.db.select(
+				_v = Application.getDB().select(
 						sql_vote_for_motionID_from_constituent_with_opinion,
 						new String[]{_motion.getLIDstr(), supportChoice},
 						DEBUG);
 				if (_v.size() <= 0) {
-					_v = Application.db.select(
+					_v = Application.getDB().select(
 							sql_one_vote_with_opinion,
 							new String[]{_motion.getLIDstr(), supportChoice},
 							DEBUG);
@@ -309,38 +309,38 @@ class D_Vote extends ASNObj{
 		v.setJustificationLID(crt_justification.getLIDstr());
 		try {
 			if (voting_constituent == null && supportChoice == null) {
-				_v = Application.db.select(
+				_v = Application.getDB().select(
 						sql_one_vote_for_justifID,
 						new String[]{crt_justification.getLIDstr()},
 						DEBUG);
 				
 			}  
 			else if (voting_constituent != null && supportChoice == null) {
-				_v = Application.db.select(
+				_v = Application.getDB().select(
 						sql_vote_for_justifID_from_constituent,
 						new String[]{crt_justification.getLIDstr(), voting_constituent.getLIDstr()},
 						DEBUG);
 				if (_v.size() <= 0) {
-					_v = Application.db.select(
+					_v = Application.getDB().select(
 							sql_one_vote_for_justifID,
 							new String[]{crt_justification.getLIDstr()},
 							DEBUG);
 				}
 			} 
 			else if (voting_constituent == null && supportChoice != null) {
-				_v = Application.db.select(
+				_v = Application.getDB().select(
 						sql_one_vote_for_justif_with_opinion,
 						new String[]{crt_justification.getLIDstr(), supportChoice},
 						DEBUG);
 						
 			}  
 			else if (voting_constituent != null && supportChoice != null)  {
-				_v = Application.db.select(
+				_v = Application.getDB().select(
 						sql_vote_for_justifID_from_constituent_with_opinion,
 						new String[]{crt_justification.getLIDstr(), supportChoice},
 						DEBUG);
 				if (_v.size() <= 0) {
-					_v = Application.db.select(
+					_v = Application.getDB().select(
 							sql_one_vote_for_justif_with_opinion,
 							new String[]{crt_justification.getLIDstr(), supportChoice},
 							DEBUG);
@@ -858,7 +858,7 @@ class D_Vote extends ASNObj{
 		String sql = "SELECT "+net.ddp2p.common.table.signature.signature_ID+","+net.ddp2p.common.table.signature.creation_date+
 		" FROM "+net.ddp2p.common.table.signature.TNAME+
 		" WHERE "+net.ddp2p.common.table.signature.global_signature_ID+"=?;";
-		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{global_vote_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> n = Application.getDB().select(sql, new String[]{global_vote_ID}, DEBUG);
 		if(n.size()==0) return null;
 		_date[0] = Util.getString(n.get(0).get(1));
 		return Util.getString(n.get(0).get(0));
@@ -869,13 +869,13 @@ class D_Vote extends ASNObj{
 		String sql = "SELECT "+net.ddp2p.common.table.signature.signature_ID+
 		" FROM "+net.ddp2p.common.table.signature.TNAME+
 		" WHERE "+net.ddp2p.common.table.signature.global_signature_ID+"=?;";
-		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{global_vote_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> n = Application.getDB().select(sql, new String[]{global_vote_ID}, DEBUG);
 		if(n.size()==0) return null;
 		return Util.getString(n.get(0).get(0));
 	}
 	public static long insertTemporaryGID(String sign_GID, String mot_ID) throws P2PDDSQLException {
 		if(DEBUG) System.out.println("WB_Vote:insertTemporaryGID: start");
-		return Application.db.insert(net.ddp2p.common.table.signature.TNAME,
+		return Application.getDB().insert(net.ddp2p.common.table.signature.TNAME,
 				new String[]{net.ddp2p.common.table.signature.global_signature_ID, net.ddp2p.common.table.signature.motion_ID},
 				new String[]{sign_GID, mot_ID},
 				DEBUG);
@@ -1093,7 +1093,7 @@ class D_Vote extends ASNObj{
 		 */
 		if (this.getLIDstr() == null) {
 			if (DEBUG) System.out.println("WB_Vote:storeVerified:inserting");
-			result = Application.db.insert(net.ddp2p.common.table.signature.TNAME,
+			result = Application.getDB().insert(net.ddp2p.common.table.signature.TNAME,
 					net.ddp2p.common.table.signature.fields_array,
 					params,
 					DEBUG
@@ -1102,7 +1102,7 @@ class D_Vote extends ASNObj{
 		}else{
 			if(DEBUG) System.out.println("WB_Vote:storeVerified:inserting");
 			params[net.ddp2p.common.table.signature.S_ID] = getLIDstr();
-			Application.db.update(net.ddp2p.common.table.signature.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.signature.TNAME,
 					net.ddp2p.common.table.signature.fields_noID_array,
 					new String[]{net.ddp2p.common.table.signature.signature_ID},
 					params,
@@ -1164,7 +1164,7 @@ class D_Vote extends ASNObj{
 	public static String getSignatureLocalID(String global_vote_ID) throws P2PDDSQLException {
 		String sql = "SELECT "+net.ddp2p.common.table.signature.signature_ID+" FROM "+net.ddp2p.common.table.signature.TNAME+
 		" WHERE "+net.ddp2p.common.table.signature.global_signature_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_vote_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{global_vote_ID}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
@@ -1225,7 +1225,7 @@ class D_Vote extends ASNObj{
 			" WHERE "+net.ddp2p.common.table.signature.global_signature_ID+"=? "+
 			//" AND "+table.signature.organization_ID+"=? "+
 			" AND "+net.ddp2p.common.table.signature.signature + " IS NOT NULL ";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{hash}, DEBUG);
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(sql, new String[]{hash}, DEBUG);
 		if(a.size()==0) result = false;
 		if(DEBUG||DBG) System.out.println("D_Vote:available: "+hash+" in "+orgID+"(?) = "+result);
 		return result;
@@ -1249,7 +1249,7 @@ class D_Vote extends ASNObj{
 			" AND ( "+net.ddp2p.common.table.signature.signature + " IS NOT NULL " +
 			// " OR "+table.signature.blocked+" = '1'" +
 					");";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{hash, creation_date}, DEBUG || DBG);
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(sql, new String[]{hash, creation_date}, DEBUG || DBG);
 		boolean result = true;
 		if(a.size()==0) result = false;
 		if(DEBUG||DBG) System.out.println("D_Vote:available: "+hash+" in "+orgID+" = "+result);
@@ -1276,7 +1276,7 @@ class D_Vote extends ASNObj{
 			//" AND "+table.constituent.organization_ID+"=? "+
 			//" AND ( "+table.constituent.sign + " IS NOT NULL " +
 			//" OR "+table.constituent.blocked+" = '1');";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{gID}, DEBUG);
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(sql, new String[]{gID}, DEBUG);
 		boolean result = true;
 		if(a.size()==0) result = false;
 		if(DEBUG||DBG) System.out.println("D_News:available: "+gID+" in "+" = "+result);
@@ -1289,7 +1289,7 @@ class D_Vote extends ASNObj{
 
 	public static void _main(String[] args) {
 		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 			if(args.length>0){readSignSave(3,1); if(true) return;}
 			
 			D_Vote c=new D_Vote(1);
@@ -1332,14 +1332,14 @@ class D_Vote extends ASNObj{
 			if(args.length>3) DEBUG = Util.stringInt2bool(args[3], false);
 			
 			
-			Application.db = new DBInterface(database);
+			Application.setDB(new DBInterface(database));
 			
 			ArrayList<ArrayList<Object>> l;
 			D_Organization organization = null;
 			D_Constituent constituent = null;
 			D_Motion motion = null;
 			if(id<=0){
-				l = Application.db.select(
+				l = Application.getDB().select(
 						"SELECT "+net.ddp2p.common.table.signature.signature_ID+
 						" FROM "+net.ddp2p.common.table.signature.TNAME, new String[]{}, DEBUG);
 				for(ArrayList<Object> a: l){
@@ -1428,8 +1428,8 @@ class D_Vote extends ASNObj{
 		long result = 0;
 		try {
 			ArrayList<ArrayList<Object>> orgs;
-			if (days <= 0) orgs = Application.db.select(sql_ac, new String[]{orgID});
-			else orgs = Application.db.select(sql_ac2, new String[]{orgID, Util.getGeneralizedDate(days)});
+			if (days <= 0) orgs = Application.getDB().select(sql_ac, new String[]{orgID});
+			else orgs = Application.getDB().select(sql_ac2, new String[]{orgID, Util.getGeneralizedDate(days)});
 			if(orgs.size()>0) result = Util.lval(orgs.get(0).get(0));
 			else result = 0;
 		} catch (P2PDDSQLException e) {
@@ -1800,7 +1800,7 @@ class D_Vote extends ASNObj{
 			if (limit > 0) sql += " LIMIT "+limit;
 			if (offset > 0) sql += " OFFSET "+offset;			
 			
-			return Application.db.select(sql+";", new String[]{Util.getStringID(motionID)}, DEBUG);
+			return Application.getDB().select(sql+";", new String[]{Util.getStringID(motionID)}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
@@ -1830,19 +1830,19 @@ class D_Vote extends ASNObj{
 				String sql = sql_VotersByNoJustification;
 				if (limit > 0) sql += " LIMIT "+limit;
 				if (offset > 0) sql += " OFFSET "+offset;			
-				return Application.db.select(sql+";", new String[]{Util.getStringID(motionID)}, DEBUG);
+				return Application.getDB().select(sql+";", new String[]{Util.getStringID(motionID)}, DEBUG);
 			}
 			if (motionID <= 0) {
 				String sql = sql_VotersByJustification;
 				if (limit > 0) sql += " LIMIT "+limit;
 				if (offset > 0) sql += " OFFSET "+offset;			
-				return Application.db.select(sql+";", new String[]{Util.getStringID(justificationID)}, DEBUG);
+				return Application.getDB().select(sql+";", new String[]{Util.getStringID(justificationID)}, DEBUG);
 			}
 			{
 				String sql = sql_VotersByMotionAndJustification;
 				if (limit > 0) sql += " LIMIT "+limit;
 				if (offset > 0) sql += " OFFSET "+offset;			
-				return Application.db.select(sql+";", new String[]{Util.getStringID(motionID), Util.getStringID(justificationID)}, DEBUG);
+				return Application.getDB().select(sql+";", new String[]{Util.getStringID(motionID), Util.getStringID(justificationID)}, DEBUG);
 			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();

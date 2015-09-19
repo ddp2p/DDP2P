@@ -61,7 +61,7 @@ public class GenerateKeys extends Thread {
 		type = Util.getKeyedIDType(keys);
 		try {
 			date = Util.getGeneralizedTime();
-			id = Application.db.insert(net.ddp2p.common.table.key.TNAME, 
+			id = Application.getDB().insert(net.ddp2p.common.table.key.TNAME, 
 					new String[]{net.ddp2p.common.table.key.ID_hash,net.ddp2p.common.table.key.public_key,net.ddp2p.common.table.key.secret_key,net.ddp2p.common.table.key.type,net.ddp2p.common.table.key.creation_date},
 					new String[]{gIDhash, gID, sID, type, date});
 			for (WorkerListener l : listeners) {

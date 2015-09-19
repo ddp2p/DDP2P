@@ -711,7 +711,7 @@ public class UDPServerThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	
 			String instance = aup.peer_instance;
 
-			if (DD.AVOID_REPEATING_AT_PING && !Application.g_UDPServer.hasSyncRequests(g_peerID, instance)) {
+			if (DD.AVOID_REPEATING_AT_PING && !Application.getG_UDPServer().hasSyncRequests(g_peerID, instance)) {
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Received ping confirmation already handled from peer"));
 				if (DEBUG || DD.DEBUG_COMMUNICATION_STUN) System.out.println("UDPServer:run: Ping already handled for: "+Util.trimmed(g_peerID));
 				return false;					
@@ -725,7 +725,7 @@ public class UDPServerThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			
 			DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Received ping confirmation from peer"));
 			if (DEBUG) System.out.println("UDPServer:run: GID ping: "+aup+" from: "+pak.getSocketAddress());
-			Application.g_UDPServer.delSyncRequests(g_peerID, instance);
+			Application.getG_UDPServer().delSyncRequests(g_peerID, instance);
 
 			//get last snapshot for peerID
 			D_PeerInstance dpi = peer.getPeerInstance(instance);

@@ -801,7 +801,7 @@ public class UpdatePeersTable {
 	
 	public static void main(String args[]){
 		try {
-			Application.db = new DBInterface(Application.DEFAULT_DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DEFAULT_DELIBERATION_FILE));
 		} catch (P2PDDSQLException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();

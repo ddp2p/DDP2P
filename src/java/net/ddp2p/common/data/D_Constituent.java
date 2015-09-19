@@ -181,11 +181,11 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		ArrayList<ArrayList<Object>> c = null;
 		try {
 			if (gID != null && gIDH != null) {
-				c = Application.db.select(sql_get_const_by_GID, new String[]{gID, gIDH}, DEBUG);
+				c = Application.getDB().select(sql_get_const_by_GID, new String[]{gID, gIDH}, DEBUG);
 			} else if (gID != null) {
-				c = Application.db.select(sql_get_const_by_GID_only, new String[]{gID}, DEBUG);
+				c = Application.getDB().select(sql_get_const_by_GID_only, new String[]{gID}, DEBUG);
 			} else if (gIDH != null) {
-				c = Application.db.select(sql_get_const_by_GIDH, new String[]{gIDH}, DEBUG);
+				c = Application.getDB().select(sql_get_const_by_GIDH, new String[]{gIDH}, DEBUG);
 			};
 			if (c == null || c.size() == 0) {
 				if (! create) throw new D_NoDataException("No such constituent: c_GIDH="+gIDH+" GID="+gID);
@@ -323,7 +323,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	private void init(String lID, boolean load_Globals) {
 		ArrayList<ArrayList<Object>> c;
 		try {
-			c = Application.db.select(sql_get_const_by_ID, new String[]{lID}, DEBUG);
+			c = Application.getDB().select(sql_get_const_by_ID, new String[]{lID}, DEBUG);
 			if (c.size() == 0) throw new RuntimeException("LID="+lID);
 			load(c.get(0), EXPAND_NONE);
 		} catch (P2PDDSQLException e) {
@@ -390,7 +390,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		String my_const_sql = "SELECT "+net.ddp2p.common.table.my_constituent_data.fields_list+
 				" FROM "+net.ddp2p.common.table.my_constituent_data.TNAME+
 				" WHERE "+net.ddp2p.common.table.my_constituent_data.constituent_ID+" = ?;";
-		ArrayList<ArrayList<Object>> my_org = Application.db.select(my_const_sql, new String[]{getLIDstr()}, DEBUG);
+		ArrayList<ArrayList<Object>> my_org = Application.getDB().select(my_const_sql, new String[]{getLIDstr()}, DEBUG);
 		if (my_org.size() != 0) {
 			ArrayList<Object> my_data = my_org.get(0);
 			mydata.name = Util.getString(my_data.get(net.ddp2p.common.table.my_constituent_data.COL_NAME));
@@ -1349,12 +1349,12 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 //					if (c != null) c.resetCache(); // removing cached memory of statistics about justifications!
 //				}
 					
-				setLID_AndLink(Application.db.insert(sync, net.ddp2p.common.table.constituent.TNAME,
+				setLID_AndLink(Application.getDB().insert(sync, net.ddp2p.common.table.constituent.TNAME,
 						net.ddp2p.common.table.constituent.fields_constituents_no_ID_list, params, DEBUG));
 					
 			} else {
 				params[net.ddp2p.common.table.constituent.CONST_COL_ID] = constituent_ID;
-				Application.db.update(sync, net.ddp2p.common.table.constituent.TNAME,
+				Application.getDB().update(sync, net.ddp2p.common.table.constituent.TNAME,
 						net.ddp2p.common.table.constituent.fields_constituents_no_ID_list,
 						new String[]{net.ddp2p.common.table.constituent.constituent_ID}, params, DEBUG);
 					
@@ -1379,11 +1379,11 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		try {
 			if (this.mydata.row <= 0) {
 				this.mydata.row =
-						Application.db.insert(sync, net.ddp2p.common.table.my_constituent_data.TNAME,
+						Application.getDB().insert(sync, net.ddp2p.common.table.my_constituent_data.TNAME,
 								net.ddp2p.common.table.my_constituent_data.fields_noID, param, DEBUG);
 			} else {
 				param[net.ddp2p.common.table.my_constituent_data.COL_ROW] = this.mydata.row+"";
-				Application.db.update(sync, net.ddp2p.common.table.my_constituent_data.TNAME,
+				Application.getDB().update(sync, net.ddp2p.common.table.my_constituent_data.TNAME,
 						net.ddp2p.common.table.my_constituent_data.fields_noID,
 						new String[]{net.ddp2p.common.table.my_constituent_data.row}, param, DEBUG);
 			}
@@ -2792,17 +2792,17 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		boolean DEBUG = false;
 		if(DEBUG) System.err.println("Deleting ID = "+constituentID);
 		try{
-			Application.db.delete(net.ddp2p.common.table.field_value.TNAME, new String[]{net.ddp2p.common.table.field_value.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.source_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.target_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.identity_ids.TNAME, new String[]{net.ddp2p.common.table.identity_ids.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.motion.TNAME, new String[]{net.ddp2p.common.table.motion.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.justification.TNAME, new String[]{net.ddp2p.common.table.justification.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.signature.TNAME, new String[]{net.ddp2p.common.table.signature.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.news.TNAME, new String[]{net.ddp2p.common.table.news.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.translation.TNAME, new String[]{net.ddp2p.common.table.translation.submitter_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.constituent.TNAME, new String[]{net.ddp2p.common.table.constituent.constituent_ID}, new String[]{constituentID+""});
-			Application.db.delete(net.ddp2p.common.table.constituent.TNAME, new String[]{net.ddp2p.common.table.constituent.submitter_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.field_value.TNAME, new String[]{net.ddp2p.common.table.field_value.constituent_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.source_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.witness.TNAME, new String[]{net.ddp2p.common.table.witness.target_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.identity_ids.TNAME, new String[]{net.ddp2p.common.table.identity_ids.constituent_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.motion.TNAME, new String[]{net.ddp2p.common.table.motion.constituent_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.justification.TNAME, new String[]{net.ddp2p.common.table.justification.constituent_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.signature.TNAME, new String[]{net.ddp2p.common.table.signature.constituent_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.news.TNAME, new String[]{net.ddp2p.common.table.news.constituent_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.translation.TNAME, new String[]{net.ddp2p.common.table.translation.submitter_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.constituent.TNAME, new String[]{net.ddp2p.common.table.constituent.constituent_ID}, new String[]{constituentID+""});
+			Application.getDB().delete(net.ddp2p.common.table.constituent.TNAME, new String[]{net.ddp2p.common.table.constituent.submitter_ID}, new String[]{constituentID+""});
 			
 			String cID = Util.getStringID(constituentID);
 			unlinkMemory(cID);
@@ -2826,11 +2826,11 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 					}
 				}
 			}
-			Application.db.delete(net.ddp2p.common.table.witness.TNAME,
+			Application.getDB().delete(net.ddp2p.common.table.witness.TNAME,
 					new String[]{net.ddp2p.common.table.witness.source_ID},
 					new String[]{Util.getStringID(constituentID)},
 					DEBUG);
-			Application.db.delete(net.ddp2p.common.table.witness.TNAME,
+			Application.getDB().delete(net.ddp2p.common.table.witness.TNAME,
 					new String[]{net.ddp2p.common.table.witness.target_ID},
 					new String[]{Util.getStringID(constituentID)},
 					DEBUG);
@@ -2849,11 +2849,11 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	 */
 	public static D_Constituent deleteConsDescription(String constituentID) {
 		try {
-			Application.db.delete(net.ddp2p.common.table.field_value.TNAME,
+			Application.getDB().delete(net.ddp2p.common.table.field_value.TNAME,
 					new String[]{net.ddp2p.common.table.field_value.constituent_ID},
 					new String[]{constituentID},
 					DEBUG);
-			Application.db.delete(net.ddp2p.common.table.constituent.TNAME,
+			Application.getDB().delete(net.ddp2p.common.table.constituent.TNAME,
 					new String[]{net.ddp2p.common.table.constituent.constituent_ID},
 					new String[]{constituentID},
 					DEBUG);
@@ -2975,7 +2975,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 						;
 		ArrayList<D_Constituent> list = new ArrayList<D_Constituent>();
 		try {
-			ArrayList<ArrayList<Object>> r = Application.db.select(sql, new String[]{GID}, DEBUG);
+			ArrayList<ArrayList<Object>> r = Application.getDB().select(sql, new String[]{GID}, DEBUG);
 			for (ArrayList<Object> o : r) {
 				long lID = Util.lval(o.get(0));
 				D_Constituent cons = D_Constituent.getConstByLID(GID, true, false);
@@ -2998,7 +2998,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 				" WHERE "+net.ddp2p.common.table.constituent.neighborhood_ID+"=?;";
 		ArrayList<ArrayList<Object>> c;
 		try {
-			c = Application.db.select(sql_c, new String[]{n_ID+""}, DEBUG);
+			c = Application.getDB().select(sql_c, new String[]{n_ID+""}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return 0;
@@ -3014,7 +3014,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 				" where "+net.ddp2p.common.table.constituent.neighborhood_ID+"=? AND "+net.ddp2p.common.table.constituent.organization_ID+"=?;";
 		ArrayList<ArrayList<Object>> c;
 		try {
-			c = Application.db.select(sql_c, new String[]{n_ID+"", o_ID+""}, DEBUG);
+			c = Application.getDB().select(sql_c, new String[]{n_ID+"", o_ID+""}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return sel_c;
@@ -3053,7 +3053,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		
 		ArrayList<ArrayList<Object>> subneighborhoods = new ArrayList<ArrayList<Object>>();
 		try {
-			subneighborhoods = Application.db.select( constituents_by_values_sql,
+			subneighborhoods = Application.getDB().select( constituents_by_values_sql,
 				new String[]{""+o_ID,
 				""+fe_ID}, DEBUG);
 		} catch (P2PDDSQLException e) {
@@ -3138,7 +3138,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	    		String[] params = new String[]{};
 	    		if(DD.CONSTITUENTS_ORPHANS_FILTER_BY_ORG) params = new String[]{Util.getStringID(o_ID)};
 	    		try {
-					ArrayList<ArrayList<Object>> identities = Application.db.select(sql, params, DEBUG);
+					ArrayList<ArrayList<Object>> identities = Application.getDB().select(sql, params, DEBUG);
 					for (int k = 0; k < identities.size(); k ++) {
 						r.add(Util.Lval(identities.get(k).get(0)));
 					}
@@ -3157,7 +3157,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public static Object getConstNBinOrganization(String orgID) {
 		Object result = null;
 		try {
-			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_org_all_constituents, new String[]{orgID, "1"});
+			ArrayList<ArrayList<Object>> orgs = Application.getDB().select(sql_org_all_constituents, new String[]{orgID, "1"});
 			if(orgs.size()>0) result = orgs.get(0).get(0);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -3258,13 +3258,13 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	public static ArrayList<ArrayList<Object>> getAllConstituents(long o_LID, long n_LID, boolean all) {
 		try {
 			if (all)
-				return Application.db.select(sql_all_constituents,
+				return Application.getDB().select(sql_all_constituents,
 						new String[]{Util.getStringID(o_LID)});
 			else if (n_LID <= 0) {
-				return Application.db.select(sql_all_constituents_in_root,
+				return Application.getDB().select(sql_all_constituents_in_root,
 						new String[]{Util.getStringID(o_LID)});
 			} else {
-				return Application.db.select(sql_all_constituents_in_neigh,
+				return Application.getDB().select(sql_all_constituents_in_neigh,
 						new String[]{Util.getStringID(o_LID), Util.getStringID(n_LID)});
 			}
 		} catch (P2PDDSQLException e) {

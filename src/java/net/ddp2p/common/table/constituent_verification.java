@@ -31,7 +31,7 @@ public class constituent_verification {
 			String sql = "SELECT "+fields+
 					" WHERE "+net.ddp2p.common.table.constituent_verification.constituent_ID +"=?;";
 			ArrayList<ArrayList<Object>> a;
-			a = Application.db.select(sql, new String[]{Util.getStringID(constituent_id)});
+			a = Application.getDB().select(sql, new String[]{Util.getStringID(constituent_id)});
 			if(a.size()==0) return null;
 			return Util.getString(a.get(0).get(net.ddp2p.common.table.constituent_verification.CV_CHALLENGE));
 		}catch(Exception e) {
@@ -44,10 +44,10 @@ public class constituent_verification {
 			String date) {
 		synchronized(monitor) {
 			try{
-				Application.db.deleteNoSync(net.ddp2p.common.table.constituent_verification.TNAME,
+				Application.getDB().deleteNoSync(net.ddp2p.common.table.constituent_verification.TNAME,
 						new String[]{net.ddp2p.common.table.constituent_verification.constituent_ID},
 						new String[]{Util.getStringID(constituent_id)}, DEBUG);
-				Application.db.insertNoSync(net.ddp2p.common.table.constituent_verification.TNAME,
+				Application.getDB().insertNoSync(net.ddp2p.common.table.constituent_verification.TNAME,
 						new String[]{net.ddp2p.common.table.constituent_verification.challenge,
 						net.ddp2p.common.table.constituent_verification.date,
 						net.ddp2p.common.table.constituent_verification.constituent_ID},

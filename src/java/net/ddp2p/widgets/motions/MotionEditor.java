@@ -480,7 +480,7 @@ public class MotionEditor extends JPanel  implements MotionsListener, DocumentLi
 					" AND "+net.ddp2p.common.table.signature.constituent_ID+"=?;";
 		ArrayList<ArrayList<Object>> s = null;
 		try {
-			s = Application.db.select(sql, new String[]{motionID,constituentID});
+			s = Application.getDB().select(sql, new String[]{motionID,constituentID});
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;

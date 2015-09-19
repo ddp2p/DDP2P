@@ -263,7 +263,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		}
 		//System.out.print("#0");
 		if(DD.ClientUDP) {
-			if(Application.g_UDPServer == null){
+			if(Application.getG_UDPServer() == null){
 				DD.ed.fireClientUpdate(new CommEvent(this, s_address,null,"FAIL: UDP Server not running", peer_name+" ("+global_peer_ID+")"));
 				if(ClientSync._DEBUG) err.println("UClient socket not yet open, no UDP server");
 				//System.out.print("#1");
@@ -274,7 +274,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 				//boolean DEBUG = true;
 				if(DEBUG) out.println("UClient try address["+k+"]"+udp_sock_addresses.get(k));
 
-				if (DD.AVOID_REPEATING_AT_PING&&(Application.g_UDPServer!=null) && (!Application.g_UDPServer.hasSyncRequests(global_peer_ID, instance))) {
+				if (DD.AVOID_REPEATING_AT_PING&&(Application.getG_UDPServer()!=null) && (!Application.getG_UDPServer().hasSyncRequests(global_peer_ID, instance))) {
 					DD.ed.fireClientUpdate(new CommEvent(this, peer_name, null, "LOCAL", "Stop sending: Received ping confirmation already handled from peer"));
 					if(DEBUG) System.out.println("UDPServer Ping already handled for: "+Util.trimmed(global_peer_ID));
 					{
@@ -340,7 +340,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 				}
 				try {
 					//System.out.print("#_"+dp.getSocketAddress());
-					Application.g_UDPServer.send(dp);
+					Application.getG_UDPServer().send(dp);
 				} catch (IOException e) {
 					if(DEBUG)System.out.println("Fail to send ping to peer \""+peer_name+"\" at "+sock_addr);
 					continue;
@@ -356,7 +356,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 						if(dir_adr.isUnresolved()) continue;
 						dp.setSocketAddress(dir_adr);
 						//System.out.print("#d");
-						Application.g_UDPServer.send(dp);
+						Application.getG_UDPServer().send(dp);
 						if(DEBUG)System.out.println("I requested ping via: "+dp.getSocketAddress()+" ping="+aup);
 					} catch (IOException e) {
 						if(ClientSync._DEBUG)System.out.println("Client: try_connect: EEEEERRRRRRRROOOOOOORRRRR "+e.getMessage());
@@ -466,9 +466,9 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 			Application_GUI.ThreadsAccounting_ping("Cycle peer "+p);
 			if(turnOff) break;
 			// Avoid asking in parallel too many synchronizations (wait for answers)
-			if((Application.g_UDPServer!=null)&&(Application.g_UDPServer.getThreads() > UDPServer.MAX_THREADS/2))
+			if((Application.getG_UDPServer()!=null)&&(Application.getG_UDPServer().getThreads() > UDPServer.MAX_THREADS/2))
 				try {
-					System.out.println("Client: run: overloaded threads = "+Application.g_UDPServer.getThreads());
+					System.out.println("Client: run: overloaded threads = "+Application.getG_UDPServer().getThreads());
 					synchronized(wait_lock ){
 						this.wait(Client1.PAUSE);
 					}
@@ -520,7 +520,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 			
 			ArrayList<ArrayList<Object>> peers_addr = null;
 			try{
-				peers_addr = Application.db.select("SELECT "+net.ddp2p.common.table.peer_address.address+", "+net.ddp2p.common.table.peer_address.type+", "+net.ddp2p.common.table.peer_address.peer_address_ID+
+				peers_addr = Application.getDB().select("SELECT "+net.ddp2p.common.table.peer_address.address+", "+net.ddp2p.common.table.peer_address.type+", "+net.ddp2p.common.table.peer_address.peer_address_ID+
 						" FROM "+net.ddp2p.common.table.peer_address.TNAME+" WHERE "+net.ddp2p.common.table.peer_address.peer_ID+" = ? ORDER BY "+net.ddp2p.common.table.peer_address.my_last_connection+" DESC;",
 						new String[]{peer_ID});
 				
@@ -530,7 +530,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 			}
 			
 			
-			if(Application.g_UDPServer!=null) Application.g_UDPServer.addSyncRequests(global_peer_ID, instance);
+			if(Application.getG_UDPServer()!=null) Application.getG_UDPServer().addSyncRequests(global_peer_ID, instance);
 			int p_addresses = peers_addr.size();
 			ArrayList<String> peer_directories = getDirectories(peers_addr);
 			ArrayList<InetSocketAddress> peer_directories_sockets = new ArrayList<InetSocketAddress>();
@@ -545,7 +545,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 			for(int a=0; a < p_addresses; a++) {
 				String address = (String) peers_addr.get(a).get(0);
 				String type=(String)peers_addr.get(a).get(1);
-				if ((Application.g_UDPServer != null) && ! Application.g_UDPServer.hasSyncRequests(global_peer_ID, instance)) {
+				if ((Application.getG_UDPServer() != null) && ! Application.getG_UDPServer().hasSyncRequests(global_peer_ID, instance)) {
 					DD.ed.fireClientUpdate(new CommEvent(this, peer_name, null, "LOCAL", "Stop sending: Received ping confirmation already handled from peer"));
 					if(ClientSync.DEBUG)System.out.println("Client:run: Ping already handled for: "+Util.trimmed(global_peer_ID));
 					if(ClientSync.DEBUG)System.out.println("Client:run: will skip: "+address+":"+type);

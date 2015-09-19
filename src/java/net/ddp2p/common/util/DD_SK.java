@@ -53,7 +53,7 @@ class SK_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	    		params[net.ddp2p.common.table.key.COL_CREATION_DATE] = Encoder.getGeneralizedTime(d.creation);
 	       		params[net.ddp2p.common.table.key.COL_PK] = Util.stringSignatureFromByte(pk.encode());
 	       		params[net.ddp2p.common.table.key.COL_IDHASH] = Util.getGIDhash((String)params[net.ddp2p.common.table.key.COL_PK]);
-	       		Application.db.insert(net.ddp2p.common.table.key.TNAME, net.ddp2p.common.table.key.fields, params, DEBUG);
+	       		Application.getDB().insert(net.ddp2p.common.table.key.TNAME, net.ddp2p.common.table.key.fields, params, DEBUG);
     		} catch (Exception e) {
     			String localized = "";
     			if (e.getLocalizedMessage() != null) localized = "\n"+__("Error:")+e.getLocalizedMessage();

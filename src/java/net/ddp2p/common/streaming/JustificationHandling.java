@@ -70,7 +70,7 @@ public class JustificationHandling {
 			if(_maxDate==null) params = new String[]{last_sync_date};
 			else params = new String[]{last_sync_date, _maxDate};
 			
-			w = Application.db.select(sql, params, DEBUG);
+			w = Application.getDB().select(sql, params, DEBUG);
 			for(ArrayList<Object> s: w) {
 				orgs.add(Util.getString(s.get(1)));
 			}
@@ -97,7 +97,7 @@ public class JustificationHandling {
 			String orgID = Util.getStringID(D_Organization.getLocalOrgID(ofi.orgGID, ofi.orgGID_hash));
 			if(_maxDate==null) params = new String[]{last_sync_date, orgID};
 			else params = new String[]{last_sync_date, _maxDate, orgID};
-			w = Application.db.select(sql, params, DEBUG);
+			w = Application.getDB().select(sql, params, DEBUG);
 			if(w.size()>0)
 				orgs.add(Util.getString(orgID));
 		}
@@ -135,7 +135,7 @@ public class JustificationHandling {
 		if (DEBUG) System.out.println("JustificationHandling: getJustHashes: start");
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else { maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
-		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
+		ArrayList<ArrayList<Object>> result = Application.getDB().select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
 				new String[]{org_id, last_sync_date, maxDate}, DEBUG);
 		return Util.AL_AL_O_2_AL_S(result);
 	}
@@ -182,7 +182,7 @@ public class JustificationHandling {
 		
 		if(_maxDate==null) params = new String[]{last_sync_date, org_id};
 		else params = new String[]{last_sync_date, _maxDate, org_id};
-		w = Application.db.select(sql, params, DEBUG);
+		w = Application.getDB().select(sql, params, DEBUG);
 
 		if(w.size()>0) {
 			result = new D_Justification[w.size()];

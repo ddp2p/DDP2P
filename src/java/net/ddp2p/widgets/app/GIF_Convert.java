@@ -101,7 +101,7 @@ public class GIF_Convert {
 		}	
 	}
 	public static void main(String[] args) throws IOException, P2PDDSQLException {
-		Application.db = new DBInterface(Application.DEFAULT_DELIBERATION_FILE);
+		Application.setDB(new DBInterface(Application.DEFAULT_DELIBERATION_FILE));
 //		// TODO Auto-generated method stub
 //	  String bmpPath;// = convertFromGIF_to_BMP("c:/GIF/GifSample2.gif", "c:/GIF/ConvertedGifSample2.bmp");
 //      bmpPath= "c:/GIF/ConvertedGifSample20.bmp";

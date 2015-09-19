@@ -474,7 +474,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		
 		ArrayList<ArrayList<Object>> u;
 		try {
-			u = Application.db.select(sql, params, DEBUG);
+			u = Application.getDB().select(sql, params, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
@@ -489,7 +489,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			" AND " + directory_forwarding_terms.priority_type+" = 1 ;";
 			params = new String[]{"0"};
 			try {
-				u = Application.db.select(sql, params, DEBUG);
+				u = Application.getDB().select(sql, params, DEBUG);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return null;
@@ -581,7 +581,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		
 		ArrayList<ArrayList<Object>> u;
 		try {
-			u = Application.db.select(sql, params, DEBUG);
+			u = Application.getDB().select(sql, params, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
@@ -596,7 +596,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			" ORDER BY "+directory_forwarding_terms.priority_type+";";
 			params = new String[]{"0"};
 			try {
-				u = Application.db.select(sql, params, DEBUG);
+				u = Application.getDB().select(sql, params, DEBUG);
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				return null;

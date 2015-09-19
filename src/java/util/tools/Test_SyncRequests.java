@@ -23,7 +23,7 @@ class Test_SyncRequests {
 	}
 	public static void _main(String args[]) throws P2PDDSQLException, ASN1DecoderFail {
 		net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
-		Application.db = new DBInterface(Application.DELIBERATION_FILE);
+		Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 		byte[]g = Util.byteSignatureFromString(good);
 		byte[]w = Util.byteSignatureFromString(wrong);
 		if(_DEBUG)System.out.println("ASR:VerSigning g hash ="+Util.stringSignatureFromByte(Util.simple_hash(g,Cipher.MD5)));

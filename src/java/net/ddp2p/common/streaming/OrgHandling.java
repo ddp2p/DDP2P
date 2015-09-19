@@ -276,7 +276,7 @@ public class OrgHandling {
 			 " AND o."+net.ddp2p.common.table.organization.broadcasted+" <> '0' " +
 					" GROUP BY "+net.ddp2p.common.table.organization.arrival_date+","+net.ddp2p.common.table.organization.global_organization_ID+" " +
 							" ORDER BY "+net.ddp2p.common.table.organization.arrival_date+" LIMIT "+(1+limitOrgLow)+";";
-			p_data = Application.db.select(sql, new String[]{last_sync_date}, DEBUG);
+			p_data = Application.getDB().select(sql, new String[]{last_sync_date}, DEBUG);
 		}else{
 			sql = "SELECT "+net.ddp2p.common.table.organization.arrival_date+", COUNT(*), " + net.ddp2p.common.table.organization.global_organization_ID+","+ net.ddp2p.common.table.organization.organization_ID+
 					" FROM "+net.ddp2p.common.table.organization.TNAME + " AS o "+
@@ -285,7 +285,7 @@ public class OrgHandling {
 				 " AND o."+net.ddp2p.common.table.organization.broadcasted+" <> '0' " +
 						" GROUP BY "+net.ddp2p.common.table.organization.arrival_date+","+net.ddp2p.common.table.organization.global_organization_ID+" " +
 								" ORDER BY "+net.ddp2p.common.table.organization.arrival_date+" LIMIT "+(1+limitOrgLow)+";";
-			p_data = Application.db.select(sql, new String[]{last_sync_date,_maxDate},DEBUG);
+			p_data = Application.getDB().select(sql, new String[]{last_sync_date,_maxDate},DEBUG);
 		}
 		if(p_data.size()<=0) result = null;
 		else{
@@ -337,7 +337,7 @@ public class OrgHandling {
 			 " AND o."+net.ddp2p.common.table.organization.broadcasted+" <> '0' " +
 					" AND "+net.ddp2p.common.table.organization.arrival_date+" > ? " +
 					" GROUP BY "+net.ddp2p.common.table.organization.arrival_date+" LIMIT 1;";
-		p_data = Application.db.select(sql, new String[]{ofi.orgGID, ofi.orgGID_hash, last_sync_date}, DEBUG);
+		p_data = Application.getDB().select(sql, new String[]{ofi.orgGID, ofi.orgGID_hash, last_sync_date}, DEBUG);
 		if(p_data.size()<=0) result = null;
 		else result = Util.getString(p_data.get(0).get(0));
 		//if (result == null) result = _maxDate;
@@ -513,7 +513,7 @@ public class OrgHandling {
 					" AND " +net.ddp2p.common.table.organization.signature+ " IS NOT NULL "+
 				" ORDER BY "+net.ddp2p.common.table.organization.arrival_date+" LIMIT "+limitOrgMax+";";
 			ArrayList<ArrayList<Object>> p_data =
-				Application.db.select(sql,
+				Application.getDB().select(sql,
 						((maxDate!=null)?(new String[]{last_sync_date, maxDate}):new String[]{last_sync_date}),
 						DEBUG);
 			if(DEBUG)out.println("OrgHandling:getOrgData: Valid Organizations for sending="+p_data.size());
@@ -675,7 +675,7 @@ public class OrgHandling {
 						//" AND arrival_time > ? AND arrival_time <= ? ORDER BY arrival_time LIMIT 100;";
 				
 				ArrayList<ArrayList<Object>>p_data =
-					Application.db.select(sql, new String[]{ofi.orgGID, ofi.orgGID_hash/*, last_sync_date, max_Date*/}, DEBUG);
+					Application.getDB().select(sql, new String[]{ofi.orgGID, ofi.orgGID_hash/*, last_sync_date, max_Date*/}, DEBUG);
 				if(p_data.size()>=1) {
 					//if(max_Date.equals(last_sync_date) && !Util.getString(p_data.get(0).get(ORG_COL_ARRIVAL)).compareTo(last_sync_date)) continue;
 					D_Organization od = //OrgHandling.getOrgData(last_sync_date, ofi.orgGID, p_data.get(0));

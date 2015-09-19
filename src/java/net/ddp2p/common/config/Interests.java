@@ -11,11 +11,11 @@ public class Interests {
 		try {
 			String cmd = args[0];
 			if("DISPLAY".equals(cmd)){
-				Application.db = new DBInterface(args[1]);
+				Application.setDB(new DBInterface(args[1]));
 				display(args);
 			}
 			if("FREE".equals(cmd)){
-				Application.db = new DBInterface(args[1]);
+				Application.setDB(new DBInterface(args[1]));
 				free(args);
 			}
 			

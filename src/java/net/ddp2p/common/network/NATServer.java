@@ -91,7 +91,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					}
 					first = false;
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 					return;
 				}
 			}

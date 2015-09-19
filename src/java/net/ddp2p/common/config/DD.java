@@ -595,7 +595,7 @@ public class DD {
 
 	public static String[] get_preferred_charsets() throws P2PDDSQLException {
     	ArrayList<ArrayList<Object>> id;
-    	id=Application.db.select("SELECT "+net.ddp2p.common.table.identity.preferred_charsets +
+    	id=Application.getDB().select("SELECT "+net.ddp2p.common.table.identity.preferred_charsets +
     			" FROM "+net.ddp2p.common.table.identity.TNAME+" AS i" +
     			" WHERE i."+net.ddp2p.common.table.identity.default_id+"==1 LIMIT 1;",
     			new String[]{});
@@ -609,7 +609,7 @@ public class DD {
 	}
 	public static String get_authorship_charset() throws P2PDDSQLException {
     	ArrayList<ArrayList<Object>> id;
-    	id=Application.db.select("SELECT "+net.ddp2p.common.table.identity.authorship_charset +
+    	id=Application.getDB().select("SELECT "+net.ddp2p.common.table.identity.authorship_charset +
     			" FROM "+net.ddp2p.common.table.identity.TNAME+" AS i" +
     			" WHERE i."+net.ddp2p.common.table.identity.default_id+"==1 LIMIT 1;",
     			new String[]{});
@@ -621,7 +621,7 @@ public class DD {
 	}
 	public static Language get_authorship_lang() throws P2PDDSQLException {
     	ArrayList<ArrayList<Object>> id;
-    	id=Application.db.select("SELECT "+net.ddp2p.common.table.identity.authorship_lang +
+    	id=Application.getDB().select("SELECT "+net.ddp2p.common.table.identity.authorship_lang +
     			" FROM "+net.ddp2p.common.table.identity.TNAME+" AS i" +
     			" WHERE i."+net.ddp2p.common.table.identity.default_id+"==1 LIMIT 1;",
     			new String[]{});
@@ -744,8 +744,8 @@ public class DD {
     	}
 	}
 	static public boolean setAppTextNoSync(String field, String value) throws P2PDDSQLException{
-		synchronized(Application.db){
-			ArrayList<ArrayList<Object>> rows = Application.db.select("SELECT "+net.ddp2p.common.table.application.value+
+		synchronized(Application.getDB()){
+			ArrayList<ArrayList<Object>> rows = Application.getDB().select("SELECT "+net.ddp2p.common.table.application.value+
 					" FROM "+net.ddp2p.common.table.application.TNAME+
 					" WHERE "+net.ddp2p.common.table.application.field+"=?;",
 					new String[]{field});
@@ -753,14 +753,14 @@ public class DD {
 				String oldvalue = Util.getString(rows.get(0).get(0));
 				if(((oldvalue==null) && (value==null)) || 
 					((oldvalue!=null) && (value!=null) && oldvalue.equals(value))) return true;
-				Application.db.updateNoSync(
+				Application.getDB().updateNoSync(
 					net.ddp2p.common.table.application.TNAME,
 					new String[]{net.ddp2p.common.table.application.value},
 					new String[]{net.ddp2p.common.table.application.field},
 					new String[]{value, field});
 			}else{
 					try{
-						Application.db.insertNoSync(net.ddp2p.common.table.application.TNAME, new String[]{net.ddp2p.common.table.application.field, net.ddp2p.common.table.application.value}, new String[]{field, value});
+						Application.getDB().insertNoSync(net.ddp2p.common.table.application.TNAME, new String[]{net.ddp2p.common.table.application.field, net.ddp2p.common.table.application.value}, new String[]{field, value});
 					}catch(Exception e){
 						e.printStackTrace();
 						Application_GUI.warning(__("Error inserting:")+"\n"+__("value=")+Util.trimmed(value)+"\n"+__("field=")+field+"\n"+__("Error:")+e.getLocalizedMessage(), __("Database update error"));
@@ -802,7 +802,7 @@ public class DD {
 	}
 	public static boolean setAppText(String field, String value,
 			boolean debug) throws P2PDDSQLException {
-		return setAppText(Application.db, field, value, debug);
+		return setAppText(Application.getDB(), field, value, debug);
 	}
 	public static boolean setAppText(DBInterface db, String field, String value,
 			boolean debug) throws P2PDDSQLException {
@@ -874,7 +874,8 @@ public class DD {
 	 * @throws P2PDDSQLException
 	 */
 	static public String getExactAppText(String field) throws P2PDDSQLException{
-		return getExactAppText(Application.db.getImplementation(), field);
+		int installation =  Application.getCurrentInstallationFromThread();
+		return getExactAppText(Application.getDB(installation).getImplementation(), field);
 	}
 	/**
 	 * 
@@ -924,12 +925,12 @@ public class DD {
     	*/
 	}
 	static public boolean startDirectoryServer(boolean on, int port) throws NumberFormatException, P2PDDSQLException {
-		DirectoryServer ds= Application.g_DirectoryServer;
+		DirectoryServer ds= Application.getG_DirectoryServer();
 		
 		if (on == false) {
 			if (ds != null) {
 				ds.turnOff();
-				Application.g_DirectoryServer=null;
+				Application.setG_DirectoryServer(null);
 				//DirectoryServer.db=null;
 				if(DEBUG)System.out.println("DD:startDirectoryServer:Turning off");
 				return true;
@@ -949,8 +950,8 @@ public class DD {
 			else port = DirectoryServer.PORT;
 		}
 		try {
-			Application.g_DirectoryServer = new DirectoryServer(port);
-			Application.g_DirectoryServer.start();
+			Application.setG_DirectoryServer(new DirectoryServer(port));
+			Application.getG_DirectoryServer().start();
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
@@ -958,11 +959,11 @@ public class DD {
 		return true;
 	}
 	static public boolean startServer(boolean on, Identity peer_id) throws NumberFormatException, P2PDDSQLException {
-		Server as = Application.g_TCPServer;
+		Server as = Application.getG_TCPServer();
 		if(DEBUG)System.err.println("Will set server as="+as+" id="+peer_id);
 		if (on == false) {
 			if (as != null) {
-				as.turnOff(); Application.g_TCPServer=null;
+				as.turnOff(); Application.setG_TCPServer(null);
 				if(DEBUG)System.err.println("Turned off");
 				return true;
 			} else {
@@ -975,8 +976,8 @@ public class DD {
 			return false;
 		}
 		try {
-			Application.g_TCPServer = new Server(peer_id);
-			Application.g_TCPServer.start();
+			Application.setG_TCPServer(new Server(peer_id));
+			Application.getG_TCPServer().start();
 		} catch (Exception e) {
 			if(DEBUG)System.err.println("Error:"+e);
 			//e.printStackTrace();
@@ -994,11 +995,11 @@ public class DD {
 	 */
 	static public boolean startUServer(boolean on, Identity peer_id) throws NumberFormatException, P2PDDSQLException {
 		//boolean DEBUG = true;
-		UDPServer aus = Application.g_UDPServer;
+		UDPServer aus = Application.getG_UDPServer();
 		if(DEBUG) System.err.println("Will set server aus="+aus+" id="+peer_id);
 		if (on == false) {
 			if (aus != null) {
-				aus.turnOff(); Application.g_UDPServer=null;
+				aus.turnOff(); Application.setG_UDPServer(null);
 				if(DEBUG) System.err.println("Turned off");
 				return true;
 			} else {
@@ -1012,9 +1013,9 @@ public class DD {
 		}
 		try {
 			if(DEBUG) System.err.println("DD:startUServ: <init>");
-			Application.g_UDPServer = new UDPServer(peer_id);
+			Application.setG_UDPServer(new UDPServer(peer_id));
 			if(DEBUG) System.err.println("DD:startUServ: <init> done, start");
-			Application.g_UDPServer.start();
+			Application.getG_UDPServer().start();
 		} catch (Exception e) {
 			if(DEBUG) System.err.println("Error:"+e);
 			//e.printStackTrace();
@@ -1024,11 +1025,11 @@ public class DD {
 	}
 	static public boolean startNATServer(boolean on) throws NumberFormatException, P2PDDSQLException {
 		//boolean DEBUG = true;
-		NATServer aus = Application.g_NATServer;
+		NATServer aus = Application.getG_NATServer();
 		if(DEBUG) System.err.println("Will set server nat_s="+aus);
 		if (on == false) {
 			if (aus != null) {
-				aus.turnOff(); Application.g_NATServer=null;
+				aus.turnOff(); Application.setG_NATServer(null);
 				if(DEBUG) System.err.println("Turned off");
 				return true;
 			} else {
@@ -1042,9 +1043,9 @@ public class DD {
 		}
 		try {
 			if(DEBUG) System.err.println("DD:startNATServ: <init>");
-			Application.g_NATServer = new NATServer();
+			Application.setG_NATServer(new NATServer());
 			if(DEBUG) System.err.println("DD:startNATServ: <init> done, start");
-			Application.g_NATServer.start();
+			Application.getG_NATServer().start();
 		} catch (Exception e) {
 			if(DEBUG) System.err.println("Error:"+e);
 			//e.printStackTrace();
@@ -1064,12 +1065,12 @@ public class DD {
 	static public boolean startClient(boolean on) throws NumberFormatException, P2PDDSQLException {
 		boolean DEBUG = DD.DEBUG || Client2.DEBUG || ClientSync.DEBUG;
 		if (DEBUG) System.out.println("DD: startClient: " + on);
-		IClient old_client = Application.g_PollingStreamingClient;
+		IClient old_client = Application.getG_PollingStreamingClient();
 		
 		if (on == false) {
 			if (old_client != null) {
 				old_client.turnOff();
-				Application.g_PollingStreamingClient=null;
+				Application.setG_PollingStreamingClient(null);
 				return true;
 			} else {
 				return false;
@@ -1078,7 +1079,7 @@ public class DD {
 		// Here on = true
 		if (old_client != null) return false;
 		try {
-			Application.g_PollingStreamingClient = ClientSync.startClient();
+			Application.setG_PollingStreamingClient(ClientSync.startClient());
 		} catch (Exception e) {
 			return false;
 		}
@@ -1090,7 +1091,7 @@ public class DD {
 	 */
 	static public boolean touchClient() {//throws NumberFormatException, P2PDDSQLException {
 		boolean result = true;
-		IClient old_client = Application.g_PollingStreamingClient;
+		IClient old_client = Application.getG_PollingStreamingClient();
 		if (old_client == null) {
 			try {
 				DD.startClient(true);
@@ -1099,7 +1100,7 @@ public class DD {
 				result = false;
 				return result;
 			}
-			old_client = Application.g_PollingStreamingClient;
+			old_client = Application.getG_PollingStreamingClient();
 		}
 		old_client.wakeUp();
 		return result;
@@ -1111,9 +1112,9 @@ public class DD {
 	}
 	public static void setBroadcastServerStatus(boolean run) {
 		if(run) {
-			if(Application.g_BroadcastServer != null) return;
+			if(Application.getG_BroadcastServer() != null) return;
 			try {
-				Application.g_BroadcastServer = new BroadcastServer();
+				Application.setG_BroadcastServer(new BroadcastServer());
 			} catch (IOException e) {
 				e.printStackTrace();
 				return;
@@ -1121,19 +1122,19 @@ public class DD {
 				e.printStackTrace();
 				return;
 			}
-			Application.g_BroadcastServer.start();
+			Application.getG_BroadcastServer().start();
 		}else{
-			if(Application.g_BroadcastServer == null) return;
-			Application.g_BroadcastServer.stopServer();
-			Application.g_BroadcastServer=null;
+			if(Application.getG_BroadcastServer() == null) return;
+			Application.getG_BroadcastServer().stopServer();
+			Application.setG_BroadcastServer(null);
 		}
 		Application_GUI.setBroadcastServerStatus_GUI(run);
 	}
 	public static void setBroadcastClientStatus(boolean run) {
 		if(run) {
-			if(Application.g_BroadcastClient != null) return;
+			if(Application.getG_BroadcastClient() != null) return;
 			try {
-				Application.g_BroadcastClient = new BroadcastClient();
+				Application.setG_BroadcastClient(new BroadcastClient());
 			} catch (IOException e) {
 				e.printStackTrace();
 				return;
@@ -1141,11 +1142,11 @@ public class DD {
 				e.printStackTrace();
 				return;
 			}
-			Application.g_BroadcastClient.start();
+			Application.getG_BroadcastClient().start();
 		}else{
-			if(Application.g_BroadcastClient == null) return;
-			Application.g_BroadcastClient.stopClient();
-			Application.g_BroadcastClient=null;
+			if(Application.getG_BroadcastClient() == null) return;
+			Application.getG_BroadcastClient().stopClient();
+			Application.setG_BroadcastClient(null);
 		}		
 		Application_GUI.setBroadcastClientStatus_GUI(run);
 	}
@@ -1219,7 +1220,7 @@ public class DD {
 		}
 		//String date = Util.getGeneralizedTime();
 		if(pGIDname == null) pGIDname = "KEY:"+date;
-		Application.db.insert(net.ddp2p.common.table.key.TNAME,
+		Application.getDB().insert(net.ddp2p.common.table.key.TNAME,
 				new String[]{net.ddp2p.common.table.key.public_key,net.ddp2p.common.table.key.secret_key,net.ddp2p.common.table.key.ID_hash,net.ddp2p.common.table.key.creation_date,
 				net.ddp2p.common.table.key.name,net.ddp2p.common.table.key.type},
 				new String[]{public_key_ID, secret_key, pGIDhash,date,
@@ -1715,8 +1716,8 @@ public class DD {
 		DD.TESTED_VERSION = null;
 		if(!dbfile.exists() || !dbfile.isFile() || !dbfile.canRead()) return __("File not readable.");
 		try{
-			Application.db = new DBInterface(attempt);
-			ArrayList<ArrayList<Object>> v = Application.db.select(
+			Application.setDB(new DBInterface(attempt));
+			ArrayList<ArrayList<Object>> v = Application.getDB().select(
 					"SELECT "+net.ddp2p.common.table.application.value+" FROM "+net.ddp2p.common.table.application.TNAME+
 					" WHERE "+net.ddp2p.common.table.application.field+"=? LIMIT 1;",
 					new String[]{DD.DD_DB_VERSION}, DEBUG);
@@ -1727,11 +1728,11 @@ public class DD {
 			if(v.size()>0)DD.TESTED_VERSION=Util.getString(v.get(0).get(0));
 		}catch(Exception e){
 			try {
-				Application.db.close();
+				Application.getDB().close();
 			} catch (net.ddp2p.common.util.P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
-			Application.db = null;
+			Application.setDB(null);
 			e.printStackTrace();
 			return e.getLocalizedMessage();
 		}

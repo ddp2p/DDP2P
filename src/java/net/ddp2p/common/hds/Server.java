@@ -609,13 +609,13 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 							try {
 								synchronized(this) {
 									this.wait(DD.DOMAINS_UPDATE_WAIT);
-									if (stop) {
-										return;
-									}
 								}
 							} catch (InterruptedException e) {
-								e.printStackTrace();
-								Application_GUI.ThreadsAccounting_ping("Error wait: "+e.getLocalizedMessage());
+								//e.printStackTrace();
+								//Application_GUI.ThreadsAccounting_ping("Error wait: "+e.getLocalizedMessage());
+							}
+							if (stop) {
+								return;
 							}
 							try {
 								if (DEBUG) System.out.println("Server:<Thread>run: detectDomain");
@@ -808,7 +808,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		}
 		if(DEBUG) out.println("Opening database: "+Application.DELIBERATION_FILE);
 		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
@@ -821,8 +821,8 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		if(DEBUG) System.out.println("My ID: "+guID);
 		if (directory_server_on_start) {
 			try {
-				Application.g_DirectoryServer = new DirectoryServer(DirectoryServer.PORT);
-				Application.g_DirectoryServer.start();
+				Application.setG_DirectoryServer(new DirectoryServer(DirectoryServer.PORT));
+				Application.getG_DirectoryServer().start();
 			}catch(Exception e) {
 				System.exit(-1);
 			}
@@ -837,12 +837,12 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			//Identity id = new Identity();
 			//id.globalID = guID;
 			Identity id2 = Identity.getCurrentPeerIdentity_QuitOnFailure();
-			Application.g_TCPServer = new Server(id2);
-			Application.g_TCPServer.start();
+			Application.setG_TCPServer(new Server(id2));
+			Application.getG_TCPServer().start();
 			//server.setID(id);
 		}
 		if (data_client_on_start) {
-			Application.g_PollingStreamingClient = ClientSync.startClient();
+			Application.setG_PollingStreamingClient(ClientSync.startClient());
 		}
 	}
 	public static boolean isMyself(InetSocketAddress sock_addr) {

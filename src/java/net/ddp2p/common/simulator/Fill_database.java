@@ -77,18 +77,18 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 	private boolean running = true;
 
 	public static void cleanDatabase() throws P2PDDSQLException {
-		Application.db.delete("delete from "+net.ddp2p.common.table.application.TNAME+" where "+net.ddp2p.common.table.application.field+"=\"WLAN_INTERESTS\";",new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.organization.TNAME,new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.peer.TNAME,new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.peer_address.TNAME,new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.constituent.TNAME,new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.motion.TNAME,new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.signature.TNAME,new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.justification.TNAME,new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.witness.TNAME,new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.neighborhood.TNAME,new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.key.TNAME,new String[]{});
-		Application.db.delete("delete from "+net.ddp2p.common.table.application.TNAME+" WHERE "+
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.application.TNAME+" where "+net.ddp2p.common.table.application.field+"=\"WLAN_INTERESTS\";",new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.organization.TNAME,new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.peer.TNAME,new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.peer_address.TNAME,new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.constituent.TNAME,new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.motion.TNAME,new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.signature.TNAME,new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.justification.TNAME,new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.witness.TNAME,new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.neighborhood.TNAME,new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.key.TNAME,new String[]{});
+		Application.getDB().delete("delete from "+net.ddp2p.common.table.application.TNAME+" WHERE "+
 							net.ddp2p.common.table.application.field+"=?"+" or "+net.ddp2p.common.table.application.field+"=?"+
 							" or "+net.ddp2p.common.table.application.field+"=?"+" or "+net.ddp2p.common.table.application.field+"=?;",
 							new String[]{"my_global_peer_ID","INTERFACES","my_peer_name","my_global_peer_ID_hash"});
@@ -295,7 +295,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		long selected = (long)Util.random(justifications);
 		String sql_sel = "SELECT "+net.ddp2p.common.table.justification.justification_ID+" FROM "+
 				net.ddp2p.common.table.justification.TNAME+" LIMIT 1 OFFSET "+selected;
-		ArrayList<ArrayList<Object>> j_data = Application.db.select(sql_sel, new String[]{});
+		ArrayList<ArrayList<Object>> j_data = Application.getDB().select(sql_sel, new String[]{});
 		J_ID = Integer.parseInt(j_data.get(0).get(0).toString());
 		return J_ID;
 	}
@@ -408,7 +408,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 					" WHERE nm."+net.ddp2p.common.table.motion.organization_ID+"=?" +
 					" AND s."+net.ddp2p.common.table.signature.constituent_ID+"=?);";
 		ArrayList<ArrayList<Object>> count =
-				Application.db.select(sql, new String[]{""+organization_ID,""+organization_ID,""+constituent_ID});
+				Application.getDB().select(sql, new String[]{""+organization_ID,""+organization_ID,""+constituent_ID});
 		if(DEBUG)System.out.println("Fill_database : select_random_motion : after 1 sel :"+Util.getGeneralizedTime());
 		if(DEBUG)System.out.println("Fill_database : select_random_motion : Org_ID="+organization_ID+" Cons_ID="+constituent_ID);
 		long motions = Integer.parseInt(count.get(0).get(0).toString());
@@ -428,7 +428,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 				+" LIMIT 1 OFFSET "+selected;
 		
 		
-		ArrayList<ArrayList<Object>> m_data = Application.db.select(sql_sel, new String[]{""+organization_ID,""+organization_ID,""+constituent_ID});
+		ArrayList<ArrayList<Object>> m_data = Application.getDB().select(sql_sel, new String[]{""+organization_ID,""+organization_ID,""+constituent_ID});
 		if(DEBUG)System.out.println("Fill_database : select_random_motion : after 2 sel :"+Util.getGeneralizedTime());
 		motion_ID = Integer.parseInt(m_data.get(0).get(0).toString());
 		if(DEBUG)System.out.println("select_random_motion(): motion selected id="+motion_ID);
@@ -445,7 +445,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		String sql_sel = "SELECT "+net.ddp2p.common.table.motion.motion_ID+
 				" FROM "+net.ddp2p.common.table.motion.TNAME+" WHERE "+
 				net.ddp2p.common.table.motion.organization_ID+"=? LIMIT 1 OFFSET "+selected;
-		ArrayList<ArrayList<Object>> m_data = Application.db.select(sql_sel, new String[]{""+organization_ID});
+		ArrayList<ArrayList<Object>> m_data = Application.getDB().select(sql_sel, new String[]{""+organization_ID});
 		motion_ID = Integer.parseInt(m_data.get(0).get(0).toString());
 		return motion_ID;
 	}
@@ -581,7 +581,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		if(DEBUG)System.out.println("Fill_database : select_random_constituent with external");
 		long p_ID;
 		String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.constituent.TNAME+" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=? AND "+net.ddp2p.common.table.constituent.external+"=?;";
-		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{""+organization_ID,external});
+		ArrayList<ArrayList<Object>> count = Application.getDB().select(sql, new String[]{""+organization_ID,external});
 		long c = Integer.parseInt(count.get(0).get(0).toString());
 		//COUNT = c;
 		if(DEBUG)System.out.println("count : "+c);
@@ -592,7 +592,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		
 		long selected = (long)Util.random(c);
 		String sql_sel = "SELECT "+net.ddp2p.common.table.constituent.constituent_ID+" FROM "+net.ddp2p.common.table.constituent.TNAME+" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=? AND "+net.ddp2p.common.table.constituent.external+"=? LIMIT 1 OFFSET "+selected;
-		ArrayList<ArrayList<Object>> p_data = Application.db.select(sql_sel, new String[]{""+organization_ID, external});
+		ArrayList<ArrayList<Object>> p_data = Application.getDB().select(sql_sel, new String[]{""+organization_ID, external});
 		p_ID = Integer.parseInt(p_data.get(0).get(0).toString());
 		return p_ID;
 	}
@@ -604,7 +604,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.constituent.TNAME+
 				" JOIN "+net.ddp2p.common.table.key.TNAME+" ON "+net.ddp2p.common.table.constituent.global_constituent_ID+"="+net.ddp2p.common.table.key.public_key
 				+" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=?  AND "+net.ddp2p.common.table.constituent.constituent_ID+"<>?";
-		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{Util.getStringID(organization_ID),""+avoid});
+		ArrayList<ArrayList<Object>> count = Application.getDB().select(sql, new String[]{Util.getStringID(organization_ID),""+avoid});
 		long c = Integer.parseInt(count.get(0).get(0).toString());
 		if(DEBUG)System.out.println("Fill_database : select_random_constituent : selected cons="+c);
 		if(c == 0) return add_constituent(organization_ID);
@@ -615,7 +615,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 				" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=? AND "+net.ddp2p.common.table.constituent.constituent_ID+"<>?"+
 				"LIMIT 1 OFFSET "+selected;
 		try{
-		p_data = Application.db.select(sql_sel, new String[]{""+organization_ID,""+avoid});
+		p_data = Application.getDB().select(sql_sel, new String[]{""+organization_ID,""+avoid});
 		}
 		catch(Exception e) {e.printStackTrace();}
 		//if(p_data.size() == 0) return add_constituent(organization_ID);
@@ -633,7 +633,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.constituent.TNAME+
 				" JOIN "+net.ddp2p.common.table.key.TNAME+" ON "+net.ddp2p.common.table.constituent.global_constituent_ID+"="+net.ddp2p.common.table.key.public_key
 				+" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=?;";
-		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{Util.getStringID(organization_ID)});
+		ArrayList<ArrayList<Object>> count = Application.getDB().select(sql, new String[]{Util.getStringID(organization_ID)});
 		long c = Integer.parseInt(count.get(0).get(0).toString());
 		if(DEBUG)System.out.println("Fill_database : select_random_constituent : selected cons="+c);
 		if(c == 0) return add_constituent(organization_ID);
@@ -644,7 +644,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 				" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=? "+
 				"LIMIT 1 OFFSET "+selected;
 		try{
-		p_data = Application.db.select(sql_sel, new String[]{""+organization_ID});
+		p_data = Application.getDB().select(sql_sel, new String[]{""+organization_ID});
 		}
 		catch(Exception e) {e.printStackTrace();}
 		//if(p_data.size() == 0) return add_constituent(organization_ID);
@@ -795,13 +795,13 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		long organization_ID = -1;
 		String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.organization.TNAME+
 				" WHERE "+net.ddp2p.common.table.organization.broadcasted+"=1";
-		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{});
+		ArrayList<ArrayList<Object>> count = Application.getDB().select(sql, new String[]{});
 		long orgs = Integer.parseInt(count.get(0).get(0).toString());
 		if(orgs == 0) return add_organization();
 		long selected = (long)Util.random(orgs);
 		String sql_sel = "SELECT "+net.ddp2p.common.table.organization.organization_ID+
 				" FROM "+net.ddp2p.common.table.organization.TNAME+" LIMIT 1 OFFSET "+selected;
-		ArrayList<ArrayList<Object>> o_data = Application.db.select(sql_sel, new String[]{});
+		ArrayList<ArrayList<Object>> o_data = Application.getDB().select(sql_sel, new String[]{});
 		organization_ID = Integer.parseInt(o_data.get(0).get(0).toString());
 		if(DEBUG)System.out.println("simulator: select_random_organization selected org id :"+organization_ID);
 		return organization_ID;
@@ -841,7 +841,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		String s_hash_org = Util.byteToHex(hash_org, net.ddp2p.common.table.organization.ORG_HASH_BYTE_SEP);
 		String sql = "SELECT "+net.ddp2p.common.table.peer.global_peer_ID+" from "+
 				net.ddp2p.common.table.peer.TNAME+" where "+net.ddp2p.common.table.peer.peer_ID+"=?;";
-		ArrayList<ArrayList<Object>> p_data = Application.db.select(sql, new String[]{""+p_ID});
+		ArrayList<ArrayList<Object>> p_data = Application.getDB().select(sql, new String[]{""+p_ID});
 		String creator_global_ID = Util.getString(p_data.get(0).get(0));
 		
 		D_Organization od = D_Organization.getEmpty(); //.getOrgByGID(gID, true, true);
@@ -896,14 +896,14 @@ private static D_Peer get_peer_by_ID(long p_id) throws P2PDDSQLException {
 	private static long select_random_peer() throws P2PDDSQLException, ASN1DecoderFail {
 		long peer_ID=-1;
 		String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.peer.TNAME;
-		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{});
+		ArrayList<ArrayList<Object>> count = Application.getDB().select(sql, new String[]{});
 		
 		long peers = Integer.parseInt(count.get(0).get(0).toString());
 		if(peers == 0) return add_peer();
 		long selected = (long)Util.random(peers);
 		String sql_sel = "SELECT "+net.ddp2p.common.table.peer.peer_ID+
 				" FROM "+net.ddp2p.common.table.peer.TNAME+" LIMIT 1 OFFSET "+selected;
-		ArrayList<ArrayList<Object>> p_data = Application.db.select(sql_sel, new String[]{});
+		ArrayList<ArrayList<Object>> p_data = Application.getDB().select(sql_sel, new String[]{});
 		peer_ID = Integer.parseInt(p_data.get(0).get(0).toString());
 		return peer_ID;
 	}

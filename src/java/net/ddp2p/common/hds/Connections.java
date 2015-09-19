@@ -1096,7 +1096,7 @@ public class Connections extends net.ddp2p.common.util.DDP2P_ServiceThread imple
 			) {
 		boolean DEBUG = Connections.DEBUG || DD.DEBUG_COMMUNICATION_ADDRESSES;
 		if (DEBUG) System.out.println("Directories: getDirAddressUDP: enter dir_address = "+dir_address);
-		if ((Application.g_UDPServer == null) || (UDPServer.getUDPSocket() == null)) {
+		if ((Application.getG_UDPServer() == null) || (UDPServer.getUDPSocket() == null)) {
 			if (DEBUG) System.out.println("Directories: getDirAddressUDP: exit no server");
 			return null;
 		}
@@ -1208,7 +1208,7 @@ public class Connections extends net.ddp2p.common.util.DDP2P_ServiceThread imple
 			Connections_Peer_Directory pd
 			) {
 		boolean DEBUG = Connections.DEBUG || DD.DEBUG_COMMUNICATION_ADDRESSES;
-		IClient This = Application.g_PollingStreamingClient;
+		IClient This = Application.getG_PollingStreamingClient();
 		if (DEBUG) out.println("Connections: update_supernode_address_instance_dir: start dp="+pd);
 		
 		Hashtable<String, Hashtable<String, Hashtable<String,String>>> _peer_contacts_for_this_peer = D_Peer.peer_contacts.get(peer_key);

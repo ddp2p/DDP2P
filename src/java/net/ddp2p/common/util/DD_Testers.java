@@ -181,7 +181,7 @@ public class DD_Testers extends ASNObj implements StegoStructure {
 			return;
 		}
 		try {
-			Application.db = new DBInterface(args[0]);
+			Application.setDB(new DBInterface(args[0]));
 			DD_Testers testers = new DD_Testers();
 			ArrayList<D_Tester> tds;
 			if(args.length == 2) {

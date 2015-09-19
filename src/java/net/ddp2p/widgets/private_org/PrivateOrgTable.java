@@ -55,7 +55,7 @@ public class PrivateOrgTable extends JTable implements MouseListener{
 		return (PrivateOrgModel)super.getModel();
 	}
 	public PrivateOrgTable(PrivateOrgPanel privateOrgPanel) {
-		super(new PrivateOrgModel(Application.db, privateOrgPanel));
+		super(new PrivateOrgModel(Application.getDB(), privateOrgPanel));
 		this.privateOrgPanel = privateOrgPanel;
 		this.getPModel().setMyTable(this);
 		init();

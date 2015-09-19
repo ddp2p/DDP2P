@@ -56,7 +56,7 @@ public class ConnPeerTable extends JTable implements MouseListener{
 	private DirPanel dirPanel;
 
 	public ConnPeerTable(DirPanel dirPanel) {
-		super(new ConnPeerModel(Application.db, dirPanel));
+		super(new ConnPeerModel(Application.getDB(), dirPanel));
 		this.dirPanel = dirPanel;
 		init();
 	}

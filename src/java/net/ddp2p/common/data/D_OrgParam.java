@@ -84,7 +84,7 @@ class D_OrgParam extends ASNObj{
 		String psql = "SELECT "+net.ddp2p.common.table.field_extra.org_field_extra +
 		" FROM "+net.ddp2p.common.table.field_extra.TNAME+
 		" WHERE "+net.ddp2p.common.table.field_extra.field_extra_ID+"=?";
-		ArrayList<ArrayList<Object>> a = Application.db.select(psql,new String[]{local_fe_ID});
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(psql,new String[]{local_fe_ID});
 		if(a.size()==0) return;
 		init(this, a.get(0));
 	}

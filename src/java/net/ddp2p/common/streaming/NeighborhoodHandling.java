@@ -67,7 +67,7 @@ public class NeighborhoodHandling {
 		if(DEBUG) out.println("OrgHandling:getNextNeighborhoodDate: start: between: "+last_sync_date+" : "+_maxDate);
 		String sql = (_maxDate==null)?sql_nomax:sql_max;
 		String[] param=(_maxDate==null)?new String[]{last_sync_date}:new String[]{last_sync_date, _maxDate};
-		ArrayList<ArrayList<Object>> n = Application.db.select(sql+" ASC LIMIT "+(1+limitNeighLow), param, DEBUG);
+		ArrayList<ArrayList<Object>> n = Application.getDB().select(sql+" ASC LIMIT "+(1+limitNeighLow), param, DEBUG);
 
 		for (ArrayList<Object> ae : n) {
 			orgs.add(Util.getString(ae.get(2)));
@@ -101,7 +101,7 @@ public class NeighborhoodHandling {
 		String maxDate;
 		if((_maxDate==null)||(_maxDate.length<1)||(_maxDate[0]==null)) maxDate = Util.getGeneralizedTime();
 		else{ maxDate = _maxDate[0]; if((_maxDate!=null)&&(_maxDate.length>0)) _maxDate[0] = maxDate;}
-		ArrayList<ArrayList<Object>> result = Application.db.select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
+		ArrayList<ArrayList<Object>> result = Application.getDB().select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
 				new String[]{org_id, last_sync_date, maxDate}, DEBUG);
 		return Util.AL_AL_O_2_AL_S(result);
 	}
@@ -140,10 +140,10 @@ public class NeighborhoodHandling {
 
 		String order = " ORDER BY n."+net.ddp2p.common.table.neighborhood.arrival_date+";";
 		if (_maxDate[0] == null) {
-			a = Application.db.select(sql_neigh+order, new String[]{org_id,last_sync_date}, DEBUG);
+			a = Application.getDB().select(sql_neigh+order, new String[]{org_id,last_sync_date}, DEBUG);
 		} else {
 			String cond = " AND n."+net.ddp2p.common.table.neighborhood.arrival_date+"<=? ";
-			a = Application.db.select(sql_neigh+cond+order, new String[]{org_id,last_sync_date, _maxDate[0]}, DEBUG);			
+			a = Application.getDB().select(sql_neigh+cond+order, new String[]{org_id,last_sync_date, _maxDate[0]}, DEBUG);			
 		}
 		if (a.size() == 0) return null;
 

@@ -68,7 +68,7 @@ public class BroadcastServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	public BroadcastServer() throws  IOException, P2PDDSQLException{
 		super ("Broadcast Server", false);
 		if(_DEBUG) System.out.println("Server START");
-		if(Application.g_BroadcastServer!=null) throw new RuntimeException("2nd Server");
+		if(Application.getG_BroadcastServer()!=null) throw new RuntimeException("2nd Server");
 	}
 	/**
 	 * Test and clear the "address_updated" flag
@@ -170,8 +170,8 @@ public class BroadcastServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			server_address_updated = true;
 			client_address_updated = true;
 			semaphore_interfaces.notifyAll();
-			if(Application.g_BroadcastServer==null) return false;
-			Application.g_BroadcastServer.addBroadcastAddress(address);
+			if(Application.getG_BroadcastServer()==null) return false;
+			Application.getG_BroadcastServer().addBroadcastAddress(address);
 			return true;
 		}
 	}
@@ -195,8 +195,8 @@ public class BroadcastServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			interfaces_IP_Masks.remove(idx);
 			server_address_updated = true;
 			client_address_updated = true;
-			if(Application.g_BroadcastServer==null) return;
-			Application.g_BroadcastServer.delBroadcastAddress(address);
+			if(Application.getG_BroadcastServer()==null) return;
+			Application.getG_BroadcastServer().delBroadcastAddress(address);
 		}
 	}
 	/**

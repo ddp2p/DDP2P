@@ -22,7 +22,7 @@ class Test_PeerNameMy {
 
 		net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
 		try {
-			Application.db = new DBInterface(dbfile);
+			Application.setDB(new DBInterface(dbfile));
 		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

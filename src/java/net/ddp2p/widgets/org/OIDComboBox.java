@@ -45,7 +45,7 @@ class OIDComboBox extends JComboBox implements ActionListener{
 		String sql = "SELECT "+net.ddp2p.common.table.oid.explanation+","+net.ddp2p.common.table.oid.oid_ID+","+net.ddp2p.common.table.oid.OID_name+","+net.ddp2p.common.table.oid.sequence+
 		" FROM "+net.ddp2p.common.table.oid.TNAME+";";
 		try {
-			ArrayList<ArrayList<Object>> oids = Application.db.select(sql, new String[]{});
+			ArrayList<ArrayList<Object>> oids = Application.getDB().select(sql, new String[]{});
 			for(ArrayList<Object> o: oids) {
 				addItem(new OIDItem(o.get(2), o.get(1), o.get(0), Util.getString(o.get(3))));
 			}
@@ -74,9 +74,9 @@ class OIDComboBox extends JComboBox implements ActionListener{
 				String seq = oid[0].trim();
 				if(seq.length()==0) return null;
 				ArrayList<ArrayList<Object>> o;
-				o = Application.db.select("SELECT "+net.ddp2p.common.table.oid.TNAME+" WHERE "+net.ddp2p.common.table.oid.sequence+"=?;", new String[]{seq}, DEBUG);
+				o = Application.getDB().select("SELECT "+net.ddp2p.common.table.oid.TNAME+" WHERE "+net.ddp2p.common.table.oid.sequence+"=?;", new String[]{seq}, DEBUG);
 				if(o.size() != 0) return null;
-				Application.db.insert(net.ddp2p.common.table.oid.TNAME, 
+				Application.getDB().insert(net.ddp2p.common.table.oid.TNAME, 
 						new String[]{net.ddp2p.common.table.oid.oid_ID,net.ddp2p.common.table.oid.explanation,
 						net.ddp2p.common.table.oid.OID_name, net.ddp2p.common.table.oid.sequence},
 						new String[]{seq, oidv[0].trim(), seq, seq}, DEBUG);

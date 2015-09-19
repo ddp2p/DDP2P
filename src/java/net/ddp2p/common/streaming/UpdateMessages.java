@@ -897,13 +897,13 @@ public class UpdateMessages {
 //	}
 	static public long get_news_ID(String global_news_ID, long constituentID, long organizationID, String date, String news, String type, String signature) throws P2PDDSQLException {
 		long result=0;
-		ArrayList<ArrayList<Object>> dt=Application.db.select("SELECT "+net.ddp2p.common.table.news.news_ID+" FROM "+net.ddp2p.common.table.news.TNAME+" WHERE "+net.ddp2p.common.table.news.global_news_ID+" = ?",
+		ArrayList<ArrayList<Object>> dt=Application.getDB().select("SELECT "+net.ddp2p.common.table.news.news_ID+" FROM "+net.ddp2p.common.table.news.TNAME+" WHERE "+net.ddp2p.common.table.news.global_news_ID+" = ?",
 				new String[]{global_news_ID});
 		if((dt.size()>=1) && (dt.get(0).size()>=1)) {
 			result = Long.parseLong(dt.get(0).get(0).toString());
 			return result;
 		}
-		result=Application.db.insert(net.ddp2p.common.table.news.TNAME,new String[]{net.ddp2p.common.table.news.constituent_ID,net.ddp2p.common.table.news.organization_ID,net.ddp2p.common.table.news.creation_date,net.ddp2p.common.table.news.news,net.ddp2p.common.table.news.type,net.ddp2p.common.table.news.signature,net.ddp2p.common.table.news.global_news_ID},
+		result=Application.getDB().insert(net.ddp2p.common.table.news.TNAME,new String[]{net.ddp2p.common.table.news.constituent_ID,net.ddp2p.common.table.news.organization_ID,net.ddp2p.common.table.news.creation_date,net.ddp2p.common.table.news.news,net.ddp2p.common.table.news.type,net.ddp2p.common.table.news.signature,net.ddp2p.common.table.news.global_news_ID},
 				new String[]{constituentID+"", organizationID+"", date, news, type, signature, global_news_ID});
 		return result;
 	}
@@ -947,15 +947,15 @@ public class UpdateMessages {
 			+" FROM "+net.ddp2p.common.table.organization.TNAME
 			+" WHERE "+net.ddp2p.common.table.organization.global_organization_ID_hash+" = ?";
 		ArrayList<ArrayList<Object>> dt;
-		if(orgHash!=null) dt=Application.db.select(sql_hash, new String[]{orgHash}, DEBUG);
-		else dt=Application.db.select(sql, new String[]{global_organizationID}, DEBUG);
+		if(orgHash!=null) dt=Application.getDB().select(sql_hash, new String[]{orgHash}, DEBUG);
+		else dt=Application.getDB().select(sql, new String[]{global_organizationID}, DEBUG);
 		if((dt.size()>=1) && (dt.get(0).size()>=1)) {
 			result = Long.parseLong(dt.get(0).get(0).toString());
 			String oname = (String)dt.get(0).get(1);
 			if(!Util.equalStrings_null_or_not(oname,org_name)) Application_GUI.warning(String.format(__("Old name for org: %1$s new name is: %2$s"),oname,org_name), __("Inconsistency"));
 			//return result;
 		}else
-			result=Application.db.insert(net.ddp2p.common.table.organization.TNAME,
+			result=Application.getDB().insert(net.ddp2p.common.table.organization.TNAME,
 					new String[]{net.ddp2p.common.table.organization.name,net.ddp2p.common.table.organization.global_organization_ID,net.ddp2p.common.table.organization.global_organization_ID_hash},
 				new String[]{org_name, global_organizationID, orgHash}, DEBUG);
 		if(DEBUG) System.out.println("UpdateMessages:get_organizationID':  exit result = "+result);		
@@ -967,7 +967,7 @@ public class UpdateMessages {
 		OrgFilter[] orgFilter=null;
 		ArrayList<ArrayList<Object>> peers_orgs = null;
 		try{
-			peers_orgs = Application.db.select("SELECT o."+net.ddp2p.common.table.organization.global_organization_ID+", o."+net.ddp2p.common.table.organization.global_organization_ID_hash+", p."+net.ddp2p.common.table.peer_org.last_sync_date +
+			peers_orgs = Application.getDB().select("SELECT o."+net.ddp2p.common.table.organization.global_organization_ID+", o."+net.ddp2p.common.table.organization.global_organization_ID_hash+", p."+net.ddp2p.common.table.peer_org.last_sync_date +
 					" FROM " + net.ddp2p.common.table.peer_org.TNAME + " AS p " +
 					" LEFT JOIN "+net.ddp2p.common.table.organization.TNAME+" AS o ON (p."+net.ddp2p.common.table.peer_org.organization_ID+"=o."+net.ddp2p.common.table.organization.organization_ID+")" +
 					" WHERE p."+net.ddp2p.common.table.peer_org.served+"=1 AND p."+net.ddp2p.common.table.peer_org.peer_ID+" = ? " +

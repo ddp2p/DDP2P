@@ -217,7 +217,7 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
 			default: { System.out.println("Unable to detect OS"); break;}
 		}
 		*/
-		Interfaces.createAndShowGUI(Application.db);
+		Interfaces.createAndShowGUI(Application.getDB());
 	}
 	@Override
 	public void mouseClicked(MouseEvent arg0) {

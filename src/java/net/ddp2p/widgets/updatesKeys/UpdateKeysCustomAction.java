@@ -63,14 +63,14 @@ public class UpdateKeysCustomAction extends DebateDecideAction {
 		if(cmd == M_DELETE) {
 			if(row>=0)
 				try {
-					Application.db.deleteNoSync(net.ddp2p.common.table.tester.TNAME,
+					Application.getDB().deleteNoSync(net.ddp2p.common.table.tester.TNAME,
 							new String[]{net.ddp2p.common.table.tester.tester_ID},
 							new String[]{tester_ID}, _DEBUG);
 					
 //					Application.db.deleteNoSync(table.tester.TNAME,
 //							new String[]{table.tester.public_key},
 //							new String[]{uki.public_key}, _DEBUG);
-			    Application.db.sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.tester.TNAME)));
+			    Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.tester.TNAME)));
 				model.update(null,null);
 				((UpdatesKeysTable)tree).repaint();	
 				} catch (Exception e1) {

@@ -56,13 +56,13 @@ public class D_PeerOrgInferred {
 		params[net.ddp2p.common.table.peer_org_inferred.COL_ORG_ID] = Util.getStringID(organization_ID);
 		if (peer_org_inferred_ID > 0) {
 			params[net.ddp2p.common.table.peer_org_inferred.COL_ID] = Util.getStringID(peer_org_inferred_ID);
-			Application.db.update(net.ddp2p.common.table.peer_org_inferred.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.peer_org_inferred.TNAME,
 					net.ddp2p.common.table.peer_org_inferred.fields_no_ID_list,
 					new String[]{net.ddp2p.common.table.peer_org_inferred.peer_org_inferred_ID},
 					params,
 					DEBUG);
 		} else {
-			peer_org_inferred_ID = Application.db.insert(net.ddp2p.common.table.peer_org_inferred.TNAME,
+			peer_org_inferred_ID = Application.getDB().insert(net.ddp2p.common.table.peer_org_inferred.TNAME,
 					net.ddp2p.common.table.peer_org_inferred.fields_list,
 					params,
 					DEBUG);

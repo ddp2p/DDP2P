@@ -1574,7 +1574,7 @@ public class Util {
 				" WHERE "+net.ddp2p.common.table.key.public_key+"= ?;";
 		java.util.ArrayList<java.util.ArrayList<Object>> o;
 		try {
-			o = Application.db.select(sql, new String[]{public_gID}, DEBUG);
+			o = Application.getDB().select(sql, new String[]{public_gID}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;
@@ -1596,7 +1596,7 @@ public class Util {
 				" WHERE "+net.ddp2p.common.table.key.ID_hash+"= ?;";
 		java.util.ArrayList<java.util.ArrayList<Object>> o;
 		try {
-			o = Application.db.select(sql, new String[]{id_hash}, DEBUG);
+			o = Application.getDB().select(sql, new String[]{id_hash}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;

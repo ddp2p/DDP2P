@@ -91,7 +91,7 @@ public class D_Tester extends ASNObj implements Summary{
 //				" WHERE "+ table.tester.public_key+"=?;";
 		ArrayList<ArrayList<Object>> result=null;
 		try {
-			result = Application.db.select(D_Tester.sql_get_tester_by_GID,new String[]{gID},DEBUG);
+			result = Application.getDB().select(D_Tester.sql_get_tester_by_GID,new String[]{gID},DEBUG);
 		} catch (net.ddp2p.common.util.P2PDDSQLException e) {
 			System.out.println(e);
 		}
@@ -104,7 +104,7 @@ public class D_Tester extends ASNObj implements Summary{
 				" WHERE "+ net.ddp2p.common.table.tester.tester_ID+"=?;";
 		ArrayList<ArrayList<Object>> result=null;
 		try{
-			result = Application.db.select(sql,new String[]{Util.getStringID(id)},DEBUG);
+			result = Application.getDB().select(sql,new String[]{Util.getStringID(id)},DEBUG);
 		}catch(net.ddp2p.common.util.P2PDDSQLException e){
 			System.out.println(e);
 		}
@@ -252,7 +252,7 @@ public class D_Tester extends ASNObj implements Summary{
 //			if (t.url != null) params[table.tester.F_URL] = t.url;
 			//if(t.name != null) params[table.tester.F_NAME] = t.name;
 			
-			Application.db.update(net.ddp2p.common.table.tester.TNAME, net.ddp2p.common.table.tester._fields_tester_no_ID,
+			Application.getDB().update(net.ddp2p.common.table.tester.TNAME, net.ddp2p.common.table.tester._fields_tester_no_ID,
 					new String[]{net.ddp2p.common.table.tester.tester_ID},
 					params, DEBUG);
 		} else {
@@ -260,7 +260,7 @@ public class D_Tester extends ASNObj implements Summary{
 //			String params2[]=new String[table.tester.F_FIELDS_NOID];
 //			System.arraycopy(params,0,params2,0,params2.length);
 //			if(DEBUG)System.out.println("params2[last]: "+ params2[table.tester.F_FIELDS_NOID-1]);
-			this.tester_ID = Application.db.insert(net.ddp2p.common.table.tester.TNAME,
+			this.tester_ID = Application.getDB().insert(net.ddp2p.common.table.tester.TNAME,
 					net.ddp2p.common.table.tester._fields_tester_no_ID,
 					params,
 					DEBUG);
@@ -272,7 +272,7 @@ public class D_Tester extends ASNObj implements Summary{
 		ArrayList<D_Tester> result = new ArrayList<D_Tester>();
 		ArrayList<ArrayList<Object>> list = null;
 		try {
-			list = Application.db.select(sql_get_all_testers_LIDs, new String[]{}, DEBUG);
+			list = Application.getDB().select(sql_get_all_testers_LIDs, new String[]{}, DEBUG);
 		} catch(net.ddp2p.common.util.P2PDDSQLException e){
 			System.out.println(e);
 		}
@@ -311,7 +311,7 @@ public class D_Tester extends ASNObj implements Summary{
 	public static ArrayList<D_Tester> retrieveAllUsedTesters(){
 		ArrayList<ArrayList<Object>> result = null;
 		try {
-			result = Application.db.select(sql_get_used_testers, new String[]{}, DEBUG);
+			result = Application.getDB().select(sql_get_used_testers, new String[]{}, DEBUG);
 		} catch(net.ddp2p.common.util.P2PDDSQLException e){
 			System.out.println(e);
 		}
@@ -423,7 +423,7 @@ public class D_Tester extends ASNObj implements Summary{
 
 	public static void initAllTestersRecommendations() {
 		try {
-			Application.db.update(false, net.ddp2p.common.table.tester.TNAME,
+			Application.getDB().update(false, net.ddp2p.common.table.tester.TNAME,
 					new String[] {net.ddp2p.common.table.tester.trust_weight 
 					,net.ddp2p.common.table.tester.reference_tester 
 					,net.ddp2p.common.table.tester.trusted_as_tester
@@ -446,7 +446,7 @@ public class D_Tester extends ASNObj implements Summary{
 	public static void setUsedTester(long testerID, String score) {
 		
 		try {
-			Application.db.update(false, net.ddp2p.common.table.tester.TNAME,
+			Application.getDB().update(false, net.ddp2p.common.table.tester.TNAME,
 					new String[]{net.ddp2p.common.table.tester.trust_weight
 					,net.ddp2p.common.table.tester.trusted_as_tester
 					//,table.tester.trusted_as_mirror
@@ -469,7 +469,7 @@ public class D_Tester extends ASNObj implements Summary{
 	public static void setKnownTester(long testerID, String score) {
 		
 		try {
-			Application.db.update(false, net.ddp2p.common.table.tester.TNAME, new String[] {net.ddp2p.common.table.tester.trust_weight},
+			Application.getDB().update(false, net.ddp2p.common.table.tester.TNAME, new String[] {net.ddp2p.common.table.tester.trust_weight},
 					new String[]{net.ddp2p.common.table.tester.tester_ID},
 					new String[]{score, Util.getStringID(testerID)},
 					DEBUG);
@@ -536,7 +536,7 @@ public class D_Tester extends ASNObj implements Summary{
 	public static PK getKey(String public_key_hash) {
 		ArrayList<ArrayList<Object>> a;
 		try {
-			a = Application.db.select(
+			a = Application.getDB().select(
 					"SELECT "+net.ddp2p.common.table.tester.public_key+
 					" FROM "+net.ddp2p.common.table.tester.TNAME+
 					" WHERE "+net.ddp2p.common.table.tester.public_key_hash+"=?;",

@@ -839,7 +839,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		String my_const_sql = "SELECT "+net.ddp2p.common.table.my_justification_data.fields_list+
 				" FROM "+net.ddp2p.common.table.my_justification_data.TNAME+
 				" WHERE "+net.ddp2p.common.table.my_justification_data.justification_ID+" = ?;";
-		ArrayList<ArrayList<Object>> my_org = Application.db.select(my_const_sql, new String[]{getLIDstr()}, DEBUG);
+		ArrayList<ArrayList<Object>> my_org = Application.getDB().select(my_const_sql, new String[]{getLIDstr()}, DEBUG);
 		if (my_org.size() != 0) {
 			ArrayList<Object> my_data = my_org.get(0);
 			mydata.name = Util.getString(my_data.get(net.ddp2p.common.table.my_justification_data.COL_NAME));
@@ -877,7 +877,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			;
 	private void init(Long lID) throws Exception {
 		ArrayList<ArrayList<Object>> a;
-		a = Application.db.select(cond_ID, new String[]{Util.getStringID(lID)});
+		a = Application.getDB().select(cond_ID, new String[]{Util.getStringID(lID)});
 		if (a.size() == 0) throw new Exception("D_Justification:init:None for lID="+lID);
 		init(a.get(0));
 		if(DEBUG) System.out.println("D_Justification: init: got="+this);//result);
@@ -893,7 +893,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			;
 	private void init(String gID) throws Exception {
 		ArrayList<ArrayList<Object>> a;
-		a = Application.db.select(cond_GID, new String[]{gID});
+		a = Application.getDB().select(cond_GID, new String[]{gID});
 		if (a.size() == 0) throw new Exception("D_Justification:init:None for GID="+gID);
 		init(a.get(0));
 		if(DEBUG) System.out.println("D_Justification: init: got="+this);//result);
@@ -902,7 +902,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	private static ArrayList<ArrayList<Object>> getJustificationArrayByGID(String gID) {
 		ArrayList<ArrayList<Object>> a;
 		try {
-			a = Application.db.select(cond_GID, new String[]{gID});
+			a = Application.getDB().select(cond_GID, new String[]{gID});
 			return a;
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -1849,11 +1849,11 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		
 			if (this.mydata.row <= 0) {
 				this.mydata.row =
-						Application.db.insert(true, net.ddp2p.common.table.my_justification_data.TNAME,
+						Application.getDB().insert(true, net.ddp2p.common.table.my_justification_data.TNAME,
 								net.ddp2p.common.table.my_justification_data.fields_noID, param, DEBUG);
 			} else {
 				param[net.ddp2p.common.table.my_justification_data.COL_ROW] = this.mydata.row+"";
-				Application.db.update(true, net.ddp2p.common.table.my_justification_data.TNAME,
+				Application.getDB().update(true, net.ddp2p.common.table.my_justification_data.TNAME,
 						net.ddp2p.common.table.my_justification_data.fields_noID,
 						new String[]{net.ddp2p.common.table.my_justification_data.row}, param, DEBUG);
 			}
@@ -1914,7 +1914,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 				if (o != null) o.resetCache(); // removing cached memory of statistics about justifications!
 			}
 			if(DEBUG) System.out.println("WB_Justification:storeVerified:inserting");
-			result = Application.db.insert(net.ddp2p.common.table.justification.TNAME,
+			result = Application.getDB().insert(net.ddp2p.common.table.justification.TNAME,
 					net.ddp2p.common.table.justification.fields_array,
 					params,
 					DEBUG
@@ -1924,7 +1924,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		}else{
 			if(DEBUG) System.out.println("WB_Justification:storeVerified:updating ID="+this.justification_ID);
 			params[net.ddp2p.common.table.justification.J_ID] = justification_ID;
-			Application.db.update(net.ddp2p.common.table.justification.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.justification.TNAME,
 					net.ddp2p.common.table.justification.fields_noID_array,
 					new String[]{net.ddp2p.common.table.justification.justification_ID},
 					params,
@@ -3024,7 +3024,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.justification.TNAME+" WHERE "+net.ddp2p.common.table.justification.motion_ID+"=?;";
 		ArrayList<ArrayList<Object>> count;
 		try {
-			count = Application.db.select(sql, new String[]{Util.getStringID(motion_ID2)});
+			count = Application.getDB().select(sql, new String[]{Util.getStringID(motion_ID2)});
 			long justifications = Integer.parseInt(count.get(0).get(0).toString());
 			return justifications;
 		} catch (P2PDDSQLException e) {
@@ -3118,9 +3118,9 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		try {
 			ArrayList<ArrayList<Object>> orgs;
 			if (days == 0)
-				orgs = Application.db.select(sql_signatures_count_all, new String[]{this.getLIDstr()});
+				orgs = Application.getDB().select(sql_signatures_count_all, new String[]{this.getLIDstr()});
 			else
-				orgs = Application.db.select(sql_signatures_count_all_recent_only, new String[]{this.getLIDstr(), Util.getGeneralizedDate(days)});
+				orgs = Application.getDB().select(sql_signatures_count_all_recent_only, new String[]{this.getLIDstr(), Util.getGeneralizedDate(days)});
 			
 			if (orgs.size() > 0) return Util.lval(orgs.get(0).get(0));
 		} catch (P2PDDSQLException e) {
@@ -3135,7 +3135,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	 */
 	public long getActivityNb_ByChoice(String choice) {
 		try {
-			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_signatures_count_with_choice_choice,
+			ArrayList<ArrayList<Object>> orgs = Application.getDB().select(sql_signatures_count_with_choice_choice,
 					new String[]{choice, this.getLIDstr()}, DEBUG);
 			if (orgs.size() > 0) return Util.lval(orgs.get(0).get(0));
 		} catch (P2PDDSQLException e) {
@@ -3151,7 +3151,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	 */
 	public long getActivityNb_Support_Choice() {
 		try {
-			ArrayList<ArrayList<Object>> orgs = Application.db.select(sql_signatures_count_with_choice_choice,
+			ArrayList<ArrayList<Object>> orgs = Application.getDB().select(sql_signatures_count_with_choice_choice,
 					new String[]{D_Vote.DEFAULT_YES_COUNTED_LABEL, this.getLIDstr()}, DEBUG);
 			if (orgs.size() > 0) return Util.lval(orgs.get(0).get(0));
 		} catch (P2PDDSQLException e) {
@@ -3228,7 +3228,7 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("D_Justification: getAllJustifications: start");
 		try {
-			DBInterface db = Application.db;
+			DBInterface db = Application.getDB();
 			if ((crt_choice == null) && (crt_answered_LID == null)) justi = db.select(sql_no_choice_no_answer, new String[]{crt_motion_LID}, DEBUG);
 			if ((crt_choice != null) && (crt_answered_LID == null)) justi = db.select(sql_choice_no_answer, new String[]{crt_choice, crt_motion_LID}, DEBUG);
 			if ((crt_choice == null) && (crt_answered_LID != null)) justi = db.select(sql_no_choice_answer, new String[]{crt_motion_LID, crt_answered_LID}, DEBUG);

@@ -72,7 +72,7 @@ public class TermsCustomAction extends DebateDecideAction {
         		int priority= tree.getModel().getPriority(row);
         		//System.out.println("data size before delete: "+tree.getModel().getRowCount());
 				try {
-					Application.db.delete(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
+					Application.getDB().delete(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
 							new String[]{net.ddp2p.common.table.directory_forwarding_terms.term_ID},
 							new String[]{term_ID}, _DEBUG);
 				//System.out.println("data size before delete: "+tree.getModel().getRowCount());
@@ -98,7 +98,7 @@ public class TermsCustomAction extends DebateDecideAction {
 	    	}
     		
     		try {
-				Application.db.insert(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
+				Application.getDB().insert(net.ddp2p.common.table.directory_forwarding_terms.TNAME,
 						new String[]{net.ddp2p.common.table.directory_forwarding_terms.peer_ID,net.ddp2p.common.table.directory_forwarding_terms.peer_instance_ID,net.ddp2p.common.table.directory_forwarding_terms.dir_domain,net.ddp2p.common.table.directory_forwarding_terms.dir_tcp_port, net.ddp2p.common.table.directory_forwarding_terms.priority, net.ddp2p.common.table.directory_forwarding_terms.service,net.ddp2p.common.table.directory_forwarding_terms.priority_type},
 						new String[]{""+tree.getModel()._peerID,""+tree.getModel()._selectedInstanceID, dir_domain, dir_port, ""+(tree.getModel().getLastPriority()+1 ), ""+0, ""+0}, DEBUG);
 				tree.getModel().update(null,null);

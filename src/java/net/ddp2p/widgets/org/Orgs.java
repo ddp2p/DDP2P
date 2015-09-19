@@ -148,7 +148,7 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 	private XTableColumnModel yourColumnModel;
 	
 	public Orgs() {
-		super(new OrgsModel(Application.db));
+		super(new OrgsModel(Application.getDB()));
 		if(DEBUG) System.out.println("Orgs: constr from db");
 		init();
 	}
@@ -950,7 +950,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		if (myself == null) return result;
 		//String pID = table.peer.getLocalPeerID(global_peer_ID);
 		String organization_ID = getLIDstr(row);
-		s = Application.db.select(sql, new String[]{ myself.getLIDstr_keep_force(), organization_ID}, DEBUG);
+		s = Application.getDB().select(sql, new String[]{ myself.getLIDstr_keep_force(), organization_ID}, DEBUG);
 		if(s.size()==0) throw new Exception("No record found");//return false;
 		if("1".equals(s.get(0).get(0))) result = true;
 		if(DEBUG) System.out.println("Orgs:OgsModel:isServingAndPresent: exit with="+result);

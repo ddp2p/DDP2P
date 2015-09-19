@@ -36,7 +36,7 @@ public class TermsTable extends JTable implements MouseListener{
 	private TermsPanel termsPanel;
 
 	public TermsTable(TermsPanel termsPanel) {
-		super(new TermsModel(Application.db, termsPanel));
+		super(new TermsModel(Application.getDB(), termsPanel));
 		this.termsPanel = termsPanel;
 		init();
 	}

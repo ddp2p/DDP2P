@@ -614,7 +614,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 	public static void setBlocking(String newsID, boolean val) {
 		if(DEBUG) System.out.println("Orgs:setBlocking: set="+val);
 		try {
-			Application.db.update(net.ddp2p.common.table.news.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.news.TNAME,
 					new String[]{net.ddp2p.common.table.news.blocked},
 					new String[]{net.ddp2p.common.table.news.news_ID},
 					new String[]{val?"1":"0", newsID}, DEBUG);
@@ -630,7 +630,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 	public static void setBroadcasting(String newsID, boolean val) {
 		if(DEBUG) System.out.println("Orgs:setBroadcasting: set="+val+" for orgID="+newsID);
 		try {
-			Application.db.update(net.ddp2p.common.table.news.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.news.TNAME,
 					new String[]{net.ddp2p.common.table.news.broadcasted},
 					new String[]{net.ddp2p.common.table.news.news_ID},
 					new String[]{val?"1":"0", newsID}, DEBUG);
@@ -642,7 +642,7 @@ public class NewsModel extends AbstractTableModel implements OrgListener, TableM
 	public static void setRequested(String newsID, boolean val) {
 		if(DEBUG) System.out.println("Orgs:setRequested: set="+val);
 		try {
-			Application.db.update(net.ddp2p.common.table.news.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.news.TNAME,
 					new String[]{net.ddp2p.common.table.news.requested},
 					new String[]{net.ddp2p.common.table.news.news_ID},
 					new String[]{val?"1":"0", newsID}, DEBUG);

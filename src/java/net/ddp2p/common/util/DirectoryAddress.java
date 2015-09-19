@@ -154,12 +154,12 @@ public class DirectoryAddress extends ASNObj{
 		try {
 			if (this.directory_address_ID <= 0) {
 				if (DEBUG) System.out.println("DirectoryAddress: store: inserting");
-				this.directory_address_ID = Application.db.insert(net.ddp2p.common.table.directory_address.TNAME, 
+				this.directory_address_ID = Application.getDB().insert(net.ddp2p.common.table.directory_address.TNAME, 
 						net.ddp2p.common.table.directory_address.fields_noID_list,
 						param, DEBUG);
 			} else {
 				param[net.ddp2p.common.table.directory_address.DA_DIRECTORY_ADDR_ID] = directory_address_ID + "";
-				Application.db.update(net.ddp2p.common.table.directory_address.TNAME, 
+				Application.getDB().update(net.ddp2p.common.table.directory_address.TNAME, 
 						net.ddp2p.common.table.directory_address.fields_noID_list,
 						new String[]{net.ddp2p.common.table.directory_address.directory_address_ID},
 						param, DEBUG);
@@ -179,7 +179,7 @@ public class DirectoryAddress extends ASNObj{
 	public static DirectoryAddress[] getActiveDirectoryAddresses() {
 		DirectoryAddress[] result;
 		try {
-			ArrayList<ArrayList<Object>> d = Application.db.select(getActiveDirs, new String[0]);
+			ArrayList<ArrayList<Object>> d = Application.getDB().select(getActiveDirs, new String[0]);
 			result = new DirectoryAddress[d.size()];
 			for (int k = 0; k < d.size(); k++) {
 				result[k] = DirectoryAddress.getDirectoryAddress(d.get(k));
@@ -195,7 +195,7 @@ public class DirectoryAddress extends ASNObj{
 	public static DirectoryAddress[] getDirectoryAddresses() {
 		DirectoryAddress[] result;
 		try {
-			ArrayList<ArrayList<Object>> d = Application.db.select(getDirs, new String[0]);
+			ArrayList<ArrayList<Object>> d = Application.getDB().select(getDirs, new String[0]);
 			result = new DirectoryAddress[d.size()];
 			for (int k = 0; k < d.size(); k++) {
 				result[k] = DirectoryAddress.getDirectoryAddress(d.get(k));
@@ -209,7 +209,7 @@ public class DirectoryAddress extends ASNObj{
 	public void delete() {
 		if (this.directory_address_ID <= 0) return;
 		try {
-			Application.db.delete(net.ddp2p.common.table.directory_address.TNAME, 
+			Application.getDB().delete(net.ddp2p.common.table.directory_address.TNAME, 
 					new String[]{net.ddp2p.common.table.directory_address.directory_address_ID},
 					new String[]{this.directory_address_ID+""}, DEBUG);
 		} catch (P2PDDSQLException e) {
@@ -260,7 +260,7 @@ public class DirectoryAddress extends ASNObj{
 	 */
 	public static void reset(String val) {
 		try {
-			Application.db.delete(net.ddp2p.common.table.directory_address.TNAME, new String[]{}, 
+			Application.getDB().delete(net.ddp2p.common.table.directory_address.TNAME, new String[]{}, 
 					new String[]{}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();

@@ -364,7 +364,7 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 		public static void main(String args[]) {
 		JFrame frame = new JFrame();
 		try {
-			Application.db = new DBInterface(Application.DEFAULT_DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DEFAULT_DELIBERATION_FILE));
 			UpdatesPanel updatePanel = new UpdatesPanel();
 			frame.setContentPane(updatePanel);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

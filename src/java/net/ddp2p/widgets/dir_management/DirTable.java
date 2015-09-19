@@ -56,7 +56,7 @@ public class DirTable extends JTable implements MouseListener{
 	private DirPanel dirPanel;
 
 	public DirTable(DirPanel dirPanel) {
-		super(new DirModel(Application.db, dirPanel));
+		super(new DirModel(Application.getDB(), dirPanel));
 		this.dirPanel = dirPanel;
 		init();
 	}

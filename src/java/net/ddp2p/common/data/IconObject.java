@@ -5,6 +5,11 @@ import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.DD;
 
+/**
+ * A class to describe ASN serializable icons to be stored with a constituent
+ * @author msilaghi
+ *
+ */
 public class IconObject extends net.ddp2p.ASN1.ASNObj {
 	private byte[] image = null;
 	private int id = -1;

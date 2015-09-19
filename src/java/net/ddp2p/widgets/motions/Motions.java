@@ -116,7 +116,7 @@ public class Motions extends JTable implements MouseListener, MotionsListener  {
 		return  getModel().getOrganizationID();
 	}
 	public Motions() {
-		super(new MotionsModel(Application.db));
+		super(new MotionsModel(Application.getDB()));
 		init();
 	}
 	void init(){

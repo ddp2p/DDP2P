@@ -277,7 +277,7 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 		}
 		ArrayList<ArrayList<Object>> u;
 		try {
-			u = Application.db.select(sql, params, DEBUG);
+			u = Application.getDB().select(sql, params, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return null;

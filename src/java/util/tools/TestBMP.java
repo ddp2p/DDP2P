@@ -42,7 +42,7 @@ public class TestBMP {
 		}
 		net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
 		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;

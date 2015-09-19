@@ -85,7 +85,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	 */
 	public static boolean transferringPeerAnswerMessage(String global_peer_ID, String instance) {
 		if (global_peer_ID == null) return false;
-		for (UDPMessage um : Application.g_UDPServer.recvMessages.values()) {
+		for (UDPMessage um : Application.getG_UDPServer().recvMessages.values()) {
 			if (global_peer_ID.equals(um.sender_GID) && Util.equalStrings_null_or_not(instance, um.sender_instance) &&
 					(um.type == DD.MSGTYPE_SyncAnswer)) {
 				if (DEBUG) System.out.println("UDPServer: transfAnswer:now="+Util.CalendargetInstance().getTimeInMillis()+" checks="+um.checked +"/"+ DD.UDP_SENDING_CONFLICTS);
@@ -94,7 +94,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				if (um.checked > DD.UDP_SENDING_CONFLICTS) { // potentially lost
 					continue; // return false; //let it go further!
 				}
-				Application.g_UDPServer.sendReclaim(um);
+				Application.getG_UDPServer().sendReclaim(um);
 				return true;
 			}
 		}
@@ -114,7 +114,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	 */
 	public static boolean transferringPeerRequestMessage(String global_peer_ID, String instance) {
 		if (global_peer_ID == null) return false;
-		for (UDPMessage um : Application.g_UDPServer.sentMessages.values()) {
+		for (UDPMessage um : Application.getG_UDPServer().sentMessages.values()) {
 			if (global_peer_ID.equals(um.destination_GID) && Util.equalStrings_null_or_not(instance, um.sender_instance) &&
 					(um.type == DD.MSGTYPE_SyncRequest) ) {
 				um.checked ++;
@@ -122,7 +122,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					continue; //return false; //let it go further!
 				if (um.no_ack_received()) {
 					try {
-						Application.g_UDPServer.reclaim(um);
+						Application.getG_UDPServer().reclaim(um);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -141,7 +141,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	 * @return
 	 */
 	public static boolean transferringPeerMessage(String global_peer_ID, String instance) {
-		if (Application.g_UDPServer == null) return false;
+		if (Application.getG_UDPServer() == null) return false;
 		if (transferringPeerAnswerMessage(global_peer_ID, instance)) return true;
 		if (transferringPeerRequestMessage(global_peer_ID, instance)) return true;
 		return false;
@@ -734,7 +734,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			try_connect(_port);
 			getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
 			Identity.setPeerUDPPort(getUDPSocket().getLocalPort());
-			Application.g_UDPServer = this;
+			Application.setG_UDPServer(this);
 			if(DEBUG)System.out.println("UDP Local port obtained is: "+Identity.getPeerUDPPort());
 			//Server.detectDomain(Identity.udp_server_port);
 
@@ -767,7 +767,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			if (DEBUG) System.out.println("UDPServer:<init>: start, connected");
 			getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
 			Identity.setPeerUDPPort(getUDPSocket().getLocalPort());
-			Application.g_UDPServer = this;
+			Application.setG_UDPServer(this);
 			if (DEBUG) System.out.println("UDPServer:<init>: Local port obtained is: "+Identity.getPeerUDPPort());
 			//Server.detectDomain(Identity.udp_server_port);
 			if (DEBUG) System.out.println("UDPServer:<init>: domain detected");
@@ -1148,7 +1148,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		}
 		try {
 			System.out.println("UDPServThread: main: start");
-			Application.db = new DBInterface(target);
+			Application.setDB(new DBInterface(target));
 			// quit when no peer found
 			Identity.init_Identity(true, true, false);
 			System.out.println("UDPServThread: main: inited IDs");
@@ -1208,7 +1208,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			for(int cnt=0; cnt<10; cnt++) {
 				System.out.println("\n\n**************   Round "+cnt+"\n\n");
 				
-				Application.db = new DBInterface(source);
+				Application.setDB(new DBInterface(source));
 				Identity.current_peer_ID = null;
 				Identity.current_peer_ID = Identity.getCurrentPeerIdentity_QuitOnFailure();
 				SK sk = HandlingMyself_Peer.getMyPeerSK();
@@ -1222,7 +1222,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				//us.sendLargeMessage(psa, sa_msg, DD.MTU, peerGID, DD.MSGTYPE_SyncAnswer);
 				//if(DEBUG)System.out.println("\n\n***************************\nUDPServer:run: Answer sent! "+sa_msg.length+"\n"+sa.toSummaryString());
 
-				Application.db = new DBInterface(target);
+				Application.setDB(new DBInterface(target));
 				Identity.current_peer_ID = null;
 				Identity.current_peer_ID = Identity.initMyCurrentPeerIdentity_fromDB(true);
 
@@ -1276,7 +1276,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		}
 	}
 	public static boolean isRunning() {
-		return Application.g_UDPServer != null;
+		return Application.getG_UDPServer() != null;
 	}
 	public static DatagramSocket getUDPSocket() {
 		return ds;

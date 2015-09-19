@@ -106,11 +106,11 @@ tieID+" tied identities";;
 		
 		try {
 			
-			c=Application.db.select("SELECT max(source_ID) FROM witness", new String[]{});
+			c=Application.getDB().select("SELECT max(source_ID) FROM witness", new String[]{});
 			if(c!=null){
 				maxRow=Integer.parseInt(net.ddp2p.common.util.Util.getString(c.get(0).get(0)));
 			}
-			c=Application.db.select("SELECT max(target_ID) FROM witness", new String[]{});
+			c=Application.getDB().select("SELECT max(target_ID) FROM witness", new String[]{});
 			if(c!=null){
 				maxColumn=Integer.parseInt(net.ddp2p.common.util.Util.getString(c.get(0).get(0)));
 			}
@@ -120,7 +120,7 @@ tieID+" tied identities";;
 					e[i][j]=2;
 				}
 			}
-			c=Application.db.select(sql, new String[]{});
+			c=Application.getDB().select(sql, new String[]{});
 			for(ArrayList a:c){
 				x=Integer.parseInt(net.ddp2p.common.util.Util.getString(a.get(0)));
 				y=Integer.parseInt(net.ddp2p.common.util.Util.getString(a.get(1)));
@@ -318,7 +318,7 @@ public class computeCensus extends JPanel{
 					"		 group by target_ID"+
 					"		)t1, constituent where t1.target_ID=constituent.constituent_ID;";
 //			c = Application.db.select(sql2, new String[]{pco,nco,t});
-			c = Application.db.select(sql2, new String[]{});
+			c = Application.getDB().select(sql2, new String[]{});
 			System.out.println("[Target_ID, Negative Count, Positive Count, ValidityOfIdentity,Constituent Name]");
 			System.out.println(c);
 
@@ -338,12 +338,12 @@ public static void populateWitnessData1(){
 			String source_ID_str=""+source_ID;
 			String target_ID_str=""+target_ID;
 			try {
-				Application.db.delete("DELETE FROM witness", new String[]{});
-				Application.db.insert(insertSql, new String[] {""+0,""+2,""+0});
-				Application.db.insert(insertSql, new String[] {""+0,""+3,""+1});
-				Application.db.insert(insertSql, new String[] {""+0,""+4,""+1});
-				Application.db.insert(insertSql, new String[] {""+3,""+1,""+0});
-				Application.db.insert(insertSql, new String[] {""+4,""+1,""+1});
+				Application.getDB().delete("DELETE FROM witness", new String[]{});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+2,""+0});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+3,""+1});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+4,""+1});
+				Application.getDB().insert(insertSql, new String[] {""+3,""+1,""+0});
+				Application.getDB().insert(insertSql, new String[] {""+4,""+1,""+1});
 			} catch (P2PDDSQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -360,12 +360,12 @@ public static void populateWitnessData2(){
 			String source_ID_str=""+source_ID;
 			String target_ID_str=""+target_ID;
 			try {
-				Application.db.delete("DELETE FROM witness", new String[]{});
-				Application.db.insert(insertSql, new String[] {""+0,""+2,""+1});
-				Application.db.insert(insertSql, new String[] {""+0,""+3,""+1});
-				Application.db.insert(insertSql, new String[] {""+0,""+4,""+1});
-				Application.db.insert(insertSql, new String[] {""+3,""+1,""+0});
-				Application.db.insert(insertSql, new String[] {""+4,""+1,""+1});
+				Application.getDB().delete("DELETE FROM witness", new String[]{});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+2,""+1});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+3,""+1});
+				Application.getDB().insert(insertSql, new String[] {""+0,""+4,""+1});
+				Application.getDB().insert(insertSql, new String[] {""+3,""+1,""+0});
+				Application.getDB().insert(insertSql, new String[] {""+4,""+1,""+1});
 			} catch (P2PDDSQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -375,7 +375,7 @@ public static void populateWitnessData2(){
 
 	public static void main(String[] args) {
 		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

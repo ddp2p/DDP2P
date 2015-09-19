@@ -44,7 +44,7 @@ public class BroadcastQueues implements BroadcastingQueue, DBListener{
 		b_h = new BroadcastQueueHandled();
 		bq = new BroadcastQueue[]{b_md,b_c,/*b_ra,*/ b_re,b_r, b_h};
 		
-		Application.db.addListener(this, 
+		Application.getDB().addListener(this, 
 				new ArrayList<String>(Arrays.asList(
 						net.ddp2p.common.table.signature.TNAME,
 						net.ddp2p.common.table.organization.TNAME,

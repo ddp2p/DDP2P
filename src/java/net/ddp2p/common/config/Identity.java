@@ -88,6 +88,7 @@ public class Identity {
 	 */
 	public static String emails;
 	
+	
 	/**
 	 * <pre>
 	 * Initialize :
@@ -362,7 +363,7 @@ public class Identity {
 		result.preferred_lang = Identity.DEFAULT_PREFERRED_LANG;
 		result.preferred_charset = null;
 		result.secret_credential = null;
-    	long a = Application.db.insertNoSync(net.ddp2p.common.table.identity.TNAME,
+    	long a = Application.getDB().insertNoSync(net.ddp2p.common.table.identity.TNAME,
     				new String[] {
     					net.ddp2p.common.table.identity.default_id,
     					net.ddp2p.common.table.identity.profile_name,
@@ -408,7 +409,7 @@ public class Identity {
 		if (DEBUG) System.out.println("Identity:getDefaultIdentity");
     	Identity result = new Identity();
     	ArrayList<ArrayList<Object>> id;
-    	id = Application.db.select(
+    	id = Application.getDB().select(
     			sql_get_default_identity,
     			new String[]{}, DEBUG);
     	if (id.size() == 0) {
@@ -565,7 +566,7 @@ public class Identity {
 			"SELECT "+net.ddp2p.common.table.identity_ids.constituent_ID+","+net.ddp2p.common.table.identity_ids.identity_ids_ID+
 			" FROM "+net.ddp2p.common.table.identity_ids.TNAME+
 			" WHERE "+net.ddp2p.common.table.identity_ids.organization_ID+"=?;";
-		ArrayList<ArrayList<Object>> i = Application.db.select(sql, new String[]{""+org_id}, DEBUG);
+		ArrayList<ArrayList<Object>> i = Application.getDB().select(sql, new String[]{""+org_id}, DEBUG);
 		if (i.size() == 0) {
 			 constituent_ID = "-1";
 		}else{
@@ -576,7 +577,7 @@ public class Identity {
 				e.printStackTrace();
 			}
 		}
-		Application.db.update(net.ddp2p.common.table.identity.TNAME,
+		Application.getDB().update(net.ddp2p.common.table.identity.TNAME,
 				new String[]{net.ddp2p.common.table.identity.organization_ID, net.ddp2p.common.table.identity.constituent_ID},
 				new String[]{net.ddp2p.common.table.identity.identity_ID},
 				new String[]{""+org_id, constituent_ID, Identity.current_identity.identity_id},
@@ -626,7 +627,7 @@ public class Identity {
 		/**
 		 * Update constituent LID as the new one, if it was already here
 		 */
-		Application.db.update(net.ddp2p.common.table.identity.TNAME,
+		Application.getDB().update(net.ddp2p.common.table.identity.TNAME,
 				new String[]{net.ddp2p.common.table.identity.organization_ID, net.ddp2p.common.table.identity.constituent_ID},
 				new String[]{net.ddp2p.common.table.identity.identity_ID},
 				new String[]{""+_organizationID, ""+_constituentID, Identity.current_identity.identity_id},
@@ -636,7 +637,7 @@ public class Identity {
 		 * Delete entry for this org if there is no constituent
 		 */
 		if (_constituentID < 0) {
-			Application.db.delete(net.ddp2p.common.table.identity_ids.TNAME,
+			Application.getDB().delete(net.ddp2p.common.table.identity_ids.TNAME,
 					new String[]{net.ddp2p.common.table.identity_ids.identity_ID,net.ddp2p.common.table.identity_ids.organization_ID},
 					new String[]{Identity.current_identity.identity_id, ""+_organizationID}, DEBUG);
 	    	if (DEBUG) System.err.println("Identity:setCurrentConstituent: cancelling myself Done");
@@ -647,12 +648,12 @@ public class Identity {
 		 * Check if it is stored
 		 */
 		ArrayList<ArrayList<Object>> i =
-				Application.db.select(sql_identity_for_org, new String[]{Identity.current_identity.identity_id, ""+_organizationID}, DEBUG);
+				Application.getDB().select(sql_identity_for_org, new String[]{Identity.current_identity.identity_id, ""+_organizationID}, DEBUG);
 		/**
 		 * Insert if not stored
 		 */
 		if (i.size() == 0) {
-			Application.db.insert(net.ddp2p.common.table.identity_ids.TNAME,
+			Application.getDB().insert(net.ddp2p.common.table.identity_ids.TNAME,
 					new String[]{net.ddp2p.common.table.identity_ids.constituent_ID, net.ddp2p.common.table.identity_ids.organization_ID, net.ddp2p.common.table.identity_ids.identity_ID},
 					new String[]{""+_constituentID, ""+_organizationID, Identity.current_identity.identity_id},
 					DEBUG);
@@ -667,7 +668,7 @@ public class Identity {
 			 * If still not the right value, try again updating (should not be here)
 			 */
 			String ID = Util.getString(i.get(0).get(0));
-			Application.db.update(net.ddp2p.common.table.identity_ids.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.identity_ids.TNAME,
 					new String[]{net.ddp2p.common.table.identity_ids.constituent_ID, net.ddp2p.common.table.identity_ids.organization_ID},
 					new String[]{net.ddp2p.common.table.identity_ids.identity_ids_ID},
 					new String[]{""+_constituentID, ""+_organizationID, ID}, DEBUG);
@@ -695,7 +696,7 @@ public class Identity {
 			return -1;
 		}
 		ArrayList<ArrayList<Object>> i = 
-			Application.db.select(sql_identity_for_org, new String[]{Identity.current_identity.identity_id,  ""+_organizationID}, DEBUG);
+			Application.getDB().select(sql_identity_for_org, new String[]{Identity.current_identity.identity_id,  ""+_organizationID}, DEBUG);
 		if (i.size() == 0){
 	    	if(DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: no current identity_ids ID Done");
 			return -1;
@@ -728,7 +729,7 @@ public class Identity {
 			"SELECT "+net.ddp2p.common.table.identity.organization_ID+
 			" FROM "+net.ddp2p.common.table.identity.TNAME+
 			" WHERE "+net.ddp2p.common.table.identity.identity_ID +"=?;";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{id+""}, DEBUG);
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(sql, new String[]{id+""}, DEBUG);
 		if(a.size()==0) return -1;
 		return Util.lval(Util.getString(a.get(0).get(0)), -1);
 	}

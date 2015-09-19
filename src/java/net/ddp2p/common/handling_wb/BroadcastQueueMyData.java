@@ -111,7 +111,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 			if(rowID==-1) rowID=1;
 			if(DEBUG)System.out.println("ROWID: "+rowID);
 			try{
-				orgs = Application.db.select(sql, new String[]{});
+				orgs = Application.getDB().select(sql, new String[]{});
 				if(DEBUG)System.out.println("orgs size"+ orgs.size());
 				for(ArrayList<Object> org : orgs){
 					last_row = Integer.parseInt(org.get(net.ddp2p.common.table.organization.ORG_COL_ID).toString());
@@ -203,7 +203,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 
 			if(DEBUG)System.out.println("_loadWitnesses : sql "+sql);
 
-			witnesses = Application.db.select(sql, new String[]{});
+			witnesses = Application.getDB().select(sql, new String[]{});
 			if(DEBUG)System.out.println("_loadWitnesses array size : "+witnesses.size());
 			for(ArrayList<Object> witness : witnesses){
 				D_Witness wbw = new D_Witness();
@@ -221,7 +221,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 				String sql1 = " SELECT "+net.ddp2p.common.table.constituent.organization_ID+
 						" FROM "+net.ddp2p.common.table.constituent.TNAME+" WHERE "+
 						net.ddp2p.common.table.constituent.constituent_ID+"=?;";
-				ArrayList<ArrayList<Object>> org_id = Application.db.select(sql1, new String[]{""+wbw.witnessed_constituentID});
+				ArrayList<ArrayList<Object>> org_id = Application.getDB().select(sql1, new String[]{""+wbw.witnessed_constituentID});
 				String OrgID = Util.getString(org_id.get(0).get(0));	
 				if(DEBUG)System.out.println("DATA : "+OrgID);
 				ArrayList<Object> org_data = get_org_db_by_local(OrgID);
@@ -311,7 +311,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 
 			if(DEBUG)System.out.println(sql_get_const);
 			try{
-				constituents = Application.db.select(sql_get_const, new String[]{});
+				constituents = Application.getDB().select(sql_get_const, new String[]{});
 				if(DEBUG)System.out.println("Constituent array size : "+constituents.size());
 				for(ArrayList<Object> constituent : constituents){
 					//System.out.println("Constituent : "+constituent);
@@ -415,7 +415,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 			if(DEBUG)System.out.println(sql);
 
 			try{
-				peers = Application.db.select(sql, new String[]{});
+				peers = Application.getDB().select(sql, new String[]{});
 				if(DEBUG)System.out.println("this time we took : "+peers.size());
 				for(ArrayList<Object> peer : peers){
 					last_row = Integer.parseInt(peer.get(net.ddp2p.common.table.peer.PEER_COL_ID).toString());
@@ -503,7 +503,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 					" LIMIT "+(VOTES_SIZE - retrieved);
 			if(DEBUG)System.out.println("SQL : "+sql);
 			try{
-				votes = Application.db.select(sql, new String[]{});
+				votes = Application.getDB().select(sql, new String[]{});
 				if(DEBUG)System.out.println("loadVotes : ArrayList size "+votes.size());
 				for(ArrayList<Object> vote : votes){
 					D_Vote v = new D_Vote();
@@ -602,7 +602,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 					" LIMIT "+(NEIGHS_SIZE - retrieved);
 			if(DEBUG)System.out.println("sql_neighs : "+sql);
 			try{
-				neighs = Application.db.select(sql, new String[]{});
+				neighs = Application.getDB().select(sql, new String[]{});
 				if(DEBUG)System.out.println("loadNeighborhoods : ArrayList size "+neighs.size());
 				for(ArrayList<Object> neigh : neighs) {
 					D_Message asn1=new D_Message();
@@ -688,7 +688,7 @@ public class BroadcastQueueMyData extends BroadcastQueue {
 		String sql = "SELECT "+net.ddp2p.common.table.organization.field_list+" FROM "+
 				net.ddp2p.common.table.organization.TNAME+" WHERE "+net.ddp2p.common.table.organization.organization_ID+
 				"=?;";
-		ArrayList<ArrayList<Object>> org_data = Application.db.select(sql, new String[]{org_id});
+		ArrayList<ArrayList<Object>> org_data = Application.getDB().select(sql, new String[]{org_id});
 		return org_data.get(0);
 	}
 

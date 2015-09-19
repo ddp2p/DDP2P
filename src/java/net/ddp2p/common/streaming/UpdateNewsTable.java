@@ -69,9 +69,9 @@ public class UpdateNewsTable {
 							" n."+net.ddp2p.common.table.news.arrival_date+" > ? LIMIT "+limitNewsLow;
 		ArrayList<ArrayList<Object>>p_data = null;
 		if(_maxDate[0] == null) {
-			p_data = Application.db.select( queryNoMaxDate, new String[]{last_sync_date});
+			p_data = Application.getDB().select( queryNoMaxDate, new String[]{last_sync_date});
 		}else{
-			p_data = Application.db.select( queryMaxDate, new String[]{last_sync_date, _maxDate[0]});
+			p_data = Application.getDB().select( queryMaxDate, new String[]{last_sync_date, _maxDate[0]});
 		}
 		recentNews.rows = new byte[p_data.size()][][];
 		if(DEBUG) out.println("news rows=: "+p_data.size());

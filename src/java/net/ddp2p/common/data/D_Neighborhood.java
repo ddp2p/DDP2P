@@ -219,14 +219,14 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 
 	private void init(Long lID) throws Exception {
 		ArrayList<ArrayList<Object>> a;
-		a = Application.db.select(sql_neighborhood_cond_ID, new String[]{Util.getStringID(lID)});
+		a = Application.getDB().select(sql_neighborhood_cond_ID, new String[]{Util.getStringID(lID)});
 		if (a.size() == 0) throw new Exception("D_Neighborhood:init:None for lID="+lID);
 		init(a.get(0));
 		if(DEBUG) System.out.println("D_Neighborhood: init: got="+this);//result);
 	}
 	private void init(String gID) throws Exception {
 		ArrayList<ArrayList<Object>> a;
-		a = Application.db.select(sql_neighborhood_cond_GID, new String[]{gID});
+		a = Application.getDB().select(sql_neighborhood_cond_GID, new String[]{gID});
 		if (a.size() == 0) throw new Exception("D_Neighborhood:init:None for GID="+gID);
 		init(a.get(0));
 		if(DEBUG) System.out.println("D_Neighborhood: init: got="+this);//result);
@@ -301,7 +301,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				+ " FROM "+ net.ddp2p.common.table.my_neighborhood_data.TNAME
 				+ " WHERE "+ net.ddp2p.common.table.my_neighborhood_data.COL_NEIGHBORHOOD_LID + " = ?;"; 
 		try {
-			ArrayList<ArrayList<Object>> my = Application.db.select(sql_my_neighborhood, new String[]{Util.getString(this._neighborhoodID)});
+			ArrayList<ArrayList<Object>> my = Application.getDB().select(sql_my_neighborhood, new String[]{Util.getString(this._neighborhoodID)});
 			if (my.size() == 0) {
 				this.mydata.row = -1;
 				return;
@@ -990,11 +990,11 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		ArrayList<ArrayList<Object>> sel;
 		try {
 			if (parent_nID <= 0)
-				sel = Application.db.select("select  "+net.ddp2p.common.table.neighborhood.fields_neighborhoods+
+				sel = Application.getDB().select("select  "+net.ddp2p.common.table.neighborhood.fields_neighborhoods+
 						" from "+net.ddp2p.common.table.neighborhood.TNAME+
 						" where "+net.ddp2p.common.table.neighborhood.organization_ID+" = ? and ( "+net.ddp2p.common.table.neighborhood.parent_nID+" ISNULL OR "+net.ddp2p.common.table.neighborhood.parent_nID+" < 0 ) and "+net.ddp2p.common.table.neighborhood.name+" = ?;",
 						new String[]{Util.getStringID(organizationID), name});
-			else sel = Application.db.select("select " + net.ddp2p.common.table.neighborhood.fields_neighborhoods +
+			else sel = Application.getDB().select("select " + net.ddp2p.common.table.neighborhood.fields_neighborhoods +
 					" from "+net.ddp2p.common.table.neighborhood.TNAME+" where "+net.ddp2p.common.table.neighborhood.organization_ID+" = ? and "+net.ddp2p.common.table.neighborhood.parent_nID+" = ? and "+net.ddp2p.common.table.neighborhood.name+" = ?;",
 					new String[]{Util.getStringID(organizationID), Util.getStringID(parent_nID), name});
 			if (sel.size() != 0)
@@ -1008,7 +1008,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		   String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.neighborhood.TNAME+" where "+net.ddp2p.common.table.neighborhood.organization_ID+"=?;";
 		   ArrayList<ArrayList<Object>> count;
 		try {
-			count = Application.db.select(sql, new String[]{Util.getString(oID)});
+			count = Application.getDB().select(sql, new String[]{Util.getString(oID)});
 			   int nbrs = Integer.parseInt(Util.getString(count.get(0).get(0)));
 			   return nbrs;
 		} catch (P2PDDSQLException e) {
@@ -1033,7 +1033,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if(DEBUG)System.out.println("select_neighborhood_or_create_by_cID : Org_id:"+organization_ID2);
 		ArrayList<ArrayList<Object>> a;
 		try {
-			a = Application.db.select(sql1, new String[]{Util.getStringID(organization_ID2)}, DEBUG);
+			a = Application.getDB().select(sql1, new String[]{Util.getStringID(organization_ID2)}, DEBUG);
 			if(DEBUG)System.out.println("a:"+a);
 			long n_ID = Long.parseLong(a.get(0).get(0).toString());
 		} catch (P2PDDSQLException e) {
@@ -1945,11 +1945,11 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			
 			if (this.mydata.row <= 0) {
 				this.mydata.row =
-						Application.db.insert(true, net.ddp2p.common.table.my_neighborhood_data.TNAME,
+						Application.getDB().insert(true, net.ddp2p.common.table.my_neighborhood_data.TNAME,
 								net.ddp2p.common.table.my_neighborhood_data.fields_noID, param, DEBUG);
 			} else {
 				param[net.ddp2p.common.table.my_neighborhood_data.COL_ROW] = this.mydata.row+"";
-				Application.db.update(true, net.ddp2p.common.table.my_neighborhood_data.TNAME,
+				Application.getDB().update(true, net.ddp2p.common.table.my_neighborhood_data.TNAME,
 						net.ddp2p.common.table.my_neighborhood_data.fields_noID,
 						new String[]{net.ddp2p.common.table.my_neighborhood_data.row}, param, DEBUG);
 			}
@@ -1997,7 +1997,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				if (DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: insert");
 				long _neig_local_ID = -1;
 				try {
-					_neig_local_ID = Application.db.insert(sync, net.ddp2p.common.table.neighborhood.TNAME, fields, params, DEBUG);
+					_neig_local_ID = Application.getDB().insert(sync, net.ddp2p.common.table.neighborhood.TNAME, fields, params, DEBUG);
 					this.setLID_AndLink(_neig_local_ID);
 				} catch (Exception e) {
 					if (_DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: insert fail: "+this.getGID());
@@ -2011,7 +2011,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				//if ((date[0] == null) || (date[0].compareTo(params[table.neighborhood.IDX_CREATION_DATE]) < 0)) {
 				params[net.ddp2p.common.table.neighborhood.IDX_ID] = id;
 				//params[table.neighborhood.IDX_FIELDs] = id;
-				Application.db.update(sync, net.ddp2p.common.table.neighborhood.TNAME, fields, new String[]{net.ddp2p.common.table.neighborhood.neighborhood_ID}, params, DEBUG);
+				Application.getDB().update(sync, net.ddp2p.common.table.neighborhood.TNAME, fields, new String[]{net.ddp2p.common.table.neighborhood.neighborhood_ID}, params, DEBUG);
 				//}
 				result = this.getLID(); //id;
 			}
@@ -2366,7 +2366,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		boolean DEBUG = false;
 		ArrayList<ArrayList<Object>> n;
 		try {
-			n = Application.db.select(sql_n_children, new String[]{Util.getStringID(n_ID)}, DEBUG);
+			n = Application.getDB().select(sql_n_children, new String[]{Util.getStringID(n_ID)}, DEBUG);
 			for (int k = 0; k < n.size(); k ++) {
 				result.add(Util.Lval(n.get(k).get(0)));
 			}
@@ -2388,7 +2388,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		boolean DEBUG = false;
 		ArrayList<ArrayList<Object>> n;
 		try {
-			n = Application.db.select(sql_n_root_children, new String[]{Util.getStringID(o_ID)}, DEBUG);
+			n = Application.getDB().select(sql_n_root_children, new String[]{Util.getStringID(o_ID)}, DEBUG);
 			for (int k = 0; k < n.size(); k ++) {
 				result.add(Util.Lval(n.get(k).get(0)));
 			}
@@ -2401,7 +2401,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
     	ArrayList<ArrayList<Object>> sel;
     	ArrayList<Long> sel_c;
     	try{
-    		sel = Application.db.select("select "+net.ddp2p.common.table.neighborhood.neighborhood_ID+" from "+net.ddp2p.common.table.neighborhood.TNAME+" where "+net.ddp2p.common.table.neighborhood.parent_nID+"=? AND "+net.ddp2p.common.table.neighborhood.organization_ID+"=?;",
+    		sel = Application.getDB().select("select "+net.ddp2p.common.table.neighborhood.neighborhood_ID+" from "+net.ddp2p.common.table.neighborhood.TNAME+" where "+net.ddp2p.common.table.neighborhood.parent_nID+"=? AND "+net.ddp2p.common.table.neighborhood.organization_ID+"=?;",
     				new String[]{Util.getStringID(nID),Util.getStringID(oID)});
     		for(int i=0; i<sel.size(); i++) {
     			long c_nID = Util.lval(sel.get(i).get(0),-1);
@@ -2412,7 +2412,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
     			long c_ID = sel_c.get(i); //Util.lval(sel.get(i).get(0),-1);
     			D_Constituent.delConstituent(c_ID);
     		}
-    		Application.db.delete(net.ddp2p.common.table.neighborhood.TNAME, new String[]{net.ddp2p.common.table.neighborhood.neighborhood_ID}, new String[]{Util.getStringID(nID)});
+    		Application.getDB().delete(net.ddp2p.common.table.neighborhood.TNAME, new String[]{net.ddp2p.common.table.neighborhood.neighborhood_ID}, new String[]{Util.getStringID(nID)});
     	} catch (Exception e) {
     		e.printStackTrace();
     	}
@@ -2420,7 +2420,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public static void zapp(long neighborhoodID2) {
 		// TODO Auto-generated method stub
 		try {
-			Application.db.delete(net.ddp2p.common.table.neighborhood.TNAME,
+			Application.getDB().delete(net.ddp2p.common.table.neighborhood.TNAME,
 					new String[]{net.ddp2p.common.table.neighborhood.neighborhood_ID},
 					new String[]{Util.getStringID(neighborhoodID2)},
 					DEBUG);
@@ -2582,14 +2582,14 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public static ArrayList<ArrayList<Object>> getAllNeighborhoods(long o_LID, long n_LID, boolean all) {
 		try {
 			if (all) {
-				return Application.db.select(sql_all_neighborhoods,
+				return Application.getDB().select(sql_all_neighborhoods,
 						new String[]{Util.getStringID(o_LID)});
 			}
 			if (n_LID <= 0) {
-				return Application.db.select(sql_all_root_neighborhoods,
+				return Application.getDB().select(sql_all_root_neighborhoods,
 						new String[]{Util.getStringID(o_LID)});
 			} else {
-				return Application.db.select(sql_all_neighborhoods_in_neigh,
+				return Application.getDB().select(sql_all_neighborhoods_in_neigh,
 						new String[]{Util.getStringID(o_LID), Util.getStringID(n_LID)});
 			}
 		} catch (P2PDDSQLException e) {

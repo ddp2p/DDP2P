@@ -392,7 +392,7 @@ public class MainFrame {
 	    	if(MainFrame.TAB_MAN_ == index) {
 	    		if(!_broadcast) {
 	    			if(_saved_broadcast==null) {
-		    			_saved_broadcast = new net.ddp2p.widgets.wireless.WLAN_widget(Application.db);
+		    			_saved_broadcast = new net.ddp2p.widgets.wireless.WLAN_widget(Application.getDB());
 		    			MainFrame.tabbedPane.setComponentAt(index, _saved_broadcast.getComboPanel());
 	    			}
 		    		if(_broadcast_reload || _broadcast_disconnect) {
@@ -1036,7 +1036,7 @@ public class MainFrame {
 	public static void askIdentity() {
 		// create a pane
 		// in the pane insert the idntities widget
-	    MainFrame.identitiesPane = new MyIdentitiesTest(Application.db);
+	    MainFrame.identitiesPane = new MyIdentitiesTest(Application.getDB());
 	    // also insert a checkbox (never start again)
 	    // A done button
 	    // set identity as current with flag in the database
@@ -1072,12 +1072,12 @@ public class MainFrame {
 	        
 	        Directories listing_dicts = (Directories)(Application.directory_status = new Directories()); //now
 	        if (MainFrame.identitiesPane == null)
-	        	MainFrame.identitiesPane = new MyIdentitiesTest(Application.db);
+	        	MainFrame.identitiesPane = new MyIdentitiesTest(Application.getDB());
 	
 	        if(DD.DEBUG) System.out.println("createAndShowGUI: identities started");
 	       
 	        //Keys keys = new widgets.keys.Keys();
-	        MainFrame.constituentsPane = new ConstituentsPanel(Application.db, /*organizationID*/-1, -1, null);
+	        MainFrame.constituentsPane = new ConstituentsPanel(Application.getDB(), /*organizationID*/-1, -1, null);
 	        GUI_Swing.constituents = MainFrame.constituentsPane;
 	        //JPanel _constituentsPane = makeConstituentsPanel(constituentsPane);
 	
@@ -1115,7 +1115,7 @@ public class MainFrame {
 	
 	        
 	        //problems with pluging initialization
-	        Application.peers = MainFrame.peersPluginsPane = new net.ddp2p.widgets.peers.Peers(Application.db);
+	        Application.peers = MainFrame.peersPluginsPane = new net.ddp2p.widgets.peers.Peers(Application.getDB());
 			if(DD.DEBUG) System.out.println("createAndShowGUI: created peers");
 			MainFrame.tabbedPane.addTab(MainFrame.TAB_PEERS, icon_peer, MainFrame.peersPluginsPane.getPanel(), __("Peers"));//peersPluginsPane.getScrollPane());
 			if(DD.DEBUG) System.out.println("createAndShowGUI: got peer panel");
@@ -1337,7 +1337,7 @@ public class MainFrame {
 	 */
 	static Language[] get_preferred_languages() throws P2PDDSQLException {
 		ArrayList<ArrayList<Object>> id;
-		id=Application.db.select("SELECT "+net.ddp2p.common.table.identity.preferred_lang +
+		id=Application.getDB().select("SELECT "+net.ddp2p.common.table.identity.preferred_lang +
 				" FROM "+net.ddp2p.common.table.identity.TNAME+" AS i" +
 				" WHERE i."+net.ddp2p.common.table.identity.default_id+"==1 LIMIT 1;",
 				new String[]{});
@@ -1602,8 +1602,8 @@ public class MainFrame {
 				errors_db.put(attempt, error);
 				if (args.length > 1) System.err.println(__("Failed attempt to open first choice file:")+" \""+attempt+"\": "+error);
 			}
-			if (DD.DEBUG) System.err.println(__("DD: main: Got DB from command line: ")+Application.db);
-			if (Application.db == null) {
+			if (DD.DEBUG) System.err.println(__("DD: main: Got DB from command line: ")+Application.getDB());
+			if (Application.getDB() == null) {
 				JFileChooser chooser = new JFileChooser();
 				chooser.setFileFilter(new net.ddp2p.widgets.components.DatabaseFilter());
 				chooser.setName(__("Select database"));
@@ -1623,7 +1623,7 @@ public class MainFrame {
 						errors_db.put(fileDB.getPath(), e.getLocalizedMessage());
 					}
 				}
-				if (Application.db == null) {
+				if (Application.getDB() == null) {
 					Application_GUI.warning(__("Missing database. Tried:\n "+Util.concat(errors_db, ",\n ", null, ": ")), __("Need to reinstall database!"));
 					//Application.warning(_("Missing database. Tried: "+Util.concat(potentialDatabases, "\n, ", null)), _("Need to reinstall database!"));
 					if (DD.DEBUG) Util.dumpThreads();
@@ -1631,7 +1631,7 @@ public class MainFrame {
 					//return;
 				}
 			}
-			if (DD.DEBUG) System.err.println(__("DD: main: Got DB fin")+Application.db);
+			if (DD.DEBUG) System.err.println(__("DD: main: Got DB fin")+Application.getDB());
 			// Quit if no peer found!
 			Identity.init_Identity(true, true, false); // used to announce dirs here
 	
@@ -1645,7 +1645,7 @@ public class MainFrame {
 			}
 			
 			if(DD.DEBUG) System.out.println("DD:run: done database, try import databases");
-			DBInterface selected_db = Application.db; //save it as the import code may change the globals
+			DBInterface selected_db = Application.getDB(); //save it as the import code may change the globals
 	
 			final String db_to_import = DD.getExactAppText (DD.APP_DB_TO_IMPORT);
 			if (DD.DEBUG) System.out.println("DD:run: done database, try import database from: "+db_to_import);
@@ -1679,15 +1679,15 @@ public class MainFrame {
 				}
 				if (imported || (q != 0)) {
 					if(_DEBUG) System.out.println("DD:run: done database, will clean "+DD.APP_DB_TO_IMPORT);
-					Application.db = selected_db; // needed to enable setAppText
+					Application.setDB(selected_db); // needed to enable setAppText
 					DD.setAppText(DD.APP_DB_TO_IMPORT, null);
 				}
 				Application_GUI.warning(__("Result trying to import data from old database:")+"\n"+db_to_import+"\n result="+(imported?__("Success"):__("Failure")), __("Importing database!"));
 			}
 	
-			Application.db = selected_db;
+			Application.setDB(selected_db);
 			if(DD.DEBUG) System.out.println("DD:run: done database, done import databases");
-			DDTranslation.db=Application.db;
+			DDTranslation.db=Application.getDB();
 	
 			//Application.DB_PATH = new File(Application.DELIBERATION_FILE).getParent();
 			//Application.db_dir = load_Directory_DB(Application.DB_PATH);

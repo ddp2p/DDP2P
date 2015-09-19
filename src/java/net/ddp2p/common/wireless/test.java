@@ -14,7 +14,7 @@ public class test
 	{
 		boolean _DEBUG = true;
 		
-		Application.db = new DBInterface("deliberation-app.db");
+		Application.setDB(new DBInterface("deliberation-app.db"));
 		
 		
 		String sel_1 = "SELECT count(DISTINCT m.motion_ID)  FROM motion AS m  WHERE m.organization_ID=1 " +
@@ -28,10 +28,10 @@ public class test
 		
 	
 		ArrayList<ArrayList<Object>> count_1 =
-				Application.db.select(sel_1, new String[]{},_DEBUG);
+				Application.getDB().select(sel_1, new String[]{},_DEBUG);
 		
 		ArrayList<ArrayList<Object>> count_2 =
-				Application.db.select(sel_2, new String[]{},_DEBUG);
+				Application.getDB().select(sel_2, new String[]{},_DEBUG);
 		
 		System.out.println();
 	}

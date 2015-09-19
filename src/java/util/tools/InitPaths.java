@@ -11,7 +11,7 @@ public class InitPaths {
 		System.out.println("Saved in application field values="+args.length);
 		if (args.length == 0) return;
 		try {
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 			net.ddp2p.tools.Directories.setLinuxPaths(args[0]);
 			
 			if(args.length > 1)

@@ -174,7 +174,7 @@ public class DD_Mirrors extends ASNObj implements StegoStructure {
 			return;
 		}
 		try {
-			Application.db = new DBInterface(args[0]);
+			Application.setDB(new DBInterface(args[0]));
 			DD_Mirrors mirrors = new DD_Mirrors();
 			ArrayList<D_MirrorInfo> tds;
 			if(args.length == 2) {

@@ -608,7 +608,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		//this.dirty_main = true;
 	}
 	private void init_ByLID(String _peerID) throws P2PDDSQLException {
-		ArrayList<ArrayList<Object>> p = Application.db.select(sql_getPeerByLID, new String[]{_peerID});
+		ArrayList<ArrayList<Object>> p = Application.getDB().select(sql_getPeerByLID, new String[]{_peerID});
 		if (p.size() == 0) {
 			setLID(_peerID);
 			if (true) throw new RuntimeException("Absent peer "+_peerID);
@@ -643,7 +643,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			if (_DEBUG) System.out.println("D_Peer: init_ByGID: null gidh: for "+gID);
 		if (DEBUG) System.out.println("D_Peer: init_ByGID: using gID: GIDhash "+gID+" -> "+peerGIDhash);
 		
-		ArrayList<ArrayList<Object>> p = Application.db.select(sql_getPeerByGIDH, new String[]{peerGIDhash}, DEBUG);
+		ArrayList<ArrayList<Object>> p = Application.getDB().select(sql_getPeerByGIDH, new String[]{peerGIDhash}, DEBUG);
 		if (p.size() == 0) {
 			if (DEBUG) System.out.println("D_Peer: init_ByGID: enter gID: GIDhash: not found");
 			if (! create) {
@@ -806,7 +806,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (this.component_messages.recommendationOfTestersBundle_Loaded) return this.component_messages.recommendationOfTestersBundle;
 		ArrayList<ArrayList<Object>> obj;
 		try {
-			obj = Application.db.select(sql_load_ScheduledRecommendedTestersMessages, 
+			obj = Application.getDB().select(sql_load_ScheduledRecommendedTestersMessages, 
 					new String[] {this.peer_ID, ""+peer_scheduled_message.MESSAGE_TYPE_RECOMMENDATION_OF_TESTERS},
 					DEBUG);
 		} catch (P2PDDSQLException e) {
@@ -870,7 +870,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (pLID <= 0) return new ArrayList<D_PeerOrgInferred>();
 		try {
 			ArrayList<ArrayList<Object>> poi = 
-					Application.db.select(sql_peer_org_inf, new String[]{Util.getStringID(pLID)}, DEBUG);
+					Application.getDB().select(sql_peer_org_inf, new String[]{Util.getStringID(pLID)}, DEBUG);
 			ArrayList<D_PeerOrgInferred> result = new ArrayList<D_PeerOrgInferred>();
 			for (int i = 0 ; i < poi.size() ; i ++ ) {
 				ArrayList<Object> ipoi = poi.get(i);
@@ -893,7 +893,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (D_PeerInstance.DEBUG) System.out.println("D_PeerInstance:loadInstances: start:"+getLIDstr());
 		try {
 			//Hashtable<String,D_PeerInstance> result = new Hashtable<String,D_PeerInstance>();
-			ArrayList<ArrayList<Object>> i = Application.db.select(D_PeerInstance.sql_peer, new String[]{getLIDstr()}, D_PeerInstance.DEBUG);
+			ArrayList<ArrayList<Object>> i = Application.getDB().select(D_PeerInstance.sql_peer, new String[]{getLIDstr()}, D_PeerInstance.DEBUG);
 			for (ArrayList<Object> k: i) {
 				D_PeerInstance crt = new D_PeerInstance(k);
 				//if (crt.peer_instance == null) this.instance_null = crt;
@@ -915,7 +915,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	private void loadMyPeerData() throws P2PDDSQLException {
 		if (getLIDstr() == null) return;
 		ArrayList<ArrayList<Object>> data =
-				Application.db.select(sql_peer_my_data,
+				Application.getDB().select(sql_peer_my_data,
 				new String[]{getLIDstr()});
 		if (data.size() == 0) return;
 		ArrayList<Object> d = data.get(0);
@@ -952,7 +952,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (DEBUG) System.out.println("D_Peer:loadPeeres: start = "+ getLIDstr());
 		ArrayList<ArrayList<Object>> a;
 		try {
-			a = Application.db.select(sql_get_addresses_by_peerID, new String[]{getLIDstr()}, DEBUG);
+			a = Application.getDB().select(sql_get_addresses_by_peerID, new String[]{getLIDstr()}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
@@ -1050,7 +1050,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				" WHERE ( po."+net.ddp2p.common.table.peer_org.peer_ID+" == ? ) "+
 				" AND po."+net.ddp2p.common.table.peer_org.served+"== '1'"+
 				" ORDER BY o."+net.ddp2p.common.table.organization.global_organization_ID;
-		ArrayList<ArrayList<Object>>p_data = Application.db.select(queryOrgs, new String[]{peer_ID}, DEBUG);
+		ArrayList<ArrayList<Object>>p_data = Application.getDB().select(queryOrgs, new String[]{peer_ID}, DEBUG);
 		result = new D_PeerOrgs[p_data.size()];
 		for (int i = 0; i < p_data.size(); i++) {
 			ArrayList<Object> o = p_data.get(i);
@@ -1795,7 +1795,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (this.component_messages.recommendationOfTestersBundle == null) {
 			if (this.component_messages.recommendationOfTestersBundleLID > 0) {
 				try {
-					Application.db.delete(true, net.ddp2p.common.table.peer_scheduled_message.TNAME,
+					Application.getDB().delete(true, net.ddp2p.common.table.peer_scheduled_message.TNAME,
 							new String[] {net.ddp2p.common.table.peer_scheduled_message.peer_ID, net.ddp2p.common.table.peer_scheduled_message.message_type},
 							new String[]{this.peer_ID+"", peer_scheduled_message.MESSAGE_TYPE_RECOMMENDATION_OF_TESTERS+""}, DEBUG);
 					this.component_messages.recommendationOfTestersBundleLID = -1;
@@ -1817,7 +1817,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		try {
 			if (update) {
 				params[net.ddp2p.common.table.peer_scheduled_message.F_ID] = Util.getStringID(this.component_messages.recommendationOfTestersBundleLID);
-				Application.db.update(net.ddp2p.common.table.peer_scheduled_message.TNAME,
+				Application.getDB().update(net.ddp2p.common.table.peer_scheduled_message.TNAME,
 						net.ddp2p.common.table.peer_scheduled_message._fields_peer_scheduled_message_no_ID,
 						new String[]{net.ddp2p.common.table.peer_scheduled_message.message_ID},
 						params,
@@ -1825,7 +1825,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			}
 			else {	
 				this.component_messages.recommendationOfTestersBundleLID = 
-						Application.db.insert(net.ddp2p.common.table.peer_scheduled_message.TNAME,
+						Application.getDB().insert(net.ddp2p.common.table.peer_scheduled_message.TNAME,
 								net.ddp2p.common.table.peer_scheduled_message._fields_peer_scheduled_message_no_ID,
 								params,
 								DEBUG);
@@ -1884,7 +1884,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		}
 		
 		if (getLIDstr() == null) {
-			this.setLID_AndLink(Application.db.insert(net.ddp2p.common.table.peer.TNAME,
+			this.setLID_AndLink(Application.getDB().insert(net.ddp2p.common.table.peer.TNAME,
 					Util.trimmed(net.ddp2p.common.table.peer.list_fields_peers_no_ID),
 					params,
 					DEBUG));
@@ -1895,7 +1895,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		} else {
 			params[net.ddp2p.common.table.peer.PEER_COL_ID] = getLIDstr();
 			if("-1".equals(getLIDstr()))Util.printCallPath("peer_ID -1: "+this);
-			Application.db.update(net.ddp2p.common.table.peer.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.peer.TNAME,
 					Util.trimmed(net.ddp2p.common.table.peer.list_fields_peers_no_ID),
 					new String[]{net.ddp2p.common.table.peer.peer_ID},
 					params,
@@ -1919,7 +1919,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			if (pi == null) {
 				assert (inst.get_peer_instance_ID() != null);
 				this.inst_by_ID.remove(inst.get_peer_instance_ID());
-				Application.db.delete(net.ddp2p.common.table.peer_instance.TNAME,
+				Application.getDB().delete(net.ddp2p.common.table.peer_instance.TNAME,
 						new String[]{net.ddp2p.common.table.peer_instance.peer_instance_ID},
 						new String[]{inst.get_peer_instance_ID()}, DEBUG);
 			}
@@ -1951,7 +1951,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				if (DEBUG) System.out.println("D_Peer: storeAddresses shared orig ="+adr.toLongString());
 				Address pi = this.getPeerAddress(adr.peer_address_ID, shared_addresses, adr);
 				if (pi == null) {
-					Application.db.delete(net.ddp2p.common.table.peer_address.TNAME,
+					Application.getDB().delete(net.ddp2p.common.table.peer_address.TNAME,
 							new String[]{net.ddp2p.common.table.peer_address.peer_address_ID},
 							new String[]{adr.peer_address_ID}, DEBUG);
 				}else
@@ -1977,7 +1977,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				if (DEBUG) System.out.println("D_Peer: storeAddresses inst orig ="+i);
 				D_PeerInstance pi = this.getPeerInstance(i.peer_instance);
 				if (pi == null) {
-					Application.db.delete(net.ddp2p.common.table.peer_address.TNAME,
+					Application.getDB().delete(net.ddp2p.common.table.peer_address.TNAME,
 							new String[]{net.ddp2p.common.table.peer_address.instance},
 							new String[]{i.get_peer_instance_ID()}, DEBUG);
 				} else {
@@ -1994,7 +1994,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 					if (DEBUG) System.out.println("D_Peer: storeAddresses i-adr orig ="+adr.toLongString());
 					Address pi = this.getPeerAddress(adr.peer_address_ID, i.addresses, adr);
 					if (pi == null) {
-						Application.db.delete(net.ddp2p.common.table.peer_address.TNAME,
+						Application.getDB().delete(net.ddp2p.common.table.peer_address.TNAME,
 								new String[]{net.ddp2p.common.table.peer_address.peer_address_ID},
 								new String[]{adr.peer_address_ID}, DEBUG);
 					} else {
@@ -2124,14 +2124,14 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			params[net.ddp2p.common.table.peer_my_data.COL_BROADCASTABLE] = component_preferences.my_broadcastable_obj;
 
 			if (this.component_preferences.my_ID == null) {
-				long id = Application.db.insert(net.ddp2p.common.table.peer_my_data.TNAME, 
+				long id = Application.getDB().insert(net.ddp2p.common.table.peer_my_data.TNAME, 
 						net.ddp2p.common.table.peer_my_data.fields_list_noID,
 						params, DEBUG);
 				this.component_preferences.my_ID = Util.getString(id);
 			} else {
 				params[net.ddp2p.common.table.peer_my_data.COL_ROW] = component_preferences.my_ID;
 
-				Application.db.update(net.ddp2p.common.table.peer_my_data.TNAME, 
+				Application.getDB().update(net.ddp2p.common.table.peer_my_data.TNAME, 
 						net.ddp2p.common.table.peer_my_data.fields_list_noID,
 						new String[]{net.ddp2p.common.table.peer_my_data.peer_my_data_ID},
 						params, DEBUG);
@@ -2149,7 +2149,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				if (DEBUG) System.out.println("D_Peer: storeServedOrgInferred org="+p_org_inf_orig);
 				D_PeerOrgInferred pi = this.getPeerOrgInferred(p_org_inf_orig.organization_ID);
 				if (pi == null) {
-					Application.db.delete(net.ddp2p.common.table.peer_org_inferred.TNAME,
+					Application.getDB().delete(net.ddp2p.common.table.peer_org_inferred.TNAME,
 							new String[]{net.ddp2p.common.table.peer_org_inferred.peer_ID, net.ddp2p.common.table.peer_org_inferred.organization_ID},
 							new String[]{getLIDstr(), Util.getString(p_org_inf_orig.organization_ID)}, DEBUG);
 				} else {
@@ -2180,7 +2180,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				if (DEBUG) System.out.println("D_Peer: storeServedOrgs org="+p_org_orig+" hash="+p_org_orig.getOrgGIDH());
 				D_PeerOrgs pi = this.getPeerOrg(p_org_orig.organization_ID, p_org_orig.getOrgGIDH());
 				if (pi == null) {
-					Application.db.delete(net.ddp2p.common.table.peer_org.TNAME,
+					Application.getDB().delete(net.ddp2p.common.table.peer_org.TNAME,
 							new String[]{net.ddp2p.common.table.peer_org.peer_ID, net.ddp2p.common.table.peer_org.organization_ID},
 							new String[]{getLIDstr(), Util.getString(p_org_orig.organization_ID)}, DEBUG);
 				} else {
@@ -2439,7 +2439,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	 */
 	public void forgetKeys() {
 		try {
-			Application.db.delete(net.ddp2p.common.table.key.TNAME, new String[]{net.ddp2p.common.table.key.public_key}, new String[]{this.getGID()}, DEBUG);
+			Application.getDB().delete(net.ddp2p.common.table.key.TNAME, new String[]{net.ddp2p.common.table.key.public_key}, new String[]{this.getGID()}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
@@ -2886,7 +2886,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if(DEBUG)System.out.println("DD_PeerAddress: getPeerGIDforID");
 		String sql = "SELECT "+net.ddp2p.common.table.peer.global_peer_ID+" FROM "+net.ddp2p.common.table.peer.TNAME+
 		" WHERE "+net.ddp2p.common.table.peer.peer_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{peerID}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{peerID}, DEBUG);
 		if(o.size()==0) return null;
 		String result = Util.getString(o.get(0).get(0));
 		if(DEBUG)System.out.println("DD_PeerAddress: getPeerGIDforID: result = "+result);
@@ -4836,15 +4836,15 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public void purge() {
 		String peerID = this.getLIDstr_keep_force();
     	try {
-			Application.db.deleteNoSync(net.ddp2p.common.table.peer_address.TNAME, new String[]{net.ddp2p.common.table.peer_address.peer_ID}, new String[]{peerID}, DEBUG);
-			Application.db.deleteNoSync(net.ddp2p.common.table.peer_instance.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{peerID}, DEBUG); // never loaded
-			Application.db.deleteNoSync(net.ddp2p.common.table.peer_my_data.TNAME, new String[]{net.ddp2p.common.table.peer_my_data.peer_ID}, new String[]{peerID}, DEBUG);
-			Application.db.deleteNoSync(net.ddp2p.common.table.org_distribution.TNAME, new String[]{net.ddp2p.common.table.org_distribution.peer_ID}, new String[]{peerID}, DEBUG);
-			Application.db.deleteNoSync(net.ddp2p.common.table.peer_org.TNAME, new String[]{net.ddp2p.common.table.peer_org.peer_ID}, new String[]{peerID}, DEBUG);
-			Application.db.deleteNoSync(net.ddp2p.common.table.peer_org_inferred.TNAME, new String[]{net.ddp2p.common.table.peer_org_inferred.peer_ID}, new String[]{peerID}, DEBUG);
-			Application.db.deleteNoSync(net.ddp2p.common.table.peer_plugin.TNAME, new String[]{net.ddp2p.common.table.peer_plugin.peer_ID}, new String[]{peerID}, DEBUG);
+			Application.getDB().deleteNoSync(net.ddp2p.common.table.peer_address.TNAME, new String[]{net.ddp2p.common.table.peer_address.peer_ID}, new String[]{peerID}, DEBUG);
+			Application.getDB().deleteNoSync(net.ddp2p.common.table.peer_instance.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{peerID}, DEBUG); // never loaded
+			Application.getDB().deleteNoSync(net.ddp2p.common.table.peer_my_data.TNAME, new String[]{net.ddp2p.common.table.peer_my_data.peer_ID}, new String[]{peerID}, DEBUG);
+			Application.getDB().deleteNoSync(net.ddp2p.common.table.org_distribution.TNAME, new String[]{net.ddp2p.common.table.org_distribution.peer_ID}, new String[]{peerID}, DEBUG);
+			Application.getDB().deleteNoSync(net.ddp2p.common.table.peer_org.TNAME, new String[]{net.ddp2p.common.table.peer_org.peer_ID}, new String[]{peerID}, DEBUG);
+			Application.getDB().deleteNoSync(net.ddp2p.common.table.peer_org_inferred.TNAME, new String[]{net.ddp2p.common.table.peer_org_inferred.peer_ID}, new String[]{peerID}, DEBUG);
+			Application.getDB().deleteNoSync(net.ddp2p.common.table.peer_plugin.TNAME, new String[]{net.ddp2p.common.table.peer_plugin.peer_ID}, new String[]{peerID}, DEBUG);
 			delete(D_Peer.getPeerByLID_NoKeep(getLIDstr(), true));
-			Application.db.sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.peer.TNAME, net.ddp2p.common.table.peer_my_data.TNAME, net.ddp2p.common.table.org_distribution.TNAME,
+			Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.peer.TNAME, net.ddp2p.common.table.peer_my_data.TNAME, net.ddp2p.common.table.org_distribution.TNAME,
 					net.ddp2p.common.table.peer_org.TNAME,net.ddp2p.common.table.peer_plugin.TNAME, net.ddp2p.common.table.peer.TNAME))); //table never loaded
     	} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
@@ -4866,7 +4866,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 //			Application.db.deleteNoSync(net.ddp2p.common.table.peer_my_data.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{pLID}, DEBUG); // never loaded
 //			Application.db.deleteNoSync(net.ddp2p.common.table.peer_org_inferred.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{pLID}, DEBUG); // never loaded
 //			Application.db.deleteNoSync(net.ddp2p.common.table.peer_org.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{pLID}, DEBUG); // never loaded
-			Application.db.deleteNoSync(net.ddp2p.common.table.peer.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{pLID}, DEBUG); // never loaded
+			Application.getDB().deleteNoSync(net.ddp2p.common.table.peer.TNAME, new String[]{net.ddp2p.common.table.peer.peer_ID}, new String[]{pLID}, DEBUG); // never loaded
 			D_Peer_Node.unregister_loaded(peer);
 			return true;
 		}
@@ -4892,7 +4892,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 					//" ORDER BY "+ table.peer.used+" DESC, "+table.peer.last_sync_date+" DESC; ";
 			String[] params = new String[0];
 			if (DEBUG) System.out.println("PeersModel:update: will select");
-			_peers = Application.db.select(sql, params, DEBUG);
+			_peers = Application.getDB().select(sql, params, DEBUG);
 			if (DEBUG) System.out.println("PeersModel:update: did select");
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -5062,7 +5062,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	}
 	public static long getPeersCount() throws P2PDDSQLException {
 		String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.peer.TNAME;
-		ArrayList<ArrayList<Object>> c = Application.db.select(sql, new String[]{}, UpdatePeersTable.DEBUG);
+		ArrayList<ArrayList<Object>> c = Application.getDB().select(sql, new String[]{}, UpdatePeersTable.DEBUG);
 		if (c.size() > 0) return Util.lval(c.get(0).get(0));
 		return 0;
 	}
@@ -5215,14 +5215,14 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 					
 					if (DEBUG) System.out.println("D_Peer: getPeersAdvertisement: max 2");
 					
-					p_data = Application.db.select(queryPeers,
+					p_data = Application.getDB().select(queryPeers,
 							new String[]{fromDate,maxDate},
 							DEBUG);
 				} else {
 					queryPeers = queryPeers_nomax1
 								+" LIMIT "+limitPeersMax+";";
 					if (DEBUG) System.out.println("D_Peer: getPeersAdvertisement: nomax 1");
-					p_data = Application.db.select(queryPeers,
+					p_data = Application.getDB().select(queryPeers,
 							new String[]{fromDate},
 							DEBUG);
 				}
@@ -5232,14 +5232,14 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 					queryPeers = queryPeers_max4
 							+" LIMIT "+limitPeersMax+";";
 					if (DEBUG) System.out.println("D_Peer: getPeersAdvertisement: max4");
-					p_data = Application.db.select(queryPeers,
+					p_data = Application.getDB().select(queryPeers,
 							new String[]{fromDate, maxDate, fromDate, maxDate},
 							DEBUG);
 				} else {
 					queryPeers = queryPeers_nomax2
 								+" LIMIT "+limitPeersMax+";";
 					if (DEBUG) System.out.println("D_Peer: getPeersAdvertisement: nomax2");
-					p_data = Application.db.select(queryPeers,
+					p_data = Application.getDB().select(queryPeers,
 							new String[]{fromDate,fromDate},
 							DEBUG);
 				}
@@ -5308,7 +5308,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				" ( ( m."+net.ddp2p.common.table.peer_my_data.broadcastable+" == 1 ) OR " +
 							" ( ( m."+net.ddp2p.common.table.peer_my_data.broadcastable+" ISNULL ) AND ( p."+net.ddp2p.common.table.peer.broadcastable+" == 1 ) ) ) " +
 				" AND ( p."+net.ddp2p.common.table.peer.arrival_date+" > ? ) GROUP BY mindate ORDER BY mindate ASC LIMIT "+(limitPeersLow+1)+";";
-					p_data = Application.db.select(queryPeers, new String[]{from_date}, DEBUG);
+					p_data = Application.getDB().select(queryPeers, new String[]{from_date}, DEBUG);
 			} else {
 				queryPeers = "SELECT p."+net.ddp2p.common.table.peer.arrival_date+" AS mindate, COUNT(*) AS c FROM "+net.ddp2p.common.table.peer.TNAME+" AS p " +
 					" LEFT JOIN "+net.ddp2p.common.table.peer_my_data.TNAME+" AS m ON (p."+net.ddp2p.common.table.peer.peer_ID+"==m."+net.ddp2p.common.table.peer_my_data.peer_ID+") " +
@@ -5316,7 +5316,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 							" ( ( m."+net.ddp2p.common.table.peer_my_data.broadcastable+" ISNULL ) AND ( p."+net.ddp2p.common.table.peer.broadcastable+" == 1 ) ) ) "+
 						" AND ( ( p."+net.ddp2p.common.table.peer.arrival_date+" > ? )  AND ( p."+net.ddp2p.common.table.peer.arrival_date+" <= ? ) ) " +
 						" GROUP BY mindate ORDER BY mindate ASC LIMIT "+(limitPeersLow+1)+";";
-				p_data = Application.db.select(queryPeers, new String[]{from_date, _maxDate}, DEBUG);
+				p_data = Application.getDB().select(queryPeers, new String[]{from_date, _maxDate}, DEBUG);
 			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -5347,7 +5347,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				" ( ( m."+net.ddp2p.common.table.peer_my_data.broadcastable+" ISNULL ) AND ( p."+net.ddp2p.common.table.peer.broadcastable+" == 1 ) ) )" +
 				" AND ( a."+net.ddp2p.common.table.peer_address.arrival_date+" > ? ) " +
 						" GROUP BY a."+net.ddp2p.common.table.peer_address.peer_ID+" ORDER BY mindate ASC LIMIT "+(limitPeersLow+1)+";";
-					p_addr = Application.db.select(queryPeers, new String[]{last_sync_date}, DEBUG);
+					p_addr = Application.getDB().select(queryPeers, new String[]{last_sync_date}, DEBUG);
 			} else {
 				queryPeers = "SELECT min(a."+net.ddp2p.common.table.peer_address.arrival_date+") AS mindate, COUNT(*) AS c,  max(a."+net.ddp2p.common.table.peer_address.arrival_date+") AS maxdate FROM "+net.ddp2p.common.table.peer.TNAME+" AS p " +
 						" LEFT JOIN "+net.ddp2p.common.table.peer_my_data.TNAME+" AS m ON (p."+net.ddp2p.common.table.peer.peer_ID+"==m."+net.ddp2p.common.table.peer_my_data.peer_ID+") " +
@@ -5357,7 +5357,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 							" ( ( m."+net.ddp2p.common.table.peer_my_data.broadcastable+" ISNULL ) AND ( p."+net.ddp2p.common.table.peer.broadcastable+" == 1 ) ) ) " +
 						" AND ( ( a."+net.ddp2p.common.table.peer_address.arrival_date+" > ? ) AND (a."+net.ddp2p.common.table.peer_address.arrival_date+" <= ?) ) " +
 						" GROUP BY a."+net.ddp2p.common.table.peer_address.peer_ID+" ORDER BY mindate ASC LIMIT "+(limitPeersLow+1)+";";		
-				p_addr = Application.db.select(queryPeers, new String[]{last_sync_date, _maxDate}, DEBUG);
+				p_addr = Application.getDB().select(queryPeers, new String[]{last_sync_date, _maxDate}, DEBUG);
 			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
@@ -5384,7 +5384,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			" LEFT JOIN "+net.ddp2p.common.table.peer.TNAME+" AS p ON(k."+net.ddp2p.common.table.key.public_key+"=p."+net.ddp2p.common.table.peer.global_peer_ID+")"+
 			" WHERE k."+net.ddp2p.common.table.key.secret_key+" IS NOT NULL ORDER BY p."+net.ddp2p.common.table.peer.name+" DESC;";
 		try {
-			c_available = Application.db.select(sql_gid, new String[]{}, DEBUG);
+			c_available = Application.getDB().select(sql_gid, new String[]{}, DEBUG);
 			for (ArrayList<Object> i: c_available) {
 				String creator_peer_id = Util.getString(i.get(3));
 				String hash = Util.getString(i.get(1));
@@ -5427,7 +5427,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 					" FROM peer JOIN peer_address ON peer.peer_ID=peer_address.peer_ID WHERE used = 1;",
 					new String[]{});
 			*/
-			ArrayList<ArrayList<Object>> _peers = Application.db.select(peers_scan_used_sql,
+			ArrayList<ArrayList<Object>> _peers = Application.getDB().select(peers_scan_used_sql,
 					new String[]{});
 			for (ArrayList<Object> p: _peers) {
 				String ID = Util.getString(p.get(0));
@@ -5498,7 +5498,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 					" GROUP BY p."+net.ddp2p.common.table.peer.peer_ID+" LIMIT "+limitPeersMax+";";
 		try {
 			ArrayList<ArrayList<Object>>p_data =
-				Application.db.select(queryPeers,
+				Application.getDB().select(queryPeers,
 						((maxDate!=null)?(new String[]{last_sync_date, maxDate, last_sync_date, maxDate}):new String[]{last_sync_date,last_sync_date}),
 						DEBUG);
 			
@@ -5942,7 +5942,7 @@ class D_Peer_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 								SaverThreadsConstants.SAVER_SLEEP_WAITING_PEER_MSEC;
 					wait(timeout);
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 			}
 		}

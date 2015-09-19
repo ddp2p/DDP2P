@@ -1,3 +1,22 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2015 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.population;
 
 import static net.ddp2p.common.util.Util.__;
@@ -28,7 +47,7 @@ public class ConstituentsIDNode extends ConstituentsBranch {
                                 " from "+net.ddp2p.common.table.witness.TNAME+" as w " +
                                 " where w."+net.ddp2p.common.table.witness.target_ID+" = ? " +
                                 " GROUP BY w."+net.ddp2p.common.table.witness.sense_y_n+"; ";
-                identities = Application.db.select(sql, new String[]{getConstituent().getC_LID()+""});
+                identities = Application.getDB().select(sql, new String[]{getConstituent().getC_LID()+""});
                 getConstituent().witness_against = getConstituent().witness_for = 0;
                 for (int k = 0; k < identities.size(); k ++) {
                         int wsense = Util.ival(identities.get(k).get(0), D_Witness.UNKNOWN);
@@ -43,7 +62,7 @@ public class ConstituentsIDNode extends ConstituentsBranch {
                 " where w."+net.ddp2p.common.table.witness.target_ID+" = ? and w."+net.ddp2p.common.table.witness.source_ID+" = ? " +
                 " ; ";
                 long myself = model.getConstituentIDMyself();
-                identities = Application.db.select(sql, 
+                identities = Application.getDB().select(sql, 
                 		new String[]{getConstituent().getC_LID()+"", myself+""});
                 getConstituent().witnessed_by_me=D_Witness.UNSPECIFIED;
                 if (identities.size() > 1) Application_GUI.warning(__("For constituent:")+" "+getConstituent().getC_LID(), __("Multiple witness from me"));
@@ -117,10 +136,10 @@ public class ConstituentsIDNode extends ConstituentsBranch {
 			if(DEBUG) System.err.println("ConstituentsIDNodeModel: toString null const");
 			return __("Unknown!");
 		}
-		if ((getConstituent().given_name == null) || 
-				(getConstituent().given_name.equals("")))
-			result = getConstituent().surname;
-		else result = getConstituent().surname+", "+getConstituent().given_name;    
+		if ((getConstituent().getGivenName() == null) || 
+				(getConstituent().getGivenName().equals("")))
+			result = getConstituent().getSurname();
+		else result = getConstituent().getSurname()+", "+getConstituent().getGivenName();    
 		return result+ " "+getConstituent().email+ " ::"+ getConstituent().getSlogan();
     }
     public void populate() {

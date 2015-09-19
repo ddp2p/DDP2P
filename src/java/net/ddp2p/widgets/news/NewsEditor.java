@@ -324,7 +324,7 @@ public class NewsEditor  extends JPanel  implements NewsListener, DocumentListen
 			" FROM "+net.ddp2p.common.table.news.TNAME+
 			" WHERE "+net.ddp2p.common.table.news.news_ID+"=?;";
 		try {
-			ArrayList<ArrayList<Object>> j = Application.db.select(sql, new String[]{d_news.news_ID}, DEBUG);
+			ArrayList<ArrayList<Object>> j = Application.getDB().select(sql, new String[]{d_news.news_ID}, DEBUG);
 			combo_answerTo = new NewsGIDItem[j.size()];
 			int k=0;
 			for (ArrayList<Object> _j :j){

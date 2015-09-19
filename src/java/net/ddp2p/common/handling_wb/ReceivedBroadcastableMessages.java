@@ -259,7 +259,7 @@ public class ReceivedBroadcastableMessages {
 		String sql = "select "+net.ddp2p.common.table.organization.global_organization_ID+
 				" from "+net.ddp2p.common.table.organization.TNAME+" WHERE "+net.ddp2p.common.table.organization.organization_ID+
 				"=?;";
-		ArrayList<ArrayList<Object>> org = Application.db.select(sql, new String[]{Util.getStringID(org_id)});
+		ArrayList<ArrayList<Object>> org = Application.getDB().select(sql, new String[]{Util.getStringID(org_id)});
 		if(org.size()==0) return null;
 		String GOid = Util.getString(org.get(0).get(0));
 		return GOid;
@@ -388,7 +388,7 @@ public class ReceivedBroadcastableMessages {
 		String sql = "select "+net.ddp2p.common.table.organization.organization_ID+
 				" from "+net.ddp2p.common.table.organization.TNAME+" WHERE "+net.ddp2p.common.table.organization.global_organization_ID+
 				"=?;";
-		orgs = Application.db.select(sql, new String[]{ORG.getGID()});
+		orgs = Application.getDB().select(sql, new String[]{ORG.getGID()});
 
 		if(orgs.isEmpty()) 
 		{
@@ -488,7 +488,7 @@ public class ReceivedBroadcastableMessages {
 		String sql = "select "+net.ddp2p.common.table.peer.peer_ID+
 				" from "+net.ddp2p.common.table.peer.TNAME+" WHERE "+net.ddp2p.common.table.peer.global_peer_ID+
 				"=?;";
-		peers = Application.db.select(sql, new String[]{creator.component_basic_data.globalID});
+		peers = Application.getDB().select(sql, new String[]{creator.component_basic_data.globalID});
 		if(peers.isEmpty()) 
 		{
 			if(DEBUG)System.out.println("Its a new Peer");

@@ -202,7 +202,7 @@ class D_Witness extends ASNObj implements Summary {
 			//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=s."+table.constituent.organization_ID+") "+
 			" WHERE w."+net.ddp2p.common.table.witness.witness_ID+"=?;"
 			;
-		ArrayList<ArrayList<Object>> w = Application.db.select(sql, new String[]{Util.getStringID(witnessID)}, DEBUG);
+		ArrayList<ArrayList<Object>> w = Application.getDB().select(sql, new String[]{Util.getStringID(witnessID)}, DEBUG);
 		if(w.size()>0) init(w.get(0));
 		if(DEBUG) System.out.println("D_Witness:D_Witness: Done");
 	}
@@ -225,7 +225,7 @@ class D_Witness extends ASNObj implements Summary {
 			//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=s."+table.constituent.organization_ID+") "+
 			" WHERE w."+net.ddp2p.common.table.witness.global_witness_ID+"=?;"
 			;
-		ArrayList<ArrayList<Object>> w = Application.db.select(sql, new String[]{witnessGID}, DEBUG);
+		ArrayList<ArrayList<Object>> w = Application.getDB().select(sql, new String[]{witnessGID}, DEBUG);
 		if (w.size() > 0) init(w.get(0));
 		else throw new D_NoDataException("absent witnessGID:"+witnessGID);
 		if(DEBUG) System.out.println("D_Witness:D_Witness: Done: "+this);
@@ -275,7 +275,7 @@ class D_Witness extends ASNObj implements Summary {
 		ArrayList<ArrayList<Object>> w = null;
 		D_Witness result; 
 		try {
-			w = Application.db.select(sqlWNLID, new String[]{Util.getStringID(_witnessLID), Util.getStringID(_targetNeighLID)}, DEBUG);
+			w = Application.getDB().select(sqlWNLID, new String[]{Util.getStringID(_witnessLID), Util.getStringID(_targetNeighLID)}, DEBUG);
 			if (w.size() > 0) result = new D_Witness(w.get(0));
 			else return null; //throw new D_NoDataException("absent meLID:"+_witnessLID);
 			if (DEBUG) System.out.println("D_Witness: getWitnessForNeighborhoodLID: Done: "+result);
@@ -304,7 +304,7 @@ class D_Witness extends ASNObj implements Summary {
 		ArrayList<ArrayList<Object>> w = null;
 		D_Witness[] result; 
 		try {
-			w = Application.db.select(sqlAWNLID+((limit > 0)?(" LIMIT "+limit+";"):";"), new String[]{Util.getStringID(_targetNeigLID)}, DEBUG);
+			w = Application.getDB().select(sqlAWNLID+((limit > 0)?(" LIMIT "+limit+";"):";"), new String[]{Util.getStringID(_targetNeigLID)}, DEBUG);
 			result = new D_Witness[w.size()];
 			for (int i = 0; i < w.size(); i++) result[i] = new D_Witness(w.get(i));
 			//else return new D_Witness[0]; //throw new D_NoDataException("absent meLID:"+_witnessLID);
@@ -338,7 +338,7 @@ class D_Witness extends ASNObj implements Summary {
 		ArrayList<ArrayList<Object>> w = null;
 		D_Witness result; 
 		try {
-			w = Application.db.select(sqlWCLID, new String[]{Util.getStringID(_witnessLID), Util.getStringID(_targetConsLID)}, DEBUG);
+			w = Application.getDB().select(sqlWCLID, new String[]{Util.getStringID(_witnessLID), Util.getStringID(_targetConsLID)}, DEBUG);
 			if (w.size() > 0) result = new D_Witness(w.get(0));
 			else return null; //throw new D_NoDataException("absent meLID:"+_witnessLID);
 			if (DEBUG) System.out.println("D_Witness: getWitnessForConstituentLID: Done: "+result);
@@ -367,7 +367,7 @@ class D_Witness extends ASNObj implements Summary {
 		ArrayList<ArrayList<Object>> w = null;
 		D_Witness[] result; 
 		try {
-			w = Application.db.select(sqlAWCLID+((limit > 0)?(" LIMIT "+limit+";"):";"), new String[]{Util.getStringID(_targetConsLID)}, DEBUG);
+			w = Application.getDB().select(sqlAWCLID+((limit > 0)?(" LIMIT "+limit+";"):";"), new String[]{Util.getStringID(_targetConsLID)}, DEBUG);
 			result = new D_Witness[w.size()];
 			for (int i=0; i < w.size(); i++) result[i] = new D_Witness(w.get(i));
 			//else return new D_Witness[0]; //throw new D_NoDataException("absent meLID:"+_witnessLID);
@@ -407,7 +407,7 @@ class D_Witness extends ASNObj implements Summary {
 		ArrayList<ArrayList<Object>> w = null;
 		D_Witness result; 
 		try {
-			w = Application.db.select(sqlSWCLID, new String[]{supportString, Util.getStringID(_targetConsLID)}, DEBUG);
+			w = Application.getDB().select(sqlSWCLID, new String[]{supportString, Util.getStringID(_targetConsLID)}, DEBUG);
 			if (w.size() > 0) result = new D_Witness(w.get(0));
 			else return null; //throw new D_NoDataException("absent meLID:" + _targetConsLID);
 			if (DEBUG) System.out.println("D_Witness: getSupportWitnessForConstituent: Done: "+result);
@@ -446,7 +446,7 @@ class D_Witness extends ASNObj implements Summary {
 		ArrayList<ArrayList<Object>> w = null;
 		D_Witness result; 
 		try {
-			w = Application.db.select(sqlSWNLID, new String[]{supportString, Util.getStringID(_targetNeigLID)}, DEBUG);
+			w = Application.getDB().select(sqlSWNLID, new String[]{supportString, Util.getStringID(_targetNeigLID)}, DEBUG);
 			if (w.size() > 0) result = new D_Witness(w.get(0));
 			else return null;//throw new D_NoDataException("absent meLID:" + _targetNeigLID);
 			if (DEBUG) System.out.println("D_Witness: getSupportWitnessForNeig: Done: "+result);
@@ -800,7 +800,7 @@ class D_Witness extends ASNObj implements Summary {
 				"SELECT "+net.ddp2p.common.table.witness.creation_date+
 				" FROM "+net.ddp2p.common.table.witness.TNAME+
 				" WHERE "+net.ddp2p.common.table.witness.witness_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{Util.getStringID(witnessID)}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{Util.getStringID(witnessID)}, DEBUG);
 		if(o.size()==0) return null;
 		return Util.getString(o.get(0).get(0));
 	}
@@ -958,7 +958,7 @@ class D_Witness extends ASNObj implements Summary {
 				" WHERE "+net.ddp2p.common.table.witness.source_ID+"=? AND "+net.ddp2p.common.table.witness.neighborhood_ID+"=?;";			
 			params = new String[]{Util.getStringID(witnessing_constituentID), Util.getStringID(witnessed_neighborhoodID)};
 		}
-		ArrayList<ArrayList<Object>> __e = Application.db.select(sql, params, DEBUG);
+		ArrayList<ArrayList<Object>> __e = Application.getDB().select(sql, params, DEBUG);
 		long result;
 		if ((__e.size() >= 1) && (this.witnessID <= 0)) {
 			//Util.printCallPath("Inconsistent Presence of witnessing: "+sql+" -> "+this);
@@ -975,7 +975,7 @@ class D_Witness extends ASNObj implements Summary {
 		if (witnessID <= 0) { //||(e.size()==0)) {
 			if (DEBUG) System.out.println("D_Witness:storeVerified:inserting");
 			try {
-				result = witnessID =Application.db.insert(sync, net.ddp2p.common.table.witness.TNAME, 
+				result = witnessID =Application.getDB().insert(sync, net.ddp2p.common.table.witness.TNAME, 
 					new String[]{
 					net.ddp2p.common.table.witness.global_witness_ID,
 					net.ddp2p.common.table.witness.hash_witness_alg,
@@ -1026,7 +1026,7 @@ class D_Witness extends ASNObj implements Summary {
 			String _creation_date=Encoder.getGeneralizedTime(creation_date);
 			if ((old_date == null) || _creation_date.compareTo(old_date) > 0) {
 				if(DEBUG) System.out.println("D_Witness:storeVerified:updating");
-				Application.db.update(sync, net.ddp2p.common.table.witness.TNAME, 
+				Application.getDB().update(sync, net.ddp2p.common.table.witness.TNAME, 
 					new String[]{
 					net.ddp2p.common.table.witness.global_witness_ID,
 					net.ddp2p.common.table.witness.hash_witness_alg,
@@ -1110,7 +1110,7 @@ class D_Witness extends ASNObj implements Summary {
 				"SELECT "+net.ddp2p.common.table.witness.witness_ID+","+net.ddp2p.common.table.witness.creation_date+
 				" FROM "+net.ddp2p.common.table.witness.TNAME+
 				" WHERE "+net.ddp2p.common.table.witness.global_witness_ID+"=?;";
-		ArrayList<ArrayList<Object>> o = Application.db.select(sql, new String[]{global_witness_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> o = Application.getDB().select(sql, new String[]{global_witness_ID}, DEBUG);
 		if(o.size()==0) return -1;
 		if((old_date!=null)&&(old_date.length>0)) old_date[0] = Util.getString(o.get(0).get(1));
 		return Util.lval(o.get(0).get(0), -1);
@@ -1157,7 +1157,7 @@ class D_Witness extends ASNObj implements Summary {
 			//" AND "+table.constituent.organization_ID+"=? "+
 			//" AND ( "+table.constituent.sign + " IS NOT NULL " +
 			//" OR "+table.constituent.blocked+" = '1');";
-		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{gID}, DEBUG||DBG);
+		ArrayList<ArrayList<Object>> a = Application.getDB().select(sql, new String[]{gID}, DEBUG||DBG);
 		boolean result = true;
 		if(a.size()==0) result = false;
 		if(!result) r = 0;
@@ -1180,7 +1180,7 @@ class D_Witness extends ASNObj implements Summary {
 						System.out.println("Solution: "+x);
 				}
 			*/
-			Application.db = new DBInterface(Application.DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 			
 			/*
 			D_Witness w = new D_Witness();
@@ -1251,11 +1251,11 @@ class D_Witness extends ASNObj implements Summary {
     		ArrayList<ArrayList<Object>> sel;
     		String sql="select "+net.ddp2p.common.table.witness.witness_ID+" from "+net.ddp2p.common.table.witness.TNAME+" where " +
     		net.ddp2p.common.table.witness.source_ID+"=? and "+net.ddp2p.common.table.witness.target_ID+"=?;";
-    		sel = Application.db.select(sql, 
+    		sel = Application.getDB().select(sql, 
     				new String[]{myself.getLIDstr(),
     				c.getLIDstr()});
     		if(sel.size()>0){
-    			Application.db.delete(net.ddp2p.common.table.witness.TNAME,
+    			Application.getDB().delete(net.ddp2p.common.table.witness.TNAME,
     					new String[]{net.ddp2p.common.table.witness.source_ID,net.ddp2p.common.table.witness.target_ID}, 
     					new String[]{myself_LID+"",
     					c.getLIDstr()});
@@ -1321,11 +1321,11 @@ class D_Witness extends ASNObj implements Summary {
 			if(args.length>3) DEBUG = Util.stringInt2bool(args[3], false);
 			
 			
-			Application.db = new DBInterface(database);
+			Application.setDB(new DBInterface(database));
 			
 			ArrayList<ArrayList<Object>> l;
 			if(id<=0){
-				l = Application.db.select(
+				l = Application.getDB().select(
 						"SELECT "+net.ddp2p.common.table.witness.witness_ID+
 						" FROM "+net.ddp2p.common.table.witness.TNAME, new String[]{}, DEBUG);
 				for(ArrayList<Object> a: l){

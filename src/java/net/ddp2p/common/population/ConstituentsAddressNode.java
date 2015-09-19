@@ -1,3 +1,22 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2015 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.population;
 
 import static net.ddp2p.common.util.Util.__;
@@ -375,7 +394,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
      		
     		if(DEBUG) System.err.print("F: populateIDs will select");
     		
-    		identities = Application.db.select(sql, param, DEBUG);
+    		identities = Application.getDB().select(sql, param, DEBUG);
     		
     		
     		String sql_additional=
@@ -394,7 +413,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     				net.ddp2p.common.table.constituent.neighborhood_ID+" = ?;";
     		//// using this instead of similar commented lines above
     		identities.addAll(
-    				Application.db.select(sql_additional, new String[]{""+getNeighborhoodData().neighborhoodID}));
+    				Application.getDB().select(sql_additional, new String[]{""+getNeighborhoodData().neighborhoodID}));
     		if(DEBUG) System.err.print("F: populateIDs selected");
     	}catch(Exception e) {
     		//JOptionPane.showMessageDialog(null,"populate: "+e.toString());
@@ -423,11 +442,14 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
        		boolean external = "1".equals(Util.getString(identities_i.get(3)));
        		//boolean external = Util.ival(identities.get(i).get(3),-1);
        		long submitterID = Util.lval(identities_i.get(5),-1);
-    		ConstituentData data = new ConstituentData();
+       		
+       		D_Constituent c = null;//D_Constituent.getConstByLID(constituentID, false, false);
+    		ConstituentData data = new ConstituentData(c);
+    		
     		data.setC_GID(Util.sval(identities_i.get(4),null));
     		data.setC_LID(Integer.parseInt(constituentID));
-    		data.given_name = forename;
-    		data.surname = name;
+    		data.setGivenName(forename);
+    		data.setSurname(name);
     		//data.inserted_by_me=(model.constituentID == external);
     		data.inserted_by_me=(model.getConstituentIDMyself() == submitterID);
     		data.external = external;
@@ -709,7 +731,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
        	" AND fv."+net.ddp2p.common.table.field_value.field_extra_ID+" > ? AND fv."+net.ddp2p.common.table.field_value.fieldID_above+" = ? AND f."+net.ddp2p.common.table.field_value.value+" = ? AND f."+net.ddp2p.common.table.field_value.field_extra_ID+" = ? "+
        	where + 
        	" "+group+";";
-       	identities = Application.db.select(sql, param);
+       	identities = Application.getDB().select(sql, param);
        	return identities;
     }
 

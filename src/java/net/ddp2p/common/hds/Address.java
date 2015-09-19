@@ -419,7 +419,7 @@ public class Address extends ASNObj {
 			} else {
 				try {
 					System.out.println("Address:init: should not come here!");
-					ArrayList<ArrayList<Object>> inst = Application.db.select(
+					ArrayList<ArrayList<Object>> inst = Application.getDB().select(
 							"SELECT "+net.ddp2p.common.table.peer_instance.peer_instance+
 							" FROM "+net.ddp2p.common.table.peer_instance.TNAME+
 							" WHERE "+net.ddp2p.common.table.peer_instance.peer_instance_ID+"=?;",
@@ -469,11 +469,11 @@ public class Address extends ASNObj {
 		params[net.ddp2p.common.table.peer_address.PA_UDP_PORT] = ""+this.udp_port;
 		params[net.ddp2p.common.table.peer_address.PA_ADDRESS] = address;
 		if (peer_address_ID == null) {
-			peer_address_ID = ""+Application.db.insert(net.ddp2p.common.table.peer_address.TNAME, 
+			peer_address_ID = ""+Application.getDB().insert(net.ddp2p.common.table.peer_address.TNAME, 
 					net.ddp2p.common.table.peer_address.fields_noID_list, params, DEBUG);
 		} else {
 			params[net.ddp2p.common.table.peer_address.PA_PEER_ADDR_ID] = peer_address_ID;
-			Application.db.update(net.ddp2p.common.table.peer_address.TNAME, 
+			Application.getDB().update(net.ddp2p.common.table.peer_address.TNAME, 
 					net.ddp2p.common.table.peer_address.fields_noID_list, 
 					new String[]{net.ddp2p.common.table.peer_address.peer_address_ID},
 					params, DEBUG);

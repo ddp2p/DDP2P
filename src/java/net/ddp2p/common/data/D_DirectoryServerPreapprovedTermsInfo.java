@@ -120,7 +120,7 @@ public class D_DirectoryServerPreapprovedTermsInfo extends net.ddp2p.ASN1.ASNObj
 		params[net.ddp2p.common.table.directory_forwarding_terms.F_ID] = Util.getString(this.term_ID);
 
 		if(cmd.equals("update"))
-			Application.db.updateNoSyncNULL(
+			Application.getDB().updateNoSyncNULL(
 					net.ddp2p.common.table.directory_forwarding_terms.TNAME, 
 					net.ddp2p.common.table.directory_forwarding_terms._fields_terms_no_ID,
 					new String[]{net.ddp2p.common.table.directory_forwarding_terms.term_ID},
@@ -132,7 +132,7 @@ public class D_DirectoryServerPreapprovedTermsInfo extends net.ddp2p.ASN1.ASNObj
 			System.arraycopy(params,0,params2,0,params2.length);
 			//System.out.println("params2[last]: "+ params2[table.updates.F_FIELDS_NOID-1]);
 			this.term_ID = 
-					Application.db.insertNoSync(
+					Application.getDB().insertNoSync(
 							net.ddp2p.common.table.directory_forwarding_terms.TNAME,
 							net.ddp2p.common.table.directory_forwarding_terms._fields_terms_no_ID,
 							params2, _DEBUG);

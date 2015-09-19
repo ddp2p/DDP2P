@@ -58,7 +58,7 @@ public class HistoryTable extends JTable implements MouseListener{
 	private DirPanel dirPanel;
 
 	public HistoryTable(DirPanel dirPanel) {
-		super(new HistoryModel(Application.db, dirPanel));
+		super(new HistoryModel(Application.getDB(), dirPanel));
 		this.dirPanel = dirPanel;
 		init();
 	}

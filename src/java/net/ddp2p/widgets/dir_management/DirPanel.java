@@ -75,7 +75,7 @@ public class DirPanel extends JPanel implements  ActionListener{
     	JPanel panel = new JPanel(new BorderLayout());
     	panel.add(getHeaderPanel("Directory Management"), BorderLayout.NORTH);
     	DirTable dirTable = null;
-	    dirTable = new DirTable(Application.db_dir, this);
+	    dirTable = new DirTable(Application.getDB_Dir(), this);
 	    JScrollPane dirTableScroll;
 	    dirTableScroll = dirTable.getScrollPane();
 	    panel.add(dirTableScroll);
@@ -92,7 +92,7 @@ public class DirPanel extends JPanel implements  ActionListener{
     	peerStatus.addActionListener(this);
     	//panel.add(getHeaderPanel("Peer Status"), BorderLayout.NORTH);
     	panel.add(peerStatus, BorderLayout.NORTH);
-	    peerStatusTable = new PeerStatusTable(Application.db_dir, this);
+	    peerStatusTable = new PeerStatusTable(Application.getDB_Dir(), this);
 	    JScrollPane peerStatusTableScroll;
     	peerStatusTableScroll = peerStatusTable.getScrollPane();
 	    panel.add(peerStatusTableScroll); 
@@ -103,7 +103,7 @@ public class DirPanel extends JPanel implements  ActionListener{
     	JPanel panel = new JPanel(new BorderLayout());
     	panel.add(getHeaderPanel("Connected Peers"), BorderLayout.NORTH);
     		
-	    connPeerTable = new ConnPeerTable(Application.db_dir, this);
+	    connPeerTable = new ConnPeerTable(Application.getDB_Dir(), this);
 	    JScrollPane connPeerTableScroll;
     	connPeerTableScroll = connPeerTable.getScrollPane();
 	    panel.add(connPeerTableScroll); 
@@ -114,7 +114,7 @@ public class DirPanel extends JPanel implements  ActionListener{
     	JPanel panel = new JPanel(new BorderLayout());
     	panel.add(getHeaderPanel("History of Messages"), BorderLayout.NORTH);
     		
-	    historyTable = new HistoryTable(Application.db_dir, this);
+	    historyTable = new HistoryTable(Application.getDB_Dir(), this);
 	    JScrollPane historyTableScroll;
     	historyTableScroll = historyTable.getScrollPane();
 	    panel.add(historyTableScroll); 
@@ -189,9 +189,9 @@ public class DirPanel extends JPanel implements  ActionListener{
 	public JPanel peerStatusTablePanel;
 	public JPanel historyTablePanel;
 	public void init(){
-		if(Application.db_dir == null){
+		if(Application.getDB_Dir() == null){
     		Application.DB_PATH = new File(Application.DELIBERATION_FILE).getParent();
-    		Application.db_dir = DD.load_Directory_DB(Application.DB_PATH);
+    		Application.setDB_Dir(DD.load_Directory_DB(Application.DB_PATH));
 		}
     	add(getDirTablePanel());
     	JPanel twoPanelsInRow1 = new JPanel(new GridLayout(1,2));
@@ -240,7 +240,7 @@ public class DirPanel extends JPanel implements  ActionListener{
     	public static void main(String args[]) {
 		JFrame frame = new JFrame();
 		try {
-			Application.db = new DBInterface(Application.DEFAULT_DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DEFAULT_DELIBERATION_FILE));
 			DirPanel dirPanel = new DirPanel();
 			frame.setContentPane(dirPanel);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

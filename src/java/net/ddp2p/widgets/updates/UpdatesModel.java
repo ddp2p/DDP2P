@@ -256,11 +256,11 @@ public class UpdatesModel extends AbstractTableModel implements TableModel, DBLi
 	public static void main(String args[]) {
 		JFrame frame = new JFrame();
 		try {
-			Application.db = new DBInterface(Application.DEFAULT_DELIBERATION_FILE);
+			Application.setDB(new DBInterface(Application.DEFAULT_DELIBERATION_FILE));
 			JPanel test = new JPanel();
 			//frame.add(test);
 			test.setLayout(new BorderLayout());
-			UpdatesTable t = new UpdatesTable(Application.db);
+			UpdatesTable t = new UpdatesTable(Application.getDB());
 			//t.getColumnModel().getColumn(TABLE_COL_QOT_ROT).setCellRenderer(new ComboBoxRenderer());
 			test.add(t);
 			//PeersTest newContentPane = new PeersTest(db);

@@ -21,6 +21,7 @@ package net.ddp2p.common.config;
 import static net.ddp2p.common.util.Util.__;
 
 import java.io.File;
+import java.util.Hashtable;
 import java.util.regex.Pattern;
 
 import net.ddp2p.common.hds.DirectoryServer;
@@ -34,29 +35,122 @@ import net.ddp2p.common.util.Util;
 import net.ddp2p.common.wireless.BroadcastClient;
 import net.ddp2p.common.wireless.BroadcastServer;
 
-public class Application{
+public class Application {
+	// move to DD.java
 	public static String USERNAME = System.getProperty("user.name");
 	public static String DIRECTORY_FILE = "directory-app.db";
 	public static final String DEFAULT_DELIBERATION_FILE = "deliberation-app.db";
 	public static String DELIBERATION_FILE = DEFAULT_DELIBERATION_FILE;
-	//public static String CURRENT_DELIBERATION_FILE = null;
-	static public DBInterface db;
-	static public DBInterface db_dir;
-	static public DirectoryServer g_DirectoryServer;
-	static public Server g_TCPServer;
-	static public UDPServer g_UDPServer; //have to unify with the one in DD
-	static public NATServer g_NATServer;
-	static public BroadcastServer g_BroadcastServer = null; // reference to the unique BroadcastServer
-	static public BroadcastClient g_BroadcastClient = null; // reference to the unique BroadcastClient
-	static public IClient g_PollingStreamingClient;
-	static public Directories_View directory_status=null;
+	
+	// This has to be initialized during registerThread() calls
+	static public Hashtable<Thread,Integer> installation_per_thread = new Hashtable<Thread,Integer>();
+	static DDP2P_Peer_Instalation installations[] = {new DDP2P_Peer_Instalation()};
+	final static int S_DEFAULT_INSTALLATION = 0;	
+	
+	static public Directories_View directory_status = null;
 	static public Peers_View peers=null;
-	//public static String my_global_peer_ID;
-	//public static String my_peer_name;
-	//public static String my_peer_slogan;
 
+	public static void registerThreadInstallation(int installation) {
+		Application.installation_per_thread.put(Thread.currentThread(), new Integer(installation));
+	}
+	public static void unregisterThreadInstallation() {
+		Application.installation_per_thread.remove(Thread.currentThread());
+	}
+	public static int getCurrentInstallationFromThread() {
+		int installation;
+		Integer i = Application.installation_per_thread.get(Thread.currentThread());
+		if (i == null) installation = Application.S_DEFAULT_INSTALLATION;
+		else installation = i.intValue();
+		return installation;
+	}
+	public static DBInterface getDB(int crt_instalation) {
+		if (crt_instalation >= installations.length) throw new RuntimeException();
+		return installations[crt_instalation].getDB();
+	}
+	public static DBInterface getDB() {
+		return installations[S_DEFAULT_INSTALLATION].getDB();
+	}
+	public static void setDB(DBInterface db) {
+		installations[S_DEFAULT_INSTALLATION].setDB(db);
+	}
+	public static DBInterface getDB_Dir() {
+		return installations[S_DEFAULT_INSTALLATION].getDB_Dir();
+	}
+	public static void setDB_Dir(DBInterface db_dir) {
+		installations[S_DEFAULT_INSTALLATION].setDB_Dir(db_dir);
+	}
+	public static DirectoryServer getG_DirectoryServer(int crt_instalation) {
+		if (crt_instalation >= installations.length) throw new RuntimeException();
+		return installations[crt_instalation].g_DirectoryServer;
+	}
+	public static DirectoryServer getG_DirectoryServer() {
+		return installations[S_DEFAULT_INSTALLATION].g_DirectoryServer;
+	}
+	public static void setG_DirectoryServer(DirectoryServer g_DirectoryServer) {
+		installations[S_DEFAULT_INSTALLATION].g_DirectoryServer = g_DirectoryServer;
+	}
+	public static Server getG_TCPServer(int crt_instalation) {
+		if (crt_instalation >= installations.length) throw new RuntimeException();
+		return installations[crt_instalation].g_TCPServer;
+	}
+	public static Server getG_TCPServer() {
+		return installations[S_DEFAULT_INSTALLATION].g_TCPServer;
+	}
+	public static void setG_TCPServer(Server g_TCPServer) {
+		installations[S_DEFAULT_INSTALLATION].g_TCPServer = g_TCPServer;
+	}
+	public static UDPServer getG_UDPServer(int crt_instalation) {
+		if (crt_instalation >= installations.length) throw new RuntimeException();
+		return installations[crt_instalation].g_UDPServer;
+	}
+	public static UDPServer getG_UDPServer() {
+		return installations[S_DEFAULT_INSTALLATION].g_UDPServer;
+	}
+	public static void setG_UDPServer(UDPServer g_UDPServer) {
+		installations[S_DEFAULT_INSTALLATION].g_UDPServer = g_UDPServer;
+	}
+	public static NATServer getG_NATServer(int crt_instalation) {
+		if (crt_instalation >= installations.length) throw new RuntimeException();
+		return installations[crt_instalation].g_NATServer;
+	}
+	public static NATServer getG_NATServer() {
+		return installations[S_DEFAULT_INSTALLATION].g_NATServer;
+	}
+	public static void setG_NATServer(NATServer g_NATServer) {
+		installations[S_DEFAULT_INSTALLATION].g_NATServer = g_NATServer;
+	}
+	public static BroadcastServer getG_BroadcastServer(int crt_instalation) {
+		if (crt_instalation >= installations.length) throw new RuntimeException();
+		return installations[crt_instalation].g_BroadcastServer;
+	}
+	public static BroadcastServer getG_BroadcastServer() {
+		return installations[S_DEFAULT_INSTALLATION].g_BroadcastServer;
+	}
+	public static void setG_BroadcastServer(BroadcastServer g_BroadcastServer) {
+		installations[S_DEFAULT_INSTALLATION].g_BroadcastServer = g_BroadcastServer;
+	}
+	public static BroadcastClient getG_BroadcastClient(int crt_instalation) {
+		if (crt_instalation >= installations.length) throw new RuntimeException();
+		return installations[crt_instalation].g_BroadcastClient;
+	}
+	public static BroadcastClient getG_BroadcastClient() {
+		return installations[S_DEFAULT_INSTALLATION].g_BroadcastClient;
+	}
+	public static void setG_BroadcastClient(BroadcastClient g_BroadcastClient) {
+		installations[S_DEFAULT_INSTALLATION].g_BroadcastClient = g_BroadcastClient;
+	}
+	public static IClient getG_PollingStreamingClient(int crt_instalation) {
+		if (crt_instalation >= installations.length) throw new RuntimeException();
+		return installations[S_DEFAULT_INSTALLATION].g_PollingStreamingClient;
+	}
+	public static IClient getG_PollingStreamingClient() {
+		return installations[S_DEFAULT_INSTALLATION].g_PollingStreamingClient;
+	}
+	public static void setG_PollingStreamingClient(
+			IClient g_PollingStreamingClient) {
+		Application.installations[S_DEFAULT_INSTALLATION].g_PollingStreamingClient = g_PollingStreamingClient;
+	}
 
-	//public static WLAN_widget wlan=null;
 	/**
 	 * ActionListener
 	 */

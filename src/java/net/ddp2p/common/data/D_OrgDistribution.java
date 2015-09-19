@@ -91,7 +91,7 @@ public class D_OrgDistribution{
 		ArrayList<D_OrgDistribution> res = new ArrayList<D_OrgDistribution>();
 		if (peer == null) return res;
 
-		ArrayList<ArrayList<Object>> l = Application.db.select(sql_peerID, new String[]{peer_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> l = Application.getDB().select(sql_peerID, new String[]{peer_ID}, DEBUG);
 		if ((l!=null)&&(l.size()!=0)){
 			for(int i=0; i<l.size(); i++){
 				ArrayList<Object> o = l.get(i);
@@ -130,10 +130,10 @@ public class D_OrgDistribution{
 	private static ArrayList<D_OrgDistribution> load_Org_Distribution_byOrg(String org_ID) throws P2PDDSQLException{
 		if (listener == null) {
 			listener = new OrgDistributionListener();
-			Application.db.addListener(listener, new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.peer.TNAME,net.ddp2p.common.table.peer_my_data.TNAME)), null);
+			Application.getDB().addListener(listener, new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.peer.TNAME,net.ddp2p.common.table.peer_my_data.TNAME)), null);
 		}
 		ArrayList<ArrayList<Object>> l =
-				Application.db.select(sql_orgID, new String[]{org_ID}, DEBUG);
+				Application.getDB().select(sql_orgID, new String[]{org_ID}, DEBUG);
 		ArrayList<D_OrgDistribution> res = new ArrayList<D_OrgDistribution>();
 		if ((l != null) && (l.size() != 0)) {
 			for (int i = 0; i < l.size(); i ++) {
@@ -201,13 +201,13 @@ public class D_OrgDistribution{
 				" FROM "+net.ddp2p.common.table.org_distribution.TNAME+
 				" WHERE "+net.ddp2p.common.table.org_distribution.peer_ID+"=? "+
 				" AND "+net.ddp2p.common.table.org_distribution.organization_ID+"=?; ";
-		ArrayList<ArrayList<Object>> od = Application.db.select(sql, new String[]{peer_ID, org_ID}, DEBUG);
+		ArrayList<ArrayList<Object>> od = Application.getDB().select(sql, new String[]{peer_ID, org_ID}, DEBUG);
 		long new_ID = -1;
 		String now = net.ddp2p.common.util.Util.getGeneralizedTime();
 		if(od.size()<=0){
 			if(DEBUG||DD.DEBUG_CHANGED_ORGS) System.out.println("D_OrgDistrib:add: insert org_distr: p="+peer_ID+" o="+org_ID);
 //			new_ID = Application.db.insertNoSync(
-			new_ID = Application.db.insert(
+			new_ID = Application.getDB().insert(
 					net.ddp2p.common.table.org_distribution.TNAME,
 				new String[]{net.ddp2p.common.table.org_distribution.peer_ID,
 							net.ddp2p.common.table.org_distribution.organization_ID,
@@ -238,7 +238,7 @@ public class D_OrgDistribution{
 	public static void setResetDate(String org_ID, String peer_ID2) {
 		if(DEBUG) System.out.println("Orgs:setResetDate: for orgID="+org_ID);
 		try {
-			Application.db.update(net.ddp2p.common.table.org_distribution.TNAME,
+			Application.getDB().update(net.ddp2p.common.table.org_distribution.TNAME,
 					new String[]{net.ddp2p.common.table.org_distribution.reset_date},
 					new String[]{net.ddp2p.common.table.org_distribution.organization_ID,
 					net.ddp2p.common.table.org_distribution.peer_ID},
@@ -257,7 +257,7 @@ public class D_OrgDistribution{
 		ArrayList<D_OrgDistribution> oo = od_by_orgID.get(org_ID);
 		if(delete_peer(oo, _peer_ID));
 		//Application.db.deleteNoSync(
-		Application.db.delete(
+		Application.getDB().delete(
 				net.ddp2p.common.table.org_distribution.TNAME,
 				new String[]{net.ddp2p.common.table.org_distribution.peer_ID, net.ddp2p.common.table.org_distribution.organization_ID},
 				new String[]{peer_ID, org_ID}, DEBUG);
