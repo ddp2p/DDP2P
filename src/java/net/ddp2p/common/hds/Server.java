@@ -485,7 +485,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		if(DEBUG) out.println("BEGIN Server.try_connect: synchronized on dir:"+UDPServer.directoryAnnouncementLock);
 		synchronized (UDPServer.directoryAnnouncementLock){
 			if(DEBUG) out.println("BEGIN Server.try_connect: synchronized");
-			Identity.setPeerTCPPort(ss.getLocalPort());
+			Application.setPeerTCPPort(ss.getLocalPort());
 			UDPServer.directoryAnnouncement = null;
 		}
 		if(DEBUG) out.println("END Server.try_connect");
@@ -529,8 +529,8 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		//UDPServer.announceMyselfToDirectoriesTCP();
 	}
 	public static void prepareLocalDomainsLists(int port) throws SocketException {
-		synchronized (Identity.my_server_domains) {
-			if ((Identity.my_server_domains.size() > 0) || (Identity.my_server_domains_loopback.size() > 0)) return;
+		synchronized (Application.getMy_Server_Domains()) {
+			if ((Application.getMy_Server_Domains().size() > 0) || (Application.getMy_Server_Domains_Loopback().size() > 0)) return;
 			if (DEBUG) out.println("END Server.detectDomain");
 			if (DD.ONLY_IP4) System.setProperty("java.net.preferIPv4Stack", "true");
 			//Properties prop = System.getProperties();
@@ -557,9 +557,9 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					if (! netint.isLoopback()) {
 						if(DEBUG) out.printf("server: Interface is not loopback\n");
 						//return;
-						Identity.my_server_domains.add(inetAddress);
+						Application.getMy_Server_Domains().add(inetAddress);
 					} else {
-						Identity.my_server_domains_loopback.add(inetAddress);
+						Application.getMy_Server_Domains_Loopback().add(inetAddress);
 					}
 					//break;
 				}
@@ -571,7 +571,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	 * @throws SocketException
 	 */
 	public static void detectDomain() throws SocketException{
-		detectDomain(Identity.getPeerTCPPort());
+		detectDomain(Application.getPeerTCPPort());
 	}
 	private final static Object domainsDetectionThread_monitor = new Object();
 	public static DDP2P_ServiceThread domainsDetectionThread = null;
@@ -595,8 +595,8 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			prepareLocalDomainsLists(port);
 		} catch(Exception e) {e.printStackTrace();}
 		UDPServer.directoryAnnouncement = null;
-		if (DEBUG) out.println("END Server.detectDomain: domains="+Identity.my_server_domains.size()+
-				", loopdomains="+Identity.my_server_domains_loopback.size());
+		if (DEBUG) out.println("END Server.detectDomain: domains="+Application.getMy_Server_Domains().size()+
+				", loopdomains="+Application.getMy_Server_Domains_Loopback().size());
 		
 		// start only once
 		synchronized(domainsDetectionThread_monitor) {
@@ -621,7 +621,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 								if (DEBUG) System.out.println("Server:<Thread>run: detectDomain");
 								//Server.detectDomain();
 								try {
-									prepareLocalDomainsLists(Identity.getPeerTCPPort());
+									prepareLocalDomainsLists(Application.getPeerTCPPort());
 								} catch(Exception e) {e.printStackTrace();}
 								
 								net.ddp2p.common.data.HandlingMyself_Peer.updateAddress(net.ddp2p.common.data.HandlingMyself_Peer.get_myself_with_wait());
@@ -712,7 +712,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			//if(DEBUG) out.println("Server:announceMyselfToDirectories: Directory Answer: "+ans);
 			s.close();
 			if (preferred) {
-				Identity.preferred_directory_idx = Identity.getListing_directories_inet().indexOf(dir);
+				Identity.setPreferred_Directory_IDX(Identity.getListing_directories_inet().indexOf(dir));
 				//first = false;
 			}
 			if (Application.directory_status != null) {

@@ -29,6 +29,7 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 import net.ddp2p.ASN1.Encoder;
+import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.Identity;
@@ -185,12 +186,12 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		return Identity.getListing_directories_string().size();
 	}
 	int getSocketsLen() {
-		if (Identity.my_server_domains == null) return 0;
-		return Identity.my_server_domains.size();
+		if (Application.getMy_Server_Domains() == null) return 0;
+		return Application.getMy_Server_Domains().size();
 	}
 	int getLoopbackLen() {
-		if (Identity.my_server_domains_loopback == null) return 0;
-		return Identity.my_server_domains_loopback.size();
+		if (Application.getMy_Server_Domains_Loopback() == null) return 0;
+		return Application.getMy_Server_Domains_Loopback().size();
 	}
 	@Override
 	public int getRowCount() {
@@ -265,11 +266,11 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		case TABLE_COL_TYPE:
 			return Address.SOCKET;
 		case TABLE_COL_DOMAIN:
-			return Identity.my_server_domains_loopback.get(row).getHostAddress();
+			return Application.getMy_Server_Domains_Loopback().get(row).getHostAddress();
 		case TABLE_COL_UDP:
-			return new Integer(Identity.getPeerUDPPort());
+			return new Integer(Application.getPeerUDPPort());
 		case TABLE_COL_TCP:
-			return new Integer(Identity.getPeerTCPPort());
+			return new Integer(Application.getPeerTCPPort());
 		case TABLE_COL_CERTIFIED:
 			return Boolean.FALSE;
 		case TABLE_COL_PRIORITY:
@@ -288,11 +289,11 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		case TABLE_COL_TYPE:
 			return Address.SOCKET;
 		case TABLE_COL_DOMAIN:
-			return Identity.my_server_domains.get(row).getHostAddress();
+			return Application.getMy_Server_Domains().get(row).getHostAddress();
 		case TABLE_COL_UDP:
-			return new Integer(Identity.getPeerUDPPort());
+			return new Integer(Application.getPeerUDPPort());
 		case TABLE_COL_TCP:
-			return new Integer(Identity.getPeerTCPPort());
+			return new Integer(Application.getPeerTCPPort());
 		case TABLE_COL_CERTIFIED:
 			return Boolean.FALSE;
 		case TABLE_COL_PRIORITY:

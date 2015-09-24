@@ -221,7 +221,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 					DD.ed.fireClientUpdate(new CommEvent(this, null, null,"FAIL ADDRESS", sock_addr+" Peer is Myself"));
 					continue; //return false;
 				}
-				if(ClientSync.isMyself(Identity.getPeerTCPPort(), sock_addr,sad)){
+				if(ClientSync.isMyself(Application.getPeerTCPPort(), sock_addr,sad)){
 					if(DEBUG) out.println("Client: Peer is myself!");
 					continue;
 				}
@@ -294,7 +294,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 				sock_addr=sad.isa_tcp;//getSockAddress(address);
 				if(DEBUG) out.println("UClient:try_connect: checkMyself");
 				
-				if(ClientSync.isMyself(Identity.getPeerUDPPort(), sock_addr, sad)){
+				if(ClientSync.isMyself(Application.getPeerUDPPort(), sock_addr, sad)){
 					if(DEBUG) out.println("Client:try_connect: UPeer "+peer_name+" is myself!"+sock_addr);
 					//System.out.print("#3");
 					continue;
@@ -313,8 +313,8 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 				aup.senderIsPeer=false;
 				aup.senderIsInitiator=true;
 				aup.initiator_domain = Identity.get_a_server_domain();//client.getInetAddress().getHostAddress();
-				aup.initiator_globalID=Identity.current_peer_ID.getPeerGID(); //dr.initiator_globalID;
-				aup.initiator_port = Identity.getPeerUDPPort();//dr.UDP_port;
+				aup.initiator_globalID=Application.getCurrent_Peer_ID().getPeerGID(); //dr.initiator_globalID;
+				aup.initiator_port = Application.getPeerUDPPort();//dr.UDP_port;
 				aup.peer_globalID=global_peer_ID;
 				aup.peer_domain=sad.getAddress().domain;//;
 				if(DEBUG) System.out.println("Client:try_connect: domain ping = \""+aup.peer_domain+"\" vs \""+Util.getNonBlockingHostName(sock_addr)+"\"");
@@ -399,9 +399,9 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 			socket.connect(sock_addr, Server.TIMEOUT_Client_wait_Dir);
 			DirectoryRequest dr = new DirectoryRequest(
 				    global_peer_ID,
-				    Identity.current_peer_ID.getPeerGID(),
-				    Identity.current_peer_ID.peerInstance,
-				    Identity.getPeerUDPPort(),
+				    Application.getCurrent_Peer_ID().getPeerGID(),
+				    Application.getCurrent_Peer_ID().peerInstance,
+				    Application.getPeerUDPPort(),
 				     peer_ID, 
 					new Address(dir_address));
 			byte[] msg = dr.encode();

@@ -69,7 +69,6 @@ import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
-import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.config.PeerListener;
 import net.ddp2p.common.config.Peers_View;
 import net.ddp2p.common.data.D_OrgDistribution;
@@ -1525,7 +1524,7 @@ class PeersRowAction extends DebateDecideAction {
 				PeerInput pi = PeerInput.getPeerInput(peer_old);
 				pi.incName();
 				//MyselfHandling.createMyPeerID(pi);
-				D_Peer mepeer = net.ddp2p.common.data.HandlingMyself_Peer.createMyselfPeer_by_dialog_inited_w_Addresses(true, Identity.current_peer_ID, pi);
+				D_Peer mepeer = net.ddp2p.common.data.HandlingMyself_Peer.createMyselfPeer_by_dialog_inited_w_Addresses(true, Application.getCurrent_Peer_ID(), pi);
 				//D_Peer mepeer = HandlingMyself_Peer.createMyselfPeer_w_Addresses(pi, true);
 				
 				if ((mepeer != null) && (mepeer.component_basic_data != null))

@@ -27,7 +27,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
-import net.ddp2p.common.config.Identity;
+import net.ddp2p.common.config.Application;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.HandlingMyself_Peer;
 import net.ddp2p.common.hds.Address;
@@ -187,7 +187,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
         int internalPortToMap;
         int externalPortToMap;
 
-        internalPortToMap = Identity.getPeerUDPPort();
+        internalPortToMap = Application.getPeerUDPPort();
         if (internalPortToMap <= 0) internalPortToMap = net.ddp2p.common.hds.Server.PORT;
         if (internalPortToMap > 0) {
             protocol = "UDP";
@@ -201,7 +201,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	        //client.getExternalIPMapping(mapping, externalPortToMap, protocol);
         }
         
-        internalPortToMap = Identity.getPeerTCPPort();
+        internalPortToMap = Application.getPeerTCPPort();
         if (internalPortToMap <= 0) internalPortToMap = net.ddp2p.common.hds.Server.PORT;
         if (internalPortToMap > 0) {
             protocol = "TCP";
@@ -232,7 +232,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
         if (natpmpDeviceAddress == null) natpmpDeviceAddress = proposeGateway();
         if (natpmpDeviceAddress == null) return false;
 
-        int portToMap = Identity.getPeerUDPPort();
+        int portToMap = Application.getPeerUDPPort();
         if (portToMap > 0) {
 	        if(client.natpmpMapWrapper( natpmpDeviceAddress
 	                ,net.ddp2p.common.network.natpmp.Request.NATPMP_OPCODE_UDP
@@ -243,7 +243,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
         }
         
         this.m_crt_external_port_UDP = mapping.getExternalPort();
-        portToMap = Identity.getPeerTCPPort();
+        portToMap = Application.getPeerTCPPort();
         if (portToMap > 0) {
         	if (client.natpmpMapWrapper( natpmpDeviceAddress
                 ,net.ddp2p.common.network.natpmp.Request.NATPMP_OPCODE_TCP
@@ -282,7 +282,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
         if (natpmpDeviceAddress == null) natpmpDeviceAddress = proposeGateway();
         if (natpmpDeviceAddress == null) return false;
 
-        int portToMap = Identity.getPeerUDPPort();
+        int portToMap = Application.getPeerUDPPort();
         if (portToMap > 0) {
         	if (client.pcpMap( natpmpDeviceAddress
                 ,OpCodeInfo.PROTOCOL_UDP
@@ -294,7 +294,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
         }
         this.m_crt_external_port_UDP = mapping.getExternalPort();
         
-        portToMap = Identity.getPeerTCPPort();
+        portToMap = Application.getPeerTCPPort();
         if (portToMap > 0) {
         	if (client.pcpMap( natpmpDeviceAddress
                 ,OpCodeInfo.PROTOCOL_TCP

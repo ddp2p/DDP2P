@@ -25,8 +25,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
-import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.util.DirectoryAddress;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
@@ -79,7 +79,7 @@ public class RPC extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				}
 			case CMD_START_UDPSERVER:
 				try {
-					DD.startUServer(cmd[1] != 0, Identity.current_peer_ID);
+					DD.startUServer(cmd[1] != 0, Application.getCurrent_Peer_ID());
 				} catch (NumberFormatException e) {
 					e.printStackTrace();
 				} catch (P2PDDSQLException e) {

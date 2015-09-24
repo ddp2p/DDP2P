@@ -601,7 +601,7 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 							Identity.getMyPeerInstance(),
 					Identity.getMyPeerGID(),
 					Identity.getMyPeerInstance(),
-					Identity.getPeerUDPPort(), 
+					Application.getPeerUDPPort(), 
 					peer_ID,
 					dir_address);
 			if (DEBUG) System.out.println("Directories:askAddress: prepared dir request dr="+dr);
@@ -711,7 +711,7 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 						Identity.getMyPeerInstance(),
 				Identity.getMyPeerGID(),
 				Identity.getMyPeerInstance(),
-				Identity.getPeerUDPPort(), 
+				Application.getPeerUDPPort(), 
 				peer_ID,
 				dir_address);
 		if (DEBUG) System.out.println("Directories:askAddressUDP: prepared dir request dr="+dr);

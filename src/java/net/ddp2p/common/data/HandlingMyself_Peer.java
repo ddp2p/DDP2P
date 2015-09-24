@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.SK;
+import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.Identity;
@@ -23,8 +24,6 @@ import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 
 public class HandlingMyself_Peer {
-	// handling myself
-	private static D_Peer _myself = null;
 	/**
 	 * Protects the whole process of setting myself
 	 *  or changing its instance (which are likely not needed)
@@ -49,7 +48,7 @@ public class HandlingMyself_Peer {
 		//Util.printCallPath("Who?");
 		synchronized(_myself_monitor) {
 			int max = 5;
-			while (_myself == null) {
+			while (Application.get_Raw__myself() == null) {
 				try {
 					if (_DEBUG) System.out.println("HandlingMyself: get_myself: ...");
 					if (max-- < 0) { Util.printCallPath(""); max = 10; }
@@ -59,18 +58,18 @@ public class HandlingMyself_Peer {
 				}
 			}
 		}
-		if (_myself == null) {
+		if (Application.get_Raw__myself() == null) {
 			Util.printCallPath("Null myself");
 			//return null;
 			Application_GUI.warning(__("No identity set!"), __("Identity absent"));
 			System.exit(1);
 		}
 		if (DEBUG) System.out.println("HandlingMyself: get_myself: found");
-		return _myself;
+		return Application.get_Raw__myself();
 	}
 	public static D_Peer get_myself_or_null() {
 		if (DEBUG) System.out.println("HandlingMyself: get_myself_or_null: start");
-		return _myself;
+		return Application.get_Raw__myself();
 	}
 	/*
 	public static void announceMyselfToDirectories_UDP_or_TCP() {
@@ -89,8 +88,8 @@ public class HandlingMyself_Peer {
 	 */
 	public static Identity loadIdentity(Identity id) {
 		if (DEBUG) out.println("HandlingMyself: loadIdentity: start="+id);
-		if (id == null) id = Identity.current_peer_ID;
-		if (id == null) id = Identity.current_peer_ID = new Identity();
+		if (id == null) id = Application.getCurrent_Peer_ID();
+		if (id == null) id = Application.setCurrent_Peer_ID(new Identity());
 		try {
 			String GID = DD.getAppText(DD.APP_my_global_peer_ID);
 			String instance = DD.getAppText(DD.APP_my_peer_instance);
@@ -190,7 +189,7 @@ public class HandlingMyself_Peer {
 	 * @return true on success
 	 */
 	static public boolean setMyself_currentIdentity_announceDirs( D_Peer me, boolean saveInDB, boolean me_kept) {
-		return setMyself_announceDirs(me, saveInDB, Identity.current_peer_ID, me_kept);
+		return setMyself_announceDirs(me, saveInDB, Application.getCurrent_Peer_ID(), me_kept);
 	}
 //	static public boolean setMyself( D_Peer me, boolean saveInDB) {
 //		return setMyself(me, saveInDB, Identity.current_peer_ID);
@@ -277,7 +276,7 @@ public class HandlingMyself_Peer {
 			}
 			synchronized(_myself_monitor) {
 				boolean keeping_here = false;
-				if (_myself != null) _myself.dec_StatusReferences(); //if (_myself != null) _myself.releaseReference();
+				if (Application.get_Raw__myself() != null) Application.get_Raw__myself().dec_StatusReferences(); //if (_myself != null) _myself.releaseReference();
 				if (me != null && !kept) {
 					me = D_Peer.getPeerByGID_or_GIDhash(null, me.getGIDH_force(), true, false, true, null);
 					keeping_here = true;
@@ -286,7 +285,7 @@ public class HandlingMyself_Peer {
 					me.inc_StatusReferences(); // keep it during the process to avoid it being dropped in-between
 					if (keeping_here) me.releaseReference();
 				}
-				_myself = me;
+				Application.set_Raw__myself(me);
 				_myself_monitor.notifyAll();
 			}
 			//MyselfHandling._myself = _myself;
@@ -428,7 +427,7 @@ public class HandlingMyself_Peer {
 		return peer;
 	}
 	public static D_Peer createMyselfPeer_by_dialog_w_Addresses(boolean saveIdentityInIB) {
-		return createMyselfPeer_by_dialog_w_Addresses(saveIdentityInIB, Identity.current_peer_ID);
+		return createMyselfPeer_by_dialog_w_Addresses(saveIdentityInIB, Application.getCurrent_Peer_ID());
 	}
 	public static D_Peer createMyselfPeer_by_dialog_w_Addresses(boolean saveIdentityInIB, Identity my_ID) {
 		if (DEBUG) System.out.println("HandlingMyself: createMyselfPeer_by_dialog_w_Addresses: start");

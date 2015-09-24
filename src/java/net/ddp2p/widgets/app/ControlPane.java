@@ -1172,8 +1172,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 			}
 		}
 		if(run){
-			if(DEBUG)System.err.println("Setting id: "+Identity.current_peer_ID);
-			DD.startServer(true, Identity.current_peer_ID);
+			if(DEBUG)System.err.println("Setting id: "+Application.getCurrent_Peer_ID());
+			DD.startServer(true, Application.getCurrent_Peer_ID());
 		}else{
 			DD.startServer(false, null);
 		}
@@ -1221,8 +1221,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		if(DEBUG)System.out.println("ControlPanel: userver started");
 
 		if(_run){
-			if(DEBUG)System.err.println("Setting userver id: "+Identity.current_peer_ID);
-			DD.startUServer(true, Identity.current_peer_ID);
+			if(DEBUG)System.err.println("Setting userver id: "+Application.getCurrent_Peer_ID());
+			DD.startUServer(true, Application.getCurrent_Peer_ID());
 		}else{
 			DD.startUServer(false, null);
 		}
@@ -1272,7 +1272,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		if(DEBUG)System.out.println("ControlPanel: nserver started");
 
 		if(_run){
-			if(DEBUG)System.err.println("Setting nserver id: "+Identity.current_peer_ID);
+			if(DEBUG)System.err.println("Setting nserver id: "+Application.getCurrent_Peer_ID());
 			DD.startNATServer(true);
 		}else{
 			DD.startNATServer(false);
@@ -1538,7 +1538,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 					net.ddp2p.widgets.components.XUtil.clipboardCopy(exportText);
 				} catch (Exception ex) {ex.printStackTrace();}
 			} else if (c_linuxScriptsPath.equals(e.getActionCommand())) {
-				if (DEBUG) System.out.println("ControlPane: scripts: "+Identity.current_peer_ID.getPeerGID());
+				if (DEBUG) System.out.println("ControlPane: scripts: "+Application.getCurrent_Peer_ID().getPeerGID());
 				String SEP = ",";
 				String previous = Application.getCurrentLinuxPathsString(SEP);
 				System.out.println("Previous linux path: "+previous);
@@ -1569,7 +1569,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 					if (_DEBUG) System.out.println("ControlPane: Application.LINUX_INSTALLATION_DIR ="+ Application.LINUX_INSTALLATION_VERSION_BASE_DIR);
 				}
 			} else if ("windowsScriptsPath".equals(e.getActionCommand())) {
-				if (DEBUG) System.out.println("ControlPane: scripts Win: "+Identity.current_peer_ID.getPeerGID());
+				if (DEBUG) System.out.println("ControlPane: scripts Win: "+Application.getCurrent_Peer_ID().getPeerGID());
 				String SEP = ",";
 				String previous = Application.getCurrentWindowsPathsString();
 				System.out.println("Previous windows path: "+previous);
@@ -2060,13 +2060,13 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	    }		
 	}
 	public static void changeMyPeerSlogan(Component win) throws P2PDDSQLException {
-		if(Identity.current_peer_ID.getPeerGID()==null){
+		if(Application.getCurrent_Peer_ID().getPeerGID()==null){
 			JOptionPane.showMessageDialog(win,
 					__("You are not yet a peer.\n Start your server first!"),
 					__("Peer Init"), Application_GUI.WARNING_MESSAGE);
 			return;
 		}
-		if (HandlingMyself_Peer.DEBUG) System.out.println("HandlingMyself_Peer:chgSlogan:peer_ID: "+Identity.current_peer_ID.getPeerGID());
+		if (HandlingMyself_Peer.DEBUG) System.out.println("HandlingMyself_Peer:chgSlogan:peer_ID: "+Application.getCurrent_Peer_ID().getPeerGID());
 		String peer_Slogan = HandlingMyself_Peer.getMyPeerSlogan();//Identity.current_peer_ID.slogan;
 		String val = JOptionPane.showInputDialog(win, __("Change Peer Slogan.\nPreviously: ")+peer_Slogan, __("Peer Slogan"), Application_GUI.QUESTION_MESSAGE);
 		if ((val != null) && (!"".equals(val))) {
@@ -2095,13 +2095,13 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		return val;
 	}
 	public static void changeMyPeerEmails(Component win) throws P2PDDSQLException {
-		if(Identity.current_peer_ID.getPeerGID()==null){
+		if(Application.getCurrent_Peer_ID().getPeerGID()==null){
 			JOptionPane.showMessageDialog(win,
 					__("You are not yet a peer.\n Start your server first!"),
 					__("Peer Init"), Application_GUI.WARNING_MESSAGE);
 			return;
 		}
-		if(D_Peer.DEBUG)System.out.println("peer_ID: "+Identity.current_peer_ID.getPeerGID());
+		if(D_Peer.DEBUG)System.out.println("peer_ID: "+Application.getCurrent_Peer_ID().getPeerGID());
 		//String peer_Slogan = Identity.current_peer_ID.slogan;
 		String val = ControlPane.queryEmails(win);
 		if ((val!=null) && (!"".equals(val))) {
@@ -2130,8 +2130,8 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		return val;
 	}
 	public static void changeMyPeerName(Component win) throws P2PDDSQLException {
-		if (D_Peer.DEBUG) System.out.println("HandlingMyself_Peer: peer_ID: "+Identity.current_peer_ID.getPeerGID());
-		if (Identity.current_peer_ID.getPeerGID() == null) {
+		if (D_Peer.DEBUG) System.out.println("HandlingMyself_Peer: peer_ID: "+Application.getCurrent_Peer_ID().getPeerGID());
+		if (Application.getCurrent_Peer_ID().getPeerGID() == null) {
 				JOptionPane.showMessageDialog(win,
 					__("You are not yet a peer.\n Start your server first!"),
 					__("Peer Init"), JOptionPane.WARNING_MESSAGE);

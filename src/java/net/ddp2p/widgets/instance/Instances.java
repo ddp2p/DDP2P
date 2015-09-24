@@ -55,7 +55,6 @@ import javax.swing.table.TableModel;
 
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
-import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.config.PeerListener;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.D_PeerInstance;
@@ -467,7 +466,7 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 		try {
 			currentPeer.setCurrentInstance(instance);
 			HandlingMyself_Peer.updateAddress(currentPeer);
-			HandlingMyself_Peer.setMyself(currentPeer, true, Identity.current_peer_ID, false, true); // not kept
+			HandlingMyself_Peer.setMyself(currentPeer, true, Application.getCurrent_Peer_ID(), false, true); // not kept
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -579,14 +579,14 @@ public class Connections extends net.ddp2p.common.util.DDP2P_ServiceThread imple
 												
 						if (DEBUG) System.out.println("***\nConnection: loadInstanceAddresses_certified: Socket: myself");
 						if ((isa_udp != null) &&
-								ClientSync.isMyself(Identity.getPeerUDPPort(), isa_udp, crt_adr)) {
+								ClientSync.isMyself(Application.getPeerUDPPort(), isa_udp, crt_adr)) {
 							if (DEBUG) out.println("***\nConnection: loadInstanceAddresses_certified:  UPeer " + peer_name +" is myself!"+isa_udp);
 							isa_udp = null;
 						}
 						//if(DEBUG)System.out.println("Connection:loadAddresses: Socket: self udp");
 						if ((isa_tcp != null) &&
 								(Server.isMyself(isa_udp) ||
-										ClientSync.isMyself(Identity.getPeerTCPPort(), isa_tcp, crt_adr))) {
+										ClientSync.isMyself(Application.getPeerTCPPort(), isa_tcp, crt_adr))) {
 							if (DEBUG) out.println("***\nConnection: loadInstanceAddresses_certified: UPeer " + peer_name + " is myself!"+isa_udp);
 							isa_tcp = null;
 						}
@@ -866,8 +866,8 @@ public class Connections extends net.ddp2p.common.util.DDP2P_ServiceThread imple
 			dr = new DirectoryRequest(
 					global_peer_ID,
 					Identity.getMyPeerGID(),
-					Identity.current_peer_ID.peerInstance,
-					Identity.getPeerUDPPort(), 
+					Application.getCurrent_Peer_ID().peerInstance,
+					Application.getPeerUDPPort(), 
 					peer_ID,
 					dir_address);
 			if (DEBUG) out.println("Connections: requestDirectoryAnswer: sending:"+dr);
@@ -1056,7 +1056,7 @@ public class Connections extends net.ddp2p.common.util.DDP2P_ServiceThread imple
 						Identity.getMyPeerInstance(),
 				Identity.getMyPeerGID(),
 				Identity.getMyPeerInstance(),
-				Identity.getPeerUDPPort(), 
+				Application.getPeerUDPPort(), 
 				peer_ID,
 				dir_address);
 		if (DEBUG) System.out.println("Directories:askAddressUDP: prepared dir request dr="+dr);

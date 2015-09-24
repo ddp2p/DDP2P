@@ -21,9 +21,16 @@ package net.ddp2p.common.config;
 import static net.ddp2p.common.util.Util.__;
 
 import java.io.File;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
 
+import net.ddp2p.common.data.D_Peer;
+import net.ddp2p.common.data.D_Peer_SaverThread;
+import net.ddp2p.common.hds.Address;
 import net.ddp2p.common.hds.DirectoryServer;
 import net.ddp2p.common.hds.IClient;
 import net.ddp2p.common.hds.Server;
@@ -44,11 +51,12 @@ public class Application {
 	
 	// This has to be initialized during registerThread() calls
 	static public Hashtable<Thread,Integer> installation_per_thread = new Hashtable<Thread,Integer>();
-	static DDP2P_Peer_Instalation installations[] = {new DDP2P_Peer_Instalation()};
+	public static DDP2P_Peer_Installation installations[] = {new DDP2P_Peer_Installation()};
 	final static int S_DEFAULT_INSTALLATION = 0;	
 	
 	static public Directories_View directory_status = null;
 	static public Peers_View peers=null;
+
 
 	public static void registerThreadInstallation(int installation) {
 		Application.installation_per_thread.put(Thread.currentThread(), new Integer(installation));
@@ -149,6 +157,122 @@ public class Application {
 	public static void setG_PollingStreamingClient(
 			IClient g_PollingStreamingClient) {
 		Application.installations[S_DEFAULT_INSTALLATION].g_PollingStreamingClient = g_PollingStreamingClient;
+	}
+	public static int getPeerTCPPort() {
+		return DDP2P_Peer_Installation.port;
+	}
+	public static void setPeerTCPPort(int port) {
+		DDP2P_Peer_Installation.port = port;
+	}
+	public static int getPeerUDPPort() {
+		return DDP2P_Peer_Installation.udp_server_port;
+	}
+	public static void setPeerUDPPort(int udp_server_port) {
+		DDP2P_Peer_Installation.udp_server_port = udp_server_port;
+	}
+
+	public static ArrayList<InetAddress> getMy_Server_Domains() {
+		return DDP2P_Peer_Installation.my_server_domains;
+	}
+	public static void setMy_Server_Domains(ArrayList<InetAddress> my_server_domains) {
+		DDP2P_Peer_Installation.my_server_domains = my_server_domains;
+	}
+
+	public static ArrayList<InetAddress> getMy_Server_Domains_Loopback() {
+		return DDP2P_Peer_Installation.my_server_domains_loopback;
+	}
+	public static void setMy_Server_Domains_Loopback(
+			ArrayList<InetAddress> my_server_domains_loopback) {
+		DDP2P_Peer_Installation.my_server_domains_loopback = my_server_domains_loopback;
+	}
+
+	static Identity getCurrent_Identity() {
+		return DDP2P_Peer_Installation.current_identity;
+	}
+	static Identity setCurrent_Identity(Identity current_identity) {
+		DDP2P_Peer_Installation.current_identity = current_identity;
+		return current_identity;
+	}
+
+	public static Identity getCurrent_Peer_ID() {
+		return DDP2P_Peer_Installation.current_peer_ID;
+	}
+	public static Identity setCurrent_Peer_ID(Identity current_peer_ID) {
+		DDP2P_Peer_Installation.current_peer_ID = current_peer_ID;
+		return current_peer_ID;
+	}
+
+	public static Calendar getCurrent_Identity_Creation_Date() {
+		return DDP2P_Peer_Installation.current_identity_creation_date;
+	}
+	public static void setCurrent_Identity_Creation_Date(
+			Calendar current_identity_creation_date) {
+		DDP2P_Peer_Installation.current_identity_creation_date = current_identity_creation_date;
+	}
+
+	static boolean isListing_directories_loaded() {
+		return DDP2P_Peer_Installation.listing_directories_loaded;
+	}
+	static void setListing_directories_loaded(boolean listing_directories_loaded) {
+		DDP2P_Peer_Installation.listing_directories_loaded = listing_directories_loaded;
+	}
+
+	static int getPreferred_directory_idx() {
+		int crt_instalation = getCurrentInstallationFromThread();
+		return installations[crt_instalation].preferred_directory_idx;
+	}
+	static void setPreferred_directory_idx(int preferred_directory_idx) {
+		int crt_instalation = getCurrentInstallationFromThread();
+		installations[crt_instalation].preferred_directory_idx = preferred_directory_idx;
+	}
+
+	public static D_Peer_SaverThread get_D_Peer__SaverThread() {
+		int crt_instalation = getCurrentInstallationFromThread();
+		return installations[crt_instalation].d_peer__saverThread;
+	}
+	public static void set_D_Peer__SaverThread(D_Peer_SaverThread saverThread) {
+		int crt_instalation = getCurrentInstallationFromThread();
+		installations[crt_instalation].d_peer__saverThread = saverThread;
+	}
+	public static void set_D_Peer__SaverThread(int crt_instalation, D_Peer_SaverThread saverThread) {
+		installations[crt_instalation].d_peer__saverThread = saverThread;
+	}
+	/**
+	 * To be used from the simulator main function
+	 * @param crt_instalation
+	 * @param preferred_directory_idx
+	 */
+	static void setPreferred_directory_idx(int crt_instalation, int preferred_directory_idx) {
+		installations[crt_instalation].preferred_directory_idx = preferred_directory_idx;
+	}
+
+	static ArrayList<String> getListing_directories_string() {
+		return DDP2P_Peer_Installation.listing_directories_string;
+	}
+	static void setListing_directories_string(
+			ArrayList<String> listing_directories_string) {
+		DDP2P_Peer_Installation.listing_directories_string = listing_directories_string;
+	}
+
+	static ArrayList<Address> getListing_directories_addr() {
+		return DDP2P_Peer_Installation.listing_directories_addr;
+	}
+	static void setListing_directories_addr(ArrayList<Address> listing_directories_addr) {
+		DDP2P_Peer_Installation.listing_directories_addr = listing_directories_addr;
+	}
+
+	static ArrayList<InetSocketAddress> getListing_directories_inet() {
+		return DDP2P_Peer_Installation.listing_directories_inet;
+	}
+	static void setListing_directories_inet(ArrayList<InetSocketAddress> listing_directories_inet) {
+		DDP2P_Peer_Installation.listing_directories_inet = listing_directories_inet;
+	}
+
+	public static D_Peer get_Raw__myself() {
+		return DDP2P_Peer_Installation._myself;
+	}
+	public static void set_Raw__myself(D_Peer _myself) {
+		DDP2P_Peer_Installation._myself = _myself;
 	}
 
 	/**

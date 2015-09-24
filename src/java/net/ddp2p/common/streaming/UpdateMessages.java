@@ -33,7 +33,6 @@ import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
-import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Justification;
 import net.ddp2p.common.data.D_Motion;
@@ -139,7 +138,7 @@ public class UpdateMessages {
 		String maxDate =_maxDate[0];
 		if(!justDate && (maxDate==null) && (orgs.size()==0)) {
 			if(DEBUG) out.println("UpdateMessages:buildAnswer: START-EXIT Nothing new to send!");
-			return new SyncAnswer(asr.lastSnapshot, Identity.current_peer_ID.getPeerGID());
+			return new SyncAnswer(asr.lastSnapshot, Application.getCurrent_Peer_ID().getPeerGID());
 		}
 		if(DEBUG) out.println("UpdateMessages:buildAnswer: START: Date at entrance: "+_maxDate[0]+" justDate="+justDate);
 		String last_sync_date="00000000000000.000Z";
@@ -197,7 +196,7 @@ public class UpdateMessages {
 				}
 			}
 		sa.orgData = orgData;
-		sa.responderGID = Identity.current_peer_ID.getPeerGID();
+		sa.responderGID = Application.getCurrent_Peer_ID().getPeerGID();
 		if (tableslist.size() > 0) {
 			sa.tables = new ASNDatabase();
 			sa.tables.snapshot = Util.getCalendar(_maxDate[0]); // Util.CalendargetInstance();

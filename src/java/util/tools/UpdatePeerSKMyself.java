@@ -12,7 +12,6 @@ import net.ddp2p.common.util.Util;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
-import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.HandlingMyself_Peer;
 
@@ -60,7 +59,7 @@ public class UpdatePeerSKMyself {
 			peer.setLID(null);
 
 			if ((args.length > 2) && (Util.stringInt2bool(args[2], false))) {
-				HandlingMyself_Peer.setMyself(peer, true, Identity.current_peer_ID, false, false); // peer is not kept
+				HandlingMyself_Peer.setMyself(peer, true, Application.getCurrent_Peer_ID(), false, false); // peer is not kept
 				HandlingMyself_Peer.updateAddress(peer);
 			}
 			peer.sign(new_sk);

@@ -945,7 +945,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 				//		" ON(p."+table.peer.peer_ID+"=po."+table.peer_org.peer_ID+") "+
 				" WHERE po."+net.ddp2p.common.table.peer_org.peer_ID +" = ? AND po."+net.ddp2p.common.table.peer_org.organization_ID+" = ?;";
 		
-		String global_peer_ID = Identity.current_peer_ID.getPeerGID();
+		String global_peer_ID = Application.getCurrent_Peer_ID().getPeerGID();
 		D_Peer myself = D_Peer.getPeerByGID_or_GIDhash(global_peer_ID, null, true, false, false, null);
 		if (myself == null) return result;
 		//String pID = table.peer.getLocalPeerID(global_peer_ID);

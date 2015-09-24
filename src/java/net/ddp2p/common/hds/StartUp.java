@@ -6,7 +6,6 @@ import java.util.Random;
 
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
-import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.simulator.WirelessLog;
 import net.ddp2p.common.updates.ClientUpdates;
 import net.ddp2p.common.util.P2PDDSQLException;
@@ -257,12 +256,12 @@ public class StartUp {
 		
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat dir");
 		if (data_userver_on_start){
-			DD.startUServer(true, Identity.current_peer_ID);
+			DD.startUServer(true, Application.getCurrent_Peer_ID());
 		}
 		
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat userver");
 		if (data_server_on_start){
-			DD.startServer(true, Identity.current_peer_ID);
+			DD.startServer(true, Application.getCurrent_Peer_ID());
 		}
 	
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat tcpserver");

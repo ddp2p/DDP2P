@@ -21,7 +21,6 @@
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Calendar;
 
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Organization;
@@ -43,13 +42,16 @@ public class Identity {
 	public static final String DEFAULT_PREFERRED_LANG = "en_US:ro_RO";
 	public static final String DEFAULT_AUTHORSHIP_LANG = "en:US";
 	public static final String DEFAULT_AUTHORSHIP_CHARSET = "latin";
-	// Lists with detected local domains for interfaces
-	public static ArrayList<InetAddress> my_server_domains = new ArrayList<InetAddress>();
-	public static ArrayList<InetAddress> my_server_domains_loopback = new ArrayList<InetAddress>();
-	private static int port = -1;		// the port where the peer is listening
-	private static int udp_server_port = -1; // the port where the udp is listening
+	
 	public static Object default_id_branch; // for Identities tree widget
 	public static Object current_id_branch;	// for Identities tree widget
+	
+	//public static String peer_ID;
+	/** Never used
+	 * Only set on the first initialization of the system, to temporary store user input
+	 * for potential later use
+	 */
+	private static String emails;
 	
 	private String constituentGID;		// globalID for peer/user (required)
 	private String peerGID;		// globalID for peer/user (required)
@@ -67,27 +69,6 @@ public class Identity {
 	public int status_references = 0;
 	private String secret_credential; // not really used
 	
-	/* Default user Identity (with constituent and language) from the identities table */
-	private static Identity current_identity = null;
-	/* Peer Identity from the DD database registry */
-	public static Identity current_peer_ID = null;
-	//public static ArrayList<InetSocketAddress> query_directories = new ArrayList<InetSocketAddress>();
-	/* The list of directories as InetSocketAddressed */
-	
-	private static boolean listing_directories_loaded = false;
-	private static ArrayList<InetSocketAddress> listing_directories_inet = new ArrayList<InetSocketAddress>();
-	private static ArrayList<Address> listing_directories_addr = new ArrayList<Address>();
-	/* The list of directories as strings prot:IP:port */
-	private static ArrayList<String> listing_directories_string = new ArrayList<String>();
-	/* the first directory that was online most recent */
-	public static int preferred_directory_idx = 0;
-	public static Calendar current_identity_creation_date;// = Util.CalendargetInstance();
-	public static String peer_ID;
-	/**
-	 * Only used on the first initialization of the system, to temporary store user input
-	 */
-	public static String emails;
-	
 	
 	/**
 	 * <pre>
@@ -102,12 +83,12 @@ public class Identity {
 	 * @return
 	 */
 	public static boolean init_Identity(boolean quit_on_failure, boolean set_peer_myself, boolean announce_dirs) {
-		current_identity = null;
+		Application.setCurrent_Identity(null);
 		// loading language, constituent and organization
-		current_identity = initCurrentConstituentIdentity();
-		current_peer_ID = null;
+		Application.setCurrent_Identity(initCurrentConstituentIdentity());
+		Application.setCurrent_Peer_ID(null);
 		// loading peer from application
-		current_peer_ID = initMyCurrentPeerIdentity_fromDB(new Identity(), quit_on_failure, set_peer_myself, announce_dirs);
+		Application.setCurrent_Peer_ID(initMyCurrentPeerIdentity_fromDB(new Identity(), quit_on_failure, set_peer_myself, announce_dirs));
 		return true;
 	}
 
@@ -180,18 +161,18 @@ public class Identity {
 		
 		// probably we should not set the port artificially... (but should not hurt)
 		// It is set similarly in detectDomain()
-		int port = Identity.getPeerTCPPort(), udp_server_port = Identity.getPeerUDPPort();
+		int port = Application.getPeerTCPPort(), udp_server_port = Application.getPeerUDPPort();
 		if (port <= 0 ) port = Server.PORT;
 		if (port <= 0 ) udp_server_port = Server.PORT;
 		
 		if (DEBUG) System.out.println("Identity:current_server_addresses port=" + port);
 		ArrayList<Address> result = new ArrayList<Address>();
-		if ((my_server_domains.size() == 0) && (my_server_domains_loopback.size() == 0)) {
+		if ((Application.getMy_Server_Domains().size() == 0) && (Application.getMy_Server_Domains_Loopback().size() == 0)) {
 			if (DEBUG) System.out.println("Identity:current_server_addresses no server");
 			return null;
 		}
-		if (DEBUG) System.out.println("Identity:current_server_addresses addresses=#" + my_server_domains.size());
-		for (InetAddress domain : my_server_domains) {
+		if (DEBUG) System.out.println("Identity:current_server_addresses addresses=#" + Application.getMy_Server_Domains().size());
+		for (InetAddress domain : Application.getMy_Server_Domains()) {
 			if (DEBUG) System.out.println("Identity:current_server_addresses addresses=" + domain);
 			String crt;
 			//String s_domain=Identity.domain.toString().split("/")[1];
@@ -223,8 +204,8 @@ public class Identity {
 			
 			if (DEBUG) System.out.println("Identity:current_server_addresses loop done: "+result);
 		}
-		if (DEBUG) System.out.println("Identity:current_server_addresses addresses=#" + my_server_domains_loopback.size());
-		for (InetAddress domain : my_server_domains_loopback) {
+		if (DEBUG) System.out.println("Identity:current_server_addresses addresses=#" + Application.getMy_Server_Domains_Loopback().size());
+		for (InetAddress domain : Application.getMy_Server_Domains_Loopback()) {
 			if(DEBUG) System.out.println("Identity:current_server_addresses: loopback addresses=" + domain);
 			String crt;
 			String domain_HostName = Util.getNonBlockingHostName(domain);
@@ -261,8 +242,8 @@ public class Identity {
 	 * @return
 	 */
 	public static String get_a_server_domain(){
-		if (my_server_domains.size() == 0) return "";
-		return ((InetAddress)Identity.my_server_domains.get(0)).getHostAddress();
+		if (Application.getMy_Server_Domains().size() == 0) return "";
+		return ((InetAddress)Application.getMy_Server_Domains().get(0)).getHostAddress();
 	}
 	/**
 	 * checks the broadcastable status for the current_peer_ID identity in the peers table
@@ -270,7 +251,7 @@ public class Identity {
 	 * @return
 	 */
 	public static boolean getAmIBroadcastable(){
-		if(Identity.current_peer_ID.getPeerGID() == null){
+		if(Application.getCurrent_Peer_ID().getPeerGID() == null){
 			return false;
 		}
 		/*
@@ -294,10 +275,10 @@ public class Identity {
 		//System.err.println("Broadcastable get val=\""+br.get(0).get(0)+"\"");
 		boolean result = ("1".equals(br.get(0).get(0).toString()));
 		*/
-		D_Peer peer = D_Peer.getPeerByGID_or_GIDhash(Identity.current_peer_ID.getPeerGID(), null, true, false, false, null);
+		D_Peer peer = D_Peer.getPeerByGID_or_GIDhash(Application.getCurrent_Peer_ID().getPeerGID(), null, true, false, false, null);
 		if (peer == null) {
-			if(_DEBUG)System.out.println("config.Identity.getAmIBroadcastable: My peer_GID is not in my database: \""+Identity.current_peer_ID.getPeerGID()+"\"");
-			Util.printCallPath(""+Identity.current_peer_ID);
+			if(_DEBUG)System.out.println("config.Identity.getAmIBroadcastable: My peer_GID is not in my database: \""+Application.getCurrent_Peer_ID().getPeerGID()+"\"");
+			Util.printCallPath(""+Application.getCurrent_Peer_ID());
 			return false;
 		}
 		boolean result = peer.getBroadcastable();
@@ -332,8 +313,8 @@ public class Identity {
 	 * @throws P2PDDSQLException
 	 */
 	public static Identity getCurrentConstituentIdentity() throws P2PDDSQLException{
-		if (current_identity != null) return current_identity;
-		return current_identity = _getDefaultConstituentIdentity();
+		if (Application.getCurrent_Identity() != null) return Application.getCurrent_Identity();
+		return Application.setCurrent_Identity(_getDefaultConstituentIdentity());
 	}
 	/**
 	 * Loads from table application, Sets and returns current peer identity (peerGID/peerGIDH/peer name)
@@ -341,8 +322,8 @@ public class Identity {
 	 * @throws P2PDDSQLException
 	 */
 	public static Identity getCurrentPeerIdentity_QuitOnFailure() {
-		if (Identity.current_peer_ID != null) return current_peer_ID;
-		return current_peer_ID = Identity.initMyCurrentPeerIdentity_fromDB(true);
+		if (Application.getCurrent_Peer_ID() != null) return Application.getCurrent_Peer_ID();
+		return Application.setCurrent_Peer_ID(Identity.initMyCurrentPeerIdentity_fromDB(true));
 	}
 	/**
 	 * Loads from table application, Sets and returns current peer identity (peerGID/peerGIDH/peer name)
@@ -351,8 +332,8 @@ public class Identity {
 	 * @throws P2PDDSQLException
 	 */
 	public static Identity getCurrentPeerIdentity_NoQuitOnFailure() {
-		if (Identity.current_peer_ID != null) return current_peer_ID;
-		return current_peer_ID = Identity.initMyCurrentPeerIdentity_fromDB(false);
+		if (Application.getCurrent_Peer_ID() != null) return Application.getCurrent_Peer_ID();
+		return Application.setCurrent_Peer_ID(Identity.initMyCurrentPeerIdentity_fromDB(false));
 	}
 	public static Identity addConstituentIdentity(boolean default_id) throws P2PDDSQLException {
 		Identity result = new Identity();
@@ -480,7 +461,7 @@ public class Identity {
     	
     	D_Peer me = HandlingMyself_Peer.getPeer(result);
 		if (me == null) {
-			Identity.current_peer_ID = result;
+			Application.setCurrent_Peer_ID(result);
 			//if (DEBUG) Util.printCallPath("");
 			new DDP2P_ServiceThread("Create Peer Dialog", true, quit_on_failure?new Object():null) {
 				public void _run() {
@@ -553,11 +534,11 @@ public class Identity {
 	   	if(DEBUG) Util.printCallPath("Set current org:"+org_id);
 		//String gID = OrgHandling.getGlobalOrgID(org_id+"");
 	   	long result = -1;
-		if(Identity.current_identity==null) {
+		if(Application.getCurrent_Identity()==null) {
 		   	if(_DEBUG) System.err.println("Identity:setCurrentOrg: No identity");
 			return -1;
 		}
-		if(Identity.current_identity.identity_id==null){
+		if(Application.getCurrent_Identity().identity_id==null){
 		   	if(_DEBUG) System.err.println("Identity:setCurrentOrg: No identity ID");
 			return -1;
 		}
@@ -580,7 +561,7 @@ public class Identity {
 		Application.getDB().update(net.ddp2p.common.table.identity.TNAME,
 				new String[]{net.ddp2p.common.table.identity.organization_ID, net.ddp2p.common.table.identity.constituent_ID},
 				new String[]{net.ddp2p.common.table.identity.identity_ID},
-				new String[]{""+org_id, constituent_ID, Identity.current_identity.identity_id},
+				new String[]{""+org_id, constituent_ID, Application.getCurrent_Identity().identity_id},
 				DEBUG);
 	   	if(DEBUG) System.err.println("Identity:setCurrentOrg: Done");
 		return result;
@@ -613,11 +594,11 @@ public class Identity {
 			long _organizationID) throws P2PDDSQLException {
     	if (DEBUG) System.err.println("Identity:setCurrentConstituent: "+_constituentID+" org="+_organizationID);
     	getCurrentConstituentIdentity(); // to load current Identity in not yet done ...
-		if (Identity.current_identity == null) {
+		if (Application.getCurrent_Identity() == null) {
 		  	if (DEBUG) System.err.println("Identity:setCurrentConstituent: No identity object");
 			return false;
 		}
-		if (Identity.current_identity.identity_id == null) {
+		if (Application.getCurrent_Identity().identity_id == null) {
 		  	if (DEBUG) System.err.println("Identity:setCurrentConstituent: No identity LID");
 			return false;
 		}
@@ -630,7 +611,7 @@ public class Identity {
 		Application.getDB().update(net.ddp2p.common.table.identity.TNAME,
 				new String[]{net.ddp2p.common.table.identity.organization_ID, net.ddp2p.common.table.identity.constituent_ID},
 				new String[]{net.ddp2p.common.table.identity.identity_ID},
-				new String[]{""+_organizationID, ""+_constituentID, Identity.current_identity.identity_id},
+				new String[]{""+_organizationID, ""+_constituentID, Application.getCurrent_Identity().identity_id},
 				DEBUG);
 		
 		/**
@@ -639,7 +620,7 @@ public class Identity {
 		if (_constituentID < 0) {
 			Application.getDB().delete(net.ddp2p.common.table.identity_ids.TNAME,
 					new String[]{net.ddp2p.common.table.identity_ids.identity_ID,net.ddp2p.common.table.identity_ids.organization_ID},
-					new String[]{Identity.current_identity.identity_id, ""+_organizationID}, DEBUG);
+					new String[]{Application.getCurrent_Identity().identity_id, ""+_organizationID}, DEBUG);
 	    	if (DEBUG) System.err.println("Identity:setCurrentConstituent: cancelling myself Done");
 			return true;
 		}
@@ -648,14 +629,14 @@ public class Identity {
 		 * Check if it is stored
 		 */
 		ArrayList<ArrayList<Object>> i =
-				Application.getDB().select(sql_identity_for_org, new String[]{Identity.current_identity.identity_id, ""+_organizationID}, DEBUG);
+				Application.getDB().select(sql_identity_for_org, new String[]{Application.getCurrent_Identity().identity_id, ""+_organizationID}, DEBUG);
 		/**
 		 * Insert if not stored
 		 */
 		if (i.size() == 0) {
 			Application.getDB().insert(net.ddp2p.common.table.identity_ids.TNAME,
 					new String[]{net.ddp2p.common.table.identity_ids.constituent_ID, net.ddp2p.common.table.identity_ids.organization_ID, net.ddp2p.common.table.identity_ids.identity_ID},
-					new String[]{""+_constituentID, ""+_organizationID, Identity.current_identity.identity_id},
+					new String[]{""+_constituentID, ""+_organizationID, Application.getCurrent_Identity().identity_id},
 					DEBUG);
 		} else {
 			long old_constituent = -1;
@@ -687,16 +668,16 @@ public class Identity {
     	if (DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: begin");
     	if (DEBUG) Util.printCallPath("Defaul ID for ORG");
     	getCurrentConstituentIdentity(); // to load current Identity in not yet done ...
-		if (Identity.current_identity == null){
+		if (Application.getCurrent_Identity() == null){
 	    	if(_DEBUG) System.err.println("Identity: getDefaultConstituentIDForOrg: no current obj Done");
 			return -1;
 		}
-		if(Identity.current_identity.identity_id==null){
+		if(Application.getCurrent_Identity().identity_id==null){
 	    	if(DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: no current identity ID Done");
 			return -1;
 		}
 		ArrayList<ArrayList<Object>> i = 
-			Application.getDB().select(sql_identity_for_org, new String[]{Identity.current_identity.identity_id,  ""+_organizationID}, DEBUG);
+			Application.getDB().select(sql_identity_for_org, new String[]{Application.getCurrent_Identity().identity_id,  ""+_organizationID}, DEBUG);
 		if (i.size() == 0){
 	    	if(DEBUG) System.err.println("Identity:getDefaultConstituentIDForOrg: no current identity_ids ID Done");
 			return -1;
@@ -716,15 +697,15 @@ public class Identity {
 	public static long getDefaultOrgID() throws P2PDDSQLException {
     	if(DEBUG) System.err.println("Identity:getDefaultOrgID: begin");
     	//Util.printCallPath("Default ID for ORG");
-		if(Identity.current_identity==null){
+		if(Application.getCurrent_Identity()==null){
 	    	if(_DEBUG) System.err.println("Identity:getDefaultOrgID: no current Done");
 			return -1;
 		}
-		if(Identity.current_identity.identity_id==null){
+		if(Application.getCurrent_Identity().identity_id==null){
 	    	if(_DEBUG) System.err.println("Identity:getDefaultOrgID: no current identity ID Done");
 			return -1;
 		}
-		long id = new Integer(Identity.current_identity.identity_id).longValue();
+		long id = new Integer(Application.getCurrent_Identity().identity_id).longValue();
 		String sql = 
 			"SELECT "+net.ddp2p.common.table.identity.organization_ID+
 			" FROM "+net.ddp2p.common.table.identity.TNAME+
@@ -739,25 +720,24 @@ public class Identity {
 	 */
 	public static void setCurrentPeerIdentity(String peerGID) {
 		 //current_identity.setPeerGID(peerGID); // unclear why setting here?
-		 Identity.current_peer_ID.setPeerGID(peerGID);
+		 Application.getCurrent_Peer_ID().setPeerGID(peerGID);
 	}
 	public static void setCurrentConstituentIdentity(Identity newID) {
-		 current_identity = newID;
+		 Application.setCurrent_Identity(newID);
 	}
 
 	public static String getMyPeerGID() {
-		if (current_peer_ID == null) return null;
-		return current_peer_ID.getPeerGID();
+		if (Application.getCurrent_Peer_ID() == null) return null;
+		return Application.getCurrent_Peer_ID().getPeerGID();
 	}
 	public static String getMyPeerInstance() {
-		if (current_peer_ID == null) return null;
-		return current_peer_ID.peerInstance;
+		if (Application.getCurrent_Peer_ID() == null) return null;
+		return Application.getCurrent_Peer_ID().peerInstance;
 	}
 
 	public static void setAgentWideEmails(String val) {
 		emails = val;
 	}
-
 	public static String getAgentWideEmails() {
 		return emails;
 	}
@@ -814,7 +794,7 @@ public class Identity {
 	}
 
 	public static int countLocalAddresses() {
-		return Identity.my_server_domains.size() + Identity.my_server_domains_loopback.size();
+		return Application.getMy_Server_Domains().size() + Application.getMy_Server_Domains_Loopback().size();
 	}
 
 	public static ArrayList<String> getListing_directories_string() {
@@ -822,12 +802,12 @@ public class Identity {
 			if (_DEBUG) System.out.println("Identity:getListing_directory_string: why not loaded so far?");
 			DD.load_listing_directories_noexception();
 		}
-		return listing_directories_string;
+		return Application.getListing_directories_string();
 	}
 
 	public static void setListing_directories_string(
 			ArrayList<String> listing_directories_string) {
-		Identity.listing_directories_string = listing_directories_string;
+		Application.setListing_directories_string(listing_directories_string);
 	}
 
 	public static ArrayList<Address> getListing_directories_addr() {
@@ -838,12 +818,12 @@ public class Identity {
 			}
 			DD.load_listing_directories_noexception();
 		}
-		return listing_directories_addr;
+		return Application.getListing_directories_addr();
 	}
 
 	public static void setListing_directories_addr(
 			ArrayList<Address> listing_directories_addr) {
-		Identity.listing_directories_addr = listing_directories_addr;
+		Application.setListing_directories_addr(listing_directories_addr);
 	}
 
 	public static ArrayList<InetSocketAddress> getListing_directories_inet() {
@@ -851,36 +831,28 @@ public class Identity {
 			if (_DEBUG) System.out.println("Identity:getListing_directory_inet: why not loaded so far?");
 			DD.load_listing_directories_noexception();
 		}
-		return listing_directories_inet;
+		return Application.getListing_directories_inet();
 	}
 
 	public static void setListing_directories_inet(
 			ArrayList<InetSocketAddress> listing_directories_inet) {
-		Identity.listing_directories_inet = listing_directories_inet;
+		Application.setListing_directories_inet(listing_directories_inet);
 	}
 
 	static public boolean isListing_directories_loaded() {
-		return listing_directories_loaded;
+		return Application.isListing_directories_loaded();
 	}
 
 	static public void setListing_directories_loaded(boolean listing_directories_loaded) {
-		Identity.listing_directories_loaded = listing_directories_loaded;
+		Application.setListing_directories_loaded(listing_directories_loaded);
 	}
 
-	public static int getPeerTCPPort() {
-		return port;
+	public static int getPreferred_Directory_IDX() {
+		return Application.getPreferred_directory_idx();
 	}
 
-	public static void setPeerTCPPort(int port) {
-		Identity.port = port;
-	}
-
-	public static int getPeerUDPPort() {
-		return udp_server_port;
-	}
-
-	public static void setPeerUDPPort(int udp_server_port) {
-		Identity.udp_server_port = udp_server_port;
+	public static void setPreferred_Directory_IDX(int preferred_directory_idx) {
+		Application.setPreferred_directory_idx(preferred_directory_idx);
 	}
 
 }
