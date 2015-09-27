@@ -1370,7 +1370,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		String old_orgGID = this.global_organization_ID;
 		
 		fillGlobals();
-		if(_DEBUG) System.out.println("D_Neighborhood:verifySign: cmp ORGID neworgGID=\""+this.getOrgGID()+"\" vs "+old_orgGID);
+		if (DEBUG) System.out.println("D_Neighborhood:verifySign: cmp ORGID neworgGID=\""+this.getOrgGID()+"\" vs "+old_orgGID);
 
 		//Util.printCallPath("recursive?");
 		String old_GID = this.global_neighborhood_ID;
@@ -1427,6 +1427,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			for (Long l : D_Neighborhood_Node.loaded_By_LID.keySet()) {
 				if (_DEBUG) System.out.println("D_Neighborhood: getGIDFromLID: available ["+l+"]"+D_Neighborhood_Node.loaded_By_LID.get(l).getGIDH());
 			}
+			Util.printCallPath("");
 			return null;
 		}
 		return c.getGID();
@@ -2664,7 +2665,7 @@ class D_Neighborhood_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThre
 								SaverThreadsConstants.SAVER_SLEEP_WAITING_NEIGHBORHOOD_MSEC;
 					wait(timeout);
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 			}
 		}

@@ -36,6 +36,7 @@ import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.config.Language;
 import net.ddp2p.common.data.DDTranslation;
 import net.ddp2p.common.data.D_Constituent;
+import net.ddp2p.common.data.D_FieldValue;
 import net.ddp2p.common.data.D_Neighborhood;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Witness;
@@ -1066,15 +1067,15 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
         this.tree = tree; this.icon = icon;
     }
     static int field_index(long[]fieldID, long field) {
-    	for(int k=0;k<fieldID.length;k++){
-    		if(fieldID[k]==field) return k;
+    	for (int k = 0; k < fieldID.length; k ++){
+    		if (fieldID[k] == field) return k;
     	}
     	return -1;
     }
     public void actionPerformed(ActionEvent e) {
-    	try{
+    	try {
     		_actionPerformed(e);
-    	}catch(Exception ex){
+    	} catch(Exception ex){
     		ex.printStackTrace();
     	}
     }
@@ -1093,10 +1094,10 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	Object target=model.getRoot();
     	if (tp != null) {
     		target = tp.getLastPathComponent();
-    		if(! (target instanceof ConstituentsAddressNode)) return;
+    		if (! (target instanceof ConstituentsAddressNode)) return;
     		ConstituentsAddressNode neig = (ConstituentsAddressNode)target;
-    		if((neig!=null)&&(neig.getNeighborhoodData()!=null)){
-    			if(neig.getNeighborhoodData().global_nID==null){
+    		if ((neig != null) && (neig.getNeighborhoodData() != null)) {
+    			if (neig.getNeighborhoodData().global_nID==null){
     				Application_GUI.warning(__("Cannot expand unsigned/temporary neighborhood.")+"\n "+
     						__("First edit it with a final value!")+"\n "+__("You can edit it by double clicking on it!"),
     						__("Temporary Neighborhood"));
@@ -1167,7 +1168,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
      * @return 
      * @throws P2PDDSQLException 
      */
-    static long storeMyConstituentData(ConstituentsTree tree, ConstituentAddData dialog,
+    static long storeMyConstituentData (ConstituentsTree tree, ConstituentAddData dialog,
     		boolean inserting_field_values, boolean inserting_neighborhoods) throws P2PDDSQLException {
     	boolean inserted_neigh = false;
     	ConstituentsModel model = (ConstituentsModel)tree.getModel();
@@ -1184,11 +1185,11 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	long field_default_next=0;
     	long field_above=-1; //  The ID of the current "previous fieldID"
     	long parent_nID=-1;
-    	String subdivisions=model.getSubDivisions();
+    	String subdivisions = model.getSubDivisions(); // should return ..
 		D_Constituent cn = null;
-		if(DEBUG)System.out.println("ConstituemtActions:AddMyself:storeMyConst: subdivs="+subdivisions);
+		if (DEBUG) System.out.println("ConstituemtActions:AddMyself:storeMyConst: subdivs="+subdivisions);
     	//String gcd=Util.getGlobalID("constituentID",dialog.emailEditor+":"+dialog.gnEditor);  
-     	if("".equals(dialog.gnEditor)&&"".equals(dialog.snEditor)) return constituentID;
+     	if ("".equals(dialog.gnEditor)&&"".equals(dialog.snEditor)) return constituentID;
 		
     	net.ddp2p.widgets.identities.IdentityBranch ib = ((net.ddp2p.widgets.identities.IdentityBranch)Identity.current_id_branch);
     	if(ib == null) return constituentID;
@@ -1201,7 +1202,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	SK sk = ib.getKeys();
     	keys = ib.getCipher();
     	
-    	if(keys==null) {
+    	if (keys == null) {
     		
         	keys = Cipher.mGetStoreCipher(
         			dialog.ciphersuit,
@@ -1283,7 +1284,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
 			}
 		}
 		
-		if(DEBUG)System.out.println("ConstituentActions:AddMyself:storeMyConst: subdivs2="+subdivisions);
+		if(DEBUG)System.out.println("ConstituentActions:AddMyself:storeMyConst: subdivs2="+subdivisions); //must have
 		try{
     		/* Inserting values and neighborhoods for ancestor neighborhoods  */
    			if(DEBUG)System.out.println("ConstituentActions:AddMyself:storeMyConst: ancestors="+otp.length);
@@ -1388,30 +1389,51 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     		}
     		/* Inserting values and properties for descendants */
         	subdivisions= dialog._subdivisions;
-			if(DEBUG)System.out.println("ConstituentActions:AddMyself:storeMyConst: descendants subdivs6="+subdivisions);
+			if(DEBUG)System.out.println("ConstituentActions:AddMyself:storeMyConst: descendants subdivs6="+subdivisions); //must here
     		if(DEBUG)System.err.println("ConstituentAddMyself:Size objects: "+dialog.valueEditor.length+" vs:"+dialog.valueEditor.length);
-    		for(int k=dialog.valueEditor.length-1;k>=0;k--) {
-    			if(DEBUG)System.out.println("ConstituentActions:AddMyself:descendants: k=="+k);
-    			String value=dialog.valueEditor[k];
+    		for (int k = dialog.valueEditor.length - 1; k >= 0; k --) {
+    			if (DEBUG) System.out.println("ConstituentActions:AddMyself:descendants: k==" + k);
+    			String value = dialog.valueEditor[k];
     			String language = dialog.getFieldValueLanguage(k);
-				if(DEBUG)System.err.println(k+": "+value+" neigh="+dialog.partNeigh[k]);
-    			if ((value==null) || (value.equals(""))){
+				if (DEBUG) System.err.println("ConstituentActions:AddMyself:loop_editor "+k+": "+value+" neigh="+dialog.partNeigh[k]);
+    			if ((value == null) || (value.equals(""))) {
     				if(DEBUG)System.err.println("Skipping: "+k);
     				continue;
     			}
     			field_default_next = 0;
-    			for(int j = k-1; j>=0; j--) {
-    				if ((dialog.valueEditor[j]==null)||(dialog.valueEditor[j].equals(""))) continue;
-    				field_default_next=dialog.fieldID[j];
+    			for (int j = k - 1; j >= 0; j --) {
+    				if ((dialog.valueEditor[j] == null) || (dialog.valueEditor[j].equals(""))) continue;
+    				field_default_next = dialog.fieldID[j];
     				break;
     			}
-    			long field_valuesID=-1;
+    			long field_valuesID=-1; // LID of neighborhood if inserted as field
     			Constituents_NeighborhoodData n_data=null;
      			
-    			boolean is_neighborhood=net.ddp2p.common.table.field_extra.isANeighborhood(dialog.partNeigh[k]);
-    			if(inserting_field_values||(!is_neighborhood)) {
+    			boolean is_neighborhood = net.ddp2p.common.table.field_extra.isANeighborhood(dialog.partNeigh[k]);
+    			if (DEBUG) System.out.println("ConstituentsAction: AddMyself: storeConstData: is_neigh="+is_neighborhood+" for "+dialog.partNeigh[k]);
+    			if (inserting_field_values || (! is_neighborhood)) {
+    	    		cn = D_Constituent.getConstByLID(constituentID, true, true);
+    	    		//cn.setNeighborhoodIDs(null, parent_nID);
+    	    		D_FieldValue fv = new D_FieldValue();
+    	    		fv.field_extra_ID = dialog.fieldID[k];
+    	    		fv.field_extra_GID = model.getOrganization().getFieldExtraGID(fv.field_extra_ID);
+    	    		fv.value = value;
+    	    		fv.value_lang = language;
+    	    		fv.field_ID_above = ((field_above<0)||(!is_neighborhood))?-1:(field_above);
+    	    		fv.field_GID_above = model.getOrganization().getFieldExtraGID(fv.field_ID_above);
+    	    		fv.field_ID_default_next = is_neighborhood?(field_default_next):0;
+    	    		fv.field_GID_default_next = model.getOrganization().getFieldExtraGID(fv.field_ID_default_next);
+    	    		fv.neighborhood_ID = Util.lval(net.ddp2p.common.table.field_extra.NEIGHBORHOOD_ID_NA, 0);
+    	    		fv.global_neighborhood_ID = D_Neighborhood.getGIDFromLID(fv.neighborhood_ID);
+    	    		cn.setFieldValue(fv);
+    	    		cn.sign();
+    	    		cn.storeRequest();
+    	    		cn.releaseReference();
+    	    		
+        			if (DEBUG) System.out.println("ConstituentsAction: AddMyself: storeConstData: inserting field value");
+        			/*
     				field_valuesID = model.db.insert(net.ddp2p.common.table.field_value.TNAME,
-    						new String[]{
+    						new String[] {
     						net.ddp2p.common.table.field_value.constituent_ID,
     						net.ddp2p.common.table.field_value.field_extra_ID,
     						net.ddp2p.common.table.field_value.value,
@@ -1427,8 +1449,9 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     						is_neighborhood?(field_default_next+""):null,
     						net.ddp2p.common.table.field_extra.NEIGHBORHOOD_ID_NA},
     								DEBUG);
+    				*/
     			}
-    			if(inserting_neighborhoods&&is_neighborhood) {
+    			if (inserting_neighborhoods && is_neighborhood) {
     				n_data = new Constituents_NeighborhoodData();
     				String n_key =  ""+model.getConstituentIDMyself()+":"+dialog.label[k]+"="+value;
     				//String gID=Util.getGlobalID("neighborhoods", n_key);
@@ -1468,6 +1491,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     				wbn = dn;
     				
     				long __neighborhoodID = dn.getLID_force();
+        			if (DEBUG) System.out.println("ConstituentsAction: AddMyself: storeConstData: got neigh "+dn);
     				//String _nID=wbn.storeVerified(Util.getStringID(constituentID), wbn.getGIDOrg(), Util.getStringID(model.getOrganizationID()), now, null, null);
     				n_data.global_nID = wbn.getGID();
     				n_data.neighborhoodID = __neighborhoodID; //Util.lval(_nID, -1);
@@ -1519,7 +1543,8 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
 					parent_nID=n_data.neighborhoodID;
      			} 
     			/* add sub-children if expanded */
-     			if (is_neighborhood&&noChild){
+     			if (is_neighborhood && noChild){
+        			if (DEBUG) System.out.println("ConstituentsAction: AddMyself: storeConstData: neigh no child");
      				//noChild=true;
    					//if((child=can.getChild(dialog.fieldID[k], value))!=null)
    	   				if((child=can.getChildByID(n_data.neighborhoodID))!=null)
@@ -1527,15 +1552,16 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
    						tree.collapsePath(tp.pathByAddingChild(child));
    						//noChild=false;
    					}
-    				if(noChild&&(child==null)) { //create the first child to show
-     					int level=field_index(can.getFieldIDs(), dialog.fieldID[k]);
+    				if (noChild&&(child==null)) { //create the first child to show
+            			if (DEBUG) System.out.println("ConstituentsAction: AddMyself: storeConstData: no visible child in neigh");
+     					int level = field_index(can.getFieldIDs(), dialog.fieldID[k]);
     					Constituents_LocationData data = new Constituents_LocationData();
     					data.value=value;
     					data.inhabitants = 1;
     					data.organizationID = model.getOrganizationID();
     					data.setLabel(dialog.label[k]);
     					data.fieldID = dialog.fieldID[k];
-    					data.field_valuesID = field_valuesID;
+    					data.field_valuesID = field_valuesID; // if inserted as field
     					data.setFieldID_default_next(field_index(can.getFieldIDs(), field_default_next));
     					data.fieldID_above = field_above;
     					data.tip = dialog.tip[k];
@@ -1562,6 +1588,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     		cn.sign();
     		cn.storeRequest();
     		cn.releaseReference();
+			if (DEBUG) System.out.println("ConstituentsAction: AddMyself: storeConstData: inserted const "+cn);
     		//}
     	}catch(Exception ev){
     		ev.printStackTrace();
@@ -1604,11 +1631,12 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     		}
     	}
     	// Could recursively fireTreeNodesChanged on ancestors to update inhabitants!!!
-    	for(;;){
-    		if(tp.getPath().length<2) break;
+    	for(;;) {
+    		if (tp.getPath().length < 2) break;
     		TreePath tpp = tp.getParentPath();
     		Object crt=tp.getLastPathComponent();
     		new_index = ((ConstituentsAddressNode)tpp.getLastPathComponent()).getIndexOfChild(crt);
+			if (DEBUG) System.out.println("ConstituentsAction: AddMyself: storeConstData: fire nodes changed in "+crt+" idx="+new_index);
     		model.fireTreeNodesChanged(new TreeModelEvent(tree,tpp, new int[]{new_index},
     				new Object[]{crt}));
     		tp = tpp;
@@ -1616,7 +1644,7 @@ class ConstituentsAddMyselfAction extends DebateDecideAction {
     	if(DEBUG) System.out.println("constituentAction:astoreMyself:setBroadcastable");
     	D_Organization crt_org = model.getOrganization();
     	if(DEBUG) System.out.println("constituentAction:astoreMyself:setBroadcastable org = "+ crt_org);
-    	if(true||!crt_org.broadcasted) {
+    	if (true || ! crt_org.broadcasted) {
         	if(DEBUG) System.out.println("constituentAction:astoreMyself:setBroadcastable org set broadcasted");
         	crt_org = crt_org.getOrgByOrg_Keep(crt_org);
     		crt_org.broadcasted = true;

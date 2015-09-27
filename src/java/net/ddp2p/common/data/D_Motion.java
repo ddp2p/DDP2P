@@ -558,9 +558,13 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				String gidh = crt.getGIDH();
 				long lid = crt.getLID();
 				if (gidh == null) {
-					if (_DEBUG) { System.out.println("D_Motion: register_newLID_ifLoaded: had no gidh! no need of this call.");
-					Util.printCallPath("Path");}
+					// Called on creation from editor
+					if (DEBUG) {
+						System.out.println("D_Motion: register_newLID_ifLoaded: had no gidh! no need of this call.");
+						//Util.printCallPath("Path");
+					}
 					return false;
+					
 				}
 				if (lid <= 0) {
 					Util.printCallPath("Why call without LID="+crt);
@@ -593,8 +597,9 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				if (DEBUG) System.out.println("D_Motion: register_newLID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
 
 				return true;
-			}
+				}
 		}
+			
 		private static boolean register_newGID_ifLoaded(D_Motion crt) {
 			if (DEBUG) System.out.println("D_Motion: register_newGID_ifLoaded: start crt = "+crt);
 			crt.reloadMessage(); 
@@ -641,6 +646,7 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 				return true;
 			}
 		}
+		
 		/**
 		 * 
 		 * @param crt
@@ -3313,7 +3319,7 @@ class D_Motion_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 								SaverThreadsConstants.SAVER_SLEEP_WAITING_MOTION_MSEC;
 					wait(timeout);
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 			}
 		}

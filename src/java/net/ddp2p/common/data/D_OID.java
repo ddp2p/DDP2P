@@ -48,6 +48,7 @@ public class D_OID {
 	}
 	public static D_OID getBySequence(BigInteger[] oid2) {
 		if (oid == null) _load_OIDs();
+		if (oid2 == null) return null;
 		return oid.get(Util.BNOID2String(oid2));
 	}
 }

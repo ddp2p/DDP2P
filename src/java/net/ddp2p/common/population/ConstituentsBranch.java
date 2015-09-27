@@ -73,12 +73,15 @@ public abstract class ConstituentsBranch extends ConstituentsNode {
     	if (index < 0) return null;
      	if ((getChildren().length == 0) && (this != model.getRoot())) populate();
     	if (index < getChildren().length) return getChildren()[index];
-    	System.out.println("ConstituentsModel: getChild: "+index+" this="+this);
+    	if (DEBUG) System.out.println("ConstituentsBranch: getChild: "+index+">#children, this="+this);
     	return __("Right click for a menu!");
     }
     public void populateChild(ConstituentsNode child, int index) {
     	ConstituentsNode _children[] = new ConstituentsNode[getChildren().length+1];
-    	if((index<0) || (index>getChildren().length)) return;
+    	if ((index < 0) || (index > getChildren().length)) {
+    		if (DEBUG) System.err.println("ConstituentsBranch:populateChild: add at bad index: "+index+" vs"+getChildren().length);
+    		return;
+    	}
     	for(int i=0; i<index; i++)	_children[i] = getChildren()[i];
     	_children[index] = child;
     	for(int i=index; i<getChildren().length;i++) _children[i+1] = getChildren()[i];

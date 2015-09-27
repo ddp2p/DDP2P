@@ -188,9 +188,19 @@ public class D_FieldValue extends ASNObj{
 		String[] params = new String[fields.length];
 		params[net.ddp2p.common.table.field_value.VAL_COL_VALUE] = wf.value;
 		params[net.ddp2p.common.table.field_value.VAL_COL_CONSTITUENT_ID] = constituent_ID;
-		params[net.ddp2p.common.table.field_value.VAL_COL_FIELD_DEFAULT_NEXT] = org.getFieldExtraID(wf.field_GID_default_next, accept_new_fields);
-		params[net.ddp2p.common.table.field_value.VAL_COL_FIELD_EXTRA_ID] = org.getFieldExtraID(wf.field_extra_GID, accept_new_fields);
-		params[net.ddp2p.common.table.field_value.VAL_COL_FIELD_ID_ABOVE] = org.getFieldExtraID(wf.field_GID_above, accept_new_fields);
+		
+		String def_next_LID = org.getFieldExtraID(wf.field_GID_default_next, accept_new_fields);
+		if (def_next_LID == null) def_next_LID = Util.getStringID(wf.field_ID_default_next);
+		params[net.ddp2p.common.table.field_value.VAL_COL_FIELD_DEFAULT_NEXT] = def_next_LID;
+		
+		String extra_LID = org.getFieldExtraID(wf.field_extra_GID, accept_new_fields);
+		if (extra_LID == null) extra_LID = Util.getStringID(wf.field_extra_ID);
+		params[net.ddp2p.common.table.field_value.VAL_COL_FIELD_EXTRA_ID] = extra_LID;
+		
+		String def_abv_LID = org.getFieldExtraID(wf.field_GID_default_next, accept_new_fields);
+		if (def_abv_LID == null) def_abv_LID = Util.getStringID(wf.field_ID_default_next);
+		params[net.ddp2p.common.table.field_value.VAL_COL_FIELD_ID_ABOVE] = def_abv_LID;
+		
 		params[net.ddp2p.common.table.field_value.VAL_COL_LANG] = wf.value_lang;
 		params[net.ddp2p.common.table.field_value.VAL_COL_NEIGH_ID] = D_Neighborhood.getLIDstrFromGID(wf.global_neighborhood_ID, org_ID);
 		if(params[net.ddp2p.common.table.field_value.VAL_COL_NEIGH_ID]==null) // table contraint refuses null;

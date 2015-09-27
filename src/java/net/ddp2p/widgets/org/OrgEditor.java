@@ -1571,7 +1571,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						__("Commit"), JOptionPane.OK_CANCEL_OPTION)>0) return;
 				
 				org = D_Organization.getOrgByOrg_Keep(org);
-				org.setGID(gID, gIDhash);
+				org.setGID_AndLink(gID, gIDhash);
 				org.updateExtraGIDs();
 				org.setCreationDate(creationTime);
 				org.setKeys(keys);//Cipher.getSK(sID)
@@ -1624,14 +1624,46 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				String gid=null;
 				//SK sk_ini=null;
 				D_Organization orgData = organization; //D_Organization.getOrgByLID(this.orgID, true);
+				organization = D_Organization.getOrgByOrg_Keep(orgData);
+				
 				if ((orgData == null) || (orgData.getName() == null) || ("".equals(orgData.getName().trim()))){
-					Application_GUI.warning(__("You need to select a name for you organization"), __("Missing Name"));
+					organization.releaseReference();
+					Application_GUI.warning(__("You have to select a name for your organization"), __("Missing Name"));
 					return;						
 				}
+				long lid = orgData.getLID();
+				if (organization == null) {
+					organization.releaseReference();
+					Application_GUI.warning(__("Lost organizations:")+"\n"+lid+"/"+orgData.getName(), __("Lost Organization"));
+					return;						
+				}
+				if (organization.getLID() != lid) {
+					organization.releaseReference();
+					Application_GUI.warning(__("Discard duplicated organizations:")
+							+"\n"+lid+"/"+orgData.getName()
+							+"\n"+organization.getLID()+"/"+organization.getName()							
+							, __("Duplicated Organization"));
+					return;
+				}
+				if ((organization.getName() == null) || ("".equals(organization.getName().trim()))){
+					organization.releaseReference();
+					Application_GUI.warning(__("You need to select a name for your organization"), __("Missing Name"));
+					return;						
+				}
+
 				//(orgData.params == null) || (orgData.params.creator_global_ID == null)
 				if ((orgData == null) || orgData.getCreatorGID() == null)
 					{
 					if (! DD.ANONYMOUS_ORG_GRASSROOT_CREATION) {
+						organization.releaseReference();
+						Application_GUI.warning(__("You need to select a peer identity as")+" "+ __("Initiator"), __("Missing Initiator"));
+						return;
+					}
+				}
+				
+				if ((orgData == null) || orgData.getCreatorGID() == null) {
+					if (! DD.ANONYMOUS_ORG_GRASSROOT_CREATION) {
+						organization.releaseReference();
 						Application_GUI.warning(__("You need to select a peer identity as")+" "+ __("Initiator"), __("Missing Initiator"));
 						return;
 					}
@@ -1647,7 +1679,10 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						__("No parameter can be changed later.")+"\n"+
 						__("For later modifications you will have to create a new organization.")+"\n"+
 						__("Once this organization is disseminated, you cannot retract it.")+"\n"+
-						__("Are you ready to commit?"), __("Commit"), JOptionPane.OK_CANCEL_OPTION)>0) return;
+						__("Are you ready to commit?")+"\n"+orgData.getName(), __("Commit"), JOptionPane.OK_CANCEL_OPTION)>0) {
+					organization.releaseReference();
+					return;
+				}
 				/*
 				try {
 					Application.db.update(table.organization.TNAME,
@@ -1669,13 +1704,24 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 					return;
 				}
 				*/
-				organization = D_Organization.getOrgByOrg_Keep(organization);
+				//organization = D_Organization.getOrgByOrg_Keep(organization);
 				organization.updateExtraGIDs();
 				organization.setCreationDate(creationTime);
 				organization.setCreationDate(creationTime);
 				organization.setArrivalDate(currentTime, _currentTime);
 				gid = organization.getOrgGIDandHashForGrassRoot(); 
-				organization.setGID(gid, gid);
+				D_Organization old = D_Organization.getOrgByGID_or_GIDhash(gid, gid, false, false, false, null);
+				if (old != null) {
+					organization.releaseReference();
+					Application_GUI.warning(__("Discard duplicated organizations:")
+							+"\n"+lid+"/"+orgData.getName()
+							+"\n"+organization.getLID()+"/"+organization.getName()							
+							+"\n"+old.getLID()+"/"+old.getName()							
+							, __("Duplicated Organization"));
+					return;
+				}
+				//organization.setGID(gid, gid);
+				organization.setGID_AndLink(gid,gid);
 				organization.signIni();
 				organization.setSignature(organization.hash(DD.APP_ORGID_HASH));
 				organization.setTemporary(false);

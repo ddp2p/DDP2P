@@ -3024,6 +3024,27 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		return sel_c;
 	}
+	public final static String constituents_by_neigh_values_sql =
+			"SELECT "
+	+ "fv." + net.ddp2p.common.table.field_value.value
+	+ ", fv."+net.ddp2p.common.table.field_value.field_extra_ID
+	+ ", COUNT(*)"
+	+ ", fe." + net.ddp2p.common.table.field_extra.tip
+	+ ", fe." + net.ddp2p.common.table.field_extra.partNeigh
+	+ ", fv." + net.ddp2p.common.table.field_value.fieldID_above
+	+ ", fv." + net.ddp2p.common.table.field_value.field_default_next
+	+ ", fv." + net.ddp2p.common.table.field_value.neighborhood_ID
+	+ " FROM "+net.ddp2p.common.table.field_value.TNAME+" AS fv " +
+	// " JOIN field_extra ON fv.fieldID = field_extra.field_extra_ID " +
+	" JOIN " + net.ddp2p.common.table.constituent.TNAME+" AS c ON c."+net.ddp2p.common.table.constituent.constituent_ID+" = fv."+net.ddp2p.common.table.field_value.constituent_ID +
+	" JOIN " + net.ddp2p.common.table.field_extra.TNAME+" AS fe ON fe."+net.ddp2p.common.table.field_extra.field_extra_ID+" = fv."+net.ddp2p.common.table.field_value.field_extra_ID+
+	" WHERE c." + net.ddp2p.common.table.constituent.organization_ID+"=? "
+	  + " AND ("
+	  + " (fv."+net.ddp2p.common.table.field_value.field_extra_ID+" = ?)"
+	  + " OR (fv."+net.ddp2p.common.table.field_value.fieldID_above+" ISNULL AND fe."+net.ddp2p.common.table.field_extra.partNeigh+" > 0) "
+	  + ") "
+	+ " GROUP BY fv."+net.ddp2p.common.table.field_value.value
+	+ " ORDER BY fv."+net.ddp2p.common.table.field_value.value+" DESC;";
 	/**
 	 * <fv.value,fv.fe_ID,count,fe.tip,fe.neigh,fv.fe_above,fv.fe_next,fv.neigh_ID> grouped by value
 	 * @param fe_ID
@@ -3031,31 +3052,14 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 	 * @return
 	 */
 	public static ArrayList<ArrayList<Object>> getRootConstValues(long fe_ID, long o_ID) {
-		String constituents_by_values_sql =
-				"SELECT "
-		+ "fv." + net.ddp2p.common.table.field_value.value
-		+ ", fv."+net.ddp2p.common.table.field_value.field_extra_ID
-		+ ", COUNT(*)"
-		+ ", fe." + net.ddp2p.common.table.field_extra.tip
-		+ ", fe." + net.ddp2p.common.table.field_extra.partNeigh
-		+ ", fv." + net.ddp2p.common.table.field_value.fieldID_above
-		+ ", fv." + net.ddp2p.common.table.field_value.field_default_next
-		+ ", fv." + net.ddp2p.common.table.field_value.neighborhood_ID
-		+ " FROM "+net.ddp2p.common.table.field_value.TNAME+" AS fv " +
-		// " JOIN field_extra ON fv.fieldID = field_extra.field_extra_ID " +
-		" JOIN " + net.ddp2p.common.table.constituent.TNAME+" AS c ON c."+net.ddp2p.common.table.constituent.constituent_ID+" = fv."+net.ddp2p.common.table.field_value.constituent_ID +
-		" JOIN " + net.ddp2p.common.table.field_extra.TNAME+" AS fe ON fe."+net.ddp2p.common.table.field_extra.field_extra_ID+" = fv."+net.ddp2p.common.table.field_value.field_extra_ID+
-		" WHERE c." + net.ddp2p.common.table.constituent.organization_ID+"=? AND " +
-		" (fv."+net.ddp2p.common.table.field_value.field_extra_ID+" = ?)"
-				+ " OR (fv."+net.ddp2p.common.table.field_value.fieldID_above+" ISNULL AND fe."+net.ddp2p.common.table.field_extra.partNeigh+" > 0) "
-		+ " GROUP BY fv."+net.ddp2p.common.table.field_value.value
-		+ " ORDER BY fv."+net.ddp2p.common.table.field_value.value+" DESC;";
+		
+		if (DEBUG) System.out.println("D_Constituent: getRootConstValues: "+constituents_by_neigh_values_sql+" // "+ o_ID+","+fe_ID);
 		
 		ArrayList<ArrayList<Object>> subneighborhoods = new ArrayList<ArrayList<Object>>();
 		try {
-			subneighborhoods = Application.getDB().select( constituents_by_values_sql,
-				new String[]{""+o_ID,
-				""+fe_ID}, DEBUG);
+			subneighborhoods = Application.getDB().select( constituents_by_neigh_values_sql,
+				new String[]{Util.getStringID(o_ID),
+				Util.getStringID(fe_ID)}, DEBUG);
 		} catch (P2PDDSQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -3078,6 +3082,18 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		return result;
 	}
+	public void setFieldValue(D_FieldValue fv) {
+		// TODO Auto-generated method stub
+		if (address == null) address = new D_FieldValue[0];
+		D_FieldValue[] _address = new D_FieldValue[address.length + 1];
+		for (int k = 0; k < _address.length - 1; k ++) {
+			_address[k] = address[k];
+		}
+		_address[_address.length - 1] = fv;
+		address = _address;
+		this.dirty_params = true;
+	}
+	
 	public D_FieldValue[] getFieldValues() {
 		return address;
 	}
@@ -3568,7 +3584,7 @@ class D_Constituent_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThrea
 								SaverThreadsConstants.SAVER_SLEEP_WAITING_CONSTITUENT_MSEC;
 					wait(timeout);
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 			}
 		}

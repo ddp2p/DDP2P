@@ -114,7 +114,7 @@ public class Client2 extends net.ddp2p.common.util.DDP2P_ServiceThread  implemen
 				startConnections();
 				wait_lock.wait(DD.PAUSE_BEFORE_CLIENT_START);
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 				return;
 			}
 		}

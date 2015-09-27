@@ -148,6 +148,18 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		/** message is enough (no need to store the Encoder itself) */
 		public byte[] message;
 		public DDP2P_DoubleLinkedList_Node<D_Organization> my_node_in_loaded;
+
+		public static D_Organization search_GIDhash(String c) {
+			DDP2P_DoubleLinkedList_Node<D_Organization> h = loaded_objects.getHead();
+			if (h == null) return null;
+			if (h.payload != null && c.equals(h.payload.getGIDH()))
+				return h.payload;
+			for (; h != loaded_objects.getHead(); h = h.getNext()) {
+				if (h.payload != null && c.equals(h.payload.getGIDH()))
+					return h.payload;
+			}
+			return null;
+		}
 	
 		public D_Organization_Node(byte[] message,
 				DDP2P_DoubleLinkedList_Node<D_Organization> my_node_in_loaded) {
@@ -319,6 +331,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				return true;
 			}
 		}
+		/**
+		 * Fails if not already registered (lid not in hash)
+		 * @param crt
+		 * @return
+		 */
 		private static boolean register_newGID_ifLoaded(D_Organization crt) {
 			if (DEBUG) System.out.println("D_Organization: register_newGID_ifLoaded: start crt = "+crt);
 			crt.reloadMessage(); 
@@ -438,23 +455,30 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	}
 	static D_Organization need_saving_next() {
 		Iterator<String> i = _need_saving.iterator();
-		if (!i.hasNext()) return null;
+		if (! i.hasNext()) return null;
 		String c = i.next();
 		if (DEBUG) System.out.println("D_Organization: need_saving_next: next: "+c);
 		D_Organization r = D_Organization_Node.loaded_By_GIDhash.get(c);
 		if (r == null) {
+			// A BUG?! TRY a last minuyte fix....
+			r = D_Organization_Node.search_GIDhash(c);
+			if (r == null) {
+				_need_saving.remove(c);				
+			} else {
+				D_Organization_Node.loaded_By_GIDhash.put(c, r);
+			}
 			if (_DEBUG) {
 				System.out.println("D_Organization Cache: need_saving_next null entry "
-						+ "needs saving next: "+c);
+						+ "needs saving next: " + c+"\nr="+r);
 				System.out.println("D_Organization Cache: "+dumpDirCache());
 			}
-			return null;
+			return r;
 		}
 		return r;
 	}
 	static D_Organization need_saving_obj_next() {
 		Iterator<D_Organization> i = _need_saving_obj.iterator();
-		if (!i.hasNext()) return null;
+		if (! i.hasNext()) return null;
 		D_Organization r = i.next();
 		if (DEBUG) System.out.println("D_Organization: need_saving_obj_next: next: "+r);
 		//D_Organization r = D_Organization_Node.loaded_org_By_GIDhash.get(c);
@@ -1958,9 +1982,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				D_Organization_Node.loaded_By_GID.put(this.getGID(), this);
 				if (DEBUG) System.out.println("D_Organization:setGID: register GID="+this.getGID());
 			}
-			if (this.getGIDH_or_guess() != null) {
-				D_Organization_Node.loaded_By_GIDhash.put(this.getGIDH_or_guess(), this);
-				if (DEBUG) System.out.println("D_Organization:setGID: register GIDH="+this.getGIDH_or_guess());
+			String gidh = this.getGIDH_or_guess();
+			if (gidh != null) {
+				D_Organization_Node.loaded_By_GIDhash.put(gidh, this);
+				if (DEBUG) System.out.println("D_Organization:setGID: register GIDH="+gidh);
 			}
 		}
 		if (DEBUG) System.out.println("D_Organization:setGID: quit loaded="+loaded_in_cache);
@@ -2005,7 +2030,13 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			//return;
 			D_Organization._need_saving_obj.add(this);
 			if (DEBUG) System.out.println("D_Peer:storeRequest: added to _need_saving_obj");
-		} else {		
+		} else {
+			if (D_Organization_Node.loaded_By_GIDhash.get(save_key) == null) {
+				D_Organization_Node.loaded_By_GIDhash.put(save_key, this);
+				String gid = this.getGID();
+				if (gid != null) D_Organization_Node.loaded_By_GID.put(gid, this);
+				Util.printCallPath("Saving unlinked org key:"+save_key+"\n"+this);
+			}
 			if (DEBUG) System.out.println("D_Organization:storeRequest: GIDH="+save_key);
 			D_Organization._need_saving.add(save_key);
 		}
@@ -4061,9 +4092,28 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		}
 		return -1;
 	}
+	public String getFieldExtraGID(long field_extra_LID) {
+		if (field_extra_LID <= 0) return null;
+		if (params == null) return null;
+		if (params.orgParam == null) return null;
+		for (D_OrgParam op : params.orgParam) {
+			if (field_extra_LID == op.field_LID) {
+				if (op.global_field_extra_ID != null) return op.global_field_extra_ID;
+				try {
+					return Util.sval(D_Organization.getFieldExtraGID_FromTable(field_extra_LID), null);
+				} catch (P2PDDSQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return null;
+	}
 	final public static String sql_getFieldsExtraByGID = "SELECT "+net.ddp2p.common.table.field_extra.field_extra_ID+
-		" FROM "+net.ddp2p.common.table.field_extra.TNAME+
-		" WHERE "+net.ddp2p.common.table.field_extra.global_field_extra_ID+"=? AND "+net.ddp2p.common.table.field_extra.organization_ID+"=?;";
+			" FROM "+net.ddp2p.common.table.field_extra.TNAME+
+			" WHERE "+net.ddp2p.common.table.field_extra.global_field_extra_ID+"=? AND "+net.ddp2p.common.table.field_extra.organization_ID+"=?;";
+	final public static String sql_getFieldsExtraByLID = "SELECT "+net.ddp2p.common.table.field_extra.global_field_extra_ID+
+			" FROM "+net.ddp2p.common.table.field_extra.TNAME+
+			" WHERE "+net.ddp2p.common.table.field_extra.field_extra_ID+"=?;";
 	/**
 	 * Get the LID of fiels in org_ID, directly from the database
 	 * @param fieldGID
@@ -4082,6 +4132,18 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		ArrayList<ArrayList<Object>> n = Application.getDB().select(sql_getFieldsExtraByGID, new String[]{fieldGID, Util.getStringID(org_LID)}, DEBUG);
 		if (n.size() != 0) {// happeded on savind orgs from DD_SK
 			if (_DEBUG) Util.printCallPath("D_Organization: getFieldExtraID: unexpectedly found "+fieldGID+" ("+org_LID+") as "+Util.getString(n.get(0).get(0)));
+			return Util.getString(n.get(0).get(0));
+		}
+		return null;
+	}
+	public static String getFieldExtraGID_FromTable(long fieldLID) throws P2PDDSQLException {
+		//boolean DEBUG = true;
+		if (DEBUG) Util.printCallPath("D_Organization: getFieldExtraGID: should not get here! field="+fieldLID);
+		if (fieldLID <= 0) return null;
+		
+		ArrayList<ArrayList<Object>> n = Application.getDB().select(sql_getFieldsExtraByLID, new String[]{Util.getStringID(fieldLID)}, DEBUG);
+		if (n.size() != 0) {// happeded on savind orgs from DD_SK
+			if (_DEBUG) Util.printCallPath("D_Organization: getFieldExtraGID: unexpectedly found "+fieldLID+" as "+Util.getString(n.get(0).get(0)));
 			return Util.getString(n.get(0).get(0));
 		}
 		return null;
@@ -4158,7 +4220,124 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		result.add(fieldIDs);
 		return result;
 	}
+	public ArrayList<Object> getDefaultRootSubdivisionsFromDB() {
+		ArrayList<Object> result = new ArrayList<Object>();
+		String subdivisions;
+		long[] fieldIDs = new long[0];
+		ArrayList<ArrayList<Object>> fields_neighborhood;
+		
+		subdivisions = net.ddp2p.common.table.neighborhood.SEP_names_subdivisions;
+		try {
+			fields_neighborhood = //getNeighborhoodsList();
+			Application.getDB().select(sql_extra_fields_RootSubdivisions,	new String[] {this.getLIDstr()}, DEBUG);
+			
+			fieldIDs = new long[fields_neighborhood.size()];
+			for (int i = 0; i < fields_neighborhood.size(); i ++) {
+				fieldIDs[i] = Util.Lval(fields_neighborhood.get(i).get(0));
+				subdivisions = subdivisions+Util.sval(fields_neighborhood.get(i).get(1), "")+net.ddp2p.common.table.neighborhood.SEP_names_subdivisions;
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+		result.add(subdivisions);
+		result.add(fieldIDs);
+		return result;
+	}
+	public ArrayList<Object> getDefaultRootSubdivisions() {
+		ArrayList<Object> result = new ArrayList<Object>();
+		String subdivisions;
+		long[] fieldIDs = new long[0];
+		ArrayList<D_OrgParam> fields_neighborhood;
+		
+		subdivisions = net.ddp2p.common.table.neighborhood.SEP_names_subdivisions;
 
+		fields_neighborhood = getNeighborhoodsList();			
+		fieldIDs = new long[fields_neighborhood.size()];
+		if(DEBUG)System.out.println("D_Organization:  getDefaultRootSubdivisions: params= #"+fieldIDs.length);
+		for (int i = 0; i < fields_neighborhood.size(); i ++) {
+			fieldIDs[i] = Util.Lval(fields_neighborhood.get(i).field_LID);
+			subdivisions = subdivisions+Util.sval(fields_neighborhood.get(i).label, "")+net.ddp2p.common.table.neighborhood.SEP_names_subdivisions;
+			if(DEBUG)System.out.println("D_Organization:  getDefaultRootSubdivisions: param= #"+i+"/"+fieldIDs[i]+" " +subdivisions);
+		}
+		result.add(subdivisions);
+		result.add(fieldIDs);
+		return result;
+	}
+
+	public ArrayList<D_OrgParam> getNeighborhoodsList() {
+		if(DEBUG)System.out.println("D_Organization:  getNeighborhoodsList: params= #"+this.getOrgParamsLen());
+		ArrayList<D_OrgParam> result = new ArrayList<D_OrgParam>();
+		for (int i = 0; i < this.getOrgParamsLen(); i ++) {
+			D_OrgParam op = this.getOrgParam(i);
+			if(DEBUG)System.out.println("D_Organization:  getNeighborhoodsList: param "+i+" = "+op);
+			if (net.ddp2p.common.table.field_extra.isANeighborhood(op.partNeigh)) {
+//				for (int k = 0; k <= result.size(); k ++) {
+//				    if (k >= result.size()) {result.add(k, op);break;}
+//					if (op.partNeigh > result.get(k).partNeigh) {result.add(k, op);break;}
+//				}
+				for (int k = result.size(); k >= 0; k --) {
+					if(DEBUG)System.out.println("D_Organization:  getNeighborhoodsList: insert "+k+" try ");
+					if (k <= 0) {result.add(0, op);break;}
+					if(DEBUG)System.out.println("D_Organization:  getNeighborhoodsList: insert cmp "+(k-1)+" = "+result.get(k-1));
+					if (op.partNeigh <= result.get(k - 1).partNeigh) {result.add(k, op);break;}
+					if(DEBUG)System.out.println("D_Organization:  getNeighborhoodsList: insert "+k+" No ");
+				}
+			} else {
+				if(DEBUG)System.out.println("D_Organization:  getNeighborhoodsList: not ANeigh "+op.partNeigh);
+			}
+		}
+		if(DEBUG)System.out.println("D_Organization:  getNeighborhoodsList: got #"+result.size());
+		return result;
+	}
+	public ArrayList<D_OrgParam> getNeighborhoodsListDec() {
+		ArrayList<D_OrgParam> result = new ArrayList<D_OrgParam>();
+		for (int i = 0; i < this.getOrgParamsLen(); i ++) {
+			D_OrgParam op = this.getOrgParam(i);
+			if (net.ddp2p.common.table.field_extra.isANeighborhood(op.partNeigh)) {
+				for (int k = 0; k <= result.size(); k ++) {
+					if (k >= result.size()) {result.add(op);break;}
+					if (op.partNeigh > result.get(k).partNeigh) {result.add(k, op);break;}
+				}
+			}
+		}
+		return result;
+	}
+	public ArrayList<D_OrgParam> getConstituentFieldsListDec() {
+		ArrayList<D_OrgParam> result = new ArrayList<D_OrgParam>();
+		for (int i = 0; i < this.getOrgParamsLen(); i ++) {
+			D_OrgParam op = this.getOrgParam(i);
+			//if (net.ddp2p.common.table.field_extra.isANeighborhood(op.partNeigh)) {
+				for (int k = 0; k <= result.size(); k ++) {
+					if (k >= result.size()) {result.add(op);break;}
+					if (op.partNeigh > result.get(k).partNeigh) {result.add(k, op);break;}
+				}
+			//}
+		}
+		return result;
+	}
+	public ArrayList<D_OrgParam> getConstituentFieldsListAsc() {
+		ArrayList<D_OrgParam> result = new ArrayList<D_OrgParam>();
+		for (int i = 0; i < this.getOrgParamsLen(); i ++) {
+			D_OrgParam op = this.getOrgParam(i);
+			//if (net.ddp2p.common.table.field_extra.isANeighborhood(op.partNeigh)) {
+				for (int k = 0; k <= result.size(); k ++) {
+					if (k >= result.size()) {result.add(op);break;}
+					if (op.partNeigh < result.get(k).partNeigh) {result.add(k, op);break;}
+				}
+			//}
+		}
+		return result;
+	}
+	public ArrayList<D_OrgParam> getConstituentsPropertiesList() {
+		ArrayList<D_OrgParam> result = new ArrayList<D_OrgParam>();
+		for (int i = 0; i < this.getOrgParamsLen(); i ++) {
+			D_OrgParam op = this.getOrgParam(i);
+			if (! net.ddp2p.common.table.field_extra.isANeighborhood(op.partNeigh)) {
+				result.add(op);
+			}
+		}
+		return result;
+	}
 
 	/**
 	 * 
@@ -4589,7 +4768,7 @@ class D_Organization_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThre
 								SaverThreadsConstants.SAVER_SLEEP_WAITING_ORGANIZATION_MSEC;
 					wait(timeout);
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 			}
 		}

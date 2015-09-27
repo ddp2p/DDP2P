@@ -159,7 +159,7 @@ public class Client_UPNP
 			_discover(addressText, port);
 			return true;
 		} catch (Exception e) {
-			e.printStackTrace();
+			// e.printStackTrace();
 		}
     	return false;
     }

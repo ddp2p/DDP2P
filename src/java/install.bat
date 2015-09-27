@@ -1,6 +1,7 @@
 @ECHO OFF
 SETLOCAL
 echo delib
+del deliberation-app.db directory-app.db
 scripts\sqlite3.exe deliberation-app.db < createEmptyDelib.sqlite
 echo delib done
 scripts\sqlite3.exe deliberation-app.db < createInitDelib.sqlite

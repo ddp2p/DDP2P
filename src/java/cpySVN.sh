@@ -10,7 +10,7 @@ A=`find ./net/ -name '*.java' | sed 's-[^/]*$--g' | sort -u | paste -s -`
 B=`echo -n tools/ util/db/ util/tools/ widgets/app/`
 D=`echo -n ./ ./scripts/ ./scripts/handling_DEBUG/`
 #E=`find ./test/ -name '*.java' | sed 's-[^/]*$--g' | sort -u | paste -s -`
-
+echo $A
 C="./ $A $B "
 #echo B=$B
 #echo $C
@@ -20,6 +20,8 @@ for a in $A $B
 do
  mkdir -p $dest/$a
  cp $a/*.java $dest/$a/
+ ls -ld $dest/$a/
+ ls -l $dest/$a/
 done
 
 for a in $D

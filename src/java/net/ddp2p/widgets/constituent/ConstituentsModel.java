@@ -394,8 +394,8 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 	public void init(long _organizationID, 
 			long _constituentID, String _global_constituentID, D_Organization org) throws P2PDDSQLException {
 		if(DEBUG) System.err.println("ConstituentsModel:init start org="+_organizationID+
-				" myconstID="+_constituentID+" gID="+_global_constituentID);
-		
+				" myconstID="+_constituentID+" gID="+_global_constituentID+" org="+org);
+		//if(_DEBUG)Util.printCallPath("");
 		
 		setRoot(null);
 		setFieldIDs(null);
@@ -424,15 +424,20 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 				e.printStackTrace();
 				return;
 			}
+		if(DEBUG)System.out.println("ConstituentsModel: final org = crt_org "+crt_org);
 	
 		// constituentID = constituentID2;
 		// global_constituentID = _global_constituentID;
 		
 		setConstituentIDMyself(_constituentID, _global_constituentID);
-		ArrayList<Object> subdivision_fields = D_Organization.getDefaultRootSubdivisions(organizationID);
-		setSubDivisions(Util.getString(subdivision_fields.get(0)));
+		ArrayList<Object> subdivision_fields = crt_org.getDefaultRootSubdivisions();
+				//D_Organization.getDefaultRootSubdivisions(organizationID);
+		String subdivs = Util.getString(subdivision_fields.get(0));
+		setSubDivisions(subdivs);
+		if(DEBUG)System.out.println("ConstituentsModel: init: subdiv "+this.getSubDivisions()+" vs "+subdivs);
 		setFieldIDs((long[]) subdivision_fields.get(1));
-		if (getFieldIDs().length > 0) hasNeighborhoods = true;
+		hasNeighborhoods = (getFieldIDs().length > 0);
+		if(DEBUG)System.out.println("ConstituentsModel: init: hadN= "+hasNeighborhoods);
 		
 		setRoot(new ConstituentsAddressNode(this,null,null,"",null,null,getFieldIDs(),0,-2,null));
 		
@@ -466,18 +471,21 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 //		neighborhood_branch_objects = db.select(neighborhoods_sql, new String[]{""+organizationID}, DEBUG);
 
 		ArrayList<Long> neighborhood_branch_obj = D_Neighborhood.getNeighborhoodRootsLIDs(organizationID);
+	    if(DEBUG) System.err.println("ConstituentsModel: init: neigh_obj = #" + neighborhood_branch_obj.size());
 		
 		int n = 0;
 		if(DEBUG) System.err.println("ConstituentsModel: Sub-neighborhoods (branches) Records= "+subneighborhoods.size());
-		for(int i=0; i<subneighborhoods.size(); i++) {
+		for (int i = 0; i < subneighborhoods.size(); i ++) {
 		    String count, fieldID;
 		    Object obj;
 			String value=Util.sval(subneighborhoods.get(i).get(0),null);
-		    if(value != null) {
+		    if(DEBUG) System.err.println("ConstituentsModel: init: subn obj i=" + i+" n="+n+" val="+value);
+		    if (value != null) {
 		    	for (; n < neighborhood_branch_obj.size(); n ++) {
 		    		D_Neighborhood dn = D_Neighborhood.getNeighByLID(neighborhood_branch_obj.get(n), true, false);
 		    		String n_name = dn.getName(); // Util.sval(neighborhood_branch_objects.get(n).get(0), "");
 		    		int cmp = value.compareToIgnoreCase(n_name);
+				    if(DEBUG) System.err.println("ConstituentsModel: init: subn_obj i=" + i+" n="+n+" nam="+n_name);
 		    		if (cmp > 0) break; 
 		    		if (cmp < 0) {
 		    			long nID = neighborhood_branch_obj.get(n); // Util.lval(neighborhood_branch_objects.get(n).get(1), -1);
@@ -492,7 +500,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		    if(obj!=null) fieldID = obj.toString(); else fieldID = "-1";
 		    obj = subneighborhoods.get(i).get(2);
 		    if(obj!=null) count = obj.toString(); else count = null;
-		    if(DEBUG) System.err.println(i+" Got: v="+value+" c="+count+" fID="+fieldID);
+		    if(DEBUG) System.err.println("ConstituentsModel: init: "+i+" Got: v="+value+" c="+count+" fID="+fieldID);
 		    Constituents_LocationData data=new Constituents_LocationData();
 		    data.value = value;
 		    data.fieldID = Long.parseLong(fieldID);
@@ -510,17 +518,18 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		    				getFieldIDs(),0, -1,null), 
 		    			0);
 		}
-	    for (; n < neighborhood_branch_obj.size(); n++) {
+	    for (; n < neighborhood_branch_obj.size(); n ++) {
     		D_Neighborhood dn = D_Neighborhood.getNeighByLID(neighborhood_branch_obj.get(n), true, false);
     		String n_name = dn.getName(); // Util.sval(neighborhood_branch_objects.get(n).get(0), "");
 	    	long nID = neighborhood_branch_obj.get(n); // Util.lval(neighborhood_branch_objects.get(n).get(1), -1);
+		    if(DEBUG) System.err.println("ConstituentsModel: init: nei_b_obj n="+n+"/nID="+nID+" nam="+n_name);
 	    	Constituents_NeighborhoodData nd=new Constituents_NeighborhoodData(nID, -1, organizationID);
 	    	//NeighborhoodData nd=new NeighborhoodData(n_name, -1, organizationID);
 	    	nd.neighborhoodID = nID;
 	    	getRoot().addChild(new ConstituentsAddressNode(this, getRoot(), nd, new Constituents_AddressAncestors[0]), 0);
 	    }
 	    if (getFieldIDs().length == 0) getRoot().populateIDs();
-	    else{
+	    else {
 	    	if(DD.CONSTITUENTS_ORPHANS_SHOWN_IN_ROOT) populateOrphans();
 	    }
 	    //stopCensusRequest();
@@ -529,7 +538,7 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 	}
 	public void populateOrphans() {
 		ArrayList<Long> orphans = D_Constituent.getOrphans(this.organizationID);
-		//if (DEBUG) System.err.print("ConstituentsModel: populateOrphans Records="+identities.size());
+		if (DEBUG) System.err.print("ConstituentsModel: populateOrphans Records="+orphans.size());
 		for (int i = 0; i < orphans.size(); i ++ ) {
 			D_Constituent c = D_Constituent.getConstByLID(orphans.get(i), true, false);
 			//ArrayList<Object> identities_i = identities.get(i);
@@ -567,8 +576,9 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 			getRoot().populateChild(new ConstituentsIDNode(this, getRoot(), data,"",null, getRoot().getNextAncestors()),0);
 		}
 		// if(identities.size()!=root.nchildren)
-		getRoot().setNChildren(orphans.size()+getRoot().getNchildren());
-		if (DEBUG) System.err.print("ConstituentsModel: populateOrphans fire");
+		int new_size = orphans.size()+getRoot().getNchildren();
+		getRoot().setNChildren(new_size);
+		if (DEBUG) System.err.print("ConstituentsModel: populateOrphans fire ->#"+new_size);
 	}
 	public Object	getChild(Object parent, int index) {	
 		if (! (parent instanceof ConstituentsBranch)) return -1;
@@ -586,6 +596,10 @@ public class ConstituentsModel extends TreeModelSupport implements TreeModel, DB
 		return cbParent.getIndexOfChild(child);
 	}
     public ConstituentsAddressNode	getRoot() {
+    	if (root == null) {
+    		setFieldIDs(new long[0]);
+    		root = new ConstituentsAddressNode(this,null,null,"",null,null,this.getFieldIDs(),0,-2,null);
+    	}
     	return root;
     }
     public boolean	isLeaf(Object node) {

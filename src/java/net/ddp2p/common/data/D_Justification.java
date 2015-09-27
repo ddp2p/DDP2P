@@ -339,8 +339,11 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 				String gidh = crt.getGIDH();
 				long lid = crt.getLID();
 				if (gidh == null) {
-					if (_DEBUG) { System.out.println("D_Justification: register_newLID_ifLoaded: had no gidh! no need of this call.");
-					Util.printCallPath("Path");}
+					// when creating a new justifiction, store, sets link
+					if (DEBUG) {
+						System.out.println("D_Justification: register_newLID_ifLoaded: had no gidh! no need of this call. "+crt);
+						//Util.printCallPath("Path");
+					}
 					return false;
 				}
 				if (lid <= 0) {
@@ -2057,10 +2060,10 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 	 * @return
 	 */
 	public byte[] sign(String signer_GID) {
-		if(DEBUG) System.out.println("WB_Justification:sign: start signer="+signer_GID);
+		if (DEBUG) System.out.println("WB_Justification:sign: start signer="+signer_GID);
 		net.ddp2p.ciphersuits.SK sk = net.ddp2p.common.util.Util.getStoredSK(signer_GID);
-		if(sk==null) {
-			if(_DEBUG) System.out.println("WB_Justification:sign: no signature");
+		if (sk == null) {
+			if (DEBUG) System.out.println("WB_Justification:sign: no signature");
 			Application_GUI.warning(__("No secret key to sign motion, no constituent GID"), __("No Secret Key!"));
 			return null;
 		}

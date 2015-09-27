@@ -568,12 +568,17 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 	}
 	@Override
 	public void orgUpdate(String orgID, int col, D_Organization org) {
-		if(orgID==null) return;
-		int model_row = getModel().getRow(orgID);
-		if(model_row<0) return;
-		int view_row = this.convertRowIndexToView(model_row);
-		this.setRowSelectionInterval(view_row, view_row);
-		
+		if (orgID == null) return;
+		int model_row = -2, view_row = -2;
+		OrgsModel m = getModel();
+		try {
+			model_row = m.getRow(orgID);
+			if (model_row < 0) return;
+			view_row = this.convertRowIndexToView(model_row);
+			this.setRowSelectionInterval(view_row, view_row);
+		} catch (Exception e) {
+			if (_DEBUG) System.out.println("Orgs: orgUpdate: #m=" + model_row+"/#v=" + view_row+" "+m.getRowCount());
+		}
 		this.fireListener(orgID, col, org);
 	}
 	@Override

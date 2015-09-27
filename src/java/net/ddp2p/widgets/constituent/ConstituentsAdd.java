@@ -44,6 +44,7 @@ import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.Language;
 import net.ddp2p.common.data.D_Document;
 import net.ddp2p.common.data.D_Neighborhood;
+import net.ddp2p.common.data.D_OrgParam;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Witness;
 import net.ddp2p.common.population.ConstituentsAddressNode;
@@ -505,14 +506,7 @@ public class ConstituentsAdd extends JDialog {
 		label_lang=new String[vfields];
 		tl=new TranslatedLabel[vfields];		
 	}
-	/**
-	 * Read the data in the fields that are not neighborhood parts
-	 * @return
-	 */
-	ArrayList<ArrayList<Object>> getProperties(){
-		ArrayList<ArrayList<Object>> fe=null;
-		try {
-			String sql = "SELECT "+net.ddp2p.common.table.field_extra.some_field_extra +
+	static final String sql_get_field_extras_props_from_org = "SELECT "+net.ddp2p.common.table.field_extra.some_field_extra +
 					//" fe.OID, OID_name, " +
 					" FROM "+net.ddp2p.common.table.field_extra.TNAME+" AS fe " +
 					//" JOIN oids ON fe.OID = oids.OID " +
@@ -520,9 +514,114 @@ public class ConstituentsAdd extends JDialog {
 					 "AND ( ( "+net.ddp2p.common.table.field_extra.partNeigh+ " ISNULL )" +
 					" OR ( "+net.ddp2p.common.table.field_extra.partNeigh+" == "+net.ddp2p.common.table.field_extra.partNeigh_non_neighborhood_indicator+" ) " +
 					" OR ( "+net.ddp2p.common.table.field_extra.partNeigh+" < "+net.ddp2p.common.table.field_extra.partNeigh_non_neighborhood_upper_indicator+" ) " +
-											" );";
-			fe=model.db.select(sql, new String[]{model.getOrganizationID()+""}, DEBUG);
-		}catch(Exception e) {
+		" );";
+	/**
+	 * Read the data in the fields that are not neighborhood parts
+	 * @return
+	 */
+	ArrayList<ArrayList<Object>> getProperties(){
+		ArrayList<ArrayList<Object>> fe = null;
+		try {
+			fe = model.db.select(sql_get_field_extras_props_from_org, new String[]{model.getOrganizationID()+""}, DEBUG);
+		} catch(Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		if (DEBUG) System.out.println("ConstituentsAdd: getProperties #"+fe.size());
+		return fe;
+	}
+	/**
+	 * Gets props
+	 * @return
+	 */	
+	ArrayList<D_OrgParam> getPropertiesFromOrg() {
+		D_Organization org = model.getOrganization();
+		if (org == null) return null;// getProperties();
+		ArrayList<D_OrgParam> r = org.getConstituentsPropertiesList();
+		if (DEBUG) System.out.println("ConstituentsAdd: getPropertiesFromOrg "+r.size()+"\n from "+org);
+		return r;
+	}
+	//@SuppressWarnings("unchecked")
+	void initDynamicFields(int static_rows, long lastPN) {
+		if(DEBUG)System.out.println("ConstituentsAdd:initDynamicFields: enter static_rows="+static_rows+" last="+lastPN);
+		D_Organization org = model.getOrganization();
+		if (org == null) {
+			if(DEBUG)System.out.println("ConstituentsAdd:initDynamicFields: no org");
+			this.initDynamicFieldsFromDB(static_rows, lastPN); 
+			return;}
+		ArrayList<D_OrgParam> fe = org.getConstituentFieldsListDec();
+		initArrays(fe.size());
+		if(DEBUG)System.out.println("ConstituentsAdd:initDynamicFields: #fe="+fe.size());
+		for(int k = 0; k < fe.size(); k++) {
+			if(DEBUG)System.out.println("ConstituentsAdd:initDynamicFields: k="+k+" fe="+fe.get(k));
+				//String crt_label="";
+				can_be_provided_later[k] = fe.get(k).can_be_provided_later;
+				certificated[k] = fe.get(k).certificated;
+				default_val[k] = fe.get(k).default_value;
+				entry_size[k] = fe.get(k).entry_size;
+				fieldID[k] = fe.get(k).field_LID;
+				label[k] = fe.get(k).label;
+				lov[k] = Util.concat(fe.get(k).list_of_values, net.ddp2p.common.table.organization.ORG_VAL_SEP, net.ddp2p.common.table.field_extra.SPARAM_LIST_VAL_DEFAULT);
+				partNeigh[k] = fe.get(k).partNeigh;
+				required[k] = fe.get(k).required;
+				tip[k] = fe.get(k).tip;
+				label_lang[k] = fe.get(k).label_lang;
+				Language lang = new Language(label_lang[k], null);
+				if(DEBUG)System.out.println("Field: "+lang+" l="+label[k]+" f="+fieldID[k]+" pn="+partNeigh[k]+" lpn="+lastPN);
+				tl[k]=new TranslatedLabel(label[k],lang);
+				if((partNeigh[k] <=lastPN)&&(lastPN>=0)&&(partNeigh[k]>0)){
+					if(DEBUG)System.out.println("ConstituentsAdd:initDynamicFields: jump over: "+partNeigh[k]);
+					if(DEBUG)System.out.println("ConstituentsAdd:initDynamicFields: jump over: "+label[k]);
+					continue;
+				}
+				c.ipadx=10;
+				c.gridx=0; c.gridy=k+static_rows;c.anchor = GridBagConstraints.WEST;
+				//if(required[k]) crt_label = "*";
+				// panel.add(new JLabel(_(label[k])+crt_label),c);
+				c.fill = GridBagConstraints.HORIZONTAL;
+				panel.add(tl[k],c);
+				if(required[k]) {
+					//tl[k].getEditor().getEditorComponent().setBackground(Color.lightGray);
+					tl[k].getEditor().getEditorComponent().setForeground(Color.red);
+					tl[k].getEditor().getEditorComponent().setFont(tl[k].getFont().deriveFont(Font.BOLD));
+				}
+				c.fill = GridBagConstraints.NONE;
+				c.gridx=1; c.gridy=k+static_rows;c.anchor=GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
+				if(lov[k].equals("")){
+					panel.add(valueEditor[k]=new JTextField(entry_size[k]),c);
+					((JTextField)valueEditor[k]).setText(default_val[k]);
+				} else {
+					String[] items=lov[k].split(net.ddp2p.common.table.field_extra.SEP_list_of_values,0);
+					panel.add(valueEditor[k]=getValueCombo(items),c);
+					int i = getIndex(items,default_val[k]);
+					((JComboBox)valueEditor[k]).setSelectedIndex(i);
+				}
+				valueEditor[k].setToolTipText(tip[k]);
+		}
+		c.fill = GridBagConstraints.BOTH;
+		c.gridx=0; c.gridy = fe.size()+static_rows;
+		c.gridwidth = 2;
+		instr_reg = new DocumentEditor();
+		//D_Organization org = model.getOrganization();
+		D_Document dd = new D_Document();
+		dd.setDBDoc(org.params.instructions_registration);
+		instr_reg.setType(dd.getFormatString());
+		instr_reg.setText(dd.getDocumentString());
+		instr_reg.setEnabled(false);
+		panel.add(instr_reg.getComponent(),c);
+	}
+
+	final static String sql_get_field_extras_org = "SELECT "+net.ddp2p.common.table.field_extra.some_field_extra+
+			//" fe.OID, OID_name, " +
+			" FROM "+net.ddp2p.common.table.field_extra.TNAME+" AS fe " +
+			//" JOIN oids ON fe.OID = oids.OID " +
+			" WHERE fe."+net.ddp2p.common.table.field_extra.organization_ID+"=? " +
+					" ORDER BY "+net.ddp2p.common.table.field_extra.partNeigh+" DESC;";
+	ArrayList<ArrayList<Object>> getFieldExtras(String orgLID) {
+		ArrayList<ArrayList<Object>> fe=null;
+		try {
+			fe = model.db.select(sql_get_field_extras_org, new String[]{orgLID}, DEBUG);
+		} catch(Exception e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -534,23 +633,12 @@ public class ConstituentsAdd extends JDialog {
 	 * @param lastPN
 	 */
 	@SuppressWarnings("unchecked")
-	void initDynamicFields(int static_rows, long lastPN){
+	void initDynamicFieldsFromDB(int static_rows, long lastPN){
 		if(DEBUG)System.out.println("ConstituentsAdd:initDynamicFields: enter static_rows="+static_rows+" last="+lastPN);
-		ArrayList<ArrayList<Object>> fe=null;
-		try {
-			String sql = "SELECT "+net.ddp2p.common.table.field_extra.some_field_extra+
-					//" fe.OID, OID_name, " +
-					" FROM "+net.ddp2p.common.table.field_extra.TNAME+" AS fe " +
-					//" JOIN oids ON fe.OID = oids.OID " +
-					" WHERE fe."+net.ddp2p.common.table.field_extra.organization_ID+"=? ORDER BY "+net.ddp2p.common.table.field_extra.partNeigh+" DESC;";
-			fe=model.db.select(sql, new String[]{model.getOrganizationID()+""}, DEBUG);
-		}catch(Exception e) {
-			e.printStackTrace();
-			return;
-		}
+		ArrayList<ArrayList<Object>> fe = getFieldExtras(model.getOrganizationID()+"");
 		initArrays(fe.size());
 		for(int k=0; k<fe.size(); k++) {
-				String crt_label="";
+				//String crt_label="";
 				can_be_provided_later[k] = (Util.lval(fe.get(k).get(net.ddp2p.common.table.field_extra.SPARAM_LATER),net.ddp2p.common.table.field_extra.SPARAM_LATER_DEFAULT)>0);
 				certificated[k] = (Util.lval(fe.get(k).get(net.ddp2p.common.table.field_extra.SPARAM_CERT),net.ddp2p.common.table.field_extra.SPARAM_CERT_DEFAULT)>0);
 				default_val[k] = Util.sval(fe.get(k).get(net.ddp2p.common.table.field_extra.SPARAM_DEFAULT),net.ddp2p.common.table.field_extra.SPARAM_DEFAULT_DEFAULT);
@@ -624,8 +712,9 @@ public class ConstituentsAdd extends JDialog {
 	 * @param sub_rows
 	 * @param fe
 	 */
-	@SuppressWarnings("unchecked")
-	void initDynamicProperties(int static_rows, int sub_rows, ArrayList<ArrayList<Object>> fe){
+	//@SuppressWarnings("unchecked")
+	@SuppressWarnings("rawtypes")
+	void initDynamicPropertiesFromDB(int static_rows, int sub_rows, ArrayList<ArrayList<Object>> fe){
 		for(int i=0; i<fe.size(); i++) {
 			if(DEBUG) System.out.println("ConstituentaAdd: initDynamicProperties: i="+i+" sub_rows="+sub_rows+" static="+static_rows+" fe="+fe.size()+" k="+ this.can_be_provided_later.length);
 			int k=i+sub_rows;
@@ -651,6 +740,48 @@ public class ConstituentsAdd extends JDialog {
 //			required[k] = (Util.lval(fe.get(i).get(table.field_extra.SPARAM_REQ),0)>0);
 //			tip[k] = Util.sval(fe.get(i).get(table.field_extra.SPARAM_TIP),null);
 //			label_lang[k] = Util.sval(fe.get(i).get(table.field_extra.SPARAM_LABEL_L),"en");
+			Language lang = new Language(label_lang[k], null);
+			if(DEBUG)System.out.println("Field: "+lang+" l="+label[k]+" f="+fieldID[k]+" pn="+partNeigh[k]);
+			tl[k]=new TranslatedLabel(label[k],lang);
+			c.ipadx=10;
+			c.gridx=0; c.gridy=k+static_rows;c.anchor = GridBagConstraints.WEST;
+			c.fill = GridBagConstraints.HORIZONTAL;
+			panel.add(tl[k],c);
+			if(required[k]) {
+				//tl[k].getEditor().getEditorComponent().setBackground(Color.lightGray);
+				tl[k].getEditor().getEditorComponent().setForeground(Color.red);
+				tl[k].getEditor().getEditorComponent().setFont(tl[k].getFont().deriveFont(Font.BOLD));
+			}
+			c.fill = GridBagConstraints.NONE;
+			c.gridx=1; c.gridy=k+static_rows;c.anchor=GridBagConstraints.WEST;c.fill = GridBagConstraints.HORIZONTAL;
+			if(lov[k].equals("")){
+				panel.add(valueEditor[k]=new JTextField(entry_size[k]),c);
+				((JTextField)valueEditor[k]).setText(default_val[k]);
+			} else {
+				String[] items=lov[k].split(net.ddp2p.common.table.field_extra.SEP_list_of_values,0);
+				panel.add(valueEditor[k]=new JComboBox(items),c);
+				int j = getIndex(items,default_val[k]);
+				((JComboBox)valueEditor[k]).setSelectedIndex(j);
+			}
+			valueEditor[k].setToolTipText(tip[k]);
+		}
+	}
+	void initDynamicProperties(int static_rows, int sub_rows, ArrayList<D_OrgParam> fe){
+		if(DEBUG) System.out.println("ConstituentaAdd: initDynamicProperties:="+fe.size());
+		for (int i = 0; i < fe.size(); i ++) {
+			if(DEBUG) System.out.println("ConstituentaAdd: initDynamicProperties: i="+i+" sub_rows="+sub_rows+" static="+static_rows+" fe="+fe.size()+" k="+ this.can_be_provided_later.length);
+			int k = i + sub_rows;
+			can_be_provided_later[k] = fe.get(i).can_be_provided_later;
+			certificated[k] = fe.get(i).certificated;
+			default_val[k] = fe.get(i).default_value;
+			entry_size[k] = fe.get(i).entry_size;
+			fieldID[k] = fe.get(i).field_LID;
+			label[k] = fe.get(i).label;
+			lov[k] = Util.concat(fe.get(i).list_of_values, net.ddp2p.common.table.organization.ORG_VAL_SEP, net.ddp2p.common.table.field_extra.SPARAM_LIST_VAL_DEFAULT);
+			partNeigh[k] = fe.get(i).partNeigh;
+			required[k] = fe.get(i).required;
+			tip[k] = fe.get(i).tip;
+			label_lang[k] = fe.get(i).label_lang;
 			Language lang = new Language(label_lang[k], null);
 			if(DEBUG)System.out.println("Field: "+lang+" l="+label[k]+" f="+fieldID[k]+" pn="+partNeigh[k]);
 			tl[k]=new TranslatedLabel(label[k],lang);
@@ -743,19 +874,21 @@ public class ConstituentsAdd extends JDialog {
 		static_rows = initStaticFields();
 		
 		// If current neighborhood has explicit subdivisions, disregard neighborhood extra-fields
-		if((sub_divisions==null)||(can.getParent()==null)) { // non-explicit subdivisions
-			if(DEBUG)System.out.println("ConstituentAdd: neigh+non-neigh: null sub="+sub_divisions);
+		if ((sub_divisions == null) || (can.getParent() == null)) { // non-explicit subdivisions
+			if(DEBUG)System.out.println("ConstituentAdd: neigh+non-neigh: null sub="+Util.concat(sub_divisions,":"));
 			initDynamicFields(static_rows,lastPN);
-		}else{ // explicit sub-divisions
+		} else { // explicit sub-divisions
 			if(DEBUG)System.out.println("ConstituentAdd: non-neigh: sub="+subdivisions+" sz="+(sub_divisions.length-1));
-			ArrayList<ArrayList<Object>> fe= getProperties();
-			if(fe == null) fe = new ArrayList<ArrayList<Object>>();
+//			ArrayList<ArrayList<Object>> fe = getProperties();
+//			if (fe == null) fe = new ArrayList<ArrayList<Object>>();
+			ArrayList<D_OrgParam> fe = getPropertiesFromOrg();
+			if (fe == null) fe = new ArrayList<D_OrgParam>();
 			int array_sizes = cnt_subdivisions+fe.size();
 			initArrays(array_sizes); // space for remaining neigh and others
 			if(DEBUG)System.out.println("ConstituentAdd: arrays="+array_sizes+" fe_size="+fe.size()+
 					" can.fields="+Util.concat(can.getFieldIDs(),":","null"));
-			if(lastPN < cnt_subdivisions) lastPN=sub_divisions.length;
-			for(int i=0;i<cnt_subdivisions;i++) {
+			if (lastPN < cnt_subdivisions) lastPN=sub_divisions.length;
+			for (int i=0;i<cnt_subdivisions;i++) {
 				int ii = i+1; // the actual subdivision considered (starting at 1)
 				int k= cnt_subdivisions -1 -i; // from the smallest subdivision, backwards in arrays
 				int new_fieldID_idx = can.getFieldIDs().length-cnt_subdivisions+i;//can.level+i; // idx in field_extra_id

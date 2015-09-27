@@ -1038,7 +1038,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			try {
 				lock.wait(DD.PAUSE_BEFORE_UDP_SERVER_START);
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				// e.printStackTrace();
 				return;
 			}
 		}

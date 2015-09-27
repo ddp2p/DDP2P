@@ -126,6 +126,6 @@ public class field_extra {
 	public static String SPARAM_LABEL_DEFAULT = __("Unspecified field");
 	public static final String[] org_field_extra_insert_list = Util.trimmed(net.ddp2p.common.table.field_extra.org_field_extra_insert.split(","));;
 	public static boolean isANeighborhood(int part_of_neigh) {
-		return part_of_neigh>0;
+		return part_of_neigh > 0;
 	}
 }
