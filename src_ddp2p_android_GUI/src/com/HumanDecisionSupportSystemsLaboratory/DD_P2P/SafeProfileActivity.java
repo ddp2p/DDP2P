@@ -16,8 +16,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
 import java.io.File;
+import java.util.Calendar;
 
 import net.ddp2p.ciphersuits.SK;
+import net.ddp2p.common.data.D_PeerInstance;
 import net.ddp2p.common.util.DD_SK;
 import net.ddp2p.common.util.P2PDDSQLException;
 
@@ -70,6 +72,7 @@ public class SafeProfileActivity extends FragmentActivity {
 	private boolean hasSK;
 	SK sk;
 	SafeProfileAdapter sAdapter;
+	static int cnt_try_false = 0;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -110,6 +113,75 @@ public class SafeProfileActivity extends FragmentActivity {
 		drawer.setOnItemClickListener(drawerListener);
 		
 		drawerLayout.setDrawerListener(drawerToggle);
+	}
+	public final static int SAFE_DRAWER_SK_SET_NAME = 0;
+	public final static int SAFE_DRAWER_SK_SET_MYSELF = 1;
+	public final static int SAFE_DRAWER_SK_EXPORT_ADDR = 2;
+	public final static int SAFE_DRAWER_SK_SELECT_DIRS = 3;
+	public final static int SAFE_DRAWER_SK_SERVE = 4;
+	public final static int SAFE_DRAWER_SK_SET_INSTANCE = 5;
+	public final static int SAFE_DRAWER_SK_HIDE_TOGGLE = 6;
+
+	public final static int SAFE_DRAWER____RESET_SYNC = 0;
+	public final static int SAFE_DRAWER____HIDE_TOGGLE = 1;
+	public final static int SAFE_DRAWER____ACCESS = 2;
+	public final static int SAFE_DRAWER____BLOCK = 3;
+	public final static int SAFE_DRAWER____SERVE = 4;
+
+	/**
+	 * Prepare the boolean member array drawerState, and returns array with strings
+	 * */
+	private String[] prepareDrawer(boolean hasSafeSk) {
+		String[] drawer = null;
+		if (hasSafeSk) {
+			drawer = new String[7];
+			drawerState = new boolean[7];
+			drawer[SAFE_DRAWER_SK_SET_NAME] =  getString(R.string.drawer_safe_Set_Name);
+			drawer[SAFE_DRAWER_SK_SET_MYSELF] = getString(R.string.drawer_safe_Set_Myself);
+			drawer[SAFE_DRAWER_SK_EXPORT_ADDR] = getString(R.string.drawer_safe_Export_Address);
+			drawer[SAFE_DRAWER_SK_SELECT_DIRS] = getString(R.string.drawer_safe_Select_DirectoryServer);
+			drawer[SAFE_DRAWER_SK_SERVE] = getString(R.string.drawer_safe_Serve_It);
+			drawer[SAFE_DRAWER_SK_SET_INSTANCE] = getString(R.string.drawer_safe_Set_Instance);
+			drawer[SAFE_DRAWER_SK_HIDE_TOGGLE] = getString(R.string.drawer_safe_Hide_This_Safe);
+
+			drawerState[SAFE_DRAWER_SK_HIDE_TOGGLE] = this.peer.getHidden();
+			drawerState[SAFE_DRAWER_SK_SERVE] = this.peer.getBroadcastable();
+
+			if (drawerState[SAFE_DRAWER_SK_HIDE_TOGGLE])
+				drawer[SAFE_DRAWER_SK_HIDE_TOGGLE] = getString(R.string.drawer_safe_Unhide_This_Safe);
+			if (drawerState[SAFE_DRAWER_SK_SERVE])
+				drawer[SAFE_DRAWER_SK_SERVE] = getString(R.string.drawer_safe_Stop_Serving_This_Safe);
+		}
+
+		if (! hasSafeSk) {
+			drawer = new String[5];
+			drawerState = new boolean[5];
+			drawerState[SAFE_DRAWER____RESET_SYNC] = false;
+			drawer[SAFE_DRAWER____RESET_SYNC] = getString(R.string.drawer_safe_Reset_Last_Sync_Date);
+
+			if (drawerState[SAFE_DRAWER____HIDE_TOGGLE] = this.peer.getHidden())
+				drawer[SAFE_DRAWER____HIDE_TOGGLE] = getString(R.string.drawer_safe_Unhide_This_Safe);
+			else	drawer[SAFE_DRAWER____HIDE_TOGGLE] = getString(R.string.drawer_safe_Hide_This_Safe);
+
+			if (drawerState[SAFE_DRAWER____ACCESS] = this.peer.getUsed())
+				drawer[SAFE_DRAWER____ACCESS] = getString(R.string.drawer_safe_Stop_Accessing_It);
+			else	drawer[SAFE_DRAWER____ACCESS] = getString(R.string.drawer_safe_Access_It);
+
+			if (drawerState[SAFE_DRAWER____BLOCK] = this.peer.getBlocked())
+				drawer[SAFE_DRAWER____BLOCK] = getString(R.string.drawer_safe_Stop_Blocking_It);
+			else	drawer[SAFE_DRAWER____BLOCK] = getString(R.string.drawer_safe_Block_It);
+
+			if (drawerState[SAFE_DRAWER____SERVE] = this.peer.getBroadcastableMyOrDefault())
+				drawer[SAFE_DRAWER____SERVE] = getString(R.string.drawer_safe_Stop_Serving_It);
+			else	drawer[SAFE_DRAWER____SERVE] = getString(R.string.drawer_safe_Serve_It);
+
+//			drawer[5] = " ";
+//			drawer[6] = " ";
+
+			Log.d(TAG, "SafeProfileAct: prepareDrawer: block="+drawerState[SAFE_DRAWER____BLOCK]);
+		}
+
+		return drawer;
 
 	}
 
@@ -370,150 +442,113 @@ public class SafeProfileActivity extends FragmentActivity {
 				}
 			} else {
 				Log.d(TAG, "SafeProfileAct: onClick: no SK");
-				/*
-				switch (position) {
-				case SafeProfileActivity.SAFE_DRAWER____RESET_SYNC: // 0:
-					Switch resetThisSafe = (Switch) view
-					.findViewById(R.id.safe_profile_drawer_switch);
-					peer = D_Peer.getPeerByPeer_Keep(peer);
-					peer.setLastSyncDate(null);
-					peer.storeRequest();
-					peer.releaseReference();
 
-					for (D_PeerInstance i : peer._instances.values()) {
-						Calendar date = i.get_last_sync_date();
-						Log.i(TAG, "last sync date: " + date);
+				switch (position) {
+					case SafeProfileActivity.SAFE_DRAWER____RESET_SYNC: // 0:
+					{
+//						Switch resetThisSafe = (Switch) view
+//								.findViewById(R.id.safe_profile_drawer_switch);
+						peer = D_Peer.getPeerByPeer_Keep(peer);
+						peer.setLastSyncDate(null);
+						peer.storeRequest();
+						peer.releaseReference();
+
+						for (D_PeerInstance i : peer._instances.values()) {
+							Calendar date = i.get_last_sync_date();
+							Log.i(TAG, "last sync date: " + date);
+						}
+						// resetThisSafe.setChecked(false);
+						drawerContent = prepareDrawer(hasSK);
+						sAdapter.setData(drawerContent);
 					}
-					resetThisSafe.setChecked(false);
 					break;
 
-				case SafeProfileActivity.SAFE_DRAWER____HIDE_TOGGLE: // 1:
-					Switch hideThisSafe = (Switch) view
-							.findViewById(R.id.safe_profile_drawer_switch);
-					D_Peer.setHidden(peer, hideThisSafe.isChecked());
-
-					hideThisSafe
-							.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-
-								@Override
-								public void onCheckedChanged(
-										CompoundButton buttonView,
-										boolean isChecked) {
-									D_Peer.setHidden(peer, isChecked);
-								}							
-							});
-					
+					case SafeProfileActivity.SAFE_DRAWER____HIDE_TOGGLE: // 1:
+					{
+//						Switch hideThisSafe = (Switch) view
+//								.findViewById(R.id.safe_profile_drawer_switch);
+//						D_Peer.setHidden(peer, hideThisSafe.isChecked());
+//						hideThisSafe
+//								.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+//									@Override
+//									public void onCheckedChanged(
+//											CompoundButton buttonView,
+//											boolean isChecked) {
+//										D_Peer.setHidden(peer, isChecked);
+//									}
+//								});
+					}
+					drawerState[SAFE_DRAWER____HIDE_TOGGLE] = !drawerState[SAFE_DRAWER____HIDE_TOGGLE];
+					D_Peer.setHidden(peer, drawerState[SAFE_DRAWER____HIDE_TOGGLE]);
+					drawerContent = prepareDrawer(hasSK);
+					sAdapter.setData(drawerContent);
 					break;
 
 				case SafeProfileActivity.SAFE_DRAWER____ACCESS: // 2:
-					Switch accessIt = (Switch) view
-							.findViewById(R.id.safe_profile_drawer_switch);
-					D_Peer.setUsed(peer, accessIt.isChecked());
-
-					accessIt.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-
-						@Override
-						public void onCheckedChanged(CompoundButton buttonView,
-								boolean isChecked) {
-							D_Peer.setUsed(peer, isChecked);
-						}
-					});
+				{
+//					Switch accessIt = (Switch) view
+//							.findViewById(R.id.safe_profile_drawer_switch);
+//					D_Peer.setUsed(peer, accessIt.isChecked());
+//					accessIt.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+//						@Override
+//						public void onCheckedChanged(CompoundButton buttonView,
+//													 boolean isChecked) {
+//							D_Peer.setUsed(peer, isChecked);
+//						}
+//					});
+				}
+				drawerState[SAFE_DRAWER____ACCESS] = !drawerState[SAFE_DRAWER____ACCESS];
+				D_Peer.setUsed(peer, drawerState[SAFE_DRAWER____ACCESS]);
+				drawerContent = prepareDrawer(hasSK);
+				sAdapter.setData(drawerContent);
 					break;
 
 				case SafeProfileActivity.SAFE_DRAWER____BLOCK: // 3:
-					Switch blockIt = (Switch) view
-							.findViewById(R.id.safe_profile_drawer_switch);
-					boolean chstate = blockIt.isChecked();
-					D_Peer.setBlocked(peer, chstate);
-					Log.d(TAG, "SafeProfileAct: onClick: block="+peer.getBlocked()+" after setting "+chstate);
-
-					blockIt.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-
-						@Override
-						public void onCheckedChanged(CompoundButton buttonView,
-								boolean isChecked) {
-							D_Peer.setBlocked(peer, isChecked);
-							Log.d(TAG, "SafeProfileAct: onChecked: block="+peer.getBlocked()+" after setting "+isChecked);
-						}
-					});
+				{
+//					Switch blockIt = (Switch) view
+//							.findViewById(R.id.safe_profile_drawer_switch);
+//					boolean chstate = blockIt.isChecked();
+//					D_Peer.setBlocked(peer, chstate);
+//					Log.d(TAG, "SafeProfileAct: onClick: block=" + peer.getBlocked() + " after setting " + chstate);
+//					blockIt.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+//						@Override
+//						public void onCheckedChanged(CompoundButton buttonView,
+//													 boolean isChecked) {
+//							D_Peer.setBlocked(peer, isChecked);
+//							Log.d(TAG, "SafeProfileAct: onChecked: block=" + peer.getBlocked() + " after setting " + isChecked);
+//						}
+//					});
+				}
+				drawerState[SAFE_DRAWER____BLOCK] = !drawerState[SAFE_DRAWER____BLOCK];
+				D_Peer.setBlocked(peer, drawerState[SAFE_DRAWER____BLOCK]);
+				drawerContent = prepareDrawer(hasSK);
+				sAdapter.setData(drawerContent);
 					break;
 
 				case SafeProfileActivity.SAFE_DRAWER____SERVE: // 4:
-					Switch serveIt = (Switch) view
-							.findViewById(R.id.safe_profile_drawer_switch);
-					D_Peer.setUsed(peer, serveIt.isChecked());
-
-					serveIt.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-
-						@Override
-						public void onCheckedChanged(CompoundButton buttonView,
-								boolean isChecked) {
-							D_Peer.setUsed(peer, isChecked);
-						}
-					});
+				{
+//					Switch serveIt = (Switch) view
+//							.findViewById(R.id.safe_profile_drawer_switch);
+//					D_Peer.setUsed(peer, serveIt.isChecked());
+//					serveIt.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+//						@Override
+//						public void onCheckedChanged(CompoundButton buttonView,
+//													 boolean isChecked) {
+//							D_Peer.setUsed(peer, isChecked);
+//						}
+//					});
+				}
+				drawerState[SAFE_DRAWER____SERVE] = !drawerState[SAFE_DRAWER____SERVE];
+				D_Peer.setBroadcastableMy(peer, drawerState[SAFE_DRAWER____SERVE]);
+				drawerContent = prepareDrawer(hasSK);
+				sAdapter.setData(drawerContent);
 					break;
 				default:
 					break;
 				}
-				*/
 			}
-
 		}
-
 	}
-	public final static int SAFE_DRAWER_SK_SET_NAME = 0;
-	public final static int SAFE_DRAWER_SK_SET_MYSELF = 1;
-	public final static int SAFE_DRAWER_SK_EXPORT_ADDR = 2;
-	public final static int SAFE_DRAWER_SK_SELECT_DIRS = 3;
-	public final static int SAFE_DRAWER_SK_SERVE = 4;
-	public final static int SAFE_DRAWER_SK_SET_INSTANCE = 5;
-	public final static int SAFE_DRAWER_SK_HIDE_TOGGLE = 6;
-	public final static int SAFE_DRAWER____RESET_SYNC = 0;
-	public final static int SAFE_DRAWER____HIDE_TOGGLE = 1;
-	public final static int SAFE_DRAWER____ACCESS = 2;
-	public final static int SAFE_DRAWER____BLOCK = 3;
-	public final static int SAFE_DRAWER____SERVE = 4;
-	private String[] prepareDrawer(boolean hasSafeSk) {
-		String[] drawer = new String[7];
-		drawerState = new boolean[7];
-
-		if (hasSafeSk) {
-			drawer[SAFE_DRAWER_SK_SET_NAME] = "Set Name";
-			drawer[SAFE_DRAWER_SK_SET_MYSELF] = "Set Myself";
-			drawer[SAFE_DRAWER_SK_EXPORT_ADDR] = "Export Address";
-			drawer[SAFE_DRAWER_SK_SELECT_DIRS] = "Select DirectoryServer";
-			drawer[SAFE_DRAWER_SK_SERVE] = "Serve It";
-			drawer[SAFE_DRAWER_SK_SET_INSTANCE] = "Set Instance";
-			drawer[SAFE_DRAWER_SK_HIDE_TOGGLE] = "Hide This Safe";
-			
-			drawerState[SAFE_DRAWER_SK_HIDE_TOGGLE] = this.peer.getHidden();
-			drawerState[SAFE_DRAWER_SK_SERVE] = this.peer.getBroadcastable();
-			if (drawerState[SAFE_DRAWER_SK_HIDE_TOGGLE]) drawer[SAFE_DRAWER_SK_HIDE_TOGGLE] = "UnHide This Safe";
-			if (drawerState[SAFE_DRAWER_SK_SERVE]) drawer[SAFE_DRAWER_SK_SERVE] = "Stop Serving This Safe";
-		}
-
-		if (! hasSafeSk) {
-			drawer[SAFE_DRAWER____RESET_SYNC] = "Reset Last Sync Date";
-			drawer[SAFE_DRAWER____HIDE_TOGGLE] = "Hide This Safe";
-			drawer[SAFE_DRAWER____ACCESS] = "Access It";
-			drawer[SAFE_DRAWER____BLOCK] = "Block It";
-			drawer[SAFE_DRAWER____SERVE] = "Serve It";
-			drawer[5] = " ";
-			drawer[6] = " ";
-			
-			drawerState[SAFE_DRAWER____RESET_SYNC] = false;
-			drawerState[SAFE_DRAWER____HIDE_TOGGLE] = this.peer.getHidden();
-			drawerState[SAFE_DRAWER____ACCESS] = this.peer.getUsed();
-			drawerState[SAFE_DRAWER____BLOCK] = this.peer.getBlocked();
-			drawerState[SAFE_DRAWER____SERVE] = this.peer.getBroadcastableMyOrDefault();
-			
-			Log.d(TAG, "SafeProfileAct: prepareDrawer: block="+drawerState[SAFE_DRAWER____BLOCK]);
-		}
-
-		return drawer;
-
-	}
-    static int cnt_try_false = 0;
 
 	private class SafeProfileAdapter extends BaseAdapter {
 
@@ -561,7 +596,7 @@ public class SafeProfileActivity extends FragmentActivity {
 
 			TextView content = (TextView) v
 					.findViewById(R.id.safe_profile_drawer_row_text);
-			if (peer.getSK() != null) {
+			if (true || (peer.getSK() != null)) {
 				content.setText(data[position]);
 				//s.setPressed(state[position]);
 			} else {

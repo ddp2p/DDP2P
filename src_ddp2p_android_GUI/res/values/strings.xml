@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources  xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
-    <string name="app_name">DirectDemocracyP2P (DDP2P)</string>
+    <string name="app_name">V16 DirectDemocracyP2P (DDP2P)</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="action_directories">Manage Directories</string>
@@ -34,8 +34,8 @@
     <string name="profile_pic_datalist" translatable="false">profile picture</string>
 
     <!-- buttons -->
-    <string name="submit" translatable="false">submit</string>
-    <string name="submit_new" translatable="false">submit new</string>
+    <string name="submit" translatable="false">Submit</string>
+    <string name="submit_new" translatable="false">Submit New</string>
     <string name="ok" translatable="false">OK</string>
 
     <string name="Yes">YES</string>
@@ -75,7 +75,7 @@
     <string name="description" translatable="false">Description</string>
     <string name="inst_for_motion" translatable="false">Instruction for motion</string>
     <string name="inst_for_registration" translatable="false">Instruction for registration</string>
-    <string name="add_extra" translatable="false">Extra</string>
+    <string name="add_extra" translatable="false">Add Extra Field in White Pages Schema</string>
     <string name="varied_voting_right" translatable="false">Varied voting right</string>
     <string name="max_voting_level" translatable="false">Max voting level</string>
     <string name="org_icon" translatable="false">Organization icon</string>
@@ -151,4 +151,31 @@
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
     <string name="settings_show_hidden">Show Hidden</string>
+    <string name="drawer_safe_Set_Name">Set Name</string>
+    <string name="drawer_safe_Reset_Last_Sync_Date">Reset Last Sync Date</string>
+    <string name="drawer_safe_Hide_This_Safe">Hide This Safe</string>
+    <string name="drawer_safe_Access_It">Access It</string>
+    <string name="drawer_safe_Block_It">Block It</string>
+    <string name="drawer_safe_Serve_It">Serve It</string>
+    <string name="drawer_safe_Set_Myself">Set Myself</string>
+    <string name="drawer_safe_Export_Address">Export Address</string>
+    <string name="drawer_safe_Select_DirectoryServer">Select DirectoryServer</string>
+    <string name="drawer_safe_Set_Instance">Set Instance</string>
+    <string name="drawer_safe_Unhide_This_Safe">UnHide This Safe</string>
+    <string name="drawer_safe_Stop_Serving_This_Safe">Stop Serving This Safe</string>
+    <string name="drawer_safe_Stop_Accessing_It">Stop Accessing It</string>
+    <string name="drawer_safe_Stop_Blocking_It">Stop Blocking It</string>
+    <string name="drawer_safe_Stop_Serving_It">Stop Serving It</string>
+    <string name="Toast_Thread_Pings">Toast Thread Pings</string>
+    <string name="startup_create_new_identity">Create New Identity</string>
+    <string name="startup_skip_identity">Skip (Use menu to do it later)</string>
+    <string name="startup_import_old_identity">Import Old Identity from a\nContainer (file/image/URL)</string>
+    <string name="Org_ExtraField_Label">Label</string>
+    <string name="Org_ExtraField_DefaultValue">Default</string>
+    <string name="Org_ExtraField_Level">Level</string>
+    <string name="Org_ExtraField_Hint">Hint</string>
+    <string name="Org_FieldExtra_ValuesList">Values divided by \'%s\'</string>
+    <string name="Safe_EmailVerification">Email For Verification</string>
+    <string name="Safe_DeviceName">Device Name (e.g., Android)</string>
+    <string name="Save_NameHint">Name By Which Your Friends Know You</string>
 </resources>

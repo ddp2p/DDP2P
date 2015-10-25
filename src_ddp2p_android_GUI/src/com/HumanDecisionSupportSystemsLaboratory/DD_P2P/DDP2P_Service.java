@@ -56,13 +56,15 @@ public class DDP2P_Service extends Service {
     public static boolean serversStarted = false;
     int _startId;
     Intent _intent; // to use with stopSelfResult(_startId);
+    final static boolean DEBUG = true;
+    final static boolean _DEBUG = true;
 
     private Looper mServiceLooper;
 
 
     @Override
     public void onCreate() {
-        Log.d("Service", "DDP2P_Service: onCreate: start");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: onCreate: start");
         super.onCreate();
         HandlerThread thread = new HandlerThread("ServiceStartArguments",
                 android.os.Process.THREAD_PRIORITY_BACKGROUND);
@@ -74,27 +76,27 @@ public class DDP2P_Service extends Service {
 
         launchForeground();
         startDDP2P(this.getApplicationContext());
-        Log.d("Service", "DDP2P_Service: onCreate: stop");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: onCreate: stop");
     }
 
     public static ArrayList<ArrayList<Object>> startDDP2P(Context ctx) {
-        Log.d("Service", "DDP2P_Service: startDDP2P: start");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: startDDP2P: start");
         boolean r = ensureDatabaseIsInited(ctx);
-        Log.d("Service", "DDP2P_Service: onCreate: db inited: " + r);
+        if (DEBUG) Log.d("Service", "DDP2P_Service: onCreate: db inited: " + r);
 
         ArrayList<ArrayList<Object>> peer_IDs = D_Peer.getAllPeers();
-        Log.d("Service",
+        if (DEBUG) Log.d("Service",
                 "DDP2P_Service: onCreate: found peers: #" + peer_IDs.size());
 
         if (peer_IDs.size() == 0) {
             // testPeerCreation();
             // peer_IDs = D_Peer.getAllPeers();
-            // Log.d("onCreateView", "Safe: onCreateView: re-found peers: #" +
+            // if (DEBUG) Log.d("onCreateView", "Safe: onCreateView: re-found peers: #" +
             // peer_IDs.size());
         } else {
             DDP2P_Service.startServers();
         }
-        Log.d("Service", "DDP2P_Service: startDDP2P: stop");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: startDDP2P: stop");
         return peer_IDs;
     }
 
@@ -102,7 +104,7 @@ public class DDP2P_Service extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         //return
         super.onStartCommand(intent, flags, startId);
-        Log.d("Service", "DDP2P_Service: onStartCommand: start");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: onStartCommand: start");
         _startId = startId; _intent = intent;
 
         /**
@@ -115,34 +117,34 @@ public class DDP2P_Service extends Service {
         */
 
         // If we get killed, after returning from here, restart
-        Log.d("Service", "DDP2P_Service: onStartCommand: stop (message sent)");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: onStartCommand: stop (message sent)");
         return START_STICKY;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d("Service", "DDP2P_Service: onBind: start");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: onBind: start");
         return mBinder;
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.d("Service", "DDP2P_Service: onUnbind: start");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: onUnbind: start");
         return super.onUnbind(intent);
     }
 
     @Override
     public void onDestroy() {
-        Log.d("Service", "DDP2P_Service: onDestroy: start");
-        Log.d("Service", "DDP2P_Service: onDestroy: in");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: onDestroy: start");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: onDestroy: in");
         Toast.makeText(this, "DDP2P service closing...", Toast.LENGTH_SHORT).show();
         terminateForeground();
-        Log.d("Service", "DDP2P_Service: onDestroy: stop");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: onDestroy: stop");
         super.onDestroy();
     }
 
     void launchForeground() {
-        Log.d("Service", "DDP2P_Service: launchForeground: start");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: launchForeground: start");
         Intent notificationIntent = new Intent(this, Main.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 , notificationIntent, 0);
         Notification notification = new NotificationCompat.Builder(this)
@@ -156,19 +158,19 @@ public class DDP2P_Service extends Service {
 //        Notification notification = new Notification(R.drawable.vote_icon, getText(R.string.DDP2P), System.currentTimeMillis());
 //        notification.setLatestEventInfo(this, "DDP2P", "DDP2P start", pendingIntent);
         startForeground(ONGOING_NOTIFICATION_ID, notification);
-        Log.d("Service", "DDP2P_Service: launchForeground: stop");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: launchForeground: stop");
     }
 
     void terminateForeground() {
-        Log.d("Service", "DDP2P_Service: terminateForeground: start");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: terminateForeground: start");
         stopForeground(true);
         // stop DDP2P threads
         DD.stop_servers();
-        Log.d("Service", "items to save: " + net.ddp2p.common.data.SaverThreadsConstants.getNumberRunningSaverWaitingItems());
+        if (DEBUG) Log.d("Service", "items to save: " + net.ddp2p.common.data.SaverThreadsConstants.getNumberRunningSaverWaitingItems());
         DD.clean_before_exit();
         // stopSelfResult(_startId);
         stopSelf();
-        Log.d("Service", "DDP2P_Service: terminateForeground: stop");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: terminateForeground: stop");
         //System.exit(0);
         try {
             Thread.currentThread().wait(1);
@@ -209,47 +211,47 @@ public class DDP2P_Service extends Service {
     public static final Object monitorDatabaseInitialization = new Object();
 
     public static boolean ensureDatabaseIsInited(Context activity) {
-        Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: start");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: start");
         synchronized (monitorDatabaseInitialization) {
             // pull out all safes from database
             if (Application_GUI.dbmail == null)
                 Application_GUI.dbmail = new Android_DB_Email(activity);
             else
-                Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: dbmail was already here");
+                if (DEBUG) Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: dbmail was already here");
 
             //Safe.safeItself.getActivity());
             if (Application_GUI.gui == null)
                 Application_GUI.gui = new Android_GUI(activity);
             else
-                Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: gui was already here");
-            if (Application.db == null) {
+                if (DEBUG) Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: gui was already here");
+            if (Application.getDB() == null) {
                 try {
                     DBInterface db = new DBInterface("deliberation-app.db");
-                    Application.db = db;
-                    Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: db inited");
+                    Application.setDB(db);
+                    if (DEBUG) Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: db inited");
                 } catch (P2PDDSQLException e1) {
                     e1.printStackTrace();
                     return false;
                 }
             } else {
-                Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: db was already here");
+                if (DEBUG) Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: db was already here");
             }
         }
-        Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: stop");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: ensureDatabaseIsInited: stop");
         return true;
     }
     public static boolean startServers() {
-        Log.d("Service", "DDP2P_Service: startServers: start, status="+serversStarted);
+        if (DEBUG) Log.d("Service", "DDP2P_Service: startServers: start, status="+serversStarted);
         synchronized (monitorServers) {
             if (serversStarted) {
-                Log.d("Service", "DDP2P_Service: startServers: quit already done");
+                if (DEBUG) Log.d("Service", "DDP2P_Service: startServers: quit already done");
                 return true;
             }
              serversStarted = true;
         }
         D_Peer myself = HandlingMyself_Peer.get_myself_or_null();
         if (myself == null) {
-            Log.d("Service", "DDP2P_Service: startServers: quit myself loaded");
+            if (DEBUG) Log.d("Service", "DDP2P_Service: startServers: quit myself loaded");
 
             //initial the server:
             Identity.init_Identity(false, true, false);
@@ -312,8 +314,8 @@ public class DDP2P_Service extends Service {
 
             try {
                 DD.startNATServer(true);
-                DD.startUServer(true, Identity.current_peer_ID);
-                DD.startServer(false, Identity.current_peer_ID);
+                DD.startUServer(true, Application.getCurrent_Peer_ID());
+                DD.startServer(false, Application.getCurrent_Peer_ID());
                 DD.startClient(true);
 
             } catch (NumberFormatException e) {
@@ -332,7 +334,7 @@ public class DDP2P_Service extends Service {
             Log.i("Service", "some error in chat initial!");
             e.printStackTrace();
         }
-        Log.d("Service", "DDP2P_Service: startServers: stop");
+        if (DEBUG) Log.d("Service", "DDP2P_Service: startServers: stop");
         return true;
     }
 
@@ -343,22 +345,22 @@ public class DDP2P_Service extends Service {
     private final class ServiceHandler extends Handler {
         public ServiceHandler(Looper looper) {
             super(looper);
-            Log.d("Service", "DDP2P_Service: handleMessage: <init>");
+            if (DEBUG) Log.d("Service", "DDP2P_Service: handleMessage: <init>");
         }
         @Override
         public void handleMessage(Message msg) {
-            Log.d("Service", "DDP2P_Service: handleMessage: start");
+            if (DEBUG) Log.d("Service", "DDP2P_Service: handleMessage: start");
             // Stop the service using the startId, so that we don't stop
             // the service in the middle of handling another job
             launchForeground();
             //stopSelf(msg.arg1);
-            Log.d("Service", "DDP2P_Service: handleMessage: stop");
+            if (DEBUG) Log.d("Service", "DDP2P_Service: handleMessage: stop");
         }
     }
     public class LocalBinder extends Binder {
         DDP2P_Service getService() {
             // Return this instance of LocalService so clients can call public methods
-            Log.d("Service", "DDP2P_Service: handleMessage: getService");
+            if (DEBUG) Log.d("Service", "DDP2P_Service: handleMessage: getService");
             return DDP2P_Service.this;
         }
     }

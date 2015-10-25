@@ -97,6 +97,8 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 	private String selectedImagePath;
 
 	private File selectImageFile;
+	public static boolean startup_wizzard_passed = false;
+
 	public Fragment findFragmentByPosition(int position) {
 		FragmentPagerAdapter fragmentPagerAdapter = mAdapter;
 		return getSupportFragmentManager().findFragmentByTag(
@@ -205,6 +207,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 					ft.detach(StartUp.this);
 					ft.commit();
 			}
+			Main.startup_wizzard_passed = true;
 			super.onActivityResult(requestCode, resultCode, data);
 		}
 
@@ -212,7 +215,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 			Log.d("Main", "Main:StartUp:onCreateView: start");
 
-			View view = inflater.inflate(R.layout.dialog_to_start_up, container);
+			View view = inflater.inflate(R.layout.dialog_to_start_up_vertical, container);
 			butImport = (Button) view.findViewById(R.id.dialog_startup_import);
 			butAbandon = (Button) view.findViewById(R.id.dialog_startup_skip);
 			butCreate = (Button) view.findViewById(R.id.dialog_startup_createNew);
@@ -309,9 +312,10 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 	}
 	*/
 
-	boolean wizard_started = false;
+	boolean _wizard_started = false;
+
 	public void askStartUp() {
-		wizard_started = true;
+		_wizard_started = true;
 		Log.d("Main", "Main:askStartUp: start");
 		// update name dialog
 		FragmentManager fm = getSupportFragmentManager();
@@ -560,7 +564,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		}
 
 		if (item.getItemId() == R.id.add_new_org) {
-			Toast.makeText(this, "add a new organization", Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, "Adding a new organization.", Toast.LENGTH_SHORT).show();
 
 			Intent intent = new Intent();
 			intent.setClass(this, AddOrg.class);
@@ -582,7 +586,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 				Toast.makeText(this, "To add your safe, first add a directory from the Manage Directories top-right menu!", Toast.LENGTH_LONG).show();
 				return super.onOptionsItemSelected(item);
 			}
-			Toast.makeText(this, "add a new safe my", Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, "Adding a new safe myself", Toast.LENGTH_SHORT).show();
 			
 			Intent intent = new Intent();
 			intent.setClass(this, AddSafe.class);
@@ -792,6 +796,9 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		}
 	}
 
+	/**
+	 * Class to asynchronously create org, and to restart servers when needed
+	 */
 	class OrgCreatingThread extends Thread {
 		D_Organization new_org;
 
@@ -819,6 +826,10 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 
 		}
 	}
+
+	/**
+	 * Class to asynchronously create myself peer, and to restart servers when needed
+	 */
 	class PeerCreatingThread extends Thread {
         PeerInput pi;
         final public String TAG = "PEER_ADD_TH";
@@ -832,7 +843,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 
             Log.d("onCreatePeerCreatingTh",
 					"PeerCreatingThread: run: start");
-			gen();
+			generateMyself();
 
 			Log.d("onCreatePeerCreatingTh",
 					"PeerCreatingThread: run: announced");
@@ -846,7 +857,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 
         }
 
-        public D_Peer gen() {
+        public D_Peer generateMyself() {
             Log.d(TAG, "add safe: gen()");
             D_Peer peer = HandlingMyself_Peer.createMyselfPeer_w_Addresses(pi,
                     true);
@@ -944,6 +955,9 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 	final static int REFRESH_ALL = 10;
 	final static int REFRESH_ORG = 11;
 
+	/**
+	 * Handler to call RefreshOrg / RefreshAll / RefreshPeer
+	 */
     private final Handler handler = new Handler() {
         final static String TAG = "Main_Handler";
 
@@ -972,8 +986,9 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
             startActivity(i);
             */
 
-			if (wizard_started) {
-				wizard_started = false;
+			if (_wizard_started) {
+				_wizard_started = false;
+				startup_wizzard_passed = true;
 
 				Intent intent = new Intent().setClass(getApplicationContext(), ImportBrowseWebObjects.class);
 				intent.putExtra(ImportBrowseWebObjects.PARAM_INSTRUCTION,
@@ -982,6 +997,12 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 			}
         }
     };
+
+	/**
+	 * Class used to asynchronously refresh peers and orgs list.
+	 * E.g after additions, etc.
+	 * Should probably be called in each onResume
+	 */
 	public class ReloadSafe extends AsyncTask<Void, Void, Void> {
 		@Override
 		protected Void doInBackground(Void... voids) {
@@ -1002,6 +1023,10 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 			refreshOrg();
 		}
 	}
+
+	/**
+	 * Class used to asynchronously start the DDP2P engine service
+	 */
 	public class CheckStartUp extends AsyncTask<Void, Void, Boolean> {
 
 		@Override
@@ -1040,6 +1065,8 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		protected void onPostExecute(Boolean o) {
 			if (!o) {
 				askStartUp();
+			} else {
+				Main.startup_wizzard_passed = true;
 			}
 		}
 	}

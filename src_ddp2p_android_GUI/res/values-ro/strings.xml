@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources  xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
-    <string name="app_name">DirectDemocracyP2P (DDP2P)</string>
+    <string name="app_name">V16 DirectDemocracyP2P (DDP2P)</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="action_directories">Manage Directories</string>
@@ -45,6 +45,7 @@
     <string name="forum">Forum</string>
     <string name="justification">Justification</string>
 
+    <string name="add_extra" translatable="false">Adaugă Cîmp în Schema de Pagini Albe</string>
 
 
   <string name="HintEmptyView">You can add items (e.g. identities for communication, organizations, etc.) using the + menu above! \n\nManage your listing directories from the standard menu!</string>
@@ -81,5 +82,32 @@
     <string name="block">Blochează</string>
     <string name="delete">Șterge</string>
     <string name="cancel">Abandonează</string>
-    <string name="settings_show_hidden">Show Hidden</string>
+    <string name="settings_show_hidden">Arată Ascunse</string>
+    <string name="drawer_safe_Set_Name">Schimbă Numele</string>
+    <string name="drawer_safe_Reset_Last_Sync_Date">Resetează Sincronizarea</string>
+    <string name="drawer_safe_Hide_This_Safe">Ascunde Conecția</string>
+    <string name="drawer_safe_Access_It">Accesează</string>
+    <string name="drawer_safe_Block_It">Blochează</string>
+    <string name="drawer_safe_Serve_It">Servește</string>
+    <string name="drawer_safe_Set_Myself">Eu Însumi</string>
+    <string name="drawer_safe_Export_Address">Exportează Adresa</string>
+    <string name="drawer_safe_Select_DirectoryServer">Selectează Repertoriul</string>
+    <string name="drawer_safe_Set_Instance">Schimbă Instanța</string>
+    <string name="drawer_safe_Unhide_This_Safe">Revelează Conecția</string>
+    <string name="drawer_safe_Stop_Serving_This_Safe">Oprește Servirea</string>
+    <string name="drawer_safe_Stop_Accessing_It">Oprește Accesul</string>
+    <string name="drawer_safe_Stop_Blocking_It">Oprește Blocarea</string>
+    <string name="drawer_safe_Stop_Serving_It">Oprește Servirea</string>
+    <string name="Toast_Thread_Pings">Arată Anunțuri de la Procese</string>
+    <string name="startup_skip_identity">Sari (Folosește meniul cînd ai timp)</string>
+    <string name="startup_create_new_identity">Crează Identitate Nouă</string>
+    <string name="startup_import_old_identity">Extrage Identitate Veche din\nContainer (fișier/imagine/URL)</string>
+    <string name="Org_ExtraField_Label">Label</string>
+    <string name="Org_ExtraField_DefaultValue">Default</string>
+    <string name="Org_ExtraField_Level">Level</string>
+    <string name="Org_ExtraField_Hint">Hint</string>
+    <string name="Org_FieldExtra_ValuesList">Values divided by \'%s\'</string>
+    <string name="Safe_EmailVerification">Email For Verification</string>
+    <string name="Safe_DeviceName">Device Name (e.g., Android)</string>
+    <string name="Save_NameHint">Name By Which Your Friends Know You</string>
 </resources>

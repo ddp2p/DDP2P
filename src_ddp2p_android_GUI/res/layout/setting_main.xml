@@ -85,4 +85,26 @@
             android:ellipsize="marquee" />
     </LinearLayout>
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:background="@drawable/card_style_bg_no_line"
+        android:layout_height="60dp"
+        >
+
+        <CheckBox
+            android:layout_marginLeft="10dp"
+            android:textSize="16sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:text="@string/Toast_Thread_Pings"
+            android:id="@+id/toast_thread_pings"
+            android:checked="false"
+            android:button="@null"
+            android:drawableRight="?android:attr/listChoiceIndicatorMultiple"
+            android:drawableEnd="?android:attr/listChoiceIndicatorMultiple"
+            android:ellipsize="marquee" />
+    </LinearLayout>
+
 </LinearLayout>

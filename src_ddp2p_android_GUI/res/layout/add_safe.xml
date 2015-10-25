@@ -20,8 +20,9 @@
         <EditText 
             android:id="@+id/add_name"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"   
-            android:inputType="textPersonName|textCapWords"              
+            android:layout_height="wrap_content"
+            android:hint="@string/Save_NameHint"
+            android:inputType="textPersonName|textCapWords"
         />       
     </LinearLayout>
 
@@ -40,11 +41,33 @@
             android:id="@+id/add_email"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="\@"
+            android:text=""
+            android:hint="@string/Safe_EmailVerification"
             android:inputType="textEmailAddress"
         />
     </LinearLayout>
-    
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/Device"
+            style="@android:style/TextAppearance"
+            />
+        <EditText
+            android:id="@+id/add_device"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:hint="@string/Safe_DeviceName"
+            android:inputType="textCapWords|textCapCharacters|textAutoComplete"
+            />
+    </LinearLayout>
+
     <LinearLayout 
         android:orientation="horizontal"
         android:layout_width="fill_parent"
@@ -54,18 +77,48 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/slogan"
+            android:gravity="top|start"
+            android:layout_marginRight="5dp"
+            android:padding="0dp"
             style="@android:style/TextAppearance"
-        />
+            android:layout_gravity="start" />
         <EditText 
             android:id="@+id/add_slogan"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
+            android:gravity="top"
+            android:textAlignment="gravity"
             style="@android:style/Widget.EditText"
             android:text=""
-            android:inputType="text|textCapSentences|textAutoCorrect|textAutoComplete"
+            android:hint="Status Text"
+            android:minLines="3"
+            android:lines="4"
+            android:maxLines="6"
+            android:background="@color/lightgray"
+            android:scrollbars="vertical"
+            android:overScrollMode="always"
+            android:scrollbarStyle="insideInset"
+            android:inputType="textCapSentences|textAutoCorrect|textAutoComplete|textMultiLine"
         />       
     </LinearLayout>
-    
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="15dp"
+            android:text="@string/keys" />
+
+        <Spinner
+            android:id="@+id/safe_keys"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
     <Button 
         android:id="@+id/submit"
         android:layout_width="wrap_content"

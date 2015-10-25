@@ -15,6 +15,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 package com.HumanDecisionSupportSystemsLaboratory.DD_P2P;
 
+import net.ddp2p.ciphersuits.RSA;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.DD_SK;
 import net.ddp2p.common.util.DD_SK_Entry;
@@ -63,7 +64,7 @@ public class OrgProfile extends FragmentActivity {
 	private static String organization_GIDH;
 	long oLID;
 	D_Organization org;
-	private static CipherSuit[] __keys;
+	public static CipherSuit[] __keys;
 	private int SELECT_PROFILE_PHOTO = 10;
 	private int SELECT_PPROFILE_PHOTO_KITKAT = 11;
 	private ImageView setProfilePhoto;
@@ -93,12 +94,12 @@ public class OrgProfile extends FragmentActivity {
 	D_Constituent constituent = null;
 	private static String TAG = "Profile";
 	// content in spinner
-	private static final String[] m = { "Secure ECDSA 512", "Medium ECDSA 256",
-			"Fast RSA 1024" };
+	public static final String[] m = { "Secure ECDSA 512", "Medium ECDSA 256",
+			"Fast RSA 1024", "Fast Insecure Toy RSA 150" };
 
 	// private static final String[] mm={"",""};
 
-	CipherSuit newCipherSuit(String _cipher, String _hash_alg, int _ciphersize) {
+	public static CipherSuit newCipherSuit(String _cipher, String _hash_alg, int _ciphersize) {
 		CipherSuit cs = new CipherSuit();
 		cs.cipher = _cipher;
 		cs.hash_alg = _hash_alg;
@@ -109,16 +110,18 @@ public class OrgProfile extends FragmentActivity {
 	public final static int KEY_IDX_ECDSA_BIG = 0;
 	public final static int KEY_IDX_ECDSA = 1;
 	public final static int KEY_IDX_RSA = 2;
+	public final static int KEY_IDX_RSA_FAST = 3;
 	@Override
 	protected void onCreate(Bundle arg0) {
 		super.onCreate(arg0);
 		Intent i = this.getIntent();
 		Bundle b = i.getExtras();
 
-		__keys = new CipherSuit[3];
+		__keys = new CipherSuit[4];
 		__keys[KEY_IDX_ECDSA_BIG] = newCipherSuit(Cipher.ECDSA, Cipher.SHA384, ECDSA.P_521);
 		__keys[KEY_IDX_ECDSA]     = newCipherSuit(Cipher.ECDSA, Cipher.SHA1, ECDSA.P_256);
 		__keys[KEY_IDX_RSA]       = newCipherSuit(Cipher.RSA, Cipher.SHA512, 1024);
+		__keys[KEY_IDX_RSA_FAST]       = newCipherSuit(Cipher.RSA, Cipher.MD5, 150);
 
 		// top panel setting
 		organization_position = b.getInt(Orgs.O_ID);
@@ -273,7 +276,12 @@ public class OrgProfile extends FragmentActivity {
 			if (sk != null) {
 				Cipher cipher = Cipher.getCipher(sk, null);
 				if (cipher instanceof net.ddp2p.ciphersuits.RSA) {
-					keys.setSelection(KEY_IDX_RSA, true);
+					RSA ecdsa = (RSA) cipher;
+					CipherSuit e = RSA.getCipherSuite(ecdsa.getPK());
+					if (e.hash_alg == Cipher.MD5)
+						keys.setSelection(KEY_IDX_RSA_FAST, true);
+					else
+						keys.setSelection(KEY_IDX_RSA, true);
 				}
 				if (cipher instanceof net.ddp2p.ciphersuits.ECDSA) {
 					ECDSA ecdsa = (ECDSA) cipher;
@@ -580,7 +588,7 @@ public class OrgProfile extends FragmentActivity {
 		return null;
 	}
 
-	private class KeysListener implements OnItemSelectedListener {
+	static class KeysListener implements OnItemSelectedListener {
 
 		@Override
 		public void onItemSelected(AdapterView<?> parent, View view,

@@ -76,15 +76,15 @@ public class Motion extends ListActivity {
 			" WHERE "+net.ddp2p.common.table.motion.organization_ID + "=? ";
 	public static java.util.ArrayList<java.util.ArrayList<Object>> getAllMotions(boolean hide, String crt_enhanced_LID) {
 		ArrayList<ArrayList<Object>> moti;
-		if (Application.db == null) return new ArrayList<ArrayList<Object>>();
+		if (Application.getDB() == null) return new ArrayList<ArrayList<Object>>();
 		String sql = sql_all_motions;
 		if (hide)	sql	 +=	" AND "+net.ddp2p.common.table.motion.hidden+" != '1' ";
 		try {
 			if (crt_enhanced_LID != null) {
 				sql += " AND " + net.ddp2p.common.table.motion.enhances_ID+" = ?;";
-				moti = Application.db.select(sql, new String[]{Motion.getOrganizationLIDstr(), Motion.getEnhancedLIDstr()});
+				moti = Application.getDB().select(sql, new String[]{Motion.getOrganizationLIDstr(), Motion.getEnhancedLIDstr()});
 			} else {
-				moti = Application.db.select(sql+";", new String[]{Motion.getOrganizationLIDstr()});
+				moti = Application.getDB().select(sql+";", new String[]{Motion.getOrganizationLIDstr()});
 			}
 			Log.d("onCreateMotCT", "Motion select asked: "+sql);
 

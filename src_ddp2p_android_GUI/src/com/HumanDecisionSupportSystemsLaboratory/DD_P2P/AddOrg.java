@@ -34,6 +34,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
+import android.text.InputType;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -67,6 +68,7 @@ class OrgSettings {
 public class AddOrg extends ActionBarActivity {
 
 	private static final String TAG = "AddOrg";
+	private static final String VALUE_SEPARATOR = ",";
 	static final OrgSettings settings = new OrgSettings();
 	private String name;
 	private String description;
@@ -314,27 +316,31 @@ public class AddOrg extends ActionBarActivity {
 				EditText etLabel = new EditText(AddOrg.this);
 				etLabel.setLayoutParams(params);
 				new_field.f_label = etLabel;
-				etLabel.setHint("Label");
+				etLabel.setHint(getString(R.string.Org_ExtraField_Label));
+				etLabel.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
 
 				EditText etValues = new EditText(AddOrg.this);
 				new_field.f_values = etValues;
 				etValues.setLayoutParams(params);
-				etValues.setHint("Values divided by ':'");
+				etValues.setHint(String.format(getString(R.string.Org_FieldExtra_ValuesList), AddOrg.VALUE_SEPARATOR));
+				etValues.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
 
 				EditText etDefault = new EditText(AddOrg.this);
 				new_field.f_default = etDefault;
 				etDefault.setLayoutParams(params);
-				etDefault.setHint("Default");
+				etDefault.setHint(getString(R.string.Org_ExtraField_DefaultValue));
 
 				EditText etLevel = new EditText(AddOrg.this);
 				new_field.f_level = etLevel;
 				etLevel.setLayoutParams(params);
-				etLevel.setHint("Level");
+				etLevel.setHint(getString(R.string.Org_ExtraField_Level));
+				etLevel.setInputType(InputType.TYPE_CLASS_NUMBER);
 
 				EditText etHint = new EditText(AddOrg.this);
 				new_field.f_hint = etHint;
 				etHint.setLayoutParams(params);
-				etHint.setHint("Hint");
+				etHint.setHint(getString(R.string.Org_ExtraField_Hint));
+				etHint.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
 
 				extraFileds.add(new_field);
 
@@ -457,12 +463,16 @@ public class AddOrg extends ActionBarActivity {
 		for (int k = 0; k < efd_list.size(); k++) {
 			ExtraFieldData ef = efd_list.get(k);
 			net.ddp2p.common.data.D_OrgParam dop = new D_OrgParam();
-			dop.label = ef.f_default;
+			dop.label = ef.f_label;
 			dop.tip = ef.f_hint;
+			dop.default_value = ef.f_default;
 			dop.partNeigh = ef.f_level;
+
+			if (ef.f_values != null) ef.f_values = ef.f_values.trim();
+			if (ef.f_values != null && ef.f_values.length() == 0) ef.f_values = null;
 			if (ef.f_values != null)
 				dop.list_of_values = Util.trimmed(ef.f_values.split(Pattern
-						.quote(",")));
+						.quote(AddOrg.VALUE_SEPARATOR)));
 			params[k] = dop;
 		}
 		// This can be used instead of the next sequence...

@@ -53,21 +53,9 @@ public class Orgs extends ListFragment{
 	public final static String sql_all_orgs = "SELECT "+net.ddp2p.common.table.organization.organization_ID+" FROM "+net.ddp2p.common.table.organization.TNAME+";";
 	
 
-	public static java.util.ArrayList<java.util.ArrayList<Object>> getAllOrganizations() {
-		ArrayList<ArrayList<Object>> result;
-		try {
-			if (Application.db != null)
-				result = Application.db.select(sql_all_orgs, new String[0]);
-			else result = new ArrayList<ArrayList<Object>>();
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-			return new ArrayList<ArrayList<Object>>();
-		}
-		return result;
-	}
 	public static void reloadOrgs() {
 		OrgItem [] _orgName;
-		ArrayList<ArrayList<Object>> orgName_alist = getAllOrganizations();
+		ArrayList<ArrayList<Object>> orgName_alist = D_Organization.getAllOrganizations();
 		_orgName = new OrgItem[orgName_alist.size()];
 		for (int k = 0; k < orgName_alist.size(); k++) {
 			_orgName[k] = new OrgItem();
@@ -173,7 +161,7 @@ public class Orgs extends ListFragment{
 	@Override
 	public void onListItemClick(ListView list, View v, int position, long id) {
 		
-		Toast.makeText(getActivity(), getListView().getItemAtPosition(position).toString(), Toast.LENGTH_SHORT).show();
+		// Toast.makeText(getActivity(), "Orgs: click org: "+getListView().getItemAtPosition(position).toString(), Toast.LENGTH_SHORT).show();
 		
 		OrgItem[] p = Orgs.orgName;
 		D_Organization o = null;

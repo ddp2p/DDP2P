@@ -44,7 +44,8 @@ public class SettingMain extends Fragment{
 				
 		adhoc = (TextView) v.findViewById(R.id.setting_main_adhoc);
 		CheckBox showHidden = (CheckBox) v.findViewById(R.id.show_hidden);
-		
+		CheckBox toastThreadPings = (CheckBox) v.findViewById(R.id.toast_thread_pings);
+
 		adhoc.setOnClickListener(new View.OnClickListener() {
 			
 			@Override
@@ -78,10 +79,19 @@ public class SettingMain extends Fragment{
 			public void onClick(View view) {
 				DD.setAppBoolean(Safe.DD_SHOW_HIDDEN, Safe.SHOW_HIDDEN = ((CheckBox) view).isChecked());
 				//new Main.ReloadSafe().execute(void);
-				Log.d("SettingMain", "SettingMain: oCW: hidden ="+Safe.SHOW_HIDDEN);
+				Log.d("SettingMain", "SettingMain: oCW: hidden =" + Safe.SHOW_HIDDEN);
 			}
 		});
-		
+
+		toastThreadPings.setChecked(Android_GUI.TOAST_THREAD_PINGS);
+		toastThreadPings.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				DD.setAppBoolean(Android_GUI.DD_TOAST_THREAD_PINGS, Android_GUI.TOAST_THREAD_PINGS = ((CheckBox) view).isChecked());
+				//new Main.ReloadSafe().execute(void);
+				Log.d("SettingMain", "SettingMain: oCW: toastPings ="+Android_GUI.TOAST_THREAD_PINGS);
+			}
+		});
 		return v;
 	}
 

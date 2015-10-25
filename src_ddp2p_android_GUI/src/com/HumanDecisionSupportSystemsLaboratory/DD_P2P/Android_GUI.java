@@ -22,6 +22,8 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import net.ddp2p.ciphersuits.Cipher;
+import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.hds.PeerInput;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Organization;
@@ -29,22 +31,28 @@ import net.ddp2p.common.data.D_Peer;
 
 public
 class Android_GUI implements net.ddp2p.common.config.Vendor_GUI_Dialogs {
+	final static boolean DEBUG = true;
+	final static boolean _DEBUG = true;
 	Context context;
+	public static boolean TOAST_THREAD_PINGS = false;
+	public static final String DD_TOAST_THREAD_PINGS = "TOAST_THREAD_PINGS";
 	Android_GUI (Context _context) {
 		context = _context;
 	}
+	public SK getCrtIdentityKeys() {return null;}
+	public Cipher getCrtIdentityCipher() {return null;}
 
 	@Override
 	public void ThreadsAccounting_ping(String arg0) {
 		// TODO Auto-generated method stub
-		Log.d("Android_GUI", "Android_GUI: ping: "+Thread.currentThread().getName()+"::"+arg0);
-		Toast_makeText(context, Thread.currentThread().getName()+"::"+arg0, Toast.LENGTH_LONG);//.show();
+		if (DEBUG) Log.d("Android_GUI", "Android_GUI: ping: "+Thread.currentThread().getName()+"::"+arg0);
+		if (TOAST_THREAD_PINGS) Toast_makeText(context, Thread.currentThread().getName()+"::"+arg0, Toast.LENGTH_LONG);//.show();
 	}
 
 	@Override
 	public int ask(String arg0, String arg1, int arg2) {
 		// TODO Auto-generated method stub
-		Log.d("Android_GUI", "Android_GUI: ??? ask "+arg0+" "+arg1);
+		if (DEBUG) Log.d("Android_GUI", "Android_GUI: ??? ask "+arg0+" "+arg1);
 		Toast_makeText(context, arg0 + " " + arg1, Toast.LENGTH_LONG);//.show();
 		return 0;
 	}
@@ -53,7 +61,7 @@ class Android_GUI implements net.ddp2p.common.config.Vendor_GUI_Dialogs {
 	public int ask(String arg0, String arg1, Object[] arg2, Object arg3,
 			Object arg4) {
 		// TODO Auto-generated method stub
-		Log.d("Android_GUI", "Android_GUI: ??? ask "+arg0+" "+arg1+" "+arg2);
+		if (DEBUG) Log.d("Android_GUI", "Android_GUI: ??? ask "+arg0+" "+arg1+" "+arg2);
 		Toast_makeText(context, arg0 + " " + arg1, Toast.LENGTH_LONG);//.show();
 		return 0;
 	}
@@ -110,7 +118,7 @@ class Android_GUI implements net.ddp2p.common.config.Vendor_GUI_Dialogs {
 	public void info(String arg0, String arg1) {
 		// TODO Auto-generated method stub
 
-		Log.d("Android_GUI", "Android_GUI: info "+arg0+" "+arg1);
+		if (DEBUG) Log.d("Android_GUI", "Android_GUI: info "+arg0+" "+arg1);
 		Toast_makeText(context, arg0 + " " + arg1, Toast.LENGTH_LONG);//.show();
 	}
 
@@ -196,8 +204,9 @@ class Android_GUI implements net.ddp2p.common.config.Vendor_GUI_Dialogs {
 	public void warning(String arg0, String arg1) {
 		// TODO Auto-generated method stub
 		//context;
-		Log.d("Android_GUI", "Android_GUI: warning "+arg0+" "+arg1);
-		Toast_makeText(context, arg0 + " " + arg1, Toast.LENGTH_LONG);//.show();
+		if (DEBUG) Log.d("Android_GUI", "Android_GUI: warning "+arg0+" "+arg1);
+		if (Main.startup_wizzard_passed)
+			Toast_makeText(context, arg0 + " " + arg1, Toast.LENGTH_LONG);//.show();
 	}
 
 	@Override
@@ -231,7 +240,7 @@ class Android_GUI implements net.ddp2p.common.config.Vendor_GUI_Dialogs {
 	}
 	public void Toast_makeText(Context c, String t, int len) {
 		if (! (c instanceof Activity)) {
-			Log.d("Toast", "Android_GUI: makeText: Not an activity: "+t);
+			if (DEBUG) Log.d("Toast", "Android_GUI: makeText: Not an activity: "+t);
 
 			Intent intent = new Intent(Main.BROADCAST_MAIN_RECEIVER);
 			intent.putExtra(Main.BROADCAST_PARAM_TOAST, t);

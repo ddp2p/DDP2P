@@ -20,6 +20,7 @@ import java.util.HashMap;
 
 import com.HumanDecisionSupportSystemsLaboratory.DD_P2P.Safe.SafeAdapter;
 
+import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.CipherSuit;
@@ -27,14 +28,17 @@ import net.ddp2p.ciphersuits.ECDSA;
 import net.ddp2p.common.hds.PeerInput;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.HandlingMyself_Peer;
+import net.ddp2p.common.util.Util;
 
 import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -43,7 +47,7 @@ import android.os.Message;
 
 public class AddSafe extends ActionBarActivity {
 
-	private String name, email, slogan;
+	private String name, email, slogan, instance;
 	private String quality;
 	final static String FAST = "FAST";
     final public static String PI = "PI";
@@ -65,29 +69,50 @@ public class AddSafe extends ActionBarActivity {
 		final Button but = (Button) findViewById(R.id.submit);
 		final EditText add_name = (EditText) findViewById(R.id.add_name);
 		final EditText add_email = (EditText) findViewById(R.id.add_email);
+		final EditText add_device = (EditText) findViewById(R.id.add_device);
 		final EditText add_slogan = (EditText) findViewById(R.id.add_slogan);
+		Spinner keys = (Spinner) findViewById(R.id.safe_keys);
+
+		OrgProfile.__keys = new CipherSuit[4];
+		OrgProfile.__keys[OrgProfile.KEY_IDX_ECDSA_BIG] = OrgProfile.newCipherSuit(Cipher.ECDSA, Cipher.SHA384, ECDSA.P_521);
+		OrgProfile.__keys[OrgProfile.KEY_IDX_ECDSA]     = OrgProfile.newCipherSuit(Cipher.ECDSA, Cipher.SHA1, ECDSA.P_256);
+		OrgProfile.__keys[OrgProfile.KEY_IDX_RSA]       = OrgProfile.newCipherSuit(Cipher.RSA, Cipher.SHA512, 1024);
+		OrgProfile.__keys[OrgProfile.KEY_IDX_RSA_FAST]       = OrgProfile.newCipherSuit(Cipher.RSA, Cipher.MD5, 150);
+
+		ArrayAdapter<String> keysAdapter = new ArrayAdapter<String>(this,
+				android.R.layout.simple_spinner_item, OrgProfile.m);
+		keysAdapter
+				.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		keys.setAdapter(keysAdapter);
+		keys.setOnItemSelectedListener(new OrgProfile.KeysListener());
+		keys.setSelection(OrgProfile._selectedKey = OrgProfile.KEY_IDX_ECDSA_BIG, true);
 
 		but.setOnClickListener(new View.OnClickListener() {
 
 			public void onClick(View v) {
 				Log.d("AddSafe", "AddSafe: inited name: start");
+				int _keys = OrgProfile._selectedKey;
 				name = add_name.getText().toString();
+				instance = Util.trimToNull(add_device.getText().toString());
 				email = add_email.getText().toString();
 				slogan = add_slogan.getText().toString();
-				quality = FAST; // You will change this based on input
-
-				if (FAST.equals(quality)) {
-					cipher = Cipher.RSA;
-					keysize = 150;
-					hash = Cipher.MD5;
-				} else {
-					cipher = Cipher.ECDSA;
-					keysize = ECDSA.P_256;
-					hash = Cipher.SHA1;
-				}
+				//quality = FAST; // You will change this based on input
+//				if (FAST.equals(quality)) {
+//					cipher = Cipher.RSA;
+//					keysize = 150;
+//					hash = Cipher.MD5;
+//				} else {
+//					cipher = Cipher.ECDSA;
+//					keysize = ECDSA.P_256;
+//					hash = Cipher.SHA1;
+//				}
+				cipher = OrgProfile.__keys[_keys].cipher;
+				keysize = OrgProfile.__keys[_keys].ciphersize;
+				hash = OrgProfile.__keys[_keys].hash_alg;
 
 				Log.d("AddSafe", "AddSafe: inited name: "+name);
 				PeerInput pi = newPeer(name, email, slogan, cipher, keysize, hash);
+				pi.instance = instance;
 /*				Safe.loadPeer();
 				Safe.safeAdapter.notifyDataSetChanged();*/
                 Intent intent = new Intent();
