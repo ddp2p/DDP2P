@@ -67,7 +67,9 @@ import net.ddp2p.common.config.OrgListener;
 import net.ddp2p.common.data.D_OrgConcepts;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Peer;
+import net.ddp2p.common.data.D_SecretKey;
 import net.ddp2p.common.data.HandlingMyself_Peer;
+import net.ddp2p.common.data.OrgGIDItem;
 import net.ddp2p.common.streaming.OrgHandling;
 import net.ddp2p.common.util.CreatorGIDItem;
 import net.ddp2p.common.util.P2PDDSQLException;
@@ -79,23 +81,6 @@ import net.ddp2p.widgets.components.MultiformatDocumentListener;
 import net.ddp2p.widgets.components.TranslatedLabel;
 import static java.lang.System.out;
 import static net.ddp2p.common.util.Util.__;
-class OrgGIDItem{
-	String gid;
-	String hash;
-	String name;
-	public OrgGIDItem(String _gid, String _hash, String _name) {set(_gid, _hash, _name);}
-	public void set(String _gid, String _hash, String _name){
-		gid = _gid;
-		hash = _hash;
-		name = _name;	
-	}
-	public String toString() {
-		if(name != null) return name;
-		if(hash == null) return "ORG:"+super.toString();
-		return "ORG:"+hash;
-	}
-}
-
 @SuppressWarnings("serial")
 public class OrgEditor  extends JPanel implements OrgListener, ActionListener, FocusListener, DocumentListener, LVListener, ItemListener, MultiformatDocumentListener {
 	//private static final boolean _DEBUG = true;
@@ -285,33 +270,13 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		if(DEBUG) System.out.println("OrgEditor:loadOrgIDKeys:Removed ORG GID ItemListener");
 		globID_field.removeAllItems();globID_field.getEditor().setItem(null);
 		if(m_editable && (method==net.ddp2p.common.table.organization._AUTHORITARIAN)) { // editing: may set any existing secret key
-			if(DEBUG) System.out.println("OrgEditor:loadOrgIDKeys: editable_authoritarian");
-			String sql_gid =
-				"SELECT k."+net.ddp2p.common.table.key.public_key+",k."+net.ddp2p.common.table.key.ID_hash+",k."+net.ddp2p.common.table.key.name+
-				//",p."+table.peer.name+
-				" FROM " + net.ddp2p.common.table.key.TNAME + " AS k " +
-				//" LEFT JOIN "+table.peer.TNAME+" AS p ON(k."+table.key.public_key+"=p."+table.peer.global_peer_ID+")"+
-				" WHERE "+net.ddp2p.common.table.key.secret_key+" IS NOT NULL;";
-			ArrayList<ArrayList<Object>> c;
-			try {
-				c = Application.getDB().select(sql_gid, new String[]{}, DEBUG);
-				for(ArrayList<Object> i: c){
-					String gid = Util.getString(i.get(0));
-					String hash = Util.getString(i.get(1));
-					String k_name = Util.getString(i.get(2));
-					String name, p_name = null; //Util.getString(i.get(3));
-					D_Peer peer = D_Peer.getPeerByGID_or_GIDhash(gid, null, true, false, false, null);
-					if (peer != null) p_name = peer.getName_MyOrDefault();
-					if (p_name != null) name = __("PEER:")+" "+p_name;
-					else name = k_name;
-					OrgGIDItem crt = new OrgGIDItem(gid,hash,name);
-					globID_field.addItem(crt);
-					if((default_gID != null)&&(default_gID.equals(gid))){
-						globID_field.setSelectedItem(crt);
-					}
+			if (DEBUG) System.out.println("OrgEditor:loadOrgIDKeys: editable_authoritarian");
+			ArrayList<OrgGIDItem> c = D_SecretKey.getOrgGIDItems();
+			for (OrgGIDItem i: c) {
+				globID_field.addItem(i);
+				if ((default_gID != null) && (default_gID.equals(i.gid))){
+					globID_field.setSelectedItem(i);
 				}
-			} catch (P2PDDSQLException e) {
-				e.printStackTrace();
 			}
 		}else{ // fix: will set GID hash
 			if(DEBUG) System.out.println("OrgEditor:loadOrgIDKeys: fix: "+default_hgID);
@@ -922,10 +887,9 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 	}
 	
 	@SuppressWarnings("unchecked")
-	public void handleFieldEvent(Object source) {
-		
+	public void handleFieldEvent(Object source) {		
 		// boolean DEBUG = true;
-		if(DEBUG)System.out.println("OrgEditor: handleFieldEvent: enter enabled="+enabled);
+		if(DEBUG)System.out.println("OrgEditor: handleFieldEvent: enter enabled="+enabled+" src="+source);
 		
 		if (this.broadcasted == source) {
 			boolean val = broadcasted.isSelected();
@@ -1199,6 +1163,7 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 			*/
 			organization = D_Organization.getOrgByOrg_Keep(organization);
 			organization.setInstructionsRegistration(new_text);
+			if(DEBUG) out.println("OrgEditor:handleFieldEvent: instructions registration ="+new_text);
 			organization.setCreationDate(creationTime);
 			organization.setArrivalDate(currentTime, _currentTime);
 			organization.setSignature(null);
@@ -1434,6 +1399,8 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				//org = D_Organization.getOrgByOrg_Keep(org);
 				D_Organization org = D_Organization.getOrgByOrg_Keep(organization);
 				
+				updateKeptOrgInstructions(org);
+				
 				org.updateExtraGIDs();
 				if (creationTime == null) org.setCreationDate();//Util.CalendargetInstance());
 				else org.setCreationDate(creationTime);
@@ -1540,10 +1507,10 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				String gID = Util.getKeyedIDPK(keys);
 				String sID = Util.getKeyedIDSK(keys);
 				//String gIDhash = Util.getHash(keys.getPK().encode());
-				String gIDhash = Util.getGIDhash(gID); // for the key table
+				String gIDhash_key_table_format = Util.getGIDhash(gID); // for the key table
 				//String gIDhashAuth = D_Organization.getOrgGIDHashAuthoritarian(gID);
 				String type = Util.getKeyedIDType(keys);
-				OrgGIDItem gid = new OrgGIDItem(gID, gIDhash, date);
+				OrgGIDItem gid = new OrgGIDItem(gID, gIDhash_key_table_format, date);
 				//String hashorg = Util.getHash(hash_org.encode(), DD.APP_ID_HASH);
 				byte[] _signature = null;
 				//String signature = null;
@@ -1571,7 +1538,8 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 						__("Commit"), JOptionPane.OK_CANCEL_OPTION)>0) return;
 				
 				org = D_Organization.getOrgByOrg_Keep(org);
-				org.setGID_AndLink(gID, gIDhash);
+				updateKeptOrgInstructions(org);
+				org.setGID_AndLink(gID, D_Organization.getOrgGIDHashAuthoritarian(gID));// D_Organization.getOrgGIDHashGuess(gID));//gIDhash);
 				org.updateExtraGIDs();
 				org.setCreationDate(creationTime);
 				org.setKeys(keys);//Cipher.getSK(sID)
@@ -1591,11 +1559,11 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				try {
 					//String _date = Util.getGeneralizedTime();
 					ArrayList<ArrayList<Object>> a = Application.getDB().select("SELECT * FROM "+net.ddp2p.common.table.key.TNAME+" WHERE "+net.ddp2p.common.table.key.ID_hash+"=?;",
-							new String[]{gIDhash}, DEBUG);
+							new String[]{gIDhash_key_table_format}, DEBUG);
 					if (a.size() <= 0) {
 						Application.getDB().insert(net.ddp2p.common.table.key.TNAME, 
 								new String[]{net.ddp2p.common.table.key.ID_hash,net.ddp2p.common.table.key.public_key,net.ddp2p.common.table.key.secret_key,net.ddp2p.common.table.key.type,net.ddp2p.common.table.key.creation_date},
-								new String[]{gIDhash, gID, sID, type, date});
+								new String[]{gIDhash_key_table_format, gID, sID, type, date});
 					}
 					/*
 					Application.db.update(table.organization.TNAME,
@@ -1624,17 +1592,22 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 				String gid=null;
 				//SK sk_ini=null;
 				D_Organization orgData = organization; //D_Organization.getOrgByLID(this.orgID, true);
-				organization = D_Organization.getOrgByOrg_Keep(orgData);
-				
-				if ((orgData == null) || (orgData.getName() == null) || ("".equals(orgData.getName().trim()))){
-					organization.releaseReference();
+				if (orgData == null) {
 					Application_GUI.warning(__("You have to select a name for your organization"), __("Missing Name"));
 					return;						
 				}
 				long lid = orgData.getLID();
+				organization = D_Organization.getOrgByOrg_Keep(orgData);
+				
 				if (organization == null) {
-					organization.releaseReference();
+					//organization.releaseReference();
 					Application_GUI.warning(__("Lost organizations:")+"\n"+lid+"/"+orgData.getName(), __("Lost Organization"));
+					return;						
+				}
+				updateKeptOrgInstructions(organization);
+				if ((orgData == null) || (orgData.getName() == null) || ("".equals(orgData.getName().trim()))){
+					organization.releaseReference();
+					Application_GUI.warning(__("You have to select a name for your organization"), __("Missing Name"));
 					return;						
 				}
 				if (organization.getLID() != lid) {
@@ -1737,6 +1710,14 @@ public class OrgEditor  extends JPanel implements OrgListener, ActionListener, F
 		}
 		if(DEBUG) out.println("OrgEditor:handleFieldEvent: exit");
 		if(DEBUG) out.println("*****************");
+	}
+	private void updateKeptOrgInstructions(D_Organization org) {
+		String new_RegistrationInstructions_text = this.instructionsRegistrationsPane.getDBDoc();
+		String new_MotionInstructions_text = this.instructionsMotionsPane.getDBDoc();
+		String new_Description_text = this.descriptionPane.getDBDoc();
+		org.setInstructionsRegistration(new_RegistrationInstructions_text);
+		org.setInstructionsNewMotions(new_MotionInstructions_text);
+		org.setDescription(new_Description_text);
 	}
 	/**
 	 * concats with table.organization.ORG_LANG_SEP

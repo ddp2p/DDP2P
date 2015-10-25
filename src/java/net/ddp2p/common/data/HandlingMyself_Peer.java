@@ -51,7 +51,7 @@ public class HandlingMyself_Peer {
 			while (Application.get_Raw__myself() == null) {
 				try {
 					if (_DEBUG) System.out.println("HandlingMyself: get_myself: ...");
-					if (max-- < 0) { Util.printCallPath(""); max = 10; }
+					if (max-- < 0) { if (DEBUG) Util.printCallPath(""); max = 10; }
 					_myself_monitor.wait(MYSELF_TIMEOUT);
 				} catch (InterruptedException e) {
 					e.printStackTrace();

@@ -605,6 +605,7 @@ public class ConstituentsAdd extends JDialog {
 		//D_Organization org = model.getOrganization();
 		D_Document dd = new D_Document();
 		dd.setDBDoc(org.params.instructions_registration);
+		if (DEBUG) System.out.println("ConstituentsAdd: initDynFi: " + org.params.instructions_registration);
 		instr_reg.setType(dd.getFormatString());
 		instr_reg.setText(dd.getDocumentString());
 		instr_reg.setEnabled(false);

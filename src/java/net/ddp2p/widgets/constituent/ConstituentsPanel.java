@@ -28,6 +28,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTree;
 
 import net.ddp2p.common.config.Application;
+import net.ddp2p.common.config.ConstituentListener;
 import net.ddp2p.common.config.Language;
 import net.ddp2p.common.config.OrgListener;
 import net.ddp2p.common.data.DDTranslation;
@@ -46,7 +47,7 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class ConstituentsPanel extends JPanel implements OrgListener, ActionListener, RefreshListener {
+public class ConstituentsPanel extends JPanel implements OrgListener, ActionListener, RefreshListener, ConstituentListener {
     private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
 	public ConstituentsTree tree;
@@ -56,6 +57,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 	private JLabel org_label = new JLabel("");
 	private JButton refresh_button = new JButton(__("Up to Date"));
 	private D_Organization organization;
+	private D_Constituent me;
 	
     private Component getNorthComponent() {
     	JPanel header = new JPanel();
@@ -67,9 +69,29 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 
     public ConstituentsPanel(DBInterface db, int _organizationID, int _constituentID, String _global_constituentID) {
     	super(new BorderLayout());
+    	constituentID = _constituentID;
+    	organizationID = _organizationID;
+    	global_constituentID = _global_constituentID;
+    	D_Organization org = null;
+    	if (organizationID > 0)
+			try {
+				org = D_Organization.getOrgByLID_NoKeep(organizationID, true);
+				organization = org;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return;
+			}
+    	if (constituentID > 0)
+			try {
+				me = D_Constituent.getConstByLID(constituentID, true, false);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
     	MainFrame.status.addOrgStatusListener(this);
+    	MainFrame.status.addConstituentMeStatusListener(this);
     	//Application.orgs.addListener(this);
-    	if(_organizationID<0) return;
+    	if (_organizationID < 0) return;
+    	
      	org_label.setText(getLabelText());
      	refresh_button.addActionListener(this);
      	//refresh_button.setEnabled(false);
@@ -78,20 +100,14 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
    	//_organizationID = 100;
     	//_constituentID = 100;
     	//String _global_constituentID = "global_ID_Test";
-    	constituentID = _constituentID;
-    	organizationID = _organizationID;
-    	global_constituentID = _global_constituentID;
-    	D_Organization org = null;
-    	if (organizationID > 0)
-			try {
-				org = D_Organization.getOrgByLID_NoKeep(organizationID, true);
-			} catch (Exception e) {
-				e.printStackTrace();
-				return;
-			}
     	ConstituentsModel cm = new ConstituentsModel(db, _organizationID, _constituentID, _global_constituentID, org, this);
     	tree = new ConstituentsTree( cm );
     	long cID = cm.getConstituentIDMyself();
+    	
+    	if (cID != constituentID && cID > 0) {
+    		constituentID = cID;
+			me = D_Constituent.getConstByLID(constituentID, true, false);
+    	}
 		cm.expandConstituentID(tree, ((cID<=0)?null:(""+cID)), true);
         JScrollPane scrollPane = new JScrollPane(tree);
         scrollPane.setPreferredSize(new Dimension(200, 200));
@@ -103,7 +119,11 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
     	if (organization == null) return __("No current organization!");
     	if (organization.getName() == null) return __("Incomplete organization data!");
     	result = __("Current Organization:")+" \""+organization.getName()+"\"";
-    	result += " || " + __("I am :")+" "+tree.getModel().getConstituentMyselfName();
+    	result += " || " + __("I am :")+" ";
+    	if (me == null)
+    		result += tree.getModel().getConstituentMyselfName();
+    	else
+    		result += me.getNameFull();//getSurname();
 		return result;
 	}
 	public void setOrg(long _orgID, D_Organization org) throws P2PDDSQLException{
@@ -119,11 +139,22 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
     		constituentID = -1;
     		MainFrame.status.setMeConstituent(null);
     	} else {
-    		MainFrame.status.setMeConstituent(D_Constituent.getConstByLID(constituentID, true, false));
+    		MainFrame.status.setMeConstituent(me = D_Constituent.getConstByLID(constituentID, true, false));
     	}
+       	if (constituentID > 0) {
+    			try {
+    				me = D_Constituent.getConstByLID(constituentID, true, false);
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    			}
+       	}
     	ConstituentsModel cm = new ConstituentsModel(Application.getDB(), organizationID, constituentID, global_constituentID, org, this);
      	tree = new ConstituentsTree(cm);
     	long cID = cm.getConstituentIDMyself();
+       	if (cID != constituentID && cID > 0) {
+    		constituentID = cID;
+			me = D_Constituent.getConstByLID(constituentID, true, false);
+    	}
 		cm.expandConstituentID(tree, ( (cID <= 0) ? null:(""+cID)), true);
         JScrollPane scrollPane = new JScrollPane(tree);
         scrollPane.setPreferredSize(new Dimension(200, 200));
@@ -178,6 +209,20 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 		}
 	    });
     }
+	@Override
+	public void constituentUpdate(D_Constituent c, boolean me, boolean selected) {
+		if (!me) return;
+		if (c != null)
+			this.constituentID = c.getLID();
+		else 
+			this.constituentID = -1;
+		
+		this.me = c;
+		
+    	if (org_label != null) {
+    		org_label.setText(getLabelText());
+    	}		
+	}
 	@Override
 	public void orgUpdate(String orgID, int col, D_Organization org) {
     	if(DEBUG)System.out.println("ConstituentsTest:orgUpdate: id="+orgID+" col="+col);

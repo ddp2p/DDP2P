@@ -155,7 +155,8 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 		if(DEBUG) System.err.println("Creating ConstituentsAddress: "+getLocation());
 	}
 	/**
-	 * Creates an unsigned neighborhood with GID null
+	 * Creates an unsigned neighborhood with GID null.
+	 * Needs keys and sk set in the current GUI implementation with getCrtIdentityKeys
 	 */
 	public void addEmptyNeighborhood() {
 		if(DEBUG) System.err.println("ConstituentsModel:ConstituentsAddressNode:addEmptyNeighborhood: start");

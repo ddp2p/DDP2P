@@ -148,6 +148,7 @@ public class KeyManagement {
 		SK _sk = Cipher.getSK(sk);
 		if (_sk==null) {
 			System.err.println("KeyManagement: Secret key null from:."+sk);
+			return null;
 		}
 		PK _pk = _sk.getPK();
 		String i_pk = Util.stringSignatureFromByte(_pk.getEncoder().getBytes());

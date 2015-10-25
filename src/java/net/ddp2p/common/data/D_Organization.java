@@ -878,7 +878,12 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	/** If storage is not null, then on create does not set temporary */
 	static public D_Organization getOrgByGID_or_GIDhash(String GID, String GIDhash, 
 			boolean load_Globals, boolean create, boolean keep, D_Peer __peer, D_Organization storage) {
-		if ((GID == null) && (GIDhash == null)) return null;
+		// boolean DEBUG = true;
+		if ((GID == null) && (GIDhash == null)) {
+			if (DEBUG) { System.out.println("D_Organization: getOrgByGID_or_GIDhash: all null -> quit");
+						Util.printCallPath(""); }
+			return null;
+		}
 		if ((GID != null) && (GIDhash == null)) GIDhash = D_Organization.getOrgGIDHashGuess(GID);
 		if (!D_Organization.isOrgGID(GID)) GID = null;
 		
@@ -927,7 +932,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				D_Organization_Node.register_loaded(crt);
 				return crt;
 			} catch (Exception e) {
-				//e.printStackTrace();//simply not present
+				e.printStackTrace();//simply not present
 				if (DEBUG) System.out.println("D_Organization: getOrgByGID_or_GIDhash: error loading");
 				return null;
 			}
@@ -1120,7 +1125,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 */
 	static public D_Organization getOrgByOrg_Keep(D_Organization org) {
 		if (org == null) return null;
-		D_Organization result = getOrgByGID_or_GIDhash_NoCreate(org.getGID(), org.getGIDH_or_guess(), true, true);
+		String gid = org.getGID();
+		String gidh = org.getGIDH_or_guess();
+		D_Organization result = null;
+		if (gid != null && gidh != null)
+			result = getOrgByGID_or_GIDhash_NoCreate(gid, gidh, true, true);
 		if (result == null) {
 			result = getOrgByLID(org.getLID_forced(), true, true);
 		}
@@ -2431,7 +2440,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	 */
 	public static long getLIDbyGID(String p_global_organization_ID) {
 		D_Organization org = D_Organization.getOrgByGID_or_GIDhash_NoCreate(p_global_organization_ID, null, true, false);
-		if (org == null) return -1;
+		if (org == null) {
+			System.out.println("D_Organization: getLIDbyGID: not found GID: "+p_global_organization_ID);
+			return -1;
+		}
 		return org.getLID_forced();
 	}
 	/**
@@ -4114,6 +4126,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 	final public static String sql_getFieldsExtraByLID = "SELECT "+net.ddp2p.common.table.field_extra.global_field_extra_ID+
 			" FROM "+net.ddp2p.common.table.field_extra.TNAME+
 			" WHERE "+net.ddp2p.common.table.field_extra.field_extra_ID+"=?;";
+	
 	/**
 	 * Get the LID of fiels in org_ID, directly from the database
 	 * @param fieldGID
@@ -4483,6 +4496,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		return getName() == null;
 	}
 	public final static String sql_all_orgs = "SELECT "+net.ddp2p.common.table.organization.organization_ID+" FROM "+net.ddp2p.common.table.organization.TNAME+";";
+	public final static String sql_all_orgs_limit = "SELECT "+net.ddp2p.common.table.organization.organization_ID+" FROM "+net.ddp2p.common.table.organization.TNAME+" LIMIT ? OFFSET ?"+";";
 	/**
 	 * The index of organization LID in array returned by getAllOrganizations
 	 */
@@ -4496,6 +4510,24 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 		try {
 			if (Application.getDB() != null)
 				result = Application.getDB().select(sql_all_orgs, new String[0]);
+			else result = new ArrayList<ArrayList<Object>>();
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+			return new ArrayList<ArrayList<Object>>();
+		}
+		return result;
+	}
+	/**
+	 * 
+	 * @param offset (use negative or 0 for no offset)
+	 * @param limit (use negative for no limit)
+	 * @return
+	 */
+	public static java.util.ArrayList<java.util.ArrayList<Object>> getAllOrganizations(int offset, int limit) {
+		ArrayList<ArrayList<Object>> result;
+		try {
+			if (Application.getDB() != null)
+				result = Application.getDB().select(sql_all_orgs_limit, new String[]{limit+"",offset+""});
 			else result = new ArrayList<ArrayList<Object>>();
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();

@@ -5829,6 +5829,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if (peer.dirty_any()) peer.storeRequest();
 		peer.releaseReference();
 	}
+
 	/**
 	 * Use to lock peer in memory cache while modifying it to save changes.
 	 * @return

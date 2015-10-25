@@ -131,7 +131,17 @@ public class Util {
 		}
     	return result;
     }
-
+    /**
+     * Trims input and returns result. If result is empty, returns null;
+     * @param toTrim
+     * @return
+     */
+    public static String trimToNull(String toTrim) {
+    	if (toTrim == null) return null;
+    	toTrim = toTrim.trim();
+    	if (toTrim.length() == 0) return null;
+    	return toTrim;
+    }
     public static String concat(String[] array, String sep) {
 		return concat(array, sep, "null");
 	}
