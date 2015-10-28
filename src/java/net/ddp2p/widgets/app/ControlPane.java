@@ -170,6 +170,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	public static final String START_BROADCAST_SERVER = __("Start Broadcast Server");
 	public static final String STOP_BROADCAST_SERVER = __("Stop Broadcast Server");
 	public static final String START_CLIENT_UPDATES = __("Start Client Updates");
+	public static final String CLEAN_DOWNLOADED_UPDATES = __("Clean Downloaded Updates");
 	public static final String STOP_CLIENT_UPDATES = __("Stop Client Updates");
 	private static final String STARTING_CLIENT_UPDATES = __("Starting Client Updates");
 	private static final String TOUCH_CLIENT_UPDATES = __("Touch Client Updates");
@@ -205,6 +206,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	JButton toggleBroadcastable=new JButton(BROADCASTABLE_NO);
 	JButton startClient=new JButton(START_CLIENT);
 	public JButton startClientUpdates=new JButton(START_CLIENT_UPDATES);
+	public JButton cleanDownloadedUpdates=new JButton(CLEAN_DOWNLOADED_UPDATES);
 	JButton touchClient=new JButton(TOUCH_CLIENT);
 	JButton setPeerName=new JButton(__("Set Peer Name"));
 	JButton setNewPeerID=new JButton(__("Set New Peer ID"));
@@ -252,6 +254,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 	private static final String c_simulator = "simulator";
 	private static final String c_keepThisVersion = "keepThisVersion";
 	private static final String c_updates_client = "updates_client";
+	private static final String c_updates_clean = "updates_clean";
 	private static final String c_client = "client";
 	private static final String c_t_client = "t_client";
 	private static final String c_directory = "directory";
@@ -824,7 +827,11 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		
 		c.add(startClientUpdates);
 		startClientUpdates.addActionListener(this);
-		startClientUpdates.setActionCommand("updates_client");
+		startClientUpdates.setActionCommand(c_updates_client);
+		
+		c.add(cleanDownloadedUpdates);
+		cleanDownloadedUpdates.addActionListener(this);
+		cleanDownloadedUpdates.setActionCommand(c_updates_clean);
 		
 		return c;
 	}
@@ -1299,7 +1306,7 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		if(DEBUG)System.err.println("ControlPane:nserv:done");
 
 	}
-	public void setClientUpdatesStatus(boolean _run) {
+	public void setClientUpdatesStatus(boolean _run, boolean force) {
 		boolean DEBUG = ControlPane.DEBUG || ClientUpdates.DEBUG;
 		if (DEBUG) System.out.println("ControlPane:setClientUpdatesStatus: got servers status: updates="+_run);
 		if (DD.GUI) {
@@ -1332,10 +1339,10 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		}
 		if (_run) {
 			if(DEBUG) System.out.println("ControlPane: setClientUpdatesStatus: here: updates stopping");
-			ClientUpdates.startClient(true);
+			ClientUpdates.startClient(true, force);
 		} else {
 			if (DEBUG) System.out.println("ControlPane: setClientUpdatesStatus: here: updates stopping");
-			ClientUpdates.startClient(false);
+			ClientUpdates.startClient(false, false);
 		}
 		
 		//if(ClientUpdates.clientUpdates!=null) startClientUpdates.setText(STOP_CLIENT_UPDATES);
@@ -1493,8 +1500,11 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 				}
 			}else if (c_updates_client.equals(e.getActionCommand())) {
 				boolean _run = (ClientUpdates.clientUpdates == null);
-				if (DEBUG || ClientUpdates.DEBUG) System.out.println("ControlPane: actionPerformed: object _run = "+_run);
-				setClientUpdatesStatus(_run);
+				if (DEBUG || ClientUpdates.DEBUG) System.out.println("ControlPane: actionPerformed: update_client object _run = "+_run);
+				setClientUpdatesStatus(_run, true);
+			}else if (c_updates_clean.equals(e.getActionCommand())) {
+				if (DEBUG || ClientUpdates.DEBUG) System.out.println("ControlPane: actionPerformed: update_clean");
+				clientUpdatesCleanDownload();
 			}else if (c_client.equals(e.getActionCommand())) {
 				setClientStatus(Application.getG_PollingStreamingClient() == null);
 			}else if (c_t_client.equals(e.getActionCommand())) {
@@ -1743,6 +1753,34 @@ public class ControlPane extends JTabbedPane implements ActionListener, ItemList
 		} catch (UnknownHostException e3) {
 			e3.printStackTrace();
 		}
+	}
+	public void clientUpdatesCleanDownload() {
+		DD.setAppTextNoException(DD.LATEST_DD_VERSION_DOWNLOADED, null);
+		String install_root_path_with_sep = ClientUpdates.getFileInstallRootPathWithSeparator();
+		//ClientUpdates.ensure_PREVIOUS(install_root_path_with_sep);
+		String result = Application_GUI.input(__("What should be the version to boot?\nDefault: "+DD.VERSION), __("Version to boot"), Application_GUI.QUESTION_MESSAGE);
+		if (result == null || result.trim().length() == 0)
+			result = DD.VERSION;
+		
+		String newDirName = install_root_path_with_sep+result;
+		if(DEBUG)System.out.println("ControlPane: clientUpdatesCleanDownload: newDirName="+newDirName);
+		File newDirFile = new File(newDirName);
+		if (! newDirFile.exists()) {
+			//create
+			//newDirFile.mkdirs();
+			if(DEBUG)System.out.println("ControlPane: clientUpdatesCleanDownload: new Dir created ");
+			Application_GUI.warning(__("Version not present:")+"\n"+newDirName, "Failure to set new version");
+			return;
+		} else {
+			if (! newDirFile.isDirectory()) {
+				Application_GUI.warning(__("Version not a directory:"+"\n"+newDirName), __("Path busy for selected release"));
+				if(DEBUG)System.out.println("ControlPane: clientUpdatesCleanDownload: new Dir not directory ");
+				return;
+			}
+		}
+
+		
+		ClientUpdates.prepareLatest(install_root_path_with_sep, DD.VERSION);
 	}
 	/**
 	 * Export the peer addresses  (IPs)

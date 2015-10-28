@@ -30,7 +30,7 @@ import net.ddp2p.common.simulator.WirelessLog;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 
-public class BroadcastConsummerBuffer extends Thread {
+public class BroadcastConsummerBuffer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	static final Object monitor = new Object();
 	public static BroadcastConsummerBuffer queue; // = new BroadcastConsummerBuffer();
 	public boolean running = true;
@@ -44,7 +44,8 @@ public class BroadcastConsummerBuffer extends Thread {
 		long counter;
 		String Msg_Time;
 	}
-	public BroadcastConsummerBuffer(){
+	public BroadcastConsummerBuffer() {
+		super("BroadcastConsummerBuffer", true);
 		this.start();
 	}
 	public void stopIt(){
@@ -92,10 +93,10 @@ public class BroadcastConsummerBuffer extends Thread {
 			}
 		}
 	}
-	public void run(){
+	public void _run(){
 		for(;;) {
 			try {
-				if(!_run()) return;
+				if(!__run()) return;
 			}catch(Exception e){
 				e.printStackTrace();
 			}
@@ -105,7 +106,7 @@ public class BroadcastConsummerBuffer extends Thread {
 	 * return "false" to stop
 	 * @return
 	 */
-	public boolean _run(){
+	public boolean __run(){
 		synchronized(monitor){
 			//System.out.println("Enter monitor block 1");
 			while(!running){

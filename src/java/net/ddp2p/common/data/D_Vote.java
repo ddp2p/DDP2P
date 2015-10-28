@@ -1585,11 +1585,22 @@ class D_Vote extends ASNObj{
 	public String getOrganizationGID() {
 		return global_organization_ID;
 	}
+	public String getOrganizationGIDH() {
+		if (global_organization_ID == null) return null;
+		return D_Organization.getOrgGIDHashGuess(global_organization_ID);
+	}
 	/**
 	 * Just sets the OrgGID with no other check
 	 * @param global_organization_ID
 	 */
 	public void setOrganizationGID(String global_organization_ID) {
+		this.global_organization_ID = global_organization_ID;
+	}
+	/**
+	 * same as setOrgGID
+	 * @param global_organization_ID
+	 */
+	public void setOrganizationGIDH(String global_organization_ID) {
 		this.global_organization_ID = global_organization_ID;
 	}
 	/**
@@ -1859,5 +1870,21 @@ class D_Vote extends ASNObj{
 			}
 		}
 		return r;
+	}
+	public String guessOrganizationGIDH() {
+		long oID = -1, c_oID = -1;
+		
+		D_Motion m = D_Motion.getMotiByGID(this.getMotionGID(), true, false);
+		if (m != null) return m.getOrganizationGID_force();
+
+		D_Constituent cs = D_Constituent.getConstByGID_or_GIDH(this.getConstituentGID(), null, true, false);
+		if (cs != null) c_oID = cs.getOrganizationLID();
+		if ((c_oID > 0) && (oID > 0) && (c_oID != oID)) {
+			if(_DEBUG) System.out.println("D_Vote:guess: "+c_oID+" vs "+oID);
+			return null;
+		}
+		if(DEBUG) System.out.println("D_Vote:guess right: "+c_oID+" vs "+oID);
+		if (c_oID > 0) oID = c_oID;
+		return D_Organization.getGIDbyLIDstr(Util.getStringID(oID));
 	}
 }

@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.swing.Icon;
 import javax.swing.JFileChooser;
@@ -15,13 +17,11 @@ import javax.swing.SwingUtilities;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.parser.ParserDelegator;
 import javax.swing.tree.TreePath;
-
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
-
 
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.SK;
@@ -316,7 +316,7 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 
 	@Override
 	public void setClientUpdatesStatus(boolean b) {
-		if(MainFrame.controlPane!=null) MainFrame.controlPane.setClientUpdatesStatus(false);
+		if(MainFrame.controlPane!=null) MainFrame.controlPane.setClientUpdatesStatus(false, false);
 	}
 
 	@Override
@@ -418,6 +418,7 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 	}
 	public void inform_arrival_org(D_Organization obj, D_Peer source) {
 		System.out.println("GUI_Swing: IAP:O GIDH="+obj.getGIDH()+" tit="+obj.getOrgNameOrMy());	
+		Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.organization.TNAME)));
 	}
 	public void inform_arrival_cons(D_Constituent obj, D_Peer source) {
 		System.out.println("GUI_Swing: IAP:C GIDH="+obj.getGIDH()+" tit="+obj.getNameOrMy());
@@ -430,6 +431,7 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 	}
 	public void inform_arrival_moti(D_Motion obj, D_Peer source) {
 		System.out.println("GUI_Swing: IAP:M GIDH="+obj.getGIDH()+" tit="+obj.getTitleStrOrMy());		
+		Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.motion.TNAME)));
 	}
 	public void inform_arrival_just(D_Justification obj, D_Peer source) {
 		System.out.println("GUI_Swing: IAP:J GIDH="+obj.getGIDH()+" tit="+obj.getTitleStrOrMy());		

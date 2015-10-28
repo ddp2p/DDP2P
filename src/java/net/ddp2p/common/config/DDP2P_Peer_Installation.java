@@ -46,7 +46,7 @@ class DDP2P_Peer_Installation {
 	public DDP2P_DoubleLinkedList<D_Peer> d_peer_loaded_objects = new DDP2P_DoubleLinkedList<D_Peer>();
 
 	// handling myself
-	static D_Peer _myself = null;
+	public D_Peer _myself = null;
 	
 	
 	static boolean listing_directories_loaded = false;

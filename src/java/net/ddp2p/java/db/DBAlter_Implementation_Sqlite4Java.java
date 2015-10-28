@@ -22,6 +22,9 @@ import com.almworks.sqlite4java.SQLiteStatement;
 
 public class DBAlter_Implementation_Sqlite4Java {
 
+	private static final boolean _DEBUG = true;
+	final static int FIRST_ATTR_IDX = 2;
+
 	public static String[] __extractDDL(File database_file){//
 		ArrayList<String> array=new ArrayList<String>();
 		ArrayList<String> result=new ArrayList<String>();
@@ -78,6 +81,7 @@ public class DBAlter_Implementation_Sqlite4Java {
 	 * @throws P2PDDSQLException
 	 */
 	public static boolean _copyData(File database_old, File database_new, BufferedReader p_reader_DDL, String[]p_array_DDL) throws IOException, P2PDDSQLException{//
+		if(DBAlter.DEBUG) System.out.println("DBAlter:_copyData_SQLITE4");
 		try { 
 			/**
 			 * Try to open old database. If not existing: fail!
@@ -119,7 +123,7 @@ public class DBAlter_Implementation_Sqlite4Java {
 				/**
 				 * Handling the table at index/line crt_table
 				 */
-				if( DBAlter.DEBUG) System.out.println("DBAlter:copyData: next table DDL= "+crt_table_DDL);
+				if(_DEBUG || DBAlter.DEBUG) System.out.println("DBAlter4:copyData: next table DDL= "+crt_table_DDL);
 				
 				if (crt_table_DDL == null) {
 					if ( DBAlter.DEBUG) System.out.println("DBAlter:copyData: end of DDL at line = "+crt_table);
@@ -153,12 +157,13 @@ public class DBAlter_Implementation_Sqlite4Java {
 					//int attributes_count_insert = olddb.columnCount();
 					int attributes_count_insert = table__DDL.length - 2;
 					String[] values_old = new String[attributes_count_insert];
+					String[] attribute_names = new String[attributes_count_insert];
 					/**
 					 * values_old_place is a list of placeholder "?" separated by comma, to be used in the insert statement.
 					 * Use empty string instead of "?" for no list of attributes copied.
 					 */
 					String values_old_place = null;
-					for (int line = 2; line < table__DDL.length; line ++) { // concat fields new DB
+					for (int line = FIRST_ATTR_IDX; line < table__DDL.length; line ++) { // concat fields new DB
 						if (attributes_new == null) attributes_new = table__DDL[line];
 						else attributes_new = attributes_new+" , "+table__DDL[line];
 					}
@@ -171,6 +176,7 @@ public class DBAlter_Implementation_Sqlite4Java {
 						values_old[j] = olddb.columnString(j);
 						if (values_old_place == null) values_old_place= "?";
 						else values_old_place += " , ? ";
+						attribute_names[j] = table__DDL[j+FIRST_ATTR_IDX];
 					}
 					if (values_old_place == null) values_old_place = "";
 	
@@ -182,6 +188,7 @@ public class DBAlter_Implementation_Sqlite4Java {
 					/**
 					 * Perform the actual insert
 					 */
+					long result = 0;
 					SQLiteStatement newdb = conn_dst.prepare(sql);
 					try {
 						for (int k = 0; k < attributes_count_insert; k++){
@@ -190,9 +197,10 @@ public class DBAlter_Implementation_Sqlite4Java {
 						}
 						newdb.stepThrough();
 	
-						long result = conn_dst.getLastInsertId();
+						result = conn_dst.getLastInsertId();
 						if (DBAlter.DEBUG) System.out.println("DBAlter:copyData:result: "+result);
 					} finally {newdb.dispose();}
+					if (_DEBUG || DBAlter.DEBUG) System.out.println("Inserted4 ["+result+"]: "+table__DDL[1]+" ("+Util.concat_pairs(attribute_names,values_old, ",","=","null")+")");
 	
 					//newdb.stepThrough();
 				}
@@ -214,6 +222,12 @@ public class DBAlter_Implementation_Sqlite4Java {
 					DBAlter_Implementation_Sqlite4Java.getExactAppText(conn_src, DD.TRUSTED_UPDATES_GID));
 			DBAlter_Implementation_Sqlite4Java.setAppText(conn_dst, DD.APP_LISTING_DIRECTORIES,
 					DBAlter_Implementation_Sqlite4Java.getExactAppText(conn_src, DD.APP_LISTING_DIRECTORIES));
+			
+			// update peer since this table is skipped...
+			DBAlter_Implementation_Sqlite4Java.setAppText(conn_dst, DD.APP_my_global_peer_ID,
+					DBAlter_Implementation_Sqlite4Java.getExactAppText(conn_src, DD.APP_my_global_peer_ID));
+			DBAlter_Implementation_Sqlite4Java.setAppText(conn_dst, DD.APP_my_global_peer_ID_hash,
+					DBAlter_Implementation_Sqlite4Java.getExactAppText(conn_src, DD.APP_my_global_peer_ID_hash));
 			conn_src.exec("COMMIT");
 			conn_dst.exec("COMMIT");
 			conn_src.dispose();
@@ -251,10 +265,10 @@ public class DBAlter_Implementation_Sqlite4Java {
 		DBInterface db = getSQLiteIntf(conn);
 		db._updateNoSync(net.ddp2p.common.table.application.TNAME, new String[]{net.ddp2p.common.table.application.value}, new String[]{net.ddp2p.common.table.application.field},
 				new String[]{value, field}, DBAlter.DEBUG);
-		if (value!=null){
+		if (value != null) {
 			String old_val = getExactAppText(conn, field);
 			if(DBAlter.DEBUG) System.err.println("DD:setAppText: field="+field+" old="+old_val);
-			if (!value.equals(old_val)) {
+			if (! value.equals(old_val)) {
 				db._insertNoSync(
 						net.ddp2p.common.table.application.TNAME,
 						new String[]{net.ddp2p.common.table.application.field, net.ddp2p.common.table.application.value},

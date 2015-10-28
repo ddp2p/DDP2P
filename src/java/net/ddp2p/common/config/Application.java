@@ -48,6 +48,7 @@ public class Application {
 	public static String DIRECTORY_FILE = "directory-app.db";
 	public static final String DEFAULT_DELIBERATION_FILE = "deliberation-app.db";
 	public static String DELIBERATION_FILE = DEFAULT_DELIBERATION_FILE;
+	public static String requestedPeerGID;
 	
 	// This has to be initialized during registerThread() calls
 	static public Hashtable<Thread,Integer> installation_per_thread = new Hashtable<Thread,Integer>();
@@ -64,6 +65,20 @@ public class Application {
 	public static void unregisterThreadInstallation() {
 		Application.installation_per_thread.remove(Thread.currentThread());
 	}
+
+	public static D_Peer get_Raw__myself(int crt_instalation) {
+		return installations[crt_instalation]._myself;
+	}
+	public static D_Peer get_Raw__myself() {
+		return installations[getCurrentInstallationFromThread()]._myself;
+	}
+	public static void set_Raw__myself(D_Peer _myself, int crt_instalation) {
+		installations[crt_instalation]._myself = _myself;
+	}
+	public static void set_Raw__myself(D_Peer _myself) {
+		installations[getCurrentInstallationFromThread()]._myself = _myself;
+	}
+
 	public static int getCurrentInstallationFromThread() {
 		int installation;
 		Integer i = Application.installation_per_thread.get(Thread.currentThread());
@@ -266,13 +281,6 @@ public class Application {
 	}
 	static void setListing_directories_inet(ArrayList<InetSocketAddress> listing_directories_inet) {
 		DDP2P_Peer_Installation.listing_directories_inet = listing_directories_inet;
-	}
-
-	public static D_Peer get_Raw__myself() {
-		return DDP2P_Peer_Installation._myself;
-	}
-	public static void set_Raw__myself(D_Peer _myself) {
-		DDP2P_Peer_Installation._myself = _myself;
 	}
 
 	/**

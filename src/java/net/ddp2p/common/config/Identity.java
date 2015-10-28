@@ -27,10 +27,7 @@ import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.HandlingMyself_Peer;
 import net.ddp2p.common.hds.Address;
-import net.ddp2p.common.hds.DirectoryServer;
 import net.ddp2p.common.hds.Server;
-import net.ddp2p.common.streaming.ConstituentHandling;
-import net.ddp2p.common.streaming.OrgHandling;
 import net.ddp2p.common.util.DDP2P_ServiceThread;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
@@ -83,10 +80,10 @@ public class Identity {
 	 * @return
 	 */
 	public static boolean init_Identity(boolean quit_on_failure, boolean set_peer_myself, boolean announce_dirs) {
-		Application.setCurrent_Identity(null);
+		//Application.setCurrent_Identity(null);
 		// loading language, constituent and organization
 		Application.setCurrent_Identity(initCurrentConstituentIdentity());
-		Application.setCurrent_Peer_ID(null);
+		//Application.setCurrent_Peer_ID(null);
 		// loading peer from application
 		Application.setCurrent_Peer_ID(initMyCurrentPeerIdentity_fromDB(new Identity(), quit_on_failure, set_peer_myself, announce_dirs));
 		return true;

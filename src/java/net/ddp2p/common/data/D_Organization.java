@@ -932,7 +932,7 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 				D_Organization_Node.register_loaded(crt);
 				return crt;
 			} catch (Exception e) {
-				e.printStackTrace();//simply not present
+				if (DEBUG) e.printStackTrace();//simply not present
 				if (DEBUG) System.out.println("D_Organization: getOrgByGID_or_GIDhash: error loading");
 				return null;
 			}

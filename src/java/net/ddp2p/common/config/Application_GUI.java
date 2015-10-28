@@ -84,7 +84,8 @@ public class Application_GUI {
 	}
 
 	/**
-	 * type = JOptionPane.QUESTION_MESSAGE
+	 * type = JOptionPane.QUESTION_MESSAGE;
+	 * or Application_GUI.QUESTION_MESSAGE
 	 * @param prompt
 	 * @param title
 	 * @return

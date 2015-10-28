@@ -72,6 +72,7 @@ public class DBAlter_Implementation_JDBC{
 	 * @throws P2PDDSQLException
 	 */
 	public static boolean _copyData(File database_old, File database_new, BufferedReader DDL, String[]_DDL) throws IOException, P2PDDSQLException{//
+		if(_DEBUG) System.out.println("DBAlter:_copyData_JDBC");
 		DB_Implementation_JDBC_SQLite conn_src = null;
 		DB_Implementation_JDBC_SQLite conn_dst = null;
 		try { 
@@ -134,7 +135,7 @@ public class DBAlter_Implementation_JDBC{
 				 */
 				String []table__DDL = Util.trimmed(table_DDL.split(Pattern.quote(" ")));
 				
-				if(_DEBUG) System.out.println("DBAlter:_copyData: next table DDL= "+table__DDL[0]);
+				if(_DEBUG) System.out.println("DBAlter:_copyData_JDBC: next table DDL= "+table__DDL[0]);
 				
 				/**
 				 * Select all attributes, in positional order, from the old table (in table__DDL[0]).
@@ -182,6 +183,7 @@ public class DBAlter_Implementation_JDBC{
 					 */
 					try {
 						conn_dst._insert(table__DDL[1], attr_new, values_old, DEBUG);
+						if (_DEBUG) System.out.println("Inserted: "+table__DDL[1]+" ("+Util.concat_pairs(attr_new,values_old, ",","=","null")+")");
 					} catch(Exception e){
 						e.printStackTrace();
 					}
@@ -206,9 +208,16 @@ public class DBAlter_Implementation_JDBC{
 					DD.getExactAppText(conn_src, DD.TRUSTED_UPDATES_GID), DEBUG);
 			DD.setAppText(db_dst, DD.APP_LISTING_DIRECTORIES,
 					DD.getExactAppText(conn_src, DD.APP_LISTING_DIRECTORIES), DEBUG);
-			try{
+			
+			// update peer since this table is skipped...
+			DD.setAppText(db_dst, DD.APP_my_global_peer_ID,
+					DD.getExactAppText(conn_src, DD.APP_my_global_peer_ID), DEBUG);
+			DD.setAppText(db_dst, DD.APP_my_global_peer_ID_hash,
+					DD.getExactAppText(conn_src, DD.APP_my_global_peer_ID_hash), DEBUG);
+			try {
 				conn_src._query("COMMIT", new String[]{}, DEBUG);//exec("COMMIT");
-			}catch(Exception e){}
+				conn_dst._query("COMMIT", new String[]{}, DEBUG);
+			} catch(Exception e){}
 			//conn_dst.exec("COMMIT");
 			conn_src.dispose_and_keep();//.dispose();
 			conn_dst.dispose_and_keep();

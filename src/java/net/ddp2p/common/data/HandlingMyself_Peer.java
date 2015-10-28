@@ -5,7 +5,6 @@ import static net.ddp2p.common.util.Util.__;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.regex.Pattern;
 
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.ciphersuits.Cipher;
@@ -92,12 +91,17 @@ public class HandlingMyself_Peer {
 		if (id == null) id = Application.setCurrent_Peer_ID(new Identity());
 		try {
 			String GID = DD.getAppText(DD.APP_my_global_peer_ID);
+			// In case command line requires a given peer
+			if (Application.requestedPeerGID != null) GID = Application.requestedPeerGID;
+			
 			String instance = DD.getAppText(DD.APP_my_peer_instance);
 			id.setPeerGID(GID);
 			id.peerInstance = instance;
 			//id.name = DD.getAppText(DD.APP_my_peer_name);
 			//id.slogan = DD.getAppText(DD.APP_my_peer_slogan);
 			id.peerGIDH = DD.getAppText(DD.APP_my_global_peer_ID_hash);
+			if (Application.requestedPeerGID != null) id.peerGIDH = D_Peer.getGIDHashGuess(Application.requestedPeerGID);
+
 			if (DEBUG)
 				System.out.println("HandlingMyself_Peer: loadIdentity: found GID="+GID+"\n\t inst="+instance+"\n\t GIDH="+id.peerGIDH+"\n\t ID="+id);
 		} catch (P2PDDSQLException e) {}

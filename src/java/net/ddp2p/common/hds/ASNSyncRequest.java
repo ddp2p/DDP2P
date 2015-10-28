@@ -780,8 +780,11 @@ public class ASNSyncRequest extends ASNObj implements Summary {
 	public SpecificRequest request;  // GIDs I want to get
 	public D_PluginData plugin_msg;
 	public ASNPluginInfo plugin_info[];
-	public D_Peer address=null; //requester
-	public D_PeerInstance dpi=null; //requester
+	public D_Peer address = null; //requester
+	public D_PeerInstance dpi = null; //requester
+	
+	public String destinationGIDH; // target
+	public String destinationInstance; // target instance 
 	
 	//Address directory=null;
 	public ASNSyncPayload pushChanges=null;
@@ -961,7 +964,11 @@ public class ASNSyncRequest extends ASNObj implements Summary {
 			if(_DEBUG)System.out.println("ASNSyncReq:decode:**********SHOULD HAVE SIGNATURE");
 		if (dec.getTypeByte()==DD.TAG_AC7)
 			dpi = new D_PeerInstance().decode(dec.getFirstObject(true));
-
+		if (dec.getTypeByte()==DD.TAG_AC18)
+			this.destinationGIDH = dec.getFirstObject(true).getString();
+		if (dec.getTypeByte()==DD.TAG_AC19)
+			this.destinationInstance = dec.getFirstObject(true).getString();
+		
 		Decoder rest = dec.getFirstObject(false); 
 		if (rest != null) {
 			if(_DEBUG)System.out.println("ASNSyncReq:decode:*******************************");
@@ -1035,6 +1042,9 @@ ASNSyncRequest := IMPLICIT [APPLICATION 7] SEQUENCE {
 			if(_DEBUG)System.out.println("ASNSyncReq:encode:*******************************");
 		}
 		if (dpi != null) enc.addToSequence(dpi.getEncoder().setASN1Type(DD.TAG_AC7));
+		if (this.destinationGIDH != null) enc.addToSequence(new Encoder(destinationGIDH, DD.TAG_AC18));
+		if (this.destinationInstance != null) enc.addToSequence(new Encoder(destinationInstance, DD.TAG_AC19));
+			
 		enc.setASN1Type(getASN1TAG());
 		return enc;
 	}

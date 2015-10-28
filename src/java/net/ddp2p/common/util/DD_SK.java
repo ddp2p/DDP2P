@@ -307,9 +307,9 @@ public class DD_SK extends ASNObj implements StegoStructure {
 			moti =  d.getFirstObject(true).getSequenceOfAL(D_Motion.getASN1Type(), D_Motion.getEmpty());
 			for (D_Motion m : moti) {
 				if (m.getOrganizationGIDH() == null) {
-					if (_DEBUG) System.out.println("DD_SK: put a GIDH for "+m);
+					if (DEBUG) System.out.println("DD_SK: put a default orgGIDH for "+m);
 					m.setOrganizationGID(default_orgGIDH);
-					if (_DEBUG) System.out.println("DD_SK: did put a GIDH for "+m);
+					if (DEBUG) System.out.println("DD_SK: did put a default orgGIDH for "+m);
 				} else
 					if (DEBUG) System.out.println("DD_SK: had a GIDH for "+m);
 			}

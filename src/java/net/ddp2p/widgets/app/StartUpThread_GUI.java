@@ -309,7 +309,7 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 		}
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat client");
 		if (StartUp.data_client_updates_on_start) {
-			MainFrame.controlPane.setClientUpdatesStatus(true);//startClient(true);
+			MainFrame.controlPane.setClientUpdatesStatus(true, false);//startClient(true);
 		}
 	}
 	public static void initBroadcastGUI() {

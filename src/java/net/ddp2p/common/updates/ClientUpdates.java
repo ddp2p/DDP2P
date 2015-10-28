@@ -143,17 +143,17 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		this.notifyAll();
 	}
 
-	static boolean forceStart = false;
+	public static boolean _forceStart = false;
 	
 	public void _run() {
 		if (DEBUG) System.out.println("ClientUpdates _run: start");
 
 		Calendar crt = Util.CalendargetInstance();
-		if ( ! forceStart ||
+		if ( ! _forceStart &&
 				( crt.getTimeInMillis() - DD.startTime.getTimeInMillis() < DD.UPDATES_WAIT_ON_STARTUP_MILLISECONDS ))
 		synchronized (this) {
 			try {
-				forceStart = true;
+				_forceStart = true;
 				this.wait(DD.UPDATES_WAIT_ON_STARTUP_MILLISECONDS);
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
@@ -1145,20 +1145,29 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			return false;			
 		}
 	}
-	private static void ensure_PREVIOUS(String parent_dir_with_sep) throws IOException{
+	/**
+	 * In no PREVIOUS, then creates it with current DD.VERSION
+	 * @param parent_dir_with_sep
+	 * @throws IOException
+	 */
+	public static void ensure_PREVIOUS(String parent_dir_with_sep) throws IOException {
 		String PREVIOUS = parent_dir_with_sep+Application.PREVIOUS;
 		File old_previous = new File(PREVIOUS);
-		if(!old_previous.exists()){
+		if (! old_previous.exists()) {
 			Util.storeStringInFile(old_previous, DD.VERSION);
 		}
 	}
 	/**
-	 * Prepare files LATEST, PREVIOUS and HISTORY
+	 * Prepare files LATEST, PREVIOUS and HISTORY.
+	 * 
+	 * Renames LATEST to PREVIOUS
+	 * CREATES HISTORY
+	 * creates LATEST with "version"
 	 * @param parent_dir_with_sep
 	 * @param version
 	 * @return
 	 */
-	private static boolean prepareLatest(String parent_dir_with_sep, String version) {
+	public static boolean prepareLatest(String parent_dir_with_sep, String version) {
 		if(DEBUG)System.out.println("ClientUpdates prepareLatest: start ver"+version+" parent"+parent_dir_with_sep);
 		try{
 			//String parent_dir = getFileInstallRootPath();
@@ -1174,29 +1183,29 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			if(DEBUG)System.out.println("ClientUpdates prepareLatest: success delete previous");
 
 			File history = new File(HISTORY);
-			if(!history.exists())Util.storeStringInFile(history, version);
-			else{
+			if (! history.exists()) Util.storeStringInFile(history, version);
+			else {
 				if(DEBUG)System.out.println("ClientUpdates prepareLatest: "+__("File date conflict for: ")+HISTORY+"\n");
 				Application_GUI.warning(Util.__("File date conflict for: ")+HISTORY, Util.__("New Version Downloaded, No link made"));
 				return false;
 			}
 			if(DEBUG)System.out.println("ClientUpdates prepareLatest: success store HISTORY");
 			File old_latest = new File(LATEST);
-			if(!old_latest.exists()){
+			if (! old_latest.exists()) {
 				if(DEBUG)System.out.println("ClientUpdates prepareLatest: no LATEST: unusual configuration, I quit!");
 				Application_GUI.warning(Util.__("I QUIT. Non-standard configuration. No file:")+LATEST, Util.__("Download stopped. No link made"));
 				return false;
 			}
-			if(!old_latest.renameTo(old_previous)){
+			if (! old_latest.renameTo(old_previous)) {
 				if(DEBUG)System.out.println("ClientUpdates prepareLatest: cannot rename LATEST to PREVIOUS");
 				return false;
 			}
 			File latest = new File(LATEST);
-			if(!latest.exists()){
+			if (! latest.exists()) {
 				if(DEBUG)System.out.println("ClientUpdates prepareLatest: will store LATEST");
 				Util.storeStringInFile(latest, version);
 			}
-			else{
+			else {
 				if(DEBUG)System.out.println("ClientUpdates prepareLatest: "+Util.__("Fail to delete&install ")+LATEST+"\n");
 				Application_GUI.warning(Util.__("Fail to delete&install ")+LATEST, Util.__("Download stopped. No link made"));
 				return false;
@@ -1282,12 +1291,14 @@ public class ClientUpdates extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		}
 		return cmp;
 	}
-	public static void startClient(boolean b) {
+	public static void startClient(boolean b, boolean force) {
 		synchronized (monitor) {
 			if (DEBUG) System.out.println("ClientUpdates: startClient: start "+b);
 			if (b) {
 				if (DEBUG) System.out.println("ClientUpdates startClient: start really "+b);
 				ClientUpdates.clientUpdates = new ClientUpdates();
+				if (force) //ClientUpdates.clientUpdates
+					ClientUpdates._forceStart = force;
 				ClientUpdates.clientUpdates.start();
 			} else {
 				if (ClientUpdates.clientUpdates == null) {

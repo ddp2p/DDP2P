@@ -19,3 +19,5 @@ else
   ICON=-Xdock:icon=${DIR_ALL}/p2pdd_resources/p2pdd40.gif
 fi
 java $ICON -cp "${DIR_ALL}/jars/DD.jar:${DIR_ALL}/jars/javax.mail.jar:${DIR_ALL}/jars/sqlite-jdbc-3.7.2.jar:${DIR_ALL}/jars/MultiSplit.jar:${DIR_ALL}/jars/sqlite4java.jar:${DIR_ALL}/jars/icepdf-core.jar:${DIR_ALL}/jars/icepdf-viewer.jar:${DIR_ALL}/jars/MetaphaseEditor-1.0.0.jar:${DIR_ALL}/:./" ${ADDR_IPV4} widgets.app.MainFrame $1 $2 $3 $4 $5 $6  ${DIR_ALL}/deliberation-app.db 
+echo PID  = $!
+

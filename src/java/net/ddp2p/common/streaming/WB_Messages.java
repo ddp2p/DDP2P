@@ -547,7 +547,7 @@ public class WB_Messages extends ASNObj{
 			obtained_sr.put(w.global_organization_ID, obtained);
 			orgs.add(w.global_organization_ID);
 		}
-		for(D_Motion m: r.moti) {
+		for (D_Motion m: r.moti) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle moti: "+m);
 			if(DEBUG) System.out.println("WB_Messages: store: handle moti: "+m.getGID()+" "+m.getMotionTitle());
 
@@ -605,7 +605,7 @@ public class WB_Messages extends ASNObj{
 			if (j.getOrgGIDH() == null){
 				j.setOrgGID(j.guessOrganizationGID());
 				if (j.getOrgGIDH() == null) {
-					if(_DEBUG) System.out.println("WB_Messages: store: cannot determine org: skip");
+					if(_DEBUG) System.out.println("WB_Messages: store: cannot determine org: skip "+j);
 					continue;
 				}
 			}
@@ -636,13 +636,16 @@ public class WB_Messages extends ASNObj{
 			if (jus == j) {
 			    jus.fillLocals(sol_rq, new_rq, peer);
 			    net.ddp2p.common.config.Application_GUI.inform_arrival(jus, peer);
-			    jus.storeRequest();
+			    if (j.isTemporary() || lid <= 0) lid = jus.storeRequest_getID();
+			    else jus.storeRequest();
+				if (DEBUG) System.out.println("WB_Messages: store: got jsame: "+j+" "+dbg_msg);
 			} else {
 				if (jus.loadRemote(j, sol_rq, new_rq, peer)) {
 					net.ddp2p.common.config.Application_GUI.inform_arrival(jus, peer);
 					jus.storeRequest();
 					// the following is just for debugging but could be eventually commented out
 					lid = jus.storeRequest_getID(); //j.store(sol_rq, new_rq);
+					if (DEBUG) System.out.println("WB_Messages: store: go lid=: "+lid+" for "+j+" "+dbg_msg);
 				} else {
 					if (DEBUG) System.out.println("WB_Messages: store: skipped just: "+j+" "+dbg_msg);
 				}
@@ -669,14 +672,24 @@ public class WB_Messages extends ASNObj{
 			obtained_sr.put(j.getOrgGID(), obtained);
 			orgs.add(j.getOrgGID());
 		}
-		for(D_Vote v: r.sign) {
-			if(DEBUG) System.out.println("WB_Messages: store: handle vote: "+v);
-			try{
-				rq = missing_sr.get(v.getOrganizationGID());
-				if(rq==null) rq = new RequestData();
+		for (D_Vote v: r.sign) {
+			if (DEBUG) System.out.println("WB_Messages: store: handle vote: "+v);
+			try {
+				//String oGID = v.getOrganizationGID();
+				String oGIDH = v.getOrganizationGIDH();
+				if (oGIDH == null){
+					v.setOrganizationGID(oGIDH = v.guessOrganizationGIDH());
+					if (oGIDH == null) {
+						if(_DEBUG) System.out.println("WB_Messages: store: cannot determine org: skip "+v);
+						continue;
+					}
+				}
+
+				rq = missing_sr.get(oGIDH);
+				if (rq == null) rq = new RequestData();
 				sol_rq = new RequestData();
 				new_rq = new RequestData();
-				long lid=v.store(sol_rq, new_rq, peer);
+				long lid = v.store(sol_rq, new_rq, peer);
 				if (lid <= 0) {
 					if(_DEBUG) System.out.println("WB_Messages: store: failed to handled vote: "+v+" "+dbg_msg);
 					continue;
@@ -684,15 +697,15 @@ public class WB_Messages extends ASNObj{
 				if(DEBUG) System.out.println("WB_Messages: store: handled vote: "+v);
 				if(DEBUG) System.out.println("WB_Messages: store: handled vote: new="+new_rq+" sol="+sol_rq);
 				rq.update(sol_rq, new_rq);
-				missing_sr.put(v.getOrganizationGID(), rq);			
+				missing_sr.put(oGIDH, rq);			
 				
-				obtained = obtained_sr.get(v.getOrganizationGID());
+				obtained = obtained_sr.get(oGIDH);
 				if (obtained == null) obtained = new RequestData();
 				obtained.sign.put(v.getGID(), DD.EMPTYDATE);
-				obtained_sr.put(v.getOrganizationGID(), obtained);
-				orgs.add(v.getOrganizationGID());
-			}catch(Exception e){
-				if(_DEBUG) System.out.println("WB_Messages: store: failed vote: "+dbg_msg+" for v="+v);
+				obtained_sr.put(oGIDH, obtained);
+				orgs.add(oGIDH);
+			} catch(Exception e) {
+				if (_DEBUG) System.out.println("WB_Messages: store: failed vote: "+dbg_msg+" for v="+v);
 				e.printStackTrace();
 			}
 		}

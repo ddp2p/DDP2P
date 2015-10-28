@@ -10,6 +10,7 @@ import net.ddp2p.common.simulator.WirelessLog;
 import net.ddp2p.common.updates.ClientUpdates;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+import net.ddp2p.common.wireless.BroadcastConsummerBuffer;
 import net.ddp2p.common.wireless.Broadcasting_Probabilities;
 
 public class StartUp {
@@ -221,6 +222,8 @@ public class StartUp {
 	 */
 	public static void initBroadcastServers() throws P2PDDSQLException {
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat updates");
+		if (wireless_server_on_start) BroadcastConsummerBuffer.queue = new BroadcastConsummerBuffer();
+		if(StartUp.DEBUG) System.out.println("StartUpThread:run: started adhoc server consummer");
 		if (wireless_server_on_start) DD.setBroadcastServerStatus(true);
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat adhoc server");
 		if (wireless_client_on_start) DD.setBroadcastClientStatus(true);
@@ -270,7 +273,7 @@ public class StartUp {
 		}
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat client");
 		if (data_client_updates_on_start) {
-			ClientUpdates.startClient(true);
+			ClientUpdates.startClient(true, false);
 		}
 		
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat nat");

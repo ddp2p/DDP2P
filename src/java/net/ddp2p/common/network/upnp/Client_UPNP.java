@@ -54,6 +54,8 @@ public class Client_UPNP
     public static final int UPNP_UDP_BROADCAST_PORT = 1900;
 	public final static String NAT_MULTICAST = "239.255.255.250";
     private static final int HTTP_STATUS_OK = 200;
+	public static final boolean DEBUG = false;
+	private static final boolean _DEBUG = true;
 
     // Custom Exception for tracking problems related to peer communication.
     private class PeerCommunicationException extends Exception
@@ -308,11 +310,35 @@ public class Client_UPNP
         }
 
         socket.close();
+/* Example data obtained:
+HTTP/1.1 200 OK
+CONTENT-LENGTH: 340
+CONTENT-TYPE: text/xml; charset="utf-8"
+DATE: Wed, 28 Oct 2015 00:23:24 GMT
+EXT:
+SERVER: Linux/2.6.35.8, UPnP/1.0, Portable SDK for UPnP devices/1.6.19
+X-User-Agent: redsonic
 
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>
+<u:GetExternalIPAddressResponse xmlns:u="urn:schemas-upnp-org:service:WANIPConnection:1">
+<NewExternalIPAddress>192.168.0.2</NewExternalIPAddress>
+</u:GetExternalIPAddressResponse>
+</s:Body> </s:Envelope> 
+*/        
         // Skip the HTTP content.
-        int xmlStartIndex = response.indexOf( "<?xml version=\"1.0\"?>" );
+        //int xmlStartIndex = response.indexOf( "<?xml version=\"1.0\"?>" );
+        int xmlStartIndex = response.indexOf( "<?xml version=\"" );
+        String responseXmlContent = response;
+
         // trim() is needed to get rid of trailing newlines
-        String responseXmlContent = response.substring( xmlStartIndex ).trim();
+        if (xmlStartIndex < 0) {
+            logger.error( "xml version not found in:." + response);
+            if (_DEBUG) System.out.println("Client_UPNP: xml 1.0 version not found in:\n" + response);
+        	//return -1;
+            xmlStartIndex = response.indexOf( "\r\n\r\n" );
+            if (xmlStartIndex >= 0) responseXmlContent = response.substring( xmlStartIndex ).trim();
+        }
+        else responseXmlContent = response.substring( xmlStartIndex ).trim();
 
         // Parse response.
         try

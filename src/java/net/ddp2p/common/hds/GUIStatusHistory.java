@@ -560,6 +560,8 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	}
 	public synchronized
 	D_Constituent getMeConstituent() {
+		if (history == null) return null;
+		if (crt < 0 || crt >= history.size()) return null;		
 		return history.get(crt).getMeConstituent();
 	}
 	public synchronized

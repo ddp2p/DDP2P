@@ -1633,7 +1633,8 @@ public class MainFrame {
 			}
 			if (DD.DEBUG) System.err.println(__("DD: main: Got DB fin")+Application.getDB());
 			// Quit if no peer found!
-			Identity.init_Identity(true, true, false); // used to announce dirs here
+			// To early since peer may be imported
+			//Identity.init_Identity(true, true, false); // used to announce dirs here
 	
 			StartUp.detect_OS_and_store_in_DD_OS_var();
 			StartUp.fill_install_paths_all_OSs_from_DB(); // to be done before importing!!!
@@ -1684,11 +1685,31 @@ public class MainFrame {
 				}
 				Application_GUI.warning(__("Result trying to import data from old database:")+"\n"+db_to_import+"\n result="+(imported?__("Success"):__("Failure")), __("Importing database!"));
 			}
-	
+			
+			run_instance(selected_db, pGID, controlIP, askIdentityFirst);
+		}
+		
+		public static void run_instance(DBInterface selected_db, String pGID, String controlIP, boolean askIdentityFirst) throws NumberFormatException, P2PDDSQLException {
+			
 			Application.setDB(selected_db);
 			if(DD.DEBUG) System.out.println("DD:run: done database, done import databases");
 			DDTranslation.db=Application.getDB();
 	
+	    	
+			try {
+				DD.load_listing_directories();
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			}
+			// set a peer Identity if passed as parameter
+			if (pGID != null && !"".equals(pGID.trim())) {
+				//guID = args[1];
+				//Identity.setCurrentPeerIdentity(pGID); // current_identity.globalID = ;
+				Application.requestedPeerGID = pGID.trim();
+			}
+			// Quit if no peer found!
+			Identity.init_Identity(true, true, false); // used to announce dirs here
+			
 			//Application.DB_PATH = new File(Application.DELIBERATION_FILE).getParent();
 			//Application.db_dir = load_Directory_DB(Application.DB_PATH);
 			
@@ -1697,19 +1718,49 @@ public class MainFrame {
 	    	/**
 	    	 * Should not quit since the peer GID may have been passed as parameter
 	    	 */
-			Identity peer_identity_id = Identity.getCurrentPeerIdentity_NoQuitOnFailure();
-			if (pGID != null && !"".equals(pGID.trim())) {
-				//guID = args[1];
-				Identity.setCurrentPeerIdentity(pGID); // current_identity.globalID = ;
-			} else {
-				if (peer_identity_id != null) pGID = peer_identity_id.getPeerGID();
-			}
+			Identity peer_identity_id = Application.getCurrent_Peer_ID();
+					//Identity.getCurrentPeerIdentity_NoQuitOnFailure(); // seems to duplicate init_Identity()...remove
+
+			if (peer_identity_id != null) pGID = peer_identity_id.getPeerGID();
 			if (DD.DEBUG) System.out.println("MainFrame: run: My peer GID: "+pGID);
 	
 			if (DD.DEBUG) System.out.println("MainFrame: run: init languages");		
 			
-			Identity const_identity_id = null;
-			const_identity_id = Identity.getCurrentConstituentIdentity();
+			initTranslationSettings(Identity.getCurrentConstituentIdentity());
+	    	
+//			try {
+//				DD.load_listing_directories();
+//			} catch (UnknownHostException e) {
+//				e.printStackTrace();
+//			}
+	
+			if (controlIP != null) new RPC(controlIP).start();
+			
+			if (DD.GUI) {
+				if(DD.DEBUG) System.out.println("DD:run: start GUI");		
+		
+				if (askIdentityFirst) {
+					askIdentity(); ////
+				}
+				
+				createAndShowGUI();
+			}
+			
+			if(DD.DEBUG) System.out.println("DD:run: start threads");
+			
+			new StartUpThread_GUI().start();
+			DD.setAppText(DD.LAST_SOFTWARE_VERSION, DD.VERSION);
+			/*
+			boolean directory_server_on_start = getAppBoolean(DD_DIRECTORY_SERVER_ON_START);//"directory_server_on_start");
+			boolean data_server_on_start = getAppBoolean(DD_DATA_SERVER_ON_START);//"data_server_on_start");
+			boolean data_client_on_start = getAppBoolean(DD_DATA_CLIENT_ON_START);//"data_client_on_start");
+			if (directory_server_on_start) startDirectoryServer(true, -1);
+			if (data_server_on_start) startServer(true, Identity.current_peer_ID);
+			if (data_client_on_start) startClient(true);
+			*/
+		}
+
+		private static void initTranslationSettings(Identity const_identity_id) throws P2PDDSQLException {
 	    	DDTranslation.preferred_languages = get_preferred_languages();
 	    	if (const_identity_id != null) {
 	    		DDTranslation.organizationID = D_Organization.getLIDbyGID(const_identity_id.organizationGID);
@@ -1726,36 +1777,5 @@ public class MainFrame {
 		    	DDTranslation.authorship_lang = DD.get_authorship_lang();//new Language("ro","RO");
 	    	
 	    	DDTranslation.preferred_charsets = DD.get_preferred_charsets();//new String[]{"latin"};
-	    	
-			try {
-				DD.load_listing_directories();
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			}
-	
-			if (controlIP != null) new RPC(controlIP).start();
-			
-			if (DD.GUI) {
-				if(DD.DEBUG) System.out.println("DD:run: start GUI");		
-		
-				if (askIdentityFirst) {
-					askIdentity(); ////
-				}
-				
-				createAndShowGUI();
-			}
-			if(DD.DEBUG) System.out.println("DD:run: start threads");
-			
-			BroadcastConsummerBuffer.queue = new BroadcastConsummerBuffer();
-			new StartUpThread_GUI().start();
-			DD.setAppText(DD.LAST_SOFTWARE_VERSION, DD.VERSION);
-			/*
-			boolean directory_server_on_start = getAppBoolean(DD_DIRECTORY_SERVER_ON_START);//"directory_server_on_start");
-			boolean data_server_on_start = getAppBoolean(DD_DATA_SERVER_ON_START);//"data_server_on_start");
-			boolean data_client_on_start = getAppBoolean(DD_DATA_CLIENT_ON_START);//"data_client_on_start");
-			if (directory_server_on_start) startDirectoryServer(true, -1);
-			if (data_server_on_start) startServer(true, Identity.current_peer_ID);
-			if (data_client_on_start) startClient(true);
-			*/
 		}
 }

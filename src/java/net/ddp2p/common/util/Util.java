@@ -160,6 +160,15 @@ public class Util {
 		for(int k=1; k<array.length; k++) result = result + sep + ((array[k]==null)?"":array[k]);
 		return result;
 	}
+	public static String concat_pairs(String[] array, String[] array2, String sep, String eq, String def) {
+		if ((array == null) ) return def;
+		if ((array2 == null) ) return def;
+		if ((array.length == 0)) return def;
+		if ((array.length != array2.length)) return def;
+		String result=((array[0]==null)?"":array[0].toString()) +eq+ ((array2[0]==null)?"":array2[0]);
+		for(int k=1; k<array.length; k++) result = result + sep + ((array[k]==null)?"":array[k]) +eq+ ((array2[k]==null)?"":array2[k]);
+		return result;
+	}
 	public static String concat(Collection<D_DirectoryEntry> array,
 			String sep, String def) {
 		String result = null;
@@ -1749,6 +1758,12 @@ public class Util {
 		}
 		return result;
 	}
+	/**
+	 * Overwrites/appends where the FileWriter opens
+	 * @param file
+	 * @param string
+	 * @throws IOException
+	 */
 	public static void storeStringInFile(File file, String string) throws IOException {
 		BufferedWriter out = new BufferedWriter(new FileWriter(file));
 		out.write(string);
@@ -2018,9 +2033,15 @@ public class Util {
 	public static InetAddress getNonBlockingHostIA(String domain) {
 		return getHostIA(domain);
 	}
+	final static Hashtable<String, GetHostIA> hostIA_addresses = new Hashtable<String, GetHostIA>();
 	public static InetAddress getHostIA(String domain) {
 		if(DEBUG) System.out.println("Util:getHostIAxx: start");
-		GetHostIA gh = new GetHostIA(domain);
+		GetHostIA gh;// = new GetHostIA(domain);
+		synchronized(hostIA_addresses) {
+			gh = hostIA_addresses.get(domain);
+			if (gh == null) // may also do it if gh is old (would need a timestamp)
+				hostIA_addresses.put(domain, gh = new GetHostIA(domain));
+		}
 		if(DEBUG) System.out.println("Util:getHostIAxx: inited");
 		synchronized(gh) {
 			if(DEBUG) System.out.println("Util:getHostIAxx: sync");
@@ -2033,6 +2054,12 @@ public class Util {
 				e.printStackTrace();
 			}
 			gh.interrupt();
+		}
+		synchronized(hostIA_addresses) {
+			if (gh.hostIA == null) {
+				hostIA_addresses.remove(domain);
+				if(DEBUG) System.out.println("Util:getHostIAxx: removed");
+			}
 		}
 		if(DEBUG) System.out.println("Util:getHostIAxx: done="+gh.hostIA);
 		return gh.hostIA;
@@ -3049,21 +3076,23 @@ public class Util {
 		}
 
 }
-class GetHostName extends Thread{
+class GetHostName extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	String hostName = null;
 	InetAddress domain;
 	InetSocketAddress sock_addr;
 	GetHostName(InetAddress domain, InetSocketAddress sock_addr) {
+		super("GetHostName: "+domain+"::"+sock_addr, true);
+		//System.out.println("Util:GetHostName: "+domain+"::"+sock_addr);
 		this.domain = domain;
 		this.sock_addr = sock_addr;
 		this.start();
 	}
-	public void run(){
+	public void _run(){
 		hostName = "";
-		if(domain!=null) {
+		if (domain != null) {
 			hostName = domain.getHostName();
-		}else
-			if(sock_addr != null) {
+		} else
+			if (sock_addr != null) {
 				hostName = sock_addr.getHostName();
 			}
 		synchronized(this){
@@ -3071,18 +3100,20 @@ class GetHostName extends Thread{
 		}
 	}
 }
-class GetHostIA extends Thread{
+class GetHostIA extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	static final boolean DEBUG = false;
 	public boolean started = false;
 	String domain = null;
 	InetAddress hostIA = null;
 	//InetSocketAddress sock_addr;
 	GetHostIA(String domain) {
+		super("GetHostIA: "+domain, true);
+		//System.out.println("Util:GetHostIA: "+domain);
 		this.domain = domain;
 		//this.sock_addr = sock_addr;
 		this.start();
 	}
-	public void run(){
+	public void _run(){
 		hostIA = null;
 		if(domain!=null) {
 			try {
@@ -3093,6 +3124,7 @@ class GetHostIA extends Thread{
 			} catch (Exception e){
 				if(DEBUG)e.printStackTrace();
 			}
+			//System.out.println("Util:GetHostIA: "+domain+"->"+hostIA);
 		}
 		synchronized(this){
 			this.notifyAll();

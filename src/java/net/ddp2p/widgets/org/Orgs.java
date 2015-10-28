@@ -468,12 +468,18 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
     	OrgsForceEditAction eAction;
     	OrgsToggleServingAction sAction;
     	OrgsCustomAction cAction;
-    	
+       	
     	aAction = new OrgsAddAction(this, __("Add!"), addicon,__("Add new organization."), __("Add"),KeyEvent.VK_A);
     	aAction.putValue("row", new Integer(row));
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);
-    	if(row<0) return popup;
+       	
+    	cAction = new OrgsCustomAction(this, __("Refresh!"), addicon,__("Refresh organizations."), __("Refresh"),KeyEvent.VK_R, OrgsCustomAction.O_REFRESH);
+    	cAction.putValue("row", new Integer(row));
+    	menuItem = new JMenuItem(cAction);
+    	popup.add(menuItem);
+
+    	if (row < 0) return popup;
     	
     	// uAction = new PeersUseAction(this, _("Toggle"),addicon,_("Toggle it."),_("Will be used to synchronize."),KeyEvent.VK_A);
        	//uAction = new OrgExtraUpAction(this, _("Use!"),addicon,_("Use it."),_("Will be used to synchronize."),KeyEvent.VK_A);
@@ -728,9 +734,10 @@ class OrgsToggleServingAction extends DebateDecideAction {
 }
 @SuppressWarnings("serial")
 class OrgsCustomAction extends DebateDecideAction {
-    public static final int M_WLAN_REQUEST = 1;
+	public static final int M_WLAN_REQUEST = 1;
 	public static final int C_RCOLUMN = 2;
 	public static final int C_ACOLUMN = 3;
+    public static final int O_REFRESH = 4;
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
 	Orgs tree; ImageIcon icon;
@@ -761,7 +768,9 @@ class OrgsCustomAction extends DebateDecideAction {
     		//System.err.println("Row selected: " + row);
     	}
     	OrgsModel model = (OrgsModel)tree.getModel();
-    	if(command == C_RCOLUMN) {
+    	if(command == O_REFRESH) {
+    		tree.getModel().update(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.organization.TNAME)), null);
+        }else if(command == C_RCOLUMN) {
         	tree.removeColumn(row);
     		tree.initColumnSizes();
         }else	if(command == C_ACOLUMN) {
