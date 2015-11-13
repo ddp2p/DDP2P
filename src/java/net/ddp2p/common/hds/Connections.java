@@ -1874,8 +1874,10 @@ public class Connections extends net.ddp2p.common.util.DDP2P_ServiceThread imple
 		}
 		Connection_Instance ci = cp.getInstanceConnection(aup.peer_instance);
 		if (ci == null) {
-			if (_DEBUG) System.out.println("Connections: acknowledgeReply: Ping reply for unnown instance: "+aup.peer_globalID+":"+aup.peer_instance); 
-			return false;
+			if (_DEBUG) System.out.println("Connections: acknowledgeReply: Ping reply for unnown instance: "+aup.peer_globalID+":"+Util.getStringNonNullUnique(aup.peer_instance)); 
+			ci = cp.getInstanceConnection(null);
+			if (ci == null) return false;
+			if (_DEBUG) System.out.println("Connections: acknowledgeReply: Ping reply for unnown null instance: "+ci); 
 		}
 		ci.setLastContactDate_UDP();
 		

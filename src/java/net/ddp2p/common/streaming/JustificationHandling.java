@@ -153,7 +153,7 @@ public class JustificationHandling {
 			" LEFT JOIN "+net.ddp2p.common.table.constituent.TNAME+" AS c ON(c."+net.ddp2p.common.table.constituent.constituent_ID+"=j."+net.ddp2p.common.table.justification.constituent_ID+")"+
 			" LEFT JOIN "+net.ddp2p.common.table.motion.TNAME+" AS m ON(m."+net.ddp2p.common.table.motion.motion_ID+"=j."+net.ddp2p.common.table.justification.motion_ID+")"+
 //			" LEFT JOIN "+table.justification.TNAME+" AS a ON(a."+table.justification.justification_ID+"=j."+table.justification.answerTo_ID+")"+
-			//" LEFT JOIN "+table.organization.TNAME+" AS o ON(o."+table.organization.organization_ID+"=m."+table.motion.organization_ID+")"+
+			" LEFT JOIN "+net.ddp2p.common.table.organization.TNAME+" AS o ON(o."+net.ddp2p.common.table.organization.organization_ID+"=m."+net.ddp2p.common.table.motion.organization_ID+")"+
 				" WHERE " +
 				//" j."+table.justification.signature+" IS NOT NULL "+
 				" j."+net.ddp2p.common.table.justification.temporary+" == '0' "+

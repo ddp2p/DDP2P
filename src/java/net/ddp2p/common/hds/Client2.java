@@ -267,9 +267,10 @@ public class Client2 extends net.ddp2p.common.util.DDP2P_ServiceThread  implemen
 				if (success) {
 					ps.setLastContactDateTCP();
 					// set also the instance flags
-					ci.setContactedSinceStart_TCP(true);
-					ci.setLastContactSuccessful_TCP(true);
-					
+					if (ci != null) {
+						ci.setContactedSinceStart_TCP(true);
+						ci.setLastContactSuccessful_TCP(true);
+					}
 					if (ClientSync.DEBUG) System.out.println("Client2: handlePeerRecent: done TCP "+success);
 					return success;
 				} else {
@@ -278,7 +279,8 @@ public class Client2 extends net.ddp2p.common.util.DDP2P_ServiceThread  implemen
 			}
 		}
 		
-		ci.setLastContactSuccessful_TCP(false);
+		if (ci != null) ci.setLastContactSuccessful_TCP(false);
+		else pc.setLastContactSuccessful(false);
 		return false;
 	}
 	/**
@@ -369,9 +371,9 @@ public class Client2 extends net.ddp2p.common.util.DDP2P_ServiceThread  implemen
 		retry = true;
 		if (DD.ClientTCP) {
 			if (DEBUG) System.out.println("Client2: handlePeerNotRecentlyContacted: try TCP");
-			
+			Connection_Instance _ci = pc.getInstanceConnection(null);
 			// does not really make sense to have sockets not linked to an instance
-			success = trySocketsListTCP(pc.shared_peer_sockets, pc, null, retry, null) || success;
+			success = trySocketsListTCP(pc.shared_peer_sockets, pc, _ci, retry, null) || success;
 			if (success) return success;
 			
 			pc.sortInstances();

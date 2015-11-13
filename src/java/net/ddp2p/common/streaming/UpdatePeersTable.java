@@ -574,9 +574,9 @@ public class UpdatePeersTable {
 	/**
 	 * Should return cache of filtered peer
 	 * @param asa
-	 * @param peer
+	 * @param peer (used only for setting provider peer)
 	 * @param tab
-	 * @param filteredID
+	 * @param filteredID (if present, then only extract this one! just in case sender is blocked)
 	 * @return
 	 * @throws P2PDDSQLException
 	 */

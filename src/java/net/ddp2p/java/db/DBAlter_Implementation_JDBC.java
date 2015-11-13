@@ -1,3 +1,22 @@
+/* ------------------------------------------------------------------------- */
+/*   Copyright (C) 2012 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+   
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+   
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+  
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.java.db;
 
 import java.io.BufferedReader;
@@ -33,7 +52,7 @@ public class DBAlter_Implementation_JDBC{
 					connection.select("SELECT "+SQLITE_MASTER.tbl_name+" FROM "+SQLITE_MASTER.TNAME+" WHERE "+SQLITE_MASTER.type+"=?;",
 							new String[]{SQLITE_MASTER.TYPE_table});
 			
-			for(int k=0; k<tables.size(); k++) {
+			for (int k = 0; k < tables.size(); k ++) {
 				ArrayList<Object> table = tables.get(k);
 				//if(!TABLE.equals(Util.getString(table.get(COL_MASTER_TYPE)))) continue;
 				//String id = Util.getString(table.get(COL_MASTER_TBL_NAME));
@@ -41,14 +60,14 @@ public class DBAlter_Implementation_JDBC{
 				array.add(id);
 			}
 	
-			for(int j=0;j<array.size();j++){
-				String tbName=array.get(j);
-				String s=tbName+" "+tbName+" ";
+			for (int j = 0; j < array.size(); j ++) {
+				String tbName = array.get(j);
+				String s = tbName + " " + tbName + " ";
 				ArrayList<ArrayList<Object>> AllColumnName = connection.select("pragma table_info("+tbName+")",new String[]{});
-				for(int k=0; k<AllColumnName.size(); k++){
+				for (int k = 0; k < AllColumnName.size(); k ++) {
 					ArrayList<Object> cols = AllColumnName.get(k);
 					String id = Util.getString(cols.get(1));
-					s = s+id+" ";
+					s = s + id + " ";
 				}
 				result.add(s);
 			}
@@ -105,7 +124,8 @@ public class DBAlter_Implementation_JDBC{
 //				System.err.println("Trying:"+database_new);
 //				return false;
 //			}
-	    	PreparedStatement st;
+
+			PreparedStatement st;
 			/**
 			 * Parse the DDL from the received bufferReader or array of Strings.
 			 * crt_table is the index of current table in DDL
@@ -117,7 +137,7 @@ public class DBAlter_Implementation_JDBC{
 			String table_DDL = null;
 			if (DDL != null) table_DDL = DDL.readLine();
 			else if ((_DDL != null) && (_DDL.length > 0)) table_DDL = _DDL[crt_table];
-			for (;;) {
+			for ( ; ; ) {
 				/**
 				 * Handling the table at index/line crt_table
 				 */
@@ -170,13 +190,13 @@ public class DBAlter_Implementation_JDBC{
 					 */
     				for (int j = 1; j <= cols_src; j ++) {
     					if (j > values_old.length) {
-    	    				System.out.println("DB_Implement_JDBC: _copy: different nb of attributes in source and DDL. Skip: "+j+" -> "+rs.getString(j));
+    						System.out.println("DB_Implement_JDBC: _copy: different nb of attributes in source and DDL. Skip: "+j+" -> "+rs.getString(j));
     						continue;
     					}
     					//for(int j=0; j<attributes_count_insert; j++){
-						values_old[j-1] = rs.getString(j); // Util.getString(olddb.get(j));
-					}
-					String[] attr_new = Arrays.copyOfRange(table__DDL, 2, table__DDL.length);
+    					values_old[j-1] = rs.getString(j); // Util.getString(olddb.get(j));
+    				}
+    				String[] attr_new = Arrays.copyOfRange(table__DDL, 2, table__DDL.length);
 					
 					/**
 					 * Perform the actual insert
@@ -215,16 +235,17 @@ public class DBAlter_Implementation_JDBC{
 			DD.setAppText(db_dst, DD.APP_my_global_peer_ID_hash,
 					DD.getExactAppText(conn_src, DD.APP_my_global_peer_ID_hash), DEBUG);
 			try {
-				conn_src._query("COMMIT", new String[]{}, DEBUG);//exec("COMMIT");
+				conn_src._query("COMMIT", new String[]{}, DEBUG);
 				conn_dst._query("COMMIT", new String[]{}, DEBUG);
 			} catch(Exception e){}
+			//conn_src.exec("COMMIT");
 			//conn_dst.exec("COMMIT");
 			conn_src.dispose_and_keep();//.dispose();
 			conn_dst.dispose_and_keep();
 			//conn_dst.dispose();
-		}catch(Exception e){
-			if(conn_src!=null) conn_src.dispose_and_keep();
-			if(conn_dst!=null) conn_dst.dispose_and_keep();
+		} catch(Exception e) {
+			if (conn_src != null) conn_src.dispose_and_keep();
+			if (conn_dst != null) conn_dst.dispose_and_keep();
 			e.printStackTrace();
 		};
 		return true;

@@ -209,6 +209,37 @@ public class UpdateMessages {
 		return sa;
 	}
 	/**
+	 * If peers tables are present, integrate the payloadReceived.responderGID from there.
+	 * Also return the cache of payloadReceived.responderGID
+	 * @param payloadReceived
+	 * @param _received_peer
+	 * @return
+	 * @throws P2PDDSQLException
+	 */
+	static long integratePeers(ASNSyncPayload payloadReceived, D_Peer _received_peer) throws P2PDDSQLException {
+		long peer_ID = -1;
+		if (payloadReceived.tables != null) {
+			if (DEBUG) err.println("UpdateMessages:integrateUpdate: tackle peers tables");
+			//Calendar tables_date=asa.tables.snapshot;
+			for (int k = 0; k < payloadReceived.tables.tables.length; k ++) {
+				if (DEBUG) err.println("Client: Handling table: "+
+						payloadReceived.tables.tables[k].name+", rows="+payloadReceived.tables.tables[k].rows.length);
+				if (net.ddp2p.common.table.peer.G_TNAME.equals(payloadReceived.tables.tables[k].name)) {
+					D_Peer p;
+					p = UpdatePeersTable.integratePeersTable(payloadReceived, _received_peer, payloadReceived.tables.tables[k], payloadReceived.responderGID);
+					if (p != null) {
+						peer_ID = p.getLID();
+						//_peer_ID = p.getLIDstr();
+					}
+					continue;
+				}
+				if (net.ddp2p.common.table.news.G_TNAME.equals(payloadReceived.tables.tables[k].name)) continue;
+				if (_DEBUG) err.println("Client: I do not handle table: "+payloadReceived.tables.tables[k].name);
+			}
+		}
+		return peer_ID;
+	}
+	/**
 	 * DD.ACCEPT_STREAMING_ANSWER_FROM_NEW_PEERS : to exit automatically on new peer
 	 * 
 	 * @param payloadReceived : arriving data
@@ -241,7 +272,7 @@ public class UpdateMessages {
 		if (local_peer != null) peer_ID = local_peer.getLID(); // Util.lval(_peer_ID, -1);
 		if (peer_ID <= 0 ) {
 			if (DEBUG || DD.DEBUG_TODO)err.println("UpdateMessages:integrateUpdate: peer unknown but may announce self: "+_received_peer);
-			if (!DD.ACCEPT_STREAMING_ANSWER_FROM_NEW_PEERS) {
+			if (! DD.ACCEPT_STREAMING_ANSWER_FROM_NEW_PEERS) {
 				if (_DEBUG) out.println("UpdateMessages:integrateUpdate: not getting from new peers: "+peer_ID+":"+local_peer);
 				return false;
 			}
@@ -255,25 +286,9 @@ public class UpdateMessages {
 		//
 		
 		if ((peer_ID <= 0) && (payloadReceived.responderGID != null)) {
-			if (payloadReceived.tables != null) {
-				if (DEBUG) err.println("UpdateMessages:integrateUpdate: tackle peers tables");
-				//Calendar tables_date=asa.tables.snapshot;
-				for (int k = 0; k < payloadReceived.tables.tables.length; k ++) {
-					if (DEBUG) err.println("Client: Handling table: "+
-							payloadReceived.tables.tables[k].name+", rows="+payloadReceived.tables.tables[k].rows.length);
-					if (net.ddp2p.common.table.peer.G_TNAME.equals(payloadReceived.tables.tables[k].name)) {
-						D_Peer p;
-						p = UpdatePeersTable.integratePeersTable(payloadReceived, _received_peer, payloadReceived.tables.tables[k], payloadReceived.responderGID);
-						if (p != null) {
-							peer_ID = p.getLID();
-							_peer_ID = p.getLIDstr();
-						}
-						continue;
-					}
-					if (net.ddp2p.common.table.news.G_TNAME.equals(payloadReceived.tables.tables[k].name)) continue;
-					if (_DEBUG) err.println("Client: I do not handle table: "+payloadReceived.tables.tables[k].name);
-				}
-			}
+			peer_ID = integratePeers(payloadReceived, _received_peer);
+			_peer_ID = Util.getStringID(peer_ID);
+		
 		
 			// Trying again to recover peer object, in case it was just saved from the message at this moment
 			if (peer_ID <= 0) {
@@ -305,6 +320,9 @@ public class UpdateMessages {
 				}
 			}
 		}
+		// further use local copy of D_Peer
+		D_Peer __received_peer = D_Peer.getPeerByPeer_Keep(_received_peer);
+		if (__received_peer != null) { __received_peer.releaseReference(); _received_peer = __received_peer;}
 		// else
 		{
 			if (payloadReceived.tables != null) {
@@ -475,6 +493,7 @@ public class UpdateMessages {
 		}
 		integrate_peer_GIDs_accounting(missing_peers, _global_peer_ID, peer_ID, _received_peer, Util.getGeneralizedTime());
 		
+		_received_peer = D_Peer.getPeerByPeer_Keep(_received_peer);
 		// Store information about needed data
 		SpecificRequest sp = new SpecificRequest();
 		evaluate_interest(payloadReceived.advertised, sp); // check existing/non-blocked data and insert wished one into sp, store sp in orgs
@@ -490,7 +509,6 @@ public class UpdateMessages {
 		Application.db.updateNoSync(table.peer.TNAME, new String[]{table.peer.last_sync_date}, new String[]{table.peer.global_peer_ID},
 				new String[]{gdate, _global_peer_ID});
 		*/
-		_received_peer = D_Peer.getPeerByPeer_Keep(_received_peer);
 		try {
 			if (instance != null && pulled) {
 				if (DEBUG) System.out.println("UpdateMessages: integrateUpdate: gdate="+gdate+" inst=["+instance+"]");

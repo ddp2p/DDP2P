@@ -222,7 +222,7 @@ public class WB_Messages extends ASNObj{
 				if((sa!=null)&&sa.hasNeighborhod(gid)) continue;
 				try {
 					D_Neighborhood n = D_Neighborhood.getNeighByGID(gid, true, false);
-					if (!OrgHandling.serving(asr, n.getOrgLIDstr())) continue;
+					if (n == null || !OrgHandling.serving(asr, n.getOrgLIDstr())) continue;
 					result.neig.add(n);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got neig");
 				} catch (Exception e) {
@@ -237,7 +237,7 @@ public class WB_Messages extends ASNObj{
 				D_Witness w = null;
 				try {
 					w = new D_Witness(gid);
-					if(!OrgHandling.serving(asr, w.organization_ID)) continue;
+					if ((w == null) || ! OrgHandling.serving(asr, w.organization_ID)) continue;
 					result.witn.add(w);
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got witn: "+w);
 				}
@@ -258,7 +258,7 @@ public class WB_Messages extends ASNObj{
 				if ((sa != null) && sa.hasMotion(gid)) continue;
 				try {
 					D_Motion m = D_Motion.getMotiByGID(gid, true, false);
-					if (! m.readyToSend()) {
+					if ((m == null) || ! m.readyToSend()) {
 						if (_DEBUG) System.out.println("WB_Messages: getRequestedData: not ready moti gid="+m);
 						continue;
 					}
@@ -283,8 +283,8 @@ public class WB_Messages extends ASNObj{
 				if ((sa != null) && sa.hasJustification(gid)) continue;
 				try {
 					D_Justification j = D_Justification.getJustByGID(gid, true, false);
-					if (!j.readyToSend()) continue;
-					if (!OrgHandling.serving(asr, j.getOrganizationLIDstr())) continue;
+					if ((j == null) || ! j.readyToSend()) continue;
+					if (! OrgHandling.serving(asr, j.getOrganizationLIDstr())) continue;
 					result.just.add(j);
 					//if (DEBUG) System.out.println("WB_Messages: getRequestedData: got just");
 					if (DEBUG) System.out.println("WB_Messages: getRequestedData: shipping just:"+j.getGIDH()+" "+j.getTitleStrOrMy());
@@ -302,7 +302,7 @@ public class WB_Messages extends ASNObj{
 				if ((sa != null) && sa.hasSignature(gid, r.sign.get(gid))) continue;
 				try{
 					D_Vote v = new D_Vote(gid);
-					if (! v.readyToSend()) continue;
+					if ((v == null) || ! v.readyToSend()) continue;
 					if (! OrgHandling.serving(asr, v.getOrganizationLIDstr())) continue;
 					result.sign.add(v);
 					if (DEBUG) System.out.println("WB_Messages: getRequestedData: got vote o:"+v.getOrganizationLID()+" m:"+v.getMotionLID()+" c:"+v.getConstituentLIDstr());

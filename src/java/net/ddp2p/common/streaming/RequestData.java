@@ -131,7 +131,7 @@ public class RequestData extends ASNObj implements Summary{
 		case MOTI: return addIfNewToArray(hash, moti, MAX_ITEM);
 		case JUST: return addIfNewToArray(hash, just, MAX_ITEM);
 		case SIGN: //return addIfNewToArray(hash, sign, MAX_ITEM);
-			Util.printCallPath("Signatures are not arrays");
+			//Util.printCallPath("Signatures are not arrays");
 			return addHashIfNewTo(hash, DD.EMPTYDATE, type, MAX_ITEM);
 			//throw new RuntimeException("Never come here!");
 		case TRAN: return addIfNewToArray(hash, tran, MAX_ITEM);

@@ -2092,19 +2092,21 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 		// return this.global_witness_ID =  
 		return D_GIDH.d_Just+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
 	}
-	public boolean verifySignature(){
+	public boolean verifySignature() {
 		if(DEBUG) System.out.println("WB_Justification:verifySignature: start");
 		String pk_ID = this.getConstituentGID();//.submitter_global_ID;
 		if((pk_ID == null) && (this.getConstituent()!=null) && (this.getConstituent().getGID()!=null))
 			pk_ID = this.getConstituent().getGID();
 		if(pk_ID == null) return false;
 		
-		String newGID = make_ID();
-		if(!newGID.equals(this.getGID())) {
-			Util.printCallPath("WB_Justification: WRONG EXTERNAL GID [" + this.getLID()+"]: "+this.getTitleOrMy()+" "+this);
-			if(DEBUG) System.out.println("WB_Justification:verifySignature: WRONG HASH GID="+this.getGID()+" vs="+newGID);
-			if(DEBUG) System.out.println("WB_Justification:verifySignature: WRONG HASH GID result="+false);
-			return false;
+		if (this.getGID() != null) {
+			String newGID = make_ID();
+			if (! newGID.equals(this.getGID())) {
+				Util.printCallPath("WB_Justification: WRONG EXTERNAL GID [" + this.getLID()+"]: "+this.getTitleOrMy()+" "+this+" vs newGID="+newGID);
+				if(DEBUG) System.out.println("WB_Justification:verifySignature: WRONG HASH GID="+this.getGID()+" vs="+newGID);
+				if(DEBUG) System.out.println("WB_Justification:verifySignature: WRONG HASH GID result="+false);
+				return false;
+			}
 		}
 		
 		boolean result = Util.verifySignByID(this.getSignableEncoder().getBytes(), pk_ID, getSignature());

@@ -1927,11 +1927,11 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 			if (DEBUG) System.out.println("D_Organization:setGID: compute GIDH");
 			if (! D_GIDH.isCompactedGID(gID)) {
 				gIDH = D_Organization.getOrgGIDHashGuess(gID);
+				if (gIDH == null) Util.printCallPath("D_Organization: setGID:"+gID+" for: "+this);
 			} else {
-				// the next would be wrong if this si authoritarian!
+				// the next would be wrong if this is authoritarian!
 				//gIDH = gID;
 			}
-			if (gIDH == null) Util.printCallPath("D_Organization: setGID:"+gID+" for: "+this);
 		}
 
 		if ( ! Util.equalStrings_null_or_not(getGIDH(), gIDH)) {		

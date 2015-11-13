@@ -1,3 +1,6 @@
+// This file is just a test, not used in DDP2P
+// Maintained as a repository of functions to convert GIF to BMP
+
 //package GIF2Bitmap;
 package net.ddp2p.widgets.app;
 import java.awt.image.BufferedImage;
@@ -22,49 +25,54 @@ import static net.ddp2p.common.util.Util.__;
 
 public class GIF_Convert {
 	/**
-	 * @param args
+	 * Just copy by copying pixel by pixel
+	 * 
+	 * @param source
+	 * @param des
+	 * @param type
 	 */
 	public static void copyImage(File source, File des, String type){
-
-       int typeBI = BufferedImage.TYPE_3BYTE_BGR;
-       try{BufferedImage bi = ImageIO.read (source);
-          if (type.equals("gif")) typeBI = BufferedImage.TYPE_BYTE_GRAY;
-	      BufferedImage ob = new BufferedImage (bi.getWidth(), bi.getHeight(), typeBI);
-	      for(int x=0; x< bi.getWidth() ; x++)
-	      	 for(int y= 0; y< bi.getHeight() ; y++)
-	      	 { int pixel = bi.getRGB (x,y);  // get the value at col,row
-	            ob.setRGB (x,y,pixel); }       // set the value at col,row 
-	     
+		
+		int typeBI = BufferedImage.TYPE_3BYTE_BGR;
+		try {
+			BufferedImage bi = ImageIO.read (source);
+			if (type.equals("gif")) typeBI = BufferedImage.TYPE_BYTE_GRAY;
+			BufferedImage ob = new BufferedImage (bi.getWidth(), bi.getHeight(), typeBI);
+			for (int x = 0; x < bi.getWidth() ; x ++)
+				for (int y = 0; y < bi.getHeight() ; y ++) {
+					int pixel = bi.getRGB (x,y);  // get the value at col,row
+					ob.setRGB (x,y,pixel);        // set the value at col,row 
+				}
 	      	ImageIO.write (ob, type, des);
-      }catch(IOException e){
-      	 System.out.println(e);
-      }
+		} catch (IOException e) {
+			System.out.println(e);
+		}
 	}
 	public static String convertFromGIF_to_BMP(String gifPath, String bmpPath){
-			try{
+		try {
 			File input = new File(gifPath);
 			// or Object input = new FileInputStream("animated.gif");
 			ImageInputStream stream = ImageIO.createImageInputStream(input);
 			Iterator readers = (Iterator) ImageIO.getImageReaders(stream);
-			if (!readers.hasNext())
-			throw new RuntimeException("no image reader found");
+			if (! readers.hasNext())
+				throw new RuntimeException("no image reader found");
 			ImageReader reader = (ImageReader) readers.next();
 			reader.setInput(stream); // don't omit this line!
 			int n = reader.getNumImages(true); // don't use false!
 			System.out.println("numImages = " + n);
-			String filename=null;
+			String filename = null;
 			for (int i = 0; i < n; i++) {
 			BufferedImage image = reader.read(i);
-				//new BufferedImage(reader.read(i).getWidth(), reader.read(i).getHeight(), BufferedImage.TYPE_3BYTE_BGR );
-			 //System.out.println("Orginal image[" + i + "] = " + image);
+			//new BufferedImage(reader.read(i).getWidth(), reader.read(i).getHeight(), BufferedImage.TYPE_3BYTE_BGR );
+			//System.out.println("Orginal image[" + i + "] = " + image);
 			//AffineTransformOp identityOp = new AffineTransformOp(new AffineTransform(), AffineTransformOp.TYPE_BILINEAR);
             //image = identityOp.filter(image, null);
             
            	//image = reader.read(i);
 			System.out.println("image[" + i + "] = " + image.getData().getDataBuffer().getSize());
-			filename= bmpPath.substring(0,bmpPath.lastIndexOf(".bmp"));
-			filename+=i;
-			filename+=".bmp";
+			filename = bmpPath.substring(0,bmpPath.lastIndexOf(".bmp"));
+			filename += i;
+			filename += ".bmp";
 			File output = new File(filename);
 			BufferedImage buffImg = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_3BYTE_BGR); 
 			final Graphics2D g2 = buffImg.createGraphics();   
@@ -83,15 +91,15 @@ public class GIF_Convert {
 			//stream = ImageIO.createImageInputStream(output); // output become input streem
 			}
 			stream.close();
-			if(filename!=null) return bmpPath.substring(0,bmpPath.lastIndexOf(".bmp")) + 0 +".bmp";
+			if (filename != null) return bmpPath.substring(0,bmpPath.lastIndexOf(".bmp")) + 0 +".bmp";
 			
-		}catch (IOException e) {
+		} catch (IOException e) {
 			// e.printStackTrace();
 		}
 		return null;	
 	}
 	public static void convertFromBMP_to_GIF(String bmpPath, String gifPath){
-		try{
+		try {
 			File input = new File(bmpPath);
 			BufferedImage image = ImageIO.read(input);
 			File output = new File(gifPath);
@@ -130,8 +138,8 @@ public class GIF_Convert {
    	  d = new File( "c:/GIF/test2.bmp" );
    	  d.deleteOnExit();
    	  copyImage(s,d,"bmp");
-   	  if(compareImages(s,d)) System.out.println("s!=d  s length= "+ s.length() +" d length="+ d.length() );
-   	   else System.out.println("s=d   s length= "+ s.length() +" d length= "+ d.length()) ;
+   	  if (compareImages(s,d)) System.out.println("s!=d  s length= "+ s.length() +" d length="+ d.length() );
+   	  else System.out.println("s=d   s length= "+ s.length() +" d length= "+ d.length()) ;
    	  // extract data 
 	  	 	 
 	}
@@ -220,7 +228,7 @@ public class GIF_Convert {
 				fail = true;
 			}
 		}
-		if(fail){
+		if (fail) {
 //				JOptionPane.showMessageDialog(this,
 //					_("Cannot Extract address in: ")+file+explain,
 //					_("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
@@ -231,15 +239,15 @@ public class GIF_Convert {
       BufferedImage bi1 = ImageIO.read (img1);
       BufferedImage bi2 = ImageIO.read (img2);
       boolean diff = false;
-      for(int x=0; x< bi1.getWidth() ; x++)
-      	 for(int y= 0; y< bi1.getHeight() ; y++)
-      	 { int pixel1 = bi1.getRGB (x,y);  // get the value at col,row
-      	   int pixel2 = bi2.getRGB (x,y);
-      	   if (pixel1!=pixel2){
-      	   	diff = true; // break;
-      	    System.out.println("X: "+x+" Y: "+y+" pixel:"+pixel1+" pixel2:"+pixel2);
-      	   }
-      	  }     
+      for (int x = 0; x < bi1.getWidth() ; x ++)
+    	  for(int y = 0; y < bi1.getHeight() ; y ++) {
+    		  int pixel1 = bi1.getRGB (x,y);  // get the value at col,row
+    		  int pixel2 = bi2.getRGB (x,y);
+    		  if (pixel1 != pixel2) {
+    			  diff = true; // break;
+    			  System.out.println("X: "+x+" Y: "+y+" pixel:"+pixel1+" pixel2:"+pixel2);
+    		  }
+    	  }     
       return diff;
    	  
   

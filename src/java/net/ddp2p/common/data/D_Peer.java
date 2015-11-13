@@ -1772,7 +1772,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		if ((other != null) && (other != this)) {
 			//storeReceived(this, true);
 			// 
-			Util.printCallPath("Why is this peer forgotten? Its preferences are lost. Reload before modifications! May have to introduce usage counters..");
+			Util.printCallPath("Why is this peer forgotten? Its preferences are lost. Reload before modifications! May have to introduce usage counters..\n"+this+"\nvs\n"+other);
 			return other.getLID();
 		}
 		
@@ -4517,7 +4517,13 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 				_po[d++] = nou; inserted = true;
 			}
 		}
-		if (d < _po.length) _po[d++] = served_orgs[s++];
+		if (d < _po.length) {
+			if (inserted) {
+				if (s < served_orgs.length) _po[d] = served_orgs[s];
+				else Util.printCallPath("Why s="+s+" this="+s);
+			}
+			else _po[d] = nou;
+		}
 		this.served_orgs = _po;
 	}
 	public void removeServingOrg(long orgID) {
@@ -4537,7 +4543,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		int s = 0, d = 0;
 		boolean deleted = false;
 		for (; s < this.served_orgs.length;) {
-			if (deleted || !this.served_orgs[s].getServed()) {
+			if (deleted || this.served_orgs[s].getServed()) {
 				_po[d++] = served_orgs[s++];
 			} else {
 				s++; deleted = true;

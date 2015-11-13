@@ -126,7 +126,10 @@ public class Connections_Peer_Directory {
 	public boolean confirmNAT(String peer_domain, int peer_port,
 			SocketAddress socketAddress, String peer_instance) {
 		Address_SocketResolved_TCP adr = this.getReportedAddress(peer_instance);
-		if (! Util.equalStrings_null_or_not(peer_domain, adr.getAddress().getDomain())) return false;
+		if (adr == null) return false;
+		Address address = adr.getAddress();
+		if (address == null) return false;
+		if (! Util.equalStrings_null_or_not(peer_domain, address.getDomain())) return false;
 		if (peer_port != adr.getAddress().udp_port) return false;
 		this.setLastPeerContactUDP(peer_instance);
 		return true;
