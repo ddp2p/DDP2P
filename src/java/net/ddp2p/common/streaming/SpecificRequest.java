@@ -50,6 +50,8 @@ public class SpecificRequest extends ASNObj implements Summary{
 	public Hashtable<String,String> peers = new Hashtable<String,String>(); // these are not part of some organization
 	public ArrayList<String> news = new ArrayList<String>(); // these are not part of some organization
 	public ArrayList<String> tran = new ArrayList<String>(); // these are not part of some organization
+	// TODO add authoritarian orgs that changed
+	public Hashtable<String, String> orgs = new Hashtable<String,String>();
 
 	public boolean empty() {
 //		if (peers.size() > 0) return false;
@@ -63,6 +65,7 @@ public class SpecificRequest extends ASNObj implements Summary{
 		if (peers.size() > 0) return false;
 		if (news.size() > 0) return false;
 		if (tran.size() > 0) return false;
+		if (orgs.size() > 0) return false;
 //		if (rd.isEmpty()) return true;
 //		for (RequestData a : rd) if ( ! a.empty() ) return false;
 		return true;
@@ -89,7 +92,9 @@ public class SpecificRequest extends ASNObj implements Summary{
 	public SpecificRequest clone() {
 		SpecificRequest result = new SpecificRequest();
 		result.peers = (Hashtable<String,String>) peers.clone();
+		result.orgs = (Hashtable<String,String>) orgs.clone();
 		result.news = (ArrayList<String>) news.clone();
+		result.tran = (ArrayList<String>) tran.clone();
 		for (RequestData a: result.rd) {
 			result.rd.add(a.clone());
 		}
@@ -98,6 +103,7 @@ public class SpecificRequest extends ASNObj implements Summary{
 	public String toSummaryString() {
 		return "SpecificRequest["+Util.concatSummary(rd.toArray(new RequestData[0]), ",", null)+
 				",\n p="+Util.concat(peers, ",", null)+
+				",\n o="+Util.concat(orgs, ",", null)+
 				", "+Util.concatSummary(news.toArray(new String[0]), ",", null)+
 				", "+Util.concatSummary(tran.toArray(new String[0]), ",", null)+
 				"]";
@@ -105,6 +111,7 @@ public class SpecificRequest extends ASNObj implements Summary{
 	public String toString() {
 		return "SpecificRequest["+Util.concat(rd.toArray(new RequestData[0]), ",")+
 				",\n peers="+Util.concat(peers, ",", null)+
+				",\n orgs="+Util.concat(orgs, ",", null)+
 				",\n news="+Util.concat(news.toArray(new String[0]), ",")+
 				",\n tran="+Util.concat(tran.toArray(new String[0]), ",")+
 				"]";
@@ -171,6 +178,7 @@ public class SpecificRequest extends ASNObj implements Summary{
 		if (gcdh != null) {
 			if (DEBUG) System.out.println("SpecificRequest:getPeerRequest: obtained "+gcdh+"\npeers");
 			result.peers = OrgPeerDataHashes.addFromPeer(gcdh.peers, _peer_ID, result.peers);
+			result.orgs = OrgPeerDataHashes.addFromPeer(gcdh.orgs, _peer_ID, result.orgs);
 			if (DEBUG) System.out.println("SpecificRequest: getPeerRequest: news");
 			result.news = OrgPeerDataHashes.addFromPeer(gcdh.news, _peer_ID, result.news);
 			if (DEBUG) System.out.println("SpecificRequest: getPeerRequest: tran");
@@ -215,6 +223,8 @@ public class SpecificRequest extends ASNObj implements Summary{
 			enc.addToSequence(Encoder.getHashStringEncoder(peers, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC1));
 		if (news.size() > 0) enc.addToSequence(Encoder.getStringEncoder(news.toArray(new String[0]), Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
 		if (tran.size() > 0) enc.addToSequence(Encoder.getStringEncoder(tran.toArray(new String[0]), Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC3));
+		if (orgs.size() > 0)
+			enc.addToSequence(Encoder.getHashStringEncoder(orgs, Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC4));
 		/*
 		enc.addToSequence(Encoder.getStringEncoder(org_GIDs, Encoder.TAG_PrintableString));
 		enc.addToSequence(Encoder.getStringEncoder(constituent_GIDs, Encoder.TAG_PrintableString));
@@ -233,6 +243,7 @@ public class SpecificRequest extends ASNObj implements Summary{
 		if (d.getTypeByte() == DD.TAG_AC1) peers = d.getFirstObject(true).getSequenceOfHSS(Encoder.TAG_PrintableString, false);
 		if (d.getTypeByte() == DD.TAG_AC2) news = d.getFirstObject(true).getSequenceOfAL(Encoder.TAG_PrintableString);
 		if (d.getTypeByte() == DD.TAG_AC3) tran = d.getFirstObject(true).getSequenceOfAL(Encoder.TAG_PrintableString);
+		if (d.getTypeByte() == DD.TAG_AC4) orgs = d.getFirstObject(true).getSequenceOfHSS(Encoder.TAG_PrintableString, false);
 		/*
 		org_GIDs = d.getFirstObject(true).getSequenceOf(Encoder.TAG_PrintableString);
 		constituent_GIDs = d.getFirstObject(true).getSequenceOf(Encoder.TAG_PrintableString);

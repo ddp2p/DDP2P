@@ -54,7 +54,11 @@ public class RequestData extends ASNObj implements Summary{
 	public static final int TRAN = 7;
 	public static final int NEWS = 8;
 	public static final int PEERS = 9;
+	//TODO: need to be added to init, to encoder and decoder!
+	public static final int ORGS_AUTH = 10;
 	public Hashtable<String,String> peers = new Hashtable<String,String>(); // not encoded and decoded (in transmission and storage used outside)
+// TODO
+	public Hashtable<String,String> orgs_auth = new Hashtable<String,String>(); // not encoded and decoded (in transmission and storage used outside)
 	public ArrayList<String> orgs = new ArrayList<String>();
 	public Hashtable<String,String> cons = new Hashtable<String,String>();
 	public ArrayList<String> neig = new ArrayList<String>();
@@ -104,6 +108,7 @@ public class RequestData extends ASNObj implements Summary{
 		result.orgs = new ArrayList<String>(orgs);
 		result.neig = new ArrayList<String>(neig);
 		result.peers = new Hashtable<String,String>(peers);
+		result.orgs_auth = new Hashtable<String,String>(peers);
 		result.cons = new Hashtable<String,String>(cons);
 		result.witn = new ArrayList<String>(witn);
 		result.moti = new ArrayList<String>(moti);
@@ -116,6 +121,7 @@ public class RequestData extends ASNObj implements Summary{
 	public boolean addHashIfNewTo(String hash, String date, int type, int MAX_ITEM) {
 		switch(type) {
 		case PEERS: return addIfNewToHash(hash, date, peers, MAX_ITEM);
+		case ORGS_AUTH: return addIfNewToHash(hash, date, orgs_auth, MAX_ITEM);
 		case CONS: return addIfNewToHash(hash, date, cons, MAX_ITEM);
 		case SIGN: return addIfNewToHash(hash, date, sign, MAX_ITEM);
 		default:
@@ -201,6 +207,7 @@ public class RequestData extends ASNObj implements Summary{
 		orgs = appendSet(orgs, n.orgs);
 		neig = appendSet(neig, n.neig);
 		peers = appendHash(peers, n.peers);
+		orgs_auth = appendHash(orgs_auth, n.orgs_auth);
 		cons = appendHash(cons, n.cons);
 		witn = appendSet(witn, n.witn);
 		moti = appendSet(moti, n.moti);
@@ -228,6 +235,7 @@ public class RequestData extends ASNObj implements Summary{
 		orgs = appendSet(orgs, n.orgs, _peer_ID, generalizedTime);
 		neig = appendSet(neig, n.neig, _peer_ID, generalizedTime);
 		peers = appendHash(peers, n.peers, _peer_ID, generalizedTime);
+		orgs_auth = appendHash(orgs_auth, n.orgs_auth, _peer_ID, generalizedTime);
 		cons = appendHash(cons, n.cons, _peer_ID, generalizedTime);
 		witn = appendSet(witn, n.witn, _peer_ID, generalizedTime);
 		moti = appendSet(moti, n.moti, _peer_ID, generalizedTime);
@@ -338,6 +346,7 @@ public class RequestData extends ASNObj implements Summary{
 			return 0==orgs.size()+
 					neig.size()+
 					peers.size()+
+					orgs_auth.size()+
 					cons.size()+
 					moti.size()+
 					just.size()+
@@ -361,6 +370,7 @@ public class RequestData extends ASNObj implements Summary{
 		if((orgs!=null)&&(orgs.size()>0)) result += "\n  orgs="+Util.concat(orgs, ", ", "NULL");
 		if((neig!=null)&&(neig.size()>0)) result += "\n  neig="+Util.concat(neig, ", ", "NULL");
 		if((peers!=null)&&(peers.size()>0)) result += "\n  peers="+Util.concat(peers, ", ", "NULL");
+		if((orgs_auth!=null)&&(orgs_auth.size()>0)) result += "\n  orgs_auth="+Util.concat(orgs_auth, ", ", "NULL");
 		if((cons!=null)&&(cons.size()>0)) result += "\n  cons="+Util.concat(cons, ", ", "NULL");
 		if((witn!=null)&&(witn.size()>0)) result += "\n  witn="+Util.concat(witn, ", ", "NULL");
 		if((moti!=null)&&(moti.size()>0)) result += "\n  moti="+Util.concat(moti, ", ", "NULL");
@@ -376,6 +386,7 @@ public class RequestData extends ASNObj implements Summary{
 		if((orgs!=null)&&(orgs.size()>0)) result += "\n  orgs=["+orgs.size()+"]="+Util.concat(orgs, ", ", "NULL");
 		if((neig!=null)&&(neig.size()>0)) result += "\n  neig="+Util.concat(neig, ", ", "NULL");
 		if((peers!=null)&&(peers.size()>0)) result += "\n  peers="+Util.concat(peers, ", ", "NULL");
+		if((orgs_auth!=null)&&(orgs_auth.size()>0)) result += "\n  orgs_auth="+Util.concat(orgs_auth, ", ", "NULL");
 		if((cons!=null)&&(cons.size()>0)) result += "\n  cons="+Util.concat(cons, ", ", "NULL");
 		if((witn!=null)&&(witn.size()>0)) result += "\n  witn="+Util.concat(witn, ", ", "NULL");
 		if((moti!=null)&&(moti.size()>0)) result += "\n  moti="+Util.concat(moti, ", ", "NULL");
@@ -403,6 +414,17 @@ public class RequestData extends ASNObj implements Summary{
 			if (this.peers.containsKey(gidh)) {
 				if (!Util.newerDateStr(this.peers.get(gidh), obtained.peers.get(gidh)))
 					peers.remove(gidh);
+			}
+		}
+		for(String s : obtained.orgs_auth.keySet()) {
+			if (this.orgs_auth.containsKey(s)) {
+				if (!Util.newerDateStr(this.orgs_auth.get(s), obtained.orgs_auth.get(s)))
+					orgs_auth.remove(s);				
+			}
+			String gidh =  D_Peer.getGIDHashFromGID(s);
+			if (this.orgs_auth.containsKey(gidh)) {
+				if (!Util.newerDateStr(this.orgs_auth.get(gidh), obtained.orgs_auth.get(gidh)))
+					orgs_auth.remove(gidh);
 			}
 		}
 		for(String s : obtained.orgs) {
@@ -439,6 +461,10 @@ public class RequestData extends ASNObj implements Summary{
 			if (! this.peers.containsKey(s)) this.peers.put(s, new_rq.peers.get(s));//DD.EMPTYDATE);
 			else if (Util.newerDateStr(new_rq.peers.get(s), this.peers.get(s))) this.peers.put(s, new_rq.peers.get(s));
 		}
+		for (String s : new_rq.orgs_auth.keySet()) {
+			if (! this.orgs_auth.containsKey(s)) this.orgs_auth.put(s, new_rq.peers.get(s));//DD.EMPTYDATE);
+			else if (Util.newerDateStr(new_rq.orgs_auth.get(s), this.orgs_auth.get(s))) this.orgs_auth.put(s, new_rq.orgs_auth.get(s));
+		}
 		for(String s : new_rq.cons.keySet()) {
 			if (! this.cons.containsKey(s)) this.cons.put(s, new_rq.cons.get(s));//DD.EMPTYDATE);
 			else if (Util.newerDateStr(new_rq.cons.get(s), this.cons.get(s))) this.cons.put(s, new_rq.cons.get(s));
@@ -459,6 +485,12 @@ public class RequestData extends ASNObj implements Summary{
 			if (this.peers.containsKey(s)) {
 				if (! Util.newerDateStr(this.peers.get(s), sol_rq.peers.get(s)))
 					this.peers.remove(s);
+			}
+		}
+		for(String s : sol_rq.orgs_auth.keySet()) {
+			if (this.orgs_auth.containsKey(s)) {
+				if (! Util.newerDateStr(this.orgs_auth.get(s), sol_rq.orgs_auth.get(s)))
+					this.orgs_auth.remove(s);
 			}
 		}
 		for(String s : sol_rq.cons.keySet()) {

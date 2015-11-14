@@ -108,6 +108,7 @@ import net.ddp2p.widgets.news.NewsEditor;
 import net.ddp2p.widgets.news.NewsTable;
 import net.ddp2p.widgets.org.OrgEditor;
 import net.ddp2p.widgets.org.Orgs;
+import net.ddp2p.widgets.peers.OrganizationRequests;
 import net.ddp2p.widgets.peers.PeerAddresses;
 import net.ddp2p.widgets.peers.PeerInstanceContacts;
 import net.ddp2p.widgets.peers.Peers;
@@ -162,6 +163,11 @@ public class MainFrame {
 	
 	static String TAB_CLONE = __("Clones");
 	static int TAB_CLONE_ = 14;
+	
+	static OrganizationRequests organizationRequests;
+	static String TAB_REQUESTS = __("REQUESTS");
+	static int TAB_REQUESTS_ = 15;
+
 	static final JPanel JunkPanelCLONE = new JPanel();
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
@@ -1279,6 +1285,10 @@ public class MainFrame {
 	    	MainFrame.peer_instances = new Instances();
 	    	MainFrame.tabbedPane.addTab(MainFrame.TAB_CLONE, icon_identity, MainFrame.peer_instances.getPanel(), __("Instances"));
 	    	MainFrame.status.addPeerSelectedStatusListener(MainFrame.peer_instances.getModel());
+	    	
+	    	MainFrame.organizationRequests = new OrganizationRequests();
+	    	MainFrame.tabbedPane.addTab(MainFrame.TAB_REQUESTS, icon_identity, MainFrame.organizationRequests, __("Organization Requests"));
+	    	MainFrame.status.addOrgStatusListener(MainFrame.organizationRequests);
 	    	
 			if(DD.DEBUG) System.out.println("createAndShowGUI: done tabs");
 	

@@ -23,6 +23,8 @@ import net.ddp2p.common.util.Util;
  * 		
  * ... probably should be something like {data_hash:{peerID:[date_claim_received,creation_data_claimed]}}
  * 
+ * should also send authoritarian organization
+ * 
  * @author msilaghi
  *
  */
@@ -32,6 +34,7 @@ public class GlobalClaimedDataHashes extends ASNObj {
 	static public GlobalClaimedDataHashes globalClaimedDataHashes = null;
 	int version = 2;
 	public Hashtable<String,Hashtable<Long,String>> peers=new Hashtable<String,Hashtable<Long,String>>();
+	public Hashtable<String,Hashtable<Long,String>> orgs=new Hashtable<String,Hashtable<Long,String>>(); // not implemented!
 	public Hashtable<String,Hashtable<Long,String>> news=new Hashtable<String,Hashtable<Long,String>>();
 	public Hashtable<String,Hashtable<Long,String>> tran=new Hashtable<String,Hashtable<Long,String>>();
 	/*
@@ -70,6 +73,7 @@ public class GlobalClaimedDataHashes extends ASNObj {
 		enc.addToSequence(OrgPeerDataHashes.getDataEncoder(peers));
 		enc.addToSequence(OrgPeerDataHashes.getDataEncoder(news));
 		enc.addToSequence(OrgPeerDataHashes.getDataEncoder(tran));
+		enc.addToSequence(OrgPeerDataHashes.getDataEncoder(orgs));
 		enc.setASN1Type(DD.TAG_AC15);
 		return enc;
 	}
@@ -85,6 +89,7 @@ public class GlobalClaimedDataHashes extends ASNObj {
 		peers = OrgPeerDataHashes.decodeData(d.getFirstObject(true));
 		news = OrgPeerDataHashes.decodeData(d.getFirstObject(true));
 		tran = OrgPeerDataHashes.decodeData(d.getFirstObject(true));
+		if (d.getTypeByte() != 0) orgs = OrgPeerDataHashes.decodeData(d.getFirstObject(true));
 		return this;
 	}
 	public void save( //long peer_ID, D_Peer peer
@@ -98,6 +103,7 @@ public class GlobalClaimedDataHashes extends ASNObj {
 	public String toString(){
 		String result = "GlobalClaimedDataHashes: [\n";
 		if((peers!=null)&&(peers.size()>0)) result += "\n  peers = "+getStringRepresentationOfHashes(peers);
+		if((orgs!=null)&&(orgs.size()>0)) result += "\n  orgs = "+getStringRepresentationOfHashes(orgs);
 		if((news!=null)&&(news.size()>0)) result += "\n  news = "+getStringRepresentationOfHashes(news);
 		if((tran!=null)&&(tran.size()>0)) result += "\n  tran = "+getStringRepresentationOfHashes(tran);
 		result += "]";
@@ -122,6 +128,7 @@ public class GlobalClaimedDataHashes extends ASNObj {
 		Long _peer_ID = new Long(peer_ID);
 		RequestData r = new RequestData();
 		r.peers = OrgPeerDataHashes.addFromPeer(peers, _peer_ID, r.peers);
+		r.orgs = OrgPeerDataHashes.addFromPeer(orgs, _peer_ID, r.orgs);
 		r.news = OrgPeerDataHashes.addFromPeer(news, _peer_ID, r.news);
 		r.tran = OrgPeerDataHashes.addFromPeer(tran, _peer_ID, r.tran);
 		return r;
@@ -130,6 +137,7 @@ public class GlobalClaimedDataHashes extends ASNObj {
 		if (DEBUG) System.out.println("\nOrgPeerDataHashes:add: add "+n+" to "+this);
 		synchronized (peers) {
 			peers = OrgPeerDataHashes.appendHash(peers, n.peers, _peer_ID, generalizedTime);
+			orgs = OrgPeerDataHashes.appendHash(orgs, n.orgs, _peer_ID, generalizedTime);
 			tran = OrgPeerDataHashes.appendSet(tran, n.tran, _peer_ID, generalizedTime);
 			news = OrgPeerDataHashes.appendSet(news, n.news, _peer_ID, generalizedTime);
 		}
@@ -164,7 +172,37 @@ public class GlobalClaimedDataHashes extends ASNObj {
 		}
 		if (DEBUG) System.out.println("GlobalClaimedDataHashes: addTran: Got "+this);
 	}
-
+	public void purgeDated (Hashtable<String,String> obtained, Hashtable<String, Hashtable<Long, String>> local) {
+		for (String s : obtained.keySet()){
+			if (DEBUG) System.out.println("RequestData: purge: At purge "+s);
+			if (local.containsKey(s)) {
+				for (Long k: local.get(s).keySet()) {
+					if (! Util.newerDateStr(local.get(s).get(k), obtained.get(s))) {
+						if (DEBUG) System.out.println("RequestData: purge: Will purge "+s+" at "+k+":"+local.get(s).get(k));
+						local.get(s).remove(k);
+					} else
+						if (DEBUG) System.out.println("RequestData: purge: Will not purge "+s+" at "+k+":"+local.get(s).get(k));
+				}
+				if (local.get(s).size() <= 0) local.remove(s);
+			}
+			try {
+				String gidh = D_Peer.getGIDHashFromGID(s);
+				if (gidh != null) {
+					if (local.containsKey(gidh)) {
+						if (DEBUG) System.out.println("RequestData: purge: At purge gidh "+gidh);
+						for (Long k: local.get(gidh).keySet()) {
+							if (! Util.newerDateStr(local.get(gidh).get(k), obtained.get(gidh))) {
+								if (DEBUG) System.out.println("RequestData: purge: Will purge "+gidh+" at "+k+":"+local.get(gidh).get(k));
+								local.get(gidh).remove(k);
+							} else
+								if (DEBUG) System.out.println("RequestData: purge: Will not purge "+gidh+" at "+k+":"+local.get(gidh).get(k));
+						}
+						if (local.get(gidh).size() <= 0) local.remove(gidh);
+					}
+				}
+			} catch (Exception e){e.printStackTrace();}
+		}
+	}
 	/**
 	 * removed what is in obtained
 	 * @param obtained
@@ -174,35 +212,8 @@ public class GlobalClaimedDataHashes extends ASNObj {
 		if (DEBUG) System.out.println("RequestData: purge: Will purge "+this+" with "+obtained);
 		//if(.empty()) return;
 		synchronized (peers) {
-			for (String s : obtained.peers.keySet()){
-				if (DEBUG) System.out.println("RequestData: purge: At purge "+s);
-				if (peers.containsKey(s)) {
-					for (Long k: peers.get(s).keySet()) {
-						if (! Util.newerDateStr(peers.get(s).get(k), obtained.peers.get(s))) {
-							if (DEBUG) System.out.println("RequestData: purge: Will purge "+s+" at "+k+":"+peers.get(s).get(k));
-							peers.get(s).remove(k);
-						} else
-							if (DEBUG) System.out.println("RequestData: purge: Will not purge "+s+" at "+k+":"+peers.get(s).get(k));
-					}
-					if (peers.get(s).size() <= 0) peers.remove(s);
-				}
-				try {
-					String gidh = D_Peer.getGIDHashFromGID(s);
-					if (gidh != null) {
-						if (peers.containsKey(gidh)) {
-							if (DEBUG) System.out.println("RequestData: purge: At purge gidh "+gidh);
-							for (Long k: peers.get(gidh).keySet()) {
-								if (! Util.newerDateStr(peers.get(gidh).get(k), obtained.peers.get(gidh))) {
-									if (DEBUG) System.out.println("RequestData: purge: Will purge "+gidh+" at "+k+":"+peers.get(gidh).get(k));
-									peers.get(gidh).remove(k);
-								} else
-									if (DEBUG) System.out.println("RequestData: purge: Will not purge "+gidh+" at "+k+":"+peers.get(gidh).get(k));
-							}
-							if (peers.get(gidh).size() <= 0) peers.remove(gidh);
-						}
-					}
-				} catch (Exception e){e.printStackTrace();}
-			}
+			purgeDated(obtained.peers, peers);
+			purgeDated(obtained.orgs_auth, orgs);
 			for(String s : obtained.tran) tran.remove(s);
 			for(String s : obtained.news) news.remove(s);
 		}
@@ -219,7 +230,8 @@ public class GlobalClaimedDataHashes extends ASNObj {
 		if(DEBUG)System.out.println("RequestData:updateAfterChanges: Will updateAfterChanges by "+peer_ID+" on \n"+this+
 				" with \n new="+new_rq+"\nsolved="+sol_rq);
 		//synchronized(cons) {
-			for(String s : new_rq.peers.keySet()) OrgPeerDataHashes.add(peers, s, peer_ID, crt_date);
+		for(String s : new_rq.peers.keySet()) OrgPeerDataHashes.add(peers, s, peer_ID, crt_date);
+		for(String s : new_rq.orgs_auth.keySet()) OrgPeerDataHashes.add(orgs, s, peer_ID, crt_date);
 			for(String s : new_rq.tran) OrgPeerDataHashes.add(tran, s, peer_ID, crt_date);
 			for(String s : new_rq.news) OrgPeerDataHashes.add(news, s, peer_ID, crt_date);
 			
@@ -233,6 +245,7 @@ public class GlobalClaimedDataHashes extends ASNObj {
 	public boolean empty() {
 		return 0 ==
 				peers.size()+
+				orgs.size()+
 				tran.size()+
 				news.size();
 	}

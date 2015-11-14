@@ -117,7 +117,7 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 	String my_peer_name;
 	D_Peer dpa;
 	boolean pack_sockets = true;
-	public PeerContacts(){
+	public PeerContacts() {
 		this.setLayout(new BorderLayout());
 		old_l = new JLabel(__("Latest Contacts for this Peer"));
 		old_l.setHorizontalTextPosition(SwingConstants.LEFT);

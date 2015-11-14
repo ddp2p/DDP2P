@@ -39,7 +39,7 @@ import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.components.DebateDecideAction;
 
-class D_PIC_Node implements TreeNode{
+class D_PIC_Node implements TreeNode {
 	private static final boolean DEBUG = false;
 	public String text;
 	public ArrayList<D_PIC_Node> child = new ArrayList<D_PIC_Node>();

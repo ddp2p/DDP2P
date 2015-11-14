@@ -2297,6 +2297,14 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		if (hash.length() != s.length()) return hash;
 		return s;
 	}
+	public static String getGIDFromGIDorGIDH(String s) {
+		if (s.startsWith(D_GIDH.d_ConsE)) return s; // it is an external
+		if (s.startsWith(D_GIDH.d_ConsR)) return null; // it is a GIDhash
+//		String hash = D_Constituent.getGIDHashFromGID_NonExternalOnly(s);
+//		if (hash == null) return null;
+//		if (hash.length() != s.length()) return hash;
+		return s;
+	}
 	/**
 	 * Should be called after the data is initialized.
 	 * Does not assign the GID itself
