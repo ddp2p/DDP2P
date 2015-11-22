@@ -1,7 +1,5 @@
 package net.ddp2p.common.hds;
-
 import java.util.ArrayList;
-
 import net.ddp2p.common.config.ConstituentListener;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.Identity;
@@ -19,18 +17,15 @@ import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.HandlingMyself_Peer;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
 public
 class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsListener, PeerListener, ConstituentListener{
 	private final class DispatcherOrg extends Thread {
 		private D_Organization org;
 		private OrgListener l;
-
 		public DispatcherOrg(OrgListener l, D_Organization org) {
 			this.l = l;
 			this.org = org;
 		}
-
 		public void run(){
 			if(DEBUG) System.out.println("GUIStatus:DispatcherOrg: disp");
 			l.orgUpdate(org.getLIDstr(), D_Organization.A_NON_FORCE_COL, org);
@@ -42,7 +37,6 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	private static final boolean _DEBUG = true;
 	static ArrayList<GUIStatus> history = new ArrayList<GUIStatus>();
 	static int crt = 0;
-	
 	ArrayList<PeerListener> peer_me_listeners = new ArrayList<PeerListener>();
 	ArrayList<PeerListener> peer_selected_listeners = new ArrayList<PeerListener>();
 	ArrayList<ConstituentListener> constituent_me_listeners = new ArrayList<ConstituentListener>();
@@ -50,20 +44,15 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	ArrayList<OrgListener> org_listeners = new ArrayList<OrgListener>();
 	ArrayList<MotionsListener> mot_listeners = new ArrayList<MotionsListener>();
 	ArrayList<JustificationsListener> just_listeners = new ArrayList<JustificationsListener>();
-
-
 	/**
 	 * Add one empty entry
 	 */
 	public GUIStatusHistory() {
-		//GUIStatus original = new GUIStatus(null);
-		//history.add(original);
 		D_Peer peer = null;
 		synchronized (DD.status_monitor) {
 			peer = HandlingMyself_Peer.get_myself_or_null();
 			this.setMePeer(peer);
 		}
-			//original.setMePeer(peer);
 	}
 	public void firePeerSelectedListeners() {
 		if(DEBUG) System.out.println("GUIStatus: peer_selected fireListener #"+peer_selected_listeners.size());
@@ -192,8 +181,6 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		if(org != null){
 			if(DEBUG) System.out.println("GUIStatus: addOrgs Listener update "+l);
 			l.orgUpdate(org.getLIDstr(), D_Organization.A_NON_FORCE_COL, org);
-			//new DispatcherOrg(l, org).start();
-			
 		}else{
 			if(DEBUG) System.out.println("GUIStatus: addOrgs Listener no org to update "+l);
 		}
@@ -203,7 +190,6 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		if(DEBUG) System.out.println("GUIStatus: removeOrgs Listener "+l);
 		org_listeners.remove(l);
 	}
-
 	public void fireMotListeners() {
 		if(DEBUG) System.out.println("GUIStatus: fireListener #"+mot_listeners.size());
 		D_Motion mot = getSelectedMot();
@@ -229,7 +215,6 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		if(DEBUG) System.out.println("GUIStatus: removeMots Listener "+l);
 		mot_listeners.remove(l);
 	}
-
 	public void fireJustListeners(boolean sync) {
 		if(DEBUG) System.out.println("GUIStatusHistory: fireListener #"+just_listeners.size());
 		D_Justification just = getSelectedJust();
@@ -270,7 +255,6 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		history.add(0, n);
 		if(history.size()>MAX_HISTORY) history.remove(history.size()-1);
 		if(DEBUG) System.out.println("GUIS: pushStack n="+n.toString(1));
-//		Util.printCallPath("stack");
 	}
 	void printCrt(String context){
 		if(DEBUG) System.out.println("GUIS: printCrt ctx="+context+" /"+history.size()+"\n "+history.get(crt).toString(1));
@@ -294,7 +278,6 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		cleanForward();
 		pushStack();
 		history.get(crt).setSelectedTab(tab);
-		//this.firePeerSelectedListeners();
 		printCrt("Tab");
 	}
 	synchronized
@@ -314,15 +297,8 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	 * To be replaced with the next
 	 * @param me
 	 */
-	/*
-	public void setMePeer(D_PeerAddress me) {
-		Util.printCallPath("");
-		System.exit(1);
-	}
-	*/
 	synchronized
 	public void setMePeer(D_Peer peer) {
-		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("GUIStatus: setMePeer "+((peer==null)?"NULL":"\""+peer.component_basic_data.name+"\""));
 		if(samePeer(peer, getMePeer())) {
 			if(DEBUG) System.out.println("GUIStatusHistory: setMePeer same old me_peer");
@@ -383,9 +359,7 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 			return;
 		}
 		cleanForward();
-		//	if(DEBUG) System.out.println("GUIStatusHistory: setOrgs removed to crt="+crt);
 		pushStack();
-		//if(DEBUG) System.out.println("GUIStatusHistory: setOrgs set to="+((org==null)?null:org.name));
 		history.get(crt).setSelectedConstituent(null);
 		history.get(crt).setSelectedJust(null);
 		history.get(crt).setSelectedMot(null);
@@ -419,7 +393,6 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 			return;
 		}
 		cleanForward();
-		//	if(DEBUG) System.out.println("GUIStatusHistory: setJusts removed to crt="+crt);
 		pushStack();
 		if(DEBUG) System.out.println("GUIStatusHistory: setJusts set to="+((just==null)?null:just.getJustificationTitle()));
 		history.get(crt).setSelectedJust(just);
@@ -471,7 +444,7 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		if (DEBUG) printHistory();
 		if(crt == history.size()-1){
 			if (DEBUG) System.out.println("GUISH: back: at the bottom: crt="+crt);
-			return false; // cannot go further back
+			return false; 
 		}
 		crt++;
 		tellListeners(crt, crt-1);
@@ -481,7 +454,7 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	synchronized
 	public boolean forward(){
 		if (DEBUG) printHistory();
-		if(crt == 0) return false; // cannot go further forward
+		if(crt == 0) return false; 
 		crt--;
 		tellListeners(crt, crt+1);
 		if (DEBUG) System.out.println("GUISH: back: from "+(crt+1)+" to "+crt);
@@ -494,49 +467,42 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 			if (DEBUG) System.out.println("GUISH: tellListeners: new org "+((org==null)?"null":org.getName()));
 			fireOrgListeners();
 		}
-
 		D_Motion mot = getSelectedMot();
 		D_Motion m_prev = getSelectedMot(previous);
 		if(mot!=m_prev){
 			if (DEBUG) System.out.println("GUISH: tellListeners: new mot "+((mot==null)?"null":mot.getMotionTitle().title_document.getDocumentUTFString()));
 			fireMotListeners();
 		}
-		
 		D_Constituent selcon = getSelectedConstituent();
 		D_Constituent sc_prev = getSelectedConstituent(previous);
 		if(selcon!=sc_prev){
 			if (DEBUG) System.out.println("GUISH: tellListeners: new selcon "+((selcon==null)?"null":selcon.getNameFull()));
 			fireConstituentSelectedListeners();
 		}
-		
 		D_Constituent mecon = getMeConstituent();
 		D_Constituent mc_prev = getMeConstituent(previous);
 		if(mecon!=mc_prev){
 			if (DEBUG) System.out.println("GUISH: tellListeners: new mecon "+((mecon==null)?"null":mecon.getNameFull()));
 			fireConstituentMeListeners();
 		}
-		
 		D_Peer selpeer = getSelectedPeer();
 		D_Peer sp_prev = getSelectedPeer(previous);
 		if(selpeer!=sp_prev){
 			if (DEBUG) System.out.println("GUISH: tellListeners: new selpeer "+((selpeer==null)?"null":selpeer.component_basic_data.name));
 			firePeerSelectedListeners();
 		}
-		
 		D_Peer mepeer = getMePeer();
 		D_Peer mp_prev = getMePeer(previous);
 		if(mepeer!=mp_prev){
 			if (DEBUG) System.out.println("GUISH: tellListeners: new mepeer "+((mepeer==null)?"null":mepeer.component_basic_data.name));
 			firePeerMeListeners();
 		}
-		
 		int crtTab = getTab();
 		int prevTab = getTab(previous);
 		if((crtTab != prevTab)&&(crtTab > 0)) {
 			if (DEBUG) System.out.println("GUISH: tellListeners: new tab "+crtTab);
 		}
 	}
-
 	boolean checkIdx(int i){
 		if (DEBUG) System.out.println("GUISH: checkIdx: "+i+" < "+history.size());
 		return (0<=i)&&(i<history.size());
@@ -603,19 +569,16 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	}
 	private
 	D_Organization getSelectedOrg(int prev) {
-		//if(prev<0) return null;
 		if(!checkIdx(prev)) return null;
 		return history.get(prev).getSelectedOrg();
 	}
 	private
 	D_Motion getSelectedMot(int prev) {
-		//if(prev<0) return null;
 		if(!checkIdx(prev)) return null;
 		return history.get(prev).getSelectedMot();
 	}
 	private
 	D_Justification getSelectedJust(int prev) {
-		//if(prev<0) return null;
 		if(!checkIdx(prev)) return null;
 		return history.get(prev).getSelectedJust();
 	}
@@ -637,7 +600,6 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 	public void motion_update(String motID, int col, D_Motion mot) {
 		if ((mot == null) &&  (motID != null)) {
 			mot = D_Motion.getMotiByLID(motID, true, false);
-			// if (mot == null) return;
 		}
 		setSelectedMot(mot);
 	}
@@ -646,7 +608,6 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		D_Motion mot = null;
 		if ((mot == null) &&  (motID != null)) {
 			mot = D_Motion.getMotiByLID(motID, true, false);
-			// if (mot == null) return;
 		}
 		setSelectedMot(mot);
 	}
@@ -680,24 +641,17 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		if(me) setMeConstituent(c);
 	}
 	public boolean is_crt_peer(D_Peer candidate) {
-		//int i = 0;
 		for (GUIStatus h : history) {
 			if (h.selected_peer == candidate) return true;
 			if (h.myself_peer == candidate) return true;
-			//i ++;
-			//if (i > MAX_HISTORY) return false;
 		}
 		return false;
 	}
 	public boolean is_crt_org(D_Organization candidate) {
-		//int i = 0;
 		for (GUIStatus h : history) {
 			Object ob = h.selected_organization;
 			D_Organization dob = (D_Organization) ob;
 			if (dob == candidate) return true;
-			//if (h.myself_peer == candidate) return true;
-			//i ++;
-			//if (i > MAX_HISTORY) return false;
 		}
 		return false;
 	}
@@ -763,7 +717,6 @@ class GUIStatusHistory implements OrgListener, MotionsListener, JustificationsLi
 		if (DEBUG) System.out.println("GUIStatusHistory: droppingConst: done");
 	}
 }
-
 class GUIStatus {
 	private static final int B_MOTION = 3;
 	private static final int B_ORGANIZATION = 2;
@@ -771,7 +724,6 @@ class GUIStatus {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	Identity selected_identity;
-	//Identity.current_id_branch;
 	D_Peer myself_peer;
 	D_Peer selected_peer;
 	D_Organization selected_organization;
@@ -782,7 +734,6 @@ class GUIStatus {
 	D_Justification selected_justification;
 	D_News selected_news;
 	int crt_tab = -1;
-	
 	public GUIStatus(GUIStatus guiStatus) {
 		if(guiStatus!=null) init(guiStatus);
 	}
@@ -810,15 +761,12 @@ class GUIStatus {
 		if(selected_news!=null) r+=s(i)+"news="+selected_news.title.title_document.getDocumentUTFString()+"\n";
 		return r;
 	}
-
 	public D_Constituent getMeConstituent() {
 		return myself_constituent;
 	}
-
 	public D_Constituent getSelectedConstituent() {
 		return selected_constituent;
 	}
-
 	private void init(GUIStatus s) {
 		selected_identity = s.selected_identity;
 		myself_peer = s.myself_peer;
@@ -832,8 +780,6 @@ class GUIStatus {
 		selected_news = s.selected_news;
 		crt_tab = s.crt_tab;
 	}
-
-
 	public void setSelectedTab(int tab) {
 		backtrack(0);
 		crt_tab = tab;
@@ -906,10 +852,8 @@ class GUIStatus {
 			myself_constituent = null;
 		case B_MOTION:
 			if(DEBUG) System.out.println("GUIStatus: backtrack: MOTION");
-			//selected_news = null;
 			selected_justification = null;
 			selected_motion = null;
 		}
 	}
-	
 }

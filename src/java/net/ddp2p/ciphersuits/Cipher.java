@@ -1,32 +1,24 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
-
 package net.ddp2p.ciphersuits;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
 /**
  * 
  * @author silaghi
@@ -35,14 +27,12 @@ import net.ddp2p.common.util.Util;
  * then genKey(2056)
  * then getSK() and getPK();
  */
-
 abstract public class Cipher{
 	public String comment;
 	String hash_alg;
 	public static final String RSA = "RSA";
 	public static final String ECDSA = "ECDSA";
 	public static final String DSA = "DSA";
-//	public static final String EC_EG = "ECElGamal";
 	public static final String MD5 = "MD5";
 	public static final String MD2 = "MD2";
 	public static final String SHA1 = "SHA-1";
@@ -123,14 +113,11 @@ abstract public class Cipher{
 	 * @return
 	 */
 	public static PK getPK(String senderID) {
-		//boolean DEBUG = true;
 		if (DEBUG) System.err.println("Cipher:getPK: start: "+senderID);
 		if (senderID == null) return null;
-		//String[]splits = Util.splitHex(senderID);
-		//if(DEBUG) System.err.println("Cipher:getPK: splits="+splits.length);
 		byte[] sID = null;
 		try {
-			sID = Util.byteSignatureFromString(senderID); // Util.hexToBytes(splits);
+			sID = Util.byteSignatureFromString(senderID); 
 		} catch(Exception e) {
 			e.printStackTrace();
 			System.err.println("Cipher:geePK: Fail to parse: "+senderID);
@@ -143,7 +130,6 @@ abstract public class Cipher{
 		Decoder decoder = new Decoder(sID);
 		if(decoder.getTypeByte()!=Encoder.TAG_SEQUENCE) {
 			Util.printCallPath("Failure to decode");
-			//throw new ASN1DecoderFail("Wrong PK");
 			return null;
 		}
 		Decoder dec;
@@ -205,8 +191,7 @@ abstract public class Cipher{
 	 * @return
 	 */
 	public static SK getSK(String _sk) {
-		//String[]splits = Util.splitHex(senderID);
-		byte[] sID = Util.byteSignatureFromString(_sk); //Util.hexToBytes(splits);
+		byte[] sID = Util.byteSignatureFromString(_sk); 
 		if ((sID == null) || (sID.length == 0)) {
 	    	if(_DEBUG)System.err.println("SK:getSK: wrong null input: \""+_sk+"\"");
 			return null;
@@ -237,7 +222,7 @@ abstract public class Cipher{
 			return sk;
 		}
 		if(ECDSA.equals(type)){
-			ECDSA_SK sk = null; //new RSA_SK();
+			ECDSA_SK sk = null; 
 			try {
 				sk = new ECDSA_SK(decoder);
 			} catch (ASN1DecoderFail e) {
@@ -286,7 +271,6 @@ abstract public class Cipher{
 	public static Cipher getCipher(SK sk, PK pk) {
 		if (sk == null)
 			return getCipher(pk);
-	
 		if (sk instanceof RSA_SK) {
 			if (pk == null) pk = sk.getPK();
 			return new net.ddp2p.ciphersuits.RSA((RSA_SK)sk, (RSA_PK)pk);
@@ -302,7 +286,6 @@ abstract public class Cipher{
 		return null;
 	}
 	public static boolean isPair(SK sk, PK pk) {
-		// boolean DEBUG = true;
 		if ((sk == null) || (pk == null)) {
 			if (DEBUG) System.out.println("Cipher:isPair: null sk or pk");
 			return false;
@@ -353,7 +336,6 @@ abstract public class Cipher{
 			System.out.println("Cipher:getAvailableSizes null");
 			return null;
 		}
-		
 		if(Cipher.RSA.equals(cipher)) {
 			if (DEBUG) System.out.println("Cipher:getAvailableSizes RSA");
 			return new Cipher_Sizes(2048, Cipher_Sizes.INT_RANGE, new int[]{230,20000});
@@ -375,8 +357,7 @@ abstract public class Cipher{
 					});
 		}
 		System.out.println("Cipher:getAvailableSizes: "+cipher);
-
-		return null;//new String[]{Cipher.RSA, Cipher.ECDSA};
+		return null;
 	}
 	public static String[] getHashAlgos(String cipher, int size) {
 		if(cipher == null) return null;
@@ -407,11 +388,6 @@ abstract public class Cipher{
 	public static String getDefaultCipher() {
 		return Cipher.ECDSA;
 	}
-	/*
-	public static String buildCiphersuitID(String ciphersuit, String hash) {
-		return ciphersuit+Cipher.cipherTypeSeparator+hash;
-	}
-	*/
 	/**
 	 * Key comment based on:  key_comment+"://"+seed+now
 	 * @param ciphersuit
@@ -428,7 +404,6 @@ abstract public class Cipher{
 			int ciphersize, String storage_comment, String key_comment, String seed,
 			String now) throws P2PDDSQLException {
 		Cipher keys;
-		//keys = Util.getKeyedGlobalID(key_comment, seed+now);
 		String body = seed+now;
     	keys = net.ddp2p.ciphersuits.Cipher.getCipher(ciphersuit, _hash_alg, key_comment+"://"+body);
 		keys.genKey(ciphersize);

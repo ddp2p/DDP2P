@@ -1,24 +1,18 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 
 		Author: Osamah Dhannoon
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.wireless;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
@@ -28,14 +22,11 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.regex.Pattern;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
-
 public class Detect_interface {
 	final static boolean DEBUG = false;
 	final static boolean _DEBUG = true;
@@ -43,38 +34,6 @@ public class Detect_interface {
 	public static int Linux = 2;
 	public static int Mac = 3;
 	private Detect_interface(){}
-/*
-	private Detect_interface() throws  IOException, P2PDDSQLException{
-		String wlan = detect_os_and_load_wireless_data();
-		//Application.db=new DBInterface("deliberation-app.db");
-		
-		Detect_interface.updateInterfaces(wlan);
-		
-		DD.setAppText(DD.APP_NET_INTERFACES,wlan);
-	}
-	public static void updateInterfaces(String wlan) {
-		if(BroadcastServer.old_interfaces_description!=null) {
-			if(BroadcastServer.old_interfaces_description.equals(wlan)) return;
-		}
-		BroadcastServer.old_interfaces_description = wlan;
-		
-		synchronized(BroadcastServer.semaphore_interfaces)  {
-			BroadcastServer.interfaces_broadcast = new ArrayList<BroadcastInterface>();
-			BroadcastServer.interfaces_IP_Masks = new ArrayList<String>();
-			Detect_interface.parseStringInterfaceDescriptions(wlan);
-			BroadcastServer.client_address_updated = true;
-		}
-	}
-	// parse and call addBroadcastAddress() @param wlan
-	 
-	static void parseStringInterfaceDescriptions(String wlan) {
-		String[][] interfs = BroadcastServer.parseInterfaceDescription(wlan);
-		for(int k = 0; k<interfs.length; k++) {
-			if(!Util.stringInt2bool(interfs[k][WLAN_widget.COL_SELECTED], false)) continue;
-			BroadcastServer.addBroadcastAddressStatic(interfs[k][WLAN_widget.COL_IP]+"/"+DD.WIRELESS_ADHOC_DD_NET_MASK, interfs[k][WLAN_widget.COL_INTERF]);
-		}
-	}
-*/
 	/**
 	 * Compare System property with strings
 	 * Windows (contained), Linux(contained), MAX OS X (contained)
@@ -84,59 +43,6 @@ public class Detect_interface {
 	 * @throws IOException
 	 * @throws P2PDDSQLException 
 	 */
-	/*
-	public static String detect_os_and_load_wireless_data()  throws IOException, P2PDDSQLException{
-		String result = null;
-		ArrayList<String> os_Names=new ArrayList<String>();
-		os_Names.add("Windows");
-		os_Names.add("Linux");
-		String osName= System.getProperty("os.name");
-		if(DEBUG) System.out.println("Detect_interface: detect_os_and_load_wireless_data: property osName="+osName);
-		
-		int ch=0;
-		if(osName.contains(os_Names.get(0))) ch=Windows;
-		else if(osName.contains(os_Names.get(1))) ch=Linux;
-		else if(osName.contains("Mac OS X")) ch=Mac;
-		switch(ch){
-		case 1:{
-			if(DEBUG) System.out.println("Detect_interface: detect_os_and_load_wireless_data: "+"Windows");
-			Application.switchToWindowsPaths();
-			DD.OS = DD.WINDOWS;
-			result = win_detect_interf();
-			break;}
-		case 2: {
-			if(DEBUG) System.out.println("Detect_interface: detect_os_and_load_wireless_data: "+"Linux");
-			Application.switchToLinuxPaths();
-			DD.OS = DD.LINUX;
-			result = lin_detect_interf();
-			break;}
-		case 3: {
-			if(DEBUG) System.out.println("Detect_interface: detect_os_and_load_wireless_data: Mac");
-			Application.switchToMacOSPaths();
-			DD.OS = DD.MAC;
-			result = mac_detect_interf();
-			break;
-			}
-			default: { if(DEBUG)System.out.println("Unable to detect OS: \""+osName+"\""); break;}
-		}
-
-		if(DEBUG) System.out.println("Detect_interface: detect_os_and_load_wireless_data: result="+result);
-		return result;
-	}
-
-	// to get the nth occurrence of a char 
-	public static int nthOccurrence(String str, char c, int n) {
-		if(str==null) return -1;
-	    int pos = str.indexOf(c, 0);
-	    while (n-- > 0 && pos != -1)
-	        pos = str.indexOf(c, pos+1);
-	    return pos;
-	}
-	
-	public static void main(String[] args) throws  IOException, P2PDDSQLException {
-		//Detect_interface d=new Detect_interface();
-	}
-	*/
 	/**
 	 *  detect OS and initial SSIDs
 	 *  SSID is stored in Application table row INTERFACES 
@@ -150,7 +56,7 @@ public class Detect_interface {
 	static public String detect_wlan() throws P2PDDSQLException {
 		try{
 			if(DEBUG) System.out.println("Detect_interface: detect_wlan()");
-			return detect_wireless_interface(); //detect_os_and_load_wireless_data();
+			return detect_wireless_interface(); 
 		}catch(IOException e){e.printStackTrace();}
 		return null;
 	}
@@ -177,17 +83,15 @@ public class Detect_interface {
 	 * @throws P2PDDSQLException 
 	 */
 	static public String win_detect_interf() throws IOException, P2PDDSQLException{
-
 		if(DEBUG)System.out.println("It's Windows !");
 		ArrayList<InterfaceData> w_info ;
-		w_info=Win_wlan_info.process();  // this should get the data from the system in a given format
+		w_info=Win_wlan_info.process();  
 		if(DEBUG)System.out.println("Detect_interface : win_detect_interf() : "+w_info);
 		String bcast1="";
 		HashSet<String> selected = getSelectedInterfaces();
 		boolean running = false;
 		ArrayList<String> Int = new ArrayList<String>();
 		InterfaceData entry_test_ip;
-		
 		for(int i=0;i<w_info.size();i++){
 			InterfaceData entry = w_info.get(i);
 			if(entry==null) continue;
@@ -219,7 +123,6 @@ public class Detect_interface {
 		if(DEBUG)System.out.println("Detect_interface:win_detect_interf result="+bcast1);
 		return bcast1;
 	}
-	
 	public static HashSet<String> currentlySelected = null;
 	public static HashSet<String> getSelectedInterfaces() throws P2PDDSQLException{
 		if(DEBUG)System.out.println("Detect_interface:getSelectedInterfaces: start");
@@ -230,13 +133,12 @@ public class Detect_interface {
 			}
 			return currentlySelected;
 		}
-		// Get stored selected intefaces into selected
 		String running_interfaces = DD.getAppText(DD.WIRELESS_SELECTED_INTERFACES);
 		if(DEBUG)System.out.println("Detect_interface:getSelectedInterfaces: get dir from DB "+running_interfaces);
 		String[] interfaces = new String[0];
 		if(running_interfaces!=null)
 			interfaces = running_interfaces.split(Pattern.quote(DD.WIRELESS_SELECTED_INTERFACES_SEP));
-		HashSet<String> selected = new HashSet<String>();//interfaces);
+		HashSet<String> selected = new HashSet<String>();
 		for(String s : interfaces) selected.add(s);
 		if(DEBUG){
 			String _selected = Util.concat(selected.toArray(), DD.WIRELESS_SELECTED_INTERFACES_SEP);
@@ -261,7 +163,6 @@ public class Detect_interface {
 		String bcast1="";
 		HashSet<String> selected = getSelectedInterfaces();
 		boolean running = false;
-		
 		for(int i=0;i<Lin_wlan.size();i++){
 			InterfaceData entry = Lin_wlan.get(i);
 			if(entry == null) continue;
@@ -282,29 +183,20 @@ public class Detect_interface {
 		if(DEBUG)System.out.println("Detect_interface:lin_detect: result="+bcast1);
 		return bcast1;
 	}
-
 	private static String mac_detect_interf() throws IOException {
-		
 		if(DEBUG)System.out.println("Detect_interface:mac_detect_interf: It's Mac !");
 		ArrayList<String> Mac_wlan = new ArrayList<String>();
 		Mac_wlan_info p1=new Mac_wlan_info();
 		Mac_wlan=p1.process();
-		 
-		 //System.out.println(Lin_wlan);
 		String bcast1=new String();
-                 
 		if(DEBUG)System.out.println("Detect_interface:mac_detect_interf: size="+Mac_wlan.size());
-
 		for(int i=0;i<Mac_wlan.size();i++){
 			 bcast1=bcast1+Mac_wlan.get(i)+":"+"false";
 			 if(i+1<Mac_wlan.size()){ bcast1=bcast1+",";  }
 		 }
 		 if(DEBUG)System.out.println("Detect_interface:mac_detect_interf: result="+bcast1);
-
 		return bcast1;
 	}
-		
-	
 	private static void initiat_broadcast_linux() throws SocketException {
 		if(DEBUG)System.out.println(" Detect_interface : initiat_broadcast_linux");
 		BroadcastServer.initAddresses();
@@ -312,16 +204,14 @@ public class Detect_interface {
 		while (interfaces.hasMoreElements()) {
 			NetworkInterface networkInterface = interfaces.nextElement();
 			if (networkInterface.isLoopback())
-				continue;    // Don't want to broadcast to the loopback interface
+				continue;    
 			for (InterfaceAddress interfaceAddress :
 				networkInterface.getInterfaceAddresses()) {
 				if(DEBUG)System.out.println("DetectInterface: initiat_broadcast_linux: interface address :"+interfaceAddress);
 				String Host_IP = interfaceAddress.getAddress().toString();
 				if(Host_IP==null) continue;
 				if(!Util.ip_compatible_with_network_mask(Util.get_IP_from_SocketAddress(Host_IP), DD.WIRELESS_ADHOC_DD_NET_IP_BASE, DD.WIRELESS_ADHOC_DD_NET_MASK)) {
-					// warning to be commented out later
 					if(DEBUG)System.out.println("Really incompatible?"+ Host_IP);
-					//Application.warning(Util._("??")+Host_IP, Util._("Incompatible address"));
 					continue;
 				}
 				String IP = Util.get_IP_from_SocketAddress(Host_IP);
@@ -336,12 +226,10 @@ public class Detect_interface {
 				}
 				if(DEBUG)System.out.println("DetectInterface: initiat_broadcast_linux: broadcasts :"+broadcast);
 				String iP_Mask = IP+"/"+DD.WIRELESS_ADHOC_DD_NET_MASK;
-				
 				BroadcastServer.addBroadcastAddressStatic(new BroadcastInterface(broadcast), iP_Mask,networkInterface.getDisplayName());
 			}
 		}
 	}
-	
 	private static void initiat_broadcast_win(String Int_name) throws P2PDDSQLException, IOException {
 		if(_DEBUG)System.out.println(" Detect_interface : initiat_broadcast_win");
 		BroadcastServer.initAddresses();

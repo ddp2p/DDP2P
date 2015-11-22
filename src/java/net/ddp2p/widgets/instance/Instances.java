@@ -1,26 +1,19 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.instance;
-
 import static net.ddp2p.common.util.Util.__;
-
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -33,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Hashtable;
-
 import javax.swing.Action;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -52,7 +44,6 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.PeerListener;
@@ -69,7 +60,6 @@ import net.ddp2p.widgets.components.CalendarRenderer;
 import net.ddp2p.widgets.components.DebateDecideAction;
 import net.ddp2p.widgets.components.XTableColumnModel;
 import net.ddp2p.widgets.peers.Peers;
-
 @SuppressWarnings("serial")
 public 
 class Instances extends JTable implements MouseListener {
@@ -81,7 +71,6 @@ class Instances extends JTable implements MouseListener {
 	BulletRenderer hotRenderer;
 	CalendarRenderer calendarRenderer = new CalendarRenderer();
 	private XTableColumnModel yourColumnModel;
-	
 	public Instances() {
 		super(new InstancesModel());
 		hotRenderer = new BulletRenderer(
@@ -99,12 +88,7 @@ class Instances extends JTable implements MouseListener {
     public Component getPanel() {
     	JScrollPane scrollPane = getScrollPane();
     	return scrollPane;
-//    	JPanel jp = new JPanel(new BorderLayout());
-//        scrollPane.setPreferredSize(new Dimension(DIM_X, DIM_Y));
-//        jp.add(scrollPane, BorderLayout.CENTER);
-//		return jp;
     }
-
 	public TableCellRenderer getCellRenderer(int row, int _column) {
 		int column = this.convertColumnIndexToModel(_column);
 		switch (column) {
@@ -117,7 +101,6 @@ class Instances extends JTable implements MouseListener {
 		}
 		return super.getCellRenderer(row, _column);
 	}
-
 	@SuppressWarnings("serial")
 	protected JTableHeader createDefaultTableHeader() {
 		return new JTableHeader(columnModel) {
@@ -135,10 +118,9 @@ class Instances extends JTable implements MouseListener {
 		return (InstancesModel) super.getModel();
 	}
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
-    	int row; //=this.getSelectedRow();
-    	int col; //=this.getSelectedColumn();
+    	int row; 
+    	int col; 
     	if(!evt.isPopupTrigger()) return;
-    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
         row=this.rowAtPoint(point);
         col=this.columnAtPoint(point);
@@ -157,34 +139,26 @@ class Instances extends JTable implements MouseListener {
     	JPopupMenu popup = new JPopupMenu();
     	InstancesModel model = getModel();
     	InstancesCustomAction cAction;
-    	
     	cAction = new InstancesCustomAction(this, __("Refresh!"), reseticon,__("Refresh."), __("Refresh"),KeyEvent.VK_R, InstancesCustomAction.C_REFRESH);
     	cAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(cAction));
-    	
     	cAction = new InstancesCustomAction(this, __("Remove Column!"), delicon,__("Remove Column."), __("Remove Column"), KeyEvent.VK_C, InstancesCustomAction.C_RCOLUMN);
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
-    	
     	cAction = new InstancesCustomAction(this, __("Add Column!"), addicon,__("Add Column."), __("Add Column"), KeyEvent.VK_A, InstancesCustomAction.C_ACOLUMN);
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
-    	
     	cAction = new InstancesCustomAction(this, __("Add new instance!"), addicon,__("Add new instance."), __("Add New"),KeyEvent.VK_I, InstancesCustomAction.C_INSTANCE);
     	cAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(cAction));
-    	
     	if (row >= 0) {
 	    	popup.addSeparator();
-
 	    	cAction = new InstancesCustomAction(this, __("Set Myself!"), addicon,__("Set Myself."), __("Set Myself"),KeyEvent.VK_M, InstancesCustomAction.C_SET_MYSELF);
 	    	cAction.putValue("row", new Integer(row));
 	    	popup.add(new JMenuItem(cAction));
-	    	
 	    	cAction = new InstancesCustomAction(this, __("Delete instance!"), delicon,__("Delete instance."), __("Delete"),KeyEvent.VK_D, InstancesCustomAction.C_DELETE);
 	    	cAction.putValue("row", new Integer(row));
 	    	popup.add(new JMenuItem(cAction));
-	    	
 	    	cAction = new InstancesCustomAction(this, __("Reset!"), delicon,__("Reset."), __("Reset"),KeyEvent.VK_R, InstancesCustomAction.C_RESET_LAST_SYNC_DATE);
 	    	cAction.putValue("row", new Integer(row));
 	    	popup.add(new JMenuItem(cAction));
@@ -195,20 +169,10 @@ class Instances extends JTable implements MouseListener {
 		getModel().setTable(this);
 		addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
-		
 		yourColumnModel = new net.ddp2p.widgets.components.XTableColumnModel();
 		setColumnModel(yourColumnModel); 
 		createDefaultColumnsFromModel(); 
-		
 		initColumnSizes();
-		//this.getTableHeader().setToolTipText(_("Click to sort; Shift-Click to sort in reverse order"));
-		////this.setAutoCreateRowSorter(true);
-		//this.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
-		
-		//icon_register = config.DDIcons.getRegistrationImageIcon("Register");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
-		//icon_org = config.DDIcons.getOrgImageIcon("Org");//Util.createImageIcon("icons/sad.smiley10.gif","General Org");
-
-		
 		DefaultTableCellRenderer rend = new DefaultTableCellRenderer() {
 			public Component getTableCellRendererComponent(JTable table,
 			Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -222,8 +186,6 @@ class Instances extends JTable implements MouseListener {
 			    return headerLabel;
 			}
 		};
-		
-		//getTableHeader().setDefaultRenderer(rend);
 		for(int col_index = 0; col_index < getModel().getColumnCount(); col_index++) {
 			if(getModel().getIcon(col_index) != null)
 				getTableHeader().getColumnModel().getColumn(col_index).setHeaderRenderer(rend);
@@ -247,18 +209,15 @@ class Instances extends JTable implements MouseListener {
         Component comp = null;
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
- 
         for (int i = 0; i < this.getColumnCount(); i++)
         {
         	int headerWidth = 0;
         	int cellWidth = 0;
         	column = this.getColumnModel().getColumn(i);
- 
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
- 
             for(int r=0; r<model.getRowCount(); r++) {
             	comp = this.getDefaultRenderer(model.getColumnClass(this.convertColumnIndexToModel(i))).
                              getTableCellRendererComponent(
@@ -272,7 +231,6 @@ class Instances extends JTable implements MouseListener {
                                    + "headerWidth = " + headerWidth
                                    + "; cellWidth = " + cellWidth);
             }
- 
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
@@ -293,7 +251,6 @@ class Instances extends JTable implements MouseListener {
 	@Override
 	public void mouseExited(MouseEvent e) {
 	}
-
 }
 @SuppressWarnings("serial")
 class InstancesModel extends AbstractTableModel implements TableModel, PeerListener, DBListener {
@@ -321,7 +278,6 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 	private static final long HOT_DELAY = HOT_SEC * 1000;
 	ArrayList<Instances> tables = new ArrayList<Instances>();
 	ArrayList<D_PeerInstance> data = new ArrayList<D_PeerInstance>();
-
 	private D_Peer currentPeer;
 	public InstancesModel() {
 		Application.getDB().addListener(this, new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.peer_instance.TNAME)), null);
@@ -344,10 +300,8 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 	@Override
 	public int getRowCount() {
 		if(currentPeer == null) return 0;
-		//return current.instances.size();
 		return data.size();
 	}
-
 	@Override
 	public Class<?> getColumnClass(int col) {
 		if (col == InstancesModel.TABLE_COL_HIDDEN) return Boolean.class;
@@ -395,32 +349,25 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 		case TABLE_COL_RESET:
 			result = crt.get_last_reset();
 			break;
-			//return crt._last_reset;
 		case TABLE_COL_CONTACT:
 			result = crt.get_last_contact_date();
 			break;
-			//return crt._last_contact_date;
 		case TABLE_COL_LAST:
 			result = crt.get_last_sync_date();
 			break;
-			//return crt._last_sync_date;
 		}
-		//System.out.println("InstancesModel:getAt:"+rowIndex+":"+columnIndex+"Result="+result);
 		return result;
 	}
-
 	public void update() {
 		if (DEBUG) System.out.println("InstancesModel: update start");
 		if (currentPeer == null) {
 			if (DEBUG) System.out.println("InstancesModel: update set peer empty");
 			this.data = new ArrayList<D_PeerInstance>();
 		} else {
-			//currentPeer.loadInstances();
 			if (DEBUG) System.out.println("InstancesModel: update set peer: "+currentPeer);
 			D_PeerInstance __data[] = currentPeer._instances.values().toArray(new D_PeerInstance[0]);
 			if (DEBUG) System.out.println("InstancesModel: update set instances: "+Util.concat(__data, "---"));
 			Arrays.sort(__data, new Comparator<D_PeerInstance>() {
-
 				@Override
 				public int compare(D_PeerInstance o1, D_PeerInstance o2) {
 					if (o1 == o2) return 0;
@@ -433,19 +380,6 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 				}});
 			this.data = new ArrayList<D_PeerInstance>(Arrays.asList(__data));
 			if (DEBUG) System.out.println("InstancesModel: update set instances sorted: "+Util.concat(__data, "---"));
-			/*
-			ArrayList<D_PeerInstance> _data = new ArrayList<D_PeerInstance>(current.instances.size());
-			//ArrayList<D_PeerInstance> _data = new ArrayList<D_PeerInstance>(current.instances.values());
-			for (D_PeerInstance dpi : current.instances.values()) {
-				for (int k = 0; k < _data.size(); k++) {
-					if (dpi.peer_instance.compareTo(_data.get(k).peer_instance) < 0) {
-						_data.add(k, dpi);
-						break;
-					}
-				}
-			}
-			this.data = _data;
-			*/
 		}
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
@@ -455,7 +389,6 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 			}
 		});
 	}
-
 	public void delete(int row) {
 		currentPeer.deleteInstance(data.get(row).peer_instance);
 		update();
@@ -466,12 +399,11 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 		try {
 			currentPeer.setCurrentInstance(instance);
 			HandlingMyself_Peer.updateAddress(currentPeer);
-			HandlingMyself_Peer.setMyself(currentPeer, true, Application.getCurrent_Peer_ID(), false, true); // not kept
+			HandlingMyself_Peer.setMyself(currentPeer, true, Application.getCurrent_Peer_ID(), false, true); 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	
 	public void resetLastSyncDate(int row) {
 		if (currentPeer == null) return;
 		String instance = data.get(row).peer_instance;
@@ -487,7 +419,6 @@ class InstancesModel extends AbstractTableModel implements TableModel, PeerListe
 			e.printStackTrace();
 		}
 	}	
-
 	public void createInstance(int row) {
 		if (currentPeer == null) {
 			Application_GUI.warning(__("You need to first select a peer!"), __("Creating Instance"));
@@ -531,7 +462,6 @@ class InstancesCustomAction extends DebateDecideAction {
 	public static final int C_RCOLUMN = 7;
 	public static final int C_SET_MYSELF = 8;
 	public static final int C_RESET_LAST_SYNC_DATE = 9;
-	
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
 	Instances tree; ImageIcon icon;
@@ -562,12 +492,6 @@ class InstancesCustomAction extends DebateDecideAction {
     		model.update();
     		tree.initColumnSizes();
     		model.fireTableDataChanged();
-//    	}else if(command == C_HIDE) {
-//    		model.hide = true;
-//    		model.update(null, null);
-//    	}else if(command == C_UNHIDE) {
-//        	model.hide = false;
-//        	model.update(null, null);
         } else	if (command == C_DELETE) {
         	model.delete(row);
         } else	if (command == C_INSTANCE) {

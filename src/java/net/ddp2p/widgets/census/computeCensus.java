@@ -1,23 +1,19 @@
 package net.ddp2p.widgets.census;
-
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Hashtable;
-
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
-//Assumption: A constituent can only have one witness stance against another constituent.
 class witnessGraph extends JFrame{
 	int allID=0, trueId=0,falseID=0,tieID=0;
     public  void addComponentsToPane(Container pane) {
@@ -26,7 +22,6 @@ class witnessGraph extends JFrame{
             return;
         }
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
 		String[] columnNames1 = { "gid", "id", "Name",
 				"Fuzzy Value" };
 		Object[][] data1 = {
@@ -39,40 +34,23 @@ class witnessGraph extends JFrame{
 						new Boolean(true) },
 				{ "Joe", "Brown", "Pool", new Integer(10), new Boolean(false) } 
 		};
-
 		final JTable table1 = new JTable(data1, columnNames1);
-//		table1.setPreferredScrollableViewportSize(new Dimension(500, 70));
-//		table1.setFillsViewportHeight(true);
-//        table1.setPreferredSize(new Dimension(200, 100));
         JScrollPane scrollPane = new JScrollPane(table1);
         JPanel jp=new JPanel();
-        
-//        jp.add(scrollPane);
-//        jp.setOpaque(true);
-        //Add the scroll pane to this panel.
         pane.add(scrollPane, BorderLayout.CENTER);
         JButton button = new JButton("Button 1 (PAGE_START)");
         button.setPreferredSize(new Dimension(200, 100));
-//        pane.add(table1, BorderLayout.CENTER);
         String l1_str = "Among "+ allID +" constituents, there are "+trueId+" true identities; "+falseID+" false identities; "+"and "+
 tieID+" tied identities";;
         JLabel l1=new JLabel(l1_str);
         pane.add(l1, BorderLayout.PAGE_START);
-        
-        //Make the center component big, since that's the
-        //typical usage of BorderLayout.
-//        button = new JButton("Button 2 (CENTER)");
-        
         button = new JButton("Button 3 (LINE_START)");
         pane.add(button, BorderLayout.LINE_START);
-        
         button = new JButton("Long-Named Button 4 (PAGE_END)");
         pane.add(button, BorderLayout.PAGE_END);
-        
         button = new JButton("5 (LINE_END)");
         pane.add(button, BorderLayout.LINE_END);
     }
-    
 	witnessGraph(){
 		populateEdge();
 		printEdge();
@@ -80,32 +58,27 @@ tieID+" tied identities";;
 		evaluateTree(r);
 		printFuzzyTable();
 		addComponentsToPane(this.getContentPane());
-		
 	}
-	final double fuzzyFactor=0.9;//0.9 is used for this implementation.
-	Integer e[][];//[2][4]=1 Means constituent 2 positively witnessed 4 and [3][4]=2 Means constituent 3 negatively witnessed 4.
+	final double fuzzyFactor=0.9;
+	Integer e[][];
 	Hashtable <Integer,Double> fuzzyValueTable=new Hashtable <Integer,Double> ();;
 	Hashtable <Integer,witnessGraphNode> ht;
-	witnessGraphNode r;//root
+	witnessGraphNode r;
 	class witnessGraphNode{
 		witnessGraphNode(){
 		}
-		
 		double fuzzyValue=0.0;
 		String constituentName;
 		Integer constituentID;
-		String neighborhoodID;//Not Implemented
-		ArrayList<witnessGraphNode> parent;//List of parents
-		ArrayList<witnessGraphNode> children;//List of children
+		String neighborhoodID;
+		ArrayList<witnessGraphNode> parent;
+		ArrayList<witnessGraphNode> children;
 	}
-	//TODO:Read from database
 	void populateEdge(){
 		Integer maxRow = 0, maxColumn = 0,x,y,z;
 		ArrayList<ArrayList<Object>> c = null;
 		String sql="SELECT source_ID, target_ID,sense_y_n from witness";
-		
 		try {
-			
 			c=Application.getDB().select("SELECT max(source_ID) FROM witness", new String[]{});
 			if(c!=null){
 				maxRow=Integer.parseInt(net.ddp2p.common.util.Util.getString(c.get(0).get(0)));
@@ -126,27 +99,10 @@ tieID+" tied identities";;
 				y=Integer.parseInt(net.ddp2p.common.util.Util.getString(a.get(1)));
 				z=Integer.parseInt(net.ddp2p.common.util.Util.getString(a.get(2)));
 				e[x][y]=z;
-//				System.out.println(x);
-//				System.out.println(y);
-//				System.out.println(z);
-//				System.out.println();
 			}
-//			e[0][4]=1;
-//			e[0][3]=1;
-//			e[0][2]=0;
-//			e[4][1]=1;
-//			e[3][1]=0;
-			
 		} catch (P2PDDSQLException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-		
-		
-
-		
-
-
 	}
 	void printEdge(){
 		System.out.println("======Edge======");
@@ -161,21 +117,18 @@ tieID+" tied identities";;
 	void buildTree(){
 		ht=new Hashtable<Integer, witnessGraphNode>();
 		int myConstituentID=0;
-		r=new witnessGraphNode();//root
+		r=new witnessGraphNode();
 		r.constituentID=myConstituentID;
 		r.fuzzyValue=1.0;
 		ht.put(myConstituentID, r);
-		
 		for(int i=0;i<e.length;i++){
 			for(int j=0;j<e[i].length;j++){
 				if(e[i][j]==1||e[i][j]==0){
-//					System.out.println("["+i+", "+j+"]"+"="+e[i][j]);
 					witnessGraphNode parent,child;
 					if(!ht.containsKey(i)){
 						parent=new witnessGraphNode();
 						parent.constituentID=i;
 						ht.put(i, parent);
-						
 					}
 					else {
 						parent=ht.get(i);
@@ -184,7 +137,6 @@ tieID+" tied identities";;
 						child=new witnessGraphNode();
 						child.constituentID=j;
 						ht.put(j, child);	
-						
 					}
 					else {
 						child=ht.get(j);
@@ -196,12 +148,8 @@ tieID+" tied identities";;
 			}
 		}
 	}
-	
-	//print fuzzy values
 	void evaluateTree(witnessGraphNode n){
-		
 		if(n!=null){
-//			System.out.println(n.constituentID+" "+n.fuzzyValue);
 			if(n.children!=null){
 				for(witnessGraphNode w:n.children){
 					if(e[n.constituentID][w.constituentID]==1){
@@ -216,10 +164,8 @@ tieID+" tied identities";;
 				}
 			}
 		}
-		
 	}
 	void printFuzzyTable(){
-		
 		allID=fuzzyValueTable.size();
 		Enumeration<Integer> e = this.fuzzyValueTable.keys();
 		while(e.hasMoreElements()){
@@ -256,18 +202,8 @@ tieID+" tied identities";;
 			double fv=fuzzyValueTable.get(a);
 			if(fv==0) System.out.println(a+"                     "+fv);
 		}
-		
 	}
-	/*
-	 * TODO:When fuzzaValue is 0, there is a tie. 
-	 * User has to make decision based on a list of paths(GUI) from himself to the tied node.
-	 * He witness against some of the nodes in the paths and re-evaluate tree to break tie until fuzzyValue of the end node not equal to 0.
-	 */
-	
 	void findPath(witnessGraphNode start, witnessGraphNode end){} 
-	
-	
-	//print fuzzy values
 	void printTree(witnessGraphNode n){
 		if(n!=null){
 			System.out.println(n.constituentID+": "+n.fuzzyValue);
@@ -278,24 +214,13 @@ tieID+" tied identities";;
 				}
 			}
 		}
-		
 	}
-	
 }
-
-
-
 public class computeCensus extends JPanel{
 	computeCensus(){
-		
 	}
-
-
 	public String[] thresholdPCNC(String pco, String nco, String t) {
-		
-
 		try {
-			
 			ArrayList<ArrayList<Object>> c;
 			String sql = "SELECT * FROM witness";
 			String sql2 = "select target_ID, NC, PC, case when((PC+1.0*"+pco+")/(NC+"+nco+")>="+t+") then 'T' else 'F' end,name from"+
@@ -317,19 +242,15 @@ public class computeCensus extends JPanel{
 					"		)"+
 					"		 group by target_ID"+
 					"		)t1, constituent where t1.target_ID=constituent.constituent_ID;";
-//			c = Application.db.select(sql2, new String[]{pco,nco,t});
 			c = Application.getDB().select(sql2, new String[]{});
 			System.out.println("[Target_ID, Negative Count, Positive Count, ValidityOfIdentity,Constituent Name]");
 			System.out.println(c);
-
 		} catch (P2PDDSQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
 	}
 public static void populateWitnessData1(){
-	//Populate simulated "witness" data
 			Integer sense_y_n=0;
 			Integer source_ID=2;
 			Integer target_ID=0;
@@ -345,13 +266,10 @@ public static void populateWitnessData1(){
 				Application.getDB().insert(insertSql, new String[] {""+3,""+1,""+0});
 				Application.getDB().insert(insertSql, new String[] {""+4,""+1,""+1});
 			} catch (P2PDDSQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 }
-
 public static void populateWitnessData2(){
-	//Populate simulated "witness" data
 			int sense_y_n=0;
 			int source_ID=2;
 			int target_ID=0;
@@ -367,40 +285,15 @@ public static void populateWitnessData2(){
 				Application.getDB().insert(insertSql, new String[] {""+3,""+1,""+0});
 				Application.getDB().insert(insertSql, new String[] {""+4,""+1,""+1});
 			} catch (P2PDDSQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 }
-
-
 	public static void main(String[] args) {
 		try {
 			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 		} catch (P2PDDSQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-//		computeCensus cc =new computeCensus();
-//		cc.thresholdPCNC("1","1", "1");
-//		JFrame jf = new JFrame();
-//		jf.add(cc);
-//		populateWitnessData();
-//		populateWitnessData1();
-		
-//		wg.evaluateTree(wg.r);
-//		wg.printTree(wg.r);
-		
-//		Hashtable <Integer,Double> fuzzyValueTable=new Hashtable <Integer,Double> ();
-//		
-//		fuzzyValueTable.put(1, 2.0);
-//		System.out.println(fuzzyValueTable.size());
-//
-//		fuzzyValueTable.put(1, 2.0);
-//		System.out.println(fuzzyValueTable.size());
-//		Enumeration e=fuzzyValueTable.keys();
-//		while(e.hasMoreElements()){
-//			System.out.println(e.nextElement());	
-//		}
 		witnessGraph wg=new witnessGraph();
         wg.pack();
         wg.setVisible(true);

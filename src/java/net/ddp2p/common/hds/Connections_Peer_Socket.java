@@ -1,12 +1,9 @@
 package net.ddp2p.common.hds;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
-
 import net.ddp2p.common.util.Util;
-
 /**
  * Address ad (SocketAddresses_Domain addr (long address_ID))
  * behind_NAT (always false?)
@@ -22,26 +19,18 @@ import net.ddp2p.common.util.Util;
 public class Connections_Peer_Socket {
 	public final static boolean OPEN_CONNECTIONS = false;
 	public Address_SocketResolved addr;
-	public long address_LID; // local ID when stored in database
-	public boolean behind_NAT = false; // true for transient addresses if there was a NAT with the report
-	
-	// status of the TCP connection
+	public long address_LID; 
+	public boolean behind_NAT = false; 
 	public String _last_contact_date_TCP;
 	public boolean contacted_since_start_TCP = false;
 	public boolean last_contact_successful_TCP = false;
-	
-	// status of the UDP connections
 	public boolean replied_since_start_UDP = false;
 	/** Set if a ping was sent since the last reply */
 	public boolean last_contact_pending_UDP = false;
 	public String _last_ping_sent_date;
 	public String _last_ping_received_date;
-	
-	// Open connections not yet used (have to decide when to close them if used)
-	public Socket tcp_connection_open = null; // non-null if a TCP connection is open (synchronized)
-	// not yet used but should be used for synchronization (if ever using open sockets)
-	public boolean tcp_connection_open_busy = false; // is some thread using this connection?
-	
+	public Socket tcp_connection_open = null; 
+	public boolean tcp_connection_open_busy = false; 
 	public Connections_Peer_Socket() {}
 	public Connections_Peer_Socket(Address ad, InetAddress ia) {
 		InetSocketAddress isa_t = null, isa_u = null;
@@ -83,7 +72,6 @@ public class Connections_Peer_Socket {
 		if (socketAddress != null && addr.isa_udp != null && addr.isa_udp.equals(socketAddress)) return true;
 		if (! Util.equalStrings_null_or_not(peer_domain, addr.addr.getDomain())) return false;
 		if (peer_port != addr.addr.udp_port) return false;
-		// TODO setting behindNAT to false?
 		return false;
 	}
 }

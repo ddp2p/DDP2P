@@ -1,61 +1,41 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
-
 package net.ddp2p.widgets.app;
-
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.net.URL;
 import java.util.Hashtable;
-
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
-
 public class DDIcons {
 	private static String I_ADD="add.png"; // action
 	private static String I_IMP="ImportIcon.jpg"; // action
 	private static String I_DEL="remove.png"; //action
-	//private static String I_RES="neutral.smiley.gif"; // action
 	private static String I_RES="sad.smiley19.gif"; // action
 	private static String I_WIT="neutral.smiley.gif"; // action
 	private static final String I_DELE = "del.png";
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
-	
-	//public static String I_INHAB = "anonym.gif"; // not used
-	//public static String I_NEIGHS30 = "neighs30.gif";
 	public static String I_NEIGHS19 = "neighs19.gif"; //icon constitutents tree
 	public static String I_INHAB19 = "anonym19.gif"; //icon constitutents tree
 	private static String I_PROF = "profile20.gif";
-	
-	//private static String I_UP15 = "icons/happy.smiley15.gif"; //icon constitutents tree
-	//private static String I_DOWN15 = "icons/sad.smiley15.gif"; //icon constitutents tree
 	public static String I_UP19 = "happy.smiley19.gif"; //icon constitutents tree
 	public static String I_DOWN19 = "sad.smiley19.gif"; //icon constitutents tree
-	//private static String I_UP32 = "icons/happy.smiley.gif"; //icon constitutents tree
-	//private static String I_DOWN32 = "icons/sad.smiley.gif"; //icon constitutents tree
-	
 	private static String I_PEER10 = "network-node10.gif";	
 	private static String I_PEERGRAY10 = "network-node_gray10.gif";	
 	private static String I_ORG = "castle10.gif";	
@@ -64,14 +44,11 @@ public class DDIcons {
 	private static String I_SIGNATURE10 = "voting_booth20.gif";	
 	private static String I_CONSTITUENT10 = "profile10.gif";	
 	private static String I_STAT = "sad.smiley10.gif";	
-	
 	private static String I_GREEN_BALL = "green-sphere.gif";
 	private static String I_GRAY_BALL = "dark-sphere.gif";
 	private static String I_RED_BALL = "red-sphere.gif";		
-
 	private static String I_BACK10 = "back10.gif";		
 	private static String I_FORW10 = "forward10.gif";	
-	
 	private static final String I_REGISTRATION20 = "registration_icon20.gif";	
 	private static final String I_MAILPOST20 = "mail20.gif";	
 	private static final String I_IDENTITIES20 = "identities20.gif";	
@@ -96,7 +73,6 @@ public class DDIcons {
 	private static final String I_LANDING20 = "landings20.jpg";	
 	private static final String I_BACK20 = "back20.gif";		
 	private static final String I_FORW20 = "forward20.gif";		
-
 	public static final String I_BROADCAST20 = "broadcast20.gif";
 	public static final String I_BLOCK_DOWNLOAD20 = "block20.gif";
 	private static final String I_HIDE20 = "hide20.gif";
@@ -106,18 +82,11 @@ public class DDIcons {
 	private static final String I_VERIF20 = "verif20.gif";
 	private static final String I_REVOKED20 = "revoked20.gif";
 	private static final String I_CONNECTED20 = "connected20.gif";
-
 	public  static final String I_DDP2P40 = "ddp2p40.gif";	
 	public  static final String I_DDP2P32 = "ddp2p32.gif";	
-
-	//LargeSplash.jpg
-
 	private static ImageIcon _II_WIT = null;
 	public static ImageIcon getWitImageIcon(String descr){
-		//System.out.println("SSIcons:getWitImageIcon:");
 		try{if(_II_WIT == null) _II_WIT= getImageIconFromResource(I_WIT, descr);}catch(Exception e){e.printStackTrace();}
-		//if(_II_WIT == null) Util.printCallPath("null");
-		//System.out.println("SSIcons:getWitImageIcon: got="+_II_WIT);
 		return _II_WIT;
 	}
 	private static ImageIcon _II_DEL = null;
@@ -394,7 +363,6 @@ public class DDIcons {
 		if(_II_RED_BALL == null) _II_RED_BALL= getImageIconFromResource(I_RED_BALL, descr);
 		return _II_RED_BALL;
 	}
-	
 	/**
 	 * DD.frame should be non-null
 	 * splash will get prepended  Application.RESOURCES_ENTRY_POINT
@@ -431,12 +399,11 @@ public class DDIcons {
 			_splash = Application.MISSING_ICON;
 		}
 		String splash = Application.RESOURCES_ENTRY_POINT+_splash;
-		ImageIcon image = new ImageIcon();//");
+		ImageIcon image = new ImageIcon();
 		if(DEBUG) System.out.println("DDIcons:getImageIconFromResource2: will get: "+splash);
 		URL url = cl.getResource(splash);
 		if(url == null) {
 			System.err.println("DDIcons:getImageIconFromResource2:Fail to find resouce: "+splash);
-			//Util.printCallPath("missing image");
 			if(_DEBUG) System.out.println("DDIcons:getImageIconFromResource2: will get missing:"+Application.RESOURCES_ENTRY_POINT+Application.MISSING_ICON);
 			url = DD.class.getResource(Application.RESOURCES_ENTRY_POINT+Application.MISSING_ICON);
 			if(url==null)
@@ -447,7 +414,6 @@ public class DDIcons {
 			return null;
 		}
         image.setImage(Toolkit.getDefaultToolkit().getImage(url));
-    	//Image newimg = img.getScaledInstance(20, 20, java.awt.Image.SCALE_SMOOTH);
         if(descr!=null) image.setDescription(descr);
         return image;
 	}
@@ -466,7 +432,7 @@ public class DDIcons {
 			_splash = Application.MISSING_ICON;
 		}
 		String splash = entry+_splash;
-		ImageIcon image = new ImageIcon();//");
+		ImageIcon image = new ImageIcon();
 		if(DEBUG) System.out.println("DDIcons:getImageIconFromResource: will get:"+splash);
 		URL url = cl.getResource(splash);
 		if(url == null) {
@@ -483,7 +449,6 @@ public class DDIcons {
 		}
 		Image im = Toolkit.getDefaultToolkit().getImage(url);
         image.setImage(im);
-    	//Image newimg = img.getScaledInstance(20, 20, java.awt.Image.SCALE_SMOOTH);
         if(descr!=null) image.setDescription(descr);
         return image;
 	}
@@ -505,7 +470,7 @@ public class DDIcons {
 			_splash = Application.MISSING_ICON;
 		}
 		String splash = entry+_splash;
-		Image image; // = new Image();//");
+		Image image; 
 		if(DEBUG) System.out.println("DDIcons:getImageFromResource: will get:"+splash);
 		URL url = cl.getResource(splash);
 		if(url == null) {
@@ -521,8 +486,6 @@ public class DDIcons {
 			return null;
 		}
         image = Toolkit.getDefaultToolkit().getImage(url);
-    	//Image newimg = img.getScaledInstance(20, 20, java.awt.Image.SCALE_SMOOTH);
-        //if(descr!=null) image.setDescription(descr);
         return image;
 	}
 	static Hashtable<String,URL> loadedIcons = new Hashtable<String,URL>();

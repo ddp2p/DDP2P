@@ -1,34 +1,26 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Song Qin
  Author: Song Qin: qsong2008@my.fit.edu
  Florida Tech, Human Decision Support Systems Laboratory
-
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU Affero General Public License as published by
  the Free Software Foundation; either the current version of the License, or
  (at your option) any later version.
-
  This program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
-
  You should have received a copy of the GNU Affero General Public License
  along with this program; if not, write to the Free Software
  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.census;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Queue;
-
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.config.OrgListener;
@@ -37,7 +29,6 @@ import net.ddp2p.common.util.DBInfo;
 import net.ddp2p.common.util.DBListener;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
 class Node {
 	Node() {
 		this.permanent = false;
@@ -48,17 +39,16 @@ class Node {
 		this.numPositiveFuzzyValue=0;
 		this.numNegativeFuzzyValue=0;
 	}
-
 	double fuzzyValue = 0.0;
 	String valueString = "";
 	String constituentName;
 	Integer constituentID;
-	String neighborhoodID;// Not Implemented
-	ArrayList<Node> parent;// List of parents
-	ArrayList<Node> children;// List of children
+	String neighborhoodID;
+	ArrayList<Node> parent;
+	ArrayList<Node> children;
 	public int positiveWitnessCount = 0;
 	public int negativeWintesCount = 0;
-	boolean used = false;// Not yet added to the queue
+	boolean used = false;
 	public double sumPositiveFuzzyValue = 0;
 	public double sumNegativeFuzzyValue = 0;
 	int isRoot = 0;
@@ -71,51 +61,40 @@ class Node {
 	public int numMoreThanHalf;
 	public int numLessThanHalf;
 }
-
 class ConstituentStatictics {
-	String value;// Hold value for all metrics
-	String threshold;// Pass or Fail
-
+	String value;
+	String threshold;
 	ConstituentStatictics(String value, String threshold) {
 		this.value = value;
 		this.threshold = threshold;
 	}
 }
-
 @SuppressWarnings("serial")
 public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 		DBListener, OrgListener {
 	private static final boolean DEBUG = false;
 	String name;
-	int sign; // -1 for negative fuzzy, 0 for tie, 1 for positives
+	int sign; 
 	private long organizationID;
 	D_Organization organization;
 	boolean debug = false;
 	Hashtable<Integer, ConstituentStatictics> viewDataBuffer = new Hashtable<Integer, ConstituentStatictics>();
-	final double fuzzyFactor = 0.9;// Parameter from user.
-	Integer edgeTable[][];// [2][4]=1 Means constituent 2 positively witnessed 4
-							// and
-	// [3][4]=2 Means constituent 3 negatively witnessed 4.
-	Hashtable<Integer, Node> graphDataBuffer;// A table holding the graph of
-												// constituents. A mapping from
-												// constituent ID to the node
-												// representing the same
-												// constituent
-	Node r;// root of a graph describing the witness relations
+	final double fuzzyFactor = 0.9;
+	Integer edgeTable[][];
+	Hashtable<Integer, Node> graphDataBuffer;
+	Node r;
 	String[] columnNames = { "Constituent Name", "Value", "Threshold Test" };
 	ArrayList tableData[] = new ArrayList[0];
-	ArrayList<Integer> fuzzyNodes;// A list of nodes that has fuzzy values
-	// User Parameter
+	ArrayList<Integer> fuzzyNodes;
 	double positiveWitWeight = 1;
 	double negativeWitWeight = 1;
 	int metric = 0;
 	protected Double pco = new Double(0);
 	protected Double nco = new Double(0);
-	protected Double t0 = new Double(0);// Threshold Value
-	protected Double t1 = new Double(0);// Threshold Value
-	protected Double t2 = new Double(0);// Threshold Value
-	protected Double t3 = new Double(0);// Threshold Value
-
+	protected Double t0 = new Double(0);
+	protected Double t1 = new Double(0);
+	protected Double t2 = new Double(0);
+	protected Double t3 = new Double(0);
 	public CensusFuzzyModel(int sign, long orgID) {
 		Application.getDB().addListener(
 				this,
@@ -123,7 +102,6 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 						net.ddp2p.common.table.constituent.TNAME)), null);
 		init(sign, orgID);
 	}
-
 	void init(int sign, long orgID) {
 		if (DEBUG)
 			System.out
@@ -133,14 +111,11 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 		this.name = "Fuzzy:" + orgID + ":" + sign;
 		update(null, null);
 	}
-
 	@Override
 	public void update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
-		// System.out.println("update:this.organizationID"+this.organizationID);
 		boolean empty = populateEdgeTable(this.organizationID);
-		// int empty=loadWitnessStance(1);
 		if (!empty) {
-			if (metric == 0) {//metric value is the index of the tab
+			if (metric == 0) {
 				populateGraph();
 				naiveMetric1(pco.toString(), nco.toString(), t0.toString());
 			} else if (metric == 1) {
@@ -155,31 +130,26 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 				populateGraph();
 				fuzzyMetric3(r);
 			}
-			populateTable();// Change the view of the table widget
+			populateTable();
 			this.fireTableDataChanged();
 		}
 	}
-
 	@Override
 	public int getColumnCount() {
 		return this.columnNames.length;
 	}
-
 	@Override
 	public String getColumnName(int col) {
 		return this.columnNames[col];
 	}
-
 	@Override
 	public int getRowCount() {
 		return tableData.length;
 	}
-
 	@Override
 	public Object getValueAt(int row, int col) {
 		return tableData[row].get(col);
 	}
-
 	/**
 	 * Populate the edgeTable for current organization
 	 * 
@@ -191,7 +161,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 		ArrayList<ArrayList<Object>> witness_stances = null;
 		ArrayList<ArrayList<Object>> sqlResult = null;
 		String sqlTestEmptyTable = "Select * from witness";
-		boolean empty = true;// The table:witness is empty or not
+		boolean empty = true;
 		try {
 			sqlResult = Application.getDB().select(sqlTestEmptyTable,
 					new String[] {});
@@ -232,7 +202,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 					targetID = Integer.parseInt(net.ddp2p.common.util.Util
 							.getString(witnessStance.get(1)));
 					sense = Integer.parseInt(net.ddp2p.common.util.Util.getString(witnessStance
-							.get(2)));// 1 or 0
+							.get(2)));
 					synchronized(this){
 						if((sourceID>edgeTable.length)||(targetID>edgeTable[sourceID].length))
 							continue;
@@ -245,45 +215,28 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 		}
 		return empty;
 	}
-
-	/*
-	 * TODO:When fuzzaValue is 0, there is a tie. User has to make decision
-	 * based on a list of paths(GUI) from himself to the tied node. He witness
-	 * against some of the nodes in the paths and re-evaluate tree to break tie
-	 * until fuzzyValue of the end node not equal to 0.
-	 */
 	void findPath(Node start, Node end) {
 	}
-
-	// print fuzzy values
 	void printTree(Node n) {
 		if (n != null) {
-			// System.out.println(n.constituentID + ": " + n.fuzzyValue);
 			if (n.children != null) {
 				for (Node w : n.children) {
-					// System.out.println(w.constituentID + ": " +
-					// w.fuzzyValue);
 					printTree(w);
 				}
 			}
 		}
-
 	}
-
-	/*
-	 * Populate the graph with root=r from database
-	 */
 	void populateGraph() {
 		graphDataBuffer = new Hashtable<Integer, Node>();
 		ArrayList<ArrayList<Object>> d = null;
 		long myConstituentID = 0;
 		try {
 			myConstituentID = Identity.getCurrentConstituentIdentity()
-					.getDefaultConstituentIDForOrg(this.organizationID);// TODO:-1
+					.getDefaultConstituentIDForOrg(this.organizationID);
 		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
-		r = new Node();// root
+		r = new Node();
 		r.constituentID = (int) myConstituentID;
 		r.fuzzyValue = 1.0;
 		graphDataBuffer.put((int) myConstituentID, r);
@@ -323,18 +276,15 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 					if (c == 0)
 						parent.children.add(child);
 				}
-
 			}
 		}
 	}
-
-	// Populate the data of the table(tableData) model
 	void populateTable() {
 		tableData = new ArrayList[viewDataBuffer.size()];
 		Enumeration<Integer> e = this.viewDataBuffer.keys();
 		ArrayList<ArrayList<Object>> constituentName = null;
-		e = this.viewDataBuffer.keys();// Enumeration of constituent IDs
-		int i = 0;// Index for tableData
+		e = this.viewDataBuffer.keys();
+		int i = 0;
 		while (e.hasMoreElements()) {
 			int constituentID = e.nextElement();
 			int myConstituentID = 0;
@@ -347,7 +297,6 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			} catch (P2PDDSQLException e1) {
 				e1.printStackTrace();
 			}
-//			System.out.println("constituentName:" + constituentName);
 			try {
 				myConstituentID = (int) Identity.getCurrentConstituentIdentity()
 						.getDefaultConstituentIDForOrg(this.organizationID);
@@ -356,43 +305,26 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			}
 			if (constituentName.size() == 0)
 				rowData.add("Can not find constituent with ID: "
-						+ constituentID);// Can't find constituents
+						+ constituentID);
 			else if (myConstituentID == constituentID)
 				rowData.add(constituentName.get(0).get(0) + "(This is you!)");// 1st
-																				// Column:
-																				// Constituent
-																				// Name
 			else
-				rowData.add(constituentName.get(0).get(0));// 1st Column:
-
-			// Constituent Name
+				rowData.add(constituentName.get(0).get(0));
 			if(statistic!=null){
-				rowData.add(statistic.value);// 2nd column: Value
-				rowData.add(statistic.threshold);// 3rd column: threshold testing:
+				rowData.add(statistic.value);
+				rowData.add(statistic.threshold);
 			}else{
 				System.err.println("CensusFuzzyModel:populateTable: statistics are null!");
 			}
-												// passed or fail
-			tableData[i] = rowData;// Populate dat of i-th row
+			tableData[i] = rowData;
 			i++;
 		}
 	}	
-
-	/*
-	 * Most intuitive metric
-	 */
 	public void naiveMetric1(String pco, String nco, String t) {
-		viewDataBuffer = new Hashtable<Integer, ConstituentStatictics>();// Mapping
-																			// from
-																			// constituent_ID
-																			// to
-																			// his
-																			// statics
+		viewDataBuffer = new Hashtable<Integer, ConstituentStatictics>();
 		try {
 			ArrayList<ArrayList<Object>> sqlResult;
 			String currentOrgID = "" + this.organizationID;// Current
-															// used/selected
-															// organization ID
 			String sql = "select target_ID, NC, PC, (PC+1.0*"
 					+ pco
 					+ ")/(NC+"
@@ -436,18 +368,13 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			e.printStackTrace();
 		}
 	}
-
-	/*
-	 * Compute fuzzy value for each node in the graph and reset viewDataBuffer
-	 */
 	void fuzzyMetric1(Node root) {
 		viewDataBuffer = new Hashtable<Integer, ConstituentStatictics>();
 		fuzzyNodes = new ArrayList<Integer>();
 		if (root != null) {
 			Queue<Node> queue = new LinkedList<Node>();
-			// Process Root
 			queue.add(root);
-			root.used = true;// Mark the node as used nodes.
+			root.used = true;
 			root.valueString += ",1.0";
 			root.averagedFuzzyValue = 1.0;
 			root.permanent = true;
@@ -456,7 +383,6 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			viewDataBuffer.put(
 					r.constituentID,
 					new ConstituentStatictics(Util.getString(r.averagedFuzzyValue), thresholdTest));
-			// Process root's child in only level 1.
 			if (root.children != null) {
 				/**
 				 * The children of the root should not be biased by other's
@@ -484,16 +410,12 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 					}
 				}
 			}
-			// Process the rest of the nodes
 			while (!queue.isEmpty()) {
-				Node parent = queue.poll();// Get the root from the queue
+				Node parent = queue.poll();
 				if (!parent.permanent) {
 					parent.averagedFuzzyValue = parent.sumFuzzyValue
 							/ parent.numFuzzyValue;
-					parent.permanent = true;// Do not allow nodes at level n+1
-											// change the averagedFuzzyValue of
-											// nodes at level n
-					
+					parent.permanent = true;
 					thresholdTest="";
 					if(parent.averagedFuzzyValue>=t1) thresholdTest="X";
 					viewDataBuffer.put(
@@ -519,7 +441,6 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 									+ Util.getString(1 - parent.averagedFuzzyValue
 											* this.fuzzyFactor);
 							child.numFuzzyValue++;
-							// fuzzyNodes.add(child.constituentID);
 						} else if (edgeTable[parent.constituentID][child.constituentID] == 1
 								&& !child.permanent) {
 							child.sumFuzzyValue += parent.averagedFuzzyValue
@@ -528,10 +449,8 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 									+ Util.getString(parent.averagedFuzzyValue
 											* this.fuzzyFactor);
 							child.numFuzzyValue++;
-							// fuzzyNodes.add(child.constituentID);
 						}
-
-						if (!child.used) {// TODO:Reset graph when switching tab
+						if (!child.used) {
 							queue.add(child);
 							child.used = true;
 						}
@@ -540,18 +459,13 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			}
 		}
 	}
-
-	/*
-	 * Compute fuzzy value for each node in the graph and reset viewDataBuffer
-	 */
 	void fuzzyMetric2(Node root) {
 		viewDataBuffer = new Hashtable<Integer, ConstituentStatictics>();
 		fuzzyNodes = new ArrayList<Integer>();
 		if (root != null) {
 			Queue<Node> queue = new LinkedList<Node>();
-			// Process Root
 			queue.add(root);
-			root.used = true;// Mark the node as used nodes.
+			root.used = true;
 			root.valueString += ",1.0";
 			root.averagedFuzzyValue = 1.0;
 			root.permanent = true;
@@ -560,7 +474,6 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			viewDataBuffer.put(
 					r.constituentID,
 					new ConstituentStatictics(Util.getString(r.averagedFuzzyValue), thresholdTest));
-			// Process root's child in only level 1.
 			if (root.children != null) {
 				/**
 				 * The children of the root should not be biased by other's
@@ -588,15 +501,12 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 					}
 				}
 			}
-			// Process the rest of the nodes
 			while (!queue.isEmpty()) {
-				Node parent = queue.poll();// Get the root from the queue
+				Node parent = queue.poll();
 				if (!parent.permanent) {
 					parent.averagedFuzzyValue = parent.sumPositiveFuzzyValue
 							/ parent.numPositiveFuzzyValue+parent.sumNegativeFuzzyValue;
-					parent.permanent = true;// Do not allow nodes at level n+1
-											// change the averagedFuzzyValue of
-											// nodes at level n
+					parent.permanent = true;
 					thresholdTest="";
 					if(parent.averagedFuzzyValue>=t2) thresholdTest="X";
 					viewDataBuffer.put(
@@ -619,7 +529,6 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 									+ Util.getString(1 - parent.averagedFuzzyValue
 											* this.fuzzyFactor);
 							child.numNegativeFuzzyValue++;
-							// fuzzyNodes.add(child.constituentID);
 						} else if (edgeTable[parent.constituentID][child.constituentID] == 1
 								&& !child.permanent) {
 							child.sumPositiveFuzzyValue += parent.averagedFuzzyValue
@@ -628,10 +537,8 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 									+ Util.getString(parent.averagedFuzzyValue
 											* this.fuzzyFactor);
 							child.numPositiveFuzzyValue++;
-							// fuzzyNodes.add(child.constituentID);
 						}
-
-						if (!child.used) {// TODO:Reset graph when switching tab
+						if (!child.used) {
 							queue.add(child);
 							child.used = true;
 						}
@@ -640,18 +547,13 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			}
 		}
 	}
-
-	/*
-	 * Compute fuzzy value for each node in the graph and reset viewDataBuffer
-	 */
 	void fuzzyMetric3(Node root) {
 		viewDataBuffer = new Hashtable<Integer, ConstituentStatictics>();
 		fuzzyNodes = new ArrayList<Integer>();
 		if (root != null) {
 			Queue<Node> queue = new LinkedList<Node>();
-			// Process Root
 			queue.add(root);
-			root.used = true;// Mark the node as used nodes.
+			root.used = true;
 			root.valueString += ",1.0";
 			root.averagedFuzzyValue = 1.0;
 			root.permanent = true;
@@ -660,7 +562,6 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			viewDataBuffer.put(
 					r.constituentID,
 					new ConstituentStatictics(Util.getString(r.averagedFuzzyValue), thresholdTest));
-			// Process root's child in only level 1.
 			if (root.children != null) {
 				/**
 				 * The children of the root should not be biased by other's
@@ -688,15 +589,12 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 					}
 				}
 			}
-			// Process the rest of the nodes
 			while (!queue.isEmpty()) {
-				Node parent = queue.poll();// Get the root from the queue
+				Node parent = queue.poll();
 				if (!parent.permanent) {
 					parent.averagedFuzzyValue = parent.numMoreThanHalf
 							/ parent.numMoreThanHalf+parent.numLessThanHalf;
-					parent.permanent = true;// Do not allow nodes at level n+1
-											// change the averagedFuzzyValue of
-											// nodes at level n
+					parent.permanent = true;
 					thresholdTest="";
 					if(parent.averagedFuzzyValue>=t3) thresholdTest="X";
 					viewDataBuffer.put(
@@ -718,9 +616,6 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 								child.numMoreThanHalf++;
 							}
 							else child.numLessThanHalf++;
-//							child.valueString += ","+ Util.getString(1 - parent.averagedFuzzyValue* this.fuzzyFactor);
-//							child.numNegativeFuzzyValue++;
-							// fuzzyNodes.add(child.constituentID);
 						} else if (edgeTable[parent.constituentID][child.constituentID] == 1
 								&& !child.permanent) {
 							double a= parent.averagedFuzzyValue* this.fuzzyFactor;
@@ -728,12 +623,8 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 								child.numMoreThanHalf++;
 							}
 							else child.numLessThanHalf++;
-//							child.valueString += ","+ Util.getString(parent.averagedFuzzyValue* this.fuzzyFactor);
-//							child.numPositiveFuzzyValue++;
-							// fuzzyNodes.add(child.constituentID);
 						}
-
-						if (!child.used) {// TODO:Reset graph when switching tab
+						if (!child.used) {
 							queue.add(child);
 							child.used = true;
 						}
@@ -742,8 +633,6 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 			}
 		}
 	}
-
-	
 	@Override
 	public void orgUpdate(String orgID, int col, D_Organization org) {
 		if (DEBUG)
@@ -752,11 +641,7 @@ public class CensusFuzzyModel extends AbstractTableModel implements TableModel,
 		this.organization = org;
 		init(-1, Util.lval(orgID, -1));
 	}
-
 	@Override
 	public void org_forceEdit(String orgID, D_Organization org) {
-		// TODO Auto-generated method stub
-
 	}
-
 }

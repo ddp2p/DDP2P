@@ -1,11 +1,9 @@
 package net.ddp2p.common.hds;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
-
 /**
  * @author msilaghi
  *
@@ -39,7 +37,6 @@ class DirectoryAnnouncement_Answer extends net.ddp2p.ASN1.ASNObj{
 	byte[] challenge;
 	byte[] remote_IP;
 	int remote_port = 0;
-	
 	public String toString() {
 		return "D_DAAnswer: ["+result+","+Util.concat(remote_IP, ".", "?.?.?.?")+":"+remote_port+"]";
 	}
@@ -150,10 +147,8 @@ class DirectoryAnnouncement_Answer extends net.ddp2p.ASN1.ASNObj{
 			remote_IP = d.getFirstObject(true).getBytes(DD.TAG_AC6);
 		if(d.isFirstObjectTagByte(DD.TAG_AC7))
 			remote_port = d.getFirstObject(true).getInteger(DD.TAG_AC7).intValue();
-		//if(!d.isFirstObjectTagByte(0)) throw new ASN1DecoderFail("Extra bytes in answer");
 		return this;
 	}	
-
 	@Override
 	public DirectoryAnnouncement_Answer decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();

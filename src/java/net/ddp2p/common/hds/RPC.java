@@ -1,36 +1,28 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.hds;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.DirectoryAddress;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
 /**
  * This is a class used to remotely control an agent (e.g. starting/stopping various servers, in particular
  * the udpServer and the DirectoryServers).
@@ -49,7 +41,6 @@ public class RPC extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		super("RPC", true);
 		controlIP = _controlIP;
 	}
-
 	@Override
 	public void _run() {
 		try {
@@ -60,7 +51,6 @@ public class RPC extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	}
 	public void __run() throws IOException {
 		rpc = new ServerSocket(54321);
-
 		for (;;) {
 			Socket s = rpc.accept();
 			InetSocketAddress ss = (InetSocketAddress) s.getRemoteSocketAddress();
@@ -93,6 +83,4 @@ public class RPC extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			}
 		}
 	}
-	//rpc.close();
-	
 }

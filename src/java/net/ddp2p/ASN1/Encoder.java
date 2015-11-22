@@ -1,34 +1,24 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
- 
 package net.ddp2p.ASN1;
-
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Hashtable;
-
-//import util.Util;
-
 public 
 class Encoder {
 	public static final byte PC_PRIMITIVE=0;
@@ -50,7 +40,7 @@ class Encoder {
 	public static final byte TAG_EMBEDDED_PDV=11;
 	public static final byte TAG_UTF8String=12;
 	public static final byte TAG_RELATIVE_OID=13;
-	public static final byte TAG_SEQUENCE=16+(1<<5); //0x30
+	public static final byte TAG_SEQUENCE=16+(1<<5); 
 	public static final byte TAG_SET=17+(1<<5);
 	public static final byte TAG_NumericString=18;
 	public static final byte TAG_PrintableString=19;
@@ -58,20 +48,17 @@ class Encoder {
 	public static final byte TAG_VideotextString2=1;
 	public static final byte TAG_IA5String=22;
 	public static final byte TAG_UTCTime=23;
-	public static final byte TAG_GeneralizedTime=24; //0x18
+	public static final byte TAG_GeneralizedTime=24; 
 	public static final byte TAG_GraphicString=25;
 	public static final byte TAG_VisibleString=26;
 	public static final byte TAG_GenerlString=27;
 	public static final byte TAG_UniversalString=28;
 	public static final byte TAG_CHARACTER_STRING=29;
 	public static final byte TAG_BMPString=30;
-	
 	public static final byte TYPE_SEQUENCE=16+(1<<5);
 	public static final byte TYPE_SET=17+(1<<5);
-
 	private static final boolean DEBUG = false;
 	public static final long CALENDAR_DISPLACEMENT = 1000000000;
-	
 	/**
 	 * Number of bytes used by this encoder (the length of the result)
 	 */
@@ -92,7 +79,6 @@ class Encoder {
 	 * The actual data payload (originally length 0)
 	 */
 	byte[] data = new byte[0];
-	
 	public static void copyBytes(byte[] results, int offset, byte[]src, int length){
 		copyBytes(results, offset, src, length,0);
 	}
@@ -101,7 +87,6 @@ class Encoder {
 			System.err.println("Destination too short: "+results.length+" vs "+offset+"+"+length);
 		if (src.length < length + src_offset)
 			System.err.println("Source too short: "+src.length+" vs "+src_offset+"+"+length);
-		
 		for (int k = 0; k < length; k ++) {
 			results[k + offset] = src[src_offset + k];
 		}
@@ -111,20 +96,13 @@ class Encoder {
 		date.setTimeInMillis(utime);
 		return Encoder.getGeneralizedTime(date);
 	}
-	/*
-	public static Calendar getCalendar(String gdate) {
-		return Util.getCalendar(gdate);
-	}
-	*/
 	public byte[] getBytes() {
-		//System.err.println("Getting Bytes from object size: "+bytes);
 		byte[] buffer = new byte[bytes];
 		getBytes(buffer, 0);
 		return buffer;
 	}
 	public int getBytes(byte[] results, int start) {
 		int offset = start;
-		//byte[] results = new byte[bytes];
 		copyBytes(results,offset,header_type,header_type.length);
 		offset += header_type.length;
 		copyBytes(results,offset,header_length,header_length.length);
@@ -156,8 +134,6 @@ class Encoder {
 		return new BigInteger(result);
 	}
 	void setASN1Length(BigInteger len){
-		//System.err.println("set len="+bytes);
-		//this.bytes = bytes;
 		int old_len_len = this.header_length.length;
 		if(len.compareTo(ASN1_Util.BN127) <= 0){
 			header_length = new byte[]{(byte)bytes};
@@ -179,29 +155,22 @@ class Encoder {
 	 */
 	void setASN1Length(int _bytes_len) {
 		int old_len_len = this.header_length.length;
-		//System.err.println("set len="+bytes);
-		//this.bytes = bytes;
 		if (_bytes_len <= 127) {
 			header_length = new byte[]{(byte) _bytes_len};
 		} else {
 			BigInteger len = new BigInteger(_bytes_len + "");
 			byte[] len_bytes = len.toByteArray();
 			header_length = new byte[1 + len_bytes.length];
-			header_length[0] = (byte)(len_bytes.length | 0x80); // +128
+			header_length[0] = (byte)(len_bytes.length | 0x80); 
 			copyBytes(header_length, 1, len_bytes, len_bytes.length);
 		}		
-		//System.err.println("set bytes="+bytes+"+"+header_length.length +"-"+ old_len_len);
 		this.bytes += header_length.length - old_len_len;
 	}
 	void incrementASN1Length(int inc){
-		//System.err.println("inc="+inc);
-		BigInteger len = contentLength();//new BigInteger(header_length);
-		//System.err.println("old_len="+len);
+		BigInteger len = contentLength();
 		len = len.add(new BigInteger(""+inc));
-		//System.err.println("new_len="+len);
 		setASN1Length(len.intValue());
 	}
-	
 	/**
 	 * sets the byte is header_type (updating bytes under assumption that the type was length was precomputed)
 	 * @param tagASN1
@@ -221,9 +190,9 @@ class Encoder {
 	 * @return returns this
 	 */
 	public static byte buildASN1byteType(int classASN1, int PCASN1, byte tag_number){
-		if ((tag_number) >= 31) { //tag_number&0x1F
+		if ((tag_number) >= 31) { 
 			if (tag_number != Encoder.TAG_SEQUENCE) ASN1_Util.printCallPath("Need more bytes for:"+tag_number);
-			tag_number = (byte)(tag_number & (byte)0x1F);//25;
+			tag_number = (byte)(tag_number & (byte)0x1F);
 			if(tag_number == 31) tag_number = 25;
 		}
 		int tag = ((classASN1&0x3)<<6)+((PCASN1&1)<<5)+(tag_number&0x1f);
@@ -273,13 +242,11 @@ class Encoder {
 	public Encoder setASN1Type(int classASN1, int PCASN1, BigInteger tag_number) {
 		if (DEBUG) System.out.println("Encoder: setASN1Type: BN"+tag_number+" bytes="+bytes);
 		if (new BigInteger("31").compareTo(tag_number) > 0) return this.setASN1Type(classASN1, PCASN1, tag_number.byteValue());
-		
-		// if the tag is 31 or bigger
 		int old_header_type_len = this.header_type.length;
 		if (DEBUG) System.out.println("Encoder: setASN1Type: BN old_len_len=" + old_header_type_len);
 		int tag = (classASN1<<6)+(PCASN1<<5)+0x1f;
 		if (DEBUG) System.out.println("Encoder: setASN1Type: BN tag="+tag);
-		byte[] nb = ASN1_Util.toBase_128(tag_number); //String nb = tag_number.toString(128);
+		byte[] nb = ASN1_Util.toBase_128(tag_number); 
 		if (DEBUG) System.out.println("Encoder: setASN1Type: BN tag_128="+ASN1_Util.byteToHex(nb));
 		int tag_len = nb.length;
 		if (DEBUG) System.out.println("Encoder: setASN1Type: BN tag_len=" + tag_len);
@@ -291,7 +258,6 @@ class Encoder {
 		}
 		header_type[tag_len] = (byte) nb[tag_len-1];
 		if (DEBUG) System.out.println("Encoder: setASN1Type: BN tag_len=" + header_type[tag_len-1]);
-		
 		bytes += header_type.length - old_header_type_len;
 		return this;
 	}
@@ -308,14 +274,6 @@ class Encoder {
 	 * @return
 	 */
 	public Encoder addToSequence(Encoder asn1_data){
-		////incrementASN1Length(asn1_data.bytes);
-		//bytes += asn1_data.bytes;
-		//asn1_data.setPrefix(data);
-		//asn1_data.setPrefix(prefix_data);
-		//asn1_data.setPrefix(header_len);
-		//asn1_data.setPrefix(header_type);
-		//prefix_data=asn1_data;
-		//System.err.println("addASN1ToASN1Sequence:: "+this+"+"+asn1_data);
 		return addToSequence(asn1_data.getBytes());
 	}
 	/**
@@ -338,14 +296,11 @@ class Encoder {
 	 * @return
 	 */
 	public Encoder addToSequence(byte[] asn1_data, int offset, int length){
-		//System.err.println("addASN1ToASN1Sequence_1: "+bytes+"+"+length);
-		//System.err.println("addASN1ToASN1Sequence_2: "+this+"+"+Util.byteToHex(asn1_data," "));
 		if (data.length == 0) {
 			data = new byte[length];
 			copyBytes(data, 0, asn1_data, length, offset);
 			this.incrementASN1Length(length);
 			bytes += length;
-			//System.err.println("addASN1ToASN1Sequence_r: "+bytes+"+"+length);
 		} else {
 			Encoder e = new Encoder();
 			e.data = data;
@@ -354,7 +309,6 @@ class Encoder {
 			prefix_data = e;
 			data = new byte[0];
 			addToSequence(asn1_data, offset, length);
-			//System.err.println("addASN1ToASN1Sequence_r2: "+bytes+"+"+length);
 		}
 		return this;
 	}
@@ -364,7 +318,6 @@ class Encoder {
 		setASN1Type(Encoder.TAG_INTEGER);
 		setASN1Length(data.length);
 		bytes+=data.length;
-		//assert(bytes==2+data.length);
 	}
 	/**
 	 * 
@@ -376,7 +329,6 @@ class Encoder {
 		setASN1Type(type);
 		setASN1Length(data.length);
 		bytes+=data.length;
-		//assert(bytes==2+data.length);
 	}
 	public Encoder(long l){
 		data=new BigInteger(""+l).toByteArray();
@@ -409,7 +361,6 @@ class Encoder {
 	public static String getGeneralizedTime(Calendar time){
 		if(time==null) return null;
 		String result = String.format("%1$tY%1$tm%1$td%1$tH%1$tM%1$tS.%1$tLZ",time);	
-		//System.out.println("getGeneralizedTime............. "+result+" from "+time);
 		return result;
 	}
 	public Encoder(Calendar time) {
@@ -423,14 +374,6 @@ class Encoder {
 			ASN1_Util.printCallPath("why?");
 			return;
 		}
-		//if(UTC==null) UTC=this.getGeneralizedTime(0);
-		/*
-		String UTC=String.format("%1$tY%1$tm%1$td%1$tH%1$tM%1$tS.%1$tLZ",time);
-			time.get(Calendar.YEAR)+time.get(Calendar.MONTH)+
-			time.get(Calendar.DAY_OF_MONTH)+time.get(Calendar.HOUR)+
-			time.get(Calendar.MINUTE)+time.get(Calendar.SECOND)+"."+
-			time.get(Calendar.MILLISECOND));
-			*/
 		data=UTC.getBytes(Charset.forName("UTF-8"));
 		setASN1Type(Encoder.TAG_GeneralizedTime);
 		setASN1Length(data.length);
@@ -535,7 +478,7 @@ class Encoder {
 		data = new byte[s.length+1];
 		data[0] = padding_bits;
 		Encoder.copyBytes(data, 1, s, s.length);
-		setASN1Type(type);//Encoder.TAG_BIT_STRING);
+		setASN1Type(type);
 		setASN1Length(data.length);
 		bytes += data.length;
 		assert(bytes == this.header_type.length + this.header_length.length + data.length);
@@ -678,16 +621,6 @@ class Encoder {
 	 */
 	public static Encoder getBNsEncoder(ArrayList<BigInteger> param) {
 		return getBNsEncoder(param, Encoder.TAG_INTEGER);
-//		if (param == null) {
-//			return Encoder.getNullEncoder();
-//		}
-//		Encoder enc = new Encoder().initSequence();
-//		for (int k = 0; k < param.size(); k++) {
-//			BigInteger crt = param.get(k);
-//			if (crt != null) enc.addToSequence(new Encoder(crt));
-//			else enc.addToSequence(Encoder.getNullEncoder());
-//		}
-//		return enc;
 	}
 	/**
 	 * for null param it returns a NULL ASN1 encoder
@@ -788,7 +721,6 @@ class Encoder {
 		}
 		String[] keys = (String[]) param.keySet().toArray(new String[0]);  
         Arrays.sort(keys);  
-
 		Encoder enc = new Encoder().initSequence();
 		for(String s: keys) {
 			Encoder e = new Encoder().initSequence();
@@ -817,19 +749,14 @@ class Encoder {
 		System.err.println("Done Object size: "+bytes);
 	}
 	public String toString(){
-		//print();
 		String res="";
 		byte[] str = getBytes();
 		return ASN1_Util.byteToHex(str," ");
-		//for(int k=0; k<str.length; k++) res=res+" "+str[k];
-		//return res;
 	}
 	public static void main(String args[]) throws ASN1DecoderFail{
 		Encoder seq2=(new Encoder())
 					.initSequence().addToSequence(new Encoder((byte)3))
 					.addToSequence(new Encoder(ASN1_Util.CalendargetInstance()));
-		//seq2.print();
-		
 		Encoder my_int = new Encoder((byte)124);
 		Encoder my_int2 = new Encoder("1024");
 		Encoder my_seq = (new Encoder()).initSequence()
@@ -838,7 +765,6 @@ class Encoder {
 			.addToSequence(seq2)
 			;
 		System.out.println(my_seq);
-		//my_seq.print();
 		Decoder dec = new Decoder(my_seq.getBytes(),0);
 		dec=dec.getContent();
 		System.out.println(dec);

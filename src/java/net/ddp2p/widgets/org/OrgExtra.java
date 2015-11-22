@@ -1,26 +1,19 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.org;
-
 import static net.ddp2p.common.util.Util.__;
-
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -36,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
-
 import javax.swing.Action;
 import javax.swing.DefaultCellEditor;
 import javax.swing.ImageIcon;
@@ -55,7 +47,6 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.data.D_OID;
 import net.ddp2p.common.data.D_OrgParam;
@@ -71,7 +62,6 @@ import net.ddp2p.widgets.components.DebateDecideAction;
 import net.ddp2p.widgets.components.LVEditor;
 import net.ddp2p.widgets.components.LVRenderer;
 import net.ddp2p.widgets.news.NewsModel;
-
 @SuppressWarnings("serial")
 public class OrgExtra extends JTable implements MouseListener, ActionListener {
 	private static final boolean DEBUG = false;
@@ -81,7 +71,6 @@ public class OrgExtra extends JTable implements MouseListener, ActionListener {
 	public SpinEditor spin;
 	public LVEditor lvEditor;
 	public OIDComboBox comboBox;
-	// private ColorRenderer colorRenderer;
 	public OrgExtra() {
 		super(new OrgExtraModel(Application.getDB()));
 		init();
@@ -98,25 +87,20 @@ public class OrgExtra extends JTable implements MouseListener, ActionListener {
 		getModel().setTable(this);
 		addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
-		//colorRenderer = new ColorRenderer(getModel());
 		initColumnSizes();
 		this.getTableHeader().setToolTipText(
         __("Click to sort; Shift-Click to sort in reverse order"));
 		this.setAutoCreateRowSorter(true);
-		
 		TableColumn oidColumn = this.getColumnModel().getColumn(OrgExtraModel.TABLE_COL_OID);
-		comboBox = getModel().getOIDComboBox();//new OIDComboBox();
+		comboBox = getModel().getOIDComboBox();
 		comboBox.addActionListener(this);
 		oidColumn.setCellEditor(new DefaultCellEditor(comboBox));
-		
 		TableColumn neighColumn = this.getColumnModel().getColumn(OrgExtraModel.TABLE_COL_NEIGHB);
 		spin = new SpinEditor();
 		neighColumn.setCellEditor(spin);
-
 		TableColumn listColumn = this.getColumnModel().getColumn(OrgExtraModel.TABLE_COL_VALUES);
 		lvEditor = new LVEditor();
 		listColumn.setCellEditor(lvEditor);
-		
 		this.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
 	}
 	public JScrollPane getScrollPane(){
@@ -127,13 +111,10 @@ public class OrgExtra extends JTable implements MouseListener, ActionListener {
     public JPanel getPanel() {
     	JPanel jp = new JPanel(new BorderLayout());
     	JScrollPane scrollPane = getScrollPane();
-        //scrollPane.setPreferredSize(new Dimension(400, 100));
         jp.add(scrollPane, BorderLayout.CENTER);
 		return jp;
     }
 	public TableCellRenderer getCellRenderer(int row, int column) {
-		//if ((column == OrgExtraModel.TABLE_COL_OID)) return colorRenderer;
-		//if ((column == OrgExtraModel.TABLE_COL_NEIGHB))column.setCellRenderer(new SpinnerRenderer(values));
 		if ((column == OrgExtraModel.TABLE_COL_VALUES)) return new LVRenderer();
 		return super.getCellRenderer(row, column);
 	}
@@ -159,20 +140,16 @@ public class OrgExtra extends JTable implements MouseListener, ActionListener {
         OrgExtraModel model = (OrgExtraModel)this.getModel();
         TableColumn column = null;
         Component comp = null;
-        //Object[] longValues = model.longValues;
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
- 
         for (int i = 0; i < model.getColumnCount(); i++) {
         	int headerWidth = 0;
         	int cellWidth = 0;
             column = this.getColumnModel().getColumn(i);
- 
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
- 
             for (int r = 0; r < model.getRowCount(); r ++) {
             	comp = this.getDefaultRenderer(model.getColumnClass(i)).
                              getTableCellRendererComponent(
@@ -186,7 +163,6 @@ public class OrgExtra extends JTable implements MouseListener, ActionListener {
                                    + "headerWidth = " + headerWidth
                                    + "; cellWidth = " + cellWidth);
             }
- 
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
@@ -219,52 +195,26 @@ public class OrgExtra extends JTable implements MouseListener, ActionListener {
 	}
 	JPopupMenu getPopup(int row, int col){
 		JMenuItem menuItem;
-    	
     	ImageIcon addicon = DDIcons.getAddImageIcon(__("add an item")); 
     	ImageIcon delicon = DDIcons.getDelImageIcon(__("delete an item")); 
     	ImageIcon reseticon = DDIcons.getResImageIcon(__("reset item"));
     	JPopupMenu popup = new JPopupMenu();
-    	//OrgExtraUpAction uAction;
-    	//OrgExtraDownAction prAction;
     	OrgExtraDeleteAction pdAction;
     	OrgExtraAddAction aAction;
-    	// uAction = new PeersUseAction(this, _("Toggle"),addicon,_("Toggle it."),_("Will be used to synchronize."),KeyEvent.VK_A);
     	aAction = new OrgExtraAddAction(this, __("Add!"), addicon,__("Add new field."), __("Add"),KeyEvent.VK_A);
     	aAction.putValue("row", new Integer(row));
-    	//aAction.putValue("org", this.getModel().org_id);
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);
     	if (row < 0) return popup;
-    	
-       	//uAction = new OrgExtraUpAction(this, _("Use!"),addicon,_("Use it."),_("Will be used to synchronize."),KeyEvent.VK_A);
-    	//uAction.putValue("row", new Integer(row));
-    	//menuItem = new JMenuItem(uAction);
-    	//popup.add(menuItem);
-    	//
-    	//prAction = new OrgExtraDownAction(this, _("Reset!"), reseticon,_("Bring again all data from this."), _("Go restart!"),KeyEvent.VK_R);
-    	//prAction.putValue("row", new Integer(row));
-    	//popup.add(new JMenuItem(prAction));
-    	//
     	pdAction = new OrgExtraDeleteAction(this, __("Delete!"), delicon,__("Delete all data about this."), __("Delete"),KeyEvent.VK_D);
     	pdAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(pdAction));
-    	/*
-    	popup.addSeparator();
-    	Hashtable<String, PluginMenus> mn = this.plugin_menus.get(new Integer(col));
-    	if(mn == null) return popup;
-    	for(String a : mn.keySet()){
-    		PluginMenus pm = mn.get(a);
-    		for(PeerPluginAction pa: pm.plugin_menu_action) popup.add(pa);
-    		for(PeerPluginMenuItem ma: pm.plugin_menu_item) popup.add(ma);
-    	}
-    	*/
     	return popup;
 	}
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
-    	int row; //=this.getSelectedRow();
-    	int col; //=this.getSelectedColumn();
+    	int row; 
+    	int col; 
     	if(!evt.isPopupTrigger()) return;
-    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
         row=this.rowAtPoint(point);
         col=this.columnAtPoint(point);
@@ -279,7 +229,6 @@ public class OrgExtra extends JTable implements MouseListener, ActionListener {
 		if(e.getSource()==comboBox) {
 			comboBox.edit(e);
 		}
-		//super.actionPerformed(e);
 	}
 	/**
 	 * This sets the highlighted extra to extra_ID
@@ -290,7 +239,6 @@ public class OrgExtra extends JTable implements MouseListener, ActionListener {
 		getModel().setCurrentField(extra_ID);
 	}
 }
-
 @SuppressWarnings("serial")
 class OrgExtraDeleteAction extends DebateDecideAction {
     private static final boolean DEBUG = false;
@@ -318,14 +266,6 @@ class OrgExtraDeleteAction extends DebateDecideAction {
     	}
     	OrgExtraModel model = (OrgExtraModel)tree.getModel();
     	model.deleteRow(row);
-    	/*		
-    			Util.getString(model.m_extras.get(row).get(table.field_extra.OPARAM_EXTRA_FIELD_ID));
-    	try {
-			Application.db.delete(table.field_extra.TNAME, new String[]{table.field_extra.field_extra_ID}, new String[]{extraID}, DEBUG);
-		} catch (P2PDDSQLException e1) {
-			e1.printStackTrace();
-		}
-    	*/
     }
 }
 @SuppressWarnings("serial")
@@ -344,28 +284,20 @@ class OrgExtraAddAction extends DebateDecideAction {
     	Object src = e.getSource();
     	JMenuItem mnu;
     	int row =-1;
-    	//String org_id=null;
-    	
     	if (src instanceof JMenuItem) {
     		mnu = (JMenuItem)src;
     		Action act = mnu.getAction();
     		row = ((Integer)act.getValue("row")).intValue();
-    		//org_id = Util.getString(act.getValue("org"));
-            //System.err.println("row property: " + row);
     	} else {
     		row = tree.getSelectedRow();
-    		//org_id = tree.getModel().getOrgLID();
-    		//System.err.println("Row selected: " + row);
     	}
     	class OrgExtra_SP {
     		public int row;
     		public long id;
     		public OrgExtra tree;
     		OrgExtra_SP (int _row, OrgExtra _tree) {row = _row; tree = _tree;}
-    		//OrgExtra_SP (int _row, long _id, OrgExtra _tree) {row = _row; id = _id; tree = _tree;}
     	}
     	new net.ddp2p.common.util.DDP2P_ServiceThread("OrgExtraRows", true, new OrgExtra_SP(row, tree)) {
-
 			@Override
 			public void _run() {
 				OrgExtra_SP tree_sp = (OrgExtra_SP) ctx;
@@ -376,7 +308,6 @@ class OrgExtraAddAction extends DebateDecideAction {
 		    		tree_sp.row = cnt - 1;
 		    		tree_sp.id = extra_ID;
 		    		SwingUtilities.invokeLater(new net.ddp2p.common.util.DDP2P_ServiceRunnable("OrgExtra_SW", false, false, tree_sp) {
-		    			// may be set daemon
 						@Override
 						public void _run() {
 							OrgExtra_SP tree_sp = (OrgExtra_SP) ctx;
@@ -384,10 +315,8 @@ class OrgExtraAddAction extends DebateDecideAction {
 							model.fireTableRowsInserted(tree_sp.row,  tree_sp.row);
 				    		tree.setCurrentField(tree_sp.id);
 						}
-		    			
 		    		});
 		    	}
-				
 			}}.start();
   		return;
     }
@@ -406,13 +335,10 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	DBInterface db;
-	//Object _orgs[]=new Object[0];
-	//String org_id = null;
 	D_Organization org;
 	String columnNames[]={__("Label"),__("Values"),__("Default"),__("Level"),__("Req"),
 			__("Lazy"),__("Cert"),__("Tip"),__("OID")};
 	ArrayList<OrgExtra> tables= new ArrayList<OrgExtra>();
-	//ArrayList<ArrayList<Object>> m_extras;
 	public void setTable(OrgExtra orgExtra) {
 		tables.add(orgExtra);
 	}
@@ -422,7 +348,6 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
     		return;
     	}
      	if (row < 0) return;
-    	//String extraID = Util.getStringID(model.org.getOrgParam(row).field_LID);
      	org = D_Organization.getOrgByOrg_Keep(org);
      	org.deleteOrgParam(row);
      	fireTableRowsDeleted(row, row);
@@ -434,16 +359,12 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
     		System.err.println("OrgExtraModel:addRow: no org for row: " + row);
     		return -1;
     	}
-     	//String new_global_extra = null; // data.D_OrgParam.makeGID(null);
     	org = D_Organization.getOrgByOrg_Keep(org);
     	String new_level = net.ddp2p.common.table.field_extra.partNeigh_non_neighborhood_indicator+"";
 		if (row >= 0) {
 			new_level = org.getOrgParam(row).partNeigh+"";
      	}
-		//System.err.println("OrgExtraModel:act: orig org: \n" + org);
 		long extra_ID = org.addEmptyOrgExtraParam(new_level);
-		//System.err.println("OrgExtraModel:act: final org: row=" +extra_ID+" cnt="+this.getRowCount()+"\n" + org);
-		//fireTableRowsInserted(getRowCount()-1,  getRowCount()-1);
 		if (org.dirty_any()) org.storeRequest();
 		org.releaseReference();
 		return extra_ID;
@@ -459,15 +380,11 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 	public void setCurrentField(long extra_ID) {
 		D_Organization _org = this.org;
 		if (DEBUG) System.out.println("OrgExtraModel:setCurrentField:long: eID"+extra_ID);
-		// Util.printCallPath("Org");
 		if (_org == null) {
 			if (DEBUG) System.out.println("OrgExtraModel:setCurrent:long: no org");
 			return;
 		}
-		//this.fireTableDataChanged();
 		for (int k = 0; k < _org.getOrgParamsLen(); k ++) {
-			//ArrayList<Object> e = m_extras.get(k);
-			//Object i = e.get(table.field_extra.OPARAM_EXTRA_FIELD_ID);
 			D_OrgParam op = _org.getOrgParam(k);
 			if (op == null) {
 				if (DEBUG) System.out.println("OrgExtraModel: setCurrent: null param at k = " + k);
@@ -478,7 +395,6 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 				if (DEBUG) System.out.println("OrgExtraModel: setCurrent: null param at k = " + k+" id="+op.field_LID);
 				continue;
 			}
-			
 			if (op.field_LID == extra_ID) {
 				if (DEBUG) System.out.println("OrgExtraModel: setCurrent:long: found k = " + k);
 				for (OrgExtra o: tables) {
@@ -487,7 +403,6 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 					ListSelectionModel selectionModel = o.getSelectionModel();
 					selectionModel.setSelectionInterval(tk, tk);
 					o.scrollRectToVisible(o.getCellRect(tk, 0, true));
-					//o.fireListener(k, 0);
 				}
 				break;
 			}
@@ -496,7 +411,6 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 	public OrgExtraModel(DBInterface _db) {
 		db = _db;
 		db.addListener(this, new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.field_extra.TNAME)), null);
-		// DBSelector.getHashTable(table.organization.TNAME, table.organization.organization_ID, ));
 		load_OIDs();
 		update(null, null);
 	}
@@ -508,16 +422,11 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 	 * @param _orgID
 	 */
 	public void setCurrentOrg (String _orgID) {
-		//boolean DEBUG = true;
-		//org_id = _orgID;
 		if (DEBUG) System.out.println ("OrgExtraModel: setCurrentOrg: orgID="+_orgID);
 		if (_orgID == null) {
-			//m_extras = null;
 			org = null;
 			if (DEBUG) System.out.println ("OrgExtraModel: setCurrentOrg: null orgID="+_orgID);
-//			this.fireTableDataChanged();
 			SwingUtilities.invokeLater(new net.ddp2p.common.util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
-				// daemon?
 				@Override
 				public void _run() {
 					((OrgExtraModel)ctx).fireTableDataChanged();
@@ -525,33 +434,13 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 			});
 			return;
 		}
-		
 		org = D_Organization.getOrgByLID_NoKeep (_orgID, true);
-		//this.fireTableDataChanged();
-		
 		SwingUtilities.invokeLater(new net.ddp2p.common.util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
-			// daemon?
 			@Override
 			public void _run() {
 				((OrgExtraModel)ctx).fireTableDataChanged();
 			}
 		});
-		
-		/*
-		String sql = "SELECT "+Util.setDatabaseAlias(table.field_extra.org_field_extra,"e")+
-		",o."+table.oid.oid_ID+",o."+table.oid.OID_name+",o."+table.oid.explanation+
-		" FROM "+table.field_extra.TNAME+" AS e " +
-				" LEFT JOIN "+table.oid.TNAME+" AS o ON(o."+table.oid.sequence+"=e."+table.field_extra.oid+") " +
-						" WHERE "+table.field_extra.organization_ID+"=? GROUP BY e."+table.field_extra.field_extra_ID;
-		try {
-			m_extras = Application.db.select(sql, new String[]{org_id},DEBUG);
-			this.fireTableDataChanged();
-			//this.fireTableStructureChanged();
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
-		*/
-		
 	}
 	public void load_OIDs() {
 		if (D_OID._load_OIDs ());
@@ -575,10 +464,8 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 		if (_org == null) return 0;
 		return _org.getOrgParamsLen();
 	}
-
 	@Override
 	public Object getValueAt(int row, int col) {
-		//boolean DEBUG = false;
 		if (DEBUG) System.out.println("OrgExtraModel:getValueAt: "+row+" col="+col);
 		if (org == null) {
 			if(DEBUG) System.out.println("OrgExtraModel:getValueAt: null extras");
@@ -589,59 +476,33 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 			if(DEBUG) System.out.println("OrgExtraModel:getValueAt: null extras");
 			return null;
 		}
-		
 		Object result = null;
 		if (row >= params.length){
 			if(DEBUG) System.out.println("OrgExtraModel:getValueAt: row>="+params.length);
 			return result;
 		}
-		/*
-		ArrayList<Object> field = this.m_extras.get(row);
-		if ((field == null) || field.size() <= col){
-			if(DEBUG) System.out.println("OrgExtraModel:getValueAt: fields="+field);
-			return null;
-		}
-		*/
 		D_OrgParam param = params[row];
-		// String fieldID = Util.getString(field.get(table.field_extra.OPARAM_EXTRA_FIELD_ID));
 		switch (col) {
-		case TABLE_COL_LABEL: result = param.label; //field.get(table.field_extra.OPARAM_LABEL); 
+		case TABLE_COL_LABEL: result = param.label; 
 			break;
-		case TABLE_COL_LAZY: result = new Boolean(param.can_be_provided_later);//field.get(table.field_extra.OPARAM_LATER);
+		case TABLE_COL_LAZY: result = new Boolean(param.can_be_provided_later);
 			break;
-		case TABLE_COL_CERTIFIED: result = new Boolean(param.certificated); //field.get(table.field_extra.OPARAM_CERT);
+		case TABLE_COL_CERTIFIED: result = new Boolean(param.certificated); 
 			break;
-		case TABLE_COL_REQUIRED: result = new Boolean(param.required); // field.get(table.field_extra.OPARAM_REQ);
+		case TABLE_COL_REQUIRED: result = new Boolean(param.required); 
 			break;
 		case TABLE_COL_NEIGHB:
 			result = new Integer (param.partNeigh);
-			/*
-			try {
-				Object o = field.get(table.field_extra.OPARAM_NEIGH);
-				if (o == null) 
-					result = new Integer(table.field_extra.partNeigh_non_neighborhood_indicator+"");
-				else	if(o instanceof Integer) result = (Integer)o;
-				else	result = new Integer(Util.ival(o, table.field_extra.partNeigh_non_neighborhood_indicator));
-			} catch(Exception e){result = new Integer(table.field_extra.partNeigh_non_neighborhood_indicator+"");}
-			*/
 			break;
-		case TABLE_COL_VALUES: result = param.list_of_values;// Util.concat(param.list_of_values,table.organization.ORG_VAL_SEP, null); //field.get(table.field_extra.OPARAM_LIST_VAL);
-			 //System.out.println("OrgExtra: getValueAt: "+Util.concat(param.list_of_values, " ; "));
+		case TABLE_COL_VALUES: result = param.list_of_values;
 		     break;
-		case TABLE_COL_DEFAULT: result = param.default_value; //field.get(table.field_extra.OPARAM_DEFAULT);
+		case TABLE_COL_DEFAULT: result = param.default_value; 
 			break;
-		case TABLE_COL_TIP: result = param.tip; //field.get(table.field_extra.OPARAM_TIP);
+		case TABLE_COL_TIP: result = param.tip; 
 				break;
 		case TABLE_COL_OID:{
-			String seq = Util.BNOID2String(param.oid);//Util.getString(field.get(table.field_extra.OPARAM_OID));
+			String seq = Util.BNOID2String(param.oid);
 			result = oidComboBox.getOIDItem(seq);
-			/*
-			result = new OIDItem(
-					field.get(COL_OID_NAME),
-					field.get(COL_OID_ID),
-					field.get(COL_OID_EXPL),
-					seq);
-			*/
 			break;
 		}
 		default:
@@ -666,23 +527,6 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 		if (DEBUG) System.out.println("OrgExtraModel:getValueAt: "+result);
 		return result;
 	}
-	/*
-	private int selectByCol(int col) {
-		int result = -1;
-		switch(col) {
-		case TABLE_COL_LABEL: result = table.field_extra.OPARAM_LABEL; break;
-		case TABLE_COL_LAZY: result = table.field_extra.OPARAM_LATER; break;
-		case TABLE_COL_CERTIFIED: result = table.field_extra.OPARAM_CERT; break;
-		case TABLE_COL_REQUIRED: result = table.field_extra.OPARAM_REQ; break;
-		case TABLE_COL_NEIGHB: result = table.field_extra.OPARAM_NEIGH; break;
-		case TABLE_COL_VALUES: result = table.field_extra.OPARAM_LIST_VAL; break;
-		case TABLE_COL_DEFAULT: result = table.field_extra.OPARAM_DEFAULT; break;
-		case TABLE_COL_TIP: result = table.field_extra.OPARAM_TIP; break;
-		case TABLE_COL_OID: result = table.field_extra.OPARAM_OID; break;
-		}
-		return result;
-	}
-	*/
 	@Override
 	public void setValueAt(Object value, int row, int col) {
 		if(DEBUG) System.out.println("OrgExtraModel:setValueAt: "+row+" val="+value+" col="+col);
@@ -697,7 +541,7 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 	}
 	public void _setValueAt(Object value, int row, int col) {
 		D_OrgParam[] params = org.getOrgParams();
-		boolean r; // = false;
+		boolean r; 
 		if ((params == null)) {
 			if (_DEBUG) System.out.println("OrgExtraModel:setValueAt: null extra params");
 			return;
@@ -706,17 +550,10 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 			if (_DEBUG) System.out.println("OrgExtraModel:setValueAt: row>="+params.length);
 			return;
 		}
-		/*
-		ArrayList<Object> field = this.m_extras.get(row);
-		if((field == null) || field.size() <= col){
-			if(_DEBUG) System.out.println("OrgExtraModel:setValueAt: fields="+field);
-			return;
-		}
-		*/
 		D_OrgParam param = params[row];
 		Object o;
 		String s=null;
-		switch (col) { // Store strings in s; prepare strings for boolean values
+		switch (col) { 
 		case TABLE_COL_NEIGHB:
 			param.partNeigh = Util.ival(value, net.ddp2p.common.table.field_extra.partNeigh_non_neighborhood_indicator);
 			o=value; 
@@ -785,22 +622,6 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 			if (_DEBUG) System.out.println("OrgExtraModel:setValueAt: unknown col="+col);
 			break;
 		}
-		//field.set(selectByCol(col), o); // store objects in fields, since we do not call sync on database update
-		/*
-		switch (col) { // store in database without sync
-		case TABLE_COL_LABEL:    r=D_Organization.set_my_data(table.field_extra.label, s, param); break;
-		case TABLE_COL_LAZY:     r=D_Organization.set_my_data(table.field_extra.can_be_provided_later, s, param); break;
-		case TABLE_COL_CERTIFIED:r=D_Organization.set_my_data(table.field_extra.certificated, s, param); break;
-		case TABLE_COL_REQUIRED: r=D_Organization.set_my_data(table.field_extra.required, s, param); break;
-		case TABLE_COL_NEIGHB:   r=D_Organization.set_my_data(table.field_extra.partNeigh, Util.getString(o), param); break;
-		case TABLE_COL_VALUES:   r=D_Organization.set_my_data(table.field_extra.list_of_values, s, param); break;
-		case TABLE_COL_DEFAULT:  r=D_Organization.set_my_data(table.field_extra.default_val, s, param); break;
-		case TABLE_COL_TIP:      r=D_Organization.set_my_data(table.field_extra.tip, s, param); break;
-		case TABLE_COL_OID:      r=D_Organization.set_my_data(table.field_extra.oid, s, param);break;
-		default:
-			if (DEBUG) System.out.println("OrgExtraModel:setValueAt: unknown col="+col);
-		}
-		*/
 		fireTableCellUpdated(row, col);
 	}
 	@Override
@@ -810,13 +631,6 @@ class OrgExtraModel extends AbstractTableModel implements TableModel, DBListener
 	}
 	@Override
 	public boolean isCellEditable(int row, int col) {
-		/*
-		switch(col){
-		case TABLE_COL_NAME:
-		case TABLE_COL_SLOGAN:
-			return true;
-		}
-		*/
 		return true;
 	}
 	@Override

@@ -1,39 +1,24 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
- 
-
 package net.ddp2p.common.util;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
-//import com.almworks.sqlite4java.*;
 import java.io.File;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
-
-//import util.db.DB_Implementation_SQLite;
-
-//import util.db.DB_Implementation_JDBC_SQLite;
-
-
 class Listener{
 	DBListener listener;
 	ArrayList<String> tables;
@@ -51,7 +36,6 @@ class DBWorkThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	static private int cnt = 0;
 	DBWorkThread(DBListener l, ArrayList<String> tables, Hashtable<String, DBInfo> info){
 		super ("DB_Worker", false);
-		//Util.printCallPath("where called");
 		this.l=l;
 		this.tables = tables;
 		this.info=info;
@@ -60,13 +44,11 @@ class DBWorkThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	static int name = 0;
 	public void _run() {
 		this.setName("DB_Worker:"+" "+(name++));
-		//ThreadsAccounting.registerThread();
 		try {
 			__run();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		//ThreadsAccounting.unregisterThread();
 	}
 	public void __run() {
 		cnt ++;
@@ -83,11 +65,9 @@ class DBWorkThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	}
 }
 public class DBInterface implements DB_Implementation {
-	//ArrayList<Listener> listeners= new ArrayList<Listener>();
 	Hashtable <DBListener, ArrayList<String>>hash_listeners=new Hashtable<DBListener, ArrayList<String>>();
 	Hashtable<String,ArrayList<DBListener>> hash_tables=new Hashtable<String,ArrayList<DBListener>>();
 	public static final int MAX_SELECT = 10000;
-	//static final boolean DEBUG = true;
 	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
     String filename = Application.DELIBERATION_FILE;
@@ -102,7 +82,6 @@ public class DBInterface implements DB_Implementation {
      * @return
      */
     public synchronized boolean addListener(DBListener object, ArrayList<String> tables, Hashtable<String,DBSelector[]> or_selectors){
-    	//listeners.add(new Listener(object, tables));
     	if(DEBUG) System.out.println("LISTENING: "+object+" ("+tables+")");
     	ArrayList<String> olds = hash_listeners.get(object);
     	if(olds!=null) return false;
@@ -129,7 +108,6 @@ public class DBInterface implements DB_Implementation {
     	}
     }
     private void fireTableUpdate(ArrayList<String> tables) {
-    	//boolean DEBUG = true;
     	if(DEBUG) System.out.println("DBInterface:fireTableUpdate: FIRE UPDATE");
     	HashSet<DBListener> list = new HashSet<DBListener>();
     	for(String table: tables){
@@ -146,7 +124,6 @@ public class DBInterface implements DB_Implementation {
     		if(DEBUG) System.out.println("DBInterface:fireTableUpdate: FIRED UPDATE to: "+l);
     	}
     	if(DEBUG) System.out.println("DBInterface:fireTableUpdate: FIRED UPDATE");
-   	
     }
     private void fireTableUpdate(String table){
     	ArrayList<String> als = new ArrayList<String>();
@@ -174,7 +151,6 @@ public class DBInterface implements DB_Implementation {
     public static String makeInsertSQL(String table, String[] fields, String[] params){
     	String sql="insert into "+table;
     	if(fields.length==0) return sql+" (ROWID) VALUES (NULL);";
-//    	if(fields.length==0) return _insert(sql+" (ROWID) VALUES (NULL);", params, dbg);
     	sql+=" ("+fields[0];
     	for( int k=1; k<fields.length; k++) sql = sql+","+fields[k];
     	sql = sql+") values (?";
@@ -185,7 +161,6 @@ public class DBInterface implements DB_Implementation {
     public static String makeInsertOrIgnoreSQL(String table, String[] fields, String[] params){
     	String sql="insert or ignore into "+table;
     	if(fields.length==0) return sql+" (ROWID) VALUES (NULL);";
-//    	if(fields.length==0) return _insert(sql+" (ROWID) VALUES (NULL);", params, dbg);
     	sql+=" ("+fields[0];
     	for( int k=1; k<fields.length; k++) sql = sql+","+fields[k];
     	sql = sql+") values (?";
@@ -194,7 +169,6 @@ public class DBInterface implements DB_Implementation {
     	return sql;
     }
     public synchronized long insertNoSync(String table, String[] fields, String[] params, boolean dbg) throws P2PDDSQLException {
-    	//if(dbg) Util.printCallPath("insert sources");
    		if(dbg) System.out.println("DBInterface:insertNoSync: insert in: "+table+" "+fields.length+" "+params.length);
     	if(db.hasParamInsert())
     		return db.tryInsert(table, fields, params, dbg);
@@ -211,7 +185,6 @@ public class DBInterface implements DB_Implementation {
      * @throws P2PDDSQLException
      */
     public synchronized long _insertNoSync(String table, String[] fields, String[] params, boolean dbg) throws P2PDDSQLException {
-    	//if(dbg) Util.printCallPath("insert sources");
     	if(dbg) System.out.println("DBInterface:insertNoSync: insert in: "+table+" "+fields.length+" "+params.length);
     	String sql = makeInsertSQL(table, fields, params);
     	return _insert(sql, params,dbg);
@@ -247,7 +220,6 @@ public class DBInterface implements DB_Implementation {
     	String sql="update "+table+" set "+fields[0]+"=?";
     	for( int k=1; k<fields.length; k++) {
     		sql = sql+","+fields[k]+"=?";
-    		//para2.add(params[cp++]);
     		cp++;
     	}
     	if(selector.length>0) {
@@ -395,7 +367,6 @@ public class DBInterface implements DB_Implementation {
     public synchronized ArrayList<ArrayList<Object>> select(String sql, String[] params) throws P2PDDSQLException{
     	return select(sql, params, DEBUG);
     }
-
 /**
  * DB procedures
  */
@@ -415,8 +386,6 @@ public class DBInterface implements DB_Implementation {
      	init(_filename.getAbsolutePath());
     }
     public void init(String _filename) throws P2PDDSQLException{
-     	//db = new DB_Implementation_SQLite();
-    	//db = new DB_Implementation_JDBC_SQLite();
     	db = Application_GUI.get_DB_Implementation();
     	if (db == null) {
     		System.out.println("DBInterface:init: database implementation is missing");
@@ -424,15 +393,6 @@ public class DBInterface implements DB_Implementation {
     	}
     	db.open(_filename);
     }
-//    public synchronized void exec(String sql) throws P2PDDSQLException{
-//    	db = new SQLiteConnection(file);
-//    	db.open(true);
-//    	db.exec("BEGIN IMMEDIATE");
-//    	db.exec(sql);
-//    	if(DEBUG) System.err.println("executed: "+sql);
-//    	db.exec("COMMIT");
-//    	db.dispose();
-//    }
 	@Override
 	public ArrayList<ArrayList<Object>> select(String sql, String[] params,
 			boolean DEBUG) throws P2PDDSQLException {
@@ -472,10 +432,6 @@ public class DBInterface implements DB_Implementation {
 	public void open(String _filename) throws P2PDDSQLException {
 		db.open(_filename);
 	}
-//	@Override
-//	public void keep_open(SQLiteConnection conn) {
-//		db.keep_open(conn);
-//	}
 	public DB_Implementation getImplementation() {
 		return db;
 	}
@@ -499,7 +455,6 @@ public class DBInterface implements DB_Implementation {
 	public void tryDelete(String table, String[] fields, String[] params,
 			boolean dbg) throws P2PDDSQLException {
 		delete(table, fields, params, dbg);
-		
 	}
 	@Override
 	public boolean hasParamUpdate() {
@@ -511,5 +466,4 @@ public class DBInterface implements DB_Implementation {
 		updateNoSync(table, fields, selector,
 				params, dbg);
 	}	
-
 }

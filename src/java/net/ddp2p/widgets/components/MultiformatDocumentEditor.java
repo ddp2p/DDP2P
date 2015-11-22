@@ -1,7 +1,5 @@
 package net.ddp2p.widgets.components;
-
 import static net.ddp2p.common.util.Util.__;
-
 import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -15,7 +13,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
@@ -26,17 +23,15 @@ import javax.swing.event.DocumentEvent.ElementChange;
 import javax.swing.event.DocumentEvent.EventType;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.data.D_Document;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.motions.MotionEditor;
-
 @SuppressWarnings("serial")
 public class MultiformatDocumentEditor extends JSplitPane implements ActionListener, DocumentListener{
-	private static final boolean DEBUG = false; //false;
+	private static final boolean DEBUG = false; 
 	D_Document data = new D_Document();
 	JPanel p1,p2,p;
 	private JButton setTxtMode;
@@ -60,50 +55,40 @@ public class MultiformatDocumentEditor extends JSplitPane implements ActionListe
 		p1 = new JPanel();
     	p.setLayout(new BorderLayout());
     	p.add(p1,BorderLayout.NORTH);
-		
     	editor = new DocumentEditor();
     	cnt++;
     	editor.name = "MF"+cnt;
     	editor.init(TEXT_LEN_ROWS, TEXT_LEN_COLS);
     	editor.addListener(this);
-		
 		editor.getComponent(D_Document.RTEDIT).setVisible(false);
 		editor.getComponent(D_Document.TEXTAREA).setVisible(false);
 		editor.getComponent(D_Document.PDFVIEW).setVisible(false);
-		
 		editor.setType(D_Document.DEFAULT_FORMAT);
 		editor.getComponent(D_Document.DEFAULT_EDITOR).setVisible(true);
-		
 		p2.add(editor.getComponent(D_Document.TEXTAREA));
 		p2.add(editor.getComponent(D_Document.RTEDIT));
 		p2.add(editor.getComponent(D_Document.PDFVIEW));
-		
     	GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.NONE;
 		c.gridx = 0; c.gridy = 0;
 		c.anchor = GridBagConstraints.WEST;
 		p1.setLayout(new GridBagLayout());
-		
 		c.gridx = 0; c.gridy++;		
 		c.anchor = GridBagConstraints.EAST;
 		p1.add(load_field = new JButton(__("Load PDF/HTM/TXT")),c);
 		load_field.addActionListener(this);
-		
 		c.gridx = 0; c.gridy ++;		
 		c.anchor = GridBagConstraints.EAST;
 		p1.add(this.setTxtMode = new JButton(__("Set TXT Mode")),c);
 		setTxtMode.addActionListener(this);
-		
 		c.gridx = 0; c.gridy ++;		
 		c.anchor = GridBagConstraints.EAST;
 		p1.add(this.setHTMMode = new JButton(__("Set HTML Mode")),c);
 		setHTMMode.addActionListener(this);
-		
 		c.gridx = 0; c.gridy ++;		
 		c.anchor = GridBagConstraints.EAST;
 		p1.add(this.sync_changes = new JButton(__("Sync Changes")),c);
 		this.sync_changes.addActionListener(this);
-		
 	}
 	public void setEnabled(boolean enable){
 		super.setEnabled(enable);
@@ -162,20 +147,15 @@ public class MultiformatDocumentEditor extends JSplitPane implements ActionListe
 	 * @param data
 	 */
 	public void setMode(String _NEW_FORMAT, String data){
-		
 		this.data.setDocumentString(data);
 		this.data.setFormatString(_NEW_FORMAT);
-		
 		this.editor.removeListener(this);
 		editor.getComponent().setVisible(false);
 		System.out.println("MFEditor: setMode: setVisCrtTo false");
 		this.editor.setType(this.data.getFormatString());
 		this.editor.setText(this.data.getDocumentString());
-		
 		editor.getComponent().setVisible(true);
 		System.out.println("MFEditor: setMode: setCrtVis=true, enabled="+enabled+" data= "+data);
-	    //this.panel_body.removeAll();
-	    //this.panel_body.add(motion_body_field.getComponent());
 		this.editor.setEnabled(enabled);
 		this.editor.addListener(this);
 	}
@@ -189,14 +169,10 @@ public class MultiformatDocumentEditor extends JSplitPane implements ActionListe
 		editor.updateDoc(this.data);
 		data = this.data.convertTo(_NEW_FORMAT);
 		if(data==null){
-			//if(DEBUG)System.out.println("MFEditor:switchMode: Nothing in doc");
-			//if(_NEW_FORMAT.equals(DocumentEditor.PDF_BODY_FORMAT)) return;
-			//data = "null fost";
 			return;
 		}
 		setMode(_NEW_FORMAT, data);
 	}
-	
 	@Override
 	public void changedUpdate(DocumentEvent evt) {
 		if(DEBUG)System.out.println("JustEditor:changedUpdate:Action: "+evt);
@@ -222,38 +198,11 @@ public class MultiformatDocumentEditor extends JSplitPane implements ActionListe
 	}
 	@SuppressWarnings("unchecked")
 	public void handleFieldEvent(Object source, DocumentEvent evt) {
-		
 		if(evt!=null){
 			this.notifyChange(evt);
 			return;
 		}else{
-			/*
-			evt = new DocumentEvent(){ //placeholder for null
-				public Document mySource = null;
-				@Override
-				public ElementChange getChange(Element arg0) {
-					return null;
-				}
-				@Override
-				public Document getDocument() {
-					return mySource;
-				}
-				@Override
-				public int getLength() {
-					return 0;
-				}
-				@Override
-				public int getOffset() {
-					return 0;
-				}
-				@Override
-				public EventType getType() {
-					return null;
-				}};
-				*/
 		}
-		
-		//boolean DEBUG = true;
 		if(this.setTxtMode==source) {
 			if(DEBUG)System.err.println("MotionEditor:handleFieldEvent: setText");
 			switchMode(D_Document.TXT_BODY_FORMAT);
@@ -289,8 +238,7 @@ public class MultiformatDocumentEditor extends JSplitPane implements ActionListe
 					if("pdf".equals(ext)) {
 	            		if(DEBUG)System.err.println("ControlPane:actionImport: Got: pdf");
 	            		try {
-	            			// File f = new File("/home/msilaghi/CS_seminar_flyer.pdf");
-	            			InputStream in = new FileInputStream(file); // "/home/msilaghi/CS_seminar_flyer.pdf");
+	            			InputStream in = new FileInputStream(file); 
 	            			if(file.length() > DocumentEditor.MAX_PDF) {
 	            				if(_DEBUG) System.out.println("OrgEditor: getText: bin size="+file.length()+" vs "+DocumentEditor.MAX_PDF);
 	            				Application_GUI.warning(__("File too large! Current Limit:"+" "+file.length()+"/"+DocumentEditor.MAX_PDF),
@@ -313,9 +261,7 @@ public class MultiformatDocumentEditor extends JSplitPane implements ActionListe
 	            			if(DEBUG) System.out.println("DocumentEditor: handle: bin size="+bin.length);
 	            			String data = Util.stringSignatureFromByte(bin);
 	            			if(DEBUG) System.out.println("DocumentEditor: handle: txt size="+data.length());
-	            			
 	            			setMode(D_Document.PDF_BODY_FORMAT, data);
-	            			
 							this.notifyChange(evt);
 	            		} catch (FileNotFoundException e) {
 	            			e.printStackTrace();
@@ -328,9 +274,7 @@ public class MultiformatDocumentEditor extends JSplitPane implements ActionListe
 	            			try{
 	            				BufferedReader bri = new BufferedReader(new FileReader(file));
 								String data = Util.readAll(bri);
-								
 								setMode(D_Document.HTM_BODY_FORMAT, data);
-								
 								this.notifyChange(evt);
 	            			}catch(Exception e){
 	            				e.printStackTrace();
@@ -340,9 +284,7 @@ public class MultiformatDocumentEditor extends JSplitPane implements ActionListe
 	            				try{
 		            				BufferedReader bri = new BufferedReader(new FileReader(file));
 									String data = Util.readAll(bri);
-									
 									setMode(D_Document.TXT_BODY_FORMAT, data);
-									
 									this.notifyChange(evt);
 		            			}catch(Exception e){
 		            				e.printStackTrace();
@@ -361,15 +303,6 @@ public class MultiformatDocumentEditor extends JSplitPane implements ActionListe
 	public MultiformatDocumentEditor getMFDocument() {
 		return this;
 	}
-	/*
-	public String getText() {
-		editor.updateDoc(data);
-		return editor.getText();
-	}
-	public void setText(String string) {
-		editor.setText(string);
-	}
-	*/
 	public String getDBDoc() {
 		editor.updateDoc(data);
 		return data.getDBDoc();

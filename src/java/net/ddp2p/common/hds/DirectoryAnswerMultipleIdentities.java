@@ -1,12 +1,9 @@
 package net.ddp2p.common.hds;
-
 import static java.lang.System.out;
-
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -14,7 +11,6 @@ import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
-
 /**
 Payment_Request ::= SEQUENCE {
  method INTEGER,
@@ -65,7 +61,6 @@ public class DirectoryAnswerMultipleIdentities extends ASNObj {
 	public ArrayList<DirectoryAnswerInstance> instances = new ArrayList<DirectoryAnswerInstance>();
 	public String directory_domain;
 	public int directory_udp_port;
-	
 	@Override
 	public String toString(){
 		String r = "DirAnswerMI: [";
@@ -89,7 +84,6 @@ public class DirectoryAnswerMultipleIdentities extends ASNObj {
 		this.decode(dec_da);
 	}
 	public DirectoryAnswerMultipleIdentities(InputStream is) throws Exception {
-		//init_is();
 		byte[] buffer = Util.readASN1Message(is, DirectoryAnswer.MAX_DA, DirectoryAnswer.MAX_LEN); 
 		Decoder dec_da = new Decoder(buffer);
 		decode(dec_da);
@@ -126,8 +120,6 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 	 * @return
 	 */
 	private Encoder getEncoder_3(Encoder enc) {
-		//Encoder enc = new Encoder().initSequence();
-		//enc.addToSequence(new Encoder(version));
 		enc.addToSequence(new Encoder(known));
 		enc.addToSequence(new Encoder(remote_GIDhash, false));
 		if (date_most_recent_among_instances != null)
@@ -137,36 +129,15 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 		enc.addToSequence(Encoder.getEncoder(instances).setASN1Type(DD.TAG_AC3));
 		if (this.directory_domain != null) enc.addToSequence(new Encoder(directory_domain).setASN1Type(DD.TAG_AP4));
 		if (this.directory_udp_port > 0) enc.addToSequence(new Encoder(directory_udp_port).setASN1Type(DD.TAG_AP5));
-		
 		enc.addToSequence(new Encoder(signature_directory));
 		return enc;
 	}
-	
-	/*
-	private Encoder getEncoder_3b(Encoder da) {
-		if(instances.size() <= 0) {
-			da.addToSequence(Encoder.getEncoder(new ArrayList<Address>()));
-			return da;
-		}
-		DirectoryAnswerInstance dia = instances.get(0);
-		if (dia.agent_version!=null) da.addToSequence(Encoder.getEncoderArray(dia.agent_version).setASN1Type(DD.TAG_AC2));
-		da.addToSequence(new Encoder(dia.date_last_contact));
-		da.addToSequence(Encoder.getEncoder(dia.addresses));
-		if (dia.instance_terms!=null) da.addToSequence(Encoder.getEncoder(dia.instance_terms).setASN1Type(DD.TAG_AC4));
-		if (remote_GIDhash != null) da.addToSequence(new Encoder(remote_GIDhash).setASN1Type(DD.TAG_AC5));
-		if (dia.instance != null) da.addToSequence(new Encoder(dia.instance).setASN1Type(DD.TAG_AC6));
-		if (dia.signature_peer.length > 0) da.addToSequence(new Encoder(dia.signature_peer, DD.TAG_AC7));
-		if (signature_directory.length > 0) da.addToSequence(new Encoder(signature_directory, DD.TAG_AC8));
-		return da;
-	}
-*/	
 	private Encoder getEncoder_2(Encoder da) {
 		if(instances.size() <= 0) {
 			da.addToSequence(Encoder.getEncoder(new ArrayList<Address>()));
 			return da;
 		}
 		DirectoryAnswerInstance dia = instances.get(0);
-
 		da.addToSequence(new Encoder(dia.date_last_contact));
 		da.addToSequence(Encoder.getEncoder(dia.addresses));
 		if (dia.instance_terms!=null) da.addToSequence(Encoder.getEncoder(dia.instance_terms).setASN1Type(DD.TAG_AC4));
@@ -180,19 +151,19 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 		}
 		DirectoryAnswerInstance dia = instances.get(0);
 		da.addToSequence(new Encoder(Util.CalendargetInstance()));
-		if(remote_GIDhash != null) da.addToSequence(new Encoder(remote_GIDhash, false));//v1
+		if(remote_GIDhash != null) da.addToSequence(new Encoder(remote_GIDhash, false));
 		Encoder addresses_enc = new Encoder().initSequence();
 		for(int k = 0; k < dia.addresses.size(); k++) {
 			Address cA = dia.addresses.get(k);
 			Encoder crt = new Encoder().initSequence();
-			crt.addToSequence(new Encoder(cA.domain));//.toString().split(":")[0]));
+			crt.addToSequence(new Encoder(cA.domain));
 			crt.addToSequence(new Encoder(new BigInteger(""+cA.tcp_port)));
 			crt.addToSequence(new Encoder(new BigInteger(""+cA.udp_port)));
 			addresses_enc.addToSequence(crt);
 			if(DEBUG) out.println("Added: "+cA.domain+":"+cA.tcp_port+":"+cA.udp_port);
 		}
 		da.addToSequence(addresses_enc);
-		if((dia.instance_terms != null)) da.addToSequence(Encoder.getEncoder(dia.instance_terms).setASN1Type(DD.TAG_AC4));//v1
+		if((dia.instance_terms != null)) da.addToSequence(Encoder.getEncoder(dia.instance_terms).setASN1Type(DD.TAG_AC4));
 		return da;
 	}
 	/**
@@ -210,7 +181,7 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 		for (int k = 0; k < dia.addresses.size(); k ++) {
 			Address cA = dia.addresses.get(k);
 			Encoder crt = new Encoder().initSequence();
-			crt.addToSequence(new Encoder(cA.domain));//.toString().split(":")[0]));
+			crt.addToSequence(new Encoder(cA.domain));
 			crt.addToSequence(new Encoder(new BigInteger(""+cA.tcp_port)));
 			crt.addToSequence(new Encoder(new BigInteger(""+cA.udp_port)));
 			addresses_enc.addToSequence(crt);
@@ -219,7 +190,6 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 		da.addToSequence(addresses_enc);
 		return da;
 	}
-
 	@Override
 	public DirectoryAnswerMultipleIdentities decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder dec_da_content=dec.getContent();
@@ -234,19 +204,12 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 		case 2:
 			return decode_2(dec_da_content);
 		case 3:
-			//return decode_3b(dec_da_content);
-		//case 4:
 			return decode_3(dec_da_content);
 		default:
-			//Application.warning(_("Got Directory Answer"), title)
 			throw new ASN1DecoderFail("DirectoryAnswer unknown version:"+version);
-			//return decode_4(dec_da_content);
 		}
 	}
-
 	private DirectoryAnswerMultipleIdentities decode_3(Decoder d) throws ASN1DecoderFail {
-		//Decoder d = dec.getContent();
-		//version = d.getFirstObject(true).getInteger().intValue();
 		known = d.getFirstObject(true).getBoolean();
 		remote_GIDhash = d.getFirstObject(true).getString();
 		if (d.isFirstObjectTagByte(DD.TAG_AP1))
@@ -262,27 +225,6 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 		signature_directory = d.getFirstObject(true).getBytes();
 		return this;
 	}
-	/*
-	private DirectoryAnswerMultipleIdentities decode_3b(Decoder d) throws ASN1DecoderFail {
-		DirectoryAnswerInstance dai = new DirectoryAnswerInstance();
-		if(d.isFirstObjectTagByte(DD.TAG_AC2))
-			dai.agent_version = d.getFirstObject(true).getIntsArray();
-		dai.date_last_contact = d.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
-		dai.addresses = d.getFirstObject(true).getSequenceOfAL(Address.getASN1Type(), new Address());
-		if(d.isFirstObjectTagByte(DD.TAG_AC4))
-			dai.instance_terms = d.getFirstObject(true).getSequenceOf(DIR_Terms_Requested.getASN1Type(), new DIR_Terms_Requested[]{}, new DIR_Terms_Requested());
-		if(d.isFirstObjectTagByte(DD.TAG_AC5))
-			remote_GIDhash = d.getFirstObject(true).getString();
-		if(d.isFirstObjectTagByte(DD.TAG_AC6))
-			dai.instance = d.getFirstObject(true).getString();
-		if(d.isFirstObjectTagByte(DD.TAG_AC7))
-			dai.signature_peer = d.getFirstObject(true).getBytes();
-		if(d.isFirstObjectTagByte(DD.TAG_AC8))
-			signature_directory = d.getFirstObject(true).getBytes();
-		this.instances.add(dai);
-		return this;
-	}
-	*/
 	private DirectoryAnswerMultipleIdentities decode_2(Decoder d) throws ASN1DecoderFail {
 		DirectoryAnswerInstance dai = new DirectoryAnswerInstance();
 		dai.date_last_contact = d.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
@@ -304,7 +246,6 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 		String gdate = dec_da_content.getFirstObject(true).
 				getGeneralizedTime(Encoder.TAG_GeneralizedTime);
 		if(DEBUG) out.println("Record date: "+gdate);
-		//date.setTime(new Date(gdate));
 		dai.date_last_contact = Util.getCalendar(gdate);
 		if((dec_da_content.getTypeByte()==Encoder.TAG_PrintableString))
 			remote_GIDhash = dec_da_content.getFirstObject(true).getString();
@@ -319,7 +260,6 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 			if(DEBUG) out.println("tcp_port: "+tcp_port);
 			int udp_port = dec_addr.getInteger().intValue();
 			if(DEBUG) out.println("udp_port: "+udp_port);
-			//address.add(new InetSocketAddress(domain, port));
 			dai.addresses.add(new Address(domain, tcp_port,udp_port));
 		}
 		if((dec_da_content.getTypeByte()==DD.TAG_AC4))
@@ -332,7 +272,6 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 		String gdate = dec_da_content.getFirstObject(true).
 				getGeneralizedTime(Encoder.TAG_GeneralizedTime);
 		if(DEBUG) out.println("Record date: "+gdate);
-		//date.setTime(new Date(gdate));
 		dai.date_last_contact = Util.getCalendar(gdate);
 		Decoder dec_addresses = dec_da_content.getFirstObject(true).getContent();
 		while(dec_addresses.type()!=Encoder.TAG_EOC) {
@@ -345,7 +284,6 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 			if(DEBUG) out.println("tcp_port: "+tcp_port);
 			int udp_port = dec_addr.getInteger().intValue();
 			if(DEBUG) out.println("udp_port: "+udp_port);
-			//address.add(new InetSocketAddress(domain, port));
 			dai.addresses.add(new Address(domain, tcp_port,udp_port));
 		}
 		this.instances.add(dai);
@@ -358,5 +296,4 @@ DirectoryAnswerMultipleIdentities ::= [AC19] SEQUENCE {
 	public static byte getASN1Type() {
 		return DD.TAG_AC19;
 	}
-
 }

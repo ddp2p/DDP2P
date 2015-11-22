@@ -1,39 +1,28 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.components;
-
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-
-
-
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.CipherSuit;
 import net.ddp2p.ciphersuits.Cipher_Sizes;
-
 @SuppressWarnings("serial")
 public
 class CipherSelection extends JPanel implements DocumentListener, ActionListener {
@@ -56,10 +45,8 @@ class CipherSelection extends JPanel implements DocumentListener, ActionListener
 	    add(crt_sizes_list = new JComboBox<String>());
 	    add(crt_sizes_int = new JTextField());
 	    add(crt_hash_algos = new JComboBox<String>());
-	    
 	    crt_sizes_list.setVisible(false);
 	    crt_sizes_int.setVisible(false);
-	    
 	    crt_cipher.setSelectedItem(Cipher.getDefaultCipher());
 	    setSelectedCipher(Cipher.getDefaultCipher());
 	    if (crt_sizes_int.isVisible()) {
@@ -70,7 +57,6 @@ class CipherSelection extends JPanel implements DocumentListener, ActionListener
 	    	this.setSelectedSizes(Cipher.getDefaultCipher(),
 	    			this.getCrtCipherSize((String)crt_sizes_list.getSelectedItem()));				
 	    }	
-			
 	    crt_cipher.addActionListener(this);
 	    crt_sizes_list.addActionListener(this);
 	    crt_sizes_int.getDocument().addDocumentListener(this);
@@ -101,9 +87,6 @@ class CipherSelection extends JPanel implements DocumentListener, ActionListener
 			}
 			Object hash = this.crt_hash_algos.getSelectedItem();
 			suit.hash_alg = (String) hash;
-//			if (hash != null) {
-//				cad.ciphersuit = Cipher.buildCiphersuitID(cad.ciphersuit, (String)hash);
-//			}
 		}
 		return suit;
 	}
@@ -171,12 +154,11 @@ class CipherSelection extends JPanel implements DocumentListener, ActionListener
 		crt_hash_algos.removeAllItems();
 		for(String h : ha) 
 			crt_hash_algos.addItem(h);
-		
 		if((ha != null) && (ha.length > 0))
 			crt_hash_algos.setSelectedIndex(0);
 	}
 	private void cipherSizeChanged () {
-		int size = this.getCrtCipherSize(); //Integer.parseInt(this.crt_sizes_int.getText());
+		int size = this.getCrtCipherSize(); 
 		this.setSelectedSizes((String) this.crt_cipher.getSelectedItem(), size);		
 	}
 	@Override
@@ -201,7 +183,6 @@ class CipherSelection extends JPanel implements DocumentListener, ActionListener
 			if(sel == null)
 				return;
 			this.setSelectedSizes((String) this.crt_cipher.getSelectedItem(),
-					//this.crt_sizes_list.getSelectedIndex());
 					this.getCrtCipherSize((String)sel));
 		}
 	}

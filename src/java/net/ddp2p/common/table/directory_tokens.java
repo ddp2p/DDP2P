@@ -1,12 +1,9 @@
 package net.ddp2p.common.table;
-
 import java.util.ArrayList;
 import java.util.regex.Pattern;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
-
 public class directory_tokens {
 	public static final String directory_tokens_ID = "directory_tokens_ID";
 	public static final String peer_ID = "peer_ID";
@@ -17,7 +14,6 @@ public class directory_tokens {
 	public static final String instructions_from_directory = "instructions_from_directory";
 	public static final String date_instructions = "date_instructions";
 	public static final String TNAME = "directory_tokens";
-	
 	public static final String fields_noID =
 			peer_ID+","+
 					peer_instance_ID+","+
@@ -44,7 +40,6 @@ public class directory_tokens {
 	public static ArrayList<Object> searchForToken(long peer_ID2, long instance_ID2, String dirAddr2, String port){
 		String sql;
 		String[]params;
-		// only 
 		sql = "SELECT "+fields+
 			  " FROM  "+TNAME+
 		      " WHERE "+peer_ID+" =? " +
@@ -52,9 +47,7 @@ public class directory_tokens {
 			  " AND   "+directory_domain+" =? "+
 		      " AND   "+directory_tcp_port+" =? "+";";
 		params = new String[]{""+peer_ID2, ""+instance_ID2, dirAddr2, port};
-		
 		DBInterface db = Application.getDB();
-		
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = db.select(sql, params, DEBUG);
@@ -62,7 +55,6 @@ public class directory_tokens {
 			e.printStackTrace();
 			return null;
 		}
-		// no record in the DB
 	    if(u==null || u.size()==0) {
 	    	if (DEBUG) System.out.println("TermsPanel: no tokens for entry peerID="+peer_ID2+":"+instance_ID2+" IP="+dirAddr2+":"+port+" in the DB table:"+TNAME);
 	    	return null;
@@ -71,7 +63,6 @@ public class directory_tokens {
 	     System.out.println("multi tokens for the same enrty in the DB table:"+TNAME);
 	     return null;
 	    }
-	    return u.get(0);//Util.ival(u.get(0).get(0));
-	
+	    return u.get(0);
 	}
 }

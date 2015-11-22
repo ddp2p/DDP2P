@@ -1,10 +1,6 @@
-//package dd_p2p.plugin;
 package net.ddp2p.common.examplePlugin;
-//import dd_p2p.plugin.*;
-
 import java.util.*;
 import java.math.BigInteger;
-
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.util.Util;
 /**
@@ -16,7 +12,6 @@ import net.ddp2p.common.util.Util;
 	 public static final int MAX_OLD_MESSAGES = 100;
 	 private static final boolean DEBUG = false;
 	 private static Hashtable<String, ChannelDataIn> channels = new Hashtable<String, ChannelDataIn>();
-		
 	 public String peerGID;
 	 public byte[] session_ID;
 	 public BigInteger lastInSequence;
@@ -26,7 +21,6 @@ import net.ddp2p.common.util.Util;
 	 public Calendar time;
 	 public ArrayList<DatedChatMessage> messages = new ArrayList<DatedChatMessage>();
 	 public ArrayList<DatedChatMessage> messages_old = new ArrayList<DatedChatMessage>();
-   	 
 	 public String toString() {
 		 return 
 	   				 "ChannelDataOut["
@@ -36,27 +30,22 @@ import net.ddp2p.common.util.Util;
 	   				 + "\n lastInSequence = "+lastInSequence
 	   				 + "\n recv = "+Util.concat(outOfSequence, " , ", null)
 	   				 + "\n peerName = "+peerName
-	   				 //+ "\n sequence_ack = "+sequence_ack
 	   				 + "\n time = "+Encoder.getGeneralizedTime(time)
 	   				 + "\n msg = "+Util.concat(messages, "\n m=", null)
 	   				 + "\n old = "+Util.concat(messages_old, "\n o=", null)
 	   				 + "\n]";
 	 }
-	 
-    	
 	 BigInteger getLastInSequence() {
 		 return lastInSequence;
 	 }
 	 ArrayList<BigInteger> getOutOfSequence() {
 		 return outOfSequence;
 	 }
-
 	 public void setNewSession(byte[] _session_id, BigInteger _first_in_this_sequence, BigInteger sequence_crt_in) {
 		 if (DEBUG) System.out.println("ChannelDataIn: setNewSession: in="+Util.byteToHex(_session_id)+" vs "+this.session_ID);
 		 this.firstInSequence = _first_in_this_sequence;
 		 this.session_ID = _session_id;
 		 this.time = Util.CalendargetInstance();
-			
 		 int old_size = messages_old.size();
 		 this.messages_old.addAll(messages);
 		 /**
@@ -64,13 +53,11 @@ import net.ddp2p.common.util.Util;
 		  */
 		 this.messages = new ArrayList<DatedChatMessage>();
 		 this.outOfSequence = new ArrayList<BigInteger>();
-					
 		 for (int index = 0; index < old_size; ) {
 			 DatedChatMessage dcm = this.messages_old.get(index);
 			 if (! Util.equalBytes_null_or_not(_session_id, dcm.msg.session_id)) { index ++; continue; }
 			 if (! _first_in_this_sequence.equals(dcm.msg.first_in_this_sequence)) { index ++; continue; }
 			 this.messages.add(dcm);
-			 
 			 if (this.lastInSequence == null) {
 				 if (_first_in_this_sequence.equals(dcm.msg.sequence))
 					 this.lastInSequence = dcm.msg.sequence;
@@ -83,12 +70,9 @@ import net.ddp2p.common.util.Util;
 					 this.outOfSequence.add(dcm.msg.sequence);
 				 }
 			 }
-			 
 			 this.messages.remove(index);
 			 old_size --;
 		 }
-
-		 //if (sequence_crt_in != null)
 		 if (_first_in_this_sequence.equals(sequence_crt_in))
 			 this.lastInSequence = sequence_crt_in;
 		 else
@@ -113,17 +97,12 @@ import net.ddp2p.common.util.Util;
 			 this.firstInSequence = first;
 		 } else {
 			 if (! Util.equalBytes(session_ID, _session_ID)) {
-				 // this.session_ID = _session_ID;
-//				 this.firstInSequence = first;
-//				 this.outOfSequence = new ArrayList<BigInteger>();
 				 setNewSession (_session_ID, first, sequence_crt_in);
 				 return true;
 			 }
 		 }
-		 // when to increment last?
 		 if (DEBUG) System.out.println("PLUGIN CHAT: l="+lastInSequence+" f="+firstInSequence+" in="+sequence_crt_in);
 		 if ( 
-    				//( sequence_crt_in != null ) &&
 				 (
 						 (
 								 (this.lastInSequence == null) 
@@ -138,9 +117,8 @@ import net.ddp2p.common.util.Util;
     						)
     				)
 				 )
-		 { // if incoming is the first after the contiguous sequence
+		 { 
 			 lastInSequence = sequence_crt_in;
-    			
 			 for(;;) {
     				if (outOfSequence == null || outOfSequence.size() == 0) break;
     				if (outOfSequence.get(0).equals(lastInSequence.add(BigInteger.ONE))) {
@@ -152,17 +130,13 @@ import net.ddp2p.common.util.Util;
     			}
     			return true;
     		} else {
-    			
     			if (firstInSequence != null  && sequence_crt_in.compareTo(this.firstInSequence) <= 0)
-    				return false; // duplicate
-    			
-    			// if another out of sequence
+    				return false; 
 			    if (outOfSequence == null)
 			    	outOfSequence = new ArrayList<BigInteger>();
 			    return insertInOrderedBinary(outOfSequence, sequence_crt_in);
     		}
 	 }
-    	
     	/**
     	 * Used to insert a new received message in the list of outOfSequence.
     	 * TODO use binary search.
@@ -174,7 +148,7 @@ import net.ddp2p.common.util.Util;
     			if (i.compareTo(list.get(k)) < 0) {
     				list.add(k, i); return true;
     			} else {
-        			if (i.compareTo(list.get(k)) == 0) { // if already known out of sequence
+        			if (i.compareTo(list.get(k)) == 0) { 
         				return false;
         			}
     				k++;
@@ -220,7 +194,6 @@ import net.ddp2p.common.util.Util;
        			return insertInOrderedBinary(list, i, m+1, e);
        		}
     	}
-    	
     	/**
     	 * Create a new channel if absent.
     	 * Only sets the peerGID.
@@ -233,8 +206,6 @@ import net.ddp2p.common.util.Util;
     		if (ch == null) {
     			ch = new ChannelDataIn();
     			ch.peerGID = peerGID;
-    			//ch.session_ID = ChatMessage.createSessionID();
-    			//ch.next_sequence = ch.firstInSequence = BigInteger.ONE;
     			channels.put(peerGID, ch);
     		}
     		return ch;
@@ -258,8 +229,4 @@ import net.ddp2p.common.util.Util;
     		}
    			System.out.println("r=>"+r);
     	}
-
     }
-
-
- 

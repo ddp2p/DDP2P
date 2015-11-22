@@ -1,5 +1,4 @@
 package net.ddp2p.common.util;
-
 public
 interface DD_EmailableAttachment{
 	String get_To();

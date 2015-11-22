@@ -1,41 +1,27 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Song Qin
 		Author: Song Qin: qsong2008@my.fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.census;
-
 import java.util.ArrayList;
-
 import javax.swing.JFrame;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
-
-
 @SuppressWarnings("serial")
 public class CensusThresholdComputation{
-
 	public String[] thresholdPCNC(String pco, String nco, String t) {
-		
-
 		try {
-			
 			ArrayList<ArrayList<Object>> c;
 			String sql = "SELECT * FROM witness";
 			String sql2 = "select target_ID, NC, PC, case when((PC+1.0*"+pco+")/(NC+"+nco+")>="+t+") then 'T' else 'F' end,name from"+
@@ -57,19 +43,15 @@ public class CensusThresholdComputation{
 					"		)"+
 					"		 group by target_ID"+
 					"		)t1, constituent where t1.target_ID=constituent.constituent_ID;";
-//			c = Application.db.select(sql2, new String[]{pco,nco,t});
 			c = Application.getDB().select(sql2, new String[]{});
 			System.out.println("[Target_ID, Negative Count, Positive Count, ValidityOfIdentity,Constituent Name]");
 			System.out.println(c);
-
 		} catch (P2PDDSQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
 	}
 public static void populateWitnessData1(){
-	//Populate simulated "witness" data
 			Integer sense_y_n=0;
 			Integer source_ID=2;
 			Integer target_ID=0;
@@ -85,13 +67,10 @@ public static void populateWitnessData1(){
 				Application.getDB().insert(insertSql, new String[] {""+3,""+1,""+0});
 				Application.getDB().insert(insertSql, new String[] {""+4,""+1,""+1});
 			} catch (P2PDDSQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 }
-
 public static void populateWitnessData2(){
-	//Populate simulated "witness" data
 			int sense_y_n=0;
 			int source_ID=2;
 			int target_ID=0;
@@ -107,40 +86,15 @@ public static void populateWitnessData2(){
 				Application.getDB().insert(insertSql, new String[] {""+3,""+1,""+0});
 				Application.getDB().insert(insertSql, new String[] {""+4,""+1,""+1});
 			} catch (P2PDDSQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 }
-
-
 	public static void main(String[] args) {
 		try {
 			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 		} catch (P2PDDSQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-//		computeCensus cc =new computeCensus();
-//		cc.thresholdPCNC("1","1", "1");
-//		JFrame jf = new JFrame();
-//		jf.add(cc);
-//		populateWitnessData();
-//		populateWitnessData1();
-		
-//		wg.evaluateTree(wg.r);
-//		wg.printTree(wg.r);
-		
-//		Hashtable <Integer,Double> fuzzyValueTable=new Hashtable <Integer,Double> ();
-//		
-//		fuzzyValueTable.put(1, 2.0);
-//		System.out.println(fuzzyValueTable.size());
-//
-//		fuzzyValueTable.put(1, 2.0);
-//		System.out.println(fuzzyValueTable.size());
-//		Enumeration e=fuzzyValueTable.keys();
-//		while(e.hasMoreElements()){
-//			System.out.println(e.nextElement());	
-//		}
 		JFrame wg=new CensusFuzzy(-1,-1).getCensusFuzzyFrame();
         wg.pack();
         wg.setVisible(true);

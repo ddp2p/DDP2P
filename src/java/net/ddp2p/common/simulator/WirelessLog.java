@@ -1,5 +1,4 @@
 package net.ddp2p.common.simulator;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -8,17 +7,13 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.data.D_Message;
 import net.ddp2p.common.util.DDP2P_ServiceThread;
 import net.ddp2p.common.util.Util;
-
-
 public class WirelessLog {
-	
     public static File f1;
     public static FileWriter fw1;
     public static PrintWriter pw1;
@@ -28,7 +23,6 @@ public class WirelessLog {
     public static File f3;
     public static FileWriter fw3;
     public static PrintWriter pw3;
-    
 	public static final DateFormat dateFormat = new SimpleDateFormat("MM/dd/yy HH:mm:ss");
 	public static final Date date = new Date();
 	public static final String Log_Time = (dateFormat.format(date))+"\n";
@@ -62,107 +56,83 @@ public class WirelessLog {
 	public static long current_handled_idx = 0;
 	public static long current_recent_idx = 0;
 	public static long current_mydata_idx = 0;
-	
-
 	public static synchronized void Print_to_log(String val){
 		if(WirelessLog.pw1!=null) WirelessLog.pw1.println(val);
 	}
-	
 	public static synchronized void Print_to_RCV_log(String val){
 		if(WirelessLog.pw2!=null) WirelessLog.pw2.println(val);
 	}
-	
 	public static synchronized void Print_to_BS_log(String val){
 		if(WirelessLog.pw3!=null) WirelessLog.pw3.println(val);
 	}
-	
 public static String inc_c_counter(){
 		WirelessLog.counter_for_circular++;
 		return ""+WirelessLog.counter_for_circular;
 	}
-	
 	public static String inc_h_counter(){
 		WirelessLog.counter_for_handled++;
 		return ""+WirelessLog.counter_for_handled;
 	}
-	
 	public static String inc_md_counter(){
 		WirelessLog.counter_for_mydata++;
 		return ""+WirelessLog.counter_for_mydata;
 	}
-	
 	public static String inc_r_counter(){
 		WirelessLog.counter_for_recent++;
 		return ""+WirelessLog.counter_for_recent;
 	}
-	
-	
 	public static void check_which_queue(String queue_type){
 		ArrayList<String> Queue_Names=new ArrayList<String>();
 		Queue_Names.add(WirelessLog.Circular_queue);
 		Queue_Names.add(WirelessLog.Recent_queue);
 		Queue_Names.add(WirelessLog.MyData_queue);
 		Queue_Names.add(WirelessLog.Handled_queue);
-
 		int ch=0;
 		if(queue_type.compareTo(Queue_Names.get(0))==0) ch=1;
 		else if(queue_type.compareTo(Queue_Names.get(1))==0) ch=2;
 		else if(queue_type.compareTo(Queue_Names.get(2))==0) ch=3;
 		else if(queue_type.compareTo(Queue_Names.get(3))==0) ch=4;
-		
 		switch(ch){
 		case 1 : 
 			WirelessLog.counter_for_circular = -1;
 			break;
-			
 		case 2 :
 			WirelessLog.counter_for_recent = -1;
 			break;
-			
 		case 3 : 
 			WirelessLog.counter_for_mydata = -1;
 			break;
-			
 		case 4 : 
 			WirelessLog.counter_for_handled = -1;
-			//System.out.println("check_which_queue : reset counter_for_handled : "+counter_for_handled);
 			break;
 		}
 	}
-	
 	public static void check_which_queue_idx(String queue_type, long idx){
 		ArrayList<String> Queue_Names=new ArrayList<String>();
 		Queue_Names.add(WirelessLog.Circular_queue);
 		Queue_Names.add(WirelessLog.Recent_queue);
 		Queue_Names.add(WirelessLog.MyData_queue);
 		Queue_Names.add(WirelessLog.Handled_queue);
-
 		int ch=0;
 		if(queue_type.compareTo(Queue_Names.get(0))==0) ch=1;
 		else if(queue_type.compareTo(Queue_Names.get(1))==0) ch=2;
 		else if(queue_type.compareTo(Queue_Names.get(2))==0) ch=3;
 		else if(queue_type.compareTo(Queue_Names.get(3))==0) ch=4;
-		
 		switch(ch){
 		case 1 : 
 			WirelessLog.current_circular_idx = idx;
 			break;
-			
 		case 2 :
 			WirelessLog.current_recent_idx = idx;
 			break;
-			
 		case 3 : 
 			WirelessLog.current_mydata_idx = idx;
 			break;
-			
 		case 4 : 
-			//System.out.println("check_which_queue_idx : handled : "+idx);
 			WirelessLog.current_handled_idx = idx;
 			break;
 		}
 	}
-	
 	public static void logging(String logQueue, String Queue_Name, String Queue_idx, String Type, byte[] msg){
 		String hash_msg = Util.stringSignatureFromByte(Util.simple_hash(msg, DD.APP_INSECURE_HASH));
 		String log = logQueue+
@@ -175,7 +145,6 @@ public static String inc_c_counter(){
 				hash_msg;
 				WirelessLog.Print_to_log(log);
 	}
-	
 	public static void RCV_logging(String Type, String Peer_GID, byte[] data,
 									int length, int status,String IP,long counter, String Msg_time){
 		String _status = null;
@@ -215,16 +184,15 @@ public static String inc_c_counter(){
 				 	;
 		 WirelessLog.Print_to_RCV_log(log);
 	}
-	
 	public static void init() throws IOException {
 		if (DEBUG) System.out.println("WirelessLog:init");
 		String t = Util.getGeneralizedTime();
-        File dir = new File(Application.CURRENT_LOGS_BASE_DIR()); //+Application.OS_PATH_SEPARATOR+Application.RELATIVE_DIR_LOGS);
+        File dir = new File(Application.CURRENT_LOGS_BASE_DIR()); 
         if (!dir.mkdirs() && (!dir.exists() || !dir.isDirectory())) {
         	System.err.println("WirelessLog: init: failure to create folder: "+dir);
         	return;
         }
-        WirelessLog.f1 = new File(Application.CURRENT_LOGS_BASE_DIR()/*+Application.OS_PATH_SEPARATOR+Application.RELATIVE_DIR_LOGS+Application.OS_PATH_SEPARATOR*/+t+".log");
+        WirelessLog.f1 = new File(Application.CURRENT_LOGS_BASE_DIR()+t+".log");
         if((!f1.exists() && !dir.canWrite()) || (f1.exists() && !f1.canWrite())) {
         	System.err.println("WirelessLog: init: cannot create/modify: "+f1);
         	return;
@@ -232,21 +200,17 @@ public static String inc_c_counter(){
         WirelessLog.fw1 = new FileWriter(f1);
         WirelessLog.pw1 = new PrintWriter(WirelessLog.fw1);
         WirelessLog.Print_to_log(WirelessLog.Log_Info);
-        
-        WirelessLog.f2  = new File(Application.CURRENT_LOGS_BASE_DIR()/*+Application.OS_PATH_SEPARATOR+Application.RELATIVE_DIR_LOGS+Application.OS_PATH_SEPARATOR*/+"RECEIVING_LOG_"+t+".log");
+        WirelessLog.f2  = new File(Application.CURRENT_LOGS_BASE_DIR()+"RECEIVING_LOG_"+t+".log");
         WirelessLog.fw2 = new FileWriter(f2);
         WirelessLog.pw2 = new PrintWriter(WirelessLog.fw2);
         WirelessLog.Print_to_RCV_log(WirelessLog.RCV_Log_Info);
-        
-        WirelessLog.f3 = new File(Application.CURRENT_LOGS_BASE_DIR()/*+Application.OS_PATH_SEPARATOR+Application.RELATIVE_DIR_LOGS+Application.OS_PATH_SEPARATOR*/+"BS_LOG"+t+".log");
+        WirelessLog.f3 = new File(Application.CURRENT_LOGS_BASE_DIR()+"BS_LOG"+t+".log");
         WirelessLog.fw3 = new FileWriter(f3);
         WirelessLog.pw3 = new PrintWriter(WirelessLog.fw3);
-        
         try {
             Runtime.getRuntime().addShutdownHook(
             new DDP2P_ServiceThread("WirelessLog", true) {
                 public void _run(){
-                     //log.info( "Exiting..." );
                     WirelessLog.pw1.close();
                     WirelessLog.pw2.close();
                     WirelessLog.pw3.close();
@@ -255,18 +219,13 @@ public static String inc_c_counter(){
         }
         catch( Throwable t1 )
         {
-            //log.error( "Server start failure!", t );
         }
-
-        
 	}
 	public static String getMsgHash(byte[] msg){
 		return Util.stringSignatureFromByte(Util.simple_hash(msg,0,msg.length, DD.APP_INSECURE_HASH));
 	}
-
 	public static void Print_to_log_Param(String logQueue, String queue_type,
 			String idx, String subqueue, byte[] result, long msg_c) {
-		
 		String log = logQueue+
 		Util.getGeneralizedTime()+
 		WirelessLog.tab+
@@ -283,5 +242,4 @@ public static String inc_c_counter(){
 			log += (WirelessLog.tab+getMsgHash(result));}
 		WirelessLog.Print_to_log(log);
 	}
-	
 }

@@ -1,7 +1,5 @@
 package net.ddp2p.common.table;
-
 import java.util.regex.Pattern;
-
 public class my_constituent_data {
 	public static final String TNAME = "my_constituent_data";
 	public static final String constituent_ID = "constituent_ID";
@@ -10,7 +8,6 @@ public class my_constituent_data {
 	public static final String category = "category";
 	public static final String preferences_date = "preferences_date";
 	public static final String row = "ROWID";
-	
 	public static final String fields_list_noID = 
 				constituent_ID + ","
 				+ name + ","
@@ -22,7 +19,6 @@ public class my_constituent_data {
 	public static final String[] fields =  fields_list.split(Pattern.quote(","));
 	public static final int FIELDS_NB_NOID = fields_noID.length;
 	public static final int FIELDS_NB = fields.length;
-	
 	public static final int COL_CONSTITUENT_LID = 0;
 	public static final int COL_NAME = 1;
 	public static final int COL_SUBMITTER = 2;

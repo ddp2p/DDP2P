@@ -1,28 +1,20 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2015 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.population;
-
 import static net.ddp2p.common.util.Util.__;
-
 import java.util.ArrayList;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.data.D_Constituent;
@@ -32,7 +24,6 @@ import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Witness;
 import net.ddp2p.common.hds.ClientSync;
 import net.ddp2p.common.util.Util;
-
 public class ConstituentsIDNode extends ConstituentsBranch {
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
@@ -56,7 +47,6 @@ public class ConstituentsIDNode extends ConstituentsBranch {
                         else if(wsense==D_Witness.UNFAVORABLE) getConstituent().witness_against = wcount;
                         else getConstituent().witness_neuter = wcount;
                 }
-                
                 sql = "select w."+net.ddp2p.common.table.witness.sense_y_n +
                 " from "+net.ddp2p.common.table.witness.TNAME+" as w " +
                 " where w."+net.ddp2p.common.table.witness.target_ID+" = ? and w."+net.ddp2p.common.table.witness.source_ID+" = ? " +
@@ -74,8 +64,6 @@ public class ConstituentsIDNode extends ConstituentsBranch {
                 if(myself == getConstituent().getC_LID()) getConstituent().myself = 1; 
                 else getConstituent().myself = 0; 
         }catch(Exception e){
-                //JOptionPane.showMessageDialog(null,"populate witnesses: "+e.toString());
-        		//Application_GUI.warning("populate witnesses: "+e.toString(), "Issue Populating Witness");
                 e.printStackTrace();                    
         }
 	}
@@ -86,27 +74,10 @@ public class ConstituentsIDNode extends ConstituentsBranch {
 		sql = _sql_children;
 		sql_params = _sql_params;
 		setConstituent(_data);
-		
 		D_Constituent cons = D_Constituent.getConstByLID(getConstituent().getC_LID(), true, false);
 		if (cons == null) return;
 		if(_data.external)  fixed_fields ++;
 		setNchildren(cons.getFieldValuesFixedNB() + fixed_fields);
-		
-//		ArrayList<ArrayList<Object>> identities;
-//		String params[] = new String[]{""+constituent.constituentID};
-//		try {
-//			String sql = "select count(*) from "+table.field_value.TNAME+" AS fv " +
-//					" JOIN "+table.constituent.TNAME+" as c ON c."+table.constituent.constituent_ID+"=fv."+table.field_value.constituent_ID +
-//					" JOIN "+table.field_extra.TNAME+" as fe ON fv."+table.field_value.field_extra_ID+"=fe."+table.field_extra.field_extra_ID +
-//					" where fe."+table.field_extra.partNeigh+" <= 0 AND fv."+table.field_value.constituent_ID+" = ?;";
-//			identities = model.db.select(sql, params, DEBUG);
-//		}catch(Exception e) {
-//			JOptionPane.showMessageDialog(null,"populate: "+e.toString());
-//    		e.printStackTrace();
-//    		return;
-//		}
-//		nchildren = Integer.parseInt(identities.get(0).get(0).toString()) + fixed_fields;
-
 		updateWitness();
 		if(DEBUG) System.err.println("ConstituentsModel: ConstituentsIDNode: "+getConstituent()+" #"+getNchildren());
 	}
@@ -143,43 +114,20 @@ public class ConstituentsIDNode extends ConstituentsBranch {
 		return result+ " "+getConstituent().email+ " ::"+ getConstituent().getSlogan();
     }
     public void populate() {
-    	//boolean DEBUG = true;
     	if (DEBUG) System.err.println("ConstituentsIDNode: populate this="+this);
 		setChildren(new ConstituentsPropertyNode[0]);
 		D_Constituent c = D_Constituent.getConstByLID(getConstituent().getC_LID(), true, false);
-		if (c == null) { // || c.address == null) {
+		if (c == null) { 
 	    	if (_DEBUG) System.err.println("ConstituentsIDNode: populate null c or address for: "+getConstituent().getC_LID());
 	    	if (_DEBUG) System.err.println("ConstituentsIDNode: populate null c or address: "+c);
-			//return;
 		}
-		
-//		ArrayList<ArrayList<Object>> identities;
-//		String params[] = new String[]{""+constituent.constituentID};
-//		try {
-//			String sql =
-//				"SELECT fv."+table.field_value.value + ", fe."+table.field_extra.label+
-//				", o."+table.oid.OID_name+", o."+table.oid.sequence+", o."+table.oid.explanation+
-//					" FROM "+table.field_value.TNAME+" AS fv " +
-//					" JOIN "+table.constituent.TNAME+" AS c ON c."+table.constituent.constituent_ID+"=fv."+table.field_value.constituent_ID +
-//					" JOIN "+table.field_extra.TNAME+" AS fe ON fv."+table.field_value.field_extra_ID+"=fe."+table.field_extra.field_extra_ID +
-//					" LEFT JOIN "+table.oid.TNAME+" AS o ON o."+table.oid.sequence+"=fe."+table.field_extra.oid +
-//					" WHERE ( fe."+table.field_extra.partNeigh+" <= 0 OR fe."+table.field_extra.partNeigh+" IS NULL ) AND fv."+table.constituent.constituent_ID+" = ?;";
-//			identities = model.db.select(sql, params, DEBUG);
-//		}catch(Exception e) {
-//			JOptionPane.showMessageDialog(null,"ConstituentsIDNode:populate: "+e.toString());
-//    		e.printStackTrace();
-//    		return;
-//		}
 		int identities_size = 0;
 		D_Organization org = null;
-		
 		org = D_Organization.getOrgByLID_NoKeep(c.getOrganizationLID(), true);
-		
 		if (c.address != null) {
 			if (DEBUG) System.out.println("ConstituentsModel: populate: addresses #"+c.address.length);
 			for ( int i = 0 ; i < c.address.length; i ++ ) {
 				if (DEBUG) System.out.println("ConstituentsModel: populate: addresses #"+i+" -> "+c.address[i]);
-	    		
 	    		D_OrgParam fe = c.address[i].field_extra;
 	    		if (fe == null) {
 	    			if (_DEBUG) System.out.println("ConstituentsModel: populate: addresses 1 null fe #"+i+" -> "+c.address[i].field_extra_GID);
@@ -197,29 +145,26 @@ public class ConstituentsIDNode extends ConstituentsBranch {
 	    		D_OID oid = D_OID.getBySequence(fe.oid);
 	    		String value;
 	    		Object obj;
-	    		obj = c.address[i].value; //identities.get(i).get(0);
+	    		obj = c.address[i].value; 
 	    		if (obj != null) value = obj.toString();else value = null;
 	    		ConstituentProperty data = new ConstituentProperty();
 	    		data.value = value;
-	    		data.label = fe.label; //Util.getString(identities.get(i).get(1));
+	    		data.label = fe.label; 
 	    		if (oid != null) {
-		    		data.OID_name = oid.OID_name; //Util.getString(identities.get(i).get(2));
-		    		data.OID = oid.sequence; //Util.getString(identities.get(i).get(3));
-		    		data.explain = oid.explanation; //Util.getString(identities.get(i).get(4));
+		    		data.OID_name = oid.OID_name; 
+		    		data.OID = oid.sequence; 
+		    		data.explain = oid.explanation; 
 	    		}
 	    		populateChild(new ConstituentsPropertyNode(data, this),0);
 	    	}
 		}
-		if ( fixed_fields >= 1) {// email, fixed field
+		if ( fixed_fields >= 1) {
     		ConstituentProperty data = new ConstituentProperty();
     		data.value = this.getConstituent().email;
     		data.label = __("Email");//;Util.getString(identities.get(i).get(1));
-    		//data.OID_name = Util.getString(identities.get(i).get(2));
-    		//data.OID = Util.getString(identities.get(i).get(3));
-    		//data.explain = Util.getString(identities.get(i).get(4));
     		populateChild(new ConstituentsPropertyNode(data, this),0);			
 		}
-		if( fixed_fields >= 2){// submitter
+		if( fixed_fields >= 2){
     		ConstituentProperty data = new ConstituentProperty();
     		data.label = __("Submitter");
     		String subm_ID = this.getConstituent().submitter_ID;
@@ -244,8 +189,7 @@ public class ConstituentsIDNode extends ConstituentsBranch {
 		String org_hash = D_Organization.getOrgGIDHashGuess(orgGID);
 		ClientSync.addToPayloadFix(net.ddp2p.common.streaming.RequestData.CONS, hash, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 	}
-   
-	public void toggle_block() { //ConstituentsTree tree
+	public void toggle_block() { 
 		try {
 			D_Constituent constit = D_Constituent.getConstByLID(this.getConstituent().getC_LID(), true, true);
 			boolean blocked = constit.toggleBlock();
@@ -257,7 +201,7 @@ public class ConstituentsIDNode extends ConstituentsBranch {
 			return;
 		}
 	}
-	public void toggle_broadcast() {//ConstituentsTree tree
+	public void toggle_broadcast() {
 		try {
 			D_Constituent constit = D_Constituent.getConstByLID(this.getConstituent().getC_LID(), true, true);
 			boolean broadcast = constit.toggleBroadcast();
@@ -269,11 +213,10 @@ public class ConstituentsIDNode extends ConstituentsBranch {
 			return;
 		}
 	}
-	public D_Constituent zapp() {//ConstituentsTree tree
+	public D_Constituent zapp() {
 		D_Constituent constit = D_Constituent.zapp(this.getConstituent().getC_LID());
 		return constit;
 	}
-	
 	public ConstituentData getConstituent() {
 		return constituent;
 	}

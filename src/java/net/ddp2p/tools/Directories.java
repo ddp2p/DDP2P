@@ -1,12 +1,10 @@
 package net.ddp2p.tools;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.hds.StartUp;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
 public class Directories {
 	/**
 	 * Stores in database the version and root paths (parent of parameter)
@@ -52,7 +50,6 @@ public class Directories {
 			DD.setAppText(DD.APP_LINUX_DATABASE_PATH, null);
 			DD.setAppText(DD.APP_LINUX_LOGS_PATH, null);
 			DD.setAppText(DD.APP_LINUX_DD_JAR_PATH, null);
-
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
@@ -75,7 +72,6 @@ public class Directories {
 	}
 	public static void setCrtPaths(String path_version_dir) {
 		setCrtPathsInDB(path_version_dir);
-		//StartUpThread.detect_OS_fill_var();
 		try {
 			StartUp.fill_install_paths_all_OSs_from_DB();
 		} catch (P2PDDSQLException e) {

@@ -1,14 +1,10 @@
-
 package net.ddp2p.java.WSupdate;
-
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
-
-
 /**
  * <p>Java class for TesterInfo complex type.
  * 
@@ -39,13 +35,11 @@ import javax.xml.bind.annotation.XmlType;
     "tests"
 })
 public class TesterInfo {
-
     protected String name;
     protected String digestPK;
     protected String signature;
     @XmlElement(nillable = true)
     protected List<Test> tests;
-
     /**
      * Gets the value of the name property.
      * 
@@ -57,7 +51,6 @@ public class TesterInfo {
     public String getName() {
         return name;
     }
-
     /**
      * Sets the value of the name property.
      * 
@@ -69,7 +62,6 @@ public class TesterInfo {
     public void setName(String value) {
         this.name = value;
     }
-
     /**
      * Gets the value of the digestPK property.
      * 
@@ -81,7 +73,6 @@ public class TesterInfo {
     public String getDigestPK() {
         return digestPK;
     }
-
     /**
      * Sets the value of the digestPK property.
      * 
@@ -93,7 +84,6 @@ public class TesterInfo {
     public void setDigestPK(String value) {
         this.digestPK = value;
     }
-
     /**
      * Gets the value of the signature property.
      * 
@@ -105,7 +95,6 @@ public class TesterInfo {
     public String getSignature() {
         return signature;
     }
-
     /**
      * Sets the value of the signature property.
      * 
@@ -117,7 +106,6 @@ public class TesterInfo {
     public void setSignature(String value) {
         this.signature = value;
     }
-
     /**
      * Gets the value of the tests property.
      * 
@@ -146,5 +134,4 @@ public class TesterInfo {
         }
         return this.tests;
     }
-
 }

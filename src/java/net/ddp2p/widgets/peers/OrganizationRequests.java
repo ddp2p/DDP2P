@@ -1,7 +1,19 @@
+/*   Copyright (C) 2015 Marius C. Silaghi
+		Author: Marius Silaghi: msilaghi@fit.edu
+		Florida Tech, Human Decision Support Systems Laboratory
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU Affero General Public License as published by
+       the Free Software Foundation; either the current version of the License, or
+       (at your option) any later version.
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+      You should have received a copy of the GNU Affero General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
 package net.ddp2p.widgets.peers;
-
 import static net.ddp2p.common.util.Util.__;
-
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.EventQueue;
@@ -13,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Hashtable;
-
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -24,7 +35,6 @@ import javax.swing.JTree;
 import javax.swing.SwingConstants;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.OrgListener;
 import net.ddp2p.common.config.PeerListener;
@@ -41,31 +51,24 @@ import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.app.MainFrame;
 import net.ddp2p.widgets.components.DebateDecideAction;
-
 class D_OR_Node implements TreeNode {
 	private static final boolean DEBUG = false;
 	public D_OR_Node parent = null;
 	public int level;
 	public int position;
 	public String text;
-	
 	public Hashtable<String, Hashtable<Long, String>> type;
 	public Hashtable<String, Hashtable<Long, Object>> type_dated;
-
 	private Hashtable<Long, String> peer_GID_set;
 	private Hashtable<Long, Object> peer_GID_dated_set;
-
 	public ArrayList<D_OR_Node> child = new ArrayList<D_OR_Node>();
 	public boolean children_built = false;
-	
-
 	private void build_children() {
 		switch (level) {
-		case OrganizationRequests.LEVEL_ROOT: // should have been done in constructor
+		case OrganizationRequests.LEVEL_ROOT: 
 			break;
 		case OrganizationRequests.LEVEL_TYPE:
 		{
-			//if (position == 1) break; // ORG not supported
 			if (type_dated != null) {
 				for (String s : type_dated.keySet()) {
 					D_OR_Node node = new D_OR_Node();
@@ -123,15 +126,12 @@ class D_OR_Node implements TreeNode {
 		case OrganizationRequests.LEVEL_PEER:
 			break;
 		}
-		
 		children_built = true;
 	}
-
 	public String toString() {
 		if (DEBUG) System.out.println("D_OR_Node: toString: " + text);
 		return text + " #"+getChildCount();
 	}
-
 	@Override
 	public TreeNode getChildAt(int childIndex) {
 		if (! children_built) build_children();
@@ -141,40 +141,33 @@ class D_OR_Node implements TreeNode {
 		}
 		return child.get(childIndex);
 	}
-
 	@Override
 	public int getChildCount() {
 		if (! children_built) build_children();
 		return child.size();
 	}
-
 	@Override
 	public TreeNode getParent() {
 		return parent;
 	}
-
 	@Override
 	public int getIndex(TreeNode node) {
 		return child.indexOf(node);
 	}
-
 	@Override
 	public boolean getAllowsChildren() {
 		return true;
 	}
-
 	@Override
 	public boolean isLeaf() {
 		if (! children_built) build_children();
 		return child.size() == 0;
 	}
-
 	@Override
 	public Enumeration children() {
 		return Collections.enumeration(child);
 	}
 }
-
 @SuppressWarnings("serial")
 public class OrganizationRequests extends JPanel implements MouseListener, OrgListener {
 	public static final boolean _DEBUG = true;
@@ -183,36 +176,29 @@ public class OrganizationRequests extends JPanel implements MouseListener, OrgLi
 	static final int LEVEL_TYPE = 1;
 	static final int LEVEL_GID = 2;
 	static final int LEVEL_PEER = 3;
-	
 	private static final int TYPES_NB = 12;
 	private static final int TYPES_G_NB = 4;
 	static final int TYPE_CONST_5 = 5;
-
 	public static JTree jt = null;
 	public static JTree old_jt = null;
 	public static JLabel l = null;
 	public static JLabel old_l = null;
 	public boolean refresh = true;
 	D_Organization organization;
-	
 	public OrganizationRequests () {
 		this.setLayout(new BorderLayout());
 		old_l = new JLabel(__("Latest Requests Advertised by this Organization."));
 		old_l.setHorizontalTextPosition(SwingConstants.LEFT);
 		this.add(old_l, BorderLayout.NORTH);
-		
 		D_OR_Node root = new D_OR_Node();
 		Object[] data = new Object[0];
 		old_jt = new JTree(root); this.add(old_jt, BorderLayout.CENTER);
 		this.addMouseListener(this);
 		this.orgUpdate(null, 0, null);
-		
 		MainFrame.status.addOrgStatusListener(this);
 	}
-	
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		
 	}
 	@Override
 	public void mousePressed(MouseEvent e) {
@@ -224,15 +210,12 @@ public class OrganizationRequests extends JPanel implements MouseListener, OrgLi
 	}
 	@Override
 	public void mouseEntered(MouseEvent e) {
-		
 	}
 	@Override
 	public void mouseExited(MouseEvent e) {
-		
 	}
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
     	if(!evt.isPopupTrigger()) return;
-    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	JPopupMenu popup = getPopup(evt);
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
@@ -241,15 +224,11 @@ public class OrganizationRequests extends JPanel implements MouseListener, OrgLi
     	ImageIcon reseticon = DDIcons.getResImageIcon(__("reset item"));
     	JPopupMenu popup = new JPopupMenu();
     	ORAction prAction;
-    	//
     	prAction = new ORAction(this, __("Refresh!"), reseticon,__("Let it refresh."),
     			__("Go refresh!"),KeyEvent.VK_R, ORAction.REFRESH);
-    	//prAction.putValue("row", new Integer(model_row));
     	popup.add(new JMenuItem(prAction));
-
     	return popup;
 	}
-
 	@Override
 	public void orgUpdate(String orgID, int col, D_Organization _org) {
 		organization = _org;
@@ -269,7 +248,6 @@ public class OrganizationRequests extends JPanel implements MouseListener, OrgLi
 		jt.expandPath(new TreePath(new Object[]{root}));
 		for (Object o: data)	jt.expandPath(new TreePath(new Object[]{root, o}));
 		jt.addMouseListener(this);
-		
 		EventQueue.invokeLater(new DDP2P_ServiceRunnable("OrganizationRequests", false, false, this) {
 			public void _run() {
 				OrganizationRequests pic = (OrganizationRequests) ctx;
@@ -290,10 +268,8 @@ public class OrganizationRequests extends JPanel implements MouseListener, OrgLi
 			}}
 		);		
 	}
-
 	private Object[] getTree(OrgPeerDataHashes specificRequest, D_OR_Node root) {
 		GlobalClaimedDataHashes _opdh = GlobalClaimedDataHashes.get();
-		
 		if (specificRequest == null) {
 			Object[] result = new Object[TYPES_G_NB];
 			for (int i = 0; i < TYPES_G_NB; i ++) {
@@ -334,7 +310,6 @@ public class OrganizationRequests extends JPanel implements MouseListener, OrgLi
 		((D_OR_Node) result[9]).type = specificRequest.sign;
 		((D_OR_Node) result[10]).type = specificRequest.news;
 		((D_OR_Node) result[11]).type = specificRequest.tran;
-		
 		((D_OR_Node) result[0]).text = "PEERS";
 		((D_OR_Node) result[1]).text = "ORGANIZATIONS";
 		((D_OR_Node) result[2]).text = "NEWS GLOBAL";
@@ -347,30 +322,21 @@ public class OrganizationRequests extends JPanel implements MouseListener, OrgLi
 		((D_OR_Node) result[9]).text = "Signatures";
 		((D_OR_Node) result[10]).text = "News";
 		((D_OR_Node) result[11]).text = "Translations";
-		
 		root.children_built = true;
 		return result;
 	}
-
 	@Override
 	public void org_forceEdit(String orgID, D_Organization org) {
-		// TODO Auto-generated method stub
-		
 	}
 	public static void main(String[] args) {
 		String dfname = Application.DELIBERATION_FILE;
-		//System.out.println("1");
 		net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
-		//System.out.println("2");
 		net.ddp2p.widgets.components.GUI_Swing.initSwingGUI();
-		//System.out.println("3");
 		try {
 			Application.setDB(new DBInterface(dfname));
 		} catch (P2PDDSQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		//System.out.println("4");
 		createAndShowGUI(Application.getDB());
 		if (args.length > 0)
 			newContentPane.orgUpdate(args[0], 0, null);
@@ -379,7 +345,6 @@ public class OrganizationRequests extends JPanel implements MouseListener, OrgLi
 	public static void createAndShowGUI(DBInterface db) {
 		MainFrame.status = new GUIStatusHistory();
 		JFrame frame = new JFrame("Directories Test");
-		//System.out.println("5");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		newContentPane = new OrganizationRequests();
 		newContentPane.setOpaque(true);
@@ -388,15 +353,9 @@ public class OrganizationRequests extends JPanel implements MouseListener, OrgLi
 		frame.setVisible(true);
 	}
 }
-
 @SuppressWarnings("serial")
 class ORAction extends DebateDecideAction {
     public static final int REFRESH = 0;
-//    public static final int NO_REFRESH = 1;
-//	public static final int RESET = 2;
-//	public static final int UNFILTER = 3;
-//	public static final int FILTER = 4;
-//	public static final int PACK_SOCKET = 5;
 	private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
     OrganizationRequests tree; ImageIcon icon; int command;
@@ -418,12 +377,6 @@ class ORAction extends DebateDecideAction {
 			tree.refresh = true;
 			tree.orgUpdate(null, 0, tree.organization);
 			break;
-//		case NO_REFRESH:
-//			tree.refresh = false;
-//			break;
 		}
     }
 }
-
-
-    

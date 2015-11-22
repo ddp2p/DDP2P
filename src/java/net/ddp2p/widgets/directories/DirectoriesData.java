@@ -1,24 +1,18 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.directories;
-
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.EventQueue;
@@ -30,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Hashtable;
-
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -41,7 +34,6 @@ import javax.swing.JTree;
 import javax.swing.SwingConstants;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
-
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DirectoriesData_View;
@@ -54,7 +46,6 @@ import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.components.DebateDecideAction;
 import net.ddp2p.widgets.components.GUI_Swing;
 import static net.ddp2p.common.util.Util.__;
-
 class DNode implements TreeNode{
 	public String text;
 	public ArrayList<DNode> child=new ArrayList<DNode>();
@@ -66,37 +57,30 @@ class DNode implements TreeNode{
 	public TreeNode getChildAt(int childIndex) {
 		return child.get(childIndex);
 	}
-
 	@Override
 	public int getChildCount() {
 		return child.size();
 	}
-
 	@Override
 	public TreeNode getParent() {
 		return parent;
 	}
-
 	@Override
 	public int getIndex(TreeNode node) {
 		return child.indexOf(node);
 	}
-
 	@Override
 	public boolean getAllowsChildren() {
 		return false;
 	}
-
 	@Override
 	public boolean isLeaf() {
 		return child.size()==0;
 	}
-
 	@Override
 	public Enumeration<?> children() {
 		return Collections.enumeration(child);
 	}
-	
 }
 /**
  * 
@@ -107,7 +91,6 @@ class DNode implements TreeNode{
 public class DirectoriesData extends JPanel implements MouseListener, DirectoriesData_View  {
 	public static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
-	// new and old trees (to remove old and set new in the panel)
 	public static JTree jt;
 	public static JTree old_jt = null;
 	public boolean refresh = true;
@@ -115,11 +98,9 @@ public class DirectoriesData extends JPanel implements MouseListener, Directorie
 		this.setLayout(new BorderLayout());
 		JLabel l = new JLabel(__("Latest Data from Directories"));
 		l.setHorizontalTextPosition(SwingConstants.LEFT);
-		//l.setHorizontalAlignment(JLabel.LEFT);
 		this.add(l, BorderLayout.NORTH);
 		this.addMouseListener(this);
 	}
-	//String colNames[] = {_("Directory"),_("Peer"),_("Date"),_("Address")};
 	public void setData(Hashtable<String,Hashtable<String,DirectoryAnswerMultipleIdentities>> ad) {
 		if(DEBUG) System.out.println("DirectoriesData: setData: start");
 		if(!refresh){
@@ -132,7 +113,6 @@ public class DirectoriesData extends JPanel implements MouseListener, Directorie
 			((DNode)o).parent = root;
 			root.child.add((DNode)o);
 		}
-		//jt = new JTree(data);
 		jt = new JTree(root);
 		jt.setRootVisible(false);
 		jt.expandPath(new TreePath(new Object[]{root}));
@@ -167,14 +147,14 @@ public class DirectoriesData extends JPanel implements MouseListener, Directorie
 	}
 	private DNode getDANode(DirectoryAnswerMultipleIdentities da, String p) {
 		DNode n = new DNode();
-		n.text = p; //Util.trimmed(p);
+		n.text = p; 
 		if (da == null) {
 			n.text += ":null";
 			return n;
 		}
 		for ( DirectoryAnswerInstance inst : da.instances) {
 			n.text += ": "+Encoder.getGeneralizedTime(inst.date_last_contact); // da.date
-			ArrayList<Address> addresses = inst.addresses; // da.addresses
+			ArrayList<Address> addresses = inst.addresses; 
 			if (addresses == null) {
 				return n;
 			}
@@ -206,29 +186,23 @@ public class DirectoriesData extends JPanel implements MouseListener, Directorie
 	}
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
     	if(!evt.isPopupTrigger()) return;
-    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	JPopupMenu popup = getPopup(evt);
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
 	private JPopupMenu getPopup(MouseEvent evt) {
 		JMenuItem menuItem;
-    	
     	ImageIcon addicon = DDIcons.getAddImageIcon(__("add an item")); 
     	ImageIcon delicon = DDIcons.getDelImageIcon(__("delete an item")); 
     	ImageIcon reseticon = DDIcons.getResImageIcon(__("reset item"));
     	JPopupMenu popup = new JPopupMenu();
        	DirDataAction prAction;
-    	//
     	prAction = new DirDataAction(this, __("Refresh!"), reseticon,__("Let it refresh."),
     			__("Go refresh!"),KeyEvent.VK_R, DirDataAction.REFRESH);
-    	//prAction.putValue("row", new Integer(model_row));
     	popup.add(new JMenuItem(prAction));
-
     	prAction = new DirDataAction(this, __("No Refresh!"), reseticon,__("Stop refresh."),
     			__("No refresh!"), KeyEvent.VK_S, DirDataAction.NO_REFRESH);
     	popup.add(new JMenuItem(prAction));
-
     	return popup;
 	}
 }
@@ -253,15 +227,6 @@ class DirDataAction extends DebateDecideAction {
     	Object src = e.getSource();
         System.err.println("PeersRowAction:command property: " + command);
     	JMenuItem mnu;
-//    	int row =-1;
-//    	if(src instanceof JMenuItem){
-//    		mnu = (JMenuItem)src;
-//    		Action act = mnu.getAction();
-//    		row = ((Integer)act.getValue("row")).intValue();
-//            System.err.println("PeersRowAction:row property: " + row);
-//    	}
-//    	PeersModel model = (PeersModel)tree.getModel();
-//    	ArrayList<ArrayList<Object>> a;
 		switch(command){
 		case REFRESH:
 			tree.refresh = true;

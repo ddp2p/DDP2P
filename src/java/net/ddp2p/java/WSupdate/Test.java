@@ -1,12 +1,8 @@
-
 package net.ddp2p.java.WSupdate;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
-
-
 /**
  * <p>Java class for Test complex type.
  * 
@@ -35,13 +31,11 @@ import javax.xml.bind.annotation.XmlType;
     "roT"
 })
 public class Test {
-
     protected Integer qualityRef;
     @XmlElement(name = "QoT")
     protected Float qoT;
     @XmlElement(name = "RoT")
     protected Float roT;
-
     /**
      * Gets the value of the qualityRef property.
      * 
@@ -53,7 +47,6 @@ public class Test {
     public Integer getQualityRef() {
         return qualityRef;
     }
-
     /**
      * Sets the value of the qualityRef property.
      * 
@@ -65,7 +58,6 @@ public class Test {
     public void setQualityRef(Integer value) {
         this.qualityRef = value;
     }
-
     /**
      * Gets the value of the qoT property.
      * 
@@ -77,7 +69,6 @@ public class Test {
     public Float getQoT() {
         return qoT;
     }
-
     /**
      * Sets the value of the qoT property.
      * 
@@ -89,7 +80,6 @@ public class Test {
     public void setQoT(Float value) {
         this.qoT = value;
     }
-
     /**
      * Gets the value of the roT property.
      * 
@@ -101,7 +91,6 @@ public class Test {
     public Float getRoT() {
         return roT;
     }
-
     /**
      * Sets the value of the roT property.
      * 
@@ -113,5 +102,4 @@ public class Test {
     public void setRoT(Float value) {
         this.roT = value;
     }
-
 }

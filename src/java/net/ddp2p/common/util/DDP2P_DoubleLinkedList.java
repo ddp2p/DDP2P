@@ -1,22 +1,17 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2013 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.util;
 /**
  * Initialized with an empty node in head
@@ -97,7 +92,6 @@ public class DDP2P_DoubleLinkedList<T> {
 		}
 		@SuppressWarnings("unchecked")
 		DDP2P_DoubleLinkedList_Node_Payload<T> p = (DDP2P_DoubleLinkedList_Node_Payload<T>) crt;
-		
 		/**
 		 * If in some list, return false
 		 */
@@ -123,7 +117,6 @@ public class DDP2P_DoubleLinkedList<T> {
 	public int size() {
 		return count;
 	}
-
 	synchronized public T removeTail() {
 		if (count <= 0) return null;
 		count --;
@@ -132,16 +125,13 @@ public class DDP2P_DoubleLinkedList<T> {
 		head.previous = new_last;
 		new_last.next = head;
 		T crt = last.payload;
-		
-
 		@SuppressWarnings("unchecked")
 		DDP2P_DoubleLinkedList_Node_Payload<T> p = (DDP2P_DoubleLinkedList_Node_Payload<T>) crt;
-		if (last != head) { // should always be the case
+		if (last != head) { 
 			last.previous = null;
 			last.next = null;
 		}
 		p.set_DDP2P_DoubleLinkedList_Node(null);
-
 		return crt;
 	}
 	/**
@@ -163,13 +153,11 @@ public class DDP2P_DoubleLinkedList<T> {
 		if (ins == null) {
 			throw new RuntimeException("Node was not in List");
 		}
-		if (ins == head.next) return true; //already first
-		
+		if (ins == head.next) return true; 
 		DDP2P_DoubleLinkedList_Node<T> prev = ins.previous;
 		DDP2P_DoubleLinkedList_Node<T> next = ins.next;
 		if (prev != null) prev.next = next;
 		if (next != null) next.previous = prev;
-		
 		DDP2P_DoubleLinkedList_Node<T> old_first = head.next;
 		ins.next = old_first;
 		ins.previous = head;
@@ -190,17 +178,15 @@ public class DDP2P_DoubleLinkedList<T> {
 		if (ins == null) {
 			throw new RuntimeException("Node was not in List");
 		}
-		
 		DDP2P_DoubleLinkedList_Node<T> prev = ins.previous;
 		DDP2P_DoubleLinkedList_Node<T> next = ins.next;
 		if (prev != null) prev.next = next;
 		if (next != null) next.previous = prev;
-		
-		if (ins != head) { // should not happen!
+		if (ins != head) { 
 			ins.next = null;
 			ins.previous = null;
 		}
-		p.set_DDP2P_DoubleLinkedList_Node(null); // free it
+		p.set_DDP2P_DoubleLinkedList_Node(null); 
 	}
 	public boolean inListProbably(T crt) {
 		if (!(crt instanceof DDP2P_DoubleLinkedList_Node_Payload<?>)) {
@@ -219,9 +205,7 @@ public class DDP2P_DoubleLinkedList<T> {
 	public T getTail() {
 		return head.previous.payload;
 	}
-
 	public DDP2P_DoubleLinkedList_Node<T> getHead() {
 		return head;
 	}
-
 }

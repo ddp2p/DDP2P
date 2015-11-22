@@ -1,11 +1,7 @@
-
 package net.ddp2p.java.WSupdate;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlType;
-
-
 /**
  * <p>Java class for Downloadable complex type.
  * 
@@ -34,11 +30,9 @@ import javax.xml.bind.annotation.XmlType;
     "digest"
 })
 public class Downloadable {
-
     protected String url;
     protected String fileName;
     protected String digest;
-
     /**
      * Gets the value of the url property.
      * 
@@ -50,7 +44,6 @@ public class Downloadable {
     public String getUrl() {
         return url;
     }
-
     /**
      * Sets the value of the url property.
      * 
@@ -62,7 +55,6 @@ public class Downloadable {
     public void setUrl(String value) {
         this.url = value;
     }
-
     /**
      * Gets the value of the fileName property.
      * 
@@ -74,7 +66,6 @@ public class Downloadable {
     public String getFileName() {
         return fileName;
     }
-
     /**
      * Sets the value of the fileName property.
      * 
@@ -86,7 +77,6 @@ public class Downloadable {
     public void setFileName(String value) {
         this.fileName = value;
     }
-
     /**
      * Gets the value of the digest property.
      * 
@@ -98,7 +88,6 @@ public class Downloadable {
     public String getDigest() {
         return digest;
     }
-
     /**
      * Sets the value of the digest property.
      * 
@@ -110,5 +99,4 @@ public class Downloadable {
     public void setDigest(String value) {
         this.digest = value;
     }
-
 }

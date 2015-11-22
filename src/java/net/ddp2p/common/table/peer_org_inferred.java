@@ -1,25 +1,17 @@
 package net.ddp2p.common.table;
-
 import java.util.regex.Pattern;
-
 import net.ddp2p.common.util.Util;
-
 public class peer_org_inferred {
 	 public static final String peer_org_inferred_ID = "peer_org_inferred_ID";
 	 public static final String peer_ID = "peer_ID";
 	 public static final String organization_ID = "organization_ID";
-	 // public static final String last_sync_date = "last_sync_date";
-	 // public static final String served = "served";
 	 public static final String TNAME = "peer_org_inferred";
 	 public static final String ORG_NAME_SEP = "^"; // should not conflict with base64
 	 public static final String ORG_SEP = ";"; // should not conflict with base64
 	 public static final boolean DEBUG = false;	
-	 
 	 public static final String fields_no_ID = 
 			 peer_ID
 			 + "," + organization_ID
-			 // + last_sync_date
-			 // + served
 			 ;
 	 public static final String fields =
 			 fields_no_ID

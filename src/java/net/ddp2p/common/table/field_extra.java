@@ -1,26 +1,20 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.table;
 import static net.ddp2p.common.util.Util.__;
 import net.ddp2p.common.util.Util;
-
 public class field_extra {
 	 public static final String field_extra_ID = "field_extra_ID";
 	 public static final String global_field_extra_ID = "global_field_extra_ID";
@@ -41,7 +35,6 @@ public class field_extra {
 	 public static final String oid = "oid";
 	 public static final String version = "version";
 	 public static final String tmp = "tmp"; // in a temporary constituent, not part of org
-	 
 	 public static final String TNAME = "field_extra";
 	 public static final String org_field_extra_insert = 
 			 label+","+
@@ -85,7 +78,6 @@ public class field_extra {
 		public static final int OPARAM_VERSION = 16;
 		public static final int OPARAM_TMP = 17;
 		public static final int OPARAM_EXTRA_FIELD_ID = 18;
-	 
 	public static final String some_field_extra = 
 		 can_be_provided_later+","+ certificated+"," + default_val+"," +entry_size+"," + field_extra_ID+", "+
 		 label+", "+list_of_values+", " + partNeigh+","+ required+","+ tip+","+ 
@@ -106,11 +98,9 @@ public class field_extra {
 	public static final int SPARAM_OID = 13;
 	public static final int SPARAM_ORG_ID = 14;
 	public static final int SPARAM_LIST_VAL_L = 15;
-	 
 	public static final String SEP_list_of_values = ";";
-	public static final int partNeigh_non_neighborhood_indicator=0;  // this is not neigh
-	public static final int partNeigh_non_neighborhood_upper_indicator = 0; // anything smaller is not neigh
-	
+	public static final int partNeigh_non_neighborhood_indicator=0;  
+	public static final int partNeigh_non_neighborhood_upper_indicator = 0; 
 	public static final long SPARAM_LATER_DEFAULT = 0;
 	public static final long SPARAM_CERT_DEFAULT = 0;
 	public static final int SPARAM_SIZE_DEFAULT = 50;
@@ -119,7 +109,6 @@ public class field_extra {
 	public static final String SPARAM_LIST_VAL_DEFAULT = "";
 	public static final int SPARAM_NEIGH_DEFAULT = 0;
 	public static final long SPARAM_REQ_DEFAULT = 0;
-	
 	public static final String SPARAM_TIP_DEFAULT = null;
 	public static final String SPARAM_LABEL_L_DEFAULT = "en";
 	public static final String NEIGHBORHOOD_ID_NA = "0";

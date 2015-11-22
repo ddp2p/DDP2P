@@ -2,13 +2,11 @@
  * From Data Encodings - Herong's Tutorial Examples
  */
 package net.ddp2p.common.util;
-
 @Deprecated
 public class Base64{
     static byte[] encodeData;
     static String charSet = 
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
     static {
         encodeData = new byte[64];
     for (int i = 0; i<64; i++) {
@@ -16,31 +14,25 @@ public class Base64{
         encodeData[i] = c;
     }
     }
-
     private Base64() {}
-
     /**
      * base-64 encode a string
      * @param s     The ascii string to encode
      * @returns     The base64 encoded result
      */
-
     public static String
     encode(String s) {
         return encode(s.getBytes());
     }
-
     /**
      * base-64 encode a byte array
      * @param src   The byte array to encode
      * @returns     The base64 encoded result
      */
-
     public static String
     encode(byte[] src) {
     return encode(src, 0, src.length);
     }
-
     /**
      * base-64 encode a byte array
      * @param src   The byte array to encode
@@ -48,15 +40,14 @@ public class Base64{
      * @param len   The number of bytes
      * @returns     The base64 encoded result
      */
-
     public static String
     encode(byte[] src, int start, int length) {
         byte[] dst = new byte[(length+2)/3 * 4 + length/72];
         int x = 0;
         int dstIndex = 0;
-        int state = 0;  // which char in pattern
-        int old = 0;    // previous byte
-        int len = 0;    // length decoded so far
+        int state = 0;  
+        int old = 0;    
+        int len = 0;    
     int max = length + start;
         for (int srcIndex = start; srcIndex<max; srcIndex++) {
         x = src[srcIndex];
@@ -81,11 +72,6 @@ public class Base64{
             len = 0;
         }
     }
-
-    /*
-     * now clean up the end bytes
-     */
-
     switch (state) {
     case 1: dst[dstIndex++] = encodeData[(old<<4) & 0x30];
        dst[dstIndex++] = (byte) '=';
@@ -97,7 +83,6 @@ public class Base64{
     }
     return new String(dst);
     }
-
     /**
      * A Base64 decoder.  This implementation is slow, and 
      * doesn't handle wrapped lines.
@@ -105,10 +90,9 @@ public class Base64{
      * @param s     a Base64 encoded string
      * @returns     The byte array eith the decoded result
      */
-
     public static byte[]
     decode(String s) {
-      int end = 0;  // end state
+      int end = 0;  
       if (s.endsWith("=")) {
       end++;
       }
@@ -144,12 +128,10 @@ public class Base64{
       } catch (ArrayIndexOutOfBoundsException e) {}
       return result;
     }
-
     /**
      * Test the decoder and encoder.
      * Call as <code>Base64 [string]</code>.
      */
-
     public static void
     main(String[] args) {
         System.out.println("encode: " + args[0]  + " -> (" 

@@ -1,24 +1,18 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.util;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -27,8 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Pattern;
-
-
 class LogicalScreenDescriptor implements GIFBlock {
 	byte width_16le[] = {16,0};
 	byte height_16le[] = {16,0};
@@ -45,7 +37,6 @@ class LogicalScreenDescriptor implements GIFBlock {
 	 * Default 0
 	 */
 	byte mDefaultPixelAspectRatio = 0;
-
 	public String toString() {
 		String r = "";
 		r += "\tWidth : "+ Util.le16_to_cpu(width_16le)+"\n";
@@ -55,7 +46,6 @@ class LogicalScreenDescriptor implements GIFBlock {
 		r += "\tPixRatio: "+ mDefaultPixelAspectRatio+" i.e. "+this.getRatio();
 		return r;
 	}
-	
 	boolean isBit(int bit){
 		return (mBitField&(1<<bit))>0;
 	}
@@ -63,7 +53,6 @@ class LogicalScreenDescriptor implements GIFBlock {
 		mBitField &= ~(1<<bit);
 		if(val) mBitField |= (1<<bit);
 	}
-	
 	boolean isGCTSorted(){
 		return (mBitField & 8)>0;
 	}
@@ -71,7 +60,6 @@ class LogicalScreenDescriptor implements GIFBlock {
 		mBitField &= ~8;
 		if(sorted) mBitField |= 8;
 	}
-	
 	boolean hasGCT(){
 		return (mBitField&128)>0;
 	}
@@ -150,7 +138,6 @@ class LogicalScreenDescriptor implements GIFBlock {
 		return start+7;
 	}
 }
-
 class ColorTable implements GIFBlock{
 	/**
 	 * R, G, B
@@ -201,18 +188,15 @@ interface GIFComponent extends GIFBlock{
 }
 class GIFCommentFrag implements GIFBlock {
 	byte data[] = new byte[0];
-
 	public String toString() {
 		String r = "";
 		r += "\t\""+Util.byteToString(data)+"\"";
 		return r;
 	}
-	
 	@Override
 	public int getSize() {
 		return 1+data.length;
 	}
-
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
 		buf[start++] = (byte)data.length;
@@ -220,7 +204,6 @@ class GIFCommentFrag implements GIFBlock {
 		start+=data.length;
 		return start;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		int size = Util.byte_to_uint(buf[start++]);
@@ -232,7 +215,6 @@ class GIFCommentFrag implements GIFBlock {
 }
 /**
  Comment Extension Block
-
 Offset   Length   Contents
   0      1 byte   Extension Introducer (0x21)
   1      1 byte   Comment Label (0xfe)
@@ -241,13 +223,11 @@ Offset   Length   Contents
         (s)bytes  Comment Data
 ]*
          1 byte   Block Terminator(0x00)
-         
  * @author msilaghi
  *
  */
 class GIFCommentBlock implements GIFComponent {
 	ArrayList<GIFCommentFrag> data = new ArrayList<GIFCommentFrag>();
-	
 	/**
 	 * 
 	 * @param msg
@@ -260,7 +240,6 @@ class GIFCommentBlock implements GIFComponent {
 			data.add(new GIFCommentFrag());
 			return;
 		}
-		// int blocks = (int) Math.ceil(m.length/255.0);
 		for (; off < end; off += GIF.MAX_FRAG) {
 			GIFCommentFrag gcf = new GIFCommentFrag();
 			int crt_len = Math.min(GIF.MAX_FRAG, end-off);
@@ -289,21 +268,13 @@ class GIFCommentBlock implements GIFComponent {
 		}
 		return off;
 	}
-	
 	public String toString() {
 		String r = "";
-
 		byte[] msg = new byte[getMessageSize()];
 		getMessage(msg, 0);
 		r += "Comment Fragment:\n\t\""+Util.byteToString(msg)+"\"";
-		/*
-		for (GIFCommentFrag f : data) {
-			r += "Comment Fragment:\n"+f+"\n";
-		}
-		*/
 		return r;
 	}
-	
 	@Override
 	public int getSize() {
 		int sz = 2;
@@ -312,7 +283,6 @@ class GIFCommentBlock implements GIFComponent {
 		}
 		return sz;
 	}
-
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
 		buf[start++] = GIF.BLOCK_EXTENSION;
@@ -322,7 +292,6 @@ class GIFCommentBlock implements GIFComponent {
 		}
 		return start;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		if(buf[start++] != GIF.BLOCK_EXTENSION) return GIF.ERROR;
@@ -337,12 +306,10 @@ class GIFCommentBlock implements GIFComponent {
 		if (GIF.DEBUG) System.out.println("CommentBlock:fillStructure end start="+start);
 		return start;
 	}
-
 	@Override
 	public byte getType() {
 		return GIF.BLOCK_EXTENSION;
 	}
-	
 }
 class GIFAnimationApplicationBlock implements GIFBlock {
 	final static byte mBlockSize = 3;
@@ -351,16 +318,13 @@ class GIFAnimationApplicationBlock implements GIFBlock {
 	 * infinite uses 0 as repeat count
 	 */
 	byte[] mRepeatCount = new byte[]{0,0};
-	
 	public String toString() {
 		String r = "";
 		r += "\tRepeat Count: "+Util.le16_to_cpu(mRepeatCount)+" (0 stands for infinity)";
 		return r;
 	}
-	
 	public GIFAnimationApplicationBlock() {
 	}
-	
 	public GIFAnimationApplicationBlock(GIFBlock gifBlock) {
 		if(gifBlock instanceof GIFAnimationApplicationBlock) {
 			GIFAnimationApplicationBlock gaab = (GIFAnimationApplicationBlock)gifBlock;
@@ -376,12 +340,10 @@ class GIFAnimationApplicationBlock implements GIFBlock {
 		}
 		throw new RuntimeException("Unsupported Animation Extension Data type");
 	}
-
 	@Override
 	public int getSize() {
 		return 4;
 	}
-
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
 		buf[start++] = mBlockSize;
@@ -389,7 +351,6 @@ class GIFAnimationApplicationBlock implements GIFBlock {
 		Util.copyBytes(buf, start, mRepeatCount, 2, 0); start +=2;
 		return start;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		if(buf[start++] != mBlockSize) return GIF.ERROR;
@@ -397,31 +358,26 @@ class GIFAnimationApplicationBlock implements GIFBlock {
 		Util.copyBytes(mRepeatCount, 0, buf, 2, start); start +=2;
 		return start;
 	}
-	
 }
 class GIFApplicationHeader implements GIFBlock {
 	final static byte mBlockSize = 11;
 	byte [] mApplicationID = new byte[8];
 	byte [] mAuthenticationCode = new byte[3];
-	
 	public String toString() {
 		String r = "";
 		r += "ApplicationID: \""+Util.byteToString(mApplicationID)+"\"\n";
 		r += "Authentication Code: \""+Util.byteToString(this.mAuthenticationCode)+"\"\n";
 		return r;
 	}
-	
 	public boolean isAnimatedGIF() {
 		if(!Util.equalBytes(mApplicationID, new byte[]{'N','E','T','S','C','A','P','E'})) return false;
 		if(!Util.equalBytes(mAuthenticationCode, new byte[]{'2','.','0'})) return false;
 		return true;
 	}
-	
 	@Override
 	public int getSize() {
 		return 12;
 	}
-
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
 		buf[start++] = mBlockSize;
@@ -429,7 +385,6 @@ class GIFApplicationHeader implements GIFBlock {
 		Util.copyBytes(buf, start, mAuthenticationCode, 3, 0); start += 3;
 		return start;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		if(buf[start++] != mBlockSize) return GIF.ERROR;
@@ -437,12 +392,10 @@ class GIFApplicationHeader implements GIFBlock {
 		Util.copyBytes(mAuthenticationCode, 0, buf, 3, start); start += 3;
 		return start;
 	}
-	
 }
 class GIFApplicationBlock implements GIFComponent {
 	GIFApplicationHeader header = new GIFApplicationHeader();
 	ArrayList<GIFBlock> data = new ArrayList<GIFBlock>();
-	
 	public String toString() {
 		String r = "";
 		r += "GIFApplicationHeader:\n"+header+"\n";
@@ -460,7 +413,6 @@ class GIFApplicationBlock implements GIFComponent {
 		}
 		return r;
 	}
-	
 	@Override
 	public int getSize() {
 		int sz = 2;
@@ -468,10 +420,9 @@ class GIFApplicationBlock implements GIFComponent {
 		for(GIFBlock f : data){
 			sz += f.getSize();
 		}
-		sz += 1; //for termination byte //Rakesh
+		sz += 1; 
 		return sz;
 	}
-
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
 		buf[start++] = GIF.BLOCK_EXTENSION;
@@ -480,15 +431,13 @@ class GIFApplicationBlock implements GIFComponent {
 		for(GIFBlock f : data){
 			start = f.fillBuffer(buf, start);
 		}
-		buf[start++] = GIF.EXTENSION_DATA_SUB_BLOCK_TERMINATOR; // Rakesh
+		buf[start++] = GIF.EXTENSION_DATA_SUB_BLOCK_TERMINATOR; 
 		return start;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		if(buf[start++] != GIF.BLOCK_EXTENSION) return GIF.ERROR;
 		if(buf[start++] != GIF.EXTENSION_APPLICATION) return GIF.ERROR;
-		//System.out.println("b."+start); //Rakesh
 		start = header.fillStructure(buf, start);
 		GIFCommentFrag f;
 		do {
@@ -498,7 +447,6 @@ class GIFApplicationBlock implements GIFComponent {
 		}while(f.getSize() > 1);
 		return start;
 	}
-
 	@Override
 	public byte getType() {
 		return GIF.BLOCK_EXTENSION;
@@ -506,7 +454,6 @@ class GIFApplicationBlock implements GIFComponent {
 }
 /**
 Plain Text Extension Block
-
 Offset   Length   Contents
   0      1 byte   Extension Introducer (0x21)
   1      1 byte   Plain Text Label (0x01)
@@ -524,7 +471,6 @@ Offset   Length   Contents
         (s)bytes  Plain Text Data
 ]*
          1 byte   Block Terminator(0x00)
-  
  * @author msilaghi
  *
  */
@@ -538,13 +484,10 @@ class PlaintextExtensionHeader implements GIFBlock{
 	byte mCharacterCellHeight = 8;
 	byte mTextForegroungColor = 0;
 	byte mTextBackgroungColor = 1;	
-	
 	@Override
 	public int getSize() {
 		return block_size+1;
 	}
-	
-
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
 		buf[start] = block_size;
@@ -558,7 +501,6 @@ class PlaintextExtensionHeader implements GIFBlock{
 		buf[start+12] = mTextBackgroungColor;
 		return start+13;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		if(buf[start]!=block_size) return GIF.ERROR;
@@ -575,10 +517,9 @@ class PlaintextExtensionHeader implements GIFBlock{
 }
 class GraphicsControlExtension implements GIFBlock{
 	final byte mBlockSize = 4;
-	byte mBitFields; // 0: transparent_index_used, 1: wait user; 2-4: disposalMethod 
-	byte mDelayTime[]={0,0}; // 1/100th of a second
+	byte mBitFields; 
+	byte mDelayTime[]={0,0}; 
 	byte mTransparentColorIndex = 0;
-	
 	public String toString() {
 		String r = "";
 		r += "\tFlags : "+Util.byteToHex(new byte[]{mBitFields})+"h"+
@@ -589,7 +530,6 @@ class GraphicsControlExtension implements GIFBlock{
 		r += "\tTransp: "+mTransparentColorIndex+" (index)";
 		return r;
 	}
-	
 	private String getDisposalMethodName() {
 		switch(getDisposalMethod()){
 		case GIF.DISPOSAL_LEAVE_INPLACE: return "LEAVE";
@@ -599,7 +539,6 @@ class GraphicsControlExtension implements GIFBlock{
 		default: return "UNKNOWN";
 		}
 	}
-
 	boolean getTransparentUsed(){
 		return (mBitFields & 1) > 0;
 	}
@@ -622,26 +561,21 @@ class GraphicsControlExtension implements GIFBlock{
 	int getDisposalMethod(){
 		return (mBitFields>>2) & 7;
 	}
-	
 	@Override
 	public int getSize() {
 		return 3+mBlockSize+1;
 	}
-
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
 		buf[start++] = GIF.BLOCK_EXTENSION;
 		buf[start++] = GIF.EXTENSION_GCE_IMAGE;
-		
 		buf[start++] = mBlockSize;
 		buf[start++] = mBitFields;
 		Util.copyBytes(buf, start, mDelayTime, 2, 0); start +=2;
 		buf[start++] = mTransparentColorIndex;
-		buf[start++] = 0; // terminator
-		
+		buf[start++] = 0; 
 		return start;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		if (GIF.BLOCK_EXTENSION != buf[start++]) {
@@ -672,21 +606,18 @@ class PlaintextData implements GIFBlock{
 	public int getSize() {
 		return 1+data.length;
 	}
-
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
 		buf[start] = (byte)data.length;
 		Util.copyBytes(buf, start+1, data, data.length, 0);
 		return start+data.length+1;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		data = new byte[buf[start]];
 		Util.copyBytes(data, 0, buf, data.length, start+1);
 		return start+data.length+1;
 	}
-	
 }
 interface GIFContentBody extends GIFBlock{
 }
@@ -699,16 +630,11 @@ class GIFImageData implements GIFContentBody  {
 	 * 0-2: LCT size; 5: sort; 6: Interlaced; 7: LCT flag
 	 */
 	byte mBitField = 0;
-	
 	ColorTable mLocalColorTable = null;
-	
 	byte mInitialCodeSize = 8;
-	
 	ArrayList<ImageData> data = new ArrayList<ImageData>();
 	byte uncompressed[] = null;
 	byte compressed[] = null;
-	
-
 	void setMessage(byte msg[]) {
 		setMessage(msg, 8, 8);
 	}
@@ -722,7 +648,6 @@ class GIFImageData implements GIFContentBody  {
 		}
 		uncompressed = Arrays.copyOf(msg, msg.length);
 		compressed = LZW.LZW_Compress(uncompressed, initial_code_size, bits_last_byte, 1<<GIF.MAX_CODE_SIZE, GIF.MAX_CODE_SIZE);
-		// int blocks = (int) Math.ceil(m.length/255.0);
 		for (int off = 0; off < compressed.length; off += GIF.MAX_FRAG) {
 			ImageData gcf = new ImageData();
 			int crt_len = Math.min(GIF.MAX_FRAG, compressed.length-off);
@@ -753,15 +678,9 @@ class GIFImageData implements GIFContentBody  {
 	int getUncompressedMessage(byte m[], int off, int initial_code_size) {
 		byte compressed[] = new byte[getCompressedMessageSize()];
 		getCompressedMessage(compressed, 0);
-		/*
-		byte uncompressed[] = Util.LZW_Decompress(compressed, initial_code_size);
-		Util.copyBytes(m, off, uncompressed, uncompressed.length, 0);
-		return off+uncompressed.length;
-		*/
 		int r = LZW._LZW_Decompress(m, 0, compressed, initial_code_size, 1<<GIF.MAX_CODE_SIZE, GIF.MAX_CODE_SIZE);
 		return off+r;
 	}
-	
 	public String toString() {
 		int width, height;
 		String r = "";
@@ -770,7 +689,6 @@ class GIFImageData implements GIFContentBody  {
 		r += "\tImage Width   : "+ (width=Util.le16_to_cpu(mImageWidth))+"\n";
 		r += "\tImage Height  : "+ (height=Util.le16_to_cpu(mImageHeight))+"\n";
 		r += "\tFlags : "+Util.byteToHex(new byte[]{mBitField})+ "h 0-2:LCT"+this.getLog2LCTSize()+" ("+this.getLCTSize()+") 5:LCTsort="+this.isLCTSorted()+" 6:interlaced="+this.isLCTInterlaced()+" 7:LCT="+this.hasLCT()+"\n";
-
 		if(mLocalColorTable != null) r+="Local Color Table:\n"+mLocalColorTable+"\n";
 		r +=  "\tInitial Code Size: "+mInitialCodeSize+"\n";
 		if(uncompressed != null) {
@@ -792,15 +710,8 @@ class GIFImageData implements GIFContentBody  {
 			String MSG = Util.byteToHex(msg, 0, off, "");
 			r+= Util.trimmed("Compressed Data:\n\t"+MSG, 10);
 		}
-
-		/*
-		for(ImageData d : data) {
-			r += "ImageDataFragment:\n"+d+"\n";
-		}
-		*/
 		return r;
 	}
-	
 	boolean isLCTInterlaced(){
 		return (mBitField & 64)>0;
 	}
@@ -846,19 +757,16 @@ class GIFImageData implements GIFContentBody  {
 		mBitField &= ~7;
 		mBitField |= exponent-1;
 	}
-
-	
 	@Override
 	public int getSize() {
 		int sz = 1+9;
 		sz += getLocalColorTableSize();
-		sz += 1; // initial compression code size
+		sz += 1; 
 		for(ImageData pd : data) {
 			sz += pd.getSize();
 		}		
 		return sz;
 	}
-
 	private int getLocalColorTableSize() {
 		if(this.mLocalColorTable == null) return 0;
 		return this.mLocalColorTable.getSize();
@@ -879,7 +787,6 @@ class GIFImageData implements GIFContentBody  {
 		}		
 		return start;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		if(buf[start++] != GIF.BLOCK_IMAGE) return GIF.ERROR;
@@ -895,7 +802,6 @@ class GIFImageData implements GIFContentBody  {
 		mInitialCodeSize = buf[start++];
 		ImageData pd;
 		do{
-			//if (GIF.DEBUG) System.out.println("GIFImageData:fillStructure  loop at: "+start);
 			pd = new ImageData(); 
 			start = pd.fillStructure(buf, start);
 			pd.initial_code_size = this.mInitialCodeSize;
@@ -904,7 +810,6 @@ class GIFImageData implements GIFContentBody  {
 		if (GIF.DEBUG) System.out.println("GIFImageData end at: "+start+" loops="+data.size()+" len="+this.getCompressedMessageSize());
 		return start;
 	}
-	
 }
 class ImageData implements GIFBlock{
 	private byte compressed[] = null;
@@ -912,7 +817,6 @@ class ImageData implements GIFBlock{
 	public int initial_code_size = 8;
 	int bits_last_byte;
 	ImageData(){
-		
 	}
 	public byte[] getCompressed() {
 		return compressed;
@@ -939,44 +843,22 @@ class ImageData implements GIFBlock{
 	@Override
 	public int getSize() {
 		if((uncompressed == null)&&(compressed == null)) return 0;
-		//if(compressed == null) compress();
 		return 1+compressed.length;
 	}
-/*
-	private void compress() {
-		if(compressed != null) return;
-		if(uncompressed == null) compressed = new byte[0];
-		compressed = Util.LZW_Compress(uncompressed, initial_code_size, bits_last_byte, 511, GIF.MAX_CODE_SIZE);
-	}
-	private void uncompress() {
-		if(uncompressed != null) return;
-		if(compressed == null) uncompressed = new byte[0];
-		try {
-			byte[] _uncompressed = Util.LZW_Decompress(compressed, initial_code_size);
-			bits_last_byte = Util.bytePack(_uncompressed, initial_code_size, uncompressed = new byte[(int)Math.ceil(_uncompressed.length*initial_code_size/8.0)]);
-		}catch(Exception e){
-			if (GIF.DEBUG) System.out.println("Error uncompressing image");
-		}
-	}
-*/
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
-		//compress();
 		buf[start++] = (byte)compressed.length;
 		Util.copyBytes(buf, start, compressed, compressed.length, 0);
 		return start+compressed.length;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		int size = Util.byte_to_uint(buf[start++]);
 		compressed = new byte[size];
 		Util.copyBytes(compressed, 0, buf, compressed.length, start);
 		uncompressed = null;
-		//uncompress();
 		return start + compressed.length;
 	}
-
 	public void setUncompressed(byte[] _uncompressed, int initial_code_size, int bits_last_byte) {
 		this.uncompressed = _uncompressed;
 		compressed = null;
@@ -997,30 +879,17 @@ class PlainTextExtention implements GIFContentBody {
 		}
 		return sz;
 	}
-
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
 		start = mPlaintextExtensionHeader.fillBuffer(buf, start);
-		//start += mPlaintextExtensionHeader.getSize();
 		for(PlaintextData pd : data) {
 			start = pd.fillBuffer(buf, start);
-			//start += pd.getSize();
 		}
 		return start;
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		start = mPlaintextExtensionHeader.fillStructure(buf, start);
-		//start += mPlaintextExtensionHeader.getSize();
-		/*
-		if(buf[start]!=0){
-			PlaintextData pd = new PlaintextData();
-			start = pd.fillStructure(buf, start);
-			//start += pd.getSize();
-			data.add(pd);
-		}
-		*/
 		PlaintextData pd;
 		do{
 			pd = new PlaintextData();
@@ -1029,11 +898,10 @@ class PlainTextExtention implements GIFContentBody {
 		}while(pd.getSize() > 1);
 		return start;
 	}
-	
 }
 class GIFContent implements GIFComponent{
-	GraphicsControlExtension mGraphicsControlExtension; //= new GraphicsControlExtension();
-	GIFContentBody mGIFContentBody; // = new GIFContentBody();
+	GraphicsControlExtension mGraphicsControlExtension; 
+	GIFContentBody mGIFContentBody; 
 	public String toString() {
 		String r = "";
 		if(mGraphicsControlExtension != null)
@@ -1044,7 +912,6 @@ class GIFContent implements GIFComponent{
 	public int fillBuffer(byte[]buf, int start){
 		if(mGraphicsControlExtension != null) {
 			start = mGraphicsControlExtension.fillBuffer(buf, start);
-			//start += mGraphicsControlExtension.getSize();
 		}
 		start = mGIFContentBody.fillBuffer(buf, start);
 		return start;
@@ -1055,7 +922,6 @@ class GIFContent implements GIFComponent{
 			mGraphicsControlExtension = new GraphicsControlExtension();
 			if(mGraphicsControlExtension != null) {
 				start = mGraphicsControlExtension.fillStructure(buf, start);
-				//start += mGraphicsControlExtension.getSize();
 			}
 		}
 		if (GIF.DEBUG) System.out.println("GIFContent:fillStructure Image Content at: "+start);
@@ -1076,22 +942,18 @@ class GIFContent implements GIFComponent{
 			return GIF.BLOCK_EXTENSION;
 		return GIF.BLOCK_IMAGE;
 	}
-	
 }
 class GIFComponentUnknown implements GIFComponent {
 	byte data[] = new byte[0];
-
 	@Override
 	public int getSize() {
 		return data.length;
 	}
-
 	@Override
 	public int fillBuffer(byte[] buf, int start) {
 		Util.copyBytes(buf, start, data, getSize(), 0);
 		return start+getSize();
 	}
-
 	@Override
 	public int fillStructure(byte[] buf, int start) {
 		int sz = size(buf, start);
@@ -1099,7 +961,6 @@ class GIFComponentUnknown implements GIFComponent {
 		Util.copyBytes(data, 0, buf, sz, start);
 		return start+data.length;
 	}
-
 	private int size(byte[] buf, int start) {
 		int sz = 2;
 		int cnt = start + 2;
@@ -1110,14 +971,11 @@ class GIFComponentUnknown implements GIFComponent {
 		}
 		return sz+1;
 	}
-
 	@Override
 	public byte getType() {
 		return data[0];
 	}
-	
 }
-
 public class GIF {
 	public static final int MAX_CODE_SIZE = 12;
 	public static final int MAX_FRAG = 0xFF;
@@ -1126,18 +984,15 @@ public class GIF {
 	final static int DISPOSAL_LEAVE_INPLACE = 1;
 	final static int DISPOSAL_RESTORE_BACKGROUND = 2;
 	final static int DISPOSAL_RESTORE_PREVIOUS = 3;
-
 	static final byte BLOCK_EXTENSION = 0x21;
 	static final byte BLOCK_IMAGE = 0x2C;
 	static final byte BLOCK_TERMINATOR = 0x3B;
-
 	static final byte EXTENSION_PLAINTEXT = 0x1;
 	static final byte EXTENSION_GCE_IMAGE = (byte) 0xF9;
 	static final byte EXTENSION_COMMENT = (byte) 0xFE;
 	static final byte EXTENSION_APPLICATION = (byte) 0xFF;
-	static final byte  EXTENSION_DATA_SUB_BLOCK_TERMINATOR = 0x00; // Rakesh
+	static final byte  EXTENSION_DATA_SUB_BLOCK_TERMINATOR = 0x00; 
 	static final boolean DEBUG = false;
-
 	final byte header[]={'G','I','F'};
 	byte version[]={'8','9','a'};
 	private LogicalScreenDescriptor mLogicalScreenDescriptor = new LogicalScreenDescriptor();
@@ -1169,7 +1024,6 @@ public class GIF {
 			buf = new byte[out_len];
 			gif.fillBuffer(buf, 0);
 			FileOutputStream fos = new FileOutputStream(out);
-			//BufferedOutputStream bos = new BufferedOutputStream(fos);
 			fos.write(buf);
 			fos.close();
 		} catch (IOException e) {
@@ -1181,7 +1035,6 @@ public class GIF {
 	public
 	byte[] GIF_Extract(File in) {
 		long MAX_FILE = 2000000;
-		//if(in.length() > MAX_FILE ) return null;
 		int in_len = (int)Math.min(MAX_FILE, in.length());
 		byte buf[] = new byte[in_len];
 		try {
@@ -1191,7 +1044,6 @@ public class GIF {
 			GIFComponent e = gif.getContent().get(0);
 			if(! (e instanceof GIFCommentBlock)) return null;
 			GIFCommentBlock gcb = (GIFCommentBlock) e;
-			
 			int out_len = gcb.getMessageSize();
 			buf = new byte[out_len];
 			gcb.getMessage(buf, 0);
@@ -1213,7 +1065,7 @@ public class GIF {
 	public int fillStructure(byte []buf, int start, int max_blocks) {
 		Util.copyBytes(header, 0, buf, header.length, start); start += header.length;
 		Util.copyBytes(version, 0, buf, version.length, start); start += version.length;
-		start = getmLogicalScreenDescriptor().fillStructure(buf, start); //start += mLogicalScreenDescriptor.getSize();
+		start = getmLogicalScreenDescriptor().fillStructure(buf, start); 
 		if(getmLogicalScreenDescriptor().hasGCT()) {	
 			this.setmGlobalColorTable(new ColorTable(this.getmLogicalScreenDescriptor().getGCTSize()));
 			start = getmGlobalColorTable().fillStructure(buf, start);
@@ -1231,7 +1083,7 @@ public class GIF {
 				switch(buf[start+1]) {
 				case GIF.EXTENSION_GCE_IMAGE:
 					if (GIF.DEBUG) System.out.println("GIF read content extension gce image");
-					break; // go to image
+					break; 
 				case GIF.EXTENSION_COMMENT:
 					if (GIF.DEBUG) System.out.println("GIF read content extension comment");
 					GIFCommentBlock commentBlock = new GIFCommentBlock();
@@ -1246,24 +1098,23 @@ public class GIF {
 					continue;
 				case GIF.EXTENSION_PLAINTEXT:
 					if (GIF.DEBUG) System.out.println("GIF read content extension plaintext");
-					// break; // not implemented
 				default:
 					if (GIF.DEBUG) System.out.println("GIF read content extension unknown");
 					GIFComponentUnknown unknown = new GIFComponentUnknown();
-					start = unknown.fillStructure(buf, start); //start += unknown.getSize();
+					start = unknown.fillStructure(buf, start); 
 					getContent().add(unknown);
 					continue;
 				}
 			case GIF.BLOCK_IMAGE:
 				if (GIF.DEBUG) System.out.println("GIF read content image block");
 				GIFContent content_block = new GIFContent();
-				start = content_block.fillStructure(buf, start); //start += content_block.getSize();
+				start = content_block.fillStructure(buf, start); 
 				getContent().add(content_block);
 				break;
 			default:
 				if (GIF.DEBUG) System.out.println("GIF read content unknown block id: "+Util.byteToHex(buf[start]));
 				GIFComponentUnknown unknown = new GIFComponentUnknown();
-				start = unknown.fillStructure(buf, start); //start += unknown.getSize();
+				start = unknown.fillStructure(buf, start); 
 				getContent().add(unknown);
 				continue;
 			}
@@ -1273,15 +1124,12 @@ public class GIF {
 	public int fillBuffer(byte[]buf, int start) {
 		Util.copyBytes(buf, start, header, header.length, 0); start += header.length;
 		Util.copyBytes(buf, start, version, version.length, 0); start += version.length;
-		start = getmLogicalScreenDescriptor().fillBuffer(buf, start); //start += mLogicalScreenDescriptor.getSize();
-		if(this.getmGlobalColorTable()!=null) start = getmGlobalColorTable().fillBuffer(buf, start); //start += mGlobalColorTable.getSize();
-		
+		start = getmLogicalScreenDescriptor().fillBuffer(buf, start); 
+		if(this.getmGlobalColorTable()!=null) start = getmGlobalColorTable().fillBuffer(buf, start); 
 		for(GIFComponent c : getContent()) {
-			start = c.fillBuffer(buf, start); //start +=  c.getSize();
+			start = c.fillBuffer(buf, start); 
 		}
-		
 		buf[start] = BLOCK_TERMINATOR;
-		
 		return start+1;
 	}
 	public String toString() {
@@ -1298,10 +1146,10 @@ public class GIF {
 	}
 	private int getContentSize() {
 		int sz =
-				6 //header + version
+				6 
 				+ getLSDSize()
 				+ getGCDSize()
-				+ 1; //terminator
+				+ 1; 
 		for(GIFComponent c:getContent()){
 			sz += c.getSize();
 		}
@@ -1347,22 +1195,15 @@ public class GIF {
 			e.printStackTrace();
 		}
 	}
-	
 	public static void genmain(String args[]) {
 		GIF gif = new GIF();
 		gif.getmLogicalScreenDescriptor().width_16le = Util.cpu_to_16le(30);
 		gif.getmLogicalScreenDescriptor().height_16le = Util.cpu_to_16le(20);
-		//gif.mLogicalScreenDescriptor.mBackgroundColor = 0;
-		//gif.mLogicalScreenDescriptor.setGCTSorted(false);
 		gif.getmLogicalScreenDescriptor().setLog2GCTSize(8);
-		//gif.mLogicalScreenDescriptor.setRatio(0);
-
 		gif.getmLogicalScreenDescriptor().setGCTbppc(8);
 		gif.getmLogicalScreenDescriptor().setGCT(true);
-		
 		gif.setmGlobalColorTable(new ColorTable(gif.getmLogicalScreenDescriptor().getGCTSize()));
-		gif.getmGlobalColorTable().colors[0][2] = (byte) 0xFF; // blue
-		
+		gif.getmGlobalColorTable().colors[0][2] = (byte) 0xFF; 
 		GIFContent gc = new GIFContent();
 		GIFImageData gid = new GIFImageData();
 		gid.mLeftPosition = new byte[]{0,0};
@@ -1375,10 +1216,8 @@ public class GIF {
 		id.setUncompressed(uncompressed, 8, 8);
 		gid.data.add(id);
 		gid.data.add(new ImageData());
-		
 		gc.mGIFContentBody = gid;
 		gif.getContent().add(gc);
-		
 		byte[] buf = gif.content();
 		String fname = "test.gif";
 		if(args.length>0) fname = args[0];
@@ -1408,7 +1247,6 @@ public class GIF {
 			GIF gif = new GIF();
 			int sz = gif.fillStructure(buf, 0);
 			if(sz > available) if (GIF.DEBUG) System.out.println("Gif incomplete: "+sz+">"+available);
-			//if (GIF.DEBUG) 
 				System.out.println("GIF: "+gif);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

@@ -1,23 +1,17 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
-
 package net.ddp2p.common.data;
 import static net.ddp2p.common.util.Util.__;
 import net.ddp2p.ASN1.ASN1DecoderFail;
@@ -27,31 +21,24 @@ import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
-
 /**
 Document ::= SEQUENCE{
 	format PrintableString,
 	document OCTET_STRING
 }
  */
-
 public class D_Document extends ASNObj{
-
 	public static final String TXT_FORMAT = "TXT";
 	private static final String D = "D:";
-	private String format;//Printable
-	private String document; //OCT STR
+	private String format;
+	private String document; 
 	public static final String TXT_BODY_FORMAT = "TXT";
 	public static final int TEXTAREA = 0;
-	
 	public static final String PDF_BODY_FORMAT = "PDF";
 	public static final int DJNative = 1;
-	
 	public static final String HTM_BODY_FORMAT = "HTM";
 	public static final int RTEDIT = 2;
-	
 	public static final int PDFVIEW = 3;
-	
 	public static final String DEFAULT_FORMAT = HTM_BODY_FORMAT;
 	public static final int DEFAULT_EDITOR = RTEDIT;
 	public String toString() {
@@ -69,7 +56,7 @@ public class D_Document extends ASNObj{
 	}
 	public D_Document(String d) {
 		format = D_Document.TXT_FORMAT;
-		document = d; // "<html></html>";
+		document = d; 
 	}
 	@Override
 	public Encoder getEncoder() {
@@ -84,7 +71,6 @@ public class D_Document extends ASNObj{
 		}
 		return enc;
 	}
-
 	@Override
 	public D_Document decode(Decoder decoder) throws ASN1DecoderFail {
 		Decoder dec = decoder.getContent();
@@ -93,12 +79,10 @@ public class D_Document extends ASNObj{
 			if(format==D_Document.PDF_BODY_FORMAT)
 				document = Util.stringSignatureFromByte(dec.getFirstObject(true).getBytes(DD.TAG_AC1));
 			else
-				//document = util.Util.readAll(new java.util.zip.GZIPInputStream(new StringBufferInputStream(dec.getFirstObject(true).getString(DD.TAG_AC1))));
 				document = dec.getFirstObject(true).getString(DD.TAG_AC1);
 		}
 		return this;
 	}
-
 	/**
 	 * representation that can be stored in database
 	 * @return
@@ -152,12 +136,9 @@ public class D_Document extends ASNObj{
 				if(0 != Application_GUI.ask(__("You may lose data by switching to the new format!"),
 						__("Losing Data"), Application_GUI.OK_CANCEL_OPTION)){
 				    System.out.println("txt document conversion abandoned");
-					return null; //document;
+					return null; 
 				}
-				
-			//	document = "<html>"+document+"</html>";
 			    document = Application_GUI.html2text(document);
-			    
 			    System.out.println("txt document= "+document);
 				format = newFormat;
 				break;
@@ -187,4 +168,3 @@ public class D_Document extends ASNObj{
 		this.document = doc.document;
 	}
 }
-

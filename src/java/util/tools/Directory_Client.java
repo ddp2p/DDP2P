@@ -1,5 +1,4 @@
 package util.tools;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -9,7 +8,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
-
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
@@ -20,13 +18,11 @@ import net.ddp2p.common.hds.DirectoryAnnouncement_Answer;
 import net.ddp2p.common.hds.DirectoryAnswer;
 import net.ddp2p.common.hds.DirectoryRequest;
 import net.ddp2p.common.util.DBInterface;
-
 public
 class Directory_Client {
 	public static String domain = "163.118.78.40";
 	public static int port = 25123;
 	static String hash;
-	
 	public static void main(String args[]){
 		try {
 			_main(args);
@@ -62,7 +58,6 @@ class Directory_Client {
 		System.out.println("Try: "+isa);
 		s.connect(isa);
 		DirectoryRequest dr = new DirectoryRequest();
-		//dr.globalIDhash = hash;
 		dr.globalID = hash;
 		dr.initiator_globalID = hash;
 		dr.UDP_port = 4500;
@@ -80,11 +75,9 @@ class Directory_Client {
 		DatagramSocket s = new DatagramSocket();
 		InetSocketAddress isa = new InetSocketAddress(domain, port);
 		System.out.println("Try: "+isa);
-		//s.connect(isa);
 		DirectoryRequest dr = new DirectoryRequest();
 		dr.director_udp_port = port;
 		dr.directory_domain = domain;
-		//dr.globalIDhash = hash;
 		dr.globalID = hash;
 		dr.initiator_globalID = hash;
 		dr.UDP_port = 4500;
@@ -92,7 +85,6 @@ class Directory_Client {
 		DatagramPacket os = new DatagramPacket(msg, msg.length, isa);
 		s.send(os);
 		System.out.println("Sent: "+dr);
-		//InputStream io = s.getInputStream();
 		byte b[] = new byte[1000];
 		os.setData(b);
 		s.receive(os);
@@ -108,12 +100,11 @@ class Directory_Client {
 		System.out.println("Try: "+isa);
 		s.connect(isa);
 		DirectoryAnnouncement da = new DirectoryAnnouncement(dir_address);
-		//dr.globalIDhash = hash;
 		da.branch = DD.BRANCH;
 		da.agent_version = DD.getMyVersion();
 		da.name = net.ddp2p.common.data.HandlingMyself_Peer.getMyPeerName();
 		da.setGID(hash);
-		da.address.setAddresses(addr); //initiator_globalID = hash;
+		da.address.setAddresses(addr); 
 		da.address.udp_port = 4500;
 		OutputStream os = s.getOutputStream();
 		os.write(da.encode());
@@ -123,7 +114,6 @@ class Directory_Client {
 		int k = io.read(b);
 		System.out.println("Got: bytes="+k);
 		DirectoryAnnouncement_Answer daa = new DirectoryAnnouncement_Answer(new Decoder(b));
-		//DirectoryAnnouncement_Answer daa = new DirectoryAnnouncement_Answer().decode(new Decoder(b));
 		System.out.println("Got: "+daa);
 	}
 	public static void announceUDP(String domain, int port, String hash,
@@ -134,12 +124,11 @@ class Directory_Client {
 		System.out.println("Try: "+isa);
 		s.connect(isa);
 		DirectoryAnnouncement da = new DirectoryAnnouncement((dir_address));
-		//dr.globalIDhash = hash;
 		da.branch = DD.BRANCH;
 		da.agent_version = DD.getMyVersion();
 		da.name = net.ddp2p.common.data.HandlingMyself_Peer.getMyPeerName();
 		da.setGID(hash);
-		da.address.setAddresses(addr); //initiator_globalID = hash;
+		da.address.setAddresses(addr); 
 		da.address.udp_port = 4500;
 		byte msg[] = da.encode();
 		DatagramPacket os = new DatagramPacket(msg, msg.length, isa);
@@ -151,7 +140,6 @@ class Directory_Client {
 		int k = os.getLength();
 		System.out.println("Got: bytes="+k);
 		DirectoryAnnouncement_Answer daa = new DirectoryAnnouncement_Answer(new Decoder(b));
-		//DirectoryAnnouncement_Answer daa = new DirectoryAnnouncement_Answer().decode(new Decoder(b));
 		System.out.println("Got: "+daa);
 	}
 }

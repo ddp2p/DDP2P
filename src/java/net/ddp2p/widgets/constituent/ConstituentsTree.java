@@ -1,32 +1,24 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
  package net.ddp2p.widgets.constituent;
-
 import java.awt.*;
 import java.awt.event.*;
 import java.net.URL;
-
 import javax.swing.*;
 import javax.swing.tree.*;
 import javax.swing.event.*;
-
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.data.D_Constituent;
@@ -39,8 +31,6 @@ import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.app.MainFrame;
 import static net.ddp2p.common.util.Util.__;
-
-
 class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 	final static long serialVersionUID=0;
 	private static final boolean _DEBUG = true;
@@ -49,9 +39,6 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 	ConstituentsPropertyNode ip=null;
 	ImageIcon anonym = DDIcons.getProfileImageIcon("anonumous icon"); // new ImageIcon("icons/profile.gif");
     public ConstituentsTreeCellRenderer() {
-    	//Image img = anonym.getImage();
-    	//anonym = new ImageIcon(img);
-    	
     }
     public Component getTreeCellRendererComponent(
        JTree tree, Object value, boolean sel,
@@ -62,7 +49,6 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
         if(value instanceof ConstituentsAddressNode)  getTreeCellRendererComponentCAN(value);
         if(value instanceof ConstituentsIDNode)  getTreeCellRendererComponentCIN(value);
         if(value instanceof ConstituentsPropertyNode)  getTreeCellRendererComponentCPN(value);
-        
 		setPreferredSize(getUI().getPreferredSize(this));
 		return this;
     }
@@ -74,22 +60,13 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
     	}
     }
     public void getTreeCellRendererComponentCAN(Object value){
-    		   	    	//ConstituentsAddressNode 
 	    	ib = (ConstituentsAddressNode)value;
 	    	setToolTipText(ib.getTip());
-	    	
 	    	if((ib!=null) && (ib.getLocation()!=null)){
 	    		String ibvalue = ib.getLocation().value;
 	    		boolean censused = ib.getLocation().censusDone;
 	    		if(ibvalue==null){
 	    			ibvalue=__("Unspecified Yet!");
-//	    			System.out.println("ConstituentsTree:Constituent node missing for: "+ib);
-//	    			System.out.println("ConstituentsTree:Constituent node missing for n_data: "+ib.n_data);
-//	    			System.out.println("ConstituentsTree:Constituent node missing for n_data nID: "+ib.n_data.neighborhoodID);
-//	    			System.out.println("ConstituentsTree:Constituent node missing for n_data: "+ib.n_data.toString());
-//	    			System.out.println("ConstituentsTree:Constituent node missing for anc: "+Util.concat(ib.ancestors,":"));
-//	    			System.out.println("ConstituentsTree:Constituent node missing for next anc: "+Util.concat(ib.next_ancestors,":"));
-//	    			System.out.println("ConstituentsTree:Constituent node missing for location: "+ib.location);
 	    		}
 	    		String str = "<html>"+ibvalue+
 	    		(censused?
@@ -99,16 +76,7 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 	    			ib.getLocation().inhabitants):""
 	    			)+
 	    			"</html>";
-	    		//String str = "<html>"+ib.location.value+" <img src='file:icons/neighs19.gif'>"+" "+
-	    		//	ib.nchildren+" "+ib.location.inhabitants+"</html>";
 	    		setText(str);
-	    		/*
-				Dimension height = Util.getPreferredSize(str, true, 200);
-				setMinimumSize(height);
-				setPreferredSize(height);
-				if(DEBUG) System.err.println("Renderer size="+height);
-				//tree.pack();
-				*/
 	    	}
 	}
     /**
@@ -121,22 +89,6 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 	    		if (name == null) name = il.getConstituent().getGivenName();
 	    		else if(il.getConstituent().getGivenName() != null) name+=", "+il.getConstituent().getGivenName();
 	    		String color="", fgcolor="", sfg="", sbg="";
-	    		/*
-	    		if((il.constituent.witnessed_by_me==1)){
-	    			color=" bgcolor='red'"; sbg=" style='background-color:red;'";
-	    		}else if(il.constituent.witnessed_by_me==2){
-	    			color=" bgcolor='#F0E68C'"; // khaki
-	    			sbg = " style='background-color:#F0E68C;'";
-	    		}
-	    		if(il.constituent.inserted_by_me){
-	    			fgcolor=" fgcolor='blue'";
-	    			sfg = " style='color:blue;'" ;
-	    		}
-	    		if(il.constituent.inserted_by_me && !il.constituent.external){
-	    			fgcolor=" fgcolor='Blue'";
-	    			sfg = " style='color:Blue;'" ;
-	    		}
-	    		*/
 	    		if (il.getConstituent().external) {
 	    			fgcolor=" fgcolor='Blue'";
 	    			sfg = " style='color:Blue;'" ;
@@ -174,23 +126,17 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 	    		URL broadcast = DDIcons.getResourceURL(DDIcons.I_BROADCAST20);
 	    		URL up = DDIcons.getResourceURL(DDIcons.I_UP19);
 	    		URL down = DDIcons.getResourceURL(DDIcons.I_DOWN19);
-	    		//if(_DEBUG) System.err.println("ConstituentsTree:getTreeCellRendererComponentCIN up="+up);
-	    		//if(_DEBUG) System.err.println("ConstituentsTree:getTreeCellRendererComponentCIN down="+down);
 	    		String str = "<html><body"+color+fgcolor+sfg+sbg+">"+
 	    				(il.getConstituent().blocked?(" <img src='"+block+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>"):("")) +
 	    				(il.getConstituent().broadcast?(""):(" <img src='"+broadcast+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>")) +
 	    			name +
-	    			//((!il.constituent.external && (il.constituent.email!=null))?("&lt;"+il.constituent.email+"&gt;"):"")+
 	    			" <img src='"+up+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>"+
 	    			il.getConstituent().witness_for+
 	    			" <img src='"+down+"' style='padding-top: 0px; vertical-align: middle;' align='middle'>"+
 	    			il.getConstituent().witness_against+	 
 	    			((!il.getConstituent().external && (il.getConstituent().getSlogan()!=null))?" <span style='background-color:yellow'>"+il.getConstituent().getSlogan()+"</span>":"")+
 	    			"</body></html>";
-	    		//System.err.println(str);
 	    		setText(str);
-				//setIcon(getDefaultLeafIcon());
-				//setIcon(getDefaultClosedIcon());
 				if (il.getConstituent().getIcon() == null) {
 					setIcon(anonym);
 				}else{
@@ -201,45 +147,6 @@ class ConstituentsTreeCellRenderer extends DefaultTreeCellRenderer {
 				setToolTipText(il.getTip());
     }
 }
-/*
-public int getHeight(){
-	if(true && (ib!=null)) {
-    String str = "<html>"+ib.location.value+" <img src:icons/neighs30.gif>"+
-    			ib.nchildren+" <img src:icons/anonym.gif>"+ib.location.inhabitants+"/html";
-    //setText(str);
-	Dimension height = Util.getPreferredSize(str, true, 200);
-	//setMinimumSize(height);
-	//setPreferredSize(height);
-	if(DEBUG) System.err.println("Renderer height="+height.height);
-	return height.height;
-	} else {
-		int sh = super.getHeight();
-		if(DEBUG) System.err.println("Renderer height="+sh);
-		return sh;
-	}
-}
-public Dimension getMinimumSize(){
-	return getPreferredSize();
-}
-public Dimension getPreferredSize(){
-	if(false && (ib!=null)) {
-    String str = "<html>"+ib.location.value+" <img src:icons/neighs30.gif>"+
-    			ib.nchildren+" <img src:icons/anonym.gif>"+ib.location.inhabitants+"/html";
-    //setText(str);
-	Dimension height = Util.getPreferredSize(str, true, 200);
-	//setMinimumSize(height);
-	//setPreferredSize(height);
-	if(DEBUG) System.err.println("Renderer preferred height="+height);
-	return height;
-	} else {
-		Dimension sh = super.getPreferredSize();
-		System.err.println("Renderer preferred height="+sh);
-		return sh;
-	}
-}
-*/
-
-
 public class ConstituentsTree extends JTree implements TreeExpansionListener,  TreeWillExpandListener, MouseListener, ActionListener{
 	final static long serialVersionUID=0;
 	private static final boolean _DEBUG = true;
@@ -247,19 +154,8 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
 	JFileChooser fc = new JFileChooser();
     JPopupMenu popup, popup_add, popup_leaf, popup_empty;
     ConstituentsAddAction addAction;
-    //ConstituentsPropertyAddAction addPAction;
     ConstituentsDelAction delAction;
     AddEmptyNeighborhoodAction addENAction;
-    /*
-    EditNeighborhoodAction editNAction;
-    AddNeighborhoodAction addNAction;
-    AddConstituentToNeighborhoodAction addC2NAction;
-    EditConstituentAction editCAction;
-    VetoNeighborhoodAction vetoNAction;
-    VetoTranslationAction vetoTAction;
-    VetoConstituentAction vetoCAction;
-    DeleteVetoConstituentAction delVCAction;
-    */
     ConstituentsWitnessAction witnessAction;
     JMenuItem m_menu_add_myself, m_menu_set_myself, m_menu_add_const, m_menu_add_neighood, m_menu_del_neighood, m_witness_const;
 	private ConstituentsAddMyselfAction addMeAction;
@@ -276,127 +172,101 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
     	ImageIcon addicon = DDIcons.getAddImageIcon(__("add an item")); 
     	ImageIcon delicon = DDIcons.getDelImageIcon(__("delete an item")); 
     	ImageIcon witnessicon = DDIcons.getWitImageIcon(__("witness an item")); 
-    	//ImageIcon witnessicon = Util.createImageIcon(DDIcons.I_WIT,_("witness an item"));
-    	
     	ConstituentsModel model = (ConstituentsModel) getModel();
     	popup_empty = new JPopupMenu();
     	popup_leaf = new JPopupMenu();
     	popup_add = new JPopupMenu();
-    	// add neighbor
     	if (model.getConstituentIDMyself() > 0) {
     		addAction = new ConstituentsAddAction(this, __("Add Neighbor"),addicon,__("Add new top level."),__("You may add new identity."),KeyEvent.VK_A);
-    		m_menu_add_const = new JMenuItem(addAction);//_("Add")
+    		m_menu_add_const = new JMenuItem(addAction);
     		popup_add.add(m_menu_add_const);
-       		m_menu_add_const = new JMenuItem(addAction);//_("Add")
+       		m_menu_add_const = new JMenuItem(addAction);
     		popup_empty.add(m_menu_add_const);
     	}
-
-
-    	//if(DEBUG) System.err.println("ConstituentsTree:preparePopup: menus3:"+popup_empty.getSubElements().length);
-    	// add
     	if (model.getConstituentIDMyself() > 0) {
     		witnessAction = new ConstituentsWitnessAction(this, __("Witness"),witnessicon,__("Witness constituents."),__("You may bear witness."),KeyEvent.VK_W);
-    		m_witness_const = new JMenuItem(witnessAction);//_("Delete");
+    		m_witness_const = new JMenuItem(witnessAction);
     		popup_leaf.add(m_witness_const);
     	}  else {
     		if(DEBUG) System.out.println("ConstituentsTree:preparePopup: no constituentID:"+model.getConstituentIDMyself());
-    		//Application.warning(_("To act, you should select/create a constituent!"), _("No constituent ID"));
     	}
-
     	if (model.getConstituentIDMyself() > 0) {
     		verifyAction = new ConstituentsCustomAction(this, __("Verify Identity by Email"), witnessicon,__("Identify constituents."),__("You may identify constituent."),KeyEvent.VK_I, ConstituentsCustomAction.IDENTIFY);
-    		m_verify_const = new JMenuItem(verifyAction);//_("Delete");
+    		m_verify_const = new JMenuItem(verifyAction);
     		popup_leaf.add(m_verify_const);
     	} else {
     		if (DEBUG) System.out.println("ConstituentsTree:preparePopup: no constituentID:"+model.getConstituentIDMyself());
-    		//Application.warning(_("To act, you should select/create a constituent!"), _("No constituent ID"));
     	}
-
     	if (model.getConstituentIDMyself() > 0) {
     		refreshAction = new ConstituentsCustomAction(this, __("Change Slogan"),addicon,__("Change Slogan."),__("Slogan."),KeyEvent.VK_S, ConstituentsCustomAction.SLOGAN);
-    		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    		m_menu_add_myself = new JMenuItem(refreshAction);
     		popup_add.add(m_menu_add_myself);
-    		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    		m_menu_add_myself = new JMenuItem(refreshAction);
     		popup_empty.add(m_menu_add_myself);
-    		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    		m_menu_add_myself = new JMenuItem(refreshAction);
     		popup_leaf.add(m_menu_add_myself);
-    		
     		if (DEBUG) System.out.println("ConstituentsTree:preparePopup: added Refresh");
-
-
     		refreshAction = new ConstituentsCustomAction(this, __("Move Myself to this Neighborhood"),addicon,__("Move Myself."),__("Move Myself."),KeyEvent.VK_M, ConstituentsCustomAction.MOVE);
-    		//m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
-    		//popup_leaf.add(m_menu_add_myself);
-    		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    		m_menu_add_myself = new JMenuItem(refreshAction);
     		popup_add.add(m_menu_add_myself);
     	}
-
-    	// add
     	addMeAction = new ConstituentsAddMyselfAction(this, __("Add Myself"),icon_register,__("Add myself at top level."),__("You may detail your identity."),KeyEvent.VK_Y);
-    	m_menu_add_myself = new JMenuItem(addMeAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(addMeAction);
     	popup_add.add(m_menu_add_myself);
-    	m_menu_add_myself = new JMenuItem(addMeAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(addMeAction);
     	popup_empty.add(m_menu_add_myself);
        	if (DEBUG) System.out.println("ConstituentsTree:preparePopup: added Mysef");
-		//if(DEBUG) System.err.println("ConstituentsTree:preparePopup: menus:"+popup_empty.getSubElements().length);
-
     	refreshAction = new ConstituentsCustomAction(this, __("Retrieve Data"),addicon,__("Retrieve Data."),__("Retrieve Data."),KeyEvent.VK_T, ConstituentsCustomAction.TOUCH);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_add.add(m_menu_add_myself);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_empty.add(m_menu_add_myself);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_leaf.add(m_menu_add_myself);
        	if (DEBUG) System.out.println("ConstituentsTree:preparePopup: added Refresh");
-
     	refreshAction = new ConstituentsCustomAction(this, __("Refresh Needed"),addicon,__("Refresh needed at top level."),__("Refresh Needed."),KeyEvent.VK_N, ConstituentsCustomAction.REFRESH_NEED);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_add.add(m_menu_add_myself);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_empty.add(m_menu_add_myself);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_leaf.add(m_menu_add_myself);
        	if (DEBUG) System.out.println("ConstituentsTree:preparePopup: added Refresh");
-
     	refreshAction = new ConstituentsCustomAction(this, __("Refresh All"),addicon,__("Refresh at top level."),__("Refresh."),KeyEvent.VK_R, ConstituentsCustomAction.REFRESH);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_add.add(m_menu_add_myself);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_empty.add(m_menu_add_myself);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_leaf.add(m_menu_add_myself);
        	if (DEBUG) System.out.println("ConstituentsTree:preparePopup: added Refresh");
-
        	if (model.automatic_refresh)
        		refreshAction = new ConstituentsCustomAction(this, __("Refresh Manually"),addicon,__("Refresh Manually."),__("Refresh Manually."),KeyEvent.VK_A, ConstituentsCustomAction.REFRESH_AUTO);
        	else
        		refreshAction = new ConstituentsCustomAction(this, __("Refresh Automatically"),addicon,__("Refresh automatically."),__("Refresh Automatically."),KeyEvent.VK_A, ConstituentsCustomAction.REFRESH_AUTO);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_add.add(m_menu_add_myself);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_empty.add(m_menu_add_myself);
-    	m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(refreshAction);
     	popup_leaf.add(m_menu_add_myself);
        	if(DEBUG) System.out.println("ConstituentsTree:preparePopup: added Refresh");
-
     	if (model.getConstituentIDMyself() > 0) {
     		refreshAction = new ConstituentsCustomAction(this, __("Expand Myself"),addicon,__("Expand myself."),__("Expand M."),KeyEvent.VK_M, ConstituentsCustomAction.MYSELF);
-    		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    		m_menu_add_myself = new JMenuItem(refreshAction);
     		popup_add.add(m_menu_add_myself);
-    		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    		m_menu_add_myself = new JMenuItem(refreshAction);
     		popup_empty.add(m_menu_add_myself);
-    		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    		m_menu_add_myself = new JMenuItem(refreshAction);
     		popup_leaf.add(m_menu_add_myself);
-    		
     		refreshAction = new ConstituentsCustomAction(this, __("Expand Witnessed"),addicon,__("Expand witnessed."),__("Expand W."),KeyEvent.VK_E, ConstituentsCustomAction.WITNESSED);
-    		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    		m_menu_add_myself = new JMenuItem(refreshAction);
     		popup_add.add(m_menu_add_myself);
-    		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    		m_menu_add_myself = new JMenuItem(refreshAction);
     		popup_empty.add(m_menu_add_myself);
-    		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+    		m_menu_add_myself = new JMenuItem(refreshAction);
     		popup_leaf.add(m_menu_add_myself);
     	}
-
     	boolean broadcasted = true;
     	boolean blocked = false;
 		if (target != null && target instanceof ConstituentsIDNode) {
@@ -415,89 +285,56 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
 				}
 			}
 		}
-
 		if (! blocked)
 			refreshAction = new ConstituentsCustomAction(this, __("Block Receiving"),addicon,__("Block."),__("Block."),KeyEvent.VK_K, ConstituentsCustomAction.BLOCK);
 		else
 			refreshAction = new ConstituentsCustomAction(this, __("UnBlock Receiving"),addicon,__("UnBlock."),__("UnBlock."),KeyEvent.VK_K, ConstituentsCustomAction.BLOCK);
-		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+		m_menu_add_myself = new JMenuItem(refreshAction);
 		popup_leaf.add(m_menu_add_myself);
-		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+		m_menu_add_myself = new JMenuItem(refreshAction);
 		popup_add.add(m_menu_add_myself);
-		//m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
-		//popup_empty.add(m_menu_add_myself);
-
 		if (broadcasted)
 			refreshAction = new ConstituentsCustomAction(this, __("Block Sending"),addicon,__("Block Sending."),__("Block Sending."),KeyEvent.VK_B, ConstituentsCustomAction.BROADCAST);
 		else
 			refreshAction = new ConstituentsCustomAction(this, __("UnBlock Sending"),addicon,__("UnBlock Sending."),__("UnBlock Sending."),KeyEvent.VK_B, ConstituentsCustomAction.BROADCAST);
-		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+		m_menu_add_myself = new JMenuItem(refreshAction);
 		popup_leaf.add(m_menu_add_myself);
-		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+		m_menu_add_myself = new JMenuItem(refreshAction);
 		popup_add.add(m_menu_add_myself);
-
 		refreshAction = new ConstituentsCustomAction(this, __("Zapp local copy"),addicon,__("Delete local."),__("Delete Local."),KeyEvent.VK_Z, ConstituentsCustomAction.ZAPP);
-		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+		m_menu_add_myself = new JMenuItem(refreshAction);
 		popup_leaf.add(m_menu_add_myself);
-		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+		m_menu_add_myself = new JMenuItem(refreshAction);
 		popup_add.add(m_menu_add_myself);
-		
 		refreshAction = new ConstituentsCustomAction(this, __("Advertise"),addicon,__("Advertise."),__("Advertise."),KeyEvent.VK_A, ConstituentsCustomAction.ADVERTISE);
-		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+		m_menu_add_myself = new JMenuItem(refreshAction);
 		popup_leaf.add(m_menu_add_myself);
-		m_menu_add_myself = new JMenuItem(refreshAction);//_("Add")
+		m_menu_add_myself = new JMenuItem(refreshAction);
 		popup_add.add(m_menu_add_myself);
-
-    	
     	delAction = new ConstituentsDelAction(this, __("Delete Neighborhoods"),delicon,__("Dell constituents."),__("You may delete this information."),KeyEvent.VK_D);
-    	m_menu_del_neighood = new JMenuItem(delAction);//_("Delete");
+    	m_menu_del_neighood = new JMenuItem(delAction);
     	popup_add.add(m_menu_del_neighood);
-    	
     	if (model.hasNeighborhoods) {
     		if(model.getConstituentIDMyself()>0) {
     			addENAction = new AddEmptyNeighborhoodAction(this, __("Add Empty Neighborhood"),addicon,__("Add uninitialized."),__("Add."),KeyEvent.VK_E);
-    			m_menu_add_neighood = new JMenuItem(addENAction);//_("Delete");
+    			m_menu_add_neighood = new JMenuItem(addENAction);
     			popup_add.add(m_menu_add_neighood);
-    			m_menu_add_neighood = new JMenuItem(addENAction);//_("Delete");
+    			m_menu_add_neighood = new JMenuItem(addENAction);
     			popup_empty.add(m_menu_add_neighood);
     		} else {
     			if(DEBUG) System.out.println("ConstituentsTree:preparePopup: no constituentID:"+model.getConstituentIDMyself());
-    			//Application.warning(_("To act, you should select/create a neighborhood!"), _("No constituent ID"));
     		}
     	}
- 
-    	// add
     	setMeAction = new ConstituentsSetMyselfAction(this, __("Set Myself"),addicon,__("Set myself at top level."),__("You may detail your identity."),KeyEvent.VK_S);
-    	m_menu_set_myself = new JMenuItem(setMeAction);//_("Add")
+    	m_menu_set_myself = new JMenuItem(setMeAction);
     	popup_leaf.add(m_menu_set_myself);
-		//if(DEBUG) System.err.println("ConstituentsTree:preparePopup: menus2:"+popup_empty.getSubElements().length);
-    	
-    	
-    	m_menu_add_myself = new JMenuItem(addMeAction);//_("Add")
+    	m_menu_add_myself = new JMenuItem(addMeAction);
     	popup_leaf.add(m_menu_add_myself);
-		//if(DEBUG) System.err.println("ConstituentsTree:preparePopup: menus5:"+popup_empty.getSubElements().length);
-    	/*
-    	popup = new JPopupMenu();
-    	// add
-    	addPAction = new ConstituentsPropertyAddAction(this, _("Add"),addicon,_("Add property."),_("You may add new information about yourself."),KeyEvent.VK_A);
-    	menuItem = new JMenuItem(addPAction);//_("Add")
-    	//menuItem.setMnemonic(KeyEvent.VK_A);menuItem.addActionListener(this);
-    	popup.add(menuItem);
-    	// delete
-    	delAction = new ConstituentsDelAction(this, _("Del"),delicon,_("Dell property."),_("You may delete this information about yourself."),KeyEvent.VK_D);
-    	menuItem = new JMenuItem(delAction);//_("Delete");
-    	//menuItem.setMnemonic(KeyEvent.VK_D);menuItem.addActionListener(this);
-    	popup.add(menuItem);
-    	//menuItem = new JMenuItem("Edit");menuItem.setMnemonic(KeyEvent.VK_E);
-    	//menuItem.addActionListener(this);popup.add(menuItem);
-    	 */
-		//if(DEBUG) System.err.println("ConstituentsTree:preparePopup: menus4:"+popup_empty.getSubElements().length);
     }
     public void reTranslate(){
     	if(DEBUG) System.out.println("ConstituentsTree:reTranslate: start");
     	preparePopup();
     }
-
 	public ConstituentsTree(ConstituentsModel _model) {
         super(_model);
         _model.setTree(this);
@@ -510,23 +347,18 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
 		setEditable(true);
 		setCellEditor(new ConstituentsTreeCellEditor(this));
 		getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
-		//Enable tool tips.
 		ToolTipManager.sharedInstance().registerComponent(this);
 		ConstituentsTreeCellRenderer renderer = new ConstituentsTreeCellRenderer();
-        //Icon personIcon = null;
-        //renderer.setLeafIcon(personIcon);
-        //renderer.setClosedIcon(personIcon);
-        //renderer.setOpenIcon(personIcon);
         setCellRenderer(renderer);
 		setShowsRootHandles(true);
-		putClientProperty("JTree.lineStyle", "Angled" /*"Horizontal"*/);
+		putClientProperty("JTree.lineStyle", "Angled" );
 		setRootVisible(false);
     }
     public void treeCollapsed(TreeExpansionEvent e) {
     	if(DEBUG) System.out.println("ConstituentsTree:treeCollapsed: start");
 		TreePath tp = e.getPath();
 		if(DEBUG) System.err.println("ConstituentsTree:treeCollapsed: F: treeCollapsed "+tp);
-		Object obj=tp.getLastPathComponent();//e.getSource();
+		Object obj=tp.getLastPathComponent();
 		if(obj instanceof ConstituentsBranch) {
 	    	ConstituentsBranch branch = (ConstituentsBranch)obj;
 	    	branch.colapsed();
@@ -539,7 +371,6 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
     }
     public void treeExpanded(TreeExpansionEvent e) {
 		if(DEBUG) System.err.println("ConstituentsTree:treeCollapsed: Expanded object: "+e);
-		
     	((ConstituentsModel)getModel()).runCensus(e.getPath());
     }
     public void treeWillExpand(TreeExpansionEvent e) throws ExpandVetoException {
@@ -568,25 +399,20 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
     }
     private void jTreeMouseReleased(java.awt.event.MouseEvent evt) {
     	Object target = null;
-   		//if(DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: menus:\""+popup_empty.getSubElements().length);
     	TreePath selPath = getPathForLocation(evt.getX(), evt.getY());
     	if(selPath!=null) target = selPath.getLastPathComponent();
    	    if (!evt.isPopupTrigger() && ((target == null) || !(target  instanceof ConstituentsIDNode))) {
-   	    	
  			if(DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: no popup");
     		return;
     	}
-   	    //preparePopup();
          if(Identity.current_id_branch == null) {
         	Application_GUI.warning(__("To modify you need to select an identity"), __("Missing identity"));
         	MainFrame.tabbedPane.setSelectedComponent(MainFrame.identitiesPane);
  			if(DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: no current ID");
         	return;
         }
-        //System.err.println("mouse release: "+selPath);
         if (selPath == null){
         	if (evt.isPopupTrigger()) {
-        		//System.err.println("popup: "+selPath);
         		setLeadSelectionPath(null);
             	preparePopup();
         		popup_empty.show((Component)evt.getSource(), evt.getX(), evt.getY());
@@ -606,7 +432,6 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
               		popup_empty.show((Component)evt.getSource(), evt.getX(), evt.getY());      			
             	} else
          			if (DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: no-null target -> popups");
-            		//System.err.println("popup: "+selPath);
             		if (target instanceof ConstituentsAddressNode){
              			if (DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: no-null target -> popup_add");
             			popup_add.show((Component)evt.getSource(), evt.getX(), evt.getY());
@@ -615,30 +440,20 @@ public class ConstituentsTree extends JTree implements TreeExpansionListener,  T
                  			if (DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: node target -> popup_leaf");
             				popup_leaf.show((Component)evt.getSource(), evt.getX(), evt.getY());
             			} else {
-            		   	    //preparePopup();
             				if (DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: instance of:\""+target+"\"");
-                       		//if(DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: menus:\""+popup_empty.getSubElements().length);
                       		setLeadSelectionPath(null);
-                    		//if(DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: menus:\""+popup_empty.getSubElements().length);
                     		Component c = (Component)evt.getSource();
             				if (DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: source:\""+c+"\"");
             				popup_empty.show(c, evt.getX(), evt.getY());  
             			}
             } else {
      			if (DEBUG) System.err.println("ConstituentsTree:jTreeMouseReleased: set sel path, not trigger");
-            	//System.err.println("no popup trigger: "+selPath);
             }
         }
     }
     public void actionPerformed(ActionEvent e) {
     	if(DEBUG) System.err.println("ConstituentsTree:actionPerformed: action: "+e);
     }
-    /* **********************
-     * This allows to return complex rendering values for a node
-     * usable instead of toString() of the node 
-     * 
-     * Currently the display is based on ConstituentsTreeCellRenderer.getTreeCellRenderer...
-     ************************/
     public String convertValueToText(Object value,
 				     boolean selected,
 				     boolean expanded,

@@ -1,26 +1,19 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.org;
-
 import static net.ddp2p.common.util.Util.__;
-
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -32,7 +25,6 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
-
 import javax.swing.Action;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -53,7 +45,6 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
@@ -84,9 +75,6 @@ import net.ddp2p.widgets.instance.Instances;
 import net.ddp2p.widgets.justifications.Justifications;
 import net.ddp2p.widgets.justifications.JustificationsModel;
 import net.ddp2p.widgets.motions.MotionsModel;
-
-//import apple.laf.CoreUIUtils.Tree;
-
 @SuppressWarnings("serial")
 class OrgPluginMenuItem extends JMenuItem {}
 interface OrgPluginRenderer extends TableCellRenderer{}
@@ -121,10 +109,8 @@ class PluginMenus{
 		this.plugin_menu_action.add(plugin_menu_action);
 	}
 }
-
 @SuppressWarnings("serial")
 public class Orgs extends JTable implements MouseListener, OrgListener {
-	// Different icons should be displayed for each state... for now just on/off
 	public static final int STATE_CONNECTION_FAIL =0;
 	public static final int STATE_CONNECTION_TCP = 1;
 	public static final int STATE_CONNECTION_UDP = 2;
@@ -133,20 +119,16 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 	private static final boolean _DEBUG = true;
 	private static final int DIM_X = 0;
 	private static final int DIM_Y = 50;
-	public static final int A_NON_FORCE_COL = D_Organization.A_NON_FORCE_COL; // 4
-	public static final int FORCE_THREASHOLD_COL = 3; // first non-force row
-
+	public static final int A_NON_FORCE_COL = D_Organization.A_NON_FORCE_COL; 
+	public static final int FORCE_THREASHOLD_COL = 3; 
 	BulletRenderer bulletRenderer = new BulletRenderer();
 	BulletRenderer hotRenderer;
 	ColorRenderer colorRenderer;
 	DefaultTableCellRenderer centerRenderer;
-	
-
 	Hashtable<String,PluginData> plugin_applets = new Hashtable<String, PluginData>();
 	Hashtable<Integer,Hashtable<String,PluginMenus>> plugin_menus = new Hashtable<Integer,Hashtable<String,PluginMenus>>();
 	ArrayList<String> plugins= new ArrayList<String>();
 	private XTableColumnModel yourColumnModel;
-	
 	public Orgs() {
 		super(new OrgsModel(Application.getDB()));
 		if(DEBUG) System.out.println("Orgs: constr from db");
@@ -162,17 +144,13 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 		if(DEBUG) System.out.println("Orgs: constr from model");
 		init();
 	}
-	
 	/**
 	 * Call this to remove a current column
 	 * @param crt_col
 	 */
 	public void removeColumn(int crt_col){
-		//TableColumn column  = this.yourColumnModel.getColumnByModelIndex(crt_col);
 		TableColumn column  = this.yourColumnModel.getColumn(crt_col);
 		yourColumnModel.setColumnVisible(column, false);
-//		_ColumnNames.remove(crt_col);
-//		this.fireTableStructureChanged();
 	}
 	public void addColumn(int crt_col){
 		TableColumn column  = this.yourColumnModel.getColumnByModelIndex(crt_col);
@@ -192,20 +170,16 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 		hotRenderer = new BulletRenderer(
 				DDIcons.getHotImageIcon("Hot"), DDIcons.getHotGImageIcon("Hot"),
 				null, __("Recently Contacted"),  __("Not Recently Contacted"), null);
-		
 		yourColumnModel = new net.ddp2p.widgets.components.XTableColumnModel();
 		setColumnModel(yourColumnModel); 
 		createDefaultColumnsFromModel(); 
-		
 		initColumnSizes();
 		this.getTableHeader().setToolTipText(
         __("Click to sort; Shift-Click to sort in reverse order"));
 		this.setAutoCreateRowSorter(true);
 		this.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
-		
    		try{
    			if (Identity.getCurrentConstituentIdentity().identity_id!=null) {
-    			//long id = new Integer(Identity.current.identity_id).longValue();
     			long orgID = Identity.getDefaultOrgID();
     			if(DEBUG) System.out.println("Orgs:init: crt orgID="+orgID);
     			this.setCurrent(orgID);
@@ -217,7 +191,6 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
    			}
     	}catch(Exception e){e.printStackTrace();}
    		if(MainFrame.status!=null) this.addOrgListener(MainFrame.status);
-   		
 		DefaultTableCellRenderer rend = new DefaultTableCellRenderer() {
 			public Component getTableCellRendererComponent(JTable table,
 			Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -231,30 +204,23 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 			    return headerLabel;
 			}
 		};
-		
-		//getTableHeader().setDefaultRenderer(rend);
 		for(int col_index = 0; col_index < getModel().getColumnCount(); col_index++) {
 			if(getModel().getIcon(col_index) != null)
 				getTableHeader().getColumnModel().getColumn(col_index).setHeaderRenderer(rend);
 		}
-
 	}
 	public JScrollPane getScrollPane(){
         JScrollPane scrollPane = new JScrollPane(this);
 		this.setFillsViewportHeight(true);
-		//this.setMinimumSize(new Dimension(400,200));
-		//scrollPane.setMinimumSize(new Dimension(400,200));
 		return scrollPane;
 	}
     public JPanel getPanel() {
     	JPanel jp = new JPanel(new BorderLayout());
     	JScrollPane scrollPane = getScrollPane();
-        //scrollPane.setPreferredSize(new Dimension(400, 200));
         scrollPane.setPreferredSize(new Dimension(DIM_X, DIM_Y));
         jp.add(scrollPane, BorderLayout.CENTER);
 		return jp;
     }
-
 	public TableCellRenderer getCellRenderer(int row, int _column) {
 		int column = this.convertColumnIndexToModel(_column);
 		if ((column == OrgsModel.TABLE_COL_NAME)) return colorRenderer;
@@ -271,7 +237,6 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 		}
 		return super.getCellRenderer(row, _column);
 	}
-	//protected String[] columnToolTips = {null,null,_("A name you provide")};
     @SuppressWarnings("serial")
 	protected JTableHeader createDefaultTableHeader() {
         return new JTableHeader(columnModel) {
@@ -288,17 +253,6 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 	public void setConnectionState(String peerID, int state){
 		((OrgsModel) this.getModel()).setConnectionState(peerID, state);
 	}
-    /*
-	public void setUDPOn(String address, Boolean on){
-		((PeersModel) this.getModel()).setUDPOn(address, on);
-	}
-	public void setTCPOn(String address, Boolean on){
-		((PeersModel) this.getModel()).setTCPOn(address, on);
-	}
-	public void setNATOn(String address, Boolean on){
-		((PeersModel) this.getModel()).setNATOn(address, on);
-	}
-	*/
 	public OrgsModel getModel(){
 		return (OrgsModel) super.getModel();
 	}
@@ -306,22 +260,17 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
         OrgsModel model = (OrgsModel)this.getModel();
         TableColumn column = null;
         Component comp = null;
-        //Object[] longValues = model.longValues;
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
- 
-//        for (int i = 0; i < model.getColumnCount(); i++)
         for (int i = 0; i < this.getColumnCount(); i++)
         {
         	int headerWidth = 0;
         	int cellWidth = 0;
         	column = this.getColumnModel().getColumn(i);
- 
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
- 
             for(int r=0; r<model.getRowCount(); r++) {
             	comp = this.getDefaultRenderer(model.getColumnClass(this.convertColumnIndexToModel(i))).
                              getTableCellRendererComponent(
@@ -335,21 +284,17 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
                                    + "headerWidth = " + headerWidth
                                    + "; cellWidth = " + cellWidth);
             }
- 
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
 	@Override
 	public void mouseClicked(MouseEvent evt) {
-    	int row; //=this.getSelectedRow();
-    	int col; //=this.getSelectedColumn();
-    	//if(!evt.isPopupTrigger()) return;
-    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
+    	int row; 
+    	int col; 
     	Point point = evt.getPoint();
         row=this.rowAtPoint(point);
         col=this.columnAtPoint(point);
         if((row<0)||(col<0)) return;
-        
     	OrgsModel model = (OrgsModel)getModel();
  		int model_row=convertRowIndexToModel(row);
    	   	if(model_row>=0) {
@@ -359,7 +304,6 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
    	   			model.setCurrent(oID);
    	   		}catch(Exception e){};
    	   	}
-        
         fireListener(row,col);
 	}
 	ArrayList<OrgListener> listeners=new ArrayList<OrgListener>();
@@ -371,23 +315,21 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 		for (OrgListener l: listeners) {
 			if (DEBUG) System.out.println("Orgs:fireForceEdit: l="+l);
 			try {
-				if (orgID == null); //l.forceEdit(orgID);
+				if (orgID == null); 
 				else l.org_forceEdit(orgID, organization_crt);
 			} catch(Exception e){e.printStackTrace();}
 		}
 	}
 	long _org_crt = -1;
-	Object old_org_signature = null; //to catch editing events
+	Object old_org_signature = null; 
 	private static OrgEditor orgEPane;
 	public void fireListener(int row, int col) {
-		///boolean DEBUG = true;
 		if(DEBUG) System.out.println("Orgs:fireListener: row="+row);
 		String orgID = null;
 		int model_row;
 		OrgsModel model = this.getModel();
 		if (row >= 0) {
 			model_row = this.convertRowIndexToModel(row);
-			
 			ArrayList<D_Organization> _data = model.data;
 			if ((model_row >= 0) && (model_row < _data.size())) {
 				D_Organization org = _data.get(model_row);
@@ -416,7 +358,6 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 		fireListener((row<0)?null:orgID, col, organization_crt);
 	}
 	void fireListener(String orgID, int col, D_Organization organization_crt) {
-		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("Orgs::fireListener: start orgID="+orgID);
 		for (OrgListener l: listeners) {
 			if (DEBUG) System.out.println("Orgs::fireListener: l="+l);
@@ -461,81 +402,47 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
     	ImageIcon delicon = DDIcons.getDelImageIcon(__("delete an item")); 
     	ImageIcon reseticon = DDIcons.getResImageIcon(__("reset item"));
     	JPopupMenu popup = new JPopupMenu();
-    	//OrgExtraUpAction uAction;
-    	//OrgExtraDownAction prAction;
     	OrgsDeleteAction pdAction;
     	OrgsAddAction aAction;
     	OrgsForceEditAction eAction;
     	OrgsToggleServingAction sAction;
     	OrgsCustomAction cAction;
-       	
     	aAction = new OrgsAddAction(this, __("Add!"), addicon,__("Add new organization."), __("Add"),KeyEvent.VK_A);
     	aAction.putValue("row", new Integer(row));
     	menuItem = new JMenuItem(aAction);
     	popup.add(menuItem);
-       	
     	cAction = new OrgsCustomAction(this, __("Refresh!"), addicon,__("Refresh organizations."), __("Refresh"),KeyEvent.VK_R, OrgsCustomAction.O_REFRESH);
     	cAction.putValue("row", new Integer(row));
     	menuItem = new JMenuItem(cAction);
     	popup.add(menuItem);
-
     	if (row < 0) return popup;
-    	
-    	// uAction = new PeersUseAction(this, _("Toggle"),addicon,_("Toggle it."),_("Will be used to synchronize."),KeyEvent.VK_A);
-       	//uAction = new OrgExtraUpAction(this, _("Use!"),addicon,_("Use it."),_("Will be used to synchronize."),KeyEvent.VK_A);
-    	//uAction.putValue("row", new Integer(row));
-    	//menuItem = new JMenuItem(uAction);
-    	//popup.add(menuItem);
-    	//
-    	//prAction = new OrgExtraDownAction(this, _("Reset!"), reseticon,_("Bring again all data from this."), _("Go restart!"),KeyEvent.VK_R);
-    	//prAction.putValue("row", new Integer(row));
-    	//popup.add(new JMenuItem(prAction));
-    	//
     	pdAction = new OrgsDeleteAction(this, __("Delete!"), delicon,__("Delete all data about this."), __("Delete"),KeyEvent.VK_D);
     	pdAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(pdAction));
-    	
     	if(getModel().isAdvertised(row))
     		sAction = new OrgsToggleServingAction(this, __("Stop Advertising!"), delicon,__("Stop advertising this organization."), __("Stop Advertising"),KeyEvent.VK_S);
     	else
        		sAction = new OrgsToggleServingAction(this, __("Advertise!"), addicon,__("Advertise this organization."), __("Advertise"),KeyEvent.VK_S);
     	sAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(sAction));
-      	
-    	
     	cAction = new OrgsCustomAction(this, __("Add to WLAN Interest!"), delicon,__("Add to WLAN Interests."), __("WLAN Request"),KeyEvent.VK_R, OrgsCustomAction.M_WLAN_REQUEST);
     	cAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(cAction));
-    	
     	cAction = new OrgsCustomAction(this, __("Add Column!"), delicon,__("Add Column."), __("Column"),KeyEvent.VK_C, OrgsCustomAction.C_ACOLUMN);
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
-    	
     	cAction = new OrgsCustomAction(this, __("Remove Column!"), delicon,__("Remove Column."), __("Column"),KeyEvent.VK_R, OrgsCustomAction.C_RCOLUMN);
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
-    	
     	eAction = new OrgsForceEditAction(this, __("Force Edit!"), delicon,__("Force editing rights."), __("Edit"),KeyEvent.VK_E);
     	eAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(eAction));
-    	
-    	/*
-    	popup.addSeparator();
-    	Hashtable<String, PluginMenus> mn = this.plugin_menus.get(new Integer(col));
-    	if(mn == null) return popup;
-    	for(String a : mn.keySet()){
-    		PluginMenus pm = mn.get(a);
-    		for(PeerPluginAction pa: pm.plugin_menu_action) popup.add(pa);
-    		for(PeerPluginMenuItem ma: pm.plugin_menu_item) popup.add(ma);
-    	}
-    	*/
     	return popup;
 	}
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
-    	int row; //=this.getSelectedRow();
-    	int col; //=this.getSelectedColumn();
+    	int row; 
+    	int col; 
     	if(!evt.isPopupTrigger()) return;
-    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
         row=this.rowAtPoint(point);
         col=this.columnAtPoint(point);
@@ -545,21 +452,14 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
-//	public D_Organization getCurrentOrg() {
-//		String gID = this.getModel().getOrgGID(convertRowIndexToModel(this.getSelectedRow()));
-//		return D_Organization.getOrgByGID_or_GIDhash_NoCreate(gID, null, true, true);
-//	}
 	/**
 	 * Panel with Editor
 	 * @return
 	 */
 	public Component getComboPanel(){
-        //DD.orgsPane = new widgets.org.Orgs();
-        //Application.orgs = DD.orgsPane;
         orgEPane = new net.ddp2p.widgets.org.OrgEditor();
-        //DD.orgsPane
-        this.addOrgListener(orgEPane); // this remains connected to Orgs rather than status to enable force edit
-    	Component orgs = MainFrame.makeOrgsPanel(orgEPane, this); //DD.orgsPane); //new JPanel();
+        this.addOrgListener(orgEPane); 
+    	Component orgs = MainFrame.makeOrgsPanel(orgEPane, this); 
     	return orgs;
 	}
 	public void connectWidget() {
@@ -589,12 +489,8 @@ public class Orgs extends JTable implements MouseListener, OrgListener {
 	}
 	@Override
 	public void org_forceEdit(String orgID, D_Organization org) {
-		// TODO Auto-generated method stub
-		
 	}
 }
-
-
 @SuppressWarnings("serial")
 class OrgsForceEditAction extends DebateDecideAction {
     private static final boolean DEBUG = false;
@@ -627,7 +523,6 @@ class OrgsForceEditAction extends DebateDecideAction {
     	tree.fireForceEdit(orgID);
     }
 }
-
 @SuppressWarnings("serial")
 class OrgsDeleteAction extends DebateDecideAction {
     private static final boolean DEBUG = false;
@@ -679,21 +574,14 @@ class OrgsAddAction extends DebateDecideAction {
     	Object src = e.getSource();
     	JMenuItem mnu;
     	int row = -1;
-    	//String org_id=null;
     	if (src instanceof JMenuItem) {
     		mnu = (JMenuItem)src;
     		Action act = mnu.getAction();
     		row = ((Integer)act.getValue("row")).intValue();
-    		//org_id = Util.getString(act.getValue("org"));
-            //System.err.println("row property: " + row);
     	} else {
     		row=tree.getSelectedRow();
        		row=tree.convertRowIndexToModel(row);
-    		//org_id = tree.getModel().org_id;
-    		//System.err.println("Row selected: " + row);
     	}
-    	//OrgsModel model = (OrgsModel)tree.getModel();
-    	
     	((java.awt.event.ActionListener)Application.appObject).actionPerformed(new ActionEvent(tree, row, DD.COMMAND_NEW_ORG));
     }
 }
@@ -718,18 +606,12 @@ class OrgsToggleServingAction extends DebateDecideAction {
     		mnu = (JMenuItem)src;
     		Action act = mnu.getAction();
     		row = ((Integer)act.getValue("row")).intValue();
-    		//org_id = Util.getString(act.getValue("org"));
-            //System.err.println("row property: " + row);
     	} else {
     		row = tree.getSelectedRow();
        		row = tree.convertRowIndexToModel(row);
-   		//org_id = tree.getModel().org_id;
-    		//System.err.println("Row selected: " + row);
     	}
     	OrgsModel model = (OrgsModel)tree.getModel();
     	model.toggleServing(row);
-    	
-    	//Application.appObject.actionPerformed(new ActionEvent(tree, row, DD.COMMAND_NEW_ORG));
     }
 }
 @SuppressWarnings("serial")
@@ -759,13 +641,9 @@ class OrgsCustomAction extends DebateDecideAction {
     		mnu = (JMenuItem)src;
     		Action act = mnu.getAction();
     		row = ((Integer)act.getValue("row")).intValue();
-    		//org_id = Util.getString(act.getValue("org"));
-            //System.err.println("row property: " + row);
     	} else {
     		row = tree.getSelectedRow();
        		row = tree.convertRowIndexToModel(row);
-   		//org_id = tree.getModel().org_id;
-    		//System.err.println("Row selected: " + row);
     	}
     	OrgsModel model = (OrgsModel)tree.getModel();
     	if(command == O_REFRESH) {
@@ -790,7 +668,6 @@ class OrgsCustomAction extends DebateDecideAction {
     		}
     		if(DEBUG) System.out.println("Orgs:OrgsCustomAction:WLANRequest: GID: "+_m_GIDH);
     		RequestData rq = new RequestData();;
-    		
 			try {
 				String interests = DD.getAppText(DD.WLAN_INTERESTS);
 				if(interests != null){
@@ -808,7 +685,6 @@ class OrgsCustomAction extends DebateDecideAction {
 					BroadcastClient.msgs.registerRequest(rq);
 				if(DEBUG) System.out.println("Orgs:OrgsCustomAction:WLANRequest: added GIDH: "+_m_GIDH);
 			}
-			
 			byte[] intr = rq.getEncoder().getBytes();
 			try {
 				DD.setAppText(DD.WLAN_INTERESTS, Util.stringSignatureFromByte(intr));
@@ -817,20 +693,17 @@ class OrgsCustomAction extends DebateDecideAction {
 			}
 			if(DEBUG) System.out.println("Orgs:OrgsCustomAction:WLANRequest: done ");
     	}
-    	
-    	//Application.appObject.actionPerformed(new ActionEvent(tree, row, DD.COMMAND_NEW_ORG));
     }
 }
-
 @SuppressWarnings("serial")
 class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	public static final int TABLE_COL_NAME = 0;
-	public static final int TABLE_COL_CREATOR = 1; // certified by trusted?
-	public static final int TABLE_COL_CATEGORY = 2; // certified by trusted?
+	public static final int TABLE_COL_CREATOR = 1; 
+	public static final int TABLE_COL_CATEGORY = 2; 
 	public static final int TABLE_COL_CONSTITUENTS_NB = 3;
-	public static final int TABLE_COL_ACTIVITY = 4; // number of votes + news
-	public static final int TABLE_COL_CONNECTION = 5; // any activity in the last x days?
-	public static final int TABLE_COL_NEWS = 6; // unread news?
+	public static final int TABLE_COL_ACTIVITY = 4; 
+	public static final int TABLE_COL_CONNECTION = 5; 
+	public static final int TABLE_COL_NEWS = 6; 
 	public static final int TABLE_COL_PLUGINS = 7;
 	public static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -838,20 +711,10 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	static int HOT_SEC = HOT_DAYS*24*3600;
 	static long HOT_MSEC = HOT_SEC*1000;
 	DBInterface db;
-	//Object _orgs[]=new Object[0];
-	//Object _meth[]=new Object[0];
-	//Object _hash[]=new Object[0];
-	//Object _crea[]=new Object[0];
-	//boolean[] _gid=new boolean[0];
-	//boolean[] _blo=new boolean[0]; // block
-	//boolean[] _req=new boolean[0]; // request
-	//boolean[] _bro=new boolean[0]; // broadcast
 	ArrayList<D_Organization> data = new ArrayList<D_Organization>();
 	Object monitor_data = new Object();
 	Hashtable<Long, Integer> rowByLID = new Hashtable<Long, Integer>();
-	
 	String columnNames[]={__("Name"),__("Founder"),__("Category"),__("Constituents"),__("Activity"),__("Hot"),__("News")
-			//,_("Plugins")
 			};
 	protected static String[] columnToolTips = {
 		__("A name for the organization: yellow/blue -not ready, blue/yellow -created by me, red/white -blocked, blue/white -broadcasted, green/white -requested"),
@@ -912,23 +775,18 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	}
 	public void connectWidget() {
 		db.addListener(this, new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.organization.TNAME)), null);
-		// DBSelector.getHashTable(table.organization.TNAME, table.organization.organization_ID, ));
 	}
 	public String getOrgGID(int row) {
-		//if ((row < 0) || (row >= _hash.length)) return null;
-		//return (String)_hash[row];
 		if ((row < 0) || (row >= data.size())) return null;
-		return (String)data.get(row).getGID();//_hash[row];
+		return (String)data.get(row).getGID();
 	}
 	public String getOrgGIDH(int row) {
 		if ((row < 0) || (row >= data.size())) return null;
-		return data.get(row).getGIDH_or_guess();//_hash[row];
+		return data.get(row).getGIDH_or_guess();
 	}
 	public boolean isServing(int row) {
 		if(DEBUG) System.out.println("\n************\nOrgs:OrgsModel:isServing: row="+row);
 		return isBroadcasted(row);
-		/*
-		*/
 	}
 	public boolean isAdvertised(int row) {
 		if(DEBUG) System.out.println("\n************\nOrgs:OrgsModel:isAdvertised: row="+row);
@@ -946,23 +804,12 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		boolean result= false;
 		if(DEBUG) System.out.println("\n************\nOrgs:OrgsModel:isServingAndPresent: row="+row);
 		ArrayList<ArrayList<Object>> s;
-		/*
-		String _sql = "SELECT po."+table.peer_org.served+
-			" FROM "+table.peer_org.TNAME+" AS po "+
-			" LEFT JOIN "+table.peer.TNAME+" AS p" +
-					" ON(p."+table.peer.peer_ID+"=po."+table.peer_org.peer_ID+") "+
-			" WHERE p."+table.peer.global_peer_ID +" = ? AND po."+table.peer_org.organization_ID+" = ?;";
-		*/
 		String sql = "SELECT po."+net.ddp2p.common.table.peer_org.served+
 				" FROM "+net.ddp2p.common.table.peer_org.TNAME+" AS po "+
-				//" LEFT JOIN "+table.peer.TNAME+" AS p" +
-				//		" ON(p."+table.peer.peer_ID+"=po."+table.peer_org.peer_ID+") "+
 				" WHERE po."+net.ddp2p.common.table.peer_org.peer_ID +" = ? AND po."+net.ddp2p.common.table.peer_org.organization_ID+" = ?;";
-		
 		String global_peer_ID = Application.getCurrent_Peer_ID().getPeerGID();
 		D_Peer myself = D_Peer.getPeerByGID_or_GIDhash(global_peer_ID, null, true, false, false, null);
 		if (myself == null) return result;
-		//String pID = table.peer.getLocalPeerID(global_peer_ID);
 		String organization_ID = getLIDstr(row);
 		s = Application.getDB().select(sql, new String[]{ myself.getLIDstr_keep_force(), organization_ID}, DEBUG);
 		if(s.size()==0) throw new Exception("No record found");//return false;
@@ -988,93 +835,11 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 	 */
 	public static boolean toggleServing(String organization_ID, boolean toggle, boolean val) {
 		if(_DEBUG) System.err.println("\n************\nOrgs:OrgsModel:toggleServing: orgID=" + Util.trimmed(organization_ID)+" toggle="+toggle+" val="+val);
-		
 		D_Peer myself = HandlingMyself_Peer.get_myself_with_wait();
 		boolean old_serving = myself.servesOrg(Util.lval(organization_ID,-1));
-		D_Organization.setBroadcasting(organization_ID, !old_serving); // set in organization.broadcasted
+		D_Organization.setBroadcasting(organization_ID, !old_serving); 
 		myself.setServingOrg(Util.lval(organization_ID,-1), !old_serving);
 		myself.storeRequest();
-		/*
-		// First set it in served orgs
-		String global_peer_ID = Identity.current_peer_ID.globalID;
-		String peer_ID;
-		try {// get my peerID
-			peer_ID = table.peer.getLocalPeerID(global_peer_ID);
-		} catch (P2PDDSQLException e2) {
-			e2.printStackTrace();
-			return false;
-		}
-		try {// is it in served org?
-			ArrayList<ArrayList<Object>> s;
-			String sql = "SELECT "+table.peer_org.served+
-				" FROM "+table.peer_org.TNAME+
-				" WHERE "+table.peer_org.peer_ID +" = ? AND "+table.peer_org.organization_ID+" = ?;";
-			s = Application.db.select(sql, new String[]{ peer_ID, organization_ID}, _DEBUG);
-			if(s.size()==0){
-				old_serving = false;
-				throw new Exception("No record found"); //return false;
-			}
-			if(Util.stringInt2bool(Util.getString(s.get(0).get(0)), false)) old_serving = true;
-			else old_serving = false;
-			if(_DEBUG) System.out.println("\n************\nOrgs:OgsModel:toggleServing: old serving=" +old_serving);
-
-			//set it in served orgs
-			if(toggle) val = !old_serving;
-			String _serving = Util.bool2StringInt(val);
-			if(val) {
-				Application.db.update(table.peer_org.TNAME, new String[]{table.peer_org.served},
-						new String[]{table.peer_org.peer_ID, table.peer_org.organization_ID},
-						new String[]{_serving, peer_ID, organization_ID}, _DEBUG);
-			}else{
-				Application.db.delete(table.peer_org.TNAME,
-						new String[]{table.peer_org.peer_ID,  table.peer_org.organization_ID},
-						new String[]{peer_ID, organization_ID}, _DEBUG);
-			}
-		try {
-			D_Organization.setBroadcasting(organization_ID, !old_serving); // set in organization.broadcasted
-		} catch (Exception e) {
-			// if not serve so far, serve now!
-			try {
-				if(_DEBUG) System.out.println("\n************\nOrgs:OrgModel:toggleServing: old serving=" +old_serving);
-				if(old_serving) util.Util.printCallPath("Old Serving unexpected!");
-				if(toggle) val = !old_serving;
-				String _serving = Util.bool2StringInt(val);
-				Application.db.insert(table.peer_org.TNAME,
-						new String[]{table.peer_org.served,table.peer_org.peer_ID,table.peer_org.organization_ID},
-						new String[]{_serving, peer_ID, organization_ID}, _DEBUG);
-				D_Organization.setBroadcasting(organization_ID, val);
-			} catch (P2PDDSQLException e1) {
-				e1.printStackTrace();
-				return false;
-			}
-		}
-		if(val) {
-			ArrayList<ArrayList<Object>> s;
-			String sql = "SELECT "+table.organization.broadcast_rule+
-				" FROM "+table.organization.TNAME+
-				" WHERE "+table.organization.organization_ID+" = ?;";
-			try {
-				s = Application.db.select(sql, new String[]{organization_ID}, _DEBUG);
-				if(s.size()>0)
-					if(!Util.stringInt2bool(s.get(0).get(0), false)){
-						Application.warning(_("It is not recommended to advertise a private organization!"), _("Private organization"));
-					}
-			} catch (P2PDDSQLException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		// need to sign again my peer due to served_orgs
-		//data.MyselfHandling.update_my_peer_ID_peers_name_slogan();
-		D_Peer me = HandlingMyself_Peer.get_myself();
-		me.setCreationDate();
-		me.sign();
-		try {
-			me.storeAct();
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
-		*/
 		if(_DEBUG) System.out.println("Orgs:OgsModel:toggleServing: exit with="+(!old_serving));
 		if(_DEBUG) System.out.println("*****************");
 		return !old_serving;
@@ -1085,7 +850,6 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		}
 	}
 	public void synced_setCurrent(long org_id) {
-		//boolean DEBUG = true;
 		ArrayList<D_Organization> _data = data;
 		if (DEBUG) System.out.println("Orgs:OrgsModel:setCurrent: id="+org_id);
 		if (org_id < 0) {
@@ -1098,47 +862,24 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			return;
 		}
 		boolean found = false;
-		//this.fireTableDataChanged();
 		for (int k = 0 ; k < _data.size() ; k++){
 			Long i = getLID(k);
 			long id = ( (i == null) ? -1 : i.longValue() );
 			if (DEBUG) System.out.println ("Orgs:OrgsModel:setCurrent: k="+k+" row_org_ID="+i);
-			/* if(i instanceof Integer){
-				Integer _id = (Integer)i;
-				id = _id.longValue();
-			}else
-				if(i instanceof Long){
-					Long _id = (Long)i;
-					id = _id.longValue();
-				}else{
-					String _id = i+"";
-					try{id = Long.parseLong(_id);}catch(Exception e){
-						if(DEBUG) System.out.println("Orgs:OrgsModel:setCurrent: ID not parsable: ["+k+"]="+i);
-						e.printStackTrace();
-						continue; //id=-2;
-					}
-				}
-			*/
 			if (id == org_id) {
 				found = true;
 				try {
-					//long constituent_ID = 
 					if(DEBUG) System.out.println("Orgs:OrgsModel:setCurrent: will set current org: row="+k);
 					Identity.setCurrentOrg(org_id);
-							
 				} catch (P2PDDSQLException e) {
 					e.printStackTrace();
 				}
-						
 				for (Orgs o: tables) {
 					int tk = o.convertRowIndexToView(k);
 					o.setRowSelectionAllowed(true);
 					ListSelectionModel selectionModel = o.getSelectionModel();
 					selectionModel.setSelectionInterval(tk, tk);
-					//o.requestFocus();
 					o.scrollRectToVisible(o.getCellRect(tk, 0, true));
-					//o.setEditingRow(k);
-					//o.setRowSelectionInterval(k, k);
 					o.fireListener(k, 0);
 				}
 				break;
@@ -1150,23 +891,17 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			int k = _data.size() - 1;
 			this.fireTableRowsInserted(k, k);
 			try {
-				//long constituent_ID = 
 				if(DEBUG) System.out.println("Orgs:OrgsModel:setCurrent: will set new current org:row= "+k);
 				Identity.setCurrentOrg(org_id);
-						
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 			}
-					
 			for (Orgs o: tables) {
 				int tk = o.convertRowIndexToView(k);
 				o.setRowSelectionAllowed(true);
 				ListSelectionModel selectionModel = o.getSelectionModel();
 				selectionModel.setSelectionInterval(tk, tk);
-				//o.requestFocus();
 				o.scrollRectToVisible(o.getCellRect(tk, 0, true));
-				//o.setEditingRow(k);
-				//o.setRowSelectionInterval(k, k);
 				o.fireListener(k, 0);
 			}
 		}
@@ -1181,32 +916,14 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		}
 		return false;
 	}
-
 	public void setTable(Orgs orgs) {
 		tables.add(orgs);
 	}
-/*	
-	final static String sql_orgs = "SELECT "+table.organization.organization_ID+","+table.organization.certification_methods+","
-		+table.organization.global_organization_ID_hash+","+table.organization.creator_ID+
-		  ","+table.organization.blocked+","+table.organization.broadcasted+","+table.organization.requested
-		+" FROM "+table.organization.TNAME+";";
-*/
 	@Override
 	public void update(ArrayList<String> _table, Hashtable<String, DBInfo> info) {
-		//boolean DEBUG = true;
-		//final int SELECT_ORG_ID = 0;
-		//final int SELECT_METHODS = 1;
-		//final int SELECT_ORG_GIDH = 2;
-		//final int SELECT_ORG_CREAT_ID = 3;
-		//final int SELECT_BLOCKED = 4;
-		//final int SELECT_BROADCASTED = 5;
-		//final int SELECT_REQUESTED = 6;
 		if(DEBUG) System.out.println("\nwidgets.org.Orgs: update table= "+_table+": info= "+info);
-		
-		
 		if (_table != null && !_table.contains(net.ddp2p.common.table.organization.TNAME)) {
 			SwingUtilities.invokeLater(new net.ddp2p.common.util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
-				// daemon?
 				@Override
 				public void _run() {
 					((OrgsModel)ctx).fireTableDataChanged();
@@ -1214,9 +931,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			});
 			return;
 		}
-		
-		//ArrayList<ArrayList<Object>> orgs = db.select(sql_orgs, new String[]{},DEBUG);
-		ArrayList<ArrayList<Object>> orgs = D_Organization.getAllOrganizations(); //.getListOrgLIDs();
+		ArrayList<ArrayList<Object>> orgs = D_Organization.getAllOrganizations(); 
 		if (orgs.size() == data.size()) {
 			boolean different = false;
 			for (int k = 0; k < data.size(); k++) {
@@ -1227,7 +942,6 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			}
 			if (! different) {
 				SwingUtilities.invokeLater(new net.ddp2p.common.util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
-					// daemon?
 					@Override
 					public void _run() {
 						((OrgsModel)ctx).fireTableDataChanged();
@@ -1236,17 +950,7 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 				return;
 			}
 		}
-		
 		ArrayList<D_Organization> _data = new ArrayList<D_Organization>();
-			
-		//_orgs = new Object[orgs.size()];
-		//_meth = new Object[orgs.size()];
-		//_hash = new Object[orgs.size()];
-		//_crea = new Object[orgs.size()];
-		//_gid = new boolean[orgs.size()];
-		//_blo = new boolean[orgs.size()];
-		//_bro = new boolean[orgs.size()];
-		//_req = new boolean[orgs.size()];
 		Hashtable<String, Integer> _rowByID = new Hashtable<String, Integer>();
 		Hashtable<Long, Integer> _rowByLID = new Hashtable<Long, Integer>();
 		for (int k = 0; k < orgs.size(); k ++) {
@@ -1258,17 +962,8 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 					continue;
 				}
 				_data.add(org_crt);
-				
-				//_orgs[k] = o.get(SELECT_ORG_ID);
 				_rowByID.put(org_crt.getLIDstr_forced(), new Integer(_data.size()-1));
 				_rowByLID.put(org_crt.getLID_forced(), new Integer(_data.size()-1));
-				//_meth[k] = o.get(SELECT_METHODS);
-				//_hash[k] = o.get(SELECT_ORG_GIDH);
-				//_crea[k] = o.get(SELECT_ORG_CREAT_ID);
-				//_gid[k] = (o.get(SELECT_ORG_CREAT_ID) != null);
-				//_blo[k] = Util.stringInt2bool(o.get(SELECT_BLOCKED), false);
-				//_bro[k] = Util.stringInt2bool(o.get(SELECT_BROADCASTED), false);
-				//_req[k] = Util.stringInt2bool(o.get(SELECT_REQUESTED), false);
 		}
 		if (DEBUG) System.out.println("widgets.org.Orgs: A total of: "+_data.size());
 		synchronized (monitor_data) {
@@ -1286,29 +981,18 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			data = _data;
 			rowByID = _rowByID;
 			rowByLID = _rowByLID;
-			
 			SwingUtilities.invokeLater(new net.ddp2p.common.util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, this) {
-				// daemon?
 				@Override
 				public void _run() {
 					((OrgsModel)ctx).fireTableDataChanged();
 				}
 			});
-
 			for (int crt_view_idx = 0; crt_view_idx < old_sel.length; crt_view_idx ++) {
 				Orgs crt_view = tables.get(crt_view_idx);
-				//int row = i.getSelectedRow();
 				int row_model = findModelRowForOrgLID(old_sel[crt_view_idx]);
 				if(DEBUG) System.out.println("widgets.org.Orgs: selected row: table["+crt_view_idx+"]="+row_model);
-				//i.revalidate();
-//				if ((row_model >= 0) && (row_model < _data.size())) {
-//					int view_row = crt_view.convertRowIndexToView(row_model);
-//					crt_view.setRowSelectionInterval(view_row, view_row);
-//				}
-				
 				class O {int row_model; Orgs crt_view; O(int _row, Orgs _view){row_model = _row; crt_view = _view;}}
 				SwingUtilities.invokeLater(new net.ddp2p.common.util.DDP2P_ServiceRunnable(__("invoke swing"), false, false, new O(row_model,crt_view)) {
-					// daemon?
 					@Override
 					public void _run() {
 						O o = (O)ctx;
@@ -1316,28 +1000,21 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 							int row_view = o.crt_view.convertRowIndexToView(o.row_model);
 							o.crt_view.setRowSelectionInterval(row_view, row_view);
 						}
-						//TODO the next is probably slowing down the system. May be run only on request
 						o.crt_view.initColumnSizes();
 					}
 				});
-				
 				crt_view.fireListener(row_model, Orgs.A_NON_FORCE_COL);
 			}
 		}
 	}
-
 	private int findModelRowForOrgLID(Object id) {
 		if (id == null) return -1;
 		long lID = Util.lval(id);
 		Integer row = rowByLID.get(new Long(lID));
 		return row;
-		// for (int k = 0; k < data.size(); k ++) if (lID == getLID(k)) return k;
-		// return -1;
 	}
 	public void setConnectionState(String peerID, int state) {
-		
 	}
-
 	@Override
 	public int getColumnCount() {
 		return columnNames.length;
@@ -1348,14 +1025,12 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		if(col == this.TABLE_COL_ACTIVITY) return Integer.class;
 		if(col == this.TABLE_COL_CONSTITUENTS_NB) return Integer.class;
 		if(col == this.TABLE_COL_NEWS) return Integer.class;
-		
 		return String.class;
 	}
 	@Override
 	public int getRowCount() {
 		return data.size();
 	}
-
 	@Override
 	public Object getValueAt(int row, int col) {
 		boolean refresh = false;
@@ -1364,48 +1039,14 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		switch (col) {
 		case TABLE_COL_NAME:
 			result = data.get(row).getOrgNameOrMy();
-			//if (row == 8) Util.printCallPath("result:"+result);
-			/*
-			String sql = "SELECT o."+table.organization.name + ", m."+table.my_organization_data.name+
-					" FROM "+table.organization.TNAME+" AS o" +
-					" LEFT JOIN "+table.my_organization_data.TNAME+" AS m " +
-							" ON (o."+table.organization.organization_ID+" = m."+table.my_organization_data.organization_ID+")" +
-					" WHERE o."+table.organization.organization_ID+"= ? LIMIT 1;";
-			try {
-				ArrayList<ArrayList<Object>> orgs = db.select(sql, new String[]{orgID});
-				if(orgs.size()>0)
-					if(orgs.get(0).get(1)!=null){
-						result = orgs.get(0).get(1);
-						if(DEBUG)System.out.println("Orgs:Got my="+result);
-					}
-					else{
-						result = orgs.get(0).get(0);
-						if(DEBUG)System.out.println("Orgs:Got my="+result);
-					}
-			} catch (P2PDDSQLException e) {
-				e.printStackTrace();
-			}
-			*/
 			break;
 		case TABLE_COL_CREATOR:
 			{
 				D_Organization org = data.get(row);
-			/*
-			String sql_cr =
-				"SELECT o."+table.organization.creator_ID+", m."+table.my_organization_data.creator+
-				", p."+table.peer.name+", pm."+table.peer_my_data.name+",p."+table.peer.name_verified+
-				" FROM "+table.organization.TNAME+" AS o" +
-				" LEFT JOIN "+table.my_organization_data.TNAME+" AS m "+" ON(o."+table.organization.organization_ID+"=m."+table.my_organization_data.organization_ID+")"+
-				" LEFT JOIN "+table.peer.TNAME+" AS p "+" ON(o."+table.organization.creator_ID+"=p."+table.peer.peer_ID+")"+
-				" LEFT JOIN "+table.peer_my_data.TNAME+" AS pm "+" ON(o."+table.organization.creator_ID+"=pm."+table.peer_my_data.peer_ID+")"+
-				" WHERE o."+table.organization.organization_ID+" = ? LIMIT 1;";
-			try {
-				ArrayList<ArrayList<Object>> orgs = db.select(sql_cr, new String[]{orgID}, DEBUG);
-				*/
-				Object creator_org_custom = org.getCreatorNameMy(); //orgs.get(0).get(1);
-				Object creator_peer_custom = org.getCreatorPeerNameMy(); //orgs.get(0).get(3);
-				Object creator_orig = org.getCreatorNameOriginal(); //orgs.get(0).get(2);
-				Object creator_orig_verified = org.getCreatorNameVerified();//orgs.get(0).get(4);
+				Object creator_org_custom = org.getCreatorNameMy(); 
+				Object creator_peer_custom = org.getCreatorPeerNameMy(); 
+				Object creator_orig = org.getCreatorNameOriginal(); 
+				Object creator_orig_verified = org.getCreatorNameVerified();
 				if (org != null)
 					if (creator_org_custom != null) {
 						result = "O: "+Util.getString(creator_org_custom);
@@ -1424,69 +1065,34 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 							if(DEBUG)System.out.println("Orgs:Got initiator="+result);
 						}
 					}
-			/*
-			} catch (P2PDDSQLException e) {
-				e.printStackTrace();
-			}
-			*/
 			}
 			break;
 		case TABLE_COL_CATEGORY:
 			result = data.get(row).getCategoryOrMy();
-			/*
-			String sql_cat = "SELECT o."+table.organization.category + ", m."+table.my_organization_data.category+
-					" FROM "+table.organization.TNAME+" AS o" +
-					" LEFT JOIN "+table.my_organization_data.TNAME+" AS m " +
-							" ON (o."+table.organization.organization_ID+" = m."+table.my_organization_data.organization_ID+")" +
-					" WHERE o."+table.organization.organization_ID+"= ? LIMIT 1;";
-			try {
-				ArrayList<ArrayList<Object>> orgs = db.select(sql_cat, new String[]{orgID});
-				if(orgs.size()>0)
-					if(orgs.get(0).get(1)!=null){
-						result = orgs.get(0).get(1);
-						if(DEBUG)System.out.println("Orgs:Got my="+result);
-					}
-					else{
-						result = orgs.get(0).get(0);
-						if(DEBUG)System.out.println("Orgs:Got my="+result);
-					}
-			} catch (P2PDDSQLException e) {
-				e.printStackTrace();
-			}
-			*/
 			break;
 		case TABLE_COL_CONSTITUENTS_NB:
 			D_Organization org = data.get(row);
 			result = org.getConstNBinOrganization_WithCache(refresh);
 			break;
-		case TABLE_COL_ACTIVITY: // number of votes + news
+		case TABLE_COL_ACTIVITY: 
 		{
 			D_Organization org3 = data.get(row);
 			result = new Integer (""+(org3.getCountActivity_WithCache(0, refresh) + org3.getCountNews_WithCache(0, refresh)));
 		}
 			break;
-		case TABLE_COL_CONNECTION: // any activity in the last x days?
+		case TABLE_COL_CONNECTION: 
 		{
 			int DAYS_OLD2 = 10;
 			D_Organization org2 = data.get(row);
 			result = new Boolean ((org2.getCountActivity_WithCache(DAYS_OLD2, refresh) + org2.getCountNews_WithCache(DAYS_OLD2, refresh)) > 0);
 		}
 		break;
-		case TABLE_COL_NEWS: // unread news?
+		case TABLE_COL_NEWS: 
 		{
 			int DAYS_OLD = 10;
 			D_Organization org4 = data.get(row);
 			result = new Integer("" + org4.getCountNews_WithCache(-DAYS_OLD, refresh));
-			// result = new Integer(""+D_News.getCount(org.getLIDstr_forced(), -DAYS_OLD));
 		}
-//			String sql_news = "SELECT count(*) FROM "+table.news.TNAME+" AS n "+
-//			" WHERE n."+table.news.organization_ID+" = ? AND n."+table.news.arrival_date+">?;";
-//			try {
-//				ArrayList<ArrayList<Object>> orgs = db.select(sql_news, new String[]{orgID,Util.getGeneralizedDate(DAYS_OLD)});
-//				if(orgs.size()>0) result = orgs.get(0).get(0);
-//			} catch (P2PDDSQLException e) {
-//				e.printStackTrace();
-//			}
 			break;
 		case TABLE_COL_PLUGINS:
 		default:
@@ -1505,7 +1111,6 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		String _value;
 		switch(col) {
 		case TABLE_COL_NAME:
-			//set_my_data(table.my_organization_data.name, Util.getString(value), row);
 			if (DEBUG) System.out.println("MotionsModel:setValueAt name obj: "+value);
 			_value = Util.getString(value);
 			if (DEBUG) System.out.println("MotionsModel:setValueAt name str: "+_value);
@@ -1526,7 +1131,6 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		case TABLE_COL_CREATOR:
 			String creator = Util.getString(value);
 			if("".equals(creator)) creator = null;
-			//set_my_data(table.my_organization_data.creator, creator, row);
 			if (org.getCreatorNameMy() == null && creator == null) break;
 			if (org.getCreatorNameMy() == null && creator != null) {
 				int o = net.ddp2p.common.config.Application_GUI.ask(
@@ -1540,7 +1144,6 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			org.setCreatorMy(creator);
 			break;
 		case TABLE_COL_CATEGORY:
-			//set_my_data(table.my_organization_data.category, Util.getString(value), row);
 			if (DEBUG) System.out.println("MotionsModel:setValueAt cat obj: "+value);
 			_value = Util.getString(value);
 			if (DEBUG) System.out.println("MotionsModel:setValueAt cat str: "+_value);
@@ -1563,37 +1166,15 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 		}
 		org.storeRequest();
 		org.releaseReference();
-
-		//fireTableCellUpdated(row, col);
 		this.fireTableRowsUpdated(row, row);
 	}
 	public boolean isMine(int row) {
 		if (row >= this.getRowCount()) return false;
-		// int method = new Integer(""+_meth[row]).intValue();
-		// if((method==OrgEditor._GRASSROOT) && (_hash[row]==null)) return true;
-		
-		/*
-		String sql = "SELECT p."+table.peer.name+" FROM "+table.peer.TNAME +" AS p JOIN "+table.key.TNAME+" AS k"+
-		" ON ("+table.peer.global_peer_ID_hash+"=k."+table.key.ID_hash+") WHERE "+table.peer.peer_ID +"=?;";
-		String cID = data.get(row).getCreatorLID(); //Util.getString(_crea[row]);
-		
-		if(cID == null) return true; // Unknown creator? probably just not set => editable
-		ArrayList<ArrayList<Object>> a;
-		try {
-			a = Application.db.select(sql, new String[]{cID});
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-			return false;
-		}
-		if(a.size()>0) return true; // I have the key => editable
-		*/
 		D_Organization org = data.get(row); 
 		return org.currentlyEdited() || org.haveCreatorKey();
-		//return false; // I do not have the key => not editable;
 	}
 	public boolean isNotReady(int row) {
 		if(DEBUG) System.out.println("Orgs:isNotReady: row="+row);
-		//Util.printCallPath("Orgs:isNotReady: signals test");
 		if (row >= this.getRowCount()) {
 			if(DEBUG) System.out.println("Orgs:isNotReady: row>"+this.getRowCount());
 			return false;
@@ -1602,18 +1183,8 @@ class OrgsModel extends AbstractTableModel implements TableModel, DBListener {
 			if(DEBUG) System.out.println("Orgs:isNotReady: gid false");
 			return true;
 		}
-		/*
-		if (DD.ANONYMOUS_ORG_ACCEPTED) {
-			String cID = data.get(row).getCreatorLID(); //Util.getString(_crea[row]);
-			if (cID == null) {
-				if (DEBUG) System.out.println("Orgs:isNotReady: cID null");
-				return true;
-			}
-		}
-		*/
 		int method = -1;
 		try {method = data.get(row).getCertifyingMethod();}catch(Exception e){}
-		
 		if ((method == net.ddp2p.common.table.organization._GRASSROOT) && (getOrgGIDH(row) == null)){
 			if(DEBUG) System.out.println("Orgs:isNotReady: hash null");
 			return true;

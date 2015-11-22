@@ -1,24 +1,18 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.directories;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -40,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
-
 import javax.swing.Action;
 import javax.swing.DefaultCellEditor;
 import javax.swing.ImageIcon;
@@ -63,7 +56,6 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
-
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
@@ -106,17 +98,13 @@ class PathCellRenderer extends DefaultTableCellRenderer {
                 isSelected, hasFocus, row, column );
         String pathValue = Util.getString(value);
         c.setToolTipText(pathValue);
-        // ...OR this probably works in your case:
-        //c.setToolTipText(c.getText());
         return c;
     }
 }
-
 @SuppressWarnings("serial")
 public class Directories extends JTable implements MouseListener, Directories_View {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-
 	PathCellRenderer pathRenderer = new PathCellRenderer();
 	BulletRenderer bulletRenderer = new BulletRenderer();
 	MyDirComboBoxRenderer myDirComboBoxRenderer;
@@ -135,8 +123,6 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
 		super(dm);
 		init();
 	}
-	
-	//Implement table cell tool tips.
     public String getToolTipText(MouseEvent e) {
         String tip = null;
         java.awt.Point p = e.getPoint();
@@ -153,13 +139,10 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
         	ex.printStackTrace();
         	return null;
         }
-
         if (realColumnIndex == DirectoriesModel.COL_TCP_ON) {
         	tip = getModel().getTCP_ON_Tip(realRowIndex, realColumnIndex);
         }
         if (realColumnIndex == DirectoriesModel.COL_ADDRESS) {
-            //JComboBox<Object> j = (JComboBox<Object>) getModel().getValueAt(realRowIndex, realColumnIndex);
-            //if (j == null) return null;
             tip = Util.getString(getModel().getAddressValueAt(realRowIndex, realColumnIndex));
         }
         if (
@@ -170,21 +153,17 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
         	    || (realColumnIndex == DirectoriesModel.COL_VERSION)
         	    || (realColumnIndex == DirectoriesModel.COL_PORT_TCP)
         		)
-        { //Sport column
-            // tip = Util.getString(getValueAt(rowIndex, colIndex));
+        { 
             tip = Util.getString(getModel().getValueAt(realRowIndex, realColumnIndex));
         }
         return tip;
     }
-	
 	void init() {
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
 		myDirComboBoxRenderer = new MyDirComboBoxRenderer();
-
 		yourColumnModel = new net.ddp2p.widgets.components.XTableColumnModel();
 		setColumnModel(yourColumnModel); 
 		createDefaultColumnsFromModel(); 
-
 		initColumnSizes();
 		this.getTableHeader().setToolTipText(
         __("Click to sort; Shift-Click to sort in reverse order"));
@@ -200,13 +179,10 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
     	JPanel jp = new JPanel(new BorderLayout());
     	JScrollPane scrollPane = getScrollPane();
         scrollPane.setPreferredSize(new Dimension(400, 200));
-        //jp.add(scrollPane, BorderLayout.CENTER);
         Application.directoriesData = new DirectoriesData();
-        //jp.add(Application.directoriesData, BorderLayout.SOUTH);
         jp.add(new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, ((DirectoriesData)Application.directoriesData)), BorderLayout.CENTER);
 		return jp;
     }
-
 	@Override
 	public TableCellEditor getCellEditor(int row, int column) {
 	   Object value = super.getValueAt(row, column);
@@ -221,9 +197,8 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
 	public TableCellRenderer getCellRenderer(int row, int column) {
 		if ((column == DirectoriesModel.COL_UDP_ON)) return bulletRenderer;
 		if ((column == DirectoriesModel.COL_TCP_ON)) return bulletRenderer;
-		if ((column == DirectoriesModel.COL_ADDRESS)) return this.myDirComboBoxRenderer;//pathRenderer;
+		if ((column == DirectoriesModel.COL_ADDRESS)) return this.myDirComboBoxRenderer;
 		if ((column == DirectoriesModel.COL_DATE)) return pathRenderer;
-		//if ((column == DirectoriesModel.COL_NAT)) return bulletRenderer;
 		return super.getCellRenderer(row, column);
 	}
 	protected String[] columnToolTips = {null,null,__("A name you provide"),
@@ -274,22 +249,18 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
         DirectoriesModel model = (DirectoriesModel)this.getModel();
         TableColumn column = null;
         Component comp = null;
-        //Object[] longValues = model.longValues;
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
-        
         TableColumnModel cm = this.getColumnModel();
-        int cnt = cm.getColumnCount(); // model.getColumnCount();
+        int cnt = cm.getColumnCount(); 
         for (int i = 0; i < cnt; i++) {
         	int headerWidth = 0;
         	int cellWidth = 0;
             column = cm.getColumn(i);
- 
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
- 
             for(int r=0; r<model.getRowCount(); r++) {
             	comp = this.getDefaultRenderer(model.getColumnClass(i)).
                              getTableCellRendererComponent(
@@ -303,7 +274,6 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
                                    + "headerWidth = " + headerWidth
                                    + "; cellWidth = " + cellWidth);
             }
- 
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
@@ -314,11 +284,6 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
 	public static void main(String[] args) throws P2PDDSQLException {
 		String dfname = Application.DELIBERATION_FILE;
 		Application.setDB(new DBInterface(dfname));
-		//DirectoriesTest dT = new DirectoriesTest(Application.db);
-		//DirectoriesModel dirsM = new DirectoriesModel(Application.db);
-		//Directories dirs = new Directories(dirsM);
-		//JScrollPane scrollPane = new JScrollPane(dirs);
-		//dirs.setFillsViewportHeight(true);
 		DirectoriesTest.createAndShowGUI(Application.getDB());
 	}
 	@Override
@@ -339,10 +304,9 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
 		jMouse(e);
 	}
 	private void jMouse(MouseEvent evt) {
-	   	int row; //=this.getSelectedRow();
-    	int col; //=this.getSelectedColumn();
+	   	int row; 
+    	int col; 
     	if(!evt.isPopupTrigger()) return;
-    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
         row=this.rowAtPoint(point);
         col=this.columnAtPoint(point);
@@ -360,39 +324,30 @@ public class Directories extends JTable implements MouseListener, Directories_Vi
     	JPopupMenu popup = new JPopupMenu();
     	DirectoriesModel model = getModel();
     	DirectoriesCustomAction cAction;
-    	
     	cAction = new DirectoriesCustomAction(this, __("Refresh!"), addicon,__("Refresh."), __("Refresh"),KeyEvent.VK_R, DirectoriesCustomAction.C_REFRESH);
     	cAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(cAction));
-    	
     	cAction = new DirectoriesCustomAction(this, __("Remove Column!"), delicon,__("Remove Column."), __("Remove Column"), KeyEvent.VK_C, DirectoriesCustomAction.C_RCOLUMN);
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
-    	
     	cAction = new DirectoriesCustomAction(this, __("Add Column!"), addicon,__("Add Column."), __("Add Column"), KeyEvent.VK_A, DirectoriesCustomAction.C_ACOLUMN);
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
-
     	cAction = new DirectoriesCustomAction(this, __("Add Directory!"), addicon,__("Add Directory."), __("Add Directory"), KeyEvent.VK_Y, DirectoriesCustomAction.C_ADIR);
     	cAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(cAction));
-
     	cAction = new DirectoriesCustomAction(this, __("Del Directory!"), delicon,__("Del Directory."), __("Del Directory"), KeyEvent.VK_D, DirectoriesCustomAction.C_DDIR);
     	cAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(cAction));
-
     	cAction = new DirectoriesCustomAction(this, __("Resize Columns!"), delicon,__("Resize."), __("Resize"), KeyEvent.VK_W, DirectoriesCustomAction.C_RESIZE);
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
-
     	cAction = new DirectoriesCustomAction(this, __("Announce Myself!"), delicon,__("Announce."), __("Announce"), KeyEvent.VK_M, DirectoriesCustomAction.C_ANNOUNCE_MYSELF);
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
-    	
     	return popup;
 	}
 }
-
 @SuppressWarnings("serial")
 class DirectoriesCustomAction extends DebateDecideAction {
 	public static final int C_REFRESH = 1;
@@ -467,13 +422,11 @@ class DirectoriesCustomAction extends DebateDecideAction {
         		return;
         	}
            	if (DEBUG) System.out.println("DirectoriesAction: adir a="+a.toLongString());
-           	net.ddp2p.common.util.DirectoryAddress da = new net.ddp2p.common.util.DirectoryAddress(a); //have names for addresses
+           	net.ddp2p.common.util.DirectoryAddress da = new net.ddp2p.common.util.DirectoryAddress(a); 
            	if (DEBUG) System.out.println("DirectoriesAction: adir da="+da);
         	new net.ddp2p.common.util.DirectoriesSaverThread(da).start();
         } else  if (command == C_DDIR) {
         	if (_DEBUG) System.out.println("DirectoriesAction:delete C_DDIR: row="+row);
-        	//util.DirectoryAddress da = new util.DirectoryAddress(a); //have names for addresses
-        	//	new util.DirectoriesSaverThread(da).start();
         	if (row < 0) return;
         	if (0 == Application_GUI.ask(__("Do you want to delete directory?"), __("Delete Directory?"), JOptionPane.OK_CANCEL_OPTION))
         		model.deleteDirectory(row);
@@ -493,7 +446,6 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		super ("Directories Polling", true);
 		this.m = m;
 		this.t = t;
-		//this.setDaemon(true); 
 		start();
 	}
 	public void _run() {
@@ -506,7 +458,6 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			//GID = Identity.getMyPeerGID();
 			String id = null;
 			String GID = null;
 			String GIDH = null;
@@ -532,7 +483,6 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				}
 				continue;
 			}
-			//String[] ld = m._ld;
 			DirectoryAddress[] _addr = m._addr;
 			if (_addr == null) {
 				ThreadsAccounting.ping("No Directories");
@@ -540,12 +490,12 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				ThreadsAccounting.ping("Directories #"+_addr.length);
 				for (int k = 0; k < _addr.length; k++) {
 					if (!_addr[k].active) continue;
-					Address dir_a = new Address(_addr[k]);//DirectoriesModel.getAddress(ld, k);
+					Address dir_a = new Address(_addr[k]);
 					if (DEBUG) System.out.println("Directories:_run: _addr="+_addr[k].toLongString());
 					if (DEBUG) System.out.println("Directories:_run: dir_a="+dir_a.toLongString());
-					String iport = dir_a.ipPort(); //m.ipPort(ld, k);
-					String ip = dir_a.getIP();//ld, k);
-					int port = dir_a.getTCPPort();//ld,k);
+					String iport = dir_a.ipPort(); 
+					String ip = dir_a.getIP();
+					int port = dir_a.getTCPPort();
 					if (DEBUG) System.out.println("Directories:ping: k="+k+" ip="+iport+" ld0="+ip+" ld1="+port);
 					InetSocketAddress s = addr.get(iport);
 					if (s == null) {
@@ -566,8 +516,6 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					if (_a != null) m.addressByIPport.put(iport, _a);
 					else m.addressByIPport.remove(iport);
 					m.dateByIPport.put(iport, Util.getGeneralizedTime());
-					//if(t!=null) t.initColumnSizes();
-					
 					m.fireTableRowsUpdated(k, k);
 				}
 			}
@@ -580,11 +528,8 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			}
 		}
 	}
-	
 	ArrayList<Address> askAddress(InetSocketAddress sock_addr, String global_peer_ID, String GIDH,
 			String peer_ID, Address dir_address) {
-		//final boolean DEBUG = true;
-		//final boolean _DEBUG = true;
 		if (DEBUG) System.out.println("Directories:askAddress: prepared dir request "+sock_addr+"/"+dir_address.toLongString());
 		if (global_peer_ID == null) {
 			if (_DEBUG) System.out.println("Directories:askAddress: prepared dir request "+sock_addr+"/"+dir_address.toLongString());
@@ -594,7 +539,6 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		}
 		Socket socket = new Socket();
 		try {
-			//if(DEBUG) out.println("Directories: askAddress:  Sending to Directory Server: connected:"+sock_addr);
 			socket.connect(sock_addr, Server.TIMEOUT_Client_wait_Dir);
 			DirectoryRequest dr =
 					new DirectoryRequest(global_peer_ID,
@@ -631,7 +575,6 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					socket.close();
 					return null;
 				}
-				//ClientSync.reportDa(dir_address, global_peer_ID, peer_name, da, null);
 				if (da.instances.size() <= 0) {
 					if (_DEBUG) System.out.println("Directories:askAddress:"+da);
 					socket.close();
@@ -647,18 +590,9 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					dr.terms_default = dr.updateTerms(dia.instance_terms, peer_ID, global_peer_ID, dir_address, dr.terms_default);
 					if (dr != null) {
 						continue;
-						/*
-						msg = dr.encode();
-						socket.setSoTimeout(Server.TIMEOUT_Client_wait_Dir);
-						socket.getOutputStream().write(msg);
-						if (_DEBUG) out.println("Directories: askAddress:  Sending to Directory Server: "+Util.byteToHexDump(msg, " ")+dr);
-						da = new DirectoryAnswer(socket.getInputStream());
-						*/
 					}
 				}
-				
 				if ((dia.addresses == null) || (dia.addresses.size() == 0)) {
-					//if(DEBUG) out.println("Directories: askAddress:  Got no addresses! da="+da+" for:"+_pc.name);
 					if (_DEBUG) out.println("Directories: askAddress:  Got empty addresses! from sa="+sock_addr+"/DIR: "+dir_address.toLongString()+"\n\t"+da+" \n\tfor:"+dr);
 					socket.close();
 					return null;
@@ -666,25 +600,18 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				if (DEBUG) out.println("Directories: askAddress: Dir Answer: "+da);
 				socket.close();
 				return dia.addresses;
-				//InetSocketAddress s= da.address.get(0);
-				//return s.getHostName()+":"+s.getPort();
 			}
 		} catch (SocketTimeoutException e) {
 			if (DEBUG) {
 				out.println("Directories:askAddresses:  fail: timeout "+e+"  DIR addr="+dir_address);
-				//ClientSync.reportDa(dir_address, global_peer_ID, peer_name, null, e.getLocalizedMessage());
 				e.printStackTrace();
 			}
 			return askAddressUDP(sock_addr, global_peer_ID, GIDH, peer_ID, dir_address);
 		} catch (IOException e) {
 			if (DEBUG) out.println("Directories:askAddresses:  fail:  DIR addr="+dir_address+" -> "+dir_address.toLongString()+" "+e.getLocalizedMessage());
-			//ClientSync.reportDa(dir_address, global_peer_ID, peer_name, null, e.getLocalizedMessage());
-			//e.printStackTrace();
-			//Directories.setUDPOn(dir_address, new Boolean(false));
 			return askAddressUDP(sock_addr, global_peer_ID, GIDH, peer_ID, dir_address);
 		} catch (Exception e) {
 			if (_DEBUG) out.println("Directories:askAddresses:  fail: "+e+"  DIR addr="+dir_address);
-			//ClientSync.reportDa(dir_address, global_peer_ID, peer_name, null, e.getLocalizedMessage());
 			e.printStackTrace();
 		}
 		return null;
@@ -715,8 +642,6 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				peer_ID,
 				dir_address);
 		if (DEBUG) System.out.println("Directories:askAddressUDP: prepared dir request dr="+dr);
-		//if (DEBUG) System.out.println("Directories:askAddressUDP: dir_address = "+dir_address+" -> "+dir_address.toLongString());
-		//if (DEBUG) System.out.println("Directories:askAddressUDP: sock_address="+_sock_addr.getAddress()+" port="+udp_port);
 		InetSocketAddress sock_addr = new InetSocketAddress(_sock_addr.getAddress(), udp_port);
 		byte[] msg = dr.encode();
 		if (DEBUG) {
@@ -725,10 +650,6 @@ class DirectoryPing extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		}
 		try {
 			DatagramPacket dp = new DatagramPacket(msg, msg.length, sock_addr);
-			//if (DEBUG) System.out.println("Directories:askAddressUDP: prepared msg = "+msg.length);
-			//if (DEBUG) System.out.println("Directories:askAddressUDP: prepared sa = "+sock_addr);
-			//if (DEBUG) System.out.println("Directories:askAddressUDP: prepared ds = "+UDPServer.ds);
-			//if (DEBUG) System.out.println("Directories:askAddressUDP: prepared dp = "+dp);
 			UDPServer.getUDPSocket().send(dp);
 		} catch (IOException e) {
 			if (DEBUG) e.printStackTrace();
@@ -747,7 +668,7 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 	static final int COL_BRANCH = 3;
 	static final int COL_VERSION = 4;
 	static final int COL_NAT = 5;
-	static final int COL_RELAY = 6; // does this directory relay?
+	static final int COL_RELAY = 6; 
 	static final int COL_UDP_ON = 7;
 	static final int COL_TCP_ON = 8;
 	static final int COL_ADDRESS = 9;
@@ -782,29 +703,12 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 		db.addListener(
 				this,
 				new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.directory_address.TNAME)), null);
-				
-//				new ArrayList<String>(Arrays.asList(table.application.TNAME)),
-//				DBSelector.getHashTable(table.application.TNAME, table.application.field, DD.APP_LISTING_DIRECTORIES));
 		update(null, null);
 		dp = new DirectoryPing(this, getTable());
 	}
 	public void deleteDirectory(int row) {
 		if (_DEBUG) System.out.println("Directories: delete: Setting "+row+"/"+_addr.length);
 		_addr[row].delete();
-		/*
-		try {
-			//Address[] addr = _addr.clone();
-			String[] ld = __ld.clone();
-			if (_DEBUG) System.out.println("Directories: delete: drop "+ld[row]);
-			ld[row] = null;
-			String dirs = buildDirectoryEntry(ld,	DD.APP_LISTING_DIRECTORIES_SEP);
-			String _dirs = buildDirectoryEntry(__ld,	DD.APP_LISTING_DIRECTORIES_SEP);
-			if (_DEBUG) System.out.println("Directories: delete: Change "+_dirs+"\nto"+dirs);
-			DD.setAppText(DD.APP_LISTING_DIRECTORIES, dirs);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
-		*/
 	}
 	public void setTable(Directories _table) {
 		this._table = _table;
@@ -812,41 +716,11 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 	private Directories getTable() {
 		return _table;
 	}
-	/*
-	public int getPort(String[] ld2, int k) {
-		if (ld2 == null) return -1;
-		if (k < 0) return -1;
-		if (k >= ld2.length) return -1;
-		//String[] l = ld2[k].split(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
-		//if (l.length<2) return -1;
-		try {
-			Address adrAddress = new Address(ld2[k]);
-			return adrAddress.getTCPPort();
-			//return Integer.parseInt(l[1]);
-		} catch(Exception e){
-			e.printStackTrace();
-			return -1;
-		}
-	}
-	
-	public String getIP(String[] ld2, int k) {
-		if(ld2 == null) return null;
-		if(k<0) return null;
-		if(k>=ld2.length) return null;
-		//String[] l = ld2[k].split(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
-		//if(l.length<1) return null;
-		//return l[0];
-		Address adrAddress = new Address(ld2[k]);
-		return adrAddress.getIP();
-
-	}
-	*/
 	@Override
 	public int getColumnCount() {
 		return columnNames.length;
 	}
 	void setUDPOn(String address, Boolean on){
-		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("DirectoriesModel:setUDPOn:"+address+" at "+on);
 		onUDPByIPport.put(address, on);
 		Integer Row = this.rowByIPport.get(address);
@@ -869,16 +743,14 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 	}
 	public Object getAddressValueAt(int row, int col) {
 		if ((_addr==null)||(_addr.length<=row)) return null;
-		//DirectoryAddress address = _addr[row]; //new Address(_ld[row]);
 		String addr = this.addressByIPport.get(this.ipPort(row));
 		return addr;
 	}
 	@Override
 	public Object getValueAt(int row, int col) {
 		if ((_addr==null)||(_addr.length<=row)) return null;
-		
 		try {
-			DirectoryAddress address = _addr[row]; //new Address(_ld[row]);
+			DirectoryAddress address = _addr[row]; 
 			if (col == COL_UDP_ON)return this.onUDPByIPport.get(this.ipPort(row));
 			if (col == COL_TCP_ON)return this.onTCPByIPport.get(this.ipPort(row));
 			if (col == COL_NAT) return this.natByIPport.get(this.ipPort(row));
@@ -892,11 +764,6 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 				if (o == null) return Util.getGeneralizedTime();
 				return o;
 			}
-		
-			//String[] el = _ld[row].split(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
-			//if(el.length<=col) return null;
-			//return el[col];
-			//TypedAddress t_address = TypedAddress.parseStringDirectoryAddress(_ld[row], DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
 			if (DEBUG) System.out.println("Directories: getValue: from="+__ld[row]+" -> a="+address);
 			if (col == COL_IP) return address.domain;
 			if (col == COL_PORT_TCP) return ""+address.tcp_port;
@@ -911,13 +778,11 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 		if (this.onTCPByIPport.get(this.ipPort(row)) == null) return null;
 		if (this.onTCPByIPport.get(this.ipPort(row))) return __("Success");
 		else return Util.getString(this.onTCPByIPportEx.get(this.ipPort(row)));
-		//return null;
 	}
 	@Override
 	public String getColumnName(int col) {
 		return columnNames[col].toString();
 	}
-
 	@Override
 	public boolean isCellEditable(int row, int col) {
 		switch (col) {
@@ -933,25 +798,12 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 			return false;
 		}
 	}
-
 	@Override
 	public void setValueAt(Object value, int row, int col) {
 		if ((value+"").indexOf(DD.APP_LISTING_DIRECTORIES_ELEM_SEP) >= 0) return; 
 		if ((value+"").indexOf(DD.APP_LISTING_DIRECTORIES_SEP) >= 0) return; 
-		DirectoryAddress adr = _addr[row]; //new Address(_ld[row]);
-		//adr.setPureProtocol(Address.DIR);
+		DirectoryAddress adr = _addr[row]; 
 		if (DEBUG) System.out.println("Directories:setVal "+adr);
-		/*
-		String el[] = _ld[row].split(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
-		String result="";
-		for(int k = 0; k < columns_storable; k ++) {
-			if(k > 0) result = result + DD.APP_LISTING_DIRECTORIES_ELEM_SEP;
-			if(k==col) result = result + value;
-			else if(k<el.length) result = result + el[k];
-			else result = result+"";
-		}
-		_ld[row] = result;
-		*/
 		int ok;
 		switch (col) {
 		case COL_IP:
@@ -977,61 +829,16 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 			break;
 		}
 		adr.store();
-		/*
-		__ld[row] = adr.toDirActivityString();
-		if (_DEBUG) System.out.println("Directories:setVal is="+row+" => "+__ld[row]);
-		try {
-			String dirs = buildDirectoryEntry(__ld,
-					//DirectoryServer.ADDR_SEP);// 
-					DD.APP_LISTING_DIRECTORIES_SEP);
-			if (_DEBUG) System.out.println("Directories: setValueAt: Setting "+dirs);
-			DD.setAppTextNoSync(DD.APP_LISTING_DIRECTORIES, dirs);
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
-		fireTableCellUpdated(row, col);
-		*/
 	}
-	/*
-	private static String buildDirectoryEntry(String[] _addr, String appSep) {
-		if (_addr == null) return null;
-		return Util.concatNonNull(_addr, appSep, null);
-	}
-	private static String buildDirectoryEntry(Address[] _addr, String appSep) {
-		if (_addr == null) return null;
-		
-//		Address a[] = new Address[_ld.length];
-//		for (int k=0; k<a.length; k++) {
-//			a[k] = new Address(_ld[k]);
-//		}
-//		return Util.concat(a, appSep, null); 
-		
-		return Util.concatNonNull(_addr, appSep, null);
-	}
-	*/
 	String ipPort(int k) {
 		if (_addr[k] == null) return null;
-		return _addr[k].ipPort(); //ipPort(_ld, k);
+		return _addr[k].ipPort(); 
 	}
 	static Address getAddress(String[]_ld, int k) {
 		if ((_ld == null) || (_ld.length <= k)) return null;	
 		Address adr = new Address(_ld[k]);
 		return adr;
 	}
-	/*
-	static String ipPort(String[]_ld, int k) {
-		Address adr = getAddress(_ld, k);
-		return adr.ipPort();
-		
-		
-//		int id1 = _ld[k].indexOf(DD.APP_LISTING_DIRECTORIES_ELEM_SEP);
-//		if(id1<0) return null;
-//		int id2 = _ld[k].indexOf(DD.APP_LISTING_DIRECTORIES_ELEM_SEP,id1+1);
-//		if(id2<0) return _ld[k];//id2 = _ld[k].length();
-//		return _ld[k].substring(0, id2);
-		
-	}
-	*/
 	void setTCPOn(String address, Boolean on, Exception e){
 		if(DEBUG) System.out.println("DirectoriesModel:setTCPOn:"+address+" at "+on);
 		onTCPByIPport.put(address, on);
@@ -1064,35 +871,6 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 		for (int k = 0; k<_addr.length; k++) {
 			this.rowByIPport.put(_addr[k].ipPort(), new Integer(k));
 		}
-		/*
-		try {
-			ld = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
-			if (_DEBUG) System.out.println("Directories:update:"+ld);
-			this.rowByIPport = new Hashtable<String,Integer>();
-			if (ld != null) {
-				__ld=ld.split(DD.APP_LISTING_DIRECTORIES_SEP);
-				_addr = new Address[__ld.length];
-				for (int k = 0; k<__ld.length; k++) {
-					if(DEBUG) System.out.println("Directories:update:"+k+" is "+__ld[k]);
-					_addr[k] = DirectoriesModel.getAddress(__ld, k);
-					if (_addr[k] == null) {
-						if(_DEBUG) System.out.println("Directories:update: fail k=:"+k+" is "+__ld[k]+" from ld="+__ld);
-						Util.printCallPath("");
-						continue;
-					}
-					String ipPort = _addr[k].ipPort();
-					if (ipPort == null) continue;
-					this.rowByIPport.put(ipPort, new Integer(k));
-				}
-			} else {
-				__ld = new String[0];
-				_addr = new Address[0];
-				this.rowByIPport = new Hashtable<String,Integer>();
-			}
-		} catch (P2PDDSQLException e) {
-			e.printStackTrace();
-		}
-		*/
 		this.fireTableDataChanged();
 	}
 	@Override
@@ -1102,25 +880,12 @@ class DirectoriesModel extends AbstractTableModel implements TableModel, DBListe
 		if(col == COL_ADDRESS) return JComboBox.class;
 		return String.class;
 	}
-/*
-	@Override
-	public void addTableModelListener(TableModelListener arg0) {		
-	}
-
-
-	@Override
-	public void removeTableModelListener(TableModelListener arg0) {
-		// 
-	}
-	*/
 }
 class MyDirComboBoxRenderer extends JLabel  implements TableCellRenderer {
-//	class MyDirComboBoxRenderer extends DefaultTableCellRenderer  implements TableCellRenderer {
   public MyDirComboBoxRenderer() {
     super();
 	setOpaque(true);
   }
-
   public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
       boolean hasFocus, int row, int column) {
 	  if(value instanceof JComboBox){
@@ -1130,7 +895,6 @@ class MyDirComboBoxRenderer extends JLabel  implements TableCellRenderer {
 		  text = "/#"+cnt+": "+Util.getString(((JComboBox) value).getItemAt(0));
 		  if(cnt > 1) this.setBackground(Color.YELLOW);
 		  else this.setBackground(Color.LIGHT_GRAY);
-		  //if(cnt>1) text = text;
 		  setText(text);
 	  }else{
 			setBackground(Color.WHITE);
@@ -1139,13 +903,11 @@ class MyDirComboBoxRenderer extends JLabel  implements TableCellRenderer {
     return this;
   }
 }
-
 @SuppressWarnings("serial")
 class MyCDirComboBoxRenderer extends JComboBox<Object> implements TableCellRenderer {
   public MyCDirComboBoxRenderer() {
     super();
   }
-
   @SuppressWarnings("unchecked")
 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
       boolean hasFocus, int row, int column) {
@@ -1167,7 +929,6 @@ public Component getTableCellRendererComponent(JTable table, Object value, boole
     return this;
   }
 }
-
 class DirectoriesTest extends JPanel {
     Directories tree;
     public DirectoriesTest(DBInterface db) {
@@ -1176,7 +937,6 @@ class DirectoriesTest extends JPanel {
         JScrollPane scrollPane = new JScrollPane(tree);
         scrollPane.setPreferredSize(new Dimension(400, 200));
         add(scrollPane, BorderLayout.CENTER);
-		//JScrollPane scrollPane = new JScrollPane(dirs);
 		tree.setFillsViewportHeight(true);
     }
     public static void createAndShowGUI(DBInterface db) {

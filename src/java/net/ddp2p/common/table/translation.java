@@ -1,24 +1,18 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.table;
-
 public class translation {
 	 public static final String translation_ID = "translation_ID";
 	 public static final String global_translation_ID = "global_translation_ID";
@@ -36,7 +30,6 @@ public class translation {
 	 public static final String arrival_date = "arrival_date";
 	 public static final String signature = "signature";
 	public static final String TNAME = "translation";
-	
 	public static final String fields_noID = 
 		global_translation_ID + "," +
 		hash_alg + "," +
@@ -54,10 +47,8 @@ public class translation {
 		signature
 		;
 	public static final String fields = fields_noID + "," + translation_ID;
-	
 	public static final String[] fields_array = fields.split(",");
 	public static final String[] fields_noID_array = fields_noID.split(",");
-	
 	public static final int T_GID = 0;
 	public static final int T_HASH_ALG = 1;
 	public static final int T_VALUE = 2;
@@ -73,7 +64,6 @@ public class translation {
 	public static final int T_ARRIVAL_DATE = 12;
 	public static final int T_SIGN = 13;
 	public static final int T_ID = 14;
-	
 	public static final int T_FIELDS = fields_array.length;
 	public static final int T_FIELDS_NOID = fields_noID_array.length;
 }
