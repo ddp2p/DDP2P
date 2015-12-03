@@ -33,7 +33,7 @@ public class DDP2P_NetworkInterface {
 	}
 	public static Enumeration<DDP2P_NetworkInterface> getNetworkInterfaces() throws SocketException {
 		ArrayList<DDP2P_NetworkInterface> result = new ArrayList<DDP2P_NetworkInterface>(); 
-		if (! Socket.simulated) {
+		if (! Socket.isSimulated()) {
 			Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
 			for (NetworkInterface netint : Collections.list(nets)) {
 				result.add(new DDP2P_NetworkInterface(netint));

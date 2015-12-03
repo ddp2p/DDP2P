@@ -36,14 +36,13 @@ class DDP2P_InputStream extends InputStream {
 	}
 }
 public class Socket extends java.net.Socket {
-	public static boolean simulated = false;
-	public static DDP2P_Network singleton = null; 
+	public static DDP2P_Network singleton_network = null; 
 	/**
 	 * get the singleton
 	 * @return
 	 */
 	public static DDP2P_Network getNetwork() {
-		return singleton;
+		return singleton_network;
 	}
 	public int port;
 	/** Connection: */
@@ -51,25 +50,28 @@ public class Socket extends java.net.Socket {
 	public int remote_port;
 	public Socket () {
 		super();
-		if (! simulated) return;
+		if (! isSimulated()) return;
 	}
 	@Override
 	public void connect(SocketAddress endpoint) throws IOException {
-		if (! simulated) super.connect(endpoint);
+		if (! isSimulated()) super.connect(endpoint);
 		Socket.getNetwork().connect(((InetSocketAddress)endpoint).getAddress(), ((InetSocketAddress)endpoint).getPort());
 	}
 	@Override
 	public void setSoTimeout(int timeout) throws SocketException {
-		if (! simulated) super.setSoTimeout(timeout);
+		if (! isSimulated()) super.setSoTimeout(timeout);
 	}
 	@Override
 	public OutputStream getOutputStream() throws IOException {
-		if (! simulated) return super.getOutputStream();
+		if (! isSimulated()) return super.getOutputStream();
 		return new DDP2P_OutputStream(this);
 	}
 	@Override
 	public InputStream getInputStream() throws IOException {
-		if (! simulated) return super.getInputStream();
+		if (! isSimulated()) return super.getInputStream();
 		return new DDP2P_InputStream(this);
+	}
+	public static boolean isSimulated() {
+		return singleton_network != null;
 	}
 }

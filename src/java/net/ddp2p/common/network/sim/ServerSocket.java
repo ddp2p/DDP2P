@@ -21,20 +21,20 @@ public class ServerSocket extends java.net.ServerSocket {
 	public int port;
 	public ServerSocket() throws IOException {
 		super();
-		if (! Socket.simulated) return;
+		if (! Socket.isSimulated()) return;
 	}
 	public ServerSocket(int port) throws IOException {
 		super(port);
-		if (! Socket.simulated) return;
+		if (! Socket.isSimulated()) return;
 		this.port = port;
 		Socket.getNetwork().register(port, this, Application.getCurrentInstallationFromThread());
 	}
 	public void setSoTimeout(int timeout) throws SocketException {
-		if (! Socket.simulated) { super.setSoTimeout(timeout); return; }
+		if (! Socket.isSimulated()) { super.setSoTimeout(timeout); return; }
 		this.timeout = timeout;
 	}
 	public java.net.Socket	accept() throws IOException {
-		if (! Socket.simulated) { return super.accept(); }
+		if (! Socket.isSimulated()) { return super.accept(); }
 		Socket result = new Socket();
 		if ((result = Socket.getNetwork().accept(this, Application.getCurrentInstallationFromThread(), timeout)) == null) throw new IOException();
 		result.port = Socket.getNetwork().getFreePort(Application.getCurrentInstallationFromThread());

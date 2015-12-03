@@ -223,13 +223,14 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 			jus.setHashAlg("0");
 			jus.setCreationDate(creation_date);
 			jus.setArrivalDate(creation_date);
-			jus.setConstituentLIDstr_Dirty(""+constituent_id);
+			jus.setConstituentLID_Dirty(constituent_id);
 			jus.setConstituentGID(D_Constituent.getGIDFromLID(jus.getConstituentLIDstr()));
 			jus.setConstituentObj(D_Constituent.getConstByLID(constituent_id, true, false));
-			jus.setMotionLIDstr(""+motion_id);
-			jus.setMotionGID(jus.getMotion().getGID());
+			jus.setMotionLID(motion_id);
+			D_Motion mot = jus.getMotionForce();
+			if (mot != null) jus.setMotionGID(mot.getGID());
 			jus.setMotionObj(D_Motion.getMotiByLID(motion_id, true, false));
-			jus.setOrganizationLIDstr(""+org_id);
+			jus.setOrganizationLID(org_id);
 			jus.setOrgGID(D_Organization.getGIDbyLIDstr(jus.getOrganizationLIDstr()));
 			D_Document doc1 = new D_Document();
 			doc1.setDocumentString(justification_text);
