@@ -69,16 +69,17 @@
     <string name="constituent_slogan" translatable="false">Slogan</string>
     <string name="profile_picture" translatable="false">Profile Picture</string>
     <string name="eligibility" translatable="false">Eligibility</string>
-    <string name="extra_fields" translatable="false">Extra Fields</string>
     <string name="eligible" translatable="false">Eligible</string>
     <string name="ineligible" translatable="false">Ineligible</string>
     <string name="description" translatable="false">Description</string>
     <string name="inst_for_motion" translatable="false">Instruction for motion</string>
     <string name="inst_for_registration" translatable="false">Instruction for registration</string>
-    <string name="add_extra" translatable="false">Add Extra Field in White Pages Schema</string>
     <string name="varied_voting_right" translatable="false">Varied voting right</string>
     <string name="max_voting_level" translatable="false">Max voting level</string>
     <string name="org_icon" translatable="false">Organization icon</string>
+
+    <string name="extra_fields">Extra Fields</string>
+    <string name="add_extra">Add Extra Field in White Pages Schema</string>
 
     <string name="rebuttal_or_answer">Do you want to create a rebuttal to this \"<xliff:g id="dialog_justification1" example="Proposal">Justification</xliff:g>\" rather than use it?"</string>
     <string name="reffered_label">You are referring to <i>\"<xliff:g id="dialog_justification1" example="Proposal">Justification</xliff:g>\"</i>:</string>

@@ -5,7 +5,7 @@
 <ScrollView android:id="@+id/ScrlView_ibwo" android:layout_width="fill_parent" android:layout_height="fill_parent" >
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="fill_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent" android:layoutDirection="locale">
     <TextView
         android:id="@+id/import_web_object_import_instructions"
         android:layout_width="fill_parent"
@@ -153,7 +153,7 @@
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Import Current Object"
+            android:text="@string/import_current_object"
             android:id="@+id/import_web_object_import_bottom_button"
             style="@android:style/Widget.Button"
             android:paddingLeft="5dp"
@@ -166,7 +166,7 @@
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Decode Content"
+            android:text="@string/decode_content"
             android:id="@+id/import_web_object_decode_bottom_button"
             style="@android:style/Widget.Button"
             android:layout_marginLeft="10dp"

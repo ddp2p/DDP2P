@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources  xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="app_name">V16 DirectDemocracyP2P (DDP2P)</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">الإعدادات</string>
+    <string name="action_directories">إدارة الادلة</string>
+
+    <!-- main action bar -->
+    <string name="action_back">عودة</string>
+    <string name="new_safe_my">تعريف هوية مستخدم جديدة</string>
+    <string name="new_safe_other">استيراد من الصور</string>
+    <string name="new_org">تعريف منظمة جديدة</string>
+    <string name="new_icon">اضافة رمز</string>
+
+    <!-- used in safe profile menu -->
+    <string name="Device">الجهاز</string>
+    <string name="Slogan">الشعار</string>
+    <string name="LastSync">خر تحديث</string>
+    <string name="LastContact">آخر اتصال</string>
+    <string name="set_name_my" >ضبط الاسم</string>
+    <string name="set_email" >ضبط البريد الالكتروني</string>
+    <string name="set_slogan" >ضبط الشعار</string>
+    <string name="add_to_current_org" >إضافة للمنظمة الحالية</string>
+    <string name="export_peer_pk" >تصدير نظير بمفتاح عام</string>
+    <string name="load_object" >تحميل عنصر</string>
+    <string name="safe_profile_drawer_open">فتح نافذة بيانات المستخدم</string>
+    <string name="safe_profile_drawer_close">إغلاق نافذة بيانات المستخدم</string>
+
+    <!-- used in data_list -->
+    <string name="name" >الاسم</string>
+    <string name="email" >البريد الإلكترونى</string>
+    <string name="slogan" >الشعار</string>
+    <string name="profile_pic_datalist" >صورة العرض</string>
+
+    <!-- buttons -->
+    <string name="submit" >تسليم</string>
+    <string name="submit_new" >تسليم جديد</string>
+    <string name="ok" >موافق</string>
+
+    <string name="Yes">نعم</string>
+    <string name="Cancel">الغاء</string>
+    <string name="LoadQuestion">هل ترغب بإضافة تساؤل؟</string>
+    <string name="SaveSuccess">تم الحفظ بنجاح!</string>
+
+    <!-- chat -->
+    <string name="send" >ارسال</string>
+    <string name="input" >ادخال</string>
+
+    <string name="org_register">تسجيل منظمة</string>
+    <string name="org_register_need">تسجيل احتياجات المنظمة!</string>
+
+    <!-- Orgs -->
+    <string name="organization">منظمة</string>
+    <string name="forum">المنتدى</string>
+    <string name="justification">التبرير</string>
+    <string name="constituents" >الناخبون</string>
+    <string name="motion" >اقتراح</string>
+    <string name="news" >الاخبار</string>
+    <string name="org_set" >الإعدادات</string>
+    <string name="org_profile" >معلومات المنظمة الاساسية</string>
+    <string name="body" >النص</string>
+    <string name="forename" >الاسم الاول</string>
+    <string name="surname" >اسم العائلة</string>
+    <string name="neighborhood" >الحي</string>
+    <string name="keys" >مفاتيح استدلالية</string>
+    <string name="has_right_to_vote" >لك الحق في التصويت</string>
+    <string name="phone_number" >رقم الهاتف</string>
+    <string name="constituent_slogan" >شعار الناخب</string>
+    <string name="profile_picture" >صورة العرض</string>
+    <string name="eligibility" >الاستحقاق</string>
+    <string name="extra_fields" >حقول اضافية</string>
+    <string name="eligible" >مؤهل</string>
+    <string name="ineligible" >غير مؤهل</string>
+    <string name="description" >الوصف</string>
+    <string name="inst_for_motion" >تعليمات لإضافة اقتراح</string>
+    <string name="inst_for_registration" >تعليمات التسجيل</string>
+    <string name="add_extra" >إضافة حقل</string>
+    <string name="varied_voting_right" >تعدد حق التصويت</string>
+    <string name="max_voting_level" >الحد الاقصى للتصويت</string>
+    <string name="org_icon" >رمز المنظمة</string>
+
+    <string name="rebuttal_or_answer">هل تريد نقض هذا \"<xliff:g id="dialog_justification1" example="Proposal">Justification</xliff:g>\" بدلاً من استخدامه؟"</string>
+    <string name="reffered_label">انت تشير إلى <i>\"<xliff:g id="dialog_justification1" example="Proposal">Justification</xliff:g>\"</i>:</string>
+    <string name="justification_add">اضافة تبرير جديد <xliff:g id="dialog_justification1" example="Proposal">الاقتراح</xliff:g>?</string>
+    <string name="justification_add_">اضافة تبرير</string>
+    <string name="justification_add_justification">اضافة تبرير جديد؟</string>
+    <string name="refute">نقض</string>
+    <string name="reuse_justification">اعادة استخدام تبرير</string>
+    <string name="swipe">اسحب لمشاهدة وجهات النظر الاخرى!</string>
+
+    <string name="users">المستخدمون</string>
+    <string name="organizations">المنظمات</string>
+
+    <!-- Justification -->
+    <string name="support" >مؤيد</string>
+    <string name="against" >معارض</string>
+    <string name="neutral" >محايد</string>
+    <string name="title" >العنوان</string>
+    <string name="yes" >نعم</string>
+    <string name="no" >لا</string>
+
+    <!-- Motion -->
+    <string name="view_votes" >مشاهدة الاصوات</string>
+
+    <!-- Witness & Neighorhood -->
+    <string name="division" >القسم</string>
+    <string name="subdivision" >القسم الفرعي</string>
+    <string name="trustworthy" >جدير بالثقة</string>
+
+    <!-- Constituent -->
+    <string name="voting_right" >حق التصويت</string>
+    <string name="new_constituent" >ناخب جديد</string>
+    <string name="new_neighborhood" >حي جديد</string>
+
+    <!-- Server -->
+    <string name="directory_empty" >لا يوجد أي دليل الخادم، يرجى الضغط "+" من أعلى اليمين للإضافة!</string>
+    <string name="directory_instruction" >عنوان الدليل علي سبيل المثال</string>
+    <string name="HintEmptyView">يمكنك إضافة جديد -على سبيل المثال الهويات للاتصال، والمنظمات، وغيرها- باستخدام القائمة “+” أعلاه \n\nيمكنك إدارة قائمة الادلة من القائمة الموحدة.</string>
+    <string name="news_title">عناوين الاخبار</string>
+    <string name="motion_title">عنوان الاقتراح</string>
+
+    <!-- Dialogs -->
+    <string name="delete_organization">حذف <xliff:g id="organization_in_delete">المنظمة</xliff:g></string>
+    <string name="wanna_delete_organization">هل تريد حذف المنظمة؟</string>
+    <string name="toast_deleting_organization">جاري حذف المنظمة… سيتم الخروج من البرنامج للتحديث!</string>
+    <string name="DDP2P">DDP2P</string>
+    <string name="browse_web_object">تصفح محتوى من الانترنت</string>
+    <string name="help_import_web_object">\tيمكنك استعراض العنوان الموجود بالاسفل (داخل الاطار الازرق) لعرض البيانات التي تريد استيرادها. يمكنك فحص قانونية البيانات الموجودة في الصفحة الحالية بالضغط على زر \’فك التشفير\’.اذا كانت هذة البيانات المحددة هي ما تريد، يمكنك استيرادها بالضغط على زر \’استيراد الكائن الحالي\’.</string>
+    <string name="label_root">المسار:</string>
+    <string name="import_current_object">استيراد الكائن الحالي</string>
+    <string name="decode_content">فك التشفير</string>
+    <string name="quit_ddp2p">اغلاقDDP2P</string>
+    <string name="menu_settings_update">قائمة الخدمات (التحديثات)</string>
+    <string name="menu_start_local_directory">ابدأ الدليل المحلي</string>
+    <string name="start_up_wizzard">الهوية\n\nهل ترغب باستيراد هوية DDP2P الخاصة بك من جهاز آخر، او انشاء هوية جديدة؟</string>
+    <string name="skip">تخطي</string>
+    <string name="create_new">جديد</string>
+    <string name="import_identity">استيراد الهوية</string>
+    <string name="dialog_label_enter_data_to_import">يرجى ادخال أو لصق المعلومات المشفرة هنا:</string>
+    <string name="dialog_wizard_title">المساعد</string>
+    <string name="announcement_import_successful">تم الإستيراد بنجاح</string>
+    <string name="refresh">تحديث</string>
+    <string name="import_web_object">استيراد كائن من الانترنت</string>
+    <string name="import_web_object_instr_dir">من آجل ان تكون هويتك قابلة للاستخدام، يجب ان تكون مسجلة و قابلة للوصول عالمياً \’نقاط التجمع\’ مع اصدقائك المباشرين عندما تكون مسافر. هنا تستطيع اختيار و تبني بعض \’نقاط التجمع\’ عن طريق التصفح و الاختيار من المستعرض \’استيراد الكائن الحالي\’. تستطع تفقد اختياراتك بالضغط على الزر \’فك التشفير\’.</string>
+    <string name="import_web_object_instr">يمكنك الآن ان تختار و تحمل الاصدقاء، المجموعات ومناقشة البنود من خلال التنقل المتصفح المضمن و الضغط \'استيراد كائن الحالي\'. يمكنك فحص قانونية البيانات الموجودة في الصفحة الحالية بالضغط على زر\'فك تشفير المحتوى\'. عندما تنتهي من ذلك، يمكنك استخدام زر العودة الموجود في جهاز اندرويد للرجوع إلى DDP2P!</string>
+    <string name="continue_create_new_peer">استمر في انشاء نظير جديد </string>
+    <string name="dialog_delete_question">هل ترغب بحذف هذا العنصر؟ اذا كانت اتصالاتك تحتوي عليه، يمكنك استعادته! لتجنب هذا الازعاج يجب عليك حضره او اخفائه!</string>
+    <string name="dialog_delete_title">تأكيد الحذف</string>
+    <string name="block">حضر</string>
+    <string name="delete">حذف</string>
+    <string name="cancel">إلغاء</string>
+    <string name="settings_show_hidden">إظهار المخفي</string>
+    <string name="drawer_safe_Set_Name">ضبط الاسم</string>
+    <string name="drawer_safe_Reset_Last_Sync_Date"> إعادة مزامنة آخر تاريخ</string>
+    <string name="drawer_safe_Hide_This_Safe">الاخفاء الآمن</string>
+    <string name="drawer_safe_Access_It">تمكين الوصول </string>
+    <string name="drawer_safe_Block_It">تمكين الحضر</string>
+    <string name="drawer_safe_Serve_It">تمكين الخدمه</string>
+    <string name="drawer_safe_Set_Myself">ضبط الحساب الخاص بي</string>
+    <string name="drawer_safe_Export_Address">تصدير العنوان</string>
+    <string name="drawer_safe_Select_DirectoryServer">اختر خادم الدليل</string>
+    <string name="drawer_safe_Set_Instance">اختيار النسخة</string>
+    <string name="drawer_safe_Unhide_This_Safe">إلغاء إخفائه</string>
+    <string name="drawer_safe_Stop_Serving_This_Safe">توقف عن خدمته</string>
+    <string name="drawer_safe_Stop_Accessing_It">توقف عن الوصول اليه</string>
+    <string name="drawer_safe_Stop_Blocking_It">توقف عن حضره</string>
+    <string name="drawer_safe_Stop_Serving_It">التوقف عن خدمته</string>
+    <string name="Toast_Thread_Pings">فحص الاتصال</string>
+    <string name="startup_create_new_identity">انشاء هويه جديده</string>
+    <string name="startup_skip_identity">تخطي (استخدم القائمة  لانجازذلك لاحقاً)</string>
+    <string name="startup_import_old_identity">استيراد هويه قديمه من\nالحاويه (file/image/URL)</string>
+    <string name="Org_ExtraField_Label">علامه</string>
+    <string name="Org_ExtraField_DefaultValue">الافتراضي</string>
+    <string name="Org_ExtraField_Level">المستوى</string>
+    <string name="Org_ExtraField_Hint">تلميح</string>
+    <string name="Org_FieldExtra_ValuesList">القيم مقسمه على \'%s\'</string>
+    <string name="Safe_EmailVerification">التحقق بواسطة البريد</string>
+    <string name="Safe_DeviceName">اسم الجهاز على سبيل المثال(Android)</string>
+    <string name="Save_NameHint">اختر اسم مناسب و معروف لدى اصدقائك</string>
+</resources>

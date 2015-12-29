@@ -45,7 +45,8 @@
     <string name="forum">Forum</string>
     <string name="justification">Justification</string>
 
-    <string name="add_extra" translatable="false">Adaugă Cîmp în Schema de Pagini Albe</string>
+    <string name="extra_fields">Informații Adiționale</string>
+    <string name="add_extra">Adaugă Cîmp în Schema de Pagini Albe</string>
 
 
   <string name="HintEmptyView">You can add items (e.g. identities for communication, organizations, etc.) using the + menu above! \n\nManage your listing directories from the standard menu!</string>

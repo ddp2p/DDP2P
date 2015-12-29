@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
     android:layout_width="fill_parent"
+    android:layoutDirection="locale"
     android:layout_height="wrap_content">
-
 
     <LinearLayout 
         android:orientation="horizontal"
@@ -72,8 +72,9 @@
         android:orientation="horizontal"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="30dp">            
-        <TextView 
+        android:layoutDirection="locale"
+        android:layout_marginTop="30dp">
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/slogan"
