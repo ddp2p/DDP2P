@@ -614,7 +614,7 @@ public class Main extends FragmentActivity implements TabListener, LoadPK.LoadPK
 		}
 
 		if (item.getItemId() == R.id.action_directories) {
-			Toast.makeText(this, "adding a directory", Toast.LENGTH_SHORT).show();
+			//Toast.makeText(this, "Managing directories", Toast.LENGTH_SHORT).show();
 			
 			Intent intent = new Intent();
 			intent.setClass(this, SelectDirectoryServer.class);

@@ -420,6 +420,8 @@ public class ImportBrowseWebObjects extends Activity {
             browser__ss = thread_ss;
             browser__url = thread_urls[0];
             browser__description = thread_description;
+            Intent intent = new Intent();
+            ImportBrowseWebObjects.this.setResult(RESULT_OK, intent);
         }
     }
     StegoStructure browser__ss = null;

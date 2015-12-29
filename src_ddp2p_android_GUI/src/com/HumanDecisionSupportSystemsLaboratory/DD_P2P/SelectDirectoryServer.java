@@ -43,7 +43,9 @@ public class SelectDirectoryServer extends ListActivity {
 	private String[] servers =  new String[0];
 	private int checkedPos[];
 	private ActionBar actionbar;
-    final static int RESULT_ADD_DIR = 10;
+	final static int RESULT_ADD_DIR = 10;
+	final static int RESULT_ADD_DIR_WEB = 11;
+	final static int RESULT_ADD_DIR_WEB_START = 12;
 
 	private ArrayAdapter<String> adapter;
 
@@ -88,7 +90,7 @@ public class SelectDirectoryServer extends ListActivity {
 		if (lda.size() == 0) {
 			Log.d("SelectDirectoryServer", "SelectDirectoryServer: updateView: start ImportBrowseWebObjects_Dirs");
 			Intent i = new Intent().setClass(this, ImportBrowseWebObjects_Dirs.class); //AddDirectoryServer.class);
-			startActivityForResult(i, RESULT_ADD_DIR);
+			startActivityForResult(i, RESULT_ADD_DIR_WEB_START);
 			if (first) return true; // do not try more than once to reload
 		}
 
@@ -195,7 +197,7 @@ public class SelectDirectoryServer extends ListActivity {
 		case R.id.add_directory_server_web_object:
 			Log.d("SelectDirectoryServer", "SelectDirectoryServer: onOptionsItemSelected: start ImportBrowseWebObjects_Dirs");
 			Intent j = new Intent().setClass(this, ImportBrowseWebObjects_Dirs.class);
-			startActivityForResult(j, RESULT_ADD_DIR);
+			startActivityForResult(j, RESULT_ADD_DIR_WEB);
 			break;
 		}
 
@@ -216,7 +218,28 @@ public class SelectDirectoryServer extends ListActivity {
             finish();
             return;
         }
-        Toast.makeText(this, "Result unknown", Toast.LENGTH_SHORT).show();
+		if (resultCode == RESULT_OK && requestCode == RESULT_ADD_DIR_WEB) {
+			_updateView(true);
+			ArrayAdapter<String> a = ((ArrayAdapter<String>) this.getListAdapter());
+			if (a != null) a.notifyDataSetChanged();
+			super.onActivityResult(requestCode, resultCode, resultData);
+			return;
+		}
+		if (resultCode == RESULT_OK && requestCode == this.RESULT_ADD_DIR_WEB_START) {
+
+			Toast.makeText(this, "Result size="+servers.length, Toast.LENGTH_SHORT).show();
+
+			//_updateView(true);
+			ArrayAdapter<String> a = ((ArrayAdapter<String>)this.getListAdapter());
+			if (a != null) a.notifyDataSetChanged();
+
+
+			super.onActivityResult(requestCode, resultCode, resultData);
+			finish();
+			return;
+		}
+        Toast.makeText(this, "Result unknown: rq="+requestCode+" rC="+resultCode, Toast.LENGTH_SHORT).show();
+		Log.d("SelectDirServer", "Result unknown: rq="+requestCode+" rC="+resultCode+" vs="+RESULT_OK);
         super.onActivityResult(requestCode, resultCode, resultData);
     }
 	@SuppressWarnings("unchecked")
