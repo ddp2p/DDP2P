@@ -74,7 +74,10 @@ class D_OR_Node implements TreeNode {
 					D_OR_Node node = new D_OR_Node();
 					node.text = s;
 					if (position == OrganizationRequests.TYPE_CONST_5) {
-						D_Constituent c = D_Constituent.getConstByGID_or_GIDH(s, D_Constituent.getGIDHashFromGID(s), true, false, -1l);
+						D_Constituent c = null;
+						try {
+							c = D_Constituent.getConstByGID_or_GIDH(s, D_Constituent.getGIDHashFromGID(s), true, false, -1l);
+						} catch (Exception e) {e.printStackTrace();}
 						if (c != null) {
 							String cn = c.getNameOrMy();
 							if (cn != null)

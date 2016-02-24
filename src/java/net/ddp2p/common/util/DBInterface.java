@@ -19,7 +19,7 @@ import java.util.Hashtable;
 import java.io.File;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
-class Listener{
+class Listener {
 	DBListener listener;
 	ArrayList<String> tables;
 	Listener(DBListener object, ArrayList<String> _tables){
@@ -70,8 +70,6 @@ public class DBInterface implements DB_Implementation {
 	public static final int MAX_SELECT = 10000;
 	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-    String filename = Application.DELIBERATION_FILE;
-    File file = null;
 	public boolean conn_open = false;
 	/**
      * 
@@ -386,6 +384,7 @@ public class DBInterface implements DB_Implementation {
      	init(_filename.getAbsolutePath());
     }
     public void init(String _filename) throws P2PDDSQLException{
+    	if (DEBUG) System.out.println("DBInterface: init "+_filename);
     	db = Application_GUI.get_DB_Implementation();
     	if (db == null) {
     		System.out.println("DBInterface:init: database implementation is missing");
@@ -465,5 +464,10 @@ public class DBInterface implements DB_Implementation {
 			String[] params, boolean dbg) throws P2PDDSQLException {
 		updateNoSync(table, fields, selector,
 				params, dbg);
+	}
+	@Override
+	public String getName() {
+		if (this.db != null) return this.db.getName();
+		return null;
 	}	
 }

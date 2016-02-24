@@ -388,7 +388,7 @@ public class DD {
 	public static final String APP_WINDOWS_LOGS_PATH = "APP_WINDOWS_LOGS_PATH";
 	public static final String APP_WINDOWS_DATABASE_PATH = "APP_WINDOWS_DATABASE_PATH";
 	public static final String APP_WINDOWS_DD_JAR_PATH = "APP_WINDOWS_DD_JAR_PATH";
-	public static int MTU=32000;
+	public final static int MTU = 32000;
 	public static ArrayList<InetSocketAddress> directories_failed = new ArrayList<InetSocketAddress>();
 	/**
 	 * Use ClientUDP?
@@ -862,6 +862,7 @@ public class DD {
 	 * @throws P2PDDSQLException
 	 */
 	static public boolean startUServer(boolean on, Identity peer_id) throws NumberFormatException, P2PDDSQLException {
+		boolean DEBUG = true;
 		UDPServer aus = Application.getG_UDPServer();
 		if(DEBUG) System.err.println("Will set server aus="+aus+" id="+peer_id);
 		if (on == false) {
@@ -1507,11 +1508,16 @@ public class DD {
 	 * @return
 	 */
 	public static String testProperDB(String attempt) {
+		System.out.println("testProperDB: enter "+attempt);
 		File dbfile = new File(attempt);
 		DD.TESTED_VERSION = null;
-		if(!dbfile.exists() || !dbfile.isFile() || !dbfile.canRead()) return __("File not readable.");
-		try{
+		if (!dbfile.exists() || !dbfile.isFile() || !dbfile.canRead()) {
+			System.out.println("testProperDB: failed "+attempt);
+			return __("File not readable.");
+		}
+		try {
 			Application.setDB(new DBInterface(attempt));
+			System.out.println("testProperDB: load "+attempt);
 			ArrayList<ArrayList<Object>> v = Application.getDB().select(
 					"SELECT "+net.ddp2p.common.table.application.value+" FROM "+net.ddp2p.common.table.application.TNAME+
 					" WHERE "+net.ddp2p.common.table.application.field+"=? LIMIT 1;",

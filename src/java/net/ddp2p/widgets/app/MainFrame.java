@@ -1150,7 +1150,7 @@ public class MainFrame {
 					break;
 				}
 				errors_db.put(attempt, error);
-				if (args.length > 1) System.err.println(__("Failed attempt to open first choice file:")+" \""+attempt+"\": "+error);
+				if (potentialDatabases.size() > 1) System.err.println(__("Failed attempt to open first choice file:")+" \""+attempt+"\": "+error);
 			}
 			if (DD.DEBUG) System.err.println(__("DD: main: Got DB from command line: ")+Application.getDB());
 			if (Application.getDB() == null) {

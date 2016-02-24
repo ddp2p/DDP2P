@@ -215,6 +215,10 @@ class DB_Implementation_SQLite implements DB_Implementation {
 			String[] params, boolean dbg) throws P2PDDSQLException {
 		throw new RuntimeException("");
 	}
+	@Override
+	public String getName() {
+		return filename;
+	}
 }
 /**
 SELECT DISTINCT m.motion_ID FROM motion AS m  WHERE m.organization_ID=1 AND

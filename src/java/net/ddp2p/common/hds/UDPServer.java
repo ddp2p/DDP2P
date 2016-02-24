@@ -190,11 +190,13 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	 * @throws IOException
 	 */
 	public void sendLargeMessage(SocketAddress sa, byte[] msg, int MTU, String destGID, int type) throws IOException {
+		boolean DEBUG = true;
 		if(MTU >= msg.length) {
 			DatagramPacket dp= new DatagramPacket(msg, msg.length);
 			dp.setSocketAddress(sa);
-			getUDPSocket().send(dp);
-			if(DEBUG) System.out.println("Sent message in one fragment to "+sa);
+			DatagramSocket ds = getUDPSocket();
+			ds.send(dp);
+			if(DEBUG) System.out.println("Sent message in one fragment to "+sa+" socket "+ds);
 			return;
 		}
 		int frags = (int) Math.ceil(msg.length/(MTU*1.0));
@@ -666,7 +668,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
 			Application.setPeerUDPPort(getUDPSocket().getLocalPort());
 			Application.setG_UDPServer(this);
-			if(DEBUG)System.out.println("UDP Local port obtained is: "+Application.getPeerUDPPort());
+			if(_DEBUG)System.out.println("UDP Local port obtained is: "+Application.getPeerUDPPort());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -686,7 +688,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER);
 			Application.setPeerUDPPort(getUDPSocket().getLocalPort());
 			Application.setG_UDPServer(this);
-			if (DEBUG) System.out.println("UDPServer:<init>: Local port obtained is: "+Application.getPeerUDPPort());
+			if (_DEBUG) System.out.println("UDPServer:<init>: Local port obtained is: "+Application.getPeerUDPPort());
 			if (DEBUG) System.out.println("UDPServer:<init>: domain detected");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -930,7 +932,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER); 
 				Application_GUI.ThreadsAccounting_ping("Accepting");
 				getUDPSocket().receive(pak);
-				if (DEBUG) out.println("userver: ************ UDPServer accepted from "+pak.getSocketAddress()+", will launch!");
+				if (_DEBUG) out.println("userver: ************ UDPServer accepted from "+pak.getSocketAddress()+", will launch!");
 				if (this.isInterrupted()) continue;
 				if (DEBUG) out.println("userver: ************* not interrupted, start!");
 				new UDPServerThread(pak, this).start();

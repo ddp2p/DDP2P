@@ -315,13 +315,20 @@ public class Identity {
     	D_Peer me = HandlingMyself_Peer.getPeer(result);
 		if (me == null) {
 			Application.setCurrent_Peer_ID(result);
+			if (! DD.GUI) {
+				Util.printCallPath("Failure to find a 'myself' peer in the database, and to create one!");
+				if (quit_on_failure) {
+					System.exit(1);
+				}
+				return result;
+			}
 			new DDP2P_ServiceThread("Create Peer Dialog", true, quit_on_failure?new Object():null) {
 				public void _run() {
 					D_Peer me = HandlingMyself_Peer.createMyselfPeer_by_dialog_w_Addresses(true);
 					if (me == null) {
 						if (_DEBUG) System.out.println("StartUpThread: run: fail to create peer!");
 						if (ctx != null) { 
-							Util.printCallPath("");
+							Util.printCallPath("Failure to find a 'myself' peer in the database, and to create one!");
 							System.exit(1);
 						}
 					}

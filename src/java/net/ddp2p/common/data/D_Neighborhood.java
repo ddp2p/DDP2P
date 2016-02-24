@@ -831,25 +831,28 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		}
 		return 0;
 	}
-	/**
-	 * Returns a single leaf (not having descendants)
-	 * @param organization_ID2
-	 * @return
-	 */
-	static public long getLeaves(long organization_ID2) {
-		String sql1 = "SELECT n."+net.ddp2p.common.table.neighborhood.neighborhood_ID +
+	public final static String sql_getLeaves = "SELECT n."+net.ddp2p.common.table.neighborhood.neighborhood_ID +
 				" FROM "+net.ddp2p.common.table.neighborhood.TNAME+" AS n " +
 				" LEFT JOIN "+net.ddp2p.common.table.neighborhood.TNAME+" AS d ON(d."+net.ddp2p.common.table.neighborhood.parent_nID+"=n."+net.ddp2p.common.table.neighborhood.neighborhood_ID+") "+
 				" LEFT JOIN "+net.ddp2p.common.table.organization.TNAME+" AS o ON(o."+net.ddp2p.common.table.organization.organization_ID+"=n."+net.ddp2p.common.table.neighborhood.organization_ID+") "+
 				" WHERE o."+net.ddp2p.common.table.organization.organization_ID+"=? AND d."+net.ddp2p.common.table.neighborhood.neighborhood_ID+" IS NULL;"
 				;
-		if(DEBUG)System.out.println("select_neighborhood_or_create_by_cID : sql1:"+sql1);
+	/**
+	 * Returns a single leaf (not having descendants). The first one.
+	 * @param organization_ID2
+	 * @return
+	 */
+	static public long getLeaves(long organization_ID2) {
+		if(DEBUG)System.out.println("select_neighborhood_or_create_by_cID : sql1:"+sql_getLeaves);
 		if(DEBUG)System.out.println("select_neighborhood_or_create_by_cID : Org_id:"+organization_ID2);
 		ArrayList<ArrayList<Object>> a;
 		try {
-			a = Application.getDB().select(sql1, new String[]{Util.getStringID(organization_ID2)}, DEBUG);
+			a = Application.getDB().select(sql_getLeaves, new String[]{Util.getStringID(organization_ID2)}, DEBUG);
 			if(DEBUG)System.out.println("a:"+a);
-			long n_ID = Long.parseLong(a.get(0).get(0).toString());
+			if (a.size() > 0) {
+				long n_ID = Long.parseLong(a.get(0).get(0).toString());
+				return n_ID;
+			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}

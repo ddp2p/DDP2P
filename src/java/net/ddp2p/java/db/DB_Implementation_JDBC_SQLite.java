@@ -302,4 +302,8 @@ class DB_Implementation_JDBC_SQLite implements DB_Implementation {
 			String[] params, boolean dbg) throws P2PDDSQLException {
 		throw new RuntimeException("");
 	}
+	@Override
+	public String getName() {
+		return filename;
+	}
 }

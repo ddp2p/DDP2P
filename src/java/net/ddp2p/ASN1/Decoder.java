@@ -131,6 +131,10 @@ class Decoder {
 		assert(this.tagVal() == 0x1f);
 		return ASN1_Util.fromBase128(data, offset + 1, offset + length);
 	}
+	public Decoder removeExplicitASN1Tag() throws ASN1DecoderFail {
+		Decoder d = this.getContent();
+		return d.getFirstObject(true);
+	}
 	public int typeLen(){
 		if (length <= 0) return 0;
 		if (tagVal() != 0x1f) return 1; 

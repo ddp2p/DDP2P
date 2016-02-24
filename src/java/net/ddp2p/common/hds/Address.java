@@ -858,6 +858,9 @@ Address ::= SEQUENCE {
 	public int getTCPPort() {
 		return tcp_port;
 	}
+	public int getUDPPort() {
+		return udp_port;
+	}
 	public String getIP() {
 		return domain;
 	}

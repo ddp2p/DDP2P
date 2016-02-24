@@ -249,7 +249,7 @@ public class Server extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	public static final int TIMEOUT_Handler = 1000000;
 	public static final int TIMEOUT_Server = 2000;
 	public static final int TIMEOUT_Client_Data = 20000;
-	public static final int PORT = 45000;
+	public static int PORT = 45000;
 	public static final int TIMEOUT_Client_wait_Server = 2000;
 	public static final int TIMEOUT_Client_wait_Dir = 2000;
 	public static final String DIR = "DIR";

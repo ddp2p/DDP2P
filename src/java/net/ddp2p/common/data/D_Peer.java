@@ -478,13 +478,13 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	/**
 	 * On creation sets dirty flags but caller should call storeRequest()
 	 * @param gID
-	 * @param isGID
+	 * @param isGID (if gID != null) gIDH recomputed from gID
 	 * @param failOnNew
 	 * @param __org
 	 * @throws P2PDDSQLException 
 	 */
 	private D_Peer(String gID, String gIDH, boolean create, D_Peer __peer) throws P2PDDSQLException {
-		if (gIDH != null) gIDH = D_Peer.getGIDHashFromGID(gID);
+		if (gID != null) gIDH = D_Peer.getGIDHashFromGID(gID);
 		init_ByGID(gID, gIDH, create, __peer);
 	}
 	/**
@@ -553,9 +553,12 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	public void init_ByGID(String gID, String peerGIDhash, boolean create, D_Peer __peer) throws P2PDDSQLException{
 		if (DEBUG) System.out.println("D_Peer: init_ByGID: enter gID: GIDhash "+gID+" -> "+Util.getStringNonNullUnique(peerGIDhash));
 		peerGIDhash = D_Peer.getGIDHashGuess(peerGIDhash);
+		if (DEBUG) System.out.println("D_Peer: init_ByGID:1 enter gID: GIDhash "+gID+" -> "+Util.getStringNonNullUnique(peerGIDhash));
 		gID = D_Peer.getGIDGuess(gID);
+		if (DEBUG) System.out.println("D_Peer: init_ByGID:2 enter gID: GIDhash "+gID+" -> "+Util.getStringNonNullUnique(peerGIDhash));
 		if (peerGIDhash == null && gID != null) {
 			peerGIDhash = D_Peer.getGIDHashGuess(gID);
+			if (DEBUG) System.out.println("D_Peer: init_ByGID:3 enter gID: GIDhash "+gID+" -> "+Util.getStringNonNullUnique(peerGIDhash));
 		}
 		assert (peerGIDhash != null);
 		if (peerGIDhash == null)

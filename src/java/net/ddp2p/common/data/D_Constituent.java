@@ -801,7 +801,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 	}	
 	/**
-	 * No keep
+	 * No keep, throws exception if GIDH is invalid!
 	 * @param GID
 	 * @param GIDhash
 	 * @param load_Globals 

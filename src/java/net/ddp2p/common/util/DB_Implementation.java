@@ -20,4 +20,5 @@ interface DB_Implementation{
 	public boolean hasParamUpdate();
 	public void tryUpdate(String table, String[] fields, String[] selector,
 			String[] params, boolean dbg) throws P2PDDSQLException;
+	public String getName();
 }

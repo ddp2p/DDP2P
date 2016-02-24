@@ -548,7 +548,7 @@ class Encoder {
 	 * @param type
 	 */
 	public Encoder(String s, byte type) {
-		if(s==null){
+		if (s == null) {
 			this.setNull();
 			return;
 		}
@@ -560,13 +560,19 @@ class Encoder {
 		bytes+=data.length;
 		assert(bytes==this.header_type.length+this.header_length.length+data.length);
 	}
+	public Encoder setExplicitASN1Tag(int _classASN1, int _privateASN1, BigInteger tag_number) {
+		Encoder e = new Encoder().initSequence();
+		e.addToSequence(this);
+		e.setASN1Type(_classASN1, _privateASN1, tag_number);
+		return e;
+	}
 	/**
 	 * 
 	 * @param param, an array of String[] to encode
 	 * @param type, the type to assign to each String
 	 * @return, an Encoder 
 	 */
-	public static Encoder getStringEncoder(String[] param, byte type){
+	public static Encoder getStringEncoder(String[] param, byte type) {
 		if (param == null) {
 			return Encoder.getNullEncoder();
 		}
