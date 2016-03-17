@@ -830,7 +830,7 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		}
 		if (crt != null) {
 			crt.setGID(GID, GIDhash, crt.getOrganizationLID());
-			if (load_Globals && !crt.loaded_globals) {
+			if (load_Globals && ! crt.loaded_globals) {
 				crt.fillGlobals();
 				D_Constituent_Node.register_fully_loaded(crt);
 			}
@@ -923,6 +923,10 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			Util.printCallPath("Why null");
 			if (_DEBUG) System.out.println("D_Constituent: getConstByGID_or_GIDH: null GID and GIDH");
 			return null;
+		}
+		if ((GIDH != null) && ! D_Constituent.isGIDHash(GIDH)) {
+			if (GID == null) GID = GIDH;
+			GIDH = D_Constituent.getGIDHashFromGID(GIDH);
 		}
 		D_Constituent crt = D_Constituent.getConstByGID_or_GIDhash_AttemptCacheOnly(GID, GIDH, p_oLID, load_Globals, keep);
 		if (crt != null) {
@@ -1907,10 +1911,22 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 		if (hash.length() != s.length()) return hash;
 		return s;
 	}
+	/**
+	 * If it is a GIDH (for a key) returns null
+	 * otherwise returns it.
+	 * @param s
+	 * @return
+	 */
 	public static String getGIDFromGIDorGIDH(String s) {
 		if (s.startsWith(D_GIDH.d_ConsE)) return s; 
 		if (s.startsWith(D_GIDH.d_ConsR)) return null; 
 		return s;
+	}
+	public static boolean isGIDHash(String s) {
+		if (s == null) return false;
+		if (s.startsWith(D_GIDH.d_ConsE)) return true; 
+		if (s.startsWith(D_GIDH.d_ConsR)) return true; 
+		return false;
 	}
 	/**
 	 * Should be called after the data is initialized.
@@ -2315,8 +2331,12 @@ public class D_Constituent extends ASNObj  implements  DDP2P_DoubleLinkedList_No
 			Hashtable<String, String> cons, String orgID, boolean DBG) {
 		Hashtable<String, String> result = new Hashtable<String, String>();
 		for (String cHash : cons.keySet()) {
-			if(cHash == null) continue;
-			if(!available(cHash, cons.get(cHash), orgID, DBG)) result.put(cHash, DD.EMPTYDATE);
+			if (cHash == null) continue;
+			if ( ! available(cHash, cons.get(cHash), orgID, DBG)) {
+				String cGIDHash = D_Constituent.getGIDFromGIDorGIDH(cHash);
+				if (cGIDHash != null)
+					result.put(cGIDHash, DD.EMPTYDATE);
+			}
 		}
 		return result;
 	}

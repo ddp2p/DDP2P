@@ -86,8 +86,15 @@ class Decoder {
 	 * Returns the first byte of the type by a call to type().
 	 * @return
 	 */
-	public byte getTypeByte(){
+	public byte getTypeByte() {
 		return type();
+	}
+	/**
+	 * If no data here
+	 * @return
+	 */
+	public boolean isEmpty() {
+		return ((data == null) || (length <= 0));
 	}
 	/**
 	 * Returns the tag, 0x1f in case there are more bytes!

@@ -1846,13 +1846,26 @@ public class D_Motion extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Pay
 		this.setRequested(this.setBlocked(false));
 		this.setBroadcasted(true);		
 	}
-	public static ArrayList<String> checkAvailability(ArrayList<String> cons,
+	public static ArrayList<String> checkAvailability(ArrayList<String> moti,
 			String orgID, boolean DBG) {
 		ArrayList<String> result = new ArrayList<String>();
-		for (String cHash : cons) {
-			if (!available(cHash, orgID, DBG)) result.add(cHash);
+		for (String mHash : moti) {
+			if (! available(mHash, orgID, DBG)) {
+				String mGIDHash = D_Motion.getGIDfromGID(mHash);
+				if (mGIDHash != null)
+					result.add(mGIDHash);
+			}
 		}
 		return result;
+	}
+	/**
+	 * Return null if invalid
+	 * @param mHash
+	 * @return
+	 */
+	public static String getGIDfromGID(String mHash) {
+		if (mHash.startsWith(D_GIDH.d_Moti)) return mHash; 
+		return null;
 	}
 	/**
 	 * check blocking at this level

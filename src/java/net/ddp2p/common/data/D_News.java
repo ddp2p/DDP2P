@@ -324,7 +324,7 @@ class D_News extends ASNObj{
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
-		return "NW:"+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
+		return D_GIDH.d_News+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
 	}
 	public boolean verifySignature(){
 		if(DEBUG) System.out.println("WB_Motion:verifySignature: start");
@@ -600,10 +600,23 @@ class D_News extends ASNObj{
 	public static ArrayList<String> checkAvailability(ArrayList<String> news,
 			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
-		for (String cHash : news) {
-			if(!available(cHash, orgID, DBG)) result.add(cHash);
+		for (String nHash : news) {
+			if (! available(nHash, orgID, DBG)) {
+				String nGIDHash = D_Motion.getGIDfromGID(nHash);
+				if (nGIDHash != null)
+					result.add(nGIDHash);
+			}
 		}
 		return result;
+	}
+	/**
+	 * Return null if invalid
+	 * @param mHash
+	 * @return
+	 */
+	public static String getGIDfromGID(String mHash) {
+		if (mHash.startsWith(D_GIDH.d_News)) return mHash; 
+		return null;
 	}
 	private static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
 		String sql = 

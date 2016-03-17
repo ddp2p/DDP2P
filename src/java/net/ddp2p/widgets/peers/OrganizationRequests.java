@@ -31,6 +31,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.SwingConstants;
 import javax.swing.tree.TreeNode;
@@ -231,6 +232,10 @@ public class OrganizationRequests extends JPanel implements MouseListener, OrgLi
     			__("Go refresh!"),KeyEvent.VK_R, ORAction.REFRESH);
     	popup.add(new JMenuItem(prAction));
     	return popup;
+	}
+	public JScrollPane getScrollPane(){
+        JScrollPane scrollPane = new JScrollPane(this);
+		return scrollPane;
 	}
 	@Override
 	public void orgUpdate(String orgID, int col, D_Organization _org) {

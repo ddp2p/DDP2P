@@ -179,7 +179,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 					Long oLID = new Long(lid);
 					D_Peer old = getLoaded_By_LocalID().get(oLID);
 					if (old != null && old != crt) {
-						Util.printCallPath("Double linking of: old="+old+" vs crt="+crt);
+						Util.printCallPath("Double linking of: old="+old+" \nvs crt="+crt);
 						String o_gid = old.getGID();
 						String o_gidh = old.getGIDH();
 						if (o_gid != null) getLoaded_By_GID().remove(o_gid);
@@ -1027,12 +1027,21 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 			return null;
 		}
 	}
+	/**
+	 * Assumes GID and GIDH have been verified
+	 * @param GID
+	 * @param GIDhash
+	 * @param load_Globals
+	 * @return
+	 */
 	static private D_Peer getPeerByGID_or_GIDhash_AttemptCacheOnly_NoKeep(String GID, String GIDhash, boolean load_Globals) {
 		D_Peer  crt = null;
+		if (DEBUG) System.out.println("D_Peer: getPeerByGID_or_GIDhash_AttemptCacheOnly_NoKeep: loaded="+load_Globals+" gidh="+GIDhash+" gid="+GID);
 		if (GIDhash != null) crt = D_Peer_Node.getLoaded_By_GIDhash().get(GIDhash);
 		if ((crt == null) && (GID != null)) crt = D_Peer_Node.getLoaded_By_GID().get(GID);
 		if (crt != null) {
-			if (load_Globals && !crt.loaded_globals) {
+			if (load_Globals && ! crt.loaded_globals) {
+				if (DEBUG) System.out.println("D_Peer: getPeerByGID_or_GIDhash_AttemptCacheOnly_NoKeep: load loaded="+load_Globals+" gidh="+GIDhash+" gid="+GID);
 				crt.loadGlobals();
 				D_Peer_Node.register_fully_loaded(crt);
 			}
@@ -1042,6 +1051,7 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		return null;
 	}
 	/**
+	 * Assumes GIDH and GID were verified
 	 * No keep
 	 * @param GID
 	 * @param GIDhash
@@ -1049,8 +1059,10 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	 * @return
 	 */
 	static private D_Peer getPeerByGID_or_GIDhash_AttemptCacheOnly(String GID, String GIDhash, boolean load_Globals, boolean keep) {
+		if (DEBUG) System.out.println("D_Peer: getPeerByGID_or_GIDhash_AttemptCacheOnly: enter gidh="+GIDhash+" gid="+GID);
 		if ((GID == null) && (GIDhash == null)) return null;
 		if ((GID != null) && (GIDhash == null)) GIDhash = D_Peer.getGIDHashGuess(GID);
+		if (DEBUG) System.out.println("D_Peer: getPeerByGID_or_GIDhash_AttemptCacheOnly: gidh="+GIDhash+" gid="+GID);
 		if (keep) {
 			synchronized (monitor_object_factory) {
 				D_Peer crt = getPeerByGID_or_GIDhash_AttemptCacheOnly_NoKeep(GID, GIDhash, load_Globals);
@@ -1088,8 +1100,13 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 	 */
 	static public D_Peer getPeerByGID_or_GIDhash(String GID, String GIDhash, boolean load_Globals, boolean create, boolean keep, D_Peer __peer) {
 		if ((GID == null) && (GIDhash == null)) return null;
+		if ((GIDhash != null) && ! D_Peer.isGIDHash(GIDhash)) {
+			if (GID == null) GID = GIDhash;
+			GIDhash = D_Peer.getGIDHashGuess(GIDhash);
+		}
 		if ((GID != null) && (GIDhash == null)) GIDhash = D_Peer.getGIDHashGuess(GID);
 		if (! D_Peer.isGID(GID)) GID = null;
+		if (DEBUG) System.out.println("D_Peer: getPeerByGID_or_GIDhash: gidh="+GIDhash+" gid="+GID);
 		if (create) {
 			if (! keep) Util.printCallPath("Why?");
 			keep = true;
@@ -4762,6 +4779,12 @@ public class D_Peer extends ASNObj implements DDP2P_DoubleLinkedList_Node_Payloa
 		Hashtable<String, String> result = new Hashtable<String, String>();
 		for (String pHash : peers.keySet()) {
 			if (pHash == null) continue;
+			String _pHash = D_Peer.getGIDHashGuess(pHash);
+			if (_pHash == null) {
+				System.out.println("D_Peer: checkAvailability: irregular received available: "+pHash);
+				continue;
+			}
+			pHash = _pHash;
 			if ((lastDate = available(pHash, peers.get(pHash), DBG)) != null) {
 				result.put(pHash, lastDate);
 				if (DEBUG || DBG) System.out.println("D_Peer: checkAvailability: ! available: "+pHash);

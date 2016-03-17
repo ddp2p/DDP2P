@@ -241,7 +241,7 @@ class D_Translations extends ASNObj{
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
-		return "W:"+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
+		return D_GIDH.d_Tran+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
 	}
 	public boolean verifySignature(){
 		if(_DEBUG) System.out.println("WB_Translations:verifySignature: start");
@@ -462,9 +462,22 @@ class D_Translations extends ASNObj{
 			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String hash : hashes) {
-			if(!available(hash, orgID, DBG)) result.add(hash);
+			if (! available(hash, orgID, DBG)) {
+				String tGIDHash = D_Motion.getGIDfromGID(hash);
+				if (tGIDHash != null)
+					result.add(tGIDHash);
+			}
 		}
 		return result;
+	}
+	/**
+	 * Return null if invalid
+	 * @param mHash
+	 * @return
+	 */
+	public static String getGIDfromGID(String mHash) {
+		if (mHash.startsWith(D_GIDH.d_Tran)) return mHash; 
+		return null;
 	}
 	/**
 	 * check blocking at this level

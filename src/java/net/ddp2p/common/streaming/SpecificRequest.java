@@ -168,6 +168,23 @@ public class SpecificRequest extends ASNObj implements Summary{
 		if (d.getTypeByte() == DD.TAG_AC4) orgs = d.getFirstObject(true).getSequenceOfHSS(Encoder.TAG_PrintableString, false);
 		return this;
 	}
+	/**
+	 * Here could check received advertisements.
+	 * Not used
+	 */
+	public void checkFormating() {
+		if (peers == null) return;
+		Hashtable<String,String> r_peers = new Hashtable<String,String>();
+		for (String p : peers.keySet()) {
+			String pgidh = D_Peer.getGIDHashGuess(p);
+			if (pgidh != null) r_peers.put(pgidh, peers.get(p));
+			else {
+				Util.printCallPath("Poor formatted peer advertisement");
+				System.out.println("SpecificRequest: Got badly formatted peer advertisement: "+p);
+			}
+		}
+		peers = r_peers;
+	}
 	public void add(SpecificRequest a) {
 		for(RequestData r : a.rd) {
 			add(r);

@@ -265,11 +265,13 @@ public class HandlingMyself_Peer {
 			if (DEBUG) out.println("HandlingMyself: getPeer: exit null GID");
 			return null;
 		}
+		if (DEBUG) out.println("HandlingMyself: getPeer: get me");
 		D_Peer me = D_Peer.getPeerByGID_or_GIDhash(id.getPeerGID(), null, true, false, false, null);
 		if (me == null) {
 			if (DEBUG) out.println("HandlingMyself: getPeer: exit peer myself not found");
 			return null;
 		}
+		if (DEBUG) out.println("HandlingMyself: getPeer: set me");
 		me.setCurrentInstance(id.peerInstance);
 		if (DEBUG) out.println("HandlingMyself: getPeer: done");
 		return me;

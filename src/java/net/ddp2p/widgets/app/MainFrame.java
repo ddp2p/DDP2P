@@ -879,7 +879,7 @@ public class MainFrame {
 	    	MainFrame.tabbedPane.addTab(MainFrame.TAB_CLONE, icon_identity, MainFrame.peer_instances.getPanel(), __("Instances"));
 	    	MainFrame.status.addPeerSelectedStatusListener(MainFrame.peer_instances.getModel());
 	    	MainFrame.organizationRequests = new OrganizationRequests();
-	    	MainFrame.tabbedPane.addTab(MainFrame.TAB_REQUESTS, icon_identity, MainFrame.organizationRequests, __("Organization Requests"));
+	    	MainFrame.tabbedPane.addTab(MainFrame.TAB_REQUESTS, icon_identity, MainFrame.organizationRequests.getScrollPane(), __("Organization Requests"));
 	    	MainFrame.status.addOrgStatusListener(MainFrame.organizationRequests);
 			if(DD.DEBUG) System.out.println("createAndShowGUI: done tabs");
 	        MainFrame.frame.remove(MainFrame.splash_label);

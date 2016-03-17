@@ -98,17 +98,79 @@ class Encoder {
 	}
 	public byte[] getBytes() {
 		byte[] buffer = new byte[bytes];
-		getBytes(buffer, 0);
+		int sz = getBytesIterative(this, buffer, 0);
+		assert(bytes == sz);
 		return buffer;
 	}
-	public int getBytes(byte[] results, int start) {
+	/**
+	 * Non recursive version that returns the offset of the end of the copying.
+	 * Assumes that the "bytes" number is right in each Encoder object.
+	 * @param enc
+	 * @param results
+	 * @param start
+	 * @return
+	 */
+	public static int getBytesIterative(Encoder enc, byte[] results, int offset) {
+		int data_bytes = 0;
+		for ( ; enc != null; ) {
+			int disp = 0;
+			copyBytes(results, offset, enc.header_type, enc.header_type.length);
+			offset += enc.header_type.length;
+			copyBytes(results, offset, enc.header_length, enc.header_length.length);
+			offset += enc.header_length.length;
+			if (enc.prefix_data != null) disp = enc.prefix_data.bytes;
+			copyBytes(results, offset + disp, enc.data, enc.data.length);
+			data_bytes += enc.data.length;
+			enc = enc.prefix_data;
+		}
+		return data_bytes + offset;
+	}
+	/**
+	 * Variant that is iterative, but uses an arraylist as stack. Does not use and does not check
+	 * member "bytes".
+	 * @param enc
+	 * @param results
+	 * @param start
+	 * @return
+	 */
+	public static int _getBytesIter(Encoder enc, byte[] results, int start) {
+		ArrayList<Encoder> stack = new ArrayList<Encoder>();
+		int offset = start;
+		boolean back = false;
+		for (;;) {
+			if (! back) {
+				copyBytes(results, offset, enc.header_type, enc.header_type.length);
+				offset += enc.header_type.length;
+				copyBytes(results, offset, enc.header_length, enc.header_length.length);
+				offset += enc.header_length.length;
+				if (enc.prefix_data != null) {
+					stack.add(enc);
+					enc = enc.prefix_data;
+					continue;
+				}
+			}
+			copyBytes(results, offset, enc.data, enc.data.length);
+			offset += enc.data.length;
+			if (stack.size() == 0) return offset;
+			enc = stack.remove(stack.size() - 1);
+			back = true;
+		}
+	}
+	/**
+	 * Recursive version that can overflow stack on large lists. But does not assume "bytes"
+	 * member is right, and tests it via asserts.
+	 * @param results
+	 * @param start
+	 * @return
+	 */
+	public int getBytesRecursive(byte[] results, int start) {
 		int offset = start;
 		copyBytes(results,offset,header_type,header_type.length);
 		offset += header_type.length;
 		copyBytes(results,offset,header_length,header_length.length);
 		offset += header_length.length;
-		if(prefix_data!=null){
-			offset = prefix_data.getBytes(results, offset);
+		if (prefix_data != null) {
+			offset = prefix_data.getBytesRecursive(results, offset);
 		}
 		assert(bytes == offset+data.length-start);
 		copyBytes(results,offset,data,data.length);

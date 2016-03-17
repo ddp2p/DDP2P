@@ -156,7 +156,9 @@ public class AttackerClient{
 		return false;
 	}
 	static void initAppFromDB (DBInterface dbInterface) throws P2PDDSQLException {
+		if (DEBUG) System.out.println("AttackerClient: initAppFromDB: enter");
 		Identity.init_Identity(true, true, false); 
+		if (DEBUG) System.out.println("AttackerClient: initAppFromDB: identity inited");
 		if (DEBUG) System.err.println(__("DD: main: Got Myelf=")+net.ddp2p.common.data.HandlingMyself_Peer.get_myself_or_null());
 		StartUp.detect_OS_and_store_in_DD_OS_var();
 		StartUp.fill_install_paths_all_OSs_from_DB(); 
@@ -164,6 +166,7 @@ public class AttackerClient{
 		if (DEBUG && Application.getDB() != null) System.err.println(__("initFromDB: main: Got DB = ")+Application.getDB().getName());
 		DDTranslation.db = Application.getDB();
 		DD.load_listing_directories_noexception();
+		if (DEBUG) System.out.println("AttackerClient: initAppFromDB: exit");
 	}
 	static void initApp() {
 		net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
@@ -182,7 +185,9 @@ public class AttackerClient{
 			if (DEBUG) System.err.println(__("DD: main: Quit no database"));
 			return;
 		}
+		if (DEBUG) System.out.println("Success loading DB, will init");
 		initAppFromDB(Application.getDB());
+		if (DEBUG) System.out.println("App inited");
 		DD.startUServer(true, Identity.getCurrentPeerIdentity_QuitOnFailure());
 		UDPServer us = Application.getG_UDPServer();
 		ASNSyncRequest request = new ASNSyncRequest();

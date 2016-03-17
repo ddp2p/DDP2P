@@ -336,9 +336,9 @@ public class OrgPeerDataHashes extends ASNObj{
 	}
 	@Override
 	public OrgPeerDataHashes decode(Decoder dec) throws ASN1DecoderFail {
-		if(dec==null) return this;
-		if(dec.getTypeByte()!=DD.TAG_AC15) {
-			Util.printCallPath("wrong TAG");
+		if (dec == null || dec.isEmpty()) return this;
+		if (dec.getTypeByte() != DD.TAG_AC15) {
+			Util.printCallPath("wrong TAG "+dec.getTypeByte());
 			return this;
 		}
 		Decoder d = dec.getContent();

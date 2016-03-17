@@ -2101,10 +2101,23 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public static ArrayList<String> checkAvailability(ArrayList<String> cons,
 			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
-		for (String cHash : cons) {
-			if(!available(cHash, orgID, DBG)) result.add(cHash);
+		for (String hash : cons) {
+			if (! available(hash, orgID, DBG)) {
+				String nGIDHash = D_Motion.getGIDfromGID(hash);
+				if (nGIDHash != null)
+					result.add(nGIDHash);
+			}
 		}
 		return result;
+	}
+	/**
+	 * Return null if invalid
+	 * @param mHash
+	 * @return
+	 */
+	public static String getGIDfromGID(String mHash) {
+		if (mHash.startsWith(D_GIDH.d_Neigh)) return mHash; 
+		return null;
 	}
 	/**
 	 * check blocking at this level

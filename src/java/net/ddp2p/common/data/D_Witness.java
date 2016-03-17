@@ -1001,10 +1001,23 @@ class D_Witness extends ASNObj implements Summary {
 	public static ArrayList<String> checkAvailability(ArrayList<String> witn,
 			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
-		for (String cHash : witn) {
-			if(!available(cHash, orgID, DBG)) result.add(cHash);
+		for (String hash : witn) {
+			if (! available(hash, orgID, DBG)) {
+				String wGIDHash = D_Motion.getGIDfromGID(hash);
+				if (wGIDHash != null)
+					result.add(wGIDHash);
+			}
 		}
 		return result;
+	}
+	/**
+	 * Return null if invalid
+	 * @param mHash
+	 * @return
+	 */
+	public static String getGIDfromGID(String mHash) {
+		if (mHash.startsWith(D_GIDH.d_Witn)) return mHash; 
+		return null;
 	}
 	public static byte getASN1Type() {
 		return TAG;

@@ -3,6 +3,9 @@ import java.util.regex.Pattern;
 public class D_GIDH {
 	public static boolean DEBUG = false;
 	public static boolean _DEBUG = true;
+	public static final String d_Tran = "L:"; 
+	public static final String d_Vote = "V:";
+	public static final String d_News = "E:";
 	public static final String d_Peer = "P:";
 	public static final String d_OrgGrassSign = "G:";
 	public static final String d_OrgAuthSign = "O:";

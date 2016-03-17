@@ -66,8 +66,13 @@ public class Identity {
 	 * @return
 	 */
 	public static boolean init_Identity(boolean quit_on_failure, boolean set_peer_myself, boolean announce_dirs) {
+		if (DEBUG) System.out.println("Identity: init_Identity: enter");
 		Application.setCurrent_Identity(initCurrentConstituentIdentity());
-		Application.setCurrent_Peer_ID(initMyCurrentPeerIdentity_fromDB(new Identity(), quit_on_failure, set_peer_myself, announce_dirs));
+		if (DEBUG) System.out.println("Identity: init_Identity: current");
+		Identity id = initMyCurrentPeerIdentity_fromDB(new Identity(), quit_on_failure, set_peer_myself, announce_dirs);
+		if (DEBUG) System.out.println("Identity: init_Identity: id");
+		Application.setCurrent_Peer_ID(id);
+		if (DEBUG) System.out.println("Identity: init_Identity: exit");
 		return true;
 	}
 	/**
@@ -310,10 +315,17 @@ public class Identity {
       */
      public static Identity initMyCurrentPeerIdentity_fromDB(Identity result, boolean quit_on_failure,
     		 boolean set_myself, boolean announce_dirs) {
+ 		if (DEBUG) System.out.println("Identity: initMyCurrentPeerIdentity_fromDB: enter");
     	HandlingMyself_Peer.loadIdentity(result);
-    	if (! set_myself) return result;
+		if (DEBUG) System.out.println("Identity: initMyCurrentPeerIdentity_fromDB: loaded");
+    	if (! set_myself) {
+     		if (DEBUG) System.out.println("Identity: initMyCurrentPeerIdentity_fromDB: quit");
+    		return result;
+    	}
     	D_Peer me = HandlingMyself_Peer.getPeer(result);
+		if (DEBUG) System.out.println("Identity: initMyCurrentPeerIdentity_fromDB: got a me");
 		if (me == null) {
+			if (DEBUG) System.out.println("Identity: initMyCurrentPeerIdentity_fromDB: got a me null");
 			Application.setCurrent_Peer_ID(result);
 			if (! DD.GUI) {
 				Util.printCallPath("Failure to find a 'myself' peer in the database, and to create one!");
@@ -337,9 +349,10 @@ public class Identity {
 		} else {
 			boolean kept;
 			boolean saveInDB;
+			if (DEBUG) System.out.println("Identity: initMyCurrentPeerIdentity_fromDB: set me");
 			HandlingMyself_Peer.setMyself(me, saveInDB = false, result, kept = false, announce_dirs);
 		}
-    	if (DEBUG) System.out.println("Identity.initMyCurrentPeerIndentity END: result="+result);
+    	if (DEBUG) System.out.println("Identity: initMyCurrentPeerIndentity_fromDB END: result="+result);
     	return result;
     }
 	public String toString(){

@@ -365,6 +365,7 @@ CREATE TABLE "peer_org" (
 	"organization_ID" INTEGER NOT NULL,
 	"served" INTEGER NOT NULL DEFAULT (0), 
 	"last_sync_date" TEXT,
+	UNIQUE (organization_ID, peer_ID) ON CONFLICT FAIL,
 	FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID),
 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
 );
@@ -375,6 +376,7 @@ CREATE TABLE "peer_org_inferred" (
         "organization_ID" INTEGER NOT NULL,
         "served" INTEGER NOT NULL DEFAULT (0), 
         "last_sync_date" TEXT,
+        UNIQUE (organization_ID, peer_ID) ON CONFLICT FAIL,
         FOREIGN KEY(peer_ID) REFERENCES peer(peer_ID),
 	FOREIGN KEY(organization_ID) REFERENCES organization(organization_ID)
 );

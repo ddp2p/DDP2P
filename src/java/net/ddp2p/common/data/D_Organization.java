@@ -763,6 +763,10 @@ class D_Organization extends ASNObj implements  DDP2P_DoubleLinkedList_Node_Payl
 						Util.printCallPath(""); }
 			return null;
 		}
+		if ((GIDhash != null) && ! D_Organization.isOrgGIDH(GIDhash)) {
+			if (GID == null) GID = GIDhash;
+			GIDhash = D_Organization.getOrgGIDHashGuess(GIDhash);
+		}
 		if ((GID != null) && (GIDhash == null)) GIDhash = D_Organization.getOrgGIDHashGuess(GID);
 		if (!D_Organization.isOrgGID(GID)) GID = null;
 		if (create) {

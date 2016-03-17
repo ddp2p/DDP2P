@@ -529,7 +529,7 @@ public class UpdateMessages {
 	private static void evaluate_interest_global(SpecificRequest advertised, SpecificRequest sp_rq) throws P2PDDSQLException {
 		sp_rq.peers = D_Peer.checkAvailability(advertised.peers, DEBUG);
 		sp_rq.news = D_News.checkAvailability(advertised.news, null, DEBUG);
-		sp_rq.tran = D_News.checkAvailability(advertised.tran, null, DEBUG);
+		sp_rq.tran = D_Translations.checkAvailability(advertised.tran, null, DEBUG);
 	}
 	/**
 	 * // check existing/non-blocked data and insert wished one into sp, store sp in orgs

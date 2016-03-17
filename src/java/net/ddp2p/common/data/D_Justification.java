@@ -1371,9 +1371,22 @@ public class D_Justification extends ASNObj implements  DDP2P_DoubleLinkedList_N
 			String orgID, String mID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
 		for (String hash : hashes) {
-			if(!available(hash, orgID, mID, DBG)) result.add(hash);
+			if (! available(hash, orgID, mID, DBG)) {
+				String jGIDHash = D_Motion.getGIDfromGID(hash);
+				if (jGIDHash != null)
+					result.add(jGIDHash);
+			}
 		}
 		return result;
+	}
+	/**
+	 * Return null if invalid
+	 * @param mHash
+	 * @return
+	 */
+	public static String getGIDfromGID(String mJust) {
+		if (mJust.startsWith(D_GIDH.d_Just)) return mJust; 
+		return null;
 	}
 	/**
 	 * check blocking at this level

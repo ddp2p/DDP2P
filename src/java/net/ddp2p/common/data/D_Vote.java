@@ -620,7 +620,7 @@ class D_Vote extends ASNObj{
 			if (_DEBUG) System.out.println("WB_Vote: makeID: not ready yet "+this);
 			return null;
 		}
-		String result = "V:"+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
+		String result = D_GIDH.d_Vote+Util.getGID_as_Hash(this.getHashEncoder().getBytes());
 		if (DEBUG) System.out.println("WB_Vote: makeID: id = "+result);
 		return result;
 	}
@@ -944,11 +944,23 @@ class D_Vote extends ASNObj{
 			}
 			String date = sign.get(vHash);
 			if(!available(vHash, date, orgID, DBG)){
-				result.put(vHash, DD.EMPTYDATE);
+				String jGIDHash = D_Motion.getGIDfromGID(vHash);
+				if (jGIDHash != null)
+					result.put(jGIDHash, DD.EMPTYDATE);
 			}else
 				if(DEBUG||DBG) out.println("D_Vote:checkAvailability: available here: "+vHash +" date="+date);
 		}
 		return result;
+	}
+	/**
+	 * Return null if invalid
+	 * @param mHash
+	 * @return
+	 */
+	public static String getGIDfromGID(String mHash) {
+		if (mHash.startsWith(D_GIDH.d_Vote))
+			return mHash; 
+		return null;
 	}
 	public static ArrayList<String> checkAvailability(ArrayList<String> sign,
 			String orgID, boolean DBG) throws P2PDDSQLException {
