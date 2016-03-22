@@ -315,11 +315,33 @@ public class Util {
 		}
 		return result;
 	}
+	/**
+	 * All elements of array should implement summary
+	 * @param array
+	 * @param sep
+	 * @param def
+	 * @return
+	 */
 	public static <T> String concatSummary(T[] array, String sep, String def) {
 		if ((array == null)) return def;
 		if ((array.length == 0)) return def;
 		String result=((array[0]==null)?"":((Summary)array[0]).toSummaryString());
 		for(int k=1; k<array.length; k++) result = result+ sep +((array[k]==null)?"":((Summary)array[k]).toSummaryString());
+		return result;
+	}
+	/**
+	 * Converts typo in array to string and trimms it to itemlen chars
+	 * @param array
+	 * @param sep
+	 * @param def
+	 * @param itemlen
+	 * @return
+	 */
+	public static <T> String concatSummaryStrings(T[] array, String sep, String def, int itemlen) {
+		if ((array == null)) return def;
+		if ((array.length == 0)) return def;
+		String result=((array[0]==null)?"":trimmed(array[0].toString(), itemlen));
+		for(int k=1; k<array.length; k++) result = result+ sep +((array[k]==null)?"":trimmed(array[k].toString(), itemlen));
 		return result;
 	}
 	public static String concatOrgs(D_PeerOrgs[] array, String sep, String def) {

@@ -120,6 +120,10 @@ class D_OR_Node implements TreeNode {
 				for (Long s : peer_GID_set.keySet()) {
 					D_OR_Node node = new D_OR_Node();
 					D_Peer peer = D_Peer.getPeerByLID(s, true, false);
+					if (peer == null) {
+						if (DEBUG) System.out.println("OrganizationRequest: build_children: no peer LID = "+s);
+						continue;
+					}
 					node.text = "(LID="+s+") \"" + peer.getName_MyOrDefault()+ "\" : \"" + peer_GID_set.get(s)+"\"";
 					node.level = OrganizationRequests.LEVEL_PEER;
 					child.add(node);
@@ -138,17 +142,27 @@ class D_OR_Node implements TreeNode {
 	}
 	@Override
 	public TreeNode getChildAt(int childIndex) {
-		if (! children_built) build_children();
-		if (childIndex > getChildCount()) {
-			if (DEBUG) System.out.println("D_OR_Node: getChildAt: recursive: " + text+" "+childIndex);
-			return this;
+		try {
+			if (! children_built) build_children();
+			if (childIndex > getChildCount()) {
+				if (DEBUG) System.out.println("D_OR_Node: getChildAt: recursive: " + text+" "+childIndex);
+				return this;
+			}
+			return child.get(childIndex);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		return child.get(childIndex);
+		return this;
 	}
 	@Override
 	public int getChildCount() {
-		if (! children_built) build_children();
-		return child.size();
+		try {
+			if (! children_built) build_children();
+			return child.size();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return 0;
 	}
 	@Override
 	public TreeNode getParent() {
@@ -164,8 +178,13 @@ class D_OR_Node implements TreeNode {
 	}
 	@Override
 	public boolean isLeaf() {
-		if (! children_built) build_children();
-		return child.size() == 0;
+		try {
+			if (! children_built) build_children();
+			return child.size() == 0;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return true;
 	}
 	@Override
 	public Enumeration children() {

@@ -70,12 +70,16 @@ public class SpecificRequest extends ASNObj implements Summary{
 		}
 		return result;
 	}
+	public static final int TRIMMEDITEM = 15;
+	/**
+	 * 
+	 */
 	public String toSummaryString() {
 		return "SpecificRequest["+Util.concatSummary(rd.toArray(new RequestData[0]), ",", null)+
 				",\n p="+Util.concat(peers, ",", null)+
 				",\n o="+Util.concat(orgs, ",", null)+
-				", "+Util.concatSummary(news.toArray(new String[0]), ",", null)+
-				", "+Util.concatSummary(tran.toArray(new String[0]), ",", null)+
+				", "+Util.concatSummaryStrings(news.toArray(new String[0]), ",", null, TRIMMEDITEM)+
+				", "+Util.concatSummaryStrings(tran.toArray(new String[0]), ",", null, TRIMMEDITEM)+
 				"]";
 	}
 	public String toString() {
