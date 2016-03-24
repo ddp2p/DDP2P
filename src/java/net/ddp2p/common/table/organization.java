@@ -1,25 +1,33 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.table;
+
 import net.ddp2p.common.util.Util;
+
 public class organization {
 	public static final int WEIGHTS_TYPE_NONE = 0;
 	public static final int WEIGHTS_TYPE_0_1 = 1;
 	public static final int WEIGHTS_TYPE_INT = 2;
 	public static final int WEIGHTS_TYPE_DEFAULT = WEIGHTS_TYPE_NONE;
 	public static final int WEIGHTS_MAX_DEFAULT = 1;
+
 	public static final String Gs_global_organization_ID = "global_organization_IDs_served";
 	 public static final String organization_ID = "organization_ID";
 	 public static final String global_organization_ID = "global_organization_ID";
@@ -29,6 +37,7 @@ public class organization {
 	 public static final String certification_methods = "certification_methods";
 	 public static final String preapproved = "preapproved";
 	 public static final String hash_org_alg = "hash_org_alg";
+	 //public static final String hash_org = "hash_org";
 	 public static final String category = "category";
 	 public static final String description = "description";
 	 public static final String certificate = "certificate"; // a certificate from globalID from an upper authority
@@ -46,6 +55,7 @@ public class organization {
 	 public static final String name_justification = "name_justification";
 	 public static final String name_motion = "name_motion";
 	 public static final String name_organization = "name_organization";
+	 //public static final String hash_orgID = "hash_orgID";
 	 public static final String motions_excluding = "motions_excluding";
 	 public static final String plugins_excluding = "plugins_excluding";
 	 public static final String reset_date = "reset_date";
@@ -75,14 +85,21 @@ public class organization {
 			hidden+","+			weights_type+","+			weights_max+","+			icon+","+      		name_constituent+","+
 			neighborhoods_rule)+" ";
 	 public static final String field_list = field_list_noID + "," + organization_ID;
+	 //hash_org+"," +
 	public static final int _GRASSROOT = 0;
 	public static final int _AUTHORITARIAN = 1;
 	public static final int _EXPRESSION = 2;
+
 	public static final String SEP_PREAPPROVED = ",";
 	public static final String ORG_HASH_BYTE_SEP = " ";
+	//public static final String ORG_SCORE_SEP = ";";
 	public static final String ORG_LANG_SEP = ";";
+	//public static final String ORG_TRANS_SEP = ";";
 	public static final String ORG_VAL_SEP = ";";
 	public static final String ORG_ICON_BYTE_SEP = " ";
+	//public static final String SEP_scoring_options = ";";
+	//public static final String SEP_languages = ";";
+	
 	public static final int ORG_COL_GID = 0;
 	public static final int ORG_COL_NAME = 1;
 	public static final int ORG_COL_TEMPORARY = 2;
@@ -97,9 +114,14 @@ public class organization {
 	public static final int ORG_COL_CATEG = 11;
 	public static final int ORG_COL_CERTIF_METHODS = 12;
 	public static final int ORG_COL_HASH_ALG = 13;
+	//public static final int ORG_COL_HASH = 14;
 	public static final int ORG_COL_CREATION_DATE = 14;
 	public static final int ORG_COL_CERTIF_DATA = 15;
+	// crl 16
+	// crl_date 17
 	public static final int ORG_COL_ARRIVAL = 18;
+	// motions_excluding
+	// plugins_excluding
 	public static final int ORG_COL_DESCRIPTION = 21;
 	public static final String hash_org_alg_crt = "v1";
 	public static final int ORG_COL_CREATOR_ID = 22;

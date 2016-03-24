@@ -1,23 +1,31 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2015 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.ASN1;
+
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TimeZone;
+
 public class ASN1_Util {
 	private static final boolean _DEBUG = false;
 	public static final int MAX_ASN1_DUMP = 20;
@@ -66,7 +74,7 @@ public class ASN1_Util {
 	 * @return
 	 */
 	public static String getStringDate(Calendar cal) {
-		SimpleDateFormat dFormat=new SimpleDateFormat ("yyyy-MM-dd:hh'h'mm'm'ss's'SSS'Z'"); 
+		SimpleDateFormat dFormat=new SimpleDateFormat ("yyyy-MM-dd:hh'h'mm'm'ss's'SSS'Z'"); /*set the date format*/
 		dFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 		return dFormat.format(cal.getTime());
 	}
@@ -83,6 +91,7 @@ public class ASN1_Util {
 		date = date.replace("-", "");
 		return getCalendar(date, null);
 	}
+
 	/**
 	 * Get a Calendar for this gdate, or ndef in case of failure
 	 * @param gdate
@@ -104,6 +113,7 @@ public class ASN1_Util {
 				Integer.parseInt(gdate.substring(12, 14)));
 		date.set(Calendar.MILLISECOND, Integer.parseInt(gdate.substring(15, 18)));
 		}catch(Exception e){return def;}
+		//System.out.println("getCalendar "+gdate+" into "+date);
 		return date;
 	}
 	/**
@@ -157,14 +167,18 @@ public class ASN1_Util {
 		BigInteger result = BigInteger.ZERO;
 		int k = offset;
 		while ((k < limit) && ((b128[k] & 0x80) != 0)) {
+			// result = result.multiply(Util.BN128).add(new BigInteger("" + (Util.getUnsignedShort(b128[k]) - 128)));
 			result = result.shiftLeft(7).or(new BigInteger(""+(b128[k] & 0x7f)));
+			//len++;
 			k++;
 		}
 		if (k < limit) {
+			// result = result.multiply(Util.BN128).add(new BigInteger("" + Util.getUnsignedShort(b128[k])));
 			if ((b128[k] & 0x80) != 0) {if (_DEBUG) System.out.println("Util: fromBase_128: last byte > 127"); ASN1_Util.printCallPath("");}
 			result = result.shiftLeft(7).or(new BigInteger(""+(b128[k]))); // here  & 0x7f would be redundant
 		}
 		return result;
+		
 	}
 	/**
 	 * Print the call stack in the current point

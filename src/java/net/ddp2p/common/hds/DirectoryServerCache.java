@@ -1,9 +1,11 @@
 package net.ddp2p.common.hds;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -18,11 +20,17 @@ import net.ddp2p.common.util.DDP2P_DoubleLinkedList_Node;
 import net.ddp2p.common.util.DDP2P_DoubleLinkedList_Node_Payload;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public
 class DirectoryServerCache{
 	private static final boolean DEBUG = false;
 	private static DirectoryServerCache.D_Directory_Storage.SaverThread saverThread = null;
+	
 	private DirectoryServerCache() {
+		/*
+		if(saverThread == null)
+			saverThread = new DirectoryServerCache.D_Directory_Storage.SaverThread();
+			*/
 	}
 	public static void startSaverThread() {
 		if (saverThread == null)
@@ -52,6 +60,12 @@ class DirectoryServerCache{
 		 if (instance == null) return e;
 		 D_DirectoryEntry crt = e.instances.get(instance);
 		 if (crt == null) {
+//			 crt = new D_DirectoryEntry();
+//			 crt.globalID = globalID;
+//			 crt.globalIDhash = globalIDhash;
+//			 crt.instance = instance;
+//			 e.instances.put(instance, crt);
+//			 D_Directory_Node.register_loaded_instance(crt);
 		 }
 		 return crt;
 	}
@@ -79,6 +93,9 @@ class DirectoryServerCache{
 			crt.parent = e;
 			crt.load(da, TCP_or_UDP);
 			if (DEBUG) System.out.println("DSCache: loadAndSetEntry: loaded new instance "+crt);
+//			 crt.globalID = globalID;
+//			 crt.globalIDhash = globalIDhash;
+//			 crt.instance = instance;
 			e.instances.put(instance, crt);
 			if (DEBUG) System.out.println("DSCache: loadAndSetEntry: loaded root "+e);
 			D_Directory_Storage.register_loaded_instance(crt);
@@ -100,8 +117,12 @@ class DirectoryServerCache{
 	 * @return
 	 */
 	public static D_DirectoryEntry getEntry(String globalID, String globalIDhash) {
+		//boolean DEBUG = true;
+		
 		if (DEBUG) System.out.println("DirServCache: getEntry: "+globalID+" GIDH="+globalIDhash);
+		
 		D_DirectoryEntry elem;
+		// Try GID first
 		if (globalID != null) {
 			elem = D_Directory_Storage.loaded_By_GID.get(globalID);
 			if (elem != null) {
@@ -109,11 +130,14 @@ class DirectoryServerCache{
 				if (DEBUG) System.out.println("DirServCache: getEntry found in loaded by GID");
 				return elem;
 			}
+		
+			// If GID not found, at least extract GIDH from it.
 			if (globalIDhash == null) {
 				globalIDhash = D_Peer.getGIDHashFromGID(globalID);
 				if (DEBUG) System.out.println("DirServCache: GIDH="+globalIDhash);
 			}
 		}
+		// if not found with GID
 		elem = D_Directory_Storage.loaded_By_GIDhash.get(globalIDhash);
 		if (elem != null) {
 			D_Directory_Storage.setRecent(elem);
@@ -123,9 +147,13 @@ class DirectoryServerCache{
 		}
 		if (DEBUG) System.out.println("DirServCache: getEntry will try to load");
 		D_DirectoryEntry _elem = new D_DirectoryEntry(globalID, globalIDhash);
+		//_elem.known = false;
+		//_elem.root = true;
 		D_Directory_Storage.register_loaded(_elem);
 		return _elem;
 	}
+	
+
 	class TurnMessage{
 		byte[] data;
 	}
@@ -135,6 +163,8 @@ class DirectoryServerCache{
 		private static final boolean _DEBUG = true;
 		public D_Directory_Storage component_node = new D_Directory_Storage();
 		public DDP2P_DoubleLinkedList_Node<D_DirectoryEntry> ddl_node;
+		//public boolean loaded_globals;
+		// public String _peer_ID;
 		public long registered_ID;
 		public String globalID;
 		public String globalIDhash;
@@ -146,6 +176,7 @@ class DirectoryServerCache{
 		public Address[] addresses;
 		public byte[] signature;
 		public Calendar timestamp;
+		//public boolean need_saving;
 		/** set to "this" in the parent itself */
 		D_DirectoryEntry parent; 
 		/** is this a parent node? */
@@ -169,7 +200,7 @@ class DirectoryServerCache{
 		/**
 		 * Pre-Initialized
 		 */
-		public Hashtable<String,ArrayList<TurnMessage>> messages = new Hashtable<String,ArrayList<TurnMessage>>(); 
+		public Hashtable<String,ArrayList<TurnMessage>> messages = new Hashtable<String,ArrayList<TurnMessage>>(); // from_peer, messages
 		/**
 		 * Pre-Initialized
 		 */
@@ -178,13 +209,16 @@ class DirectoryServerCache{
 		 * Does this contain valid data? (typically true if the address is not empty)
 		 */
 		public boolean known = true; 
+		
 		public void buildInstanceRequestedTerms(){
+			//boolean DEBUG = true;
 			if (DEBUG) System.out.println("DirServerCache: buildInstanceRequestedTerms: enter");
 			if (instance_terms != null) return;
 			String isNull = " IS NULL ;";
 			String instanceType = " = ? ;" ;
 			if(this.instance==null)
 				instanceType= isNull;
+			// a specific instance for a specific peer ID [sql1 and sql2]
 			String sql1 =
 					"SELECT "+net.ddp2p.common.table.subscriber.fields_subscribers+
 					" FROM "+net.ddp2p.common.table.subscriber.TNAME+
@@ -195,6 +229,7 @@ class DirectoryServerCache{
 					" FROM "+net.ddp2p.common.table.subscriber.TNAME+
 					" WHERE "+net.ddp2p.common.table.subscriber.GID_hash+" = ?" +
 					" AND   "+net.ddp2p.common.table.subscriber.instance+instanceType;
+			// all instance for a specific peer ID [sql11 and sql22]
 			String sql11 =
 					"SELECT "+net.ddp2p.common.table.subscriber.fields_subscribers+
 					" FROM "+net.ddp2p.common.table.subscriber.TNAME+
@@ -205,6 +240,7 @@ class DirectoryServerCache{
 					" FROM "+net.ddp2p.common.table.subscriber.TNAME+
 					" WHERE "+net.ddp2p.common.table.subscriber.GID_hash+" = ?" +
 					" AND   "+net.ddp2p.common.table.subscriber.all_instances+" = '1' ;";
+			// default for all instance for all peer IDs [sql111]
 			String sql111 =
 					"SELECT "+net.ddp2p.common.table.subscriber.fields_subscribers+
 					" FROM "+net.ddp2p.common.table.subscriber.TNAME+
@@ -213,8 +249,12 @@ class DirectoryServerCache{
 			String sql =
 					"SELECT "+net.ddp2p.common.table.subscriber.subscriber_ID+
 					" FROM "+net.ddp2p.common.table.subscriber.TNAME+" LIMIT 1;";
+			
+
 			ArrayList<ArrayList<Object>> d, any;
 			try {
+				
+				//if (d == null || d.size()==0) {
 					any = Application.getDB_Dir().select(sql, new String[]{}, DEBUG);
 					if ((any == null) || (any.size() == 0)) {
 						DIR_Terms_Requested[] terms_any = new DIR_Terms_Requested[1];
@@ -222,8 +262,12 @@ class DirectoryServerCache{
 						t.setServeLiberally();
 						terms_any[0] = t;
 						this.instance_terms = terms_any;
+						
 						return;
 					}
+				//}
+
+				
 				String params[] = new String[1];
 				if (instance != null) {
 					params = new String[2];
@@ -231,16 +275,21 @@ class DirectoryServerCache{
 				}
 				params[0] = this.globalID;
 				d = Application.getDB_Dir().select(sql1, params, DEBUG);
+				
 				if (d == null || d.size()==0) {
 					params[0] = this.globalIDhash;
 					d = Application.getDB_Dir().select(sql2, params, DEBUG);
 				}
+				
 				if (d == null || d.size()==0)
 					d = Application.getDB_Dir().select(sql11, new String[]{this.globalID}, DEBUG);	
+				
 				if (d == null || d.size()==0)
 					d = Application.getDB_Dir().select(sql22, new String[]{this.globalIDhash}, DEBUG);
+				
 				if (d == null || d.size()==0)
 					d = Application.getDB_Dir().select(sql111, new String[]{}, DEBUG);	
+					
 			} catch (P2PDDSQLException e) {
 				e.printStackTrace();
 				DIR_Terms_Requested[] terms_any = new DIR_Terms_Requested[1];
@@ -248,17 +297,23 @@ class DirectoryServerCache{
 				t.setServeLiberally();
 				terms_any[0] = t;
 				this.instance_terms = terms_any;
+				
 				return;
 			}
+
+			//if (d==null || d.size()==0) return;
 			DIR_Terms_Requested[] terms = new DIR_Terms_Requested[d.size()];
 			int i=0;
 			for (ArrayList<Object> _u : d){
+				//D_SubscriberInfo s = new D_SubscriberInfo(_d, Application.db_dir );
 				DIR_Terms_Requested t = new DIR_Terms_Requested();
 				t.ad = Util.get_int(_u.get(net.ddp2p.common.table.subscriber.F_AD));
-				t.payment = null; 
+				t.payment = null; // not yet implemented
 				t.plaintext = Util.get_int(_u.get(net.ddp2p.common.table.subscriber.F_PLAINTEXT));
+				// ask?
 				t.services_available = Util.getString(_u.get(net.ddp2p.common.table.subscriber.F_MODE)).getBytes();
 				t.topic = Util.get_int(_u.get(net.ddp2p.common.table.subscriber.F_TOPIC))+"";
+				//t.version = 1; // ask??
 				terms[i] = t;
 			}
 			this.instance_terms = terms;
@@ -288,6 +343,7 @@ class DirectoryServerCache{
 					"\n]";
 			return r;
 		}
+		
 		/**
 		 * 
 		 * @param _globalID
@@ -333,9 +389,12 @@ class DirectoryServerCache{
 			}
 			AddressSequence(String _adr) {
 				byte adr [] = Util.byteSignatureFromString(_adr);
-				try {
+				try {//Address.getAddresses(_adr);
 					decode(new Decoder(adr));
+//					Decoder dec = new Decoder(adr).getContent();
+//					this.addresses = dec.getSequenceOf(Address.getASN1Type(), new Address[0], new Address());
 				} catch (Exception e) {
+					//e.printStackTrace();
 					Util.printCallPathTop("Address Encoding failed");
 					this._addr = Address.getAddresses(_adr);
 				}
@@ -347,6 +406,7 @@ class DirectoryServerCache{
 				enc.addToSequence(Encoder.getEncoder(_addr));
 				return enc;
 			}
+
 			@Override
 			public AddressSequence decode(Decoder d) throws ASN1DecoderFail {
 				Decoder dec = d.getContent();
@@ -359,10 +419,12 @@ class DirectoryServerCache{
 			public Address[] getAddresses() {
 				return _addr;
 			}
+			
 		}
 		long update() throws P2PDDSQLException{
+			//System.out.println("=================================>update "+this);
 			if (registered_ID <= 0) return this.storeNew();
-			D_Directory_Storage.need_saving_remove(globalIDhash, instance); 
+			D_Directory_Storage.need_saving_remove(globalIDhash, instance); //need_saving = false;
 			String params[] = new String[net.ddp2p.common.table.registered.fields_list.length];
 			params[net.ddp2p.common.table.registered.REG_GID] = globalID;
 			params[net.ddp2p.common.table.registered.REG_GID_HASH] = globalIDhash;
@@ -371,12 +433,18 @@ class DirectoryServerCache{
 			params[net.ddp2p.common.table.registered.REG_AGENT_VERSION] = agent_version;
 			params[net.ddp2p.common.table.registered.REG_NAME] = name;
 			params[net.ddp2p.common.table.registered.REG_CERT] = (certificate.length == 0)?null:Util.stringSignatureFromByte(certificate);
-			params[net.ddp2p.common.table.registered.REG_ADDR] = new AddressSequence(addresses).getB64ASN1Addresses(); 
+			
+//			Encoder enc = new Encoder().initSequence();
+//			enc.addToSequence(Encoder.getEncoder(addresses));
+//			byte[]  _adr = new AddressSequence(addresses).getB64ASN1Addresses();//enc.getBytes();
+			
+			params[net.ddp2p.common.table.registered.REG_ADDR] = new AddressSequence(addresses).getB64ASN1Addresses(); //Address.joinAddresses(addresses);
 			params[net.ddp2p.common.table.registered.REG_SIGN] = (signature.length==0)?null:Util.stringSignatureFromByte(signature);
 			if (timestamp == null)
 				timestamp = Util.CalendargetInstance();
-			params[net.ddp2p.common.table.registered.REG_TIME] = Encoder.getGeneralizedTime(timestamp); 
+			params[net.ddp2p.common.table.registered.REG_TIME] = Encoder.getGeneralizedTime(timestamp); // (Util.CalendargetInstance().getTimeInMillis()/1000)+"";
 			params[net.ddp2p.common.table.registered.REG_ID] = Util.getStringID(this.registered_ID);
+			
 			Application.getDB_Dir().update
 					(
 							net.ddp2p.common.table.registered.TNAME,
@@ -384,10 +452,11 @@ class DirectoryServerCache{
 							new String[]{net.ddp2p.common.table.registered.registeredID},
 							params, DEBUG
 					);
+//					new String[]{table.registered.global_peer_ID,table.registered.certificate,table.registered.addresses,table.registered.signature,table.registered.timestamp},
 			return registered_ID;
 		}
 		long storeNew() throws P2PDDSQLException{
-			D_Directory_Storage.need_saving_remove(globalIDhash, instance); 
+			D_Directory_Storage.need_saving_remove(globalIDhash, instance); // need_saving = false;
 			String params[] = new String[net.ddp2p.common.table.registered.fields_noID_list.length];
 			params[net.ddp2p.common.table.registered.REG_GID] = globalID;
 			params[net.ddp2p.common.table.registered.REG_GID_HASH] = globalIDhash;
@@ -396,13 +465,20 @@ class DirectoryServerCache{
 			params[net.ddp2p.common.table.registered.REG_AGENT_VERSION] = agent_version;
 			params[net.ddp2p.common.table.registered.REG_NAME] = name;
 			params[net.ddp2p.common.table.registered.REG_CERT] = (certificate.length==0)?null:Util.stringSignatureFromByte(certificate);
-			params[net.ddp2p.common.table.registered.REG_ADDR] = new AddressSequence(addresses).getB64ASN1Addresses(); 
+
+//			Encoder enc = new Encoder().initSequence();
+//			enc.addToSequence(Encoder.getEncoder(addresses));
+//			byte[]  _adr = enc.getBytes();
+			
+			params[net.ddp2p.common.table.registered.REG_ADDR] = new AddressSequence(addresses).getB64ASN1Addresses(); //Util.stringSignatureFromByte(_adr); //Address.joinAddresses(addresses);
 			params[net.ddp2p.common.table.registered.REG_SIGN] = (signature.length==0)?null:Util.stringSignatureFromByte(signature);
 			if(timestamp == null)
-				timestamp = Util.CalendargetInstance(); 
+				timestamp = Util.CalendargetInstance(); //.getTimeInMillis()/1000)+"";
 			params[net.ddp2p.common.table.registered.REG_TIME] = Encoder.getGeneralizedTime(timestamp);
+			
 			registered_ID=Application.getDB_Dir().insert(net.ddp2p.common.table.registered.TNAME, net.ddp2p.common.table.registered.fields_noID_list,
 					params);
+//					new String[]{table.registered.global_peer_ID,table.registered.certificate,table.registered.addresses,table.registered.signature,table.registered.timestamp},
 			return registered_ID;
 		}
 		int discardMessage () {
@@ -423,7 +499,7 @@ class DirectoryServerCache{
 			addresses = n.addresses;
 			signature = n.signature;
 			timestamp = n.timestamp;
-			D_Directory_Storage.need_saving_add(globalIDhash, instance);
+			D_Directory_Storage.need_saving_add(globalIDhash, instance);//need_saving = true;
 			known = true;
 		}
 		private static void set_NAT(Address[] addresses2, Address nat, boolean tCP) {
@@ -467,6 +543,7 @@ class DirectoryServerCache{
 		 */
 		public void load(DirectoryAnnouncement da, boolean TCP) {
 			if (DEBUG) System.out.println("DSCache: load: start "+da);
+			
 			boolean need_saving = false;
 			if (da.getGID()!=null) {
 				if(!Util.equalStrings_null_or_not(globalID, da.getGID())) {
@@ -513,6 +590,7 @@ class DirectoryServerCache{
 				addresses = da.address._addresses;
 			}
 			timestamp = da.date;
+			//need_saving = true;
 			if (need_saving) {
 				D_Directory_Storage.discardMessage(this);
 				D_Directory_Storage.need_saving_add(globalIDhash, instance);
@@ -521,6 +599,7 @@ class DirectoryServerCache{
 			if (DEBUG) System.out.println("DSCache: load: end "+this);
 		}
 		private void initGIDH(String _globalIDH) {
+			//boolean DEBUG = true;
 			if (DEBUG) System.out.println("DirServC: initGIDH "+_globalIDH);
 			clean();
 			String sql =
@@ -536,10 +615,12 @@ class DirectoryServerCache{
 				return;
 			}
 			if (DEBUG) System.out.println("DirServC: initGIDH gets: #"+d.size());
+
 			if (d.size() > 0) {
 				initAll(d);
 				if (DEBUG) System.out.println("DirServC: initGIDH gets: "+this);
 			}
+			
 			if(this.globalIDhash == null) this.globalIDhash = _globalIDH;
 		}
 		/**
@@ -558,7 +639,9 @@ class DirectoryServerCache{
 					this.instances.put(Util.getString(_instance), new D_DirectoryEntry(a, this));
 			}
 		}
+		
 		private void initGID(String _globalID) {
+			//boolean DEBUG = true;
 			if (DEBUG) System.out.println("DirServC: initGID "+_globalID);
 			clean();
 			String sql =
@@ -579,6 +662,7 @@ class DirectoryServerCache{
 				initAll(d);
 				if (DEBUG) System.out.println("DirServC: initGID got " + this);
 			}
+			
 			if (this.globalID == null) this.globalID = _globalID;
 			if (this.globalIDhash == null) this.globalIDhash = D_Peer.getGIDHashFromGID(globalID);
 		}
@@ -589,11 +673,23 @@ class DirectoryServerCache{
 		private void clean() {
 			registered_ID = -1;
 			if (globalIDhash != null)
-				D_Directory_Storage.need_saving_remove(globalIDhash, instance); 
+				D_Directory_Storage.need_saving_remove(globalIDhash, instance); // need_saving = false;
 		}
 		private void init(ArrayList<Object> d, D_DirectoryEntry _parent) {
 			parent = _parent;
 			this.registered_ID = Util.lval(d.get(net.ddp2p.common.table.registered.REG_ID));
+			//this.addresses = TypedAddress.parseStringAddresses(Util.getString(d.get(table.registered.REG_ADDR)));
+
+//			String _adr = Util.getString(d.get(table.registered.REG_ADDR));
+//			byte adr [] = Util.byteSignatureFromString(_adr);
+//			try {//Address.getAddresses(_adr);
+//				Decoder dec = new Decoder(adr).getContent();
+//				this.addresses = dec.getSequenceOf(Address.getASN1Type(), new Address[0], new Address());
+//			} catch (Exception e) {
+//				//e.printStackTrace();
+//				Util.printCallPathTop("Address Encoding failed");
+//				this.addresses = Address.getAddresses(_adr);
+//			}
 			this.addresses = new AddressSequence(Util.getString(d.get(net.ddp2p.common.table.registered.REG_ADDR))).getAddresses();
 			this.certificate = Util.byteSignatureFromString(Util.getString(d.get(net.ddp2p.common.table.registered.REG_CERT)));
 			this.globalID = Util.getString(d.get(net.ddp2p.common.table.registered.REG_GID));
@@ -607,14 +703,18 @@ class DirectoryServerCache{
 			this.known = true;
 			if (timestamp == null) timestamp = Util.CalendargetInstance();
 		}
+
 		@Override
 		public Encoder getEncoder() {
+			// TODO Auto-generated method stub
 			return null;
 		}
 		@Override
 		public Object decode(Decoder dec) throws ASN1DecoderFail {
+			// TODO Auto-generated method stub
 			return null;
 		}
+		
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public DDP2P_DoubleLinkedList_Node<DirectoryServerCache.D_DirectoryEntry> set_DDP2P_DoubleLinkedList_Node(
@@ -634,6 +734,7 @@ class DirectoryServerCache{
 	 *
 	 */
 	public static class D_Directory_Storage {
+
 		/**
 		 * Each agent is hashed by a key (GIDH,instance)
 		 * This class allows to test equality
@@ -653,6 +754,7 @@ class DirectoryServerCache{
 				return true;
 			}
 		}
+		
 		/**
 		 * Max number of peers
 		 */
@@ -669,6 +771,7 @@ class DirectoryServerCache{
 		 * Currently loaded peers, ordered by the access time
 		 */
 		private static DDP2P_DoubleLinkedList<D_DirectoryEntry> loaded_objects = new DDP2P_DoubleLinkedList<D_DirectoryEntry>();
+		// private static Hashtable<Long, D_DirectoryEntry> loaded_peer_By_LocalID = new Hashtable<Long, D_DirectoryEntry>();
 		/**
 		 * Loaded indexed by GID
 		 */
@@ -711,6 +814,7 @@ class DirectoryServerCache{
 				current_space -= dm;
 			}
 		}
+
 		/**
 		 * Creates a KEY object for a GIDH and instance
 		 * @param gIDH
@@ -749,6 +853,7 @@ class DirectoryServerCache{
 			if (index == null) return r;
 			return r.instances.get(index);
 		}
+				
 		/**
 		 * Monitors: 
 		 * - saver_thread_monitor for needs_saving
@@ -772,6 +877,7 @@ class DirectoryServerCache{
 						if (de != null) {
 							Application_GUI.ThreadsAccounting_ping("Saving");
 							need_saving_remove(de.globalIDhash, de.instance);
+							// try 3 times to save
 							for (int k = 0; k < net.ddp2p.common.data.SaverThreadsConstants.ATTEMPTS_ON_ERROR; k ++) {
 								try {
 									de.update();
@@ -796,7 +902,7 @@ class DirectoryServerCache{
 							long timeout = (DirectoryServerCache.getNumberItemsNeedSaving() > 0)?
 									SaverThreadsConstants.SAVER_SLEEP_BETWEEN_DIRS_MSEC:
 										SaverThreadsConstants.SAVER_SLEEP_WAITING_DIRS_MSEC;
-							wait(timeout); 
+							wait(timeout); //SAVER_SLEEP);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
@@ -804,13 +910,19 @@ class DirectoryServerCache{
 				}
 			}
 		}
+		
+		
 		/**
 		 * message is enough (no need to store the Encoder itself)
 		 */
 		public byte[] message;
+		//public DDP2P_DoubleLinkedList_Node<D_DirectoryEntry> my_node_in_loaded;
+
 		public D_Directory_Storage(byte[] message)
+				//,DDP2P_DoubleLinkedList_Node<D_DirectoryEntry> my_node_in_loaded)
 		{
 			this.message = message;
+			//this.my_node_in_loaded = my_node_in_loaded;
 		}
 		public D_Directory_Storage() {
 		}
@@ -820,14 +932,16 @@ class DirectoryServerCache{
 		 * @param crt
 		 */
 		private static void register_fully_loaded(D_DirectoryEntry crt) {
+			//assert((crt.component_node.message==null) && (crt.loaded_globals));
 			/**
 			 * Message already loaded
 			 */
 			if(crt.component_node.message != null)
 				return;
+			//if(!crt.loaded_globals) return;
 			byte[] message = crt.encode();
 			synchronized(loaded_objects) {
-				crt.component_node.message = message; 
+				crt.component_node.message = message; // crt.encoder.getBytes();
 				if(crt.component_node.message != null)
 					current_space += crt.component_node.message.length;
 			}
@@ -844,13 +958,14 @@ class DirectoryServerCache{
 			synchronized(loaded_objects) {
 				loaded_objects.offerFirst(crt);
 				if(crt.component_node.message != null) current_space += crt.component_node.message.length;
+				
 				/**
 				 * Disconnect overflowing instances from list, set them in "removed"
 				 */
 				while ((loaded_objects.size() > MAX_LOADED_PEERS)
 						|| (current_space > MAX_PEERS_RAM)) {
-					if (loaded_objects.size() <= MIN_PEERS_RAM) break; 
-					D_DirectoryEntry removed = loaded_objects.removeTail();
+					if (loaded_objects.size() <= MIN_PEERS_RAM) break; // at least _crt_peer and _myself
+					D_DirectoryEntry removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
 					if (removed.component_node.message != null) current_space -= removed.component_node.message.length;
 					if (D_Directory_Storage.need_saving_contains(removed.globalIDhash, removed.instance)) rem.add(removed);
 					else {
@@ -887,24 +1002,38 @@ class DirectoryServerCache{
 		 */
 		private static void register_loaded(D_DirectoryEntry crt) {
 			ArrayList<D_DirectoryEntry> rem = new ArrayList<D_DirectoryEntry>();
+			//crt.encoder = crt.getEncoder();
+			//if(crt.loaded_globals) crt.component_node.message = crt.encode(); //crt.encoder.getBytes();
 			synchronized (loaded_objects) {
 				if (DEBUG) System.out.println("DSCache:register_loaded registering "+crt);
 				if (crt.get_DDP2P_DoubleLinkedList_Node() == null) {
 					boolean result = loaded_objects.offerFirst(crt);
 					if (DEBUG) System.out.println("DSCache:register_loaded registered "+result);
 					if (DEBUG) System.out.println("DSCache:register_loaded "+loaded_objects);
+					// loaded_peer_By_LocalID.put(new Long(crt._peer_ID), crt);
+					
 					loaded_By_GID.put(crt.globalID, crt);
+					
 					loaded_By_GIDhash.put(crt.globalIDhash, crt);
+					
 					if (crt.component_node.message != null) {
 						current_space += crt.component_node.message.length;
 					}
 				} else {
 					loaded_objects.moveToFront(crt);
 				}
+				
 				while ((loaded_objects.size() > MAX_LOADED_PEERS)
 						|| (current_space > MAX_PEERS_RAM)) {
-					if (loaded_objects.size() <= MIN_PEERS_RAM) break; 
-					D_DirectoryEntry removed = loaded_objects.removeTail();
+					if (loaded_objects.size() <= MIN_PEERS_RAM) break; // at least _crt_peer and _myself
+//					D_DirectoryEntry candidate = loaded_peers.getTail();
+//					if((candidate == D_DirectoryEntry._crt_peer)||(candidate == D_DirectoryEntry._myself)){
+//						setRecent(candidate);
+//						continue;
+//					}
+					
+					D_DirectoryEntry removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
+					// loaded_peer_By_LocalID.remove(new Long(removed._peer_ID));
 					loaded_By_GID.remove(removed.globalID);
 					loaded_By_GIDhash.remove(removed.globalIDhash);
 					if(removed.component_node.message != null) current_space -= removed.component_node.message.length;

@@ -1,20 +1,27 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.util;
+
 import java.io.File;
 import java.util.ArrayList;
+
 interface PNG_Chunk {
 	byte[] getMarker();
 	int getMarkerInt();
@@ -54,6 +61,7 @@ class PNG_Chunk_ANY implements PNG_Chunk {
 	public int getMarkerInt() {
 		return (int)Util.be32_to_cpu(marker, 0);
 	}
+
 	@Override
 	public int load(byte[] data, int offset, int limit) {
 		int off = offset;
@@ -172,6 +180,7 @@ class PNG_Chunk_IHDR extends PNG_Chunk_ANY {
 		data[off++] = compression;
 		data[off++] = filter;
 		data[off++] = interlace;
+		//Util.copyBytes(data, off, buf, length, 0);
 		Util.copyBytes(data, off, crc, 4, off);
 		return offset+12+length;
 	}
@@ -197,6 +206,7 @@ class PNG_Chunk_IEND implements PNG_Chunk {
 	public int getMarkerInt() {
 		return (int)Util.be32_to_cpu(marker, 0);
 	}
+
 	@Override
 	public int load(byte[] data, int offset, int limit) {
 		int off = offset;
@@ -212,11 +222,13 @@ class PNG_Chunk_IEND implements PNG_Chunk {
 		Util.copyBytes(in, 0, data, 4, off);
 		if (!Util.equalBytes(crc, in))
 			throw new RuntimeException("Wrong IEND crc");
+		//Util.copyBytes(crc, 0, data, 4, off);
 		off += 4;
 		if(!CRC.verifyCRC(crc, data, 4+length, offset+4))
 			throw new RuntimeException("Wrong IEND crc verif");
 		return off;
 	}
+	//@Override
 	public int save(byte[] data, int off, int limit) {
 		Util.cpu_to_be32(length, data, off);
 		off += 4;
@@ -239,6 +251,7 @@ class PNG_Chunk_IEND implements PNG_Chunk {
 	 */
 	@Override
 	public boolean isCritical() {
+		//marker[0] & (1<<5);
 		return Util.isUpperCase(marker[0]);
 	}
 	@Override
@@ -253,12 +266,18 @@ class PNG_Chunk_IEND implements PNG_Chunk {
  *
  */
 class CRC {
+	   /* Table of CRCs of all 8-bit messages. */
 	   static long crc_table[] = new long[256];
+	   
+	   /* Flag: has the table been computed? Initially false. */
 	   static boolean crc_table_computed = false;
+	   
+	   /* Make the table for a fast CRC. */
 	   static void make_crc_table()
 	   {
 	     long c;
 	     int n, k;
+	   
 	     for (n = 0; n < 256; n++) {
 	       c = (long) n;
 	       for (k = 0; k < 8; k++) {
@@ -271,11 +290,18 @@ class CRC {
 	     }
 	     crc_table_computed = true;
 	   }
+	   
+	   /* Update a running CRC with the bytes buf[0..len-1]--the CRC
+	      should be initialized to all 1's, and the transmitted value
+	      is the 1's complement of the final running CRC (see the
+	      crc() routine below)). */
+	   
 	   static long update_crc(long crc, byte buf[],
 	                            int len, int off)
 	   {
 	     long c = crc;
 	     int n, n_off;
+	   
 	     if (!crc_table_computed)
 	       make_crc_table();
 	     for (n_off = 0; n_off < len; n_off++) {
@@ -284,6 +310,8 @@ class CRC {
 	     }
 	     return c;
 	   }
+	   
+	   /* Return the CRC of the bytes buf[0..len-1]. */
 	   static long crc(byte buf[], int len, int off)
 	   {
 	     return update_crc(0xffffffffL, buf, len, off) ^ 0xffffffffL;
@@ -291,6 +319,9 @@ class CRC {
 		public static byte[] getCRC(byte[] data, int len, int off) {
 			byte b[] = new byte[4];
 			return getCRC(data, len, off, b, 0);
+			//long crc = CRC.crc(data, len, off);
+			//Util.cpu_to_be32(crc, b, 0);
+			//return b;
 		}
 		public static byte[] getCRC(byte[] in, int in_len, int in_off, byte out[], int out_off){
 			long crc = CRC.crc(in, in_len, in_off);
@@ -315,6 +346,7 @@ class CRC {
 			return crc==old_crc;
 		}
 }
+
 public 
 class PNG {
 	public static final int IEND = 
@@ -323,7 +355,7 @@ class PNG {
 			Util.be16_to_cpu(new byte[]{'I','H','D','R'}, 0);
 	public static final byte[] _ppDd =
 			new byte[]{'p','p','D','d'};
-	public static final int ppDd = 
+	public static final int ppDd = // ancillary/private/safeCopy
 			Util.be16_to_cpu(_ppDd, 0);
 	public static final byte crc[] =
 			new byte[]{(byte) 0xB7, 0x1D, (byte) 0xC1, 0x04, 1};
@@ -332,14 +364,24 @@ class PNG {
 	String filename;
 	ArrayList<PNG_Chunk> chunks = new ArrayList<PNG_Chunk>();
 	byte header[] = new byte[] {
-			(byte) 0x89, 
-			0x50, 0x4E, 0x47, 
-			0x0D, 0x0A, 
-			0x1A, 0x0A}; 
+			(byte) 0x89, // binary tag
+			0x50, 0x4E, 0x47, // PNG 
+			0x0D, 0x0A, // CR, LF 
+			0x1A, 0x0A}; // EOF, LF
 	private byte[] end_data = new byte[0];
+
 	public PNG() {
+		//CRC.make_crc_table();
+		/*
+		long crc = CRC.crc(new byte[]{'I','E','N','D'}, 4);
+		byte b[] = new byte[4];
+		Util.cpu_to_be32(crc, b, 0);
+		System.out.println("crc="+Util.byteToHexDump(b));
+		*/
 	}
+	
 	public static boolean validMarker(byte[] marker, int off) {
+		//System.out.println("Marker "+off+"="+marker[off]+""+marker[off+1]);
 		if (!Util.isAsciiAlpha(marker[off+0])) return false;
 		if (!Util.isAsciiAlpha(marker[off+1])) return false;
 		if (!Util.isUpperCase(marker[off+2])) return false;

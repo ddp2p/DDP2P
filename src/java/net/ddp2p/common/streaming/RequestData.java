@@ -1,20 +1,28 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.common.streaming;
+
 import java.util.ArrayList;
 import java.util.Hashtable;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -27,6 +35,7 @@ import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Summary;
 import net.ddp2p.common.util.Util;
+
 /**
  * Contains ArrayLists of GIDhash-es. An ordered hashtable for constituents (with date)
  * Probably should be the same for authoritarian orgs! and for signatures!
@@ -45,9 +54,11 @@ public class RequestData extends ASNObj implements Summary{
 	public static final int TRAN = 7;
 	public static final int NEWS = 8;
 	public static final int PEERS = 9;
+	//TODO: need to be added to init, to encoder and decoder!
 	public static final int ORGS_AUTH = 10;
-	public Hashtable<String,String> peers = new Hashtable<String,String>(); 
-	public Hashtable<String,String> orgs_auth = new Hashtable<String,String>(); 
+	public Hashtable<String,String> peers = new Hashtable<String,String>(); // not encoded and decoded (in transmission and storage used outside)
+// TODO
+	public Hashtable<String,String> orgs_auth = new Hashtable<String,String>(); // not encoded and decoded (in transmission and storage used outside)
 	public ArrayList<String> orgs = new ArrayList<String>();
 	public Hashtable<String,String> cons = new Hashtable<String,String>();
 	public ArrayList<String> neig = new ArrayList<String>();
@@ -58,7 +69,7 @@ public class RequestData extends ASNObj implements Summary{
 	public ArrayList<String> tran = new ArrayList<String>();
 	public ArrayList<String> news = new ArrayList<String>();
 	public String global_organization_ID_hash;
-	public int version = 2; 
+	public int version = 2; // From version 2 on, sign is a Hashtable
 	public RequestData() {}
 	public RequestData(String GIDH) {global_organization_ID_hash = GIDH;}
 	/**
@@ -125,8 +136,10 @@ public class RequestData extends ASNObj implements Summary{
 		case WITN: return addIfNewToArray(hash, witn, MAX_ITEM);
 		case MOTI: return addIfNewToArray(hash, moti, MAX_ITEM);
 		case JUST: return addIfNewToArray(hash, just, MAX_ITEM);
-		case SIGN: 
+		case SIGN: //return addIfNewToArray(hash, sign, MAX_ITEM);
+			//Util.printCallPath("Signatures are not arrays");
 			return addHashIfNewTo(hash, DD.EMPTYDATE, type, MAX_ITEM);
+			//throw new RuntimeException("Never come here!");
 		case TRAN: return addIfNewToArray(hash, tran, MAX_ITEM);
 		case NEWS: return addIfNewToArray(hash, news, MAX_ITEM);
 		default:
@@ -163,6 +176,7 @@ public class RequestData extends ASNObj implements Summary{
 		}
 		orgs = d.getSequenceOfAL(Encoder.TAG_PrintableString);
 		neig = d.getSequenceOfAL(Encoder.TAG_PrintableString);
+		//peers = d.getSequenceOfHSS(Encoder.TAG_PrintableString, false);
 		cons = d.getSequenceOfHSS(Encoder.TAG_PrintableString, false);
 		witn = d.getSequenceOfAL(Encoder.TAG_PrintableString);
 		moti = d.getSequenceOfAL(Encoder.TAG_PrintableString);
@@ -176,6 +190,19 @@ public class RequestData extends ASNObj implements Summary{
 	 * @param orgID
 	 * @throws P2PDDSQLException
 	 */
+	/*
+	@Deprecated
+	public void save(long orgID) throws P2PDDSQLException {
+		String old = this.global_organization_ID_hash;
+		this.global_organization_ID_hash = null;
+		Encoder enc = this.getEncoder();
+		this.global_organization_ID_hash = old;
+		byte[]msg = enc.getBytes();
+		String s = Util.stringSignatureFromByte(msg);
+		Application.db.update(table.organization.TNAME, new String[]{table.organization.specific_requests},
+				new String[]{table.organization.organization_ID}, new String[]{s, Util.getStringID(orgID)}, DEBUG);
+	}
+	*/
 	public void add(RequestData n) {
 		orgs = appendSet(orgs, n.orgs);
 		neig = appendSet(neig, n.neig);
@@ -199,6 +226,7 @@ public class RequestData extends ASNObj implements Summary{
 	public static Hashtable<String, String> appendHash(Hashtable<String, String> to,
 			Hashtable<String, String> from) {
 		for(String s : from.keySet()){
+			//if(!to.containsKey(s))
 			to.put(s, from.get(s));
 		}
 		return to;
@@ -226,6 +254,7 @@ public class RequestData extends ASNObj implements Summary{
 	public static Hashtable<String, String> appendHash(Hashtable<String, String> to,
 			Hashtable<String, String> from, String _peer_ID, String generalizedTime) {
 		for(String s : from.keySet()){
+			//if(!to.contains(s)) 
 			to.put(s, from.get(s));
 		}
 		return to;
@@ -327,6 +356,12 @@ public class RequestData extends ASNObj implements Summary{
 					news.size();
 		}catch(Exception e){
 			e.printStackTrace();
+//			System.err.println("RequestData: empty: this="+this);
+//			System.err.println("RequestData: empty: orgs="+orgs);
+//			System.err.println("RequestData: empty: neig="+neig);
+//			System.err.println("RequestData: empty: cons="+cons);
+//			System.err.println("RequestData: empty: witn="+witn);
+//			System.err.println("RequestData: empty: moti="+moti);
 			return false;
 		}
 	}
@@ -369,6 +404,7 @@ public class RequestData extends ASNObj implements Summary{
 	public void purge(RequestData obtained) {
 		if(obtained==null) return;
 		if(DEBUG)System.out.println("RequestData:purge: Will purge "+this+" with "+obtained);
+		//if(obtained.empty()) return;
 		for(String s : obtained.peers.keySet()) {
 			if (this.peers.containsKey(s)) {
 				if (!Util.newerDateStr(this.peers.get(s), obtained.peers.get(s)))
@@ -422,15 +458,15 @@ public class RequestData extends ASNObj implements Summary{
 	}
 	public void update(RequestData sol_rq, RequestData new_rq) {
 		for (String s : new_rq.peers.keySet()) {
-			if (! this.peers.containsKey(s)) this.peers.put(s, new_rq.peers.get(s));
+			if (! this.peers.containsKey(s)) this.peers.put(s, new_rq.peers.get(s));//DD.EMPTYDATE);
 			else if (Util.newerDateStr(new_rq.peers.get(s), this.peers.get(s))) this.peers.put(s, new_rq.peers.get(s));
 		}
 		for (String s : new_rq.orgs_auth.keySet()) {
-			if (! this.orgs_auth.containsKey(s)) this.orgs_auth.put(s, new_rq.peers.get(s));
+			if (! this.orgs_auth.containsKey(s)) this.orgs_auth.put(s, new_rq.peers.get(s));//DD.EMPTYDATE);
 			else if (Util.newerDateStr(new_rq.orgs_auth.get(s), this.orgs_auth.get(s))) this.orgs_auth.put(s, new_rq.orgs_auth.get(s));
 		}
 		for(String s : new_rq.cons.keySet()) {
-			if (! this.cons.containsKey(s)) this.cons.put(s, new_rq.cons.get(s));
+			if (! this.cons.containsKey(s)) this.cons.put(s, new_rq.cons.get(s));//DD.EMPTYDATE);
 			else if (Util.newerDateStr(new_rq.cons.get(s), this.cons.get(s))) this.cons.put(s, new_rq.cons.get(s));
 		}
 		for(String s : new_rq.orgs) if(!this.orgs.contains(s)) this.orgs.add(s);
@@ -439,11 +475,12 @@ public class RequestData extends ASNObj implements Summary{
 		for(String s : new_rq.moti) if(!this.moti.contains(s)) this.moti.add(s);
 		for(String s : new_rq.just) if(!this.just.contains(s)) this.just.add(s);
 		for(String s : new_rq.sign.keySet()) {
-			if (! this.sign.containsKey(s)) this.sign.put(s, new_rq.sign.get(s));
+			if (! this.sign.containsKey(s)) this.sign.put(s, new_rq.sign.get(s));//DD.EMPTYDATE);
 			else if (Util.newerDateStr(new_rq.sign.get(s), this.sign.get(s))) this.sign.put(s, new_rq.sign.get(s));
 		}
 		for(String s : new_rq.tran) if(!this.tran.contains(s)) this.tran.add(s);
 		for(String s : new_rq.news) if(!this.news.contains(s)) this.news.add(s);
+		
 		for(String s : sol_rq.peers.keySet()) {
 			if (this.peers.containsKey(s)) {
 				if (! Util.newerDateStr(this.peers.get(s), sol_rq.peers.get(s)))

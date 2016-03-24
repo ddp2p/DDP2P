@@ -1,10 +1,12 @@
 package net.ddp2p.common.hds;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.ciphersuits.CipherSuit;
 import net.ddp2p.common.data.D_Peer;
+
 /**
  * Data communicated by a CreatePeer Dialog
  * @author msilaghi
@@ -53,6 +55,7 @@ class PeerInput extends ASNObj {
 		return this;
 	}
 	public PeerInput() {
+		
 	}
 	public PeerInput(String name2, String slogan2, String email2) {
 		name = name2;

@@ -1,4 +1,5 @@
 package tools;
+
 public class Directories {
 	/**
 	 * Stores in database the version and root paths (parent of parameter)

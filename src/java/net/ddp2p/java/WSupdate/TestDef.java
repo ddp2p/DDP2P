@@ -1,10 +1,14 @@
+
 package net.ddp2p.java.WSupdate;
+
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
+
+
 /**
  * <p>Java class for TestDef complex type.
  * 
@@ -33,10 +37,12 @@ import javax.xml.bind.annotation.XmlType;
     "desc"
 })
 public class TestDef {
+
     protected Integer ref;
     @XmlElement(nillable = true)
     protected List<String> qualityStructure;
     protected String desc;
+
     /**
      * Gets the value of the ref property.
      * 
@@ -48,6 +54,7 @@ public class TestDef {
     public Integer getRef() {
         return ref;
     }
+
     /**
      * Sets the value of the ref property.
      * 
@@ -59,6 +66,7 @@ public class TestDef {
     public void setRef(Integer value) {
         this.ref = value;
     }
+
     /**
      * Gets the value of the qualityStructure property.
      * 
@@ -87,6 +95,7 @@ public class TestDef {
         }
         return this.qualityStructure;
     }
+
     /**
      * Gets the value of the desc property.
      * 
@@ -98,6 +107,7 @@ public class TestDef {
     public String getDesc() {
         return desc;
     }
+
     /**
      * Sets the value of the desc property.
      * 
@@ -109,4 +119,5 @@ public class TestDef {
     public void setDesc(String value) {
         this.desc = value;
     }
+
 }

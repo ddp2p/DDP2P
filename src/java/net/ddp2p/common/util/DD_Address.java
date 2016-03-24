@@ -1,23 +1,31 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
  package net.ddp2p.common.util;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.regex.Pattern;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
@@ -30,6 +38,7 @@ import net.ddp2p.common.data.D_PeerOrgs;
 import net.ddp2p.common.hds.Address;
 import net.ddp2p.common.hds.DirectoryServer;
 import net.ddp2p.common.hds.SR;
+
 public class DD_Address implements StegoStructure {
 	public static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -42,6 +51,7 @@ public class DD_Address implements StegoStructure {
 	public static final String V2 = "2";
 	/** sign ArrayList<Address */
 	public static final String V3 = "3";
+	
 	public D_Peer peer;
 	public String version=V3;
 	public String peer_version;
@@ -51,6 +61,7 @@ public class DD_Address implements StegoStructure {
 	public String phones;
 	public String slogan;
 	public String address;
+	//public String type;
 	public boolean broadcastable;
 	public String[] hash_alg;
 	public byte[] signature;
@@ -65,6 +76,7 @@ public class DD_Address implements StegoStructure {
 	public static String EMAILS = "\n<<EMAILS>>\n";
 	public static String PHONES = "\n<<PHONES>>\n";
 	public static String ADDRESS = "\n<<ADDRESS>>\n";
+//	public static String TYPE = "\n<<TYPE>>\n";
 	public static String DATE = "\n<<DATE>>\n";
 	public static String BROADCAST = "\n<<BROADCAST>>\n";
 	public static String HASH_ALG  = "\n<<HASH_ALG>>\n";
@@ -74,9 +86,39 @@ public class DD_Address implements StegoStructure {
 	public static String SEPREP = "\n#\n";
 	public static String SEP = "\n<<";
 	public DD_Address() {
-		hash_alg = SR.HASH_ALG_V1;
+		hash_alg = SR.HASH_ALG_V1;//new String[0];//SR.peerAddressHashAlg;
 		signature = new byte[0];
 	}
+	/*
+	public DDAddress(D_PeerAddress dd) {
+		boolean encode_addresses = true;
+		version = dd.component_basic_data.version;
+		globalID = dd.component_basic_data.globalID;
+		name = dd.component_basic_data.name;
+		slogan = dd.component_basic_data.slogan;
+		emails = dd.component_basic_data.emails;
+		phones = dd.component_basic_data.phones;
+		creation_date = Encoder.getGeneralizedTime(dd.component_basic_data.creation_date);
+		picture = dd.component_basic_data.picture;
+		if(encode_addresses && (dd.address!=null)){
+			address = "";
+			for(int k=0; k<dd.address.length; k++) {
+				if(!"".equals(address)) address += DirectoryServer.ADDR_SEP;
+				if(DD.EXPORT_DDADDRESS_WITH_LOCALHOST) {
+					if(dd.address[k].address.startsWith("localhost:")) continue;
+					if(dd.address[k].address.startsWith("127.0.0.1:")) continue;
+				}
+				address += dd.address[k].type+Address.ADDR_PART_SEP+dd.address[k].address;
+				if(dd.address[k].certified) address += TypedAddress.PRI_SEP+dd.address[k].priority;
+			}
+		}
+		broadcastable = dd.component_basic_data.broadcastable;
+		hash_alg = dd.signature_alg;
+		//signature_alg = D_PeerAddress.getStringFromHashAlg(signature_alg);
+		signature = dd.component_basic_data.signature;
+		served_orgs = dd.served_orgs;
+	}
+	*/
 	/**
 	 * Call with the peer that you want to encode into an image.
 	 * @param dd
@@ -89,7 +131,7 @@ public class DD_Address implements StegoStructure {
 	void init_V3(D_Peer dd) {
 		if (DEBUG) System.out.println("DD_Address: init_V3: peer="+dd);
 		this.peer = dd;
-		init_V2(dd); 
+		init_V2(dd); // for the NiceDescription function
 		System.out.println("DD_Address: init_V3: done");
 	}
 	void init_V2(D_Peer dd) {
@@ -101,9 +143,10 @@ public class DD_Address implements StegoStructure {
 		slogan = dd.component_basic_data.slogan;
 		emails = dd.component_basic_data.emails;
 		phones = dd.component_basic_data.phones;
-		creation_date = dd.getCreationDate(); 
+		creation_date = dd.getCreationDate(); //Encoder.getGeneralizedTime(dd.this.getCreationTime());
 		picture = dd.component_basic_data.picture;
 		if (V2.equals(version)) Util.printCallPath("Need to encode addresses: v="+version+" p="+dd);
+		
 		if(encode_addresses && (dd.hasAddresses())){
 			address = "";
 			for(int k=0; k<dd.shared_addresses.size(); k++) {
@@ -116,8 +159,10 @@ public class DD_Address implements StegoStructure {
 				if(dd.shared_addresses.get(k).certified) address += Address.PRI_SEP+dd.shared_addresses.get(k).priority;
 			}
 		}
+		
 		broadcastable = dd.component_basic_data.broadcastable;
 		hash_alg = dd.signature_alg;
+		//signature_alg = D_PeerAddress.getStringFromHashAlg(signature_alg);
 		signature = dd.getSignature();
 		served_orgs = dd.served_orgs;
 		if (DEBUG) System.out.println("DD_Address: init_V2: got "+this);
@@ -138,6 +183,46 @@ public class DD_Address implements StegoStructure {
 	 * Does not update version
 	 * @param sk
 	 */
+	/*
+	@Deprecated
+	public void sign(SK sk) {
+		signature = new byte[0];
+		D_Peer pa = new D_Peer(this,true);
+		//byte[] msg = getBytes();
+		//if(DEBUG)System.err.println("DDAddress: sign: msg=["+msg.length+"]"+Util.byteToHex(msg, ":"));
+		if(DEBUG)System.err.println("DDAddress: sign: peer_addr="+pa);
+		signature = pa.sign(sk); //Util.sign(pa,  sk);
+		if(DEBUG)System.err.println("DDAddress: sign: sign=["+signature.length+"]"+Util.byteToHex(signature, ":"));
+	}
+	*/
+	/*
+	public boolean verify() {
+		//boolean DEBUG = true;
+		if(DEBUG)System.err.println("DDAddress: verify: start ");
+		if((signature==null) || (signature.length==0)){
+			if(_DEBUG)System.err.println("DDAddress: verify: exit: empty signature ");
+			return false;
+		}
+		//byte[] sign = signature;
+		//signature = new byte[0];
+		D_Peer pa;
+		if(V2.equals(version))
+			pa = new D_Peer(this,true);
+		else //V0
+			pa = new D_Peer(this,false);			
+		//byte[] msg = getBytes();
+		//if(DEBUG)System.err.println("DDAddress: verify: msg=["+msg.length+"]"+Util.byteToHex(msg, ":"));
+		//signature = sign;
+		if(DEBUG)System.err.println("DDAddress: verify: will get PK from "+globalID);
+		//PK senderPK = ciphersuits.Cipher.getPK(this.globalID);
+		if(DEBUG)System.err.println("DDAddress: verify: will verify signature of pa="+pa);
+		if(DEBUG)System.err.println("DDAddress: verify: sign=["+signature.length+"]"+Util.byteToHex(signature, ":"));
+		//return Util.verifySign(pa, senderPK, sign);
+		boolean result = pa.verifySignature();
+		if(DEBUG)System.err.println("DDAddress: verify: got = " + result);
+		return result;
+	}
+	*/
 	public String getString() {
 		String result=BEGIN+sane(globalID);
 		result+=VERSION+sane(peer_version);
@@ -149,6 +234,7 @@ public class DD_Address implements StegoStructure {
 		result+=SLOGAN+sane(slogan);
 		result+=DATE+sane(creation_date);
 		result+=ADDRESS+sane(address);
+		//result+=TYPE+sane(type);
 		result+=BROADCAST+sane(broadcastable?"1":"0");
 		result+=HASH_ALG+((hash_alg==null)?"NULL":"\""+sane(Util.concat(hash_alg,":"))+"\"");
 		result+=SERVING+sane(Util.concatPeerOrgs(served_orgs));
@@ -163,6 +249,7 @@ public class DD_Address implements StegoStructure {
 	 * @return
 	 */
 	public String getNiceDescription() {
+		//boolean DEBUG=true;
 		if(DEBUG)System.err.println("DDAddress: getNiceDescription: start ");
 		String result=BEGIN+sane(Util.trimmed(globalID,MAX_ID_DESCRIPTION));
 		if(DEBUG)System.err.println("DDAddress: getNiceDescription: GID");
@@ -188,6 +275,7 @@ public class DD_Address implements StegoStructure {
 			}
 		}
 		if(DEBUG)System.err.println("DDAddress: getNiceDescription: address");
+		//result+=TYPE+sane(type);
 		result+=BROADCAST+sane(broadcastable?"1":"0");
 		if(DEBUG)System.err.println("DDAddress: getNiceDescription: broadcastable");
 		result+=HASH_ALG+((hash_alg==null)?"NULL":"\""+sane(Util.trimmed(Util.concat(hash_alg,":"),MAX_ID_DESCRIPTION))+"\"");
@@ -202,6 +290,7 @@ public class DD_Address implements StegoStructure {
 	public void saveSync() throws P2PDDSQLException {
 		save();
 	}
+	
 	public void save() throws P2PDDSQLException {
 		if (V0.equals(this.version)) save_V2();
 		if (V1.equals(this.version)) save_V2();
@@ -237,6 +326,8 @@ public class DD_Address implements StegoStructure {
 		D_Peer.storeReceived(peer, true, true, null);
 	}
 	public void save_V2() throws P2PDDSQLException {
+		//boolean DEBUG = true;
+		//long peer_ID = -1;
 		if (address == null) {
 			if (DEBUG) System.out.println("DDAddress:save: nothing to save ");
 			Application_GUI.warning(__("No address to save!"), __("Saving failed!"));
@@ -255,18 +346,21 @@ public class DD_Address implements StegoStructure {
 		if (DEBUG) System.out.println("DDAddress:save: will save");
 		Calendar _date = Util.CalendargetInstance();
 		String date = Encoder.getGeneralizedTime(_date);
+		//UpdatePeersTable.integratePeerOrgs(pa.served_orgs, peer_ID, crt_date);
 		String adr[] = address.split(Pattern.quote(DirectoryServer.ADDR_SEP));
 		if (DEBUG) System.out.println("DDAddress:save: will save address: ["+adr.length+"] "+address);
+
 		ArrayList<Address> _a = new ArrayList<Address>(adr.length);
 		for (int k = 0; k < adr.length; k ++) {
 			if (DEBUG) System.out.println("DDAddress:save: will save address: "+adr[k]);
 			String pr[] = adr[k].split(Pattern.quote(Address.PRI_SEP));
 			String[] ds = pr[0].split(Pattern.quote(Address.ADDR_PART_SEP));
 			if (DEBUG) System.out.println("DDAddress:save: address parts: "+ds.length);
-			if (ds.length < 3) continue; 
+			if (ds.length < 3) continue; //TypedAddress
 			String type = ds[0];
 			String target = ds[1]+Address.ADDR_PART_SEP+ds[2];
 			if (ds.length > 3) target += Address.ADDR_PART_SEP + ds[3];
+			//long address_ID = 
 			boolean certificate = false;
 			int priority = 0;
 			if (pr.length > 1) {
@@ -289,10 +383,57 @@ public class DD_Address implements StegoStructure {
 				__("Save Obtained Address?"),
 				Application_GUI.OK_CANCEL_OPTION);
 		if (ok != 0) return;
+		
 		if (DEBUG) System.out.println("DDAddress:save: will save "+this);
 		D_Peer saved = D_Peer.loadPeer(this, true);
 		if (DEBUG) Application_GUI.warning(__("Address Saved as #")+saved.getLIDstr_keep_force()+"! ", __("Saved!"));
 	}
+		/*
+		D_Peer pa;
+		if (V2.equals(version))
+			pa = new D_Peer(this,true);
+		else //V0+(!existing[0]))
+			pa = new D_Peer(this,true); // false
+		D_Peer old = new D_Peer(pa.component_basic_data.globalID, 0, false);
+
+
+		if(old._peer_ID > 0) {
+			if(DEBUG) System.out.println("DDAddress: save old:"+old);
+			
+//			old.component_preferences.used = true;
+//			old.component_basic_data.name = pa.component_basic_data.name;
+//			old.component_basic_data.emails = pa.component_basic_data.emails;
+//			old.component_basic_data.phones = pa.component_basic_data.phones;
+//			old.component_basic_data.slogan = pa.component_basic_data.slogan;
+//			old.address = pa.address;
+//			old.component_basic_data.creation_date = pa.component_basic_data.creation_date;
+//			old.component_basic_data.version = pa.component_basic_data.version;
+//			old.component_basic_data.globalID = pa.component_basic_data.globalID;
+//			old.component_basic_data.broadcastable = pa.component_basic_data.broadcastable;
+//			old.served_orgs = pa.served_orgs;
+//			old.component_basic_data.signature = pa.component_basic_data.signature;
+//			old.component_basic_data.picture = pa.component_basic_data.picture;
+//			old.component_basic_data.hash_alg = pa.component_basic_data.hash_alg;
+//			old.component_basic_data.globalIDhash = pa.component_basic_data.globalIDhash;
+//			if(DEBUG) System.out.println("DDAddress: save old modified:"+old);
+//			old.storeVerified();
+//			if(DEBUG) System.out.println("DDAddress: saved old modified:"+old);
+			
+			peer_ID = pa._storeVerified(_date, date, true);
+			if(DEBUG) System.out.println("DDAddress: saved received:"+pa);
+		} else {
+			if(DEBUG) System.out.println("DDAddress: save new");
+			pa.component_preferences.used = true;
+			peer_ID = pa._storeVerified();
+		}
+		*/
+		//D_PeerAddress.integratePeerOrgs(served_orgs, peer_ID, date);
+//		if(this.served_orgs!=null)
+//			for(int k=0; k<this.served_orgs.length; k++) {
+//				long org_ID = UpdateMessages.get_organizationID(served_orgs[k].global_organization_ID, served_orgs[k].org_name, date, served_orgs[k].global_organization_IDhash);
+//				D_PeerAddress.get_peers_orgs_ID(peer_ID,org_ID, date);
+//			}
+		
 	String sane(String in) {
 		if(in==null) return "";
 		String out = in.replaceAll("#", "##");
@@ -335,6 +476,7 @@ public class DD_Address implements StegoStructure {
 		if (!elem[++k].startsWith(DATE.substring(SEP.length()))) return false;
 		if (!elem[++k].startsWith(ADDRESS.substring(SEP.length()))) return false;
 		if(DEBUG)System.out.println("DDAddress:parseAddress:pA8");
+		//if (!elem[4].startsWith(TYPE.substring(SEP.length()))) return false;
 		if (!elem[++k].startsWith(BROADCAST.substring(SEP.length()))) return false;
 		if(DEBUG)System.out.println("DDAddress:parseAddress:pA9");
 		if (!elem[++k].startsWith(HASH_ALG.substring(SEP.length()))) return false;
@@ -352,6 +494,7 @@ public class DD_Address implements StegoStructure {
 		slogan = clean(elem[t++].substring(SLOGAN.length()-SEP.length()));
 		creation_date = clean(elem[t++].substring(DATE.length()-SEP.length()));
 		address = clean(elem[t++].substring(ADDRESS.length()-SEP.length()));
+		//type = clean(elem[4].substring(TYPE.length()-SEP.length()));
 		broadcastable = Integer.parseInt(clean(elem[t++].substring(BROADCAST.length()-SEP.length())))>0;
 		String s_hash_alg = clean(elem[t++].substring(HASH_ALG.length()-SEP.length()));
 		if (s_hash_alg == null) hash_alg = new String[]{};
@@ -362,12 +505,13 @@ public class DD_Address implements StegoStructure {
 		}
 		served_orgs = Util.parsePeerOrgs(elem[t++].substring(SERVING.length()-SEP.length()));
 		String s_signature = clean(elem[t++].substring(SIGNATURE.length()-SEP.length()));
+		//signature = (s_signature==null)?(new byte[]{}):(Util.hexToBytes(s_signature.split(":")));
 		signature = (s_signature==null)?(new byte[]{}):(Util.byteSignatureFromString(s_signature));
 		if(DEBUG)System.out.println("DDAddress:parseAddress:pA3");
 		return true;
 	}
 	public byte[] getBytes() {
-		return getEncoder().getBytes(); 
+		return getEncoder().getBytes(); // _getBytes();
 	}
 	public Encoder getEncoder() {
 		Encoder enc = _getEncoder();
@@ -377,54 +521,69 @@ public class DD_Address implements StegoStructure {
 	public Encoder _getEncoder() {
 		if(V1.equals(version)) return _getBytes_V1();
 		if(V2.equals(version)) return _getBytes_V2();
-		if(V3.equals(version)) return _getBytes_V3(); 
+		if(V3.equals(version)) return _getBytes_V3(); //peer.encode();
 		throw new RuntimeException("Unknown DDAddress version:"+peer_version);
 	}
+//	public byte[] _getBytes() {
+//		if(V1.equals(version)) return _getBytes_V1();
+//		if(V2.equals(version)) return _getBytes_V2();
+//		if(V3.equals(version)) return _getBytes_V3(); //peer.encode();
+//		throw new RuntimeException("Unknown DDAddress version:"+peer_version);
+//	}
 	public Encoder _getBytes_V3() {
 		Encoder enc = new Encoder().initSequence();
 		if (version != null) enc.addToSequence(new Encoder(version,false).setASN1Type(DD.TAG_AC0));
 		enc.addToSequence(peer.getEncoder());
 		ArrayList<D_PeerInstance> dpi = new ArrayList<D_PeerInstance>( peer._instances.values());
 		enc.addToSequence(Encoder.getEncoder(dpi));
-		return enc;
+		return enc;//.getBytes();
 	}
 	public Encoder _getBytes_V1() {
 		Encoder enc = new Encoder().initSequence();
 		if(version!=null) enc.addToSequence(new Encoder(version,false).setASN1Type(DD.TAG_AC0));
 		enc.addToSequence(new Encoder(globalID,false));
 		if(creation_date!=null)enc.addToSequence(new Encoder(Util.getCalendar(creation_date)));
+
 		if(name==null) enc.addToSequence(new Encoder("",Encoder.TAG_UTF8String));
 		else enc.addToSequence(new Encoder(name,Encoder.TAG_UTF8String));
+
 		if(slogan==null) enc.addToSequence(new Encoder("",Encoder.TAG_UTF8String));
 		else enc.addToSequence(new Encoder(slogan,Encoder.TAG_UTF8String));
+
 		enc.addToSequence(new Encoder(address,false));
+		//enc.addToSequence(new Encoder(type,false));
 		enc.addToSequence(new Encoder(broadcastable));
 		enc.addToSequence(Encoder.getStringEncoder(hash_alg, Encoder.TAG_PrintableString));
 		if(this.served_orgs!=null)enc.addToSequence(Encoder.getEncoder(this.served_orgs).setASN1Type(DD.TAG_AC12));
 		enc.addToSequence(new Encoder(signature).setASN1Type(Encoder.TAG_OCTET_STRING));
-		return enc;
+		return enc;//.getBytes();
 	}
 	public Encoder _getBytes_V2() {
 		Encoder enc = new Encoder().initSequence();
 		if(version!=null)enc.addToSequence(new Encoder(version,false).setASN1Type(DD.TAG_AC0));
 		enc.addToSequence(new Encoder(globalID,false));
 		if(creation_date!=null)enc.addToSequence(new Encoder(Util.getCalendar(creation_date)));
+		
 		if(name==null) enc.addToSequence(new Encoder("",Encoder.TAG_UTF8String));
 		else enc.addToSequence(new Encoder(name,Encoder.TAG_UTF8String));
+		
 		if(V2.equals(peer_version)){
 			if(emails==null) enc.addToSequence(new Encoder("",Encoder.TAG_UTF8String));
 			else enc.addToSequence(new Encoder(emails,Encoder.TAG_UTF8String));			
 			if(phones==null) enc.addToSequence(new Encoder("",Encoder.TAG_UTF8String));
 			else enc.addToSequence(new Encoder(phones,Encoder.TAG_UTF8String));			
 		}
+		
 		if(slogan==null) enc.addToSequence(new Encoder("",Encoder.TAG_UTF8String));
 		else enc.addToSequence(new Encoder(slogan,Encoder.TAG_UTF8String));
+		
 		enc.addToSequence(new Encoder(address,false));
+		//enc.addToSequence(new Encoder(type,false));
 		enc.addToSequence(new Encoder(broadcastable));
 		enc.addToSequence(Encoder.getStringEncoder(hash_alg, Encoder.TAG_PrintableString));
 		if(this.served_orgs!=null)enc.addToSequence(Encoder.getEncoder(this.served_orgs).setASN1Type(DD.TAG_AC12));
 		enc.addToSequence(new Encoder(signature).setASN1Type(Encoder.TAG_OCTET_STRING));
-		return enc;
+		return enc;//.getBytes();
 	}
 	/**
 	 * Attempts to decode may profit by detecting a miss-matched object type by not accepting data with no name.
@@ -432,6 +591,8 @@ public class DD_Address implements StegoStructure {
 	@Override
 	public void setBytes(byte[] msg) throws ASN1DecoderFail {
 		_setBytes(msg);
+		//if (DEBUG) System.out.println("DD_Address: setBytes x: done");
+		// Attempts to decode may profit by detecting a miss-matched object type by not accepting data with no name.
 		if (V0.equals(this.version)) return;
 		if (V1.equals(this.version)) return;
 		if (V2.equals(this.version)) return;
@@ -439,6 +600,7 @@ public class DD_Address implements StegoStructure {
 			if (_DEBUG) System.out.println("DD_Address: setBytes: we do not allow peers with no name:"+peer);
 			throw new net.ddp2p.ASN1.ASNLenRuntimeException("No name in received peer!");
 		}
+		//if (DEBUG) System.out.println("DD_Address: setBytes x: success");
 	}
 	/**
 	 * This version always returns true. Could be configured to return false on wrong ASN1 tag by uncommenting return condition.
@@ -447,6 +609,7 @@ public class DD_Address implements StegoStructure {
 	 * @throws ASN1DecoderFail
 	 */
 	public boolean _setBytes(byte[] msg) throws ASN1DecoderFail {
+		//Util.printCallPath("");
 		if (DEBUG) System.out.println("DD_Address: setBytes: enter");
 		if (_DEBUG) System.out.println("DD_Address: setBytes: enter msg=#"+msg.length+": "+Util.byteToHexDump(msg, 30));
 		Decoder dec = new Decoder(msg);
@@ -454,10 +617,12 @@ public class DD_Address implements StegoStructure {
 		BigInteger _found = dec.getTagValueBN();
 		if (! expected.equals(_found)) {
 			if (_DEBUG) System.err.println("DD_Address: setBytes: Got: message not ASN1 tag of ="+this.getClass()+" "+expected+" vs "+_found);
+			//return false;
 		}
 		dec = dec.getContent();
 		peer_version = null;
 		if (dec.getTypeByte() == DD.TAG_AC0) version = peer_version = dec.getFirstObject(true).getString(DD.TAG_AC0);
+		
 		if (V0.equals(version)) {
 			if (DEBUG) System.out.println("DD_Address: setBytes: V0");
 			setBytes_V2(dec); return true;}
@@ -472,6 +637,7 @@ public class DD_Address implements StegoStructure {
 		if (V3.equals(version)) {
 			if (DEBUG) System.out.println("DD_Address: setBytes: V3");
 			setBytes_V3(dec); 
+			//if (DEBUG) System.out.println("DD_Address: setBytes: done V3");
 			return true;}
 		if (DEBUG) System.out.println("DD_Address: setBytes: exit: \""+version+"\"");
 		return true;
@@ -485,11 +651,16 @@ public class DD_Address implements StegoStructure {
 			peer.putPeerInstance(i.peer_instance, i, false);
 		}
 		if (DEBUG) System.out.println("DD_Address: setBytes_V3: exit 0:"+peer);
+		//D_Peer p = D_Peer.getPeerByGIDhash(peer.getGIDH(), true, true, true);
+		
 		if (DEBUG) System.out.println("DD_Address: setBytes_V3: exit 1:"+this.getNiceDescription());
 		this.init_V2(peer);
 		if (DEBUG) System.out.println("DD_Address: setBytes_V3: exit 2:"+this.getNiceDescription());
+		//p.loadRemote(peer);
+		//peer.storeRequest();
 	}
 	public void setBytes_V2(Decoder dec) throws ASN1DecoderFail {
+		//if(V0.equals(version)){
 		globalID = dec.getFirstObject(true).getString(Encoder.TAG_PrintableString);
 		if (dec.getTypeByte()==Encoder.TAG_GeneralizedTime)
 			creation_date = dec.getFirstObject(true).getGeneralizedTimeAnyType();
@@ -504,6 +675,7 @@ public class DD_Address implements StegoStructure {
 		slogan = dec.getFirstObject(true).getString(Encoder.TAG_UTF8String);
 		if ("".equals(slogan)) slogan = null;
 		address = dec.getFirstObject(true).getString(Encoder.TAG_PrintableString);
+		//type = dec.getFirstObject(true).getString(Encoder.TAG_PrintableString);
 		broadcastable = dec.getFirstObject(true).getBoolean();
 		hash_alg = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_PrintableString);
 		if(dec.getTypeByte() == DD.TAG_AC12)
@@ -511,6 +683,7 @@ public class DD_Address implements StegoStructure {
 		signature = dec.getFirstObject(true).getBytes();
 		if(dec.getFirstObject(false)!=null) throw new ASN1DecoderFail("Extra Objects");
 	}
+	
 	public void setDDAddress(DD_Address d) {
 		address = d.address;
 		this.version = d.version;

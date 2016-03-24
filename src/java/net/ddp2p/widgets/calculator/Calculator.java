@@ -3,6 +3,7 @@
  * Charset: UTF-8
  ***************************************************/
 package net.ddp2p.widgets.calculator;
+
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
@@ -18,6 +19,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.math.BigDecimal;
+
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -29,16 +31,20 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.border.LineBorder;
+
 public class Calculator implements ActionListener {
 	private final static int OP_NULL = -1;
 	private final static int OP_PLUS = 1;
 	private final static int OP_MINUS = 2;
 	private final static int OP_TIME = 3;
 	private final static int OP_DIV = 4;
+
 	public JFrame frame;
 	public Container con;
+
 	public JPanel panel;
 	public JPanel displayPanel;
+
 	public JMenuBar menuBar;
 	public JMenu checkMenu;
 	public JMenu editMenu;
@@ -47,8 +53,10 @@ public class Calculator implements ActionListener {
 	public JMenuItem copyItem;
 	public JMenuItem pasteItem;
 	public JMenuItem aboutItem;
+
 	public JTextField displayFieldTop;
 	public JTextField displayFieldBottom;
+
 	public JButton buttonMC;
 	public JButton buttonMR;
 	public JButton buttonMS;
@@ -77,8 +85,11 @@ public class Calculator implements ActionListener {
 	public JButton button0;
 	public JButton buttonDot;
 	public JButton buttonPlus;
+
 	public JPanel panel1;
 	public JButton[] buttonArray;
+
+	// operation variables
 	public String stock;
 	public String displayTop;
 	public String displayBottom;
@@ -101,24 +112,34 @@ public class Calculator implements ActionListener {
 	public boolean timeFlag;
 	public boolean divFlag;
 	public boolean equalFlag;
+
 	public Calculator() {
 		frame = new JFrame("Calculator");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		// setting the frame size
 		int inset_width = 570;
 		int inset_hight = 224;
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		frame.setBounds(inset_width, inset_hight, screenSize.width
 				- inset_width * 2, screenSize.height - inset_hight * 2);
+		// setting the frame icon
 		Toolkit kit = Toolkit.getDefaultToolkit();
 		Image img = kit.getImage("src/programe/title.png");
 		frame.setIconImage(img);
+		// setting frame resizable and disable the maximization button
 		frame.setResizable(false);
+
+		// get the container of the frame
 		con = frame.getContentPane();
 		con.setLayout(new GridLayout(1, 1));
+
+		// initializing panel
 		panel = new JPanel();
 		panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 		displayPanel = new JPanel();
 		displayPanel.setBorder(new LineBorder(Color.gray));
+
+		// initializing menu bar, menu, and menu items
 		menuBar = new JMenuBar();
 		checkMenu = new JMenu("Check(V)");
 		editMenu = new JMenu("Edit(E)");
@@ -130,20 +151,30 @@ public class Calculator implements ActionListener {
 		pasteItem.addActionListener(this);
 		aboutItem = new JMenuItem("About(A)");
 		aboutItem.addActionListener(this);
+
+		// setting font and keyboard shortcuts
+		//checkMenu.setFont(new Font("", Font.PLAIN, 13));
 		checkMenu.setMnemonic('v');
+		//editMenu.setFont(new Font("", Font.PLAIN, 13));
 		editMenu.setMnemonic('e');
+		//helpMenu.setFont(new Font("", Font.PLAIN, 13));
 		helpMenu.setMnemonic('h');
+		//standardItem.setFont(new Font("", Font.PLAIN, 13));
 		standardItem.setMnemonic('t');
 		standardItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1,
 				InputEvent.ALT_MASK));
+		//copyItem.setFont(new Font("", Font.PLAIN, 13));
 		copyItem.setMnemonic('c');
 		copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C,
 				InputEvent.CTRL_MASK));
+		//pasteItem.setFont(new Font("", Font.PLAIN, 13));
 		pasteItem.setMnemonic('p');
 		pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V,
 				InputEvent.CTRL_MASK));
+		//aboutItem.setFont(new Font("", Font.PLAIN, 13));
 		aboutItem.setMnemonic('a');
 		aboutItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0));
+
 		displayFieldTop = new JTextField(17);
 		displayFieldTop.setEditable(false);
 		displayFieldTop.setHorizontalAlignment(JTextField.RIGHT);
@@ -155,6 +186,8 @@ public class Calculator implements ActionListener {
 		displayFieldBottom.setHorizontalAlignment(JTextField.RIGHT);
 		displayFieldBottom.setFont(new Font("Consolas", Font.PLAIN, 20));
 		displayFieldBottom.setText("0");
+
+		// initializing buttons
 		buttonMC = new JButton("MC");
 		buttonMC.addActionListener(this);
 		buttonMR = new JButton("MR");
@@ -211,6 +244,8 @@ public class Calculator implements ActionListener {
 		buttonDot.addActionListener(this);
 		buttonPlus = new JButton("+");
 		buttonPlus.addActionListener(this);
+
+		// buttonArray
 		buttonArray = new JButton[28];
 		buttonArray[0] = buttonMC;
 		buttonArray[1] = buttonMR;
@@ -243,6 +278,7 @@ public class Calculator implements ActionListener {
 		for (int i = 0; i < buttonArray.length; i++) {
 			buttonArray[i].setMargin(new Insets(3, 5, 3, 5));
 		}
+
 		stock = "";
 		displayTop = "";
 		displayBottom = "";
@@ -260,10 +296,13 @@ public class Calculator implements ActionListener {
 		minusFlag = true;
 		timeFlag = true;
 		divFlag = true;
+
 		dotFlag = true;
 		equalFlag = true;
+
 		errorFlag = false;
 	}
+
 	public JFrame createGUI() {
 		frame.setJMenuBar(menuBar);
 		menuBar.add(checkMenu);
@@ -273,17 +312,23 @@ public class Calculator implements ActionListener {
 		editMenu.add(copyItem);
 		editMenu.add(pasteItem);
 		helpMenu.add(aboutItem);
+
+		// setting the layout of panel
 		GridBagLayout layout = new GridBagLayout();
 		panel.setLayout(layout);
 		GridBagConstraints cons = new GridBagConstraints();
 		cons.fill = GridBagConstraints.BOTH;
 		cons.anchor = GridBagConstraints.CENTER;
 		cons.insets = new Insets(2, 2, 2, 2);
+
+		// setting the layout of display panel
 		GridBagLayout displayLayout = new GridBagLayout();
 		displayPanel.setLayout(displayLayout);
 		GridBagConstraints displayCons = new GridBagConstraints();
 		displayCons.fill = GridBagConstraints.BOTH;
 		displayCons.anchor = GridBagConstraints.CENTER;
+
+		// adding components
 		cons.gridx = 0;
 		cons.gridy = 0;
 		cons.gridheight = 2;
@@ -298,177 +343,211 @@ public class Calculator implements ActionListener {
 		displayCons.gridy = 1;
 		displayLayout.setConstraints(displayFieldBottom, displayCons);
 		displayPanel.add(displayFieldBottom);
+
+		// MC
 		cons.gridx = 0;
 		cons.gridy = 2;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonMC, cons);
 		panel.add(buttonMC);
+
+		// MR
 		cons.gridx = 1;
 		cons.gridy = 2;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonMR, cons);
 		panel.add(buttonMR);
+		// MS
 		cons.gridx = 2;
 		cons.gridy = 2;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonMS, cons);
 		panel.add(buttonMS);
+		// M+
 		cons.gridx = 3;
 		cons.gridy = 2;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonMPlus, cons);
 		panel.add(buttonMPlus);
+		// M-
 		cons.gridx = 4;
 		cons.gridy = 2;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonMMinus, cons);
 		panel.add(buttonMMinus);
+		// Back
 		cons.gridx = 0;
 		cons.gridy = 3;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonBack, cons);
 		panel.add(buttonBack);
+		// CE
 		cons.gridx = 1;
 		cons.gridy = 3;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonCE, cons);
 		panel.add(buttonCE);
+		// C
 		cons.gridx = 2;
 		cons.gridy = 3;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonC, cons);
 		panel.add(buttonC);
+		// 
 		cons.gridx = 3;
 		cons.gridy = 3;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonNegative, cons);
 		panel.add(buttonNegative);
+		// 
 		cons.gridx = 4;
 		cons.gridy = 3;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonRoot, cons);
 		panel.add(buttonRoot);
+		// 7
 		cons.gridx = 0;
 		cons.gridy = 4;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(button7, cons);
 		panel.add(button7);
+		// 8
 		cons.gridx = 1;
 		cons.gridy = 4;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(button8, cons);
 		panel.add(button8);
+		// 9
 		cons.gridx = 2;
 		cons.gridy = 4;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(button9, cons);
 		panel.add(button9);
+		// 
 		cons.gridx = 3;
 		cons.gridy = 4;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonDiv, cons);
 		panel.add(buttonDiv);
+		// %
 		cons.gridx = 4;
 		cons.gridy = 4;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonPercent, cons);
 		panel.add(buttonPercent);
+		// 4
 		cons.gridx = 0;
 		cons.gridy = 5;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(button4, cons);
 		panel.add(button4);
+		// 5
 		cons.gridx = 1;
 		cons.gridy = 5;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(button5, cons);
 		panel.add(button5);
+		// 6
 		cons.gridx = 2;
 		cons.gridy = 5;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(button6, cons);
 		panel.add(button6);
+		// X
 		cons.gridx = 3;
 		cons.gridy = 5;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonTime, cons);
 		panel.add(buttonTime);
+		// 1/x
 		cons.gridx = 4;
 		cons.gridy = 5;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonBackwards, cons);
 		panel.add(buttonBackwards);
+		// 1
 		cons.gridx = 0;
 		cons.gridy = 6;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(button1, cons);
 		panel.add(button1);
+		// 2
 		cons.gridx = 1;
 		cons.gridy = 6;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(button2, cons);
 		panel.add(button2);
+		// 3
 		cons.gridx = 2;
 		cons.gridy = 6;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(button3, cons);
 		panel.add(button3);
+		// -
 		cons.gridx = 3;
 		cons.gridy = 6;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonMinus, cons);
 		panel.add(buttonMinus);
+		// =
 		cons.gridx = 4;
 		cons.gridy = 6;
 		cons.gridheight = 2;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonEqual, cons);
 		panel.add(buttonEqual);
+		// 0
 		cons.gridx = 0;
 		cons.gridy = 7;
 		cons.gridheight = 1;
 		cons.gridwidth = 2;
 		layout.setConstraints(button0, cons);
 		panel.add(button0);
+		// .
 		cons.gridx = 2;
 		cons.gridy = 7;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonDot, cons);
 		panel.add(buttonDot);
+		// +
 		cons.gridx = 3;
 		cons.gridy = 7;
 		cons.gridheight = 1;
 		cons.gridwidth = 1;
 		layout.setConstraints(buttonPlus, cons);
 		panel.add(buttonPlus);
+
 		con.add(panel);
+
+//		frame.setVisible(true);
 		return frame;
 	}
+
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (errorFlag == true)
@@ -730,6 +809,7 @@ public class Calculator implements ActionListener {
 				dotFlag = true;
 				op = OP_DIV;
 			}
+
 		}
 		if (e.getSource() == buttonEqual) {
 			if (firstOP != "") {
@@ -873,6 +953,7 @@ public class Calculator implements ActionListener {
 					"Author: Jiuyang Zhou\r\nMay 29, 2013 @ Florida Tech");
 		}
 	}
+
 	public void operation() {
 		try {
 			secondInt = Integer.parseInt(secondOP.trim());
@@ -908,6 +989,7 @@ public class Calculator implements ActionListener {
 			System.out.println(firstFloat);
 			System.out.println(secondFloat);
 			System.out.println(resultFloat);
+			// System.out.println(displayBottom);
 			break;
 		case OP_MINUS:
 			resultFloat = b1.subtract(b2).floatValue();
@@ -989,6 +1071,7 @@ public class Calculator implements ActionListener {
 			break;
 		}
 	}
+
 	public void initial() {
 		displayFieldTop.setText("");
 		displayFieldBottom.setText("0");
@@ -998,6 +1081,7 @@ public class Calculator implements ActionListener {
 		secondOP = "";
 		errorFlag = false;
 	}
+
 	public static void main(String args[]) {
 		new Calculator().createGUI();
 	}

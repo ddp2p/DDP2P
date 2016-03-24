@@ -1,23 +1,32 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.identities;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.text.MessageFormat;
 import java.util.ArrayList;
+
 import javax.swing.JOptionPane;
 import javax.swing.event.TreeModelEvent;
+
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.Application;
@@ -27,6 +36,7 @@ import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.hds.GenerateKeys;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public class IdentityBranch extends IdentityNode{
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
@@ -39,7 +49,7 @@ public class IdentityBranch extends IdentityNode{
     private SK keys;
     String sql_params[] = new String[0];
     String globalID, globalOrgID, c_name, c_forename, org_name;
-	public String pk_hash; 
+	public String pk_hash; // hash of the public key
 	private Cipher cipher;
 	private String c_name_my;
     public IdentityBranch(MyIdentitiesModel _model, String _tip) {
@@ -77,12 +87,22 @@ public class IdentityBranch extends IdentityNode{
 				IdentityBranch oib = (IdentityBranch)Identity.default_id_branch;
 				oib.default_id = false;
 				Identity.default_id_branch = null;
+		    	//model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{model.root.getIndexOfChild(oib)},new Object[]{oib}));
 			}			
 			Identity.default_id_branch = this;
 		}
 		if(_sql_params!=null) sql_params = _sql_params;
+
     	ArrayList<ArrayList<Object>> id;
     	try {
+    		/*
+    		String _sql = "SELECT c."+table.constituent.global_constituent_ID+", o."+table.organization.global_organization_ID+
+					", o."+table.organization.name+", c."+table.constituent.name+", c."+table.constituent.forename +
+					" FROM "+table.identity.TNAME+" AS i" +
+					" LEFT JOIN "+table.constituent.TNAME+" AS c ON (i."+table.identity.constituent_ID+" == c."+table.constituent.constituent_ID+")" +
+					" LEFT JOIN "+table.organization.TNAME+" AS o ON (o."+table.organization.organization_ID+" == i."+table.identity.organization_ID+")" +
+					" WHERE i."+table.identity.identity_ID+"==? LIMIT 1;";
+			*/
     		String sql = "SELECT i."+net.ddp2p.common.table.identity.constituent_ID + ", i." + net.ddp2p.common.table.identity.organization_ID +
 					" FROM "+net.ddp2p.common.table.identity.TNAME+" AS i" +
 					" WHERE i."+net.ddp2p.common.table.identity.identity_ID+"==? LIMIT 1;";
@@ -94,21 +114,23 @@ public class IdentityBranch extends IdentityNode{
 			}
 			long _cID = Util.lval(id.get(0).get(0));
 			long _oID = Util.lval(id.get(0).get(1));
+			
 			D_Organization org = null;
 			if (_oID > 0) org = D_Organization.getOrgByLID_NoKeep(_oID, true);
 			D_Constituent cons = null;
 			if (_cID > 0) cons = D_Constituent.getConstByLID(_cID, true, false);
 			if (cons != null) {			
-				globalID = cons.getGID(); 
-				if (org != null) globalOrgID = org.getGID(); 
-				if (org != null) org_name = org.getOrgNameOrMy(); 
-				c_name = cons.getSurname(); 
-				c_forename = cons.getForename(); 
+				globalID = cons.getGID(); //(String) id.get(0).get(0);
+				if (org != null) globalOrgID = org.getGID(); //(String) id.get(0).get(1);
+				if (org != null) org_name = org.getOrgNameOrMy(); //(String) id.get(0).get(2);
+				c_name = cons.getSurname(); //(String) id.get(0).get(3);
+				c_forename = cons.getForename(); //(String) id.get(0).get(4);
 				c_name_my = cons.getNameOrMy();
 			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
+		
     }
     void setNChildren(int _nchildren) {
     	nchildren = _nchildren;
@@ -118,6 +140,7 @@ public class IdentityBranch extends IdentityNode{
     	}
     }
     void populateChild(Object child, int index) {
+    	//boolean DEBUG=true;
     	if(DEBUG) System.err.println("IdentityBranch:populateChild:addChild "+child+" to "+name+"["+index+"]");
     	Object _children[] = new Object[children.length+1];
     	if(DEBUG) System.err.println("IdentityBranch:populateChild:_cl="+_children.length+" cl="+children.length);
@@ -146,6 +169,7 @@ public class IdentityBranch extends IdentityNode{
     		}
     	}
     	setNChildren(nchildren-1);
+	
     	try{
     		if(child instanceof IdentityLeaf) {
     			long id = ((IdentityLeaf)child).id;
@@ -160,6 +184,7 @@ public class IdentityBranch extends IdentityNode{
     		e.printStackTrace();
     	}
     }
+    
     int getIndexOfChild(Object child) {
     	if(DEBUG) System.err.println("getIndexofChild "+child);
     	for(int i=0; i<children.length; i++){
@@ -174,24 +199,30 @@ public class IdentityBranch extends IdentityNode{
     	return -1;
     }
     int getChildCount() {
+    	//System.err.println("#children of "+name+" ="+nchildren);
     	return nchildren;
+	    //children.length;
     }
     Object getChild(int index){
     	if(index<0) return null;
+    	//System.err.println("getChild of "+name+"["+index+"]");
     	if(children.length == 0) {
     		if(DEBUG) System.err.println("populating");
     		if(this !=model.root)populate();
     		if(DEBUG) System.err.println("populated, #="+children.length);
     	}
     	if(index < children.length) {
+    		//System.err.println("getChild of "+name+"["+index+"]="+children[index]);
     		return children[index];
     	}
     	if(DEBUG) System.err.println("getChild of "+name+"["+index+"]=no item");
     	return __("No Item");
     }
+    
     void populate() {
+    	//boolean DEBUG=true;
 		if(DEBUG) System.err.println("IdentityBranch:populate: start");
-    	children = new Object[0]; 
+    	children = new Object[0]; //to avoid duplication
     	ArrayList<ArrayList<Object>> identities;
     	try {
     		identities = model.db.select(sql, sql_params, DEBUG);
@@ -213,6 +244,7 @@ public class IdentityBranch extends IdentityNode{
     		Object o_explain= identities.get(i).get(5);
     		String explain=(o_explain==null)?null:(String)o_explain;
        		long seq= Util.lval(identities.get(i).get(6), 0);
+     		// MessageFormat.format(_("{0} ({1})"),snew Object[]{oid_name,oid})
     		populateChild(new IdentityLeaf(value, oid, oid_name,explain, new Integer(iv_ID).intValue(), seq, this), children.length);
     		if(DEBUG) System.err.println("IdentityBranch:populate: identity lf "+value);
     	}
@@ -224,16 +256,29 @@ public class IdentityBranch extends IdentityNode{
     	if(nchildren>0)
     		result =  MessageFormat.format(__("{0} ({1} properties)"), new Object[]{name,nchildren});
     	else
-    		result = name;
+    		result = name;//+" #"+identityID;
     	if(org_name!=null)
     		result += "<font color='green'> - "+org_name+"</font>";
+
+    	/*
+    	if((c_name!=null) && (c_forename!=null))
+    		result += " alias: "+c_name+", "+c_forename;
+    	else{
+        	if((c_name!=null))
+        		result += " alias: "+c_name;
+        	if((c_forename!=null))
+        		result += " alias: "+c_forename;    		
+    	}
+    	*/
     	result += " alias: "+c_name_my;
+    	
     	if(this==Identity.current_id_branch) 
     			result = "<html><font color='purple'>"+result+"</font></html>";
     	else if(default_id) 
     			result = "<html><font color='red'>"+result+"</font></html>";
     	else if(this.getKeys()==null){
     		result = "<html><font color='#DDA0DD'>"+result+"</font></html>";
+    		//this.tip = this.tip+" No Key!";
     	}
     	if(DEBUG) System.out.println("IdentityBranch: "+result);
     	return result;
@@ -273,4 +318,11 @@ public class IdentityBranch extends IdentityNode{
 	public Cipher getCipher() {
 		return cipher;
 	}
+	/*
+	public void setKeys(Cipher _keys, SK _sk) {
+		this.cipher = _keys;
+		this.keys = _sk;
+		this.pk_hash = Util.getKeyedIDPKhash(_keys);
+	}
+	*/
 }

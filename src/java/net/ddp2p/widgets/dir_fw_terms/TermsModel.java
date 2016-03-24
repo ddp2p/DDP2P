@@ -1,13 +1,17 @@
 package net.ddp2p.widgets.dir_fw_terms;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Hashtable;
+
 import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.JComboBox;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.data.D_DirectoryServerPreapprovedTermsInfo;
@@ -18,6 +22,7 @@ import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.DBListener;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 @SuppressWarnings("serial")
 public class TermsModel extends AbstractTableModel implements TableModel, DBListener{
 	public static final int TABLE_COL_PRIORITY = 0;
@@ -38,15 +43,20 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 	public String _dirAddr;
 	public long selectedInstanceID;
 	public long _selectedInstanceID;
+
 	private DBInterface db;
 	HashSet<Object> tables = new HashSet<Object>();
 	String columnNames[]={__("Priority"),__("Topic"),__("AD"),__("Plaintext"),__("Payment"), __("Service"),  __("Priority Type")};
-	ArrayList<D_DirectoryServerPreapprovedTermsInfo> data = new ArrayList<D_DirectoryServerPreapprovedTermsInfo>(); 
+
+	ArrayList<D_DirectoryServerPreapprovedTermsInfo> data = new ArrayList<D_DirectoryServerPreapprovedTermsInfo>(); // rows of type D_TermInfo -> Bean
 	private TermsPanel panel;
-	public TermsModel(DBInterface _db, TermsPanel _panel) { 
+	
+	public TermsModel(DBInterface _db, TermsPanel _panel) { // constructor with dataSource -> DBInterface _db
 		db = _db;
 		panel = _panel;
 		db.addListener(this, new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.directory_forwarding_terms.TNAME)), null);
+		// DBSelector.getHashTable(table.organization.TNAME, table.organization.organization_ID, ));
+	//	update(null, null);
 	}
     public void setPeerID(long peerID2){
     	this._peerID = this.peerID = peerID2;
@@ -61,44 +71,53 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
     	if(data == null || data.size()==0)
     		return 0;
     	return (data.get(getRowCount()-1).priority);
+    	
     }
      public JComboBox getPriorityTypeComboBox(){
 		if(DEBUG) System.out.println("DirModel: getModeComboBox: start:");
+		
 		priorityTypeCBox = new JComboBox<String>();
 		priorityTypeCBox.addItem("Normal");
 		priorityTypeCBox.addItem("Proactive");
 		priorityTypeCBox.setSelectedIndex(0);
+		
 		return priorityTypeCBox;
 	}
     public JComboBox getServiceComboBox(){
 		if(DEBUG) System.out.println("DirModel: getModeComboBox: start:");
+		
 		serviceCBox = new JComboBox<String>();
 		serviceCBox.addItem("All Services");
 		serviceCBox.addItem("Forward");
 		serviceCBox.addItem("Address");
 		serviceCBox.addItem("Start up com.");
 		serviceCBox.setSelectedIndex(0);
+		
 		return serviceCBox;
 	}
 	@Override
 	public int getRowCount() {
 		return data.size();
 	}
+
 	@Override
 	public int getColumnCount() {
 		return columnNames.length;
 	}
+
 	@Override
 	public String getColumnName(int col) {
 		if(DEBUG) System.out.println("TermsModel:getColumnName: col Header["+col+"]="+columnNames[col]);
 		return Util.getString(columnNames[col]);
 	}
+
 	@Override
 	public Class<?> getColumnClass(int col) {
 		if(col == TABLE_COL_SERVICE || col == TABLE_COL_PRIORITY_TYPE) return getValueAt(0, col).getClass();
 		if(col == TABLE_COL_PRIORITY) return String.class;
 		return Boolean.class;
 	}
+
 	@Override
 	public boolean isCellEditable(int rowIndex, int columnIndex) {
 		switch(columnIndex){
@@ -109,8 +128,10 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 		}
 		return true;
 	}
+
+	//@SuppressWarnings({"rawtypes", "unchecked" })
 	@Override
-	public Object getValueAt(int rowIndex, int columnIndex) {
+	public Object getValueAt(int rowIndex, int columnIndex) {// a cell
 		if((rowIndex<0) || (rowIndex>=data.size())) return null;
 		if((columnIndex<0) || (columnIndex>this.getColumnCount())) return null;
 		D_DirectoryServerPreapprovedTermsInfo crt = data.get(rowIndex);
@@ -133,6 +154,7 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 		}
 		return null;
 	}
+
 	@Override
 	public void setValueAt(Object aValue, int row, int col) {
 		if(DEBUG) System.out.println("TermsModel:setValueAt: r="+row +", c="+col+" val="+aValue);
@@ -147,6 +169,7 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 			{   Application_GUI.warning(__("Topic field has no value"), __("No topic assigned"));
 				crt.topic = false;
 			}else{
+				// incorrect situation
 				if(directory_tokens.searchForToken(crt.peer_ID, crt.peer_instance_ID, crt.dir_addr, crt.dir_tcp_port)== null)
 				{
 					System.out.println("no token(topic) in DB!!!");
@@ -203,6 +226,8 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 		}
 		fireTableCellUpdated(row, col);
 	}
+	
+	
    public int getIndex(String item, JComboBox cbox){
    		for( int i=0; i<cbox.getItemCount(); i++){
    			if(cbox.getItemAt(i).equals(item))
@@ -212,10 +237,16 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
    }
 	@Override
 	public void addTableModelListener(TableModelListener l) {
+		// TODO Auto-generated method stub
+
 	}
+
 	@Override
 	public void removeTableModelListener(TableModelListener l) {
+		// TODO Auto-generated method stub
+
 	}
+
 	static ArrayList<ArrayList<Object>> getTerms(long _peerID2, String dirAddr, long instanceID){
 		String dir_domain= null;
 		String dir_port = null;
@@ -253,6 +284,7 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 		}
 		return u;
 	}
+	
 	@Override
 	public void update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
 		if(DEBUG) System.out.println("TermsModel: update: start: table="+Util.concat(table, " ", "null"));
@@ -264,12 +296,17 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 			 return;
 		}
 		if((u.size()==0) && (_peerID!=0) && (_dirAddr!=null) && (_selectedInstanceID!=-1)) {
+			//System.out.println("TermsModel.update(): u.size()==0");
+			// logical error???
 			u = getTerms(_peerID, null, _selectedInstanceID); if(u==null) return;
 			if(u.size()==0) {
+				// logical error???
 				u = getTerms(0, _dirAddr, _selectedInstanceID); if(u==null) return;
 				if(u.size()==0) {
+					// logical error???
 					u = getTerms(_peerID, _dirAddr, -1); if(u==null) return;
 					if(u.size()==0) {
+						// logical error???
 						u = getTerms(0, null, -1); if(u==null) return;
 						getPanel().setGeneralGlobal();
 						_dirAddr = null; _peerID = 0; _selectedInstanceID=-1;
@@ -287,7 +324,7 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 		for(ArrayList<Object> _u :u){
 			D_DirectoryServerPreapprovedTermsInfo ui = new D_DirectoryServerPreapprovedTermsInfo(_u);
 			if(DEBUG) System.out.println("TermsModel: update: add: "+ui);
-			data.add(ui); 
+			data.add(ui); // add a new item to data list (rows)
 		}
 		this.fireTableDataChanged();
 	}
@@ -297,7 +334,7 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 	public void shiftByOne(int priority)throws P2PDDSQLException{
 		System.out.println("data size: "+ data.size());
 		for(int i=priority-1; i< data.size(); i++ ){
-			data.get(i).priority -= 1;
+			data.get(i).priority -= 1;//data.get(i).priority;
 			data.get(i).storeNoSync("update");
 		}	
 	}
@@ -320,9 +357,62 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 		data.removeAll(data);
 		update(null, null);
 	}
+
 	public void setTable(TermsTable termsTable) {
 		tables.add(termsTable);
 	}
+/*	
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		TableJButton bb =(TableJButton)e.getSource();
+		QualitesTable q = new QualitesTable(data.get(bb.rowNo));
+		JPanel p = new JPanel(new BorderLayout());
+		p.add(q.getScrollPane());
+		final JFrame frame = new JFrame();
+		frame.setContentPane(p);
+		frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		frame.pack();
+		frame.setSize(600,300);
+		frame.setVisible(true);
+        JButton okBt = new JButton("   OK   ");
+        okBt.addActionListener(new ActionListener() {
+         public void actionPerformed(ActionEvent e) {
+            frame.hide();
+           }
+        });
+
+		p.add(okBt,BorderLayout.SOUTH);
+//		JOptionPane.showMessageDialog(null,p);
+  //      JOptionPane.showMessageDialog(null,p,"Test Qualities Info", JOptionPane.DEFAULT_OPTION, null);
+        
+
+	}
+*/
+/*	public static void main(String args[]) {
+		JFrame frame = new JFrame();
+		try {
+			Application.db = new DBInterface(Application.DEFAULT_DELIBERATION_FILE);
+			JPanel test = new JPanel();
+			//frame.add(test);
+			test.setLayout(new BorderLayout());
+			UpdatesTable t = new UpdatesTable(Application.db);
+			//t.getColumnModel().getColumn(TABLE_COL_QOT_ROT).setCellRenderer(new ComboBoxRenderer());
+			test.add(t);
+			//PeersTest newContentPane = new PeersTest(db);
+			//newContentPane.setOpaque(true);
+			//frame.setContentPane(t.getScrollPane());
+			test.add(t.getTableHeader(),BorderLayout.NORTH);
+			frame.setContentPane(test);
+			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			frame.pack();
+			frame.setSize(800,300);
+			frame.setVisible(true);
+		} catch (P2PDDSQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+*/
 	public long get_TermID(int row) {
 		if(row<0) return -1;
 		try{
@@ -332,4 +422,5 @@ public class TermsModel extends AbstractTableModel implements TableModel, DBList
 			return -1;
 		}
 	}
+
 }

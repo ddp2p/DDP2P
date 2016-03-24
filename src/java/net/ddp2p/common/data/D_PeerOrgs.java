@@ -1,19 +1,27 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.common.data;
+
 import java.util.ArrayList;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -27,14 +35,18 @@ import net.ddp2p.common.util.Util;
 public class D_PeerOrgs extends ASNObj {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	public String org_name; 
-	private String global_organization_IDhash; 
-	public String global_organization_ID; 
+	public String org_name; //OPT
+	private String global_organization_IDhash; //OPT
+	public String global_organization_ID; //OPT
+	
+	//not sent
 	private boolean served;
 	private String last_sync_date;
 	public long organization_ID;
+	
 	public boolean dirty;
 	public long peer_org_ID;
+	
 	public D_PeerOrgs(){}
 	public D_PeerOrgs(long orgID) {
 		this.organization_ID = orgID;
@@ -110,9 +122,12 @@ public class D_PeerOrgs extends ASNObj {
 	public void store(D_Peer p) throws P2PDDSQLException {
 		if (DEBUG) System.out.println("D_PeerOrgs: store: "+this);
 		if (global_organization_ID != null) {
+			//adding_date = Encoder.getGeneralizedTime(Util.incCalendar(adding__date, 1));
 			if (organization_ID <= 0) {
 				organization_ID = UpdateMessages.get_organizationID(global_organization_ID, org_name, p.getArrivalDate(), null);
 			}
+			//adding_date = Encoder.getGeneralizedTime(Util.incCalendar(adding__date, 1));
+			//long peers_orgs_ID = get_peers_orgs_ID(peer_ID, organizationID, adding_date);
 			dirty = false;
 			if (peer_org_ID > 0) {
 				Application.getDB().update(net.ddp2p.common.table.peer_org.TNAME,

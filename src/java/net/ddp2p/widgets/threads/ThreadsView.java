@@ -1,24 +1,32 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.threads;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -26,9 +34,11 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
+
 import net.ddp2p.widgets.app.ThreadsAccounting;
 import net.ddp2p.widgets.components.BulletRenderer;
 import net.ddp2p.widgets.components.XTableColumnModel;
+
 @SuppressWarnings("serial")
 public class ThreadsView  extends JTable implements MouseListener {
 	private static final boolean DEBUG = false;
@@ -38,6 +48,7 @@ public class ThreadsView  extends JTable implements MouseListener {
 	public static final int HOT_SEC = 10;
 	BulletRenderer bulletRenderer = new BulletRenderer();
 	private XTableColumnModel yourColumnModel;
+	
 	public ThreadsView() {
 		super(ThreadsAccounting.instance());
 		if(DEBUG) System.out.println("ThreadsView: constr from model");
@@ -55,6 +66,7 @@ public class ThreadsView  extends JTable implements MouseListener {
         jp.add(scrollPane, BorderLayout.CENTER);
 		return jp;
     }
+
 	public TableCellRenderer getCellRenderer(int row, int _column) {
 		int column = this.convertColumnIndexToModel(_column);
 		if ((column == ThreadsAccounting.TABLE_COL_HOT))
@@ -79,6 +91,7 @@ public class ThreadsView  extends JTable implements MouseListener {
             }
         };
     }
+	
 	public ThreadsAccounting getModel(){
 		return (ThreadsAccounting) super.getModel();
 	}
@@ -86,13 +99,18 @@ public class ThreadsView  extends JTable implements MouseListener {
 		getModel().setTable(this);
 		addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
+		
 		yourColumnModel = new net.ddp2p.widgets.components.XTableColumnModel();
 		setColumnModel(yourColumnModel); 
 		createDefaultColumnsFromModel(); 
+		
 		initColumnSizes();
 		this.getTableHeader().setToolTipText(
         __("Click to sort; Shift-Click to sort in reverse order"));
+		////this.setAutoCreateRowSorter(true);
+		//this.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
 	}
+	
 	/**
 	 * Call this to remove a current column
 	 * @param crt_col
@@ -111,15 +129,18 @@ public class ThreadsView  extends JTable implements MouseListener {
         Component comp = null;
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
+ 
         for (int i = 0; i < this.getColumnCount(); i++)
         {
         	int headerWidth = 0;
         	int cellWidth = 0;
         	column = this.getColumnModel().getColumn(i);
+ 
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
+ 
             for(int r=0; r<model.getRowCount(); r++) {
             	comp = this.getDefaultRenderer(model.getColumnClass(this.convertColumnIndexToModel(i))).
                              getTableCellRendererComponent(
@@ -133,22 +154,38 @@ public class ThreadsView  extends JTable implements MouseListener {
                                    + "headerWidth = " + headerWidth
                                    + "; cellWidth = " + cellWidth);
             }
+ 
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
+
 	@Override
 	public void mouseClicked(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
+
 	@Override
 	public void mouseEntered(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
+
 	@Override
 	public void mouseExited(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
+
 	@Override
 	public void mousePressed(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
+
 	@Override
 	public void mouseReleased(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
 }

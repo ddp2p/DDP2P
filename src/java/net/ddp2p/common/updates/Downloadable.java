@@ -1,18 +1,24 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.updates;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -20,11 +26,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.common.util.Util;
+
 public class Downloadable extends net.ddp2p.ASN1.ASNObj{
 	private static final boolean DEBUG = false;
 	public String url;
@@ -71,6 +79,8 @@ public class Downloadable extends net.ddp2p.ASN1.ASNObj{
     	FileInputStream fos = new FileInputStream(filename);
     	long len=0;
     	int crt=0;
+    	//FileChannel ch = fos.getChannel();
+    	
     	byte[] message = new byte[1<<14];
     	MessageDigest _digest;
     	String hash_alg = Cipher.SHA256;
@@ -80,9 +90,14 @@ public class Downloadable extends net.ddp2p.ASN1.ASNObj{
     	} catch (NoSuchAlgorithmException e) {
     		e.printStackTrace(); return;}
     	do{
+    		
+			//crt=istream.read(message);
  			crt = fos.read(message);
  			if (crt <= 0) break;
  			_digest.update(message, 0, crt);
+    		//crt=ch.transferFrom(rbc, len, 1 << 32);
+    		//if(crt>0) len+=crt;
+			//if(DEBUG)System.out.println("ClientUpdates downloadNewer: done crt="+crt+" len="+len);
     	} while((crt > 0));
     	fos.close();
     	digest = _digest.digest();

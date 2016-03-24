@@ -1,31 +1,40 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.app;
+
 import java.awt.EventQueue;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
+
 import javax.swing.SwingUtilities;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
+
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.org.Orgs;
 import net.ddp2p.widgets.threads.ThreadsView;
 import static net.ddp2p.common.util.Util.__;
+
 class Thread_Info {
 	String name;
 	String state;
@@ -42,6 +51,7 @@ class Thread_Info {
 				+"\n...]";
 	}
 }
+
 @SuppressWarnings("serial")
 public class ThreadsAccounting extends AbstractTableModel implements TableModel {
 	static final Hashtable<Thread, Thread_Info> running = new Hashtable<Thread, Thread_Info>();
@@ -54,6 +64,7 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 	 */
 	public static final long HOT = ThreadsView.HOT_SEC*1000;
 	private static final boolean DEBUG = false;
+	
 	public static void registerThread() {
 		registerThread(Thread.currentThread().getName());
 	}
@@ -119,6 +130,8 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 			}
 		}
 		public void _run() {
+			//return;
+			
 			synchronized(ThreadsAccounting.monitor_running) {
 				rows = 0;
 				if(rows >= 0) {
@@ -132,6 +145,7 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 				if(row_changed >=0 )
 					ThreadsAccounting.instance().fireTableRowsUpdated(row_changed, row_changed);
 			}
+			
 		}
 	}
 	public static void unregisterThread() {
@@ -159,6 +173,7 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 		synchronized (monitor_running) {
 			if ((old_info = running.get(crt)) == null) {
 				old_info = new Thread_Info();
+				
 				if (! SwingUtilities.isEventDispatchThread() && ! EventQueue.isDispatchThread()) {
 					System.out.println("ThreadsAccounting:ping Already unexisting: "+crt);
 					Util.printCallPath("ThreadsAccounting:ping unexisting");
@@ -167,6 +182,7 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 					System.out.println("ThreadsAccounting:ping from Swing Event: "+crt);
 					old_info.name = "Swing Event:"+" "+crt.getName();
 				}
+				
 				old_info.creation_date = Util.CalendargetInstance();
 				old_info._creation_date = Encoder.getGeneralizedTime(old_info.creation_date);
 				old_info._last_ping_date = old_info._creation_date;
@@ -186,25 +202,31 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 					UpdateThreadsViewRunnable.UPDATE));
 		}
 	}
+
 	@Override
 	public Class<?> getColumnClass(int col) {
 		if(col == TABLE_COL_HOT) return Boolean.class;
 		return String.class;
 	}
+
 	@Override
 	public int getColumnCount() {
 		return columnNames.length;
 	}
+
 	@Override
 	public String getColumnName(int col) {
 		return this.columnNames[col];
 	}
+
 	@Override
 	public int getRowCount() {
 		return view.size();
 	}
+
 	@Override
 	public Object getValueAt(int row, int col) {
+		//Object result = null;
 		Thread_Info info;
 		try{
 			synchronized(monitor_running) {
@@ -229,10 +251,12 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 		}
 		return null;
 	}
+
 	@Override
 	public boolean isCellEditable(int row, int col) {
 		return false;
 	}
+
 	@Override
 	public void setValueAt(Object val, int row, int col) {
 	}
@@ -243,6 +267,7 @@ public class ThreadsAccounting extends AbstractTableModel implements TableModel 
 	public static final int TABLE_COL_CREATION = 3;
 	public static final int TABLE_COL_PING = 4;
 	ArrayList<ThreadsView> tables= new ArrayList<ThreadsView>();
+
 	public void setTable(ThreadsView threadsView) {
 		tables.add(threadsView);
 	}

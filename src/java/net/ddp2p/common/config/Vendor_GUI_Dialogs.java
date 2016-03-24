@@ -1,10 +1,13 @@
 package net.ddp2p.common.config;
+
+
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.hds.PeerInput;
+
 public interface Vendor_GUI_Dialogs {
 	public void fixScriptsBaseDir(String dir);
 	public void warning(String war, String title);
@@ -50,6 +53,7 @@ public interface Vendor_GUI_Dialogs {
 	public void update_broadcast_client_sockets(Long msg_cnter);
 	public void inform_arrival(Object obj, D_Peer source);
 	public boolean playThanks();
+	// public boolean clipboardCopy();
 	public SK getCrtIdentityKeys();
 	public Cipher getCrtIdentityCipher();
 }

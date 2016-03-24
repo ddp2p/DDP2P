@@ -1,19 +1,27 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.common.config;
+ 
 import static net.ddp2p.common.util.Util.__;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -28,7 +36,9 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
+
 import javax.swing.JOptionPane;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
@@ -79,17 +89,21 @@ import net.ddp2p.common.wireless.BroadcastClient;
 import net.ddp2p.common.wireless.BroadcastServer;
 import net.ddp2p.common.wireless.Broadcasting_Probabilities;
 import net.ddp2p.common.wireless.Refresh;
+
 public class DD {
 	public static final String BRANCH = "B";//FIT_HDSSL_SILAGHI";
-	public static final String VERSION = "0.10.25";
+	public static final String VERSION = "0.10.26";
 	public static final boolean ONLY_IP4 = false;
+
 	private static final String PK_Developer = "MIIEGgwDUlNBYAEwAgMBAAECggQASKs9x2VEQH1SRxRwO43yt6HXCTnOmPJVUjN8bQQUTVBdFXhQsTpnTP1yLe/qFlA0jnIzheHT4WEcsU874N800iPMWHCjpCowQwwTj9SQLTmfbfhL8z0a7Dw6ZJQ+DnYoPVhx3JHL57CK3YeVYclZCoHetZ5PEIpcAwxaPmnL3GQaOgJiVHb6CLMi+hNHLxsjQZwTYTeoUOXQKgyTcRDE6xCvw8+q0U6/Uan3KCx/KmtdRQMEtGAXSPANv12kle84Dv8AdJxT1CJGsXm0+N6+wbbvkL77kMr+79sCR/8drZmOnrbjveQpab2pSh0vO//XqslrDRbzhniGSpqFW+YNTOixWAsCp35hNPbAx5xqPXg6DEIrysGslDGo4gC3Ew5mN/JkOQA+pd6uIzC4EgbfWqJKMvrtOQN67hJR7Ysxn7cLDXGvmhK1s7oSJcnOmhWljSZ6joviVwAWKgzdm1gMBhn5+VdgwoEE7g5Inw0dH9UmgufloNiBQMM9m2igdQPaLRuVttrAEcs55F/Z5NFtJquTeQFBLAGux3MVxrYCgivRaoAzAkUMhGOA+00KU3oh3Bds0U8GYCMuYYrwSAWTZf0Z9lvUwJv8HtLJvI6p1p53oGzIW9bo20d0PMz7XrzNDOLEME9PaXKLo6vMCAxXIj19nm/bE1HBY7e7HErKMX3M7LC2xZ8PH7wsnl5M3y0ZZ6c9quwhvz/dWcUAQ5963LtDZ6bOenAGVGBjdWLhHK8/2p9Vgu1ZNA1WWHWnafExsT5GxuwZQ/PMk8YtmxqEkgGy2+xVT19oUK+yO1ok+xRUjvSRZ0IbWUEcOfQ5FvLNmMdV/NSebB6vjQwM5DGCE1YDhix+Qghr558KokVz7BPVrGVe1pUxfPo2XPwHReF8es+vr16lvwXrVEmQNG8KrX1tN5Z5I29+ZVcR6ti4t90RXY6H6lmLtU3P/PSmfOrBQraNHVvDm9y1hnSP9+EhJzuWFaS8v4+7OnodIWuZsYd2WYQp4YcDJ+7grV3s1vvacujzxCOwx5/gosLxOau45bvKqhsFrZ+le6IRNAG7T6ZwC9wesqCGBJlIwS50DlAb/KhPyDIvf+7EH1iwckG4fBtixaK9co8FHnuddn/cEIc6fkWDEzr2Cu3HyxeMeDrcGRvjTRr78Wp/ptvRoOYElOLkxrkmanetjOCMqRl1DJvl53SQKePraRx2DpRemK/TMQ3+5TQkFjjEsI2P455Th0z6vF+JzpetZ3j1NUqx+iEZ2ArMhdDk7dE/4qcn2xwLz5nNMvHSnO2N0T9tCLi96CqZm/HTqGa6jTxFhJOP11sFCCQ9jkKhxvxubs0sww75dnqXQeffpxyolcht3KHwfwwHU0hBLTUxMg==";
 	private static PK _PK_Developer = null;
 	public static PK get_PK_Developer() {
 		if (_PK_Developer != null) return _PK_Developer;
 		return _PK_Developer = Cipher.getPK(PK_Developer);
 	}
+	
 	public static String _APP_NAME = __("Direct Democracy P2P");
+	//public static String _APP_NAME = _("La Bible A Petits Pas");
 	public static String APP_NAME = _APP_NAME+" "+VERSION;
 	public static final String DEFAULT_EMAIL_PROVIDER = "my.fit.edu";
 	public static boolean DEBUG = false;
@@ -99,9 +113,14 @@ public class DD {
 		if (dbg_todo) Decoder.DEBUG_TODO = dbg_todo;
 		return dbg_todo;
 	}
+	
     public static final String WIRELESS_THANKS = "wireless_thanks.wav"; // in scripts
-    public static String scripts_prefix = null; 
+    public static String scripts_prefix = null; //Application.linux_scripts_prefix+Application.scripts_path
+
+    // May want to let users edit the next value, as part of making the LIST_OF_VALUES
+    // in fields_extra delete-able easier
 	public static boolean DELETE_COMBOBOX_WITHOUT_CTRL = true;
+	//public static final byte TAG_SyncReq_push = DD.asn1Type(Encoder.CLASS_UNIVERSAL, Encoder.PC_CONSTRUCTED, Encoder.TAG_SEQUENCE);
 	public static final byte TAG_AP0 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)0);
 	public static final byte TAG_AP1 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)1);
 	public static final byte TAG_AP2 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)2);
@@ -120,6 +139,7 @@ public class DD {
 	public static final byte TAG_AP15 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)15);
 	public static final byte TAG_AP16 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)16);
 	public static final byte TAG_AP17 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)17);
+	
 	public static final byte TAG_AC0 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)0);
 	public static final byte TAG_AC1 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)1);
 	public static final byte TAG_AC2 = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)2);
@@ -158,6 +178,7 @@ public class DD {
 	public static final byte TYPE_SignSyncReq = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_PRIMITIVE, (byte)5);
 	public static final byte MSGTYPE_EmptyPing = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)20);;
 	public static final byte TYPE_ORG_DATA = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)29);
+	
 	public static String DEFAULT_PEER = "Peer";
 	public static String DEFAULT_ORGANIZATION = "Organization";
 	public static String DEFAULT_CONSTITUENT = "Constituent";
@@ -166,6 +187,12 @@ public class DD {
 	public static String DEFAULT_JUSTIFICATION = "Justification";
 	public static String DEFAULT_MOTION = "Motion";
 	public static String DEFAULT_VOTE = "Vote";
+	/*
+	 * TYPES OF IMAGES
+	 * should never go over 30 for the type value in one byte
+	 */
+	//public static final byte TYPE_DD_IDENTITY_VERIFICATION = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)30);
+	//public static final byte TYPE_DD_IDENTITY_VERIFICATION_ANSWER = DD.asn1Type(Encoder.CLASS_APPLICATION, Encoder.PC_CONSTRUCTED, (byte)29);
 	public static short getPositive(short tag) {
 		if (tag >= 0) return tag;
 		return (short)(0x7fff & tag);
@@ -178,9 +205,9 @@ public class DD {
 	public static final short STEGO_SIGN_CONSTITUENT_VERIF_ANSWER = 0x3EE3;
 	public static final short STEGO_SIGN_MIRRORS = 0x4774;
 	public static final short STEGO_SIGN_TESTERS = 0x588C;
-	public static final short STEGO_SK = 0x3EEF; 
+	public static final short STEGO_SK = 0x3EEF; //getPositive((short) 0xBEEF);
 	public static final short STEGO_SIGN_CONSTITUENT_VERIF_REQUEST = 0x7AAD;
-	public static final short STEGO_SLOGAN = 0x5EAD; 
+	public static final short STEGO_SLOGAN = 0x5EAD; //getPositive((short) 0xDEAD);
 	/**
 	 * class(2bits)||pc(1b)||number
 	 * @param classASN1
@@ -210,8 +237,11 @@ public class DD {
 	 * Currently final. If allowing plugins to register structures, then should not be final.
 	 * Could have been initialized with registerStegoStructure().
 	 */
+	
 	public static ArrayList<StegoStructure> available_stego_structure =
 			new ArrayList<StegoStructure>(Arrays.asList(_getInitialStegoStructureInstances()));
+			//new ArrayList<StegoStructure>();
+	
 	/**
 	 * This builds a list with installed StegoStructures.
 	 * Hard-coded are:
@@ -288,20 +318,22 @@ public class DD {
 			r[k] = a[k].getSignShort();
 		return r;
 	}
+	
 	public static boolean STREAM_SEND_ALL_ORG_CREATOR = true;
 	public static boolean STREAM_SEND_ALL_FUTURE_ORG = false;
 	public static boolean WARN_BROADCAST_LIMITS_REACHED = true;
 	public static boolean WARN_OF_WRONG_SYNC_REQ_SK = false;
-	public static boolean EXPORT_DDADDRESS_WITH_LOCALHOST = false; 
-	public static boolean VERIFY_SIGNATURE_MYPEER_IN_REQUEST = false; 
+	public static boolean EXPORT_DDADDRESS_WITH_LOCALHOST = false; // should localhost addresses be in exported images?
+	public static boolean VERIFY_SIGNATURE_MYPEER_IN_REQUEST = false; //for debugging my signature in requests
 	public static boolean ADHOC_MESSAGES_USE_DICTIONARIES = true;
-	public static boolean ADHOC_DD_IP_WINDOWS_DETECTED_WITH_NETSH = true; 
+	public static boolean ADHOC_DD_IP_WINDOWS_DETECTED_WITH_NETSH = true; //for seeing the network IP when nobody is present (will broadcast messages wildly in such cases)
 	public static boolean ADHOC_DD_IP_WINDOWS_DETECTED_ON_EACH_SEND = true;
 	public static String ADHOC_DD_IP_WINDOWS_NETSH_IP_IDENTIFIER = "IP";
 	public static String ADHOC_DD_IP_WINDOWS_IPCONFIG_IPv4_IDENTIFIER = "IPv4";
 	public static String ADHOC_DD_IP_WINDOWS_NETSH_INTERFACE_IDENTIFIER = "Name"; // One may prefer to just extract first label in output
 	public static String ADHOC_DD_IP_WINDOWS_NETSH_SSID_IDENTIFIER = "SSID";
 	public static Refresh START_REFRESH = null;
+
 	public static final String newsFields[] = new String[]{"global_news_ID","global_author_ID","date","news","type","signature"};
 	public static final String newsFieldsTypes[] = new String[]{"TEXT","TEXT","TEXT","TEXT","TEXT","TEXT"};
 	public static final String DD_DATA_CLIENT_UPDATES_INACTIVE_ON_START = "data_client_updates_on_start";
@@ -313,6 +345,7 @@ public class DD {
 	public static final String COMMAND_NEW_ORG = "COMMAND_NEW_ORG";
 	public static final int MSGTYPE_SyncAnswer = 10;
 	public static final int MSGTYPE_SyncRequest = 11;
+
 	public static final String APP_NET_INTERFACES = "INTERFACES";
 	public static final String APP_NON_ClientUDP = "!ClientUDP";
 	public static final String APP_NON_ClientNAT = "!ClientNAT";
@@ -320,24 +353,35 @@ public class DD {
 	public static final String APP_LISTING_DIRECTORIES = "listing_directories";
 	public static final String APP_LISTING_DIRECTORIES_SEP = ",";
 	public static final String APP_LISTING_DIRECTORIES_ELEM_SEP = ":";
+
+	/*
+	public static final String APP_INSTALLED_PLUGINS = "INSTALLED PLUGINS";
+	public static final String APP_INSTALLED_PLUGINS_SEP = ",";
+	public static final String APP_INSTALLED_PLUGINS_ELEM_SEP = ":";
+	*/
 	public static final String APP_stop_automatic_creation_of_default_identity = "stop_automatic_creation_of_default_identity";
 	public static final String APP_hidden_from_my_peers = "hidden_from_my_peers";
 	public static final String APP_my_global_peer_ID = "my_global_peer_ID";
 	public static final String APP_my_peer_instance = "my_peer_instance";
+	//public static final String APP_my_peer_name = "my_peer_name";
+	//public static final String APP_my_peer_slogan = "my_peer_slogan";
 	public static final String APP_my_global_peer_ID_hash = "my_global_peer_ID_hash";
-	public static final String APP_ID_HASH = Cipher.SHA1; 
-	public static final String APP_INSECURE_HASH = Cipher.MD5; 
-	public static final String APP_ORGID_HASH = Cipher.SHA256;  
+	public static final String APP_ID_HASH = Cipher.SHA1; // default hash alg for new ID Cipher.MD5;
+	public static final String APP_INSECURE_HASH = Cipher.MD5; // default hash alg for new ID
+	public static final String APP_ORGID_HASH = Cipher.SHA256;  // default hash alg for new OrgID
 	public static final String APP_ID_HASH_SEP = ":"; // default hash alg for new ID
 	public static final String DD_WIRELESS_SERVER_ON_START = "WIRELESS_SERVER_ON_START";
 	public static final String DD_CLIENT_SERVER_ON_START = "CLIENT_SERVER_ON_START";
 	public static final String DD_SIMULATOR_ON_START = "SIMULATOR_ON_START";
+
 	public static final String APP_LINUX_INSTALLATION_PATH = "SCRIPT_WIRELESS_LINUX_PATH";
 	public static final String APP_WINDOWS_INSTALLATION_PATH = "SCRIPT_WIRELESS_WINDOWS_PATH";
 	public static final String APP_LINUX_INSTALLATION_ROOT_PATH = "APP_LINUX_INSTALLATION_ROOT_PATH";
 	public static final String APP_WINDOWS_INSTALLATION_ROOT_PATH = "SCRIPT_WIRELESS_WINDOWS_ROOT_PATH";
+
 	public static final String BROADCASTING_PROBABILITIES = "BROADCASTING_PROBABILITIES";
 	public static final String GENERATION_PROBABILITIES = "GENERATION_PROBABILITIES";
+	
 	public static final String PROB_CONSTITUENTS = "C";
 	public static final String PROB_ORGANIZATIONS = "O";
 	public static final String PROB_MOTIONS = "M";
@@ -348,22 +392,26 @@ public class DD {
 	public static final String PROB_PEERS = "P";
 	public static final String PROB_SEP = ",";
 	public static final String PROB_KEY_SEP = ":";
+	
 	public static final int WINDOWS = 1;
 	public static final int LINUX = 2;
 	public static final int MAC = 3;
 	public static boolean DEBUG_PLUGIN = false;
 	public static int OS = WINDOWS;
+	
 	public static String DEFAULT_DD_SSID = "DirectDemocracy";
 	public static String DEFAULT_WIRELESS_ADHOC_DD_NET_MASK = "255.0.0.0";
 	public static String DEFAULT_WIRELESS_ADHOC_DD_NET_IP_BASE = "10.0.0.";
 	public static String DEFAULT_WIRELESS_ADHOC_DD_NET_BROADCAST_IP = "10.255.255.255";
+	
 	public static String DD_SSID = DEFAULT_DD_SSID;
 	public static String WIRELESS_ADHOC_DD_NET_MASK = DEFAULT_WIRELESS_ADHOC_DD_NET_MASK;
 	public static String WIRELESS_ADHOC_DD_NET_IP_BASE = DEFAULT_WIRELESS_ADHOC_DD_NET_IP_BASE;
 	public static String WIRELESS_ADHOC_DD_NET_BROADCAST_IP = DEFAULT_WIRELESS_ADHOC_DD_NET_BROADCAST_IP;
-	public static String WIRELESS_IP_BYTE; 
+	public static String WIRELESS_IP_BYTE; // last byte of 10.0.0.
 	public static String WIRELESS_ADHOC_DD_NET_IP;
 	public static final String APP_LAST_IP = "LAST_IP"; // last wireless adhoc broadcast IP
+
 	public static final String APP_UPDATES_SERVERS = "UPDATES_SERVERS";
 	public static final String APP_UPDATES_SERVERS_URL_SEP = ";";
 	public static final String LATEST_DD_VERSION_DOWNLOADED = "LATEST_DD_VERSION_DOWNLOADED";
@@ -378,16 +426,23 @@ public class DD {
 	public static final String APP_Q_BR = "Q_BR";
 	public static final int RSA_BITS_TRUSTED_FOR_UPDATES = 1<<12;
 	public static final String APP_DB_TO_IMPORT = "APP_DB_TO_IMPORT";
+	
 	public static final String APP_LINUX_SCRIPTS_PATH = "APP_LINUX_SCRIPTS_PATH";
 	public static final String APP_LINUX_PLUGINS_PATH = "APP_LINUX_PLUGINS_PATH";
 	public static final String APP_LINUX_LOGS_PATH = "APP_LINUX_LOGS_PATH";
 	public static final String APP_LINUX_DATABASE_PATH = "APP_LINUX_DATABASE_PATH";
 	public static final String APP_LINUX_DD_JAR_PATH = "APP_LINUX_DD_JAR_PATH";
+	
 	public static final String APP_WINDOWS_SCRIPTS_PATH = "APP_WINDOWS_SCRIPTS_PATH";
 	public static final String APP_WINDOWS_PLUGINS_PATH = "APP_WINDOWS_PLUGINS_PATH";
 	public static final String APP_WINDOWS_LOGS_PATH = "APP_WINDOWS_LOGS_PATH";
 	public static final String APP_WINDOWS_DATABASE_PATH = "APP_WINDOWS_DATABASE_PATH";
 	public static final String APP_WINDOWS_DD_JAR_PATH = "APP_WINDOWS_DD_JAR_PATH";
+
+	//static public DirectoryServer ds;
+	//static public Server server;
+	//static public Client client;
+	//static public UDPServer userver;
 	public final static int MTU = 32000;
 	public static ArrayList<InetSocketAddress> directories_failed = new ArrayList<InetSocketAddress>();
 	/**
@@ -395,7 +450,8 @@ public class DD {
 	 */
 	public static boolean ClientNAT = true;
 	public static boolean ClientUDP = true;
-	public static boolean ClientTCP = false; 
+	public static boolean ClientTCP = false; //Should the client try TCP?
+	
 	public static EventDispatcher ed=new EventDispatcher();
 	public static final String SERVE_DIRECTLY = "SERVE_DIRECTLY";
 	public static final boolean DD_DATA_CLIENT_ON_START_DEFAULT = true;
@@ -439,7 +495,7 @@ public class DD {
 	public static final long PAUSE_BEFORE_CLIENT_START = 4*1000; //after connections
 	public static final long PAUSE_BEFORE_UDP_SERVER_START = 4*1000;
 	public static final boolean DROP_DUPLICATE_REQUESTS = false;
-	public static final int UDP_SENDING_CONFLICTS = 10; 
+	public static final int UDP_SENDING_CONFLICTS = 10; // how many requests are dropped waiting to send a message
 	public static final boolean ACCEPT_UNSIGNED_CONSTITUENTS = false;
 	public static final boolean ACCEPT_UNSIGNED_NEIGHBORHOOD = false;
 	public static final boolean ACCEPT_UNSIGNED_PEERS_FROM_TABLES = false;
@@ -460,13 +516,14 @@ public class DD {
 	public static boolean DEBUG_LIVE_THREADS = false;
 	public static boolean DEBUG_COMMUNICATION = false;
 	public static boolean DEBUG_COMMUNICATION_LOWLEVEL = false;
+	//public static int TCP_MAX_LENGTH = 10000000;
 	public static int UDP_MAX_FRAGMENT_LENGTH = 100000;
 	public static int UDP_MAX_FRAGMENTS = 100;
 	public static boolean WARN_ON_IDENTITY_CHANGED_DETECTION = false;
 	public static boolean CONSTITUENTS_ORPHANS_SHOWN_BESIDES_NEIGHBORHOODS = true;
 	public static boolean CONSTITUENTS_ORPHANS_FILTER_BY_ORG = true;
 	public static boolean CONSTITUENTS_ORPHANS_SHOWN_IN_ROOT = false;
-	public static boolean NEIGHBORHOOD_SIGNED_WHEN_CREATED_EMPTY = false; 
+	public static boolean NEIGHBORHOOD_SIGNED_WHEN_CREATED_EMPTY = false; // otherwise they cannot be now edited!
 	public static boolean ACCEPT_STREAMING_SYNC_REQUEST_PAYLOAD_DATA_FROM_UNKNOWN_PEERS = false;
 	public static boolean ACCEPT_TEMPORARY_AND_NEW_CONSTITUENT_FIELDS = true;
 	public static long UDP_SERVER_WAIT_MILLISECONDS = 1000;
@@ -476,8 +533,11 @@ public class DD {
 	public static boolean BLOCK_NEW_ARRIVING_PEERS_CONTACTING_ME = false;
 	public static boolean BLOCK_NEW_ARRIVING_PEERS_ANSWERING_ME = false;
 	public static boolean BLOCK_NEW_ARRIVING_PEERS_FORWARDED_TO_ME = false;
+	//public static final String EMPTYDATE = "00000000000000.000Z";
 	public static boolean BLOCK_NEW_ARRIVING_ORGS = false;
 	public static boolean BLOCK_NEW_ARRIVING_ORGS_WITH_BAD_SIGNATURE = true;
+	//public static boolean WARN_WRONG_SIGNATURE_RECEIVED = true; // duplicate for WARN_OF_FAILING_SIGNATURE_ONRECEPTION
+    
 	public static  boolean TEST_SIGNATURES = false;
 	public static  boolean WARN_OF_UNUSED_PEERS = true;
 	public static  boolean ACCEPT_DATA_FROM_UNSIGNED_PEERS = false;
@@ -517,6 +577,9 @@ public class DD {
 	public static boolean SCRIPTS_ERRORS_WARNING = true;
 	public static boolean WARNED_NO_DIRS = false;
 	public static boolean REJECT_NEW_ARRIVING_PEERS_CONTACTING_ME = false;
+
+
+    
 	/**
 	 * Needs testing,
 	 * Needs tuning the amount of data advertisement sent for indirect ads (increase from current value)
@@ -527,7 +590,9 @@ public class DD {
 	public static void serveDataDirectly(boolean direct){
 		OrgHandling.SERVE_DIRECTLY_DATA = direct;
 	}
+	
 	public final static boolean  preloadedControl = true;
+
 	public static String[] get_preferred_charsets() throws P2PDDSQLException {
     	ArrayList<ArrayList<Object>> id;
     	id=Application.getDB().select("SELECT "+net.ddp2p.common.table.identity.preferred_charsets +
@@ -569,20 +634,26 @@ public class DD {
     	if(lang.length>=2)return new Language(lang[0],lang[1]);
     	return new Language(lang[0],lang[0]);
 	}
+
 	public static boolean test_proper_directory(String ld) {
     	String dirs[] = ld.split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_SEP));
+    	//Identity.listing_directories_string.clear();
     	for(int k=0; k<dirs.length; k++) {
     		if(dirs[k] == null){
     			Application_GUI.warning(__("Test Error for "+dirs[k]), __("Error installing directories (null)"));
     			return false;
     		}
+    		//String[] d=dirs[k].split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_ELEM_SEP));
+    		
     		Address adr;
     		try {
     			adr = new Address(dirs[k]);
     		} catch (Exception e) {
+    		//if(d.length!=2){
     			Application_GUI.warning(__("Error for")+" "+dirs[k]+"\nParsing Error: "+e.getMessage(), __("Error installing directories (impropper)"));
     			return false;
     		}
+    		//Identity.listing_directories_string.add(dirs[k]);
     		try{
     			new InetSocketAddress(InetAddress.getByName(adr.getIP()),adr.getTCPPort());
     		} catch(Exception e) {
@@ -608,8 +679,10 @@ public class DD {
 	 */
 	public static void load_listing_directories() throws P2PDDSQLException, NumberFormatException, UnknownHostException{
 		Identity.setListing_directories_loaded(true);
+		
 		DirectoryAddress dirs[] = DirectoryAddress.getActiveDirectoryAddresses();
 		if ((dirs == null) || (dirs.length == 0)) {
+			// Only reinit dirs if there is no directory (even inactive) 
 			DirectoryAddress _dirs[] = DirectoryAddress.getDirectoryAddresses();
 			if ((_dirs == null) || (_dirs.length == 0)) {
 	     		String listing_directories;
@@ -633,10 +706,30 @@ public class DD {
     		}
     		return;
     	}
+     	/*
+    	String ld = DD.getAppText(DD.APP_LISTING_DIRECTORIES);
+    	if(ld == null){
+    		if(!DD.WARNED_NO_DIRS) {
+    			new DDP2P_ServiceThread("Warning no listing directories", true) {
+    				public void _run() {
+    					Application.warning(_("You have not yet configured listing directories. " +
+    							"\nSuch directories allow you to travel and use multiple devices." +
+    							"\nDo not forget to add some later \n" +
+    							"(e.g., from the list found DirectDemocracyP2P.net)!\n" +
+    							"If you have a stable IP, than you probably do not need it."), _("Configuration"));
+    				}
+    			}.start();
+    			DD.WARNED_NO_DIRS = true;
+    		}
+    		return;
+    	}
+    	String dirs[] = ld.split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_SEP));
+    	*/
     	Identity.getListing_directories_string().clear();
-    	Identity.getListing_directories_inet().clear(); 
+    	Identity.getListing_directories_inet().clear(); // just added
     	Identity.getListing_directories_addr().clear();
     	for (int k=0; k<dirs.length; k++) {
+    		//String[] d=dirs[k].split(Pattern.quote(DD.APP_LISTING_DIRECTORIES_ELEM_SEP));
     		try{
         		Address adr = new Address(dirs[k]);
         		InetSocketAddress isa = new InetSocketAddress(InetAddress.getByName(adr.getIP()),adr.getTCPPort());
@@ -674,10 +767,18 @@ public class DD {
 					}
 					if(DEBUG){
 						Application_GUI.warning(__("Added absent property: ")+field, __("Properties"));
+					
 						System.err.println("Why absent");
 						Util.printCallPath("");
 					}
 			}
+//			if (value!=null){
+//				String actual = getExactAppText(field);
+//				if ((actual == null) || !value.equals(actual)) {
+//						System.err.println(_("Error inserting:")+"\n"+_("value=")+value+"\n"+_("field=")+field+"\nold="+actual);
+//				Application.db.insertNoSync(table.application.TNAME, new String[]{table.application.field, table.application.value}, new String[]{field, value});
+//				}
+//			}
 		}
 		return true;
 	}
@@ -723,6 +824,19 @@ public class DD {
     			if(DEBUG)Application_GUI.warning(__("Added absent property: ")+field, __("Properties"));
     		}
     	}
+    	/* //was used to debug when the error was a wrong Application.db object 
+    	else{
+    		if(DEBUG) System.err.println("DD:setAppText: field="+field+" set null");
+    		String old_val = getExactAppText(field);
+    		if(DEBUG) System.err.println("DD:setAppText: field="+field+" _old="+old_val);
+    		if(old_val!=null){
+    			if(DEBUG)Application.warning(_("Deleting property: ")+field+" old_value", _("Properties"));
+    			int q=Application.ask(_("Want to force delete property:")+" "+field, _("Property"), JOptionPane.OK_CANCEL_OPTION);
+    			if(q==0)Application.db.delete(table.application.TNAME, new String[]{table.application.field},
+    					new String[]{field}, DEBUG);
+    		}
+    	}
+    	*/
 		return true;
 	}
 	static public boolean setAppBoolean(String field, boolean val){
@@ -783,32 +897,48 @@ public class DD {
     	String result = Util.getString(id.get(0).get(0));
    		return result;
 	}
+
 	public static boolean getAppBoolean(String field, boolean _def) {
     	String aval = null;
 		try {
 			aval = DD.getExactAppText(field);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
-		}
+		}//Util.getString(id.get(0).get(0));
 		if (aval==null) return false;
 		if(aval.equals("1")) return true; 
 		return false;
 	}
+
 	static public boolean getAppBoolean(String field) throws P2PDDSQLException{
 		return getAppBoolean(field, false);
+		/*
+    	ArrayList<ArrayList<Object>> id;
+    	id=Application.db.select("SELECT "+table.application.value+
+    			" FROM "+table.application.TNAME+" AS a " +
+    			" WHERE "+table.application.field+"=? LIMIT 1;",
+    			new String[]{field});
+    	if(id.size()==0){
+    		if(DEBUG) System.err.println(_("No boolean application record found for field: ")+field);
+    		return false;
+    	}
+    	*/
 	}
 	static public boolean startDirectoryServer(boolean on, int port) throws NumberFormatException, P2PDDSQLException {
 		DirectoryServer ds= Application.getG_DirectoryServer();
+		
 		if (on == false) {
 			if (ds != null) {
 				ds.turnOff();
 				Application.setG_DirectoryServer(null);
+				//DirectoryServer.db=null;
 				if(DEBUG)System.out.println("DD:startDirectoryServer:Turning off");
 				return true;
 			} else {
 				return false;
 			}
 		}
+		// if on = true
 		if (ds != null) {
 			if(DEBUG)System.out.println("DD:startDirectoryServer:Turned off already");
 			return false;
@@ -840,6 +970,7 @@ public class DD {
 				return false;
 			}
 		}
+		// for on = true
 		if (as != null){
 			if(DEBUG)System.err.println("Was not null");
 			return false;
@@ -849,6 +980,7 @@ public class DD {
 			Application.getG_TCPServer().start();
 		} catch (Exception e) {
 			if(DEBUG)System.err.println("Error:"+e);
+			//e.printStackTrace();
 			return false;
 		}
 		return true;
@@ -874,6 +1006,7 @@ public class DD {
 				return false;
 			}
 		}
+		// if on = true
 		if (aus != null) {
 			if (DEBUG) System.err.println("Was not null");
 			return false;
@@ -885,11 +1018,13 @@ public class DD {
 			Application.getG_UDPServer().start();
 		} catch (Exception e) {
 			if(DEBUG) System.err.println("Error:"+e);
+			//e.printStackTrace();
 			return false;
 		}
 		return true;
 	}
 	static public boolean startNATServer(boolean on) throws NumberFormatException, P2PDDSQLException {
+		//boolean DEBUG = true;
 		NATServer aus = Application.getG_NATServer();
 		if(DEBUG) System.err.println("Will set server nat_s="+aus);
 		if (on == false) {
@@ -901,6 +1036,7 @@ public class DD {
 				return false;
 			}
 		}
+		// if on = true
 		if (aus != null) {
 			if (DEBUG) System.err.println("Was not null");
 			return false;
@@ -912,6 +1048,7 @@ public class DD {
 			Application.getG_NATServer().start();
 		} catch (Exception e) {
 			if(DEBUG) System.err.println("Error:"+e);
+			//e.printStackTrace();
 			return false;
 		}
 		return true;
@@ -929,6 +1066,7 @@ public class DD {
 		boolean DEBUG = DD.DEBUG || Client2.DEBUG || ClientSync.DEBUG;
 		if (DEBUG) System.out.println("DD: startClient: " + on);
 		IClient old_client = Application.getG_PollingStreamingClient();
+		
 		if (on == false) {
 			if (old_client != null) {
 				old_client.turnOff();
@@ -938,6 +1076,7 @@ public class DD {
 				return false;
 			}
 		}
+		// Here on = true
 		if (old_client != null) return false;
 		try {
 			Application.setG_PollingStreamingClient(ClientSync.startClient());
@@ -950,7 +1089,7 @@ public class DD {
 	/**
 	 * Method to make the client wake up from sleep and retry connections (e.g. after new addresses are received from directories)
 	 */
-	static public boolean touchClient() {
+	static public boolean touchClient() {//throws NumberFormatException, P2PDDSQLException {
 		boolean result = true;
 		IClient old_client = Application.getG_PollingStreamingClient();
 		if (old_client == null) {
@@ -966,6 +1105,7 @@ public class DD {
 		old_client.wakeUp();
 		return result;
 	}
+
 	public static SK getConstituentSK(long constituentID) throws P2PDDSQLException {
 		String constGID = D_Constituent.getGIDFromLID(constituentID);
 		return Util.getStoredSK(constGID);
@@ -1078,11 +1218,13 @@ public class DD {
 			pGIDhash = Util.getGIDhash(public_key_ID);
 			if(DEBUG) System.out.println("DD:storeSK public key hash: "+pGIDhash);
 		}
+		//String date = Util.getGeneralizedTime();
 		if(pGIDname == null) pGIDname = "KEY:"+date;
 		Application.getDB().insert(net.ddp2p.common.table.key.TNAME,
 				new String[]{net.ddp2p.common.table.key.public_key,net.ddp2p.common.table.key.secret_key,net.ddp2p.common.table.key.ID_hash,net.ddp2p.common.table.key.creation_date,
 				net.ddp2p.common.table.key.name,net.ddp2p.common.table.key.type},
 				new String[]{public_key_ID, secret_key, pGIDhash,date,
+				/*Util.getKeyedIDPKhash(pIDb)*/
 				pGIDname,
 				Util.getKeyedIDType(keys)}, DEBUG);
 	}
@@ -1096,11 +1238,14 @@ public class DD {
 	public static final int MAX_DPEER_UNCERTIFIED_ADDRESSES = 5;
 	public static final boolean DIRECTORY_ANNOUNCEMENT_UDP = true;
 	public static final boolean DIRECTORY_ANNOUNCEMENT_TCP = true;
+	//public static final String MISSING_PEERS = "MISSING_PEERS";
+	//public static final String MISSING_NEWS = "MISSING_NEWS";
 	public static final String WINDOWS_NO_IP = "No IP"; // to signal no IP4 in ipconfig
 	public static final String ALREADY_CONTACTED = __("Already contacted ***");
 	/**
 	 * Peers
 	 */
+	// Different icons should be displayed for each state... for now just on/off
 	public static final int PEERS_STATE_CONNECTION_FAIL =0;
 	public static final int PEERS_STATE_CONNECTION_TCP = 1;
 	public static final int PEERS_STATE_CONNECTION_UDP = 2;
@@ -1121,8 +1266,8 @@ public class DD {
 	public static final boolean ANONYMOUS_NEWS_CREATION = true; 
 	public static final boolean VERIFY_GIDH_ALWAYS = false;
 	public static final String NO_CONTACT = "No contact";
-	public static final int CLIENTS_NB_MEMORY = 100; 
-	public static final int CLIENTS_RANDOM_MEMORY = 10; 
+	public static final int CLIENTS_NB_MEMORY = 100; // how much  memory assigned to recent clients to avoid duplication & DOS
+	public static final int CLIENTS_RANDOM_MEMORY = 10; // max size of randomID for ASNSyncRequest
 	public static final String APP_CLAIMED_DATA_HASHES = "CLAIMED_DATA_HASHES";
 	public static final long DOMAINS_UPDATE_WAIT = 1000 * 200;
 	/**
@@ -1149,15 +1294,17 @@ public class DD {
 	public static final String APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS = "APP_USER_SOPHISTICATED_IN_SELECTING_TESTERS";
 	public static final String AUTOMATIC_TESTERS_RATING_BY_SYSTEM = "AUTOMATIC_TESTERS_RATING_BY_SYSTEM";
 	public static final boolean DEBUG_TMP_GIDH_MANAGEMENT = false;
-	public static final int MAX_CONTAINER_SIZE = 5000000; 
+	public static final int MAX_CONTAINER_SIZE = 5000000; // max size of an image containing an object
 	public static boolean DEBUG_COMMUNICATION_ADDRESSES = false;
 	public static boolean DEBUG_COMMUNICATION_STUN = false;
 	public static int MAX_ORG_ICON_LENGTH = 20000;
 	public static int MAX_CONSTITUENT_ICON_LENGTH = 20000; 
 	public static int MAX_PEER_ICON_LENGTH = 20000;
+	
 	public static boolean RELEASE = true;
 	/** dir_IP: (GID: ()addresses) */
 	public static Hashtable<String,Hashtable<String,DirectoryAnswerMultipleIdentities>> dir_data = new Hashtable<String,Hashtable<String,DirectoryAnswerMultipleIdentities>>();
+
 	/**
 	 * Is the data for me as constituent fully input?
 	 * @param organization_ID
@@ -1168,6 +1315,15 @@ public class DD {
 		D_Constituent c = D_Constituent.getConstByLID(constituent_ID, true, false);
 		if (c != null && c.getSurname() != null) return true;
 		return false;
+		/*
+		try{
+			String sql = "SELECT "+table.constituent.name+" FROM "+table.constituent.TNAME+
+			" WHERE "+table.constituent.constituent_ID+"=?;";
+			ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{""+constituent_ID});
+			if ((a.size()>=1) && (a.get(0).get(0)!=null)) return true;
+		}catch(Exception e){}
+		return false;
+		*/
 	}
 	/**
 		 * Returns the current version as an array of ints: DD.VERSION_INTS
@@ -1205,25 +1361,29 @@ public class DD {
 			StegoStructure myAddress
 			) {
 		BMP[] _data = new BMP[1];
-		byte[][] _buffer_original_data = new byte[1][]; 
+		byte[][] _buffer_original_data = new byte[1][]; // old .bmp file 
 		byte[] adr_bytes = myAddress.getBytes();
+		
 		if (file.exists()) {
 			boolean fail = EmbedInMedia.cannotEmbedInBMPFile(file, adr_bytes, explain, _buffer_original_data, _data);
+			
 			if (fail) {
 				if (_DEBUG) System.out.println("DD: embedPeerInBMP: failed embedding in existing image: "+explain[0]);
 				return false;
 			}
 		}
+		
 		if ( EmbedInMedia.DEBUG ) System.out.println("EmbedInMedia:actionExport:bmp");
 		try {
 			if ( ! file.exists()) {
-				EmbedInMedia.saveSteganoBMP(file, adr_bytes, myAddress.getSignShort()); 
+				EmbedInMedia.saveSteganoBMP(file, adr_bytes, myAddress.getSignShort()); //DD.STEGO_SIGN_PEER);
 			} else {
 				FileOutputStream fo;
 				fo = new FileOutputStream(file);
 				int offset = _data[0].startdata;
 				int word_bytes = 1;
 				int bits = 4;
+				////Util.copyBytes(b, BMP.CREATOR, adr_bytes.length);
 				fo.write(EmbedInMedia.getSteganoBytes(adr_bytes, _buffer_original_data[0], offset, word_bytes, bits, myAddress.getSignShort()));
 				fo.close();
 			}
@@ -1232,6 +1392,7 @@ public class DD {
 			e.printStackTrace();
 			return false;
 		}
+		
 		return true;
 	}
 	public static int findStegoIndex(StegoStructure[] adr, StegoStructure ss) {
@@ -1251,6 +1412,7 @@ public class DD {
 	 */
 	public static String loadFromMedia(InputStream is, String mime, StegoStructure[] adr, int[] selected) throws IOException {
 		byte[] buffer = new byte[DD.MAX_CONTAINER_SIZE];
+
 		if (selected != null && selected.length > 0) selected[0] = -1;
 		int len = Util.readAll(is, buffer);
 		if (DEBUG) System.out.println("Util: readAll: got n="+len+"/"+buffer.length);
@@ -1324,10 +1486,15 @@ public class DD {
 			}
 			if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif position="+i);
 			if (! found || i >= b.length) {
+//				JOptionPane.showMessageDialog(parent,
+//							__("Cannot Extract address in: ")+file+__("No valid data in the picture!"),
+//							__("Inappropriate File"), JOptionPane.WARNING_MESSAGE);
 						return __("Cannot Extract address in GIF file.")+" "+__("No valid data in the picture!");
 			}
 			byte[] addBy = new byte[b.length-i]; 
 			System.arraycopy(b,i,addBy,0,b.length-i);
+			// System.out.println("Got bytes ("+addBy.length+") to write: "+Util.byteToHex(addBy, " "));
+			
 			for (int k = 0; k < adr.length; k ++) {
 				if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif try adr#="+k+"/"+adr.length);
 				try {
@@ -1341,16 +1508,18 @@ public class DD {
 					_selected = k;
 					if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif success adr#="+k+"/"+adr.length+" val="+adr[k]);
 					break;
-				} catch (Exception e1) { 
+				} catch (Exception e1) { // ASN1DecoderFail | ASN1.ASNLenRuntimeException | 
 					if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif failed adr#="+k+"/"+adr.length);
 					if (EmbedInMedia.DEBUG){
 						e1.printStackTrace();
+						//Application_GUI.warning(__("Failed to parse gif file: "+file+"\n"+"at : "+i+"/"+b.length+"\n"+e1.getMessage()+"\nstego="+adr[k]), __("Failed to parse address!"));
 					}
 				}
 			}
 		} while (i < b.length && _selected < 0);
 		if (_DEBUG) System.err.println("ControlPane: actionImport: Got: gif done at i#="+i+" adr="+_selected+" val="+adr[_selected]);
 		if (_selected == -1) {
+			//Application_GUI.warning(__("Failed to parse file: ")+file+"\n", __("Failed to parse address!"));
 			return __("Failed to parse GIF file");
 		}
 		if ((selected != null) && (selected.length > 0))
@@ -1364,6 +1533,8 @@ public class DD {
 		if ((error = DD.loadBMP(adr, selected)) == null)	
 			adr[selected[0]].save();
 		else
+			// DisplayErrorMessage(error);
+		
 		On success, call the following:
 		adr[selected[0].save();
 	 * 
@@ -1384,6 +1555,7 @@ public class DD {
 		String explain = null;
 		boolean fail = false;
 		BMP data = new BMP(b, 0);
+	
 		if ((data.compression != BMP.BI_RGB) || (data.bpp < 24)) {
 			explain = " - "+__("Not supported compression: "+data.compression+" "+data.bpp);
 			fail = true;
@@ -1417,6 +1589,35 @@ public class DD {
 	 * @param organization_ID
 	 * @param key_ID
 	 */
+	/*
+	public static long createConstituent(long organization_ID, HashConstituent data) {
+		long result = -1;
+		try {
+			String hash_constituent = Util.stringSignatureFromByte(data.encode());//Util.byteToHex(data.encode());
+			result = Application.db.insert(table.constituent.TNAME,
+					new String[]{table.constituent.global_constituent_ID,
+					table.constituent.global_constituent_ID_hash,
+					table.constituent.organization_ID,
+					table.constituent.hash_constituent_alg,
+					table.constituent.hash_constituent,
+					table.constituent.slogan,
+					table.constituent.creation_date
+					},
+					new String[]{
+					data.global_constituent_ID,
+					data.global_constituent_ID_hash,
+					""+organization_ID,
+					table.constituent.CURRENT_HASH_CONSTITUENT_ALG,
+					hash_constituent,
+					data.slogan,
+					data.creation_date
+					});
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
+*/
 	public static void load_broadcast_probabilities(String val) {
 		if(val==null) return;
 		String[] probs= val.split(Pattern.quote(DD.PROB_SEP));
@@ -1450,6 +1651,7 @@ public class DD {
 		neighbors = neighbors/sum;
 		votes = votes/sum;
 		peers = peers/sum;
+
 		Broadcasting_Probabilities.broadcast_constituent = constit;
 		Broadcasting_Probabilities.broadcast_organization = orgs;
 		Broadcasting_Probabilities.broadcast_motion = motions;
@@ -1459,6 +1661,7 @@ public class DD {
 		Broadcasting_Probabilities.broadcast_vote = votes;
 		Broadcasting_Probabilities.broadcast_peer = peers;
 	}
+
 	public static void load_generation_probabilities(String val) {
 		if(val==null) return;
 		String[] probs= val.split(Pattern.quote(DD.PROB_SEP));
@@ -1492,6 +1695,7 @@ public class DD {
 		neighbors = neighbors/sum;
 		votes = votes/sum;
 		peers = peers/sum;
+
 		SimulationParameters.adding_new_constituent = constit;
 		SimulationParameters.adding_new_organization = orgs;
 		SimulationParameters.adding_new_motion = motions;
@@ -1522,6 +1726,10 @@ public class DD {
 					"SELECT "+net.ddp2p.common.table.application.value+" FROM "+net.ddp2p.common.table.application.TNAME+
 					" WHERE "+net.ddp2p.common.table.application.field+"=? LIMIT 1;",
 					new String[]{DD.DD_DB_VERSION}, DEBUG);
+//			ArrayList<ArrayList<Object>> v = Application.db.select(
+//					"SELECT * FROM "+table.application.TNAME+
+//					" LIMIT 1;",
+//					new String[]{}, DEBUG);
 			if(v.size()>0)DD.TESTED_VERSION=Util.getString(v.get(0).get(0));
 		}catch(Exception e){
 			try {
@@ -1549,6 +1757,8 @@ public class DD {
 			return error;
 		}
 	}
+	
+
 	public static DBInterface load_Directory_DB(String dB_PATH) {
 		DBInterface dbdir = null;
 		String sql = "SELECT "+net.ddp2p.common.table.subscriber.subscriber_ID+
@@ -1559,28 +1769,64 @@ public class DD {
 			String dbase = Application.DIRECTORY_FILE;
 			if(dB_PATH!=null) dbase = dB_PATH+Application.OS_PATH_SEPARATOR+dbase;
 			dbdir = DirectoryServer.getDirDB(dbase);
+			//dbdir = new DBInterface(dbase);
 			dbdir.select(sql, params, DEBUG);
 		} catch (net.ddp2p.common.util.P2PDDSQLException e) {
 			System.out.print(sql);
 			e.printStackTrace();
 			return null;
 		}
+		
 		return dbdir;
 	}
+
 	public static boolean asking_topic = false;
+
 	public static boolean isThisAnApprovedPeer(String senderID) {
+		// TODO Auto-generated method stub
 		return true;
 	}
 	public static boolean GUI = true;
+	//static final String CONSOLE="CONSOLE";
+	// parameters: 
+	// last parameter is the database (if different from CONSOLE)
+	// the parameter 1 is the GID of the peer
+	//
+	// Should be: -d database, -p peerGID, -c [for colsole]
 	/**
 	 * @deprecated Use {@link MainFrame#main(String[])} instead
 	 */
+/*
+	static public void main(String args[]) throws util.P2PDDSQLException {
+		MainFrame.main(args);
+	}
+*/
 	static public void set_DEBUG(){
+		/*
+		DD.DEBUG = true;
+		DD.DEBUG_LIVE_THREADS = true;
+		DD.DEBUG_COMMUNICATION = true;
+		ClientSync.DEBUG = true;
+		Connections.DEBUG=true;
+		D_Constituent.DEBUG = true;
+		D_Witness.DEBUG = true;
+		D_Organization.DEBUG = true;
+		D_Neighborhood.DEBUG = true;
+		UpdateMessages.DEBUG = true;
+		OrgHandling.DEBUG = true;
+		SpecificRequest.DEBUG = true;
+		WB_Messages.DEBUG = true;
+		WitnessingHandling.DEBUG = true;
+		NeighborhoodHandling.DEBUG = true;
+		ConstituentHandling.DEBUG = true;
+		/*
+		*/
 	}
 	final static public Object stop_monitor = new Object();
 	public static final boolean BLOCK_NEW_ARRIVING_TMP_ORGS = false;
 	public static final boolean BLOCK_NEW_ARRIVING_TMP_CONSTITUENT = false;
 	public static final boolean BLOCK_NEW_ARRIVING_TMP_MOTIONS = false;
+	
     public static final String SAFE_TEXT_MY_HEADER_SEP = " | "; // at the end of the title. Unsafe since spaces often are trimmed
     public static final String SAFE_TEXT_MY_BODY_SEP = "|DDP2P|OBJECT|START||"; // at the beginning of the body
     public static final String SAFE_TEXT_MY_BODY_TRAILER_SEP = "|DDP2P|OBJECT|TRAILER|"; // at the end of the body (optional)
@@ -1590,16 +1836,21 @@ public class DD {
             DD.startNATServer(false);
             DD.startUServer(false, null);
             DD.startServer(false, null);
+            
             DDP2P_ServiceThread domainsDetectionThread = Server.domainsDetectionThread;
             if (domainsDetectionThread != null) {
             	domainsDetectionThread.turnOff();
             	domainsDetectionThread = null;
             }
+
             DD.startClient(false);
             Connections c = Client2.g_Connections;
-            if (c != null) c.turnOff(); 
+            if (c != null) c.turnOff(); // used both by UDPServer and Client2
+            
             DD.startDirectoryServer(false, 0);
+            
             PluginRegistration.removePlugins();
+			
             System.out.println("Servers Closed...");
         }catch (Exception er){er.printStackTrace();}
 	}
@@ -1624,11 +1875,12 @@ public class DD {
 	 */
 	public static void clean_exit() {
         System.out.println("Exiting attempt...");
+        // Here should first stop servers!
         stop_servers();
        	System.out.println("StartUpThread: exitingIcon: items to save: "+net.ddp2p.common.data.SaverThreadsConstants.getNumberRunningSaverWaitingItems());
        	clean_before_exit();
         System.out.println("Exiting...");
-        System.exit(0); 
+        System.exit(0); // exit from tray icon
 	}
 	/**
 	 * Extracts an object from this text (or null).
@@ -1640,6 +1892,10 @@ public class DD {
         String body = extractMessage(text);       
         if (body == null) {
         	if (_DEBUG) System.out.println("DD: importText: Extraction of body failed");
+//            Toast.makeText(getActivity(), "Separators not found: \""+Safe.SAFE_TEXT_MY_HEADER_SEP+Safe.SAFE_TEXT_ANDROID_SUBJECT_SEP+"\"", Toast.LENGTH_SHORT).show();
+//            FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+//            ft.detach(LoadPK.this);
+//            ft.commit();
             return __("Extraction of body failed");
         }
         net.ddp2p.common.util.StegoStructure imported_object = interpreteASN1B64Object(body);
@@ -1655,12 +1911,21 @@ public class DD {
 		StegoStructure[] imported_objects = new StegoStructure[1];
 		String error = extractStegoObject(strAddress, imported_objects);
         net.ddp2p.common.util.StegoStructure imported_object = imported_objects[0];
+        
         if (imported_object == null) {
             if (_DEBUG) System.out.println("DD: importText: Decoding failed: "+error);
+//            Toast.makeText(getActivity(), "Failed to decode", Toast.LENGTH_SHORT).show();
+//            FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+//            ft.detach(LoadPK.this);
+//            ft.commit();
             return;
         }
+       
         String interpretation = imported_object.getNiceDescription();
+        //ask confirm
+        
         if (0 == Application_GUI.ask(__("Do you wish to load?")+"\n"+interpretation, __("Do you wish to load?"), 0)) {
+            //StegoStructure imported_object = (StegoStructure) ctx;
             try {
                 imported_object.save();
                 Application_GUI.info("Saving successful!", "Saving successful!");
@@ -1670,6 +1935,40 @@ public class DD {
             }
         } 
 	}
+      
+/*
+        AlertDialog.Builder confirm = new AlertDialog.Builder(getActivity());
+        confirm.setTitle("Do you wish to load?");
+        confirm.setMessage(interpretation)
+            .setCancelable(false)
+            .setPositiveButton("Yes", new MyDialog_OnClickListener(imported_object) {
+                public void _onClick(DialogInterface dialog, int id) {
+//                    Log.d("PK", "LoadPK: Trying to save");
+                    StegoStructure imported_object = (StegoStructure) ctx;
+                    try {
+                        imported_object.save();
+//                        Toast.makeText(getActivity(), "Saving successful!", Toast.LENGTH_SHORT).show();
+                    } catch (P2PDDSQLException e) {
+                        e.printStackTrace();
+//                        Log.d("PK", "LoadPK: Failed to save: "+e.getLocalizedMessage());
+                    }
+
+//                    FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+//                    ft.detach(LoadPK.this);
+//                    ft.commit();
+                    dialog.cancel();
+                }
+            })
+            .setNegativeButton("No",new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,int id) {
+//                    FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+//                    ft.detach(LoadPK.this);
+//                    ft.commit();
+                    dialog.cancel();
+                }
+            });
+        */
+       
 	/**
 	 * Extracts a StegoStructure object from a String in base 64 for ASN1 encoding
 	 * @param addressASN1B64
@@ -1681,18 +1980,24 @@ public class DD {
     	try {
     		if (DEBUG) System.out.println("DD: interprete: "+ addressASN1B64);
     		msg = Util.byteSignatureFromString(addressASN1B64);
+               
     		Decoder dec = new Decoder(msg);
+               
+//                StegoStructure s2s = getStegoStructure(dec.getTagValueBN());
+               
     		ss = DD.getStegoStructure(dec);
     		if (ss == null) {
     			if (_DEBUG) System.out.println("DD: interprete: Use default stego ... DD_Address");
     			ss = new DD_Address();
     		}
+    		//DD_Address da =
     		ss.setBytes(msg);
     		return ss;
     	} catch (Exception e) {
     		e.printStackTrace();
     		DD_SK dsk = new DD_SK();
     		if (_DEBUG) System.out.println("DD: interprete: Try default... DD_SK");
+           
     		try {
     			dsk.setBytes(msg);
     			if (DEBUG) System.out.println("DD: interprete: got="+dsk);
@@ -1731,6 +2036,7 @@ public class DD {
 	 */
 	public static String getExportTextObjectBody(D_Peer peer) {
 		DD_Address adr = new DD_Address(peer);
+		
 		String msgBody = DD.getExportTextObjectBody(adr.getBytes());
 		return msgBody;
 	}
@@ -1761,17 +2067,20 @@ public class DD {
 	public static String getExportTextObjectTitle (D_Motion crt_motion) {
 		String testSubject = __("DDP2P: Motion Detail of")+" \""+ crt_motion.getTitleStrOrMy()
 				+ "\" in \""+ crt_motion.getOrganization().getName()+"\" " + DD.SAFE_TEXT_MY_HEADER_SEP;
+
 		return testSubject;
 	}
 	public static String getExportTextObjectTitle (D_Organization org, D_Constituent constituent) {
 		String testSubject = __("DDP2P: Organization")+" \""+ org.getName()+"\" "+__("Profile of")+" \""
 				+ constituent.getNameOrMy() + " " + DD.SAFE_TEXT_MY_HEADER_SEP;
+
 		return testSubject;
 	}
 	public static String getExportTextObjectTitle(DD_DirectoryServer ds) {
 		String testSubject = __("DDP2P: Directories")+" \""+ ds.getNiceDescription() + "\" " + DD.SAFE_TEXT_MY_HEADER_SEP;
 		return testSubject;
 	}
+
     /**
      * Break a message in a string to extract the base64 encoding.
      * we assume it is:<p>
@@ -1790,40 +2099,58 @@ public class DD {
             	if (_DEBUG) System.out.println("DD: extractMessage: Address = null");
                 return null;
             }
+            //strAddress = strAddress.trim();
             if (DEBUG) System.out.println("DD: extractMessage: Address="+strAddress);
+            
+            // First try to break by body separator. If present then we are done 
             String[] __chunks = strAddress.split(Pattern.quote(DD.SAFE_TEXT_MY_BODY_SEP));
             if (__chunks.length == 0 || __chunks[__chunks.length - 1] == null) {
             	if (_DEBUG) System.out.println("DD: extractMessage: My top Body chunk = null");
                 return null;
             }
-            if (__chunks.length > 1) { 
+            if (__chunks.length > 1) { // it occurred and separates
+                // take the last chunk.
             	strAddress = __chunks[__chunks.length - 1];
+                
+                // for new versions with a trailer separator:
                 String [] ___chunks = strAddress.split(Pattern.quote(DD.SAFE_TEXT_MY_BODY_TRAILER_SEP));
                 if (___chunks.length == 0 || ___chunks[0] == null) {
                 	if (_DEBUG) System.out.println("DD: extractMessage: My first untrailled Body chunk = null");
                     return null;
                 }
                 strAddress = ___chunks[0];
-            	addressASN1B64 = strAddress; 
+
+                // now decode
+            	addressASN1B64 = strAddress; //__chunks[__chunks.length - 1];
             	addressASN1B64 = addressASN1B64.trim();
                 if (DEBUG) System.out.println("DD: extractMessage ASN1 Body=["+__chunks.length+"]=" + addressASN1B64);
                 if (DEBUG) System.out.println("DD: extractMessage ASN1 Body=[0]=" + __chunks[0]);
+
                 return Util.B64Join(addressASN1B64);
             }
+            // dealing with old versions
             if (DEBUG) System.out.println("DD: extractMessage: Address after 1 attempt="+strAddress);
+            
+            // take the last chunk.
             strAddress = __chunks[__chunks.length - 1];
+                       
+            // for old versions (without body separator), try taking out headers introduced in a subject
             String[] chunks = strAddress.split(Pattern.quote(DD.SAFE_TEXT_MY_HEADER_SEP));
             if (chunks.length == 0 || chunks[chunks.length - 1] == null) {
             	if (_DEBUG) System.out.println("DD: extractMessage: My Body chunk = null");
                 return null;
             }
+           
             String body = chunks[chunks.length - 1];
             if (DEBUG) System.out.println("DD:extractMessage: Body="+body);
+           
+            // for old versions (without body separator), try taking out headers introduced by whatsup between subject and body
             String[] _chunks = body.split(Pattern.quote(DD.SAFE_TEXT_ANDROID_SUBJECT_SEP));
             if (_chunks.length == 0 || _chunks[_chunks.length - 1] == null) {
                 if (_DEBUG) System.out.println("DD: extractMessage: Android Body chunk = null");
                 return null;
             }
+
             addressASN1B64 = _chunks[_chunks.length - 1];
         	addressASN1B64 = addressASN1B64.trim();
             if (DEBUG) System.out.println("DD: extractMessage ASN1 Body final=" + addressASN1B64);
@@ -1836,21 +2163,29 @@ public class DD {
 	public static D_Constituent getCrtConstituent(long oLID) {
 		if (oLID <= 0)
 			return null;
+		// D_Organization org;
+		// org = D_Organization.getOrgByLID(oLID, true, false);
+		// if (org == null) return null;
+
 		long constituent_LID = -1;
 		D_Constituent constituent = null;
 		try {
 			Identity crt_identity = Identity.getCurrentConstituentIdentity();
 			if (crt_identity == null) {
+				//Log.d(TAG, "No identity");
 			} else
 				constituent_LID = net.ddp2p.common.config.Identity
 						.getDefaultConstituentIDForOrg(oLID);
 		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
+
 		if (constituent_LID > 0) {
 			constituent = D_Constituent.getConstByLID(constituent_LID, true,
 					false);
+			//Log.d(TAG, "Got const: " + constituent);
 		}
+
 		return constituent;
 	}
 	/**

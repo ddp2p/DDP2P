@@ -1,4 +1,5 @@
 package net.ddp2p.common.table;
+
 import java.util.regex.Pattern;
 public class directory_address {
 	public static final String directory_address_ID = "directory_address_ID";
@@ -20,6 +21,7 @@ public class directory_address {
 	public static final String date_last_connection = "date_last_connection";
 	public static final String date_signature = "date_signature";
 	public static final String TNAME = "directory_address";
+	
 	public static final String fields_noID =
 			agent_version+","+
 			protocol+","+

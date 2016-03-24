@@ -1,14 +1,19 @@
 package net.ddp2p.widgets.components;
+
 import java.awt.Component;
+
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.table.TableCellRenderer;
+
 import net.ddp2p.common.util.Util;
+
 @SuppressWarnings("serial")
 public
 class LVRenderer extends JLabel
 implements TableCellRenderer {
 	 JLabel label = new JLabel();
+
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value,
 			boolean isSelected, boolean hasFocus, int row, int column) {

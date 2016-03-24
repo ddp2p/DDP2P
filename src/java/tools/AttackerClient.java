@@ -24,6 +24,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
@@ -54,6 +56,7 @@ public class AttackerClient{
 		}	
 	}
 	static String dbfile = Application.DEFAULT_DELIBERATION_FILE; 
+	static String dbfile1 = Application.DELIBERATION_FILE;
 	private static String MyGID;
 	private static String MyGIDHash;
 	private static String OrgGIDHash;
@@ -156,9 +159,7 @@ public class AttackerClient{
 		return false;
 	}
 	static void initAppFromDB (DBInterface dbInterface) throws P2PDDSQLException {
-		if (DEBUG) System.out.println("AttackerClient: initAppFromDB: enter");
 		Identity.init_Identity(true, true, false); 
-		if (DEBUG) System.out.println("AttackerClient: initAppFromDB: identity inited");
 		if (DEBUG) System.err.println(__("DD: main: Got Myelf=")+net.ddp2p.common.data.HandlingMyself_Peer.get_myself_or_null());
 		StartUp.detect_OS_and_store_in_DD_OS_var();
 		StartUp.fill_install_paths_all_OSs_from_DB(); 
@@ -166,12 +167,145 @@ public class AttackerClient{
 		if (DEBUG && Application.getDB() != null) System.err.println(__("initFromDB: main: Got DB = ")+Application.getDB().getName());
 		DDTranslation.db = Application.getDB();
 		DD.load_listing_directories_noexception();
-		if (DEBUG) System.out.println("AttackerClient: initAppFromDB: exit");
 	}
 	static void initApp() {
 		net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
 		DD.startTime = Util.CalendargetInstance();
 	}
+	public static String randomTimeStamp(){
+		int yr = randomNumberRange(2000, 2015);
+		String yr1=yr+"";
+		
+		int mm = randomNumberRange(1, 12);
+		String m;
+		if (mm <= 9) 
+			m = "0" + mm;
+		else 
+			m = mm + "";
+		
+		int dd = randomNumberRange(1, 28);
+		String d;
+		if (dd <= 9) 
+			d = "0" + dd;
+		else 
+			d = dd + "";
+		
+		int hh = randomNumberRange(0, 23);
+		String h;
+		if (hh <= 9) 
+			h = "0" + hh;
+		else 
+			h = hh + "";
+		
+		int mi = randomNumberRange(0, 59);
+		String mi1;
+		if (mi <= 9) 
+			mi1 = "0" + mi;
+		else 
+			mi1 = mi + "";
+		
+		int ss = randomNumberRange(0, 59);
+		String s;
+		if (ss <= 9) 
+			s = "0" + ss;
+		else
+			s = ss + "";
+		
+		int rn = randomNumberRange(0, 999);
+		String rn1;
+		if (rn <= 9) 
+			rn1 = "00" + rn;
+		else if(rn<99&&rn>9)
+			rn1 = "0" + rn;
+		else
+			rn1=rn+"";
+		String output=yr1+m+d+h+mi1+s+"."+rn1+"Z";
+		return output;
+	}
+
+	// function to generate random number 1 to 9
+	public static int randomNumber() {
+		return randomNumberRange(1, 9);
+	}
+
+	// function to generate random alphabet
+	public static char randomAlphabet() {
+		String alphabet = "abcdefghijklmnopqrstuvwxyz";
+		int length = alphabet.length();
+		Random random = new Random();
+		char output = alphabet.charAt(random.nextInt(length));
+		return output;
+	}
+
+	// function to generate random number in range
+	public static int randomNumberRange(int min, int max) {
+		Random random = new Random();
+		int randomNum = random.nextInt((max - min) + 1) + min;
+		return randomNum;
+	}
+
+	// function to generate alphanumeric
+	public static String randomAlphaNumberic(String alphabet, int len) {
+		int length = alphabet.length();
+		Random random = new Random();
+		String output = "";
+		for (int i = 0; i < len; i++) {
+			output += alphabet.charAt(random.nextInt(length));
+		}
+		return output;
+	}
+
+	// function to generate SSH
+	public static String randomPeerStringGen() {
+		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+		int len = 27;
+		String gen = randomAlphaNumberic(alphabet, len);
+		String output = "P:SHA-1:" + gen + "=";
+		return output;
+	}
+	
+	public static String randomMotionStringGen() {
+		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+		int len = 27;
+		String gen = randomAlphaNumberic(alphabet, len);
+		String output = "M:SHA-1:" + gen + "=";
+		return output;
+	}
+	
+	public static String randomConstituentStringGen() {
+		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+		int len = 27;
+		String gen = randomAlphaNumberic(alphabet, len);
+		String output = "R:SHA-1:" + gen + "=";
+		return output;
+	}
+	
+	public static String randomWitnessStringGen() {
+		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+		int len = 27;
+		String gen = randomAlphaNumberic(alphabet, len);
+		String output = "W:SHA-1:" + gen + "=";
+		return output;
+	}
+	
+	public static String randomNewsGlobalStringGen() {
+		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+		int len = 27;
+		String gen = randomAlphaNumberic(alphabet, len);
+		String output = "E:SHA-1:" + gen + "=";
+		return output;
+	}
+	
+	public static String randomOrganizationStringGen() {
+		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+		int len = 43;
+		String gen = randomAlphaNumberic(alphabet, len);
+		String output = "G:" + gen + "=";
+		return output;
+	}
+	
+	
+	
 	public static void _main(String[] args) throws Exception 
 	{
 		ArrayList<String> potentialDatabases = new ArrayList<String>();
@@ -185,9 +319,7 @@ public class AttackerClient{
 			if (DEBUG) System.err.println(__("DD: main: Quit no database"));
 			return;
 		}
-		if (DEBUG) System.out.println("Success loading DB, will init");
 		initAppFromDB(Application.getDB());
-		if (DEBUG) System.out.println("App inited");
 		DD.startUServer(true, Identity.getCurrentPeerIdentity_QuitOnFailure());
 		UDPServer us = Application.getG_UDPServer();
 		ASNSyncRequest request = new ASNSyncRequest();
@@ -204,15 +336,28 @@ public class AttackerClient{
 				return;
 			}
 		}
+		
+		
 		request.pushChanges = new ASNSyncPayload();	
 		request.pushChanges.advertised = new SpecificRequest();		
-		request.pushChanges.advertised.peers.put("kglfjgsgdhfjgjh", "20160127215338.622Z");	
-		request.pushChanges.advertised.peers.put("P:SHA-1:fpbCWB5BCD0Jmu7VOFNgGaoM/Vo=", "20160127215339.622Z");
-		request.pushChanges.advertised.peers.put("P:SHA-1:gpbCWB5BCD0Jmu7VOFNgGaoM/Vo=", "20160127215337.622Z");
-		RequestData rd = new RequestData();		
-		rd.cons.put("gahhahdhaskhk", "20160127215338.622Z");		
-		rd.cons.put("R:SHA-1:7+Xa6InSWCWxy3C0ZfnUYCxgveU=", "20160127215358.622Z");		
-		rd.cons.put("R:SHA-1:7+Xa6InSWCWxy3C0ZfnUYCxgvfU=", "20160127215368.622Z");		
+		//System.out.println(randomTimeStamp());
+		//System.out.println(randomStringGen());
+		
+		RequestData rd = new RequestData();
+		
+		request.pushChanges.advertised.peers.put(randomPeerStringGen(),randomTimeStamp());	
+		request.pushChanges.advertised.news.add(randomNewsGlobalStringGen());
+		request.pushChanges.advertised.news.add(randomNewsGlobalStringGen());
+		request.pushChanges.advertised.orgs.put(randomOrganizationStringGen(), randomTimeStamp());
+		rd.cons.put(randomConstituentStringGen(), randomTimeStamp());
+		rd.witn.add(randomWitnessStringGen());
+		rd.orgs.add(randomOrganizationStringGen());
+		rd.news.add(randomNewsGlobalStringGen());
+		rd.moti.add(randomMotionStringGen());
+		//rd.tran.add("uvwx");
+		//rd.neig.add("yzabcd");
+		
+		
 		rd.global_organization_ID_hash = OrgGIDHash;		
 		request.pushChanges.advertised.rd.add(rd);	
 		request.address = me;
@@ -251,10 +396,12 @@ public class AttackerClient{
 		}
 		System.out.println("k: done instances");
 		synchronized(clientSocket) {
-			clientSocket.wait(10*60*60);
+			clientSocket.wait(1000*600*600);
 			System.out.println("l");
 		}
 		clientSocket.close();
 		System.out.println("m");
-	}
+		}
+	
 }
+

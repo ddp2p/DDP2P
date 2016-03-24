@@ -1,4 +1,5 @@
 package net.ddp2p.widgets.peers;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -8,6 +9,7 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -16,6 +18,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+
 import net.ddp2p.ciphersuits.KeyManagement;
 import net.ddp2p.ciphersuits.PK;
 import net.ddp2p.ciphersuits.SK;
@@ -28,6 +31,7 @@ import net.ddp2p.widgets.app.Util_GUI;
 import net.ddp2p.widgets.components.CipherSelection;
 import net.ddp2p.widgets.components.TranslatedLabel;
 import static net.ddp2p.common.util.Util.__;
+
 @SuppressWarnings("serial")
 public class CreatePeer extends JDialog implements ActionListener {
 	private static final boolean DEBUG = false;
@@ -84,6 +88,14 @@ public class CreatePeer extends JDialog implements ActionListener {
 	public D_Peer getDPeer() {
 		return peer;
 	}
+	/*
+	public D_PeerAddress getPeerAddress() {
+		Util.printCallPath("");
+		System.exit(1);
+		//return peer;
+		return null;
+	}
+	*/
 	public static final String title = __("Enter your data!");
 	/**
 	 * Whether the result should be signed, stored and unkept.
@@ -111,7 +123,7 @@ public class CreatePeer extends JDialog implements ActionListener {
 	public void showIt(){
 	    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 	    pack(); 
-	    setVisible(true); 
+	    setVisible(true); // this shows it;
 	}
 	/**
 	 * Sets only name, slogan and email (if non-null)
@@ -133,66 +145,85 @@ public class CreatePeer extends JDialog implements ActionListener {
     		+__("If you plan working on multiple machines, provide an instance identifier!")
     		;
 	void init(JFrame parent) {
+		//Util.printCallPath("Why?");
+		//JButton bp;
 	    if (parent != null) {
 	    	Dimension parentSize = parent.getSize(); 
 	    	Point p = parent.getLocation(); 
 	    	setLocation(p.x + parentSize.width / 4, p.y + parentSize.height / 4);
 	    }
+	    
+	    
 		int y = 0;
 	    JPanel messagePane = new JPanel();
 	    getContentPane().add(messagePane);
+
 	    messagePane.setLayout(new GridBagLayout());
 		c.ipadx=10; c.gridx=0; c.gridy=y; c.anchor = GridBagConstraints.WEST; c.fill = GridBagConstraints.HORIZONTAL;
-	    c.gridx = 0; c.gridy = y; 
+
+	    c.gridx = 0; c.gridy = y; //c.gridwidth = 2;
 		messagePane.add(new JLabel(__("Description")), c);
 	    c.gridx = 1;
 		messagePane.add(description = new JTextArea(_description), c);
 		description.setRows(3);
 		description.setColumns(30);
 	    y++;
-	    c.gridx = 0; c.gridy = y; 
+
+		
+	    c.gridx = 0; c.gridy = y; //c.gridwidth = 1;
 		messagePane.add(new JLabel(__("Peer Name")), c);
 	    c.gridx = 1;
 	    messagePane.add(name = new JTextField(NAME_CHARACTERS), c);
 	    y++;
+	    
 	    c.gridx = 0; c.gridy = y;
 	    String peerInstance = __("Device Name"); //_("Peer Instance");
 	    messagePane.add(new JLabel(peerInstance), c);
 	    c.gridx = 1; c.gridy = y;
 	    messagePane.add(instance = new JTextField(SLOGAN_CHARACTERS), c);
 	    y++;
+	    
 	    c.gridx = 0; c.gridy = y;
 	    String statusText = __("Status Text"); //_("Peer Slogan");
 	    messagePane.add(new JLabel(statusText), c);
 	    c.gridx = 1; c.gridy = y;
 	    messagePane.add(slogan = new JTextField(SLOGAN_CHARACTERS), c);
 	    y++;
+	    
 	    c.gridx = 0; c.gridy = y;
 	    messagePane.add(new JLabel(__("Email For Verification")), c);
 	    c.gridx = 1; c.gridy = y;
 	    messagePane.add(email = new JTextField(EMAIL_CHARACTERS), c);
 	    y++;
+	      
 	    c.gridx = 0; c.gridy = y;
 	    messagePane.add(label_ciphersuit = new JLabel(__("Cipher-Suit")), c);
 	    c.gridx = 1;
 	    this.cipherSelection = new CipherSelection();			
 	    messagePane.add(cipherSelection, c);
 	    y++;
+
+	      
 	    JPanel buttonPane = new JPanel();
+	    
 	    button_ok = new JButton("CREATE");
 	    button_ok.setActionCommand(cOK);
 	    buttonPane.add(button_ok);
 	    button_ok.addActionListener(this);
+	    
 	    if (show_import) {
 		    button_import = new JButton("IMPORT");
 		    button_import.setActionCommand(cIMPORT);
 		    buttonPane.add(button_import);
 		    button_import.addActionListener(this);
 	    }
+	    
 	    button_cancel = new JButton("CANCEL");
 	    button_cancel.setActionCommand(cCANCEL);
 	    buttonPane.add(button_cancel);
 	    button_cancel.addActionListener(this);
+	    
+	      
 	    getContentPane().add(buttonPane, BorderLayout.SOUTH);
 	}
 	int getIndex(String[] items, String val){
@@ -210,6 +241,7 @@ public class CreatePeer extends JDialog implements ActionListener {
 		JFileChooser filterUpdates = new JFileChooser();
 		filterUpdates.setFileFilter(new net.ddp2p.widgets.components.UpdatesFilterKey());
 		filterUpdates.setName(__("Select Secret Trusted Key"));
+		//filterUpdates.setSelectedFile(null);
 		Util_GUI.cleanFileSelector(filterUpdates);
 		int loadNewPeerVal = filterUpdates.showDialog(this,__("Specify Trusted Secret Key File"));
 		if (loadNewPeerVal != JFileChooser.APPROVE_OPTION){
@@ -236,25 +268,40 @@ public class CreatePeer extends JDialog implements ActionListener {
 				Application_GUI.warning(__("Failure to load key!"), __("Loading Secret Key"));
 				return null;
 			}
+			/*
+			if (!is_new[0]) {
+				Application.warning(_("Secret key already available!"), _("Loading Secret Key"));
+				return null;
+			}
+			*/
 			PK new_pk = new_sk.getPK();
 			String new_gid = Util.getKeyedIDPK(new_pk);
+			//String _pk=__pk[0];//Util.stringSignatureFromByte(new_sk.getPK().getEncoder().getBytes());
 			if (DEBUG) System.out.println("CreatePeer:LoadPeer: will load="+new_gid);
-			peer = D_Peer.getPeerByGID_or_GIDhash(new_gid, null, true, true, true, null);
+			peer = D_Peer.getPeerByGID_or_GIDhash(new_gid, null, true, true, true, null);//  new D_Peer(new_gid);
+			//peer = D_Peer.getPeerByPeer_Keep(peer);
 			if (DEBUG) System.out.println("CreatePeer:LoadPeer: loaded peer="+peer);
 			if (peer.getLIDstr() == null) {
 				if (DEBUG) System.out.println("CreatePeer:LoadPeer: loaded ID=null");
-				PeerInput data = file_data[0];
+				PeerInput data = file_data[0];//new CreatePeer(DD.frame, file_data[0], false).getData();
 				if (DEBUG) System.out.println("CreatePeer:LoadPeer: loaded ID data set");
 				peer.setPeerInputNoCiphersuit(data);
 			}
 			if (DEBUG) System.out.println("CreatePeer:LoadPeer: will make instance");
 			peer.makeNewInstance();
+			
+			//if (isMyself(peer)){setInstance} //cannot be since I had no key
+			//peer.component_basic_data.globalID = _pk;
+			//peer.component_basic_data.globalIDhash=null;
+			//peer._peer_ID = -1;
+			//peer.peer_ID = null;
 			if (DEBUG) System.out.println("CreatePeer:LoadPeer: will sign peer");
 			if (STORE_SIGN_AND_UNKEPT_PEER) {
 				peer.sign(new_sk);
 				peer.storeRequest();
 				peer.releaseReference();
 			}
+			//peer.storeAsynchronouslyNoException();
 		}catch(Exception e2){
 			e2.printStackTrace();
 			if (_DEBUG) System.out.println("CreatePeer:LoadPeer: exception");
@@ -271,12 +318,13 @@ public class CreatePeer extends JDialog implements ActionListener {
 				peer.setPeerInputNoCiphersuit(this.getData());
 				if (STORE_SIGN_AND_UNKEPT_PEER) {
 					peer.sign(new_sk);
-					peer.storeRequest(); 
+					peer.storeRequest(); //storeAsynchronouslyNoException();
 					peer.releaseReference();
 				}
 			}
 		}
 		if (e.getSource() == button_import) {
+			//setVisible(false); 
 			peer = loadPeer();
 			if ( peer == null ) {
 				if (DEBUG) System.out.println("CreatePeer: action: peer null");
@@ -286,6 +334,7 @@ public class CreatePeer extends JDialog implements ActionListener {
 			this.setData(dta);
 			this.cipherSelection.setVisible(false);
 			this.label_ciphersuit.setVisible(false);
+			//valid = true;
 			if (DEBUG) System.out.println("CreatePeer: action: peer valid");
 			return;
 		}

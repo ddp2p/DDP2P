@@ -1,21 +1,30 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.common.streaming;
+
 import static java.lang.System.out;
+
 import java.util.ArrayList;
 import java.util.HashSet;
+
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
@@ -23,6 +32,7 @@ import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.hds.Table;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public class UpdateNewsTable {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -87,7 +97,7 @@ public class UpdateNewsTable {
 			String news = Util.getBString(tab.rows[i][3]);
 			String type = Util.getBString(tab.rows[i][4]);
 			String signature = Util.getBString(tab.rows[i][5]);
-			long constituentID = 
+			long constituentID = //UpdateMessages.get_constituent_LID_ByGID(global_constituentID);
 					D_Constituent.getLIDFromGID(global_constituentID, -1L);
 			if (constituentID < 0) continue;
 			long news_ID = UpdateMessages.get_news_ID(global_news_ID, constituentID, -1,  date, news, type, signature);

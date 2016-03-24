@@ -1,27 +1,35 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
  package net.ddp2p.widgets.constituent;
 import javax.swing.*;
 import javax.swing.tree.*;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.*;
 import java.util.*;
+
 import static net.ddp2p.common.util.Util.__;
+
 import javax.swing.AbstractCellEditor;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -29,6 +37,7 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.WindowConstants;
+
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.Language;
@@ -44,6 +53,7 @@ import net.ddp2p.widgets.components.DDLanguageSelector;
 import net.ddp2p.widgets.components.DivisionSelector;
 import net.ddp2p.widgets.components.LanguageItem;
 import net.ddp2p.widgets.components.Translation;
+
 class NeighborhoodRegistration extends JPanel{
 	GridBagConstraints c = new GridBagConstraints();
 	JTextField nameEditor;
@@ -52,6 +62,7 @@ class NeighborhoodRegistration extends JPanel{
 	DivisionSelector divisionEditor;
 	DDLanguageSelector divisionLanguageSelector;
 	DDCountrySelector divisionCountrySelector;
+	//JComboBox fieldID;
 	JTextField subdivisionsEditor;
 	DDLanguageSelector subdivisionsLanguageSelector;
 	DDCountrySelector subdivisionsCountrySelector;
@@ -67,10 +78,15 @@ class NeighborhoodRegistration extends JPanel{
 		add(new JLabel(__("Neighborhood Name:")),c);
 		c.gridx=0; c.gridy=1; c.fill = GridBagConstraints.HORIZONTAL;
 		add(nameEditor=new JTextField(10),c);
+		//c.gridx=0; c.gridy=1; c.fill = GridBagConstraints.NONE;
+		//add(new JLabel(_("Language")),c);
 		c.gridx=1; c.gridy=1; c.fill = GridBagConstraints.HORIZONTAL;
 		add(nameLanguageSelector=new DDLanguageSelector(),c);
+		//c.gridx=0; c.gridy=2; c.fill = GridBagConstraints.NONE;
+		//add(new JLabel(_("Country")),c);
 		c.gridx=2; c.gridy=1; c.fill = GridBagConstraints.HORIZONTAL;
 		add(nameCountrySelector=new DDCountrySelector(),c);
+		
 		c.gridx=0; c.gridy=3; c.fill = GridBagConstraints.HORIZONTAL;
 		add(new JLabel(__("Division Name:")),c);
 		c.gridx=0; c.gridy=4; c.fill = GridBagConstraints.HORIZONTAL;
@@ -79,6 +95,7 @@ class NeighborhoodRegistration extends JPanel{
 		add(divisionLanguageSelector=new DDLanguageSelector(),c);
 		c.gridx=2; c.gridy=4; c.fill = GridBagConstraints.HORIZONTAL;
 		add(divisionCountrySelector=new DDCountrySelector(),c);
+		
 		c.gridx=0; c.gridy=5; c.fill = GridBagConstraints.HORIZONTAL;
 		add(new JLabel(__("Sub-Divisions Names:")),c);
 		c.gridx=0; c.gridy=6; c.fill = GridBagConstraints.HORIZONTAL;
@@ -90,6 +107,7 @@ class NeighborhoodRegistration extends JPanel{
 		inited = true;
 	}
 }
+
 class ConstituentsTreeCellEditor extends AbstractCellEditor
 	implements TreeCellEditor, ActionListener {
 	boolean in_leaf = false;
@@ -113,6 +131,7 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
 		button.setActionCommand(EDIT);
 		button.addActionListener(this);
 		button.setBorderPainted(false);
+		
 		panel = new NeighborhoodRegistration(model);
 		GridBagConstraints c = new GridBagConstraints();
 		dialog = new JDialog(Util_GUI.findWindow(tree));
@@ -127,6 +146,7 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
 			public void actionPerformed(ActionEvent evt) {
 		       	if(DEBUG)System.out.println("ok actionPerformed: "+evt);
 				dialog.setVisible(false);
+				
 				nd=new Constituents_NeighborhoodData();
 				nd.name_lang=new Language(null,null);
 				nd.name_division_lang=new Language(null,null);
@@ -147,13 +167,17 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
 		dialog.validate();
 	}
 	Constituents_NeighborhoodData nd=null;
+	//@Override
 	public Object getCellEditorValue() {
 		if(DEBUG)System.out.println("getValue: "+nd);//+" data="+data);
 		return nd;
 	}
+	//@Override
 	public void actionPerformed(ActionEvent e) {
        	if(DEBUG)System.out.println("actionPerformed: "+e);//+" data="+data);
     	if (EDIT.equals(e.getActionCommand())) {
+           	//System.err.println("EDIT actionPerformed: "+e+" data="+data);
+    		//valueEditor.setText(data.value);
     		dialog.setVisible(true);    		
     		fireEditingStopped();
     	}else if (EDIT_ID.equals(e.getActionCommand())) {
@@ -161,6 +185,7 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
     		fireEditingStopped();
     	}
 	}
+	//@Override
 	public Component getTreeCellEditorComponent(JTree tree,
 			Object value,
 			boolean isSelected,
@@ -170,7 +195,7 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
 		if (value instanceof ConstituentsAddressNode) {
 			ConstituentsAddressNode node = (ConstituentsAddressNode)value;
 			in_leaf = false;
-			nd = null;
+			nd = null;//node.n_data;
 			panel.init();
 			panel.divisionEditor.init(model.getSubDivisions(),
 					((ConstituentsAddressNode)node.getParent()).getNeighborhoodData().names_subdivisions,
@@ -194,12 +219,22 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
 			dialog.pack();
 			return button;
 		}else if (value instanceof ConstituentsIDNode) {
+			//in_leaf = false;
+			//IdentityBranch ib = (IdentityBranch)value;
+			//data.value = ib.name;
+	   		//identityEditor.setText(data.value);
+	   	 	//return identityEditor;
 		} else if(value instanceof ConstituentsPropertyNode){
+			//in_leaf = true;
+			//IdentityLeaf il = (IdentityLeaf)value;
+			//return button;
 		}
 		return null;
 	}
 	public
     boolean 	isCellEditable(EventObject anEvent) {
+     	//System.err.println("isCellEditable: "+anEvent);
+		//     Asks the editor if it can start editing using anEvent.
      	if (anEvent instanceof MouseEvent) {
      		MouseEvent mouseEvent = (MouseEvent)anEvent;
      		if(mouseEvent.getClickCount() != 2) return false;
@@ -221,6 +256,7 @@ class ConstituentsTreeCellEditor extends AbstractCellEditor
     }
 	public
     boolean 	shouldSelectCell(EventObject anEvent) {
+		// Returns true if the editing cell should be selected, false otherwise.
 		return false;
     }
 }

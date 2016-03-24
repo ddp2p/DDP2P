@@ -1,6 +1,9 @@
 package net.ddp2p.common.table;
+
 import java.util.regex.Pattern;
+
 public class registered{
+
 	public static final String TNAME = "registered";
 	public static final String global_peer_ID = "global_peer_ID";
 	public static final String global_peer_ID_hash = "global_peer_ID_hash";
@@ -13,6 +16,7 @@ public class registered{
 	public static final String agent_version = "agent_version";
 	public static final String name = "name";
 	public static final String registeredID = "registeredID";
+	
 	public static final String fields_noID = 
 			global_peer_ID+
 			","+global_peer_ID_hash+
@@ -25,6 +29,7 @@ public class registered{
 			","+agent_version +
 			","+name
 			;
+	
 	public static final String[] fields_noID_list = fields_noID.split(Pattern.quote(","));
 	public static final String fields =  fields_noID+","+registeredID;
 	public static final String[] fields_list = fields.split(Pattern.quote(","));

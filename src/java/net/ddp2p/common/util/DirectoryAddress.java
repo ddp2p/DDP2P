@@ -1,6 +1,8 @@
 package net.ddp2p.common.util;
+
 import java.util.ArrayList;
 import java.util.Calendar;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -21,9 +23,10 @@ public class DirectoryAddress extends ASNObj{
 	public String agent_version;
 	public String branch;
 	public String domain;
-	public String name; 
-	public int tcp_port; 
-	public int udp_port; 
+	public String name; // this is added in addition to Address
+	public int tcp_port; // only one port
+	public int udp_port; // only one port
+	
 	public long directory_address_ID = -1;
 	public byte[] signature;
 	public String comments;
@@ -35,6 +38,7 @@ public class DirectoryAddress extends ASNObj{
 	public boolean active = true;
 	public Calendar contact;
 	public Calendar creation;
+
 	public String toLongString() {
 		String str = "[DirectoryAddress:v="+version+" p="+pure_protocol+" av="+agent_version+" b="+branch+" d="+domain+" t="+tcp_port+" u="+udp_port+" n="+name+"]";
 		return str;
@@ -86,11 +90,21 @@ public class DirectoryAddress extends ASNObj{
 	public ASNObj instance() throws CloneNotSupportedException{return new DirectoryAddress();}
 	public String toString() {
 		Address adr = new Address(this);
+		/*
+		adr.domain = domain;
+		adr.tcp_port = tcp_port;
+		adr.udp_port = udp_port;
+		adr.pure_protocol = pure_protocol;
+		adr.branch = branch;
+		adr.agent_version = agent_version;
+		*/
 		return adr.toStringStorage();
+		//return domain+DD.APP_LISTING_DIRECTORIES_ELEM_SEP+port;
 	}
 	public static byte getASN1Type() {
 		return DD.TAG_AC17;
 	}
+
 	public static DirectoryAddress getDirectoryAddress(ArrayList<Object> a) {
 		DirectoryAddress result = new DirectoryAddress();
 		result.active = Util.stringInt2bool(a.get(net.ddp2p.common.table.directory_address.DA_ACTIVE), false);
@@ -204,21 +218,27 @@ public class DirectoryAddress extends ASNObj{
 	}
 	public void setDomain(String string) {
 		domain = string;
+		
 	}
 	public void setBothPorts(String string) {
 		this.udp_port = this.tcp_port = Util.ival(string, this.tcp_port);
+		
 	}
 	public void setName(String string) {
 		name = string;
+		
 	}
 	public void setBranch(String string) {
 		branch = string;
+		
 	}
 	public void setAgentVersion(String string) {
 		agent_version = string;
+		
 	}
 	public void setActive(Boolean value) {
 		active = value;
+		
 	}
 	public String ipPort() {
 		return getIP()+DD.APP_LISTING_DIRECTORIES_ELEM_SEP+getTCPPort();
@@ -227,6 +247,7 @@ public class DirectoryAddress extends ASNObj{
 		return this.tcp_port;
 	}
 	public String getIP() {
+		
 		return domain;
 	}
 	public static String getDirectoryAddressesStr() {
@@ -246,6 +267,8 @@ public class DirectoryAddress extends ASNObj{
 		}
 		DD_DirectoryServer ds = new DD_DirectoryServer();
 		ds.parseAddress(val);
+		//System.out.println("DirectoryAddress: reset: val = "+ds);
 		if (!ds.empty()) ds.save();
 	}
+
 }

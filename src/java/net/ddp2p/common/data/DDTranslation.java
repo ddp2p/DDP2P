@@ -1,21 +1,28 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
  package net.ddp2p.common.data;
 import java.util.ArrayList;
+
 import net.ddp2p.common.config.Language;
 import net.ddp2p.common.util.DBInterface;
+
 /**
  * Class to query the database about translations of given texts in given languages
  * @author msilaghi
@@ -84,6 +91,7 @@ public class DDTranslation {
 					params_submitter = new String[]{sID,source, from.lang, preferred_languages[k].lang, preferred_languages[k].flavor};
 				}
 			}
+
 			try{
 				if(DEBUG) System.out.println("DDTranslation:translates:look1");
 				sel=db.select("select "+net.ddp2p.common.table.translation.translation+","+ net.ddp2p.common.table.translation.translation_lang+"," +net.ddp2p.common.table.translation.translation_flavor+"," +net.ddp2p.common.table.translation.translation_charset+" from "+net.ddp2p.common.table.translation.TNAME+" where "+net.ddp2p.common.table.translation.submitter_ID+" = ? and "+net.ddp2p.common.table.translation.value+" = ? " +
@@ -96,6 +104,7 @@ public class DDTranslation {
 				e.printStackTrace();
 	    		return null;
 			}
+			
 			try{
 				if(DEBUG) System.out.println("DDTranslation:translates:look2");
 				sel=db.select("select "+net.ddp2p.common.table.translation.translation+","+ net.ddp2p.common.table.translation.translation_lang+","+ net.ddp2p.common.table.translation.translation_flavor+"," +net.ddp2p.common.table.translation.translation_charset+", count(*) AS counts from "+net.ddp2p.common.table.translation.TNAME +
@@ -129,3 +138,4 @@ public class DDTranslation {
 		return null;
 	}
 }
+

@@ -1,18 +1,24 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.peers;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.EventQueue;
@@ -24,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Hashtable;
+
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -34,6 +41,7 @@ import javax.swing.JTree;
 import javax.swing.SwingConstants;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.PeerListener;
@@ -44,6 +52,7 @@ import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.components.DebateDecideAction;
 import net.ddp2p.widgets.components.GUI_Swing;
 import static net.ddp2p.common.util.Util.__;
+
 class DNode implements TreeNode{
 	private static final boolean DEBUG = false;
 	public String text;
@@ -58,36 +67,43 @@ class DNode implements TreeNode{
 		if(DEBUG) System.out.println("PeerContacts: getChildAt: "+this+" return:"+childIndex);
 		return child.get(childIndex);
 	}
+
 	@Override
 	public int getChildCount() {
 		if(DEBUG) System.out.println("PeerContacts: getChildCount: "+this+" return:"+child.size());
 		return child.size();
 	}
+
 	@Override
 	public TreeNode getParent() {
 		if(DEBUG) System.out.println("PeerContacts: getParent: "+this+" return:"+parent);
 		return parent;
 	}
+
 	@Override
 	public int getIndex(TreeNode node) {
 		if(DEBUG) System.out.println("PeerContacts: getIndex: "+this+" node="+node+" return:"+child.indexOf(node));
 		return child.indexOf(node);
 	}
+
 	@Override
 	public boolean getAllowsChildren() {
 		if(DEBUG) System.out.println("PeerContacts: getAllowsChildren: "+this+" true="+true);
-		return true;
+		return true;//child.size()!=0;
 	}
+
 	@Override
 	public boolean isLeaf() {
 		if(DEBUG) System.out.println("PeerContacts: isLeaf: "+this+" true="+true);
 		return child.size()==0;
 	}
+
 	@Override
 	public Enumeration children() {
 		if(DEBUG) System.out.println("PeerContacts: children: "+this);
 		return Collections.enumeration(child);
 	}
+	
 }
 public class PeerContacts extends JPanel implements MouseListener, PeerListener {
 	public static final boolean _DEBUG = true;
@@ -109,7 +125,10 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 		this.addMouseListener(this);
 		GUI_Swing.peer_contacts = this;
 		if(Application.peers!=null) ((Peers)Application.peers).addListener(this);
+		//l.setHorizontalAlignment(JLabel.LEFT);
 	}
+
+	// (GID: (instance: (DIR_Address:(ADR:date))))
 	public void update(Hashtable<String, Hashtable<String, Hashtable<String, Hashtable<String, String>>>> peer_contacts) {
 		if (DEBUG) System.out.println("PeerContacts: update: start");
 		if (! refresh) {
@@ -117,11 +136,13 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 			return;
 		}
 		Object[] data = getTree(peer_contacts);
+		//if(_DEBUG) System.out.println("PeerContacts: new tree");
 		DNode root = new DNode(); root.text = "root";
 		for (Object o: data) {
 			((DNode)o).parent = root;
 			root.child.add((DNode)o);
 		}
+		//jt = new JTree(data);
 		jt = new JTree(root);
 		jt.setRootVisible(false);
 		jt.expandPath(new TreePath(new Object[]{root}));
@@ -131,6 +152,7 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 			public void run() {
 				String now = Util.getGeneralizedTime();
 				if(DEBUG) System.out.println("PeerContacts: invoked later:do "+now);
+				//Application.peer.remo.removeAll();
 				if(old_jt!=null) GUI_Swing.peer_contacts.remove(old_jt);
 				old_jt = jt;
 				if(jt!=null) GUI_Swing.peer_contacts.add(jt,BorderLayout.CENTER);
@@ -139,15 +161,19 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 				l.setHorizontalTextPosition(SwingConstants.LEFT);
 				old_l = l;
 				GUI_Swing.peer_contacts.add(l, BorderLayout.NORTH);
+//				l.repaint();
+//				jt.repaint();
 				GUI_Swing.peer_contacts.revalidate();
 				if(DEBUG) System.out.println("PeerContacts: invoked later:did");
 			}}
 		);		
 	}
+	// (GID: (instance: (DIR_Address:(ADR:date))))
 	private Object[] getTree(Hashtable<String, Hashtable<String, Hashtable<String, Hashtable<String, String>>>> peer_contacts) {
 		ArrayList<Object> result = new ArrayList<Object>();
 		for (String peer : peer_contacts.keySet()){
 			if (DEBUG) System.out.println("PeerContacts: getTree: peer="+peer);
+			// if filter and a value is set, remove everything else
 			if (filter && (dpa != null)) {
 				if (!peer.equals(this.dpa.component_basic_data.name) &&
 						!peer.equals(this.my_peer_name) &&
@@ -167,6 +193,7 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 		}
 		return result.toArray();
 	}
+	// (DIR_Address:(ADR:date))
 	private DNode getInstNode(Hashtable<String, Hashtable<String, String>> dir_addresses, String instance_nonull) {
 		DNode  inst = new DNode();
 		inst.text = instance_nonull;
@@ -178,9 +205,10 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 		}
 		return inst;
 	}
+	// (ADR:date)
 	private DNode getDANode(Hashtable<String, String> da, String p) {
 		DNode n = new DNode();
-		n.text = p; 
+		n.text = p; // Util.trimmed(p);
 		if (da == null) {
 			n.text = ":null";
 			return n;
@@ -203,53 +231,74 @@ public class PeerContacts extends JPanel implements MouseListener, PeerListener 
 		}
 		return n;
 	}
+
 	@Override
 	public void mouseClicked(MouseEvent e) {
+		
 	}
+
 	@Override
 	public void mousePressed(MouseEvent e) {
 	   	jtableMouseReleased(e);
 	}
+
 	@Override
 	public void mouseReleased(MouseEvent e) {
 	   	jtableMouseReleased(e);		
 	}
+
 	@Override
 	public void mouseEntered(MouseEvent e) {
+		
 	}
+
 	@Override
 	public void mouseExited(MouseEvent e) {
+		
 	}
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
     	if(!evt.isPopupTrigger()) return;
+    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	JPopupMenu popup = getPopup(evt);
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
 	private JPopupMenu getPopup(MouseEvent evt) {
+//		JMenuItem menuItem;
+//    	ImageIcon addicon = DDIcons.getAddImageIcon(_("add an item")); 
+//    	ImageIcon delicon = DDIcons.getDelImageIcon(_("delete an item")); 
     	ImageIcon reseticon = DDIcons.getResImageIcon(__("reset item"));
     	JPopupMenu popup = new JPopupMenu();
     	PeerContactsAction prAction;
+    	//
     	prAction = new PeerContactsAction(this, __("Refresh!"), reseticon,__("Let it refresh."),
     			__("Go refresh!"),KeyEvent.VK_R, PeerContactsAction.REFRESH);
+    	//prAction.putValue("row", new Integer(model_row));
     	popup.add(new JMenuItem(prAction));
+
     	prAction = new PeerContactsAction(this, __("No Refresh!"), reseticon,__("Stop refresh."),
     			__("No refresh!"), KeyEvent.VK_S, PeerContactsAction.NO_REFRESH);
     	popup.add(new JMenuItem(prAction));
+
     	prAction = new PeerContactsAction(this, __("Filter by Peer!"), reseticon,__("Filter By Peer."),
     			__("Filter!"), KeyEvent.VK_F, PeerContactsAction.FILTER);
     	popup.add(new JMenuItem(prAction));
+
     	prAction = new PeerContactsAction(this, __("Remove Filter by Peer!"), reseticon,__("Remove Filter By Peer."),
     			__("Unfilter!"), KeyEvent.VK_U, PeerContactsAction.UNFILTER);
     	popup.add(new JMenuItem(prAction));
+
     	prAction = new PeerContactsAction(this, __("Delete Old data!"), reseticon,__("Delete old data."),
     			__("Unfilter!"), KeyEvent.VK_D, PeerContactsAction.RESET);
     	popup.add(new JMenuItem(prAction));
+
     	prAction = new PeerContactsAction(this, __("Pack Socket entries!"), reseticon,__("Pack Socket entries."),
     			__("Pack Socket!"), KeyEvent.VK_P, PeerContactsAction.PACK_SOCKET);
     	popup.add(new JMenuItem(prAction));
+
     	return popup;
 	}
+
 	@Override
 	public void update_peer(D_Peer peer, String my_peer_name, boolean me, boolean selected) {
 		this.dpa = peer;
@@ -277,10 +326,20 @@ class PeerContactsAction extends DebateDecideAction {
         this.icon = icon;
         this.command = command;
     }
+	//public final JFileChooser filterUpdates = new JFileChooser();
     public void actionPerformed(ActionEvent e) {
     	Object src = e.getSource();
         if(DEBUG)System.err.println("PeersRowAction:command property: " + command);
     	JMenuItem mnu;
+//    	int row =-1;
+//    	if(src instanceof JMenuItem){
+//    		mnu = (JMenuItem)src;
+//    		Action act = mnu.getAction();
+//    		row = ((Integer)act.getValue("row")).intValue();
+//            System.err.println("PeersRowAction:row property: " + row);
+//    	}
+//    	PeersModel model = (PeersModel)tree.getModel();
+//    	ArrayList<ArrayList<Object>> a;
 		switch(command){
 		case REFRESH:
 			tree.refresh = true;

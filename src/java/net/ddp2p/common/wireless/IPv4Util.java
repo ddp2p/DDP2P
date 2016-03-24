@@ -1,22 +1,30 @@
 package net.ddp2p.common.wireless;
+
 /*
      * Copyright (C) 2011 Archie L. Cobbs. All rights reserved.
      *
      * $Id$
      */
+    
+    //package org.dellroad.stuff.net;
+    
     import java.net.Inet4Address;
     import java.net.InetAddress;
     import java.net.UnknownHostException;
     import java.util.regex.Matcher;
     import java.util.regex.Pattern;
+    
     /**
      * Utility methods for working with IPv4 addresses and netmasks.
      */
     public final class IPv4Util {
+    
         public static final int MIN_VALID_NETMASK_WIDTH = 8;
         public static final int MAX_VALID_NETMASK_WIDTH = 30;
+    
         private IPv4Util() {
         }
+    
         /**
          * Convert from 32-bit integer representation.
          */
@@ -28,6 +36,7 @@ package net.ddp2p.common.wireless;
                 (byte)(address & 0xff),
             });
         }
+    
         /**
          * Convert to 32-bit integer representation.
          */
@@ -38,12 +47,14 @@ package net.ddp2p.common.wireless;
                  | ((bytes[2] & 0xff) << 8)
                  | (bytes[3] & 0xff);
         }
+    
         /**
          * Convert to an unsigned 32-bit integer representation within a 64-bit long.
          */
         public static long toUInt32(Inet4Address address) {
             return toInt32(address) & 0x00000000ffffffffL;
         }
+    
         /**
          * Convert raw bytes to an {@link Inet4Address}.
          *
@@ -58,6 +69,7 @@ package net.ddp2p.common.wireless;
                 throw new RuntimeException("unexpected exception", e);
             }
         }
+    
         /**
          * Convert an IPv4 address to string representation.
          *
@@ -66,6 +78,7 @@ package net.ddp2p.common.wireless;
         public static String toString(Inet4Address address) {
             return IPv4Util.toString(address.getAddress());
         }
+    
         /**
          * Convert a network address (IPv4 base address and netmask) to string representation.
          *
@@ -74,10 +87,12 @@ package net.ddp2p.common.wireless;
         public static String toString(Inet4Address address, Inet4Address netmask) {
             return IPv4Util.toString(address) + "/" + IPv4Util.getWidth(netmask);
         }
+    
         private static String toString(byte[] bytes) {
             assert bytes.length == 4;
             return (bytes[0] & 0xff) + "." + (bytes[1] & 0xff) + "." + (bytes[2] & 0xff) + "." + (bytes[3] & 0xff);
         }
+    
         /**
          * Convert from string representation.
          *
@@ -96,6 +111,7 @@ package net.ddp2p.common.wireless;
               (byte)Integer.parseInt(matcher.group(4))
             });
         }
+    
         /**
          * Get netmask width.
          *
@@ -112,6 +128,7 @@ package net.ddp2p.common.wireless;
             }
             throw new IllegalArgumentException("invalid netmask " + netmask);
         }
+    
         /**
          * Determine if the given address is a valid CIDR netmask.
          * The netmask must have a width between 8 and 30 (inclusive).
@@ -124,6 +141,7 @@ package net.ddp2p.common.wireless;
                 return false;
             }
         }
+    
         /**
          * Get netmask with the given width.
          *
@@ -134,6 +152,7 @@ package net.ddp2p.common.wireless;
                 throw new IllegalArgumentException("invalid netmask width " + width);
             return toAddress(~0 << (32 - width));
         }
+    
         /**
          * Get the base address (all host bits zero) of the given IP network.
          *
@@ -147,6 +166,7 @@ package net.ddp2p.common.wireless;
             addr &= ~0 << (32 - width);
             return toAddress(addr);
         }
+    
         /**
          * Get the broadcast address (all host bits one) of the given IP network.
          *
@@ -160,6 +180,7 @@ package net.ddp2p.common.wireless;
             addr |= ~(~0 << (32 - width));
             return toAddress(addr);
         }
+    
         /**
          * Determine if the given address lives on the given network.
          *
@@ -175,6 +196,7 @@ package net.ddp2p.common.wireless;
             int mask = ~0 << (32 - width);
             return (addr1 & mask) == (addr2 & mask);
         }
+    
         /**
          * Determine if the given address is a valid host address on the given network.
          * The address must lie on the given network and not equal either the base or broadcast addresses.
@@ -190,3 +212,5 @@ package net.ddp2p.common.wireless;
              && !address.equals(getBroadcastAddress(network, netmask));
         }
     }
+    
+

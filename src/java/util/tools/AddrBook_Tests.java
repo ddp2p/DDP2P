@@ -1,10 +1,12 @@
 package util.tools;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.common.config.Application;
@@ -25,6 +27,7 @@ import net.ddp2p.common.hds.Connections.DirectoryRequestAnswer;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.GetOpt;
 import net.ddp2p.common.util.P2PDDSQLException;
+
 public class AddrBook_Tests {
 	private static boolean DEBUG = false;
 	private static boolean udp = false;
@@ -35,6 +38,7 @@ public class AddrBook_Tests {
 	private static long pLID = 1;
 	private static boolean b_pLID = false;
 	private static String DS_DOMAIN = "debatedecide.org";
+
 	public static void main(String[] args) {
 		if (DEBUG) {
 			System.out.println("AddrBook: len="+args.length);
@@ -44,6 +48,7 @@ public class AddrBook_Tests {
 		}
 		try {
 			net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
+			
 			char c;
 			opts:
 			while ((c = GetOpt.getopt(args, "P:D:d:L:huvarp")) != GetOpt.END) {
@@ -62,7 +67,9 @@ public class AddrBook_Tests {
 							+ "\n\t -p         Send pingempty for myself"
 							+ "\n\t -r         Request myself"
 							);
-					System.exit(-1);
+					//printHELP();
+					//break;
+					System.exit(-1);//return;
 				case 'd':
 					if (DEBUG) System.out.println("Option d: "+GetOpt.optarg);
 					Application.DIRECTORY_FILE = GetOpt.optarg;
@@ -127,6 +134,7 @@ public class AddrBook_Tests {
 				default:
 					System.out.println("AddrBook: unknown option error: \""+c+"\"");
 					break opts;
+					//return;
 				}
 			}
 		} catch (Exception e){
@@ -134,17 +142,21 @@ public class AddrBook_Tests {
 			System.exit(-1);
 		}
 		System.out.println("AddrBook_Test: run: options done");
+
 		try {
 			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 			return;
 		}
+
 		boolean quit_on_failure = false;
 		boolean set_peer_myself = true;
 		boolean announce_dirs = false;
 		Identity.init_Identity(quit_on_failure, set_peer_myself = true, announce_dirs  = false);
+		//Identity.initMyCurrentPeerIdentity_fromDB(quit_on_failure);
 		System.out.println("AddrBook_Test: run: identity");
+		
 		if (announcement) {
 			System.out.println("AddrBook_Test: run: announcement start detect domains");
 			try {
@@ -176,6 +188,7 @@ public class AddrBook_Tests {
 			}
 		}
 		if (request) {
+			
 			System.out.println("AddrBook_Test: run: request");
 			try {
 				if (udp) sendUDPRequest();
@@ -186,6 +199,7 @@ public class AddrBook_Tests {
 			}
 		}
 	}
+
 	private static void sendTCPrequest() {
 		System.out.println("AddrBook_Test: sendTCPrequest: tcp request");
 		Address adr = new Address();
@@ -194,9 +208,11 @@ public class AddrBook_Tests {
 		adr.inetSockAddr = new InetSocketAddress(DS_DOMAIN, DS_PORT);
 		adr.branch = DD.BRANCH;
 		adr.agent_version = DD.VERSION;
+
 		D_Peer peer;
 		if (b_pLID) peer = D_Peer.getPeerByLID_NoKeep(pLID, true);
 		else peer = net.ddp2p.common.data.HandlingMyself_Peer.get_myself_or_null();
+		
 		if (peer == null) {
 			System.out.println("AddrBook_Test: sendTCPrequest: no such peer");
 			return;
@@ -205,12 +221,14 @@ public class AddrBook_Tests {
 		try {
 			DirectoryRequestAnswer dra = Connections.requestDirectoryAnswerByTCP(peer.getGID(), peer.getLIDstr(), adr.inetSockAddr, adr);
 			System.out.println("AddrBook_Test: sendTCPrequest: result ="+dra.da);
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
+
 	private static void sendUDPRequest() throws IOException, ASN1DecoderFail, P2PDDSQLException {
 		System.out.println("AddrBook_Test: sendUDPRequest: udp request");
 		Address adr = new Address();
@@ -219,28 +237,39 @@ public class AddrBook_Tests {
 		adr.inetSockAddr = new InetSocketAddress(DS_DOMAIN, DS_PORT);
 		adr.branch = DD.BRANCH;
 		adr.agent_version = DD.VERSION;
+
 		Application.setG_UDPServer(new UDPServer(Identity.getCurrentPeerIdentity_NoQuitOnFailure()));
+
 		D_Peer peer;
 		if (b_pLID) peer = D_Peer.getPeerByLID_NoKeep(pLID, true);
 		else peer = net.ddp2p.common.data.HandlingMyself_Peer.get_myself_or_null();
+		
 		if (peer == null) {
 			System.out.println("AddrBook_Test: sendUDPRequest: no such peer");
 			return;
 		}
+
 		DirectoryRequest dr = Connections.getDirAddressUDP(adr.inetSockAddr, adr, peer.getGID(), peer.getName(), peer.getLIDstr());
 		System.out.println("AddrBook_Test: sendUDPRequest: sent request = " + dr);
+		
 		byte[] _buffer = new byte[UDPServer.UDP_BUFFER_LENGTH];
 		DatagramPacket pak = new DatagramPacket(_buffer, UDPServer.UDP_BUFFER_LENGTH);
-		UDPServer.getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER); 
+		// calling the DatagramPacket receive call
+		UDPServer.getUDPSocket().setSoTimeout(Server.TIMEOUT_UDP_NAT_BORER); // might have changed
 		System.out.println("AddrBook_Test: sendUDPRequest: waiting answer");
 		UDPServer.getUDPSocket().receive(pak);
 		System.out.println("AddrBook_Test: sendUDPRequest: waiting answer done");
+
 		byte[] msg = null;
 		msg = pak.getData();
+		//msg_len = msg.length;
 		Decoder dec = new Decoder(msg, pak.getOffset(), pak.getLength());
+		
 		DirectoryAnswerMultipleIdentities dami = new DirectoryAnswerMultipleIdentities(dec);
+		
 		System.out.println("AddrBook_Test: sendUDPRequest: answer =" + dami);
 	}
+
 	private static void sendTCPAnnouncement(DirectoryAnnouncement a) throws UnknownHostException, IOException {
 		System.out.println("AddrBook_Test: sendTCPAnnouncement: tcp announcement");
 		Address adr = new Address();
@@ -252,7 +281,13 @@ public class AddrBook_Tests {
 		boolean result;
 		result = Server.announceMyselfToDirectory(a, adr, false);
 		System.out.println("AddrBook_Test: run: result ="+result);
+
+//		Socket s = new Socket(DS_DOMAIN, DS_PORT);
+//		s.getOutputStream().write(a.encode());
+//		byte[] b = new byte[1000];
+//		s.getInputStream().read(b);
 	}
+
 	private static void sendUDPAnnouncement(DirectoryAnnouncement a) throws P2PDDSQLException {
 		Address adr = new Address();
 		adr.setDomain(DS_DOMAIN);

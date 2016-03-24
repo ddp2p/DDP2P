@@ -1,33 +1,42 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014
 		Authors: Khalid Alhamed, Marius Silaghi
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.recommendationTesters;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Random;
+
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.data.D_RecommendationOfTester;
 import net.ddp2p.common.data.D_Tester;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 /**
  * It loads all the recommendations available at this time.
  * Checks an expiration time (e.g. 6 months) and deletes the old ones.
  *
  */
 public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThread {
+	//public static RecommenderOfTesters rot = new RecommenderOfTesters(false);
 	public static RecommenderOfTesters runningRecommender;
 	final static boolean START_ROT_ON_START = false;
 	static boolean started = decideStartRec();
@@ -43,12 +52,15 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 	final static int EXPIRATION_DELAY_RECEIVED_RECOMMENDATIONS_IN_DAYS = 360;
 	final static int EXPIRATION_DELAY_PRODUCED_RECOMMENDATIONS_IN_DAYS = 1;
 	static boolean USER_SOPHISTICATED_IN_SELECTING_TESTERS = false;
-	public final static float f_AMORTIZATION_OF_SCORE_APPLIED_AT_EACH_TRANSFER_BETWEEN_USERS = 0.9f;  
-	public final static float k_DIVERSITY_FACTOR_AS_TRADEOFF_AGAINST_PROXIMITY = 2.0f;  
-	public final static float Pr_PROBABILITY_OF_REPLACING_A_USED_TESTER_WITH_A_HIGHER_SCORED_ONE = 0.5f; 
-	public final static int N_MAX_NUMBER_OF_TESTERS = 3; 
-	public final static int MAX_SIZE_OF_TESER_INTRODUCERS_IN_A_MESSAGE=10;
-	public final static int EXPERATION_OF_RECOMMENDATION_BY_INTRODUCER_IN_DAYS=100;
+	
+	public final static float f_AMORTIZATION_OF_SCORE_APPLIED_AT_EACH_TRANSFER_BETWEEN_USERS = 0.9f;  // amortization factor
+	public final static float k_DIVERSITY_FACTOR_AS_TRADEOFF_AGAINST_PROXIMITY = 2.0f;  // diversity factor
+	public final static float Pr_PROBABILITY_OF_REPLACING_A_USED_TESTER_WITH_A_HIGHER_SCORED_ONE = 0.5f; // switching probability
+	public final static int N_MAX_NUMBER_OF_TESTERS = 3; // in our experiments we set N=10
+	
+	public final static int MAX_SIZE_OF_TESER_INTRODUCERS_IN_A_MESSAGE=10;// shouldn't exceed this limit
+	public final static int EXPERATION_OF_RECOMMENDATION_BY_INTRODUCER_IN_DAYS=100;// 
+	
 	private static final boolean DEBUG = false;
 	public static boolean STOP_RECOMMENDATION_OF_TESTERS = true;
 	public RecommenderOfTesters(boolean immediateRrecommendation) {
@@ -59,8 +71,10 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 			try {
 				DD.setAppText(DD.APP_LAST_RECOMMENDATION_OF_TESTERS, null, true);
 			} catch (P2PDDSQLException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			//DD.setAppTextNoException(DD.APP_LAST_RECOMMENDATION_OF_TESTERS, null);
 		runningRecommender = this;
 	}
 	/**
@@ -81,6 +95,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 		DD.setAppBoolean(DD.APP_STOP_RECOMMENDATION_OF_TESTERS, STOP_RECOMMENDATION_OF_TESTERS);
 		runningRecommender = new RecommenderOfTesters(immediateRrecommendation);
 		runningRecommender.start();
+		
 	}
 	public static void setSophisticated(boolean sophisticated) {
 		if (runningRecommender != null) runningRecommender.stopRecommenders();
@@ -106,6 +121,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 		} catch(Exception e) {
 			if(DEBUG)e.printStackTrace();
 		}
+		//_run();
 	}
 */
 	@Override
@@ -128,6 +144,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 				recommendTesters();
 				RecommendationOfTestersSender.announceRecommendation(knownTestersList, usedTestersList);
 			} catch(Exception e) {
+				
 			}
 			DD.setAppTextNoException(DD.APP_LAST_RECOMMENDATION_OF_TESTERS, Util.getGeneralizedTime());
 		}
@@ -154,6 +171,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 			if(DEBUG) System.out.println("[   T"+ Util.concat(receivedTesters, " | T")+"]");
 			sourcePeers = D_RecommendationOfTester.retrieveAllRecommendationSenderPeerLID().toArray(new Long[0]);
 			scoreMatrix = extractScoreMatrix(sourcePeers, receivedTesters);
+			
 			if(!DEBUG) System.out.println("[   T"+ Util.concat(receivedTesters, " | T")+"]");
 			if(!DEBUG){ 
 				for(int i=0; i<sourcePeers.length; i++){
@@ -178,6 +196,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 		RecommenderOfTesters.knownTestersList_global = knownTestersList;
 		RecommenderOfTesters.usedTestersList_global = usedTestersList;
 		RecommenderOfTesters.scoreMatrix_global =  scoreMatrix;
+		
 		if(!DEBUG){ 
 			for(int i=0; i<sourcePeers.length; i++){
 				System.out.print("P"+sourcePeers[i]);
@@ -192,10 +211,13 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 			updateTestersWieght();
 	}
 	private void updateTestersWieght() {
+		// all weights set to -1 , flags set to 0 (reference, used,..)
 		D_Tester.initAllTestersRecommendations();
 		setKnownTesters(knownTestersList);
 		setUsedTesters(usedTestersList);
+		
 	}
+	
 	private void setUsedTesters(TesterAndScore[] usedTestersList) {
 		for(int i = 0; i<usedTestersList.length; i++) {
 			String score = ""+usedTestersList[i].score;
@@ -203,6 +225,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 			D_Tester.setUsedTester(usedTestersList[i].testerID, score);
 		}
 	}
+	
 	private void setKnownTesters(TesterAndScore[] knownTestersList) {
 		for(int i = 0; i < knownTestersList.length; i++) {
 			String score = ""+knownTestersList[i].score;
@@ -210,6 +233,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 			D_Tester.setKnownTester(knownTestersList[i].testerID, score);
 		}
 	}
+	
 	/**
 	 * Create  the list that is specifying the testers to be used in evaluations of updates.
 	 * It has to have size at most N
@@ -219,25 +243,32 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 	 */
 	private TesterAndScore[] buildusedTestersList(
 			TesterAndScore[] currentUsedTesters) {
+		
 		if(!autoTestersRating)
 			return currentUsedTesters;
+		
 		if (currentUsedTesters.length < N_MAX_NUMBER_OF_TESTERS && currentUsedTesters.length <= knownTestersList.length)
 			return TopNwithFilter(knownTestersList, N_MAX_NUMBER_OF_TESTERS);
+		
 		ArrayList<TesterAndScore>  usedTestersListTemp = new ArrayList<TesterAndScore>();
+		
 		if (currentUsedTesters.length < N_MAX_NUMBER_OF_TESTERS && currentUsedTesters.length > knownTestersList.length)
 			for(int i=0; i < currentUsedTesters.length; i++)
 				usedTestersListTemp.add(currentUsedTesters[i]);
 		else{
 		      assert(currentUsedTesters.length >= N_MAX_NUMBER_OF_TESTERS);
+		      //if(currentUsedTesters.length>=N)
 		      for(int i=0; i < N_MAX_NUMBER_OF_TESTERS; i++)
-			      usedTestersListTemp.add(currentUsedTesters[i]); 
+			      usedTestersListTemp.add(currentUsedTesters[i]); // usedTesters got the topN of currentList
 		}
 		if(DEBUG) System.out.println("usedTestersList: ["+ Util.concat(usedTestersListTemp.toArray(new TesterAndScore[0]), "|")+"]");
 		removeAndReplaceNigativeWieght(usedTestersListTemp);
 		TesterAndScore candidateTesterForReplacement=null;
 		int index;
+		//changing the weight of testers in the UT list with new testers's weight in KT list
 		for(int i=0; i<knownTestersList.length; i++)
 			if((index=isExist(knownTestersList[i], usedTestersListTemp))!=-1){
+				//update score for used testers list from KT list
 				usedTestersListTemp.get(index).score = knownTestersList[i].score;
 			} 
 			else if(candidateTesterForReplacement==null){
@@ -254,6 +285,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 			ArrayList<TesterAndScore> usedTesterListTemp) {
 		int index;
 		int removeCount=0;
+		// Remove Step
 		for(int i=0; i<knownTestersList.length; i++)
 			if((index=isExist(knownTestersList[i], usedTesterListTemp))!=-1){
 				if(knownTestersList[i].score<=0){
@@ -261,6 +293,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 					removeCount++;
 				}
 			} 
+		// Replace Step (Add)
 		boolean found=false;
 		for(int k=0; k<removeCount; k++){
 			for(int i=0; i<knownTestersList.length; i++)
@@ -272,6 +305,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 			if(found==false)
 				break;
 			} 
+		
 	}
 	private boolean switchBasedOnPr() {
 		Random rand = new Random();
@@ -331,6 +365,7 @@ public class RecommenderOfTesters extends net.ddp2p.common.util.DDP2P_ServiceThr
 			ts.score = Util.Fval(usedTesters.get(i).trustWeight, null);
 			testerAndScore.add(ts);
 		}
+		
 		Collections.sort(testerAndScore);
 		return testerAndScore.toArray(new TesterAndScore[0]) ;
 	}
@@ -353,8 +388,10 @@ List after applying the formula for all testers received from others.
 		return knownTestersList.toArray(new TesterAndScore[0] );
 	}
 	private Float calculateWeight(Float[][] scoreMatrix,int testerIndex, int n) {
+		//ArrayList<Float> testerScoresList = new ArrayList<Float> ;
 		int countScores = 0;
 		float maxScore = 0;
+		
 		for(int i=0; i<scoreMatrix.length; i++){
 			if(scoreMatrix[i][testerIndex] !=null){
 				countScores++;
@@ -362,12 +399,15 @@ List after applying the formula for all testers received from others.
 					maxScore=scoreMatrix[i][testerIndex].floatValue();
 			}
 		}
+		
 		Float newWeight= (Float) f_AMORTIZATION_OF_SCORE_APPLIED_AT_EACH_TRANSFER_BETWEEN_USERS * (1 - countScores/(k_DIVERSITY_FACTOR_AS_TRADEOFF_AGAINST_PROXIMITY*n)) * maxScore;
+		
 		return newWeight;
 	}
 	private Float[][] extractScoreMatrix(Long[] sourcePeers,
 			Long[] receivedTesters) {
 		Float scoreMatrix[][] = new Float[sourcePeers.length][receivedTesters.length];
+		// -1 means a tester is not yet rated by a peer
 		initMatrix(scoreMatrix, null);
 		ArrayList<D_RecommendationOfTester> recomList=null;
 		for(int i=0; i<sourcePeers.length; i++){ 
@@ -377,8 +417,10 @@ List after applying the formula for all testers received from others.
 			if(recomList!=null)
 				for(D_RecommendationOfTester rot:recomList)
 					{rot.releaseReferences();
+					//System.out.println("after releaseReferences() for tester:"+rot.testerLID+" the release is:"+rot.getReferenced());
 					}
 		}
+		
 		return scoreMatrix;
 	}
 	private Float scoreForTester(ArrayList<D_RecommendationOfTester> recomList,
@@ -394,4 +436,37 @@ List after applying the formula for all testers received from others.
 			for(int j=0; j < scoreMatrix[i].length; j++)
 				scoreMatrix[i][j]= initValue;
 	}
+	
 }
+/*
+class TesterAndScore implements Comparable<TesterAndScore>{
+	private static final boolean _DEBUG = true;
+	long testerID;
+	Float score;
+	@Override
+	public int compareTo(TesterAndScore testerScore) {
+		assert(this.score != null && testerScore.score != null);
+		if (this.score == null) {
+			this.score = 100.0f;
+			if (_DEBUG) System.out.println("RecommenderOfTester: compareTo: why null score for this: "+this);
+		}
+		if (testerScore.score == null) {
+			testerScore.score = 100.0f;
+			if (_DEBUG) System.out.println("RecommenderOfTester: compareTo: why null score for tester: "+testerScore);
+		}
+
+		if ( this.score.floatValue() == testerScore.score.floatValue())
+            return 0;
+        else if (this.score.floatValue() < testerScore.score.floatValue())
+            return 1;
+        else
+            return -1;
+	}
+	
+	@Override
+	public String toString(){
+		String result= testerID+":"+score;
+		return result;
+	}
+}
+*/

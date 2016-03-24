@@ -1,10 +1,13 @@
 package net.ddp2p.ciphersuits;
+
 import java.math.BigInteger;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.util.Util;
+
 public
 class ECDSA_Signature extends ASNObj{
 	BigInteger r;

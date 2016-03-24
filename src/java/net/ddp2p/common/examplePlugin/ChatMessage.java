@@ -1,27 +1,31 @@
 package net.ddp2p.common.examplePlugin;
+//package dd_p2p.plugin;
+
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
+
 public class ChatMessage extends net.ddp2p.ASN1.ASNObj {
      public static final int MT_TEXT = 1;
      public static final int MT_IMAGE = 2;
-     public static final int MT_EMPTY = 0; 
+     public static final int MT_EMPTY = 0; // just to inform session_id, session_id_ack, first_in_this_sequence, last_acknowledged_in_sequence, received_out_of_sequence
      private static final boolean DEBUG = false;
      int version = 0;
-     int message_type = MT_EMPTY; 
-     byte[] session_id; 
-     byte[] session_id_ack; 
+     int message_type = MT_EMPTY; // 1-TEXT (message is in "msg"), 2-image, 3-request full element
+     byte[] session_id; // array of 8 random numbers
+     byte[] session_id_ack; // array of 8 random numbers
      BigInteger requested_element;
      String msg;
      ArrayList<ChatElem> content;
-     BigInteger first_in_this_sequence; 
+     BigInteger first_in_this_sequence; // the id of the first message in this sequence (>0)
      BigInteger sequence;
      BigInteger sub_sequence;
      BigInteger sub_sequence_ack;
@@ -45,12 +49,14 @@ public class ChatMessage extends net.ddp2p.ASN1.ASNObj {
      			+ "\n recv_out_of_seq=" + received_out_of_sequence
      			+"\n]"	;
      }
+
      static byte[] createSessionID() {
          byte[] rnd = new byte[8];
          Random r = new SecureRandom();
          r.nextBytes(rnd);
          return rnd;
      }
+
      @Override
      public Encoder getEncoder() {
          Encoder enc = new Encoder().initSequence();
@@ -70,6 +76,7 @@ public class ChatMessage extends net.ddp2p.ASN1.ASNObj {
              enc.addToSequence(Encoder.getBNsEncoder(received_out_of_sequence).setASN1Type(DD.TAG_AC10));
           return enc;
      }
+
      @Override
      public ChatMessage decode(Decoder dec) throws ASN1DecoderFail {
          Decoder d = dec.getContent();
@@ -85,7 +92,7 @@ public class ChatMessage extends net.ddp2p.ASN1.ASNObj {
          if (d.getTypeByte() == DD.TAG_AP7) sub_sequence = d.getFirstObject(true).getInteger(DD.TAG_AP7);
          if (d.getTypeByte() == DD.TAG_AP8) sub_sequence_ack = d.getFirstObject(true).getInteger(DD.TAG_AP8);
          if (d.getTypeByte() == DD.TAG_AP9) last_acknowledged_in_sequence = d.getFirstObject(true).getInteger(DD.TAG_AP9);
-         if (d.getTypeByte() == DD.TAG_AC10) received_out_of_sequence =  d.getFirstObject(true).getSequenceOfBNs(Encoder.TAG_INTEGER);
+         if (d.getTypeByte() == DD.TAG_AC10) received_out_of_sequence =  d.getFirstObject(true).getSequenceOfBNs(Encoder.TAG_INTEGER);// new ArrayList<BigInteger>(Arrays.asList(d.getFirstObject(true).getBNIntsArray()));
          return this;
      }
      public String getName() {

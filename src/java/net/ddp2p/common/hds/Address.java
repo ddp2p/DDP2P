@@ -1,24 +1,34 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+/*
+ * Describes an address as sent between a directory and a client
+ */
 package net.ddp2p.common.hds;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.regex.Pattern;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -31,6 +41,7 @@ import net.ddp2p.common.data.TypedAddressComparator;
 import net.ddp2p.common.util.DirectoryAddress;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 /**
  * The version util.DirectoryADdress has an extra Name, but a single port and no extra preferences,
  * to be used only for messages about directories 
@@ -40,6 +51,7 @@ import net.ddp2p.common.util.Util;
 public class Address extends ASNObj {
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
+	//DirectoryServer.ADDR_SEP=',';
 	/**
 	 * Used in sending addresses over the network
 	 */
@@ -66,6 +78,7 @@ public class Address extends ASNObj {
 	public String branch;
 	public String agent_version;
 	public int version_structure = V2;
+
 	public long _instance_ID;
 	public String instance_ID_str;
 	public String instance;
@@ -76,12 +89,14 @@ public class Address extends ASNObj {
 	public String peer_address_ID;
 	@Deprecated
 	public String address;
+
 	/**
 	 * Local variable, used for directories
 	 */
 	public InetSocketAddress inetSockAddr;
 	public boolean active = true;
 	public boolean dirty = false; 
+	
 	/**
 	 * "active" is not added in the output, even if it is parsed
 	 * if active is false, then the whole data is added (including empty name)
@@ -94,7 +109,10 @@ public class Address extends ASNObj {
 				"\tdomain  ="+domain+","+
 				"\ttcp     ="+tcp_port+"," +
 				"\tudp     ="+udp_port+"," +
+				//"\tname    ="+name+"," +
 				"\tcertify ="+certified+"," +
+				//"\tpriority="+priority+"?," +
+				//"\tactive="+active+"," +
 				"]";
 	}
 	public String toLongString() {
@@ -136,6 +154,7 @@ public class Address extends ASNObj {
 		String result = "";
 		String prot = getProtocolVersion();
 		result += ((prot!=null)?(prot + ADDR_PROT_INTERN_SEP):"");
+		
 		result += domain + ADDR_PART_SEP + tcp_port;
 		if ((udp_port != tcp_port) || (name != null) || !active) {
 			if (udp_port <= 0)
@@ -186,7 +205,7 @@ public class Address extends ASNObj {
 		return result;
 	}
 	public Address instance() {return new Address();}
-	public Address(){} 
+	public Address(){} // For arrays
 	/**
 	 * Expects "[<pure[%branch[%version]]>://]<domain>:<tcp>:<udp>:<name>[:<active_int_boolean>:...]"
 	 * Separated by PROT_SEP=%, PRI_SEP=/, ADDR_PROT_INTERN_SEP=://, ADDR_PART_SEP=:
@@ -228,6 +247,7 @@ public class Address extends ASNObj {
 	 */
 	public void _setAddress(String domain_port) {
 		if (DEBUG) System.out.println("Address:_setAddress: enter "+domain_port);
+		//if (DEBUG) Util.printCallPath("Where?");
 		if (domain_port == null) return;
 		String _protocol = getProtocol(domain_port);
 		if (DEBUG) System.out.println("Address:_setAddress: protocol "+_protocol);
@@ -273,6 +293,22 @@ public class Address extends ASNObj {
 		this.address = domain_port;
 		_setAddress(domain_port);
 		active = getActive(domain_port);
+		/*
+		String dp[] = domain_port.split(":");
+		if(dp.length<2) return;
+		domain = dp[0];
+		String[]proto = domain.split(Pattern.quote(ADDR_PROT_SEP));
+		if(proto.length>1){
+			protocol = proto[0];
+			domain = proto[1];
+		}else{
+			domain = proto[0];
+		}
+		tcp_port = Integer.parseInt(dp[1]);
+		if(dp.length>2)
+			udp_port = Integer.parseInt(dp[2]);
+		else udp_port = tcp_port;
+		*/
 	}
 	private String parseAgentVersionFromProtocol(String _protocol) {
 		if(_protocol == null) return null;
@@ -348,9 +384,10 @@ public class Address extends ASNObj {
 		this.address = d.address;
 		this.version_structure = d.version_structure;
 	}
+	// Guessing an address from a socket address
 	public Address(SocketAddress psa, D_PeerInstance dpi) {
 		this.pure_protocol = Address.SOCKET;
-		this.domain = Util.get_IP_from_SocketAddress(psa); 
+		this.domain = Util.get_IP_from_SocketAddress(psa); // psa.getHostString();
 		this.tcp_port = ((InetSocketAddress)psa).getPort();
 		this.udp_port = this.tcp_port;
 		if (dpi != null) {
@@ -371,6 +408,7 @@ public class Address extends ASNObj {
 			D_PeerInstance dpi = null;
 			if (peer != null){
 				dpi = peer.getPeerInstance_ByID(instance_ID_str);
+				//this._peer_ID = peer.get_ID();
 			}
 			if (dpi != null) {
 				instance = dpi.peer_instance;
@@ -406,6 +444,7 @@ public class Address extends ASNObj {
 		return DIR.equals(this.pure_protocol);
 	}
 	public void store(String peer_ID, String instance_ID) throws P2PDDSQLException {
+		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("Address: store: "+peer_ID+" inst="+instance_ID);
 		String params[];
 		assert(Util.equalStrings_null_or_not(instance_ID, this.instance_ID_str));
@@ -456,6 +495,17 @@ public class Address extends ASNObj {
 			if(DBG) System.out.println("3->"+a.domain+" vs "+this.domain);
 			return false;
 		}
+		/*
+		if((a.domain==null)||(this.domain==null))
+			if(! ((a.domain==null)&&(this.domain==null))){
+				if(DBG) System.out.println("2->"+a.domain+" or "+this.domain);
+				return false;
+			}
+		if((a.domain!=null) && !a.domain.equals(this.domain)){
+			if(DBG) System.out.println("3->");
+			return false;
+		}
+		*/
 		if(a.tcp_port!=this.tcp_port){
 			if(DBG) System.out.println("4->"+a.tcp_port+" vs "+this.tcp_port);
 			return false;
@@ -470,6 +520,35 @@ public class Address extends ASNObj {
 			if(DBG) System.out.println("6->"+a.getProtocolVersion()+" vs "+this.getProtocolVersion());
 			return false;
 		}
+		/*
+		if(DBG) if((a.pure_protocol!=null)||(this.pure_protocol!=null)) Util.printCallPath("adr?");
+		if((a.pure_protocol==null)&&(this.pure_protocol!=null))
+			if(!Address.SOCKET.equals(this.pure_protocol)){
+				if(DBG) System.out.println("6a->"+a.pure_protocol+" or "+this.pure_protocol);
+				if(DBG) Util.printCallPath("adr?");
+				return false;
+			}
+		if((a.pure_protocol!=null)&&(this.pure_protocol==null))
+			if(!Address.SOCKET.equals(a.pure_protocol)){
+				if(DBG) System.out.println("6b->"+a.pure_protocol+" or "+this.pure_protocol);
+				if(DBG) Util.printCallPath("adr?");
+				return false;
+			}
+			*/
+		/*
+		if((a.protocol==null)||(this.protocol==null))
+			if(! ((a.protocol==null)&&(this.protocol==null))){
+				System.out.println("6->"+a.protocol+" or "+this.protocol);
+				return false;
+			}
+		*/
+		/*
+		if((a.pure_protocol!=null) && (this.pure_protocol!=null) && !a.pure_protocol.equals(this.pure_protocol)){
+			if(DBG) System.out.println("7->");
+			return false;
+		}
+		*/
+		//if(DBG) System.out.println("=");
 		return true;
 	}
 	/**
@@ -481,13 +560,15 @@ public class Address extends ASNObj {
 	}
 	public boolean checkVersionV0() {
 		String port = ""+tcp_port;
+		//if (tcp_port <= 0) port = "" + udp_port;
+		//else port = "" + tcp_port;
 		String __address = domain+":"+port;
 		String ___address = pure_protocol+"://"+domain+":"+port;
 		if ((address != null) && !Util.equalStrings_null_or_not(__address, address)
 				&&!Util.equalStrings_null_or_not(__address+":"+udp_port, address)
 				&&
 			!Util.equalStrings_null_or_not(___address, address)
-				) { 
+				) { // eventually I want to migrate to __address from address
 			System.out.println("Address:checkVersionV0: computed="+__address+" vs expected="+address+" in="+this.toLongString());
 			Util.printCallPath("Address:"+this.toLongString());
 			return false;
@@ -499,7 +580,7 @@ public class Address extends ASNObj {
 	 */
 	public Encoder getEncoder() {
 		switch (this.version_structure) {
-		case V0: 
+		case V0: // like old TypedAddress
 			if (DEBUG) System.out.println("Address:enc:V0");
 			return getEncoder_V0();
 		case V1:
@@ -519,6 +600,9 @@ public class Address extends ASNObj {
 	@Deprecated
 	public String getOldAddress(){
 		String port = ""+tcp_port;
+		//if (tcp_port <= 0) port = "" + udp_port;
+		//else port = "" + tcp_port;
+		//String __address = domain+":"+port;
 		String ___address = pure_protocol+"://"+domain+":"+port;
 		return ___address;
 	}
@@ -535,6 +619,8 @@ Address ::= SEQUENCE {
 	public Encoder getEncoder_V0() {
 		Encoder enc = new Encoder().initSequence();
 		String port = ""+tcp_port;
+		//if (tcp_port <= 0) port = "" + udp_port;
+		//else port = "" + tcp_port;
 		String __address = domain+":"+port;
 		String ___address = pure_protocol+"://"+domain+":"+port;
 		String enc_address = address;
@@ -544,7 +630,7 @@ Address ::= SEQUENCE {
 				&& ! Util.equalStrings_null_or_not(__address+":"+udp_port, address)
 				&&
 			! Util.equalStrings_null_or_not(___address, address)
-				) { 
+				) { // eventually I want to migrate to __address from address
 			System.out.println("Address:getEncoder_V0: computed="+__address+" vs expected="+address+" in="+this.toLongString());
 			Util.printCallPath("Address:"+this.toLongString());
 		}
@@ -651,6 +737,7 @@ Address ::= SEQUENCE {
 		return this;
 	}
 	public Address decode_V1(Decoder content) {
+		//this._version_structure = V1;
 		domain = content.getFirstObject(true).getString();
 		tcp_port = content.getFirstObject(true).getInteger().intValue();
 		Decoder udp_dec = content.getFirstObject(true);
@@ -666,6 +753,7 @@ Address ::= SEQUENCE {
 		return this;
 	}
 	public Address decode_V2(Decoder content) throws ASN1DecoderFail {
+		//this.version_structure = V2;
 		domain = content.getFirstObject(true).getString();
 		tcp_port = content.getFirstObject(true).getInteger().intValue();
 		udp_port = content.getFirstObject(true).getInteger().intValue();
@@ -701,6 +789,13 @@ Address ::= SEQUENCE {
 		a.branch = DD.BRANCH;
 		a.agent_version = DD.VERSION;
 		return a.toString();
+		/*
+		String port;
+		if(_udp_port>=0) port = _tcp_port+ADDR_PART_SEP+_udp_port;
+		else port = _tcp_port+"";
+		if(_protocol == null) return _domain+ADDR_PART_SEP+port;
+		return _protocol+ADDR_PROT_SEP+_domain+ADDR_PART_SEP+port;
+		*/
 	}
 	public static String getProtocol(String address){
 		String[] protos = address.split(Pattern.quote(ADDR_PROT_INTERN_SEP));
@@ -743,7 +838,7 @@ Address ::= SEQUENCE {
 			return Integer.parseInt(ports[2]);
 		} catch(Exception e) {
 			System.out.println("Error parsing:"+address);
-			return -1; 
+			return -1; // happens with name of directory in application table
 		}
 	}
 	/**
@@ -791,6 +886,7 @@ Address ::= SEQUENCE {
 			String addresses2) {
 		if(addresses1==null) return addresses2;
 		if(addresses2==null) return addresses1;
+		//if((addresses1==null)&&(addresses2==null)) return null;
 		return addresses1+DirectoryServer.ADDR_SEP+addresses2;
 	}
 	/**
@@ -883,6 +979,7 @@ Address ::= SEQUENCE {
 	}
 	public String toDirActivityString() {
 		String result = this.toString();
+	
 		if (Address.DIR.equals(pure_protocol) && (branch==null) && (agent_version==null))
 			result = this.getDomain()+ADDR_PART_SEP+this.getTCPPort();
 		if (!active)
@@ -908,13 +1005,16 @@ Address ::= SEQUENCE {
 			}
 			return _avs;
 		} catch (Exception e) {
+			//e.printStackTrace();
 			return null;
 		}
 	}
-	public static final int COMPONENTS = 2; 
+	public static final int COMPONENTS = 2; // http://domain:tcp:udp/priority
 	public static ArrayList<Address> getAddress(String addresses) {
+		//boolean DEBUG = true;
 		if(D_Peer.DEBUG) System.out.println("PeerAddress:getAddress: parsing addresses "+addresses);
 		String[]addresses_l = Address.split(addresses);
+		// may have to control addresses, to defend from DOS based on false addresses
 		ArrayList<Address> address = new ArrayList<Address>(addresses_l.length);
 		for(int k=0; k<addresses_l.length; k++) {
 			if(D_Peer.DEBUG)System.out.println("PeerAddress:getAddress: parsing address "+addresses_l[k]);
@@ -947,6 +1047,7 @@ Address ::= SEQUENCE {
         	if (ta == null) {
         		if (DEBUG || DD.DEBUG_TODO) {
         			System.out.println("TypedAddress:getOrdCer: No address: "+k);
+        			
         			for (int i = 0; i < addr.size(); i ++) {
         				System.out.println("TypedAddress:getOrdCert: adr["+i+"]="+ta);
         			}
@@ -961,12 +1062,16 @@ Address ::= SEQUENCE {
         }
 		if (DEBUG) System.out.println("Address:getOrdCTA: result "+Util.concatA(result, "---", "NULL"));
         if (result.size() == 0) return null;
+        //Address[] r = result.toArray(new TypedAddress[]{});
+        //Collections.sort(result, new TypedAddressComparator());
+        //Arrays.sort(result, new TypedAddressComparator());
         Collections.sort(result, new TypedAddressComparator());
         return result;
 	}
 	public String getDomain() {
 		return domain;
 	}
+	
 	public long get_peer_address_ID() {
 		return Util.lval (this.peer_address_ID, -1);
 	}
@@ -984,8 +1089,11 @@ Address ::= SEQUENCE {
 	}
 	public String getExtendedProtocol() {
 		return getProtocolVersion();
+//		if (branch == null) return this.pure_protocol;
+//		return this.pure_protocol+"."+this.branch+"."+this.agent_version;
 	}
 	public void setExtendedProtocol(String adr) {
+
 		if (adr == null) return;
 		String [] a = adr.split(Pattern.quote(PROT_SEP));
 		pure_protocol = a[0];

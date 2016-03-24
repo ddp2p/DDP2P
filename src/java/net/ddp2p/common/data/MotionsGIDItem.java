@@ -1,4 +1,5 @@
 package net.ddp2p.common.data;
+
 public class MotionsGIDItem{
 	public String gid;
 	public String id;

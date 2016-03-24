@@ -1,25 +1,33 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package util.tools;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.hds.DirectoryRequest;
 import net.ddp2p.common.hds.DirectoryServer;
 import net.ddp2p.common.hds.DirectoryServerUDP;
 import net.ddp2p.common.util.GetOpt;
+
 public class AddrBook {
 	private static boolean DEBUG = false;
+
 	public static void main(String[] args) {
 		if (DEBUG) {
 			System.out.println("AddrBook: len="+args.length);
@@ -29,6 +37,7 @@ public class AddrBook {
 		}
 		try {
 			net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
+			
 			char c;
 			opts:
 			while ((c = GetOpt.getopt(args, "d:P:I:r:a:hv")) != GetOpt.END) {
@@ -44,7 +53,9 @@ public class AddrBook {
 							+ "\n\t -c GID      Accept requests for peer with this GID as current peer"
 							+ "\n\t -a GID      Accept announcements/pings/requests for peer with this GID as current peer"
 							);
-					System.exit(-1);
+					//printHELP();
+					//break;
+					System.exit(-1);//return;
 				case 'd':
 					if (DEBUG) System.out.println("Option d: "+GetOpt.optarg);
 					Application.DIRECTORY_FILE = GetOpt.optarg;
@@ -83,8 +94,11 @@ public class AddrBook {
 				default:
 					System.out.println("AddrBook: unknown option error: \""+c+"\"");
 					break opts;
+					//return;
 				}
 			}
+			// if (args.length > 0) Application.DIRECTORY_FILE = args[0];
+			// if (args.length > 1) DirectoryServer.PORT = Integer.parseInt(args[1]);
 			DirectoryServer ds = new DirectoryServer(DirectoryServer.PORT);
 			ds.start();
 		}catch(Exception e) {
@@ -92,4 +106,5 @@ public class AddrBook {
 			System.exit(-1);
 		}		
 	}
+
 }

@@ -1,21 +1,30 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Khalid AlHamed and Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.table;
+
 import java.util.regex.Pattern;
+
 import net.ddp2p.common.util.Util;
+
 public class mirror {
+
 	public static final String TNAME = "mirror";//"updates";
 	public static final String mirror_ID = "mirror_ID";//"mirror_ID";
 	public static final String public_key = "public_key"; //new field, part of mirror's url
@@ -36,9 +45,12 @@ public class mirror {
 	public static final String creation_date_for_mirror_data = "creation_date"; // new field, ??
 	public static final String preference_date = "preference_date"; // new field, ??
 	public static final String signature = "signature"; // new field, signature of the mirror data
+	
 	public static final String revoked = "revoked";
 	public static final String revoked_info = "revoked_info";
 	public static final String revoked_GID_hash = "revoked_GID_hash";
+	
+			
 	public static final String fields_updates_no_ID = 
 			public_key+","+
 			original_mirror_name+","+
@@ -61,6 +73,7 @@ public class mirror {
 			revoked+","+
 			revoked_info+","+
 			revoked_GID_hash;
+			
 	public static final String[] _fields_updates_no_ID = Util.trimmed(fields_updates_no_ID.split(Pattern.quote(",")));
 	public static final String fields_updates = fields_updates_no_ID+","+mirror_ID;
 	public static final int F_FIELDS_NOID = _fields_updates_no_ID.length;
@@ -87,4 +100,5 @@ public class mirror {
 	public static final int F_REVOKED_INFO = 19;
 	public static final int F_REVOKED_GID_HASH = 20;
 	public static final int F_ID = 21;
+	
 }

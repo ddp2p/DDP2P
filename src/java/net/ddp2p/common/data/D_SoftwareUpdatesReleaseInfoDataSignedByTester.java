@@ -1,7 +1,9 @@
 package net.ddp2p.common.data;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
@@ -11,6 +13,7 @@ import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.updates.VersionInfo;
 import net.ddp2p.common.util.Util;
 import static net.ddp2p.common.util.Util.__;
+
 public class D_SoftwareUpdatesReleaseInfoDataSignedByTester extends net.ddp2p.ASN1.ASNObj{
 	D_SoftwareUpdatesReleaseInfoByTester tester_info;
 	D_ReleaseQuality quality_release[];
@@ -34,13 +37,26 @@ public class D_SoftwareUpdatesReleaseInfoDataSignedByTester extends net.ddp2p.AS
 			return;
 		}
 		try{
+		
 			FileWriter xmlFile = new FileWriter(fileName);
+	//		if(!xmlFile.isFile()){
+	//			Application.warning(_("Bad parameters list: need existing xml_file_name;"), _("TESTER GENERATE XML"));
+	//			return;			
+	//		}
+	//		
 			BufferedWriter xmlOut = new BufferedWriter(xmlFile);
+		/*	xmlOut.write("<?xml version="1.0" encoding="ISO-8859-1"?>");
+			String[] tester */
+			
+		
 		}catch (IOException e)
 		{
 		    System.out.println("Exception ");
+		 
 		}
+
 	}
+
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
@@ -49,10 +65,13 @@ public class D_SoftwareUpdatesReleaseInfoDataSignedByTester extends net.ddp2p.AS
 			enc.addToSequence(version_info.getSignableEncoder());
 		return enc;
 	}
+
 	@Override
 	public D_SoftwareUpdatesReleaseInfoDataSignedByTester decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();
+		//d.getFirstObject(true);
 		throw new ASN1DecoderFail("Not meant to be decoded, encoder only for signatures");
+		//return null;
 	}
 	public byte[] sign(SK sk) {
 		byte[] result;

@@ -1,10 +1,14 @@
+
 package net.ddp2p.java.WSupdate;
+
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
+
+
 /**
  * <p>Java class for VersionInfo complex type.
  * 
@@ -41,6 +45,7 @@ import javax.xml.bind.annotation.XmlType;
     "testers"
 })
 public class VersionInfo {
+
     @XmlElement(required = true)
     protected String version;
     @XmlElement(required = true)
@@ -55,6 +60,7 @@ public class VersionInfo {
     protected List<TestDef> qotd;
     @XmlElement(nillable = true)
     protected List<TesterInfo> testers;
+
     /**
      * Gets the value of the version property.
      * 
@@ -66,6 +72,7 @@ public class VersionInfo {
     public String getVersion() {
         return version;
     }
+
     /**
      * Sets the value of the version property.
      * 
@@ -77,6 +84,7 @@ public class VersionInfo {
     public void setVersion(String value) {
         this.version = value;
     }
+
     /**
      * Gets the value of the date property.
      * 
@@ -88,6 +96,7 @@ public class VersionInfo {
     public String getDate() {
         return date;
     }
+
     /**
      * Sets the value of the date property.
      * 
@@ -99,6 +108,7 @@ public class VersionInfo {
     public void setDate(String value) {
         this.date = value;
     }
+
     /**
      * Gets the value of the script property.
      * 
@@ -110,6 +120,7 @@ public class VersionInfo {
     public String getScript() {
         return script;
     }
+
     /**
      * Sets the value of the script property.
      * 
@@ -121,6 +132,7 @@ public class VersionInfo {
     public void setScript(String value) {
         this.script = value;
     }
+
     /**
      * Gets the value of the trustedPublicKey property.
      * 
@@ -132,6 +144,7 @@ public class VersionInfo {
     public String getTrustedPublicKey() {
         return trustedPublicKey;
     }
+
     /**
      * Sets the value of the trustedPublicKey property.
      * 
@@ -143,6 +156,7 @@ public class VersionInfo {
     public void setTrustedPublicKey(String value) {
         this.trustedPublicKey = value;
     }
+
     /**
      * Gets the value of the data property.
      * 
@@ -171,6 +185,7 @@ public class VersionInfo {
         }
         return this.data;
     }
+
     /**
      * Gets the value of the qotd property.
      * 
@@ -199,6 +214,7 @@ public class VersionInfo {
         }
         return this.qotd;
     }
+
     /**
      * Gets the value of the testers property.
      * 
@@ -227,4 +243,5 @@ public class VersionInfo {
         }
         return this.testers;
     }
+
 }

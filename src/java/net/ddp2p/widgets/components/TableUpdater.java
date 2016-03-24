@@ -1,13 +1,17 @@
 package net.ddp2p.widgets.components;
+
 import java.awt.Component;
 import java.util.ArrayList;
+
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
+
 public class TableUpdater implements Runnable{
 	private static final boolean DEBUG = false;
 	AbstractTableModel model;
 	Component mytable;
 	ArrayList<Component> mytables;
+
 	/**
 	 * 
 	 * @param _model

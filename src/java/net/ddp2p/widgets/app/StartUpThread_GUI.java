@@ -1,19 +1,27 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi and Khalid Alhamed
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.widgets.app;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.awt.AWTException;
 import java.awt.EventQueue;
 import java.awt.Image;
@@ -29,6 +37,7 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Random;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
@@ -43,6 +52,7 @@ import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.common.wireless.Broadcasting_Probabilities;
 import net.ddp2p.widgets.components.GUI_Swing;
+
 class ChatElem extends net.ddp2p.ASN1.ASNObj {
 	public ChatElem instance() {
 		return new ChatElem();
@@ -50,35 +60,43 @@ class ChatElem extends net.ddp2p.ASN1.ASNObj {
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
+		// TODO Auto-generated method stub
 		return enc;
 	}
+
 	@Override
 	public  ChatElem decode(Decoder dec) throws ASN1DecoderFail {
+		// TODO Auto-generated method stub
 		return this;
 	}
+
 	public static byte getASN1Type() {
 		return DD.TAG_AC19;
 	}
+	
 }
+
 class ChatMessage extends net.ddp2p.ASN1.ASNObj {
 	int version = 0;
-	int message_type = 0; 
-	byte[] session_id; 
+	int message_type = 0; // 0-TEXT (message is in "msg"), 1-image, 2-request full element
+	byte[] session_id; // array of 8 random numbers
 	BigInteger requested_element;
 	String msg;
 	ArrayList<ChatElem> content;
-	BigInteger first_in_this_sequence; 
+	BigInteger first_in_this_sequence; // the id of the first message in this sequence (>0)
 	BigInteger sequence;
 	BigInteger sub_sequence;
 	BigInteger sub_sequence_ack;
 	BigInteger last_acknowledged_in_sequence;
 	BigInteger[] received_out_of_sequence;
+	
 	static byte[] createSessionID() {
 		byte[] rnd = new byte[8];
 		Random r = new SecureRandom();
 		r.nextBytes(rnd);
 		return rnd;
 	}
+
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();
@@ -96,6 +114,7 @@ class ChatMessage extends net.ddp2p.ASN1.ASNObj {
 		if (received_out_of_sequence != null) enc.addToSequence(new Encoder(received_out_of_sequence).setASN1Type(DD.TAG_AC10));
 		return enc;
 	}
+
 	@Override
 	public ChatMessage decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();
@@ -114,6 +133,7 @@ class ChatMessage extends net.ddp2p.ASN1.ASNObj {
 		return this;
 	}
 }
+
 /**
  * This class starts the services configured in the application table
  * @author silaghi
@@ -124,40 +144,57 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 	public StartUpThread_GUI() {
 		super("StartUpThread",false);
 	}
+	
 	public void registerTray(){
         if(StartUp.DEBUG)System.err.println("TrayIcon support checked.");
+
+
 		if (SystemTray.isSupported()) {
 		       if(StartUp.DEBUG)System.err.println("TrayIcon supported.");
+
 		    SystemTray tray = SystemTray.getSystemTray();
-		    Image image = net.ddp2p.widgets.app.DDIcons.getImageFromResource(DDIcons.I_DDP2P40, MainFrame.frame); 
+		    //Image image = Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico"));
+		    Image image = net.ddp2p.widgets.app.DDIcons.getImageFromResource(DDIcons.I_DDP2P40, MainFrame.frame); //Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"angry16.png"));
 		    if(image==null) System.err.println("TrayIcon image failed.");
+		    //Image image = Toolkit.getDefaultToolkit().getImage(DD.class.getResource(Application.RESOURCES_ENTRY_POINT+"favicon.ico"));
+		    //Image image = DDIcons.getImageIconFromResource("favicon.ico", "P2P Direct Democracy");//Toolkit.getDefaultToolkit().getImage("tray.gif");
+
 		    MouseListener mouseListener = new MouseListener() {
+		                
 		        public void mouseClicked(MouseEvent e) {
 		            System.out.println("Tray Icon - Mouse clicked!");                 
 		        }
+
 		        public void mouseEntered(MouseEvent e) {
 		            System.out.println("Tray Icon - Mouse entered!");                 
 		        }
+
 		        public void mouseExited(MouseEvent e) {
 		            System.out.println("Tray Icon - Mouse exited!");                 
 		        }
+
 		        public void mousePressed(MouseEvent e) {
 		            System.out.println("Tray Icon - Mouse pressed!");                 
 		        }
+
 		        public void mouseReleased(MouseEvent e) {
 		            System.out.println("Tray Icon - Mouse released!");                 
 		        }
 		    };
+
 		    ActionListener exitListener = new ActionListener() {
 		        public void actionPerformed(ActionEvent e) {
 		        	DD.clean_exit();
 		        }
 		    };
+		            
 		    PopupMenu popup = new PopupMenu();
 		    MenuItem defaultItem = new MenuItem("Exit");
 		    defaultItem.addActionListener(exitListener);
 		    popup.add(defaultItem);
+
 		    trayIcon = new TrayIcon(image, "P2P Direct Democracy", popup);
+
 		    ActionListener actionListener = new ActionListener() {
 				@Override
 		        public void actionPerformed(ActionEvent e) {
@@ -166,19 +203,31 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 		                TrayIcon.MessageType.INFO);
 		        }
 		    };
+		            
 		    trayIcon.setImageAutoSize(true);
 		    trayIcon.addActionListener(actionListener);
 		    trayIcon.addMouseListener(mouseListener);
+
 		    try {
 		        tray.add(trayIcon);
 		    } catch (AWTException e) {
 		        System.err.println("TrayIcon could not be added.");
 		    }
+		    
+//		    trayIcon.displayMessage("Finished downloading", 
+//		            "Your Java application has finished downloading",
+//		            TrayIcon.MessageType.INFO);
+
 		} else {
+
 	        System.err.println("TrayIcon not supported.");
+		    //  System Tray is not supported
+
 		}
+		
 		MainFrame.loadAppIcons(true, MainFrame.frame);
 	}
+	
 	/**
 	 * Should be called only from dispatcher
 	 */
@@ -189,6 +238,7 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 			if(StartUp._DEBUG) System.out.println("StartUpThread:initQueuesStatus: no control pane");
 			return;
 		}
+		
 		MainFrame.controlPane.q_MD.removeItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.q_C.removeItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.q_RA.removeItemListener(MainFrame.controlPane);
@@ -207,6 +257,7 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 		MainFrame.controlPane.q_RE.addItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.q_BH.addItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.q_BR.addItemListener(MainFrame.controlPane);
+			
 		MainFrame.controlPane.tcpButton.removeItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.udpButton.removeItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.natButton.removeItemListener(MainFrame.controlPane);
@@ -216,9 +267,12 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 		MainFrame.controlPane.tcpButton.addItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.udpButton.addItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.natButton.addItemListener(MainFrame.controlPane);
+			
+			
 		MainFrame.controlPane.serveDirectly.removeItemListener(MainFrame.controlPane);
 		MainFrame.controlPane.serveDirectly.setSelected(OrgHandling.SERVE_DIRECTLY_DATA);
 		MainFrame.controlPane.serveDirectly.addItemListener(MainFrame.controlPane);
+			
 		if(StartUp.DEBUG) System.out.println("StartUpThread:initQueuesStatus: start");
 	}
 	/**
@@ -228,8 +282,9 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 	 */
 	public static void initServers_GUI() throws NumberFormatException, P2PDDSQLException {
 		if (StartUp.directory_server_on_start){
-			MainFrame.controlPane.setDirectoryStatus(true);
+			MainFrame.controlPane.setDirectoryStatus(true);//startDirectoryServer(true, -1);
 		}
+
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat dir");
 		if (StartUp.data_userver_on_start){
 			MainFrame.controlPane.setUServerStatus(true);
@@ -237,20 +292,24 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 		if (StartUp.data_nserver_on_start){
 			MainFrame.controlPane.setNServerStatus(true);
 		}
+		
 		if (StartUp.data_userver_on_start){
+			//MainFrame.controlPane.setUServerStatus(true);
 			RecommenderOfTesters.startROT();
 		}
+		
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat userver");
 		if (StartUp.data_server_on_start){
 			MainFrame.controlPane.setServerStatus(true);
 		}
+
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat tcpserver");
 		if (StartUp.data_client_on_start){
-			MainFrame.controlPane.setClientStatus(true);
+			MainFrame.controlPane.setClientStatus(true);//startClient(true);
 		}
 		if(StartUp.DEBUG) System.out.println("StartUpThread:run: stat client");
 		if (StartUp.data_client_updates_on_start) {
-			MainFrame.controlPane.setClientUpdatesStatus(true, false);
+			MainFrame.controlPane.setClientUpdatesStatus(true, false);//startClient(true);
 		}
 	}
 	public static void initBroadcastGUI() {
@@ -272,6 +331,7 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 				if(StartUp.DEBUG) System.out.println("StartUpThread:run: IPBase later = "+DD.WIRELESS_ADHOC_DD_NET_IP_BASE);
 				GUI_Swing.controlPane.m_area_ADHOC_Mask.setText(DD.WIRELESS_ADHOC_DD_NET_MASK);
 				GUI_Swing.controlPane.m_area_ADHOC_SSID.setText(DD.DD_SSID);
+				
 				if(GUI_Swing.panelUpdates!=null) {
 					try {
 						String testers_count_value=DD.getAppText(DD.UPDATES_TESTERS_THRESHOLD_COUNT_VALUE);
@@ -279,6 +339,7 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 								testers_count_value = ""+Integer.parseInt(testers_count_value);}catch(Exception e){};
 						if (testers_count_value == null) testers_count_value = "" + DD.UPDATES_TESTERS_THRESHOLD_COUNT_DEFAULT; 
 						GUI_Swing.panelUpdates.numberTxt.setText(testers_count_value);
+						
 						String testers_count_weight = DD.getAppText(DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_VALUE);
 						try{if(testers_count_weight != null)
 							testers_count_weight = ""+Float.parseFloat(testers_count_weight);}catch(Exception e){};
@@ -298,19 +359,44 @@ public class StartUpThread_GUI extends net.ddp2p.common.util.DDP2P_ServiceThread
 		});
 	}
 	public void _run() {
+		//boolean DEBUG = true;
 		try{
 			StartUp.init_startup();
+//			//if(DEBUG) System.out.println("Starting UDP Server");
+//			//DD.userver= new UDPServer(Server.PORT);
+//			//DD.userver.start();
+//			//if(DEBUG) System.out.println("StartUpThread:run: will create peer");
+//			//MyselfHandling.createMyPeerIDIfEmpty();
+//			//D_Peer me = HandlingMyself_Peer.get_myself();
+//			/*
+//			if (me == null) {
+//				me = HandlingMyself_Peer.createMyselfPeer_by_dialog_w_Addresses(true);
+//				if (me == null){
+//					if (_DEBUG) System.out.println("StartUpThread:run: fail to create peer!");
+//					System.exit(1);
+//				}
+//			}
+//			*/
+			//if(DEBUG) System.out.println("StartUpThread:run: created peer");
 			if (MainFrame.controlPane == null) StartUp.initServers_no_GUI();
 			else initServers_GUI();
+			
 			StartUp.initBroadcastServers();
 			if (DD.GUI) initBroadcastGUI();			
+
 			if (DD.GUI) {
 				net.ddp2p.common.plugin_data.PluginRegistration.loadPlugins(HandlingMyself_Peer.getMyPeerGID(), HandlingMyself_Peer.getMyPeerName());
+				
+				//plugin_data.PluginRegistration.loadPlugin(AndroidChat.Main.class, HandlingMyself_Peer.getMyPeerGID(), HandlingMyself_Peer.getMyPeerName());
 			}
+
 			StartUp.initBroadcastSettings();
+
 			if (StartUp.DEBUG) System.out.println("StartUpThread:run: startThread done, go in Tray");
 			registerTray();
+	
 		}
 		catch(Exception e){e.printStackTrace();}
 	}
+
 }

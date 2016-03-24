@@ -1,4 +1,6 @@
 package net.ddp2p.ciphersuits;
+
+
 /**
  * Data communicated with CipherSelection  widget
  * @author msilaghi
@@ -9,7 +11,9 @@ class CipherSuit {
 	public String cipher;
 	public int ciphersize;
 	public String hash_alg;
+	
 	public CipherSuit() {
+		
 	}
 	public CipherSuit(String _cipher, String _hash_alg, int _ciphersize) {
 		cipher = _cipher;

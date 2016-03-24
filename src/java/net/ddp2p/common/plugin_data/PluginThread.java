@@ -1,22 +1,29 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.plugin_data;
+
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Hashtable;
+
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.data.D_Peer;
@@ -27,6 +34,7 @@ import net.ddp2p.common.util.DDP2P_ServiceThread;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 import static net.ddp2p.common.util.Util.__;
+
 class PluginThread extends DDP2P_ServiceThread {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -51,28 +59,44 @@ class PluginThread extends DDP2P_ServiceThread {
 	@SuppressWarnings("unchecked")
 	public void __run () {
 		if (DEBUG) System.out.println("PluginThread:_run: start");
+		//data.D_PluginInfo info = null;
+		//PeerPlugin plugin = null;
 		String plugin_GID = null;
 		String plugin_name = null;
 		Hashtable<String, Object> request = null;
 		try {
+			//info = (data.D_PluginInfo) p_methods.getPluginData.invoke(null);
+			//plugin_GID = (String) p_methods.getPluginGID.invoke(null);
+			//plugin_name = (String) p_methods.getPluginName.invoke(null);
+			//Object _plugin = p_methods.getPeerPlugin.invoke(null);
+			//if(_plugin instanceof PeerPlugin) plugin = (PeerPlugin) _plugin;
 			Hashtable<String,Object> data = (Hashtable<String,Object>) p_methods.getPluginDataHashtable.invoke(null);
 			if (data == null) {
 				ping(__("Quit no plugins!"));
 				return;
 			}
-			D_PluginInfo i = new D_PluginInfo().setHashtable(data); 
+			D_PluginInfo i = new D_PluginInfo().setHashtable(data); // getting the details from the plugin
 			if (i == null) {
 				ping(__("Quit no plugin data!"));
 				return;
 			}
 			plugin_GID = i.plugin_GID;
 			plugin_name = i.plugin_name;
+
 		} catch (IllegalArgumentException e) {e.printStackTrace();}
 		catch (IllegalAccessException e) {e.printStackTrace();}
 		catch (InvocationTargetException e) {e.printStackTrace();}
+		//info.plugin.setSendPipe(connection);
+		/*
+		if(plugin==null){
+			if(_DEBUG) System.out.println("PluginThread:run: no plugin object");
+			return;
+		}
+		*/
 		int cnt = 0;
 		for (;!stop;) {
 			cnt ++;
+			//System.out.print("_0");
 			if(DEBUG) System.out.println("PluginThread:_run: loop DBGPLUG="+DD.DEBUG_PLUGIN);
 			try {
 				request = null;
@@ -93,6 +117,7 @@ class PluginThread extends DDP2P_ServiceThread {
 			switch (msg.type) {
 			case PluginRequest.MSG:
 				ping(__("Will enqueue message")+" ("+cnt+")");
+				//System.out.print("_1");
 				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: will enqueue MSG " + msg);
 				if ((msg == null) || (msg.plugin_GID == null) || (msg.peer_GID == null)) {
 					if (DD.WARN_OF_INVALID_PLUGIN_MSG)
@@ -124,6 +149,7 @@ class PluginThread extends DDP2P_ServiceThread {
 						continue;
 					}
 				}
+				//System.out.print("_5");
 				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: schedule for sending");
 				ClientSync.schedule_for_sending_plugin_data(msg);
 				if (pca != null) {
@@ -132,7 +158,9 @@ class PluginThread extends DDP2P_ServiceThread {
 				}
 				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: enqueue for sending");
 				result  = D_PluginData._enqueueForSending(msg.msg, msg.peer_GID, msg.plugin_GID);
+				
 				if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:_run: sending result = "+result);
+				
 				if (! result) {
 					if (_DEBUG || DD.DEBUG_PLUGIN) System.out.println("PluginThread:run: failed to enqueue");
 					try {
@@ -195,6 +223,7 @@ class PluginThread extends DDP2P_ServiceThread {
 	}
 	public static void main(String args[]) {
 		String val = args[0];
+		//byte[] IV = val.getBytes();
 		byte[] IV = Util.byteSignatureFromString(val);
 		String m1 = "Pay Bob 100$";
 		String m2 = "Pay Bob 500$";

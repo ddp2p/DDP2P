@@ -1,16 +1,22 @@
 package net.ddp2p.widgets.updatesKeys;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.awt.Component;
 import java.awt.Dimension;
+
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+
 public class RecommendationsTable extends JTable{
+
 	private static final boolean DEBUG = false;
 	private DefaultTableCellRenderer centerRenderer;
+	
 	public RecommendationsTable(RecommendationsModel dm) {
 		super(dm);
 		init();
@@ -23,12 +29,15 @@ public class RecommendationsTable extends JTable{
 		TableCellRenderer headerRenderer =
 	            this.getTableHeader().getDefaultRenderer();
 		getColumnModel().getColumn(0).setCellRenderer(headerRenderer);
+		
 		for(int i=1; i<this.getModel().getColumnCount(); i++)
 			getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+		
 		this.getTableHeader().setToolTipText(
         __("Click to sort; Shift-Click to sort in reverse order"));
 		this.setAutoCreateRowSorter(true);	
 		if(DEBUG) System.out.println("UpdateTable:init:done");
+		//initColumnSizes();
   	}
 	public JScrollPane getScrollPane(){
 		 JScrollPane scrollPane = new JScrollPane(this);
@@ -44,14 +53,17 @@ public class RecommendationsTable extends JTable{
         Component comp = null;
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
+ 
         for (int i = 0; i < model.getColumnCount(); i++) {
         	int headerWidth = 0;
         	int cellWidth = 0;
         	column = this.getColumnModel().getColumn(i);
+ 
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
+ 
             for(int r=0; r<model.getRowCount(); r++) {
             	comp = this.getDefaultRenderer(model.getColumnClass(i)).
                              getTableCellRendererComponent(
@@ -65,6 +77,7 @@ public class RecommendationsTable extends JTable{
                                    + "headerWidth = " + headerWidth
                                    + "; cellWidth = " + cellWidth);
             }
+ 
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }

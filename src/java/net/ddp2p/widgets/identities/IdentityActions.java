@@ -1,24 +1,31 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
  package net.ddp2p.widgets.identities;
 import java.awt.event.*;
 import java.awt.*;
 import java.util.ArrayList;
+
 import javax.swing.*;
 import javax.swing.tree.*;
 import javax.swing.event.*;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.Identity;
@@ -28,6 +35,7 @@ import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.components.DebateDecideAction;
 import static net.ddp2p.common.util.Util.__;
+
 @SuppressWarnings("serial")
 class IdentitySetCurrentAction extends DebateDecideAction {
     MyIdentitiesTree tree;ImageIcon icon;
@@ -38,8 +46,10 @@ class IdentitySetCurrentAction extends DebateDecideAction {
         super(text, icon, desc, whatis, mnemonic);
 	this.tree = tree;this.icon = icon;
     }
+    
     public void actionPerformed(ActionEvent e) {
     	MyIdentitiesModel model = (MyIdentitiesModel)tree.getModel();
+            //System.err.println("Set Default action: " + e);
     	TreePath tp=tree.getLeadSelectionPath();
     	Object source = tp.getLastPathComponent();
     	if(source instanceof IdentityBranch) {
@@ -63,6 +73,7 @@ class IdentitySetCurrentAction extends DebateDecideAction {
     	}
     }	
 }
+
 @SuppressWarnings("serial")
 class IdentityUnSetCurrentAction extends DebateDecideAction {
     MyIdentitiesTree tree;ImageIcon icon;
@@ -75,6 +86,7 @@ class IdentityUnSetCurrentAction extends DebateDecideAction {
     }
     public void actionPerformed(ActionEvent e) {
     	MyIdentitiesModel model = (MyIdentitiesModel)tree.getModel();
+            //System.err.println("Set Default action: " + e);
     	TreePath tp=tree.getLeadSelectionPath();
     	Object source = tp.getLastPathComponent();
     	if(source instanceof IdentityBranch) {
@@ -98,6 +110,7 @@ class IdentitySetDefAction extends DebateDecideAction {
     }
     public void actionPerformed(ActionEvent e) {
     	MyIdentitiesModel model = (MyIdentitiesModel)tree.getModel();
+            //System.err.println("Set Default action: " + e);
     	TreePath tp=tree.getLeadSelectionPath();
     	Object source = tp.getLastPathComponent();
     	if(source instanceof IdentityBranch) {
@@ -124,7 +137,7 @@ class IdentitySetDefAction extends DebateDecideAction {
 					if(old_idx >= 0)
 						try{
 							model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{old_idx}, new Object[]{oib}));
-						}catch(Exception e){
+						}catch(Exception e){//e.printStackTrace();
 						}
 				}
 				model.db.update(net.ddp2p.common.table.identity.TNAME, new String[]{net.ddp2p.common.table.identity.default_id}, new String[]{net.ddp2p.common.table.identity.identity_ID}, 
@@ -150,6 +163,7 @@ class IdentityUnSetDefAction extends DebateDecideAction {
     }
     public void actionPerformed(ActionEvent e) {
     	MyIdentitiesModel model = (MyIdentitiesModel)tree.getModel();
+            //System.err.println("Set Default action: " + e);
     	TreePath tp=tree.getLeadSelectionPath();
     	Object source = tp.getLastPathComponent();
     	if(source instanceof IdentityBranch) {
@@ -170,9 +184,16 @@ class IdentityUnSetDefAction extends DebateDecideAction {
 					if(old_idx >= 0)
 						try{
 							model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{old_idx}, new Object[]{oib}));
-						}catch(Exception e){
+						}catch(Exception e){//e.printStackTrace();
 						}
 				}
+				/*
+				model.db.update(table.identity.TNAME, new String[]{table.identity.default_id}, new String[]{table.identity.identity_ID}, 
+						new String[]{"1", ""+identitiesID});
+				Identity.default_id_branch = ib;
+				ib.default_id = true;
+		    	model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{model.root.getIndexOfChild(ib)},new Object[]{ib}));				
+		    	*/
 		} catch (P2PDDSQLException e1) {
 			e1.printStackTrace();
 		}
@@ -193,6 +214,7 @@ class IdentityAddAction extends DebateDecideAction implements WorkerListener {
 	}
 	public void actionPerformed(ActionEvent e) {
 		model = (MyIdentitiesModel)tree.getModel();
+		//System.err.println("Add Action for first button/menu item: " + e);
 		long identityID=0;
 		try{
 			identityID=model.db.insert(
@@ -216,7 +238,9 @@ class IdentityAddAction extends DebateDecideAction implements WorkerListener {
 						__("'New Identity' has just been added"), Queries.sql_identity_enum_leafs, params, null,null, null),new_index);
 		if(DEBUG) System.out.println("IdentityActions:IdentityAddAction:Firing add: "+
 				model.root+" idx="+new_index+" newid="+newid);
+
 		net.ddp2p.common.hds.GenerateKeys keygen = new net.ddp2p.common.hds.GenerateKeys("Identity", this); keygen.start();
+
 		model.fireTreeNodesInserted(new TreeModelEvent(tree,
 				new Object[]{model.root}, new int[]{new_index},new Object[]{newid}));
 		if(model.root.getChildCount()==1) {
@@ -246,13 +270,17 @@ class IdentityCustomAction extends DebateDecideAction {
     }
     public void actionPerformed(ActionEvent e) {
     	MyIdentitiesModel model = (MyIdentitiesModel)tree.getModel();
+    	//System.err.println("Add Action for first button/menu item: " + e);
     	TreePath tp=tree.getLeadSelectionPath();
     	Object source = tp.getLastPathComponent();
     	if(cmd == CMD_UP) {
     		if(source instanceof IdentityBranch) {
+    			//IdentityBranch ib = (IdentityBranch)source;
+    			//long identitiesID = ib.identityID;
     		}    	
     		if(source instanceof IdentityLeaf) {
     			IdentityLeaf il = (IdentityLeaf)source;
+    			//long pID = il.id;
     			il.sequence = 0;
     			try {
     				Application.getDB().update(net.ddp2p.common.table.identity_value.TNAME,
@@ -262,6 +290,8 @@ class IdentityCustomAction extends DebateDecideAction {
     			} catch (P2PDDSQLException e1) {
     				e1.printStackTrace();
     			}
+				//TreePath new_path = tp.getParentPath();//.pathByAddingChild(newchild);
+				//model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{model.root.getIndexOfChild(ib)},new Object[]{ib}));
 				il.identityBranch.colapsed();
 				il.identityBranch.populate();
 				model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{model.root.getIndexOfChild(il.identityBranch)},new Object[]{il.identityBranch}));
@@ -269,9 +299,12 @@ class IdentityCustomAction extends DebateDecideAction {
     	}
     	if(cmd == CMD_BOTTOM) {
     		if(source instanceof IdentityBranch) {
+    			//IdentityBranch ib = (IdentityBranch)source;
+    			//long identitiesID = ib.identityID;
     		}    	
     		if(source instanceof IdentityLeaf) {
     			IdentityLeaf il = (IdentityLeaf)source;
+    			//long pID = il.id;
     			String sql_max = 
     				"SELECT max(iv."+net.ddp2p.common.table.identity_value.sequence_ordering+") " +
 					" FROM "+net.ddp2p.common.table.identity_value.TNAME+" AS iv "+
@@ -293,6 +326,8 @@ class IdentityCustomAction extends DebateDecideAction {
     			} catch (P2PDDSQLException e1) {
     				e1.printStackTrace();
     			}
+				//TreePath new_path = tp.getParentPath();//.pathByAddingChild(newchild);
+				//model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{model.root.getIndexOfChild(ib)},new Object[]{ib}));
 				il.identityBranch.colapsed();
 				il.identityBranch.populate();
 				model.fireTreeNodesChanged(new TreeModelEvent(tree,new Object[]{model.root},new int[]{model.root.getIndexOfChild(il.identityBranch)},new Object[]{il.identityBranch}));
@@ -312,6 +347,7 @@ class IdentityPropertyAddAction extends DebateDecideAction {
 	}
 	public void actionPerformed(ActionEvent e) {
 		MyIdentitiesModel model = (MyIdentitiesModel)tree.getModel();
+		//System.err.println("Add Action for first button/menu item: " + e);
 		TreePath tp=tree.getLeadSelectionPath();
 		Object source = tp.getLastPathComponent();
 		if(source instanceof IdentityBranch) {
@@ -335,6 +371,7 @@ class IdentityPropertyAddAction extends DebateDecideAction {
 					if(DEBUG) System.out.println("fireInserted: "+id+" "+newchild);
 				}else
 					if(DEBUG) System.out.println("fireInserted delayed: "+ib.children.length+" != "+ib.nchildren);
+
 				if (ib.nchildren == 1){
 					tree.expandPath(new TreePath(new Object[]{model.root,ib}));
 					tree.scrollPathToVisible(new_path);
@@ -348,6 +385,7 @@ class IdentityPropertyAddAction extends DebateDecideAction {
 			JOptionPane.showMessageDialog(tree,__("Only adding properties to identities!"),__("Insertion Error"),JOptionPane.ERROR_MESSAGE);
 	}
 }
+
 class IdentityDelAction extends DebateDecideAction {
 	MyIdentitiesTree tree;ImageIcon icon;
 	MyIdentitiesModel model;
@@ -364,6 +402,8 @@ class IdentityDelAction extends DebateDecideAction {
 		Object o_parent = tpp.getLastPathComponent();
 		if(!(o_parent instanceof IdentityBranch)) return false;
 		IdentityBranch parent = (IdentityBranch)o_parent;
+		//tree.clearSelection();
+		////tree.collapsePath(tpp);
 		int old_index = parent.getIndexOfChild(source);
 		if(old_index == -1) {
 			JOptionPane.showMessageDialog((Component)tree,(new Object[] {__("Item not found!"),tp}),__("Delete item"),JOptionPane.ERROR_MESSAGE);
@@ -375,6 +415,7 @@ class IdentityDelAction extends DebateDecideAction {
 	}
 	public void actionPerformed(ActionEvent e) {
 		model = (MyIdentitiesModel)tree.getModel();
+		//System.err.println("Del Action for first button/menu item: " + e);
 		TreePath tp=tree.getLeadSelectionPath();
     	tree.addSelectionPath(tp);
     	TreePath sp[] = tree.getSelectionPaths();
@@ -382,9 +423,12 @@ class IdentityDelAction extends DebateDecideAction {
     		JOptionPane.showMessageDialog((Component)tree,(new Object[] {__("Cannot remove this item!")}),__("Delete item"),JOptionPane.ERROR_MESSAGE);
     		return;
     	}
+    	//int result = JOptionPane.showConfirmDialog((Component)tree,(new Object[]{_("Are you sure you want to remove this item!")}),_("Delete item"),JOptionPane.OK_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE);
     	Object options[]=new Object[]{__("Yes"),__("Cancel")};
     	int result = JOptionPane.showOptionDialog((Component)tree,(new Object[]{__("Are you sure you want to remove selected items!")}),__("Delete items"),JOptionPane.OK_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
     	if(result == 0){
+    		//System.err.println("Removing "+tp);
+    		//remove(tp);
     		for (int i=0; i<sp.length; i++) {
     	   		System.err.println("Removing "+sp[i]);
     	   		remove(sp[i]);

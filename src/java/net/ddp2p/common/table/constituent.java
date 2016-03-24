@@ -1,20 +1,28 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.table;
+
 import java.util.regex.Pattern;
+
 import net.ddp2p.common.util.Util;
+
 public class constituent {
 	 public static final String constituent_ID = "constituent_ID";
 	 public static final String submitter_ID = "submitter_ID";
@@ -49,11 +57,14 @@ public class constituent {
 		public static final String requested = "requested";
 		public static final String broadcasted = "broadcasted";
 	public static final String TNAME = "constituent";
+
 	public static final String INIT_SLOGAN = net.ddp2p.common.util.Util.__("I have just arrived");
+
 	public static final String fields_constituents_no_ID = 
 		" "+global_constituent_ID+
 		", "+global_constituent_ID_hash+
 		", "+hash_constituent_alg+
+		//", "+hash_constituent+
 		", "+certChain+
 		", "+certificate+
 		", "+certRequest+
@@ -85,9 +96,11 @@ public class constituent {
 	public static final String fields_constituents = 
 		fields_constituents_no_ID+", "+constituent_ID+
 		" ";
+
 	public static final int CONST_COL_GID = 0;
 	public static final int CONST_COL_GID_HASH = 1;
 	public static final int CONST_COL_HASH_ALG = 2;
+	//public static final int CONST_COL_HASH = 2; // hash of fields signed by user
 	public static final int CONST_COL_CERT_CHAIN = 3;
 	public static final int CONST_COL_CERTIF = 4;
 	public static final int CONST_COL_CERREQ = 5;
@@ -116,7 +129,9 @@ public class constituent {
 	public static final int CONST_COL_PEER_TRANSMITTER_ID = 28;
 	public static final int CONST_COL_DATE_PREFERENCES = 29;
 	public static final int CONST_COL_ID = 30;
+
 	public static final String CURRENT_HASH_CONSTITUENT_ALG = "V1";
+	
 	public static final String[] fields_constituents_no_ID_list = Util.trimmed(net.ddp2p.common.table.constituent.fields_constituents_no_ID.split(Pattern.quote(",")));
 	public static final String[] fields_constituents_list = Util.trimmed(net.ddp2p.common.table.constituent.fields_constituents.split(Pattern.quote(",")));
 	public static final int CONST_COLs_NOID = fields_constituents_no_ID_list.length;

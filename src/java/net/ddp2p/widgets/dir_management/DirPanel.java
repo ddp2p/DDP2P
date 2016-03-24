@@ -2,6 +2,7 @@
  * Khalid Alhamed
  */
 package net.ddp2p.widgets.dir_management;
+
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.Font;
@@ -13,6 +14,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
 import java.io.File;
 import java.util.Enumeration;
+
 import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -26,6 +28,7 @@ import javax.swing.JFrame;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JScrollPane;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.config.PeerListener;
@@ -38,17 +41,26 @@ import net.ddp2p.common.table.peer_address;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 import java.util.ArrayList; 
+
+//import table.directory_forwarding_dir;// changed
 import static net.ddp2p.common.util.Util.__;
+
 @SuppressWarnings("serial")
 public class DirPanel extends JPanel implements  ActionListener{
+
 	private static final boolean _DEBUG = false;
     static boolean DEBUG = false;
+    
+	
     public DirPanel() {
     	super( new GridLayout(3,1));
+    	//super( new BorderLayout());
     	init();
     }
     public DirPanel(int peerID, String peerName) {
+    	//super( new BorderLayout());
     	super( new GridLayout(3,1));
     	init();
     }
@@ -69,6 +81,7 @@ public class DirPanel extends JPanel implements  ActionListener{
 	    panel.add(dirTableScroll);
 	    addMouseListener(dirTable);
 		dirTableScroll.addMouseListener(dirTable); 
+		//addMouseListener(this);
 	    return panel;
     }
     public PeerStatusTable peerStatusTable = null;
@@ -77,6 +90,7 @@ public class DirPanel extends JPanel implements  ActionListener{
     	JButton peerStatus = new JButton("Peer Status");
     	peerStatus.setActionCommand(peerStatus.getLabel());
     	peerStatus.addActionListener(this);
+    	//panel.add(getHeaderPanel("Peer Status"), BorderLayout.NORTH);
     	panel.add(peerStatus, BorderLayout.NORTH);
 	    peerStatusTable = new PeerStatusTable(Application.getDB_Dir(), this);
 	    JScrollPane peerStatusTableScroll;
@@ -88,6 +102,7 @@ public class DirPanel extends JPanel implements  ActionListener{
      public JPanel getConnPeerTablePanel() {
     	JPanel panel = new JPanel(new BorderLayout());
     	panel.add(getHeaderPanel("Connected Peers"), BorderLayout.NORTH);
+    		
 	    connPeerTable = new ConnPeerTable(Application.getDB_Dir(), this);
 	    JScrollPane connPeerTableScroll;
     	connPeerTableScroll = connPeerTable.getScrollPane();
@@ -98,6 +113,7 @@ public class DirPanel extends JPanel implements  ActionListener{
      public JPanel getHistoryTablePanel() {
     	JPanel panel = new JPanel(new BorderLayout());
     	panel.add(getHeaderPanel("History of Messages"), BorderLayout.NORTH);
+    		
 	    historyTable = new HistoryTable(Application.getDB_Dir(), this);
 	    JScrollPane historyTableScroll;
     	historyTableScroll = historyTable.getScrollPane();
@@ -109,6 +125,7 @@ public class DirPanel extends JPanel implements  ActionListener{
     	try{_actionPerformed(e);}
     	catch(Exception o){o.printStackTrace();}
     }
+    
 	public void _actionPerformed(ActionEvent e) throws P2PDDSQLException {
 		if(e.getActionCommand().equals("Peer Status")){
 			peerStatusTable.getModel().update(null,null);
@@ -127,6 +144,7 @@ public class DirPanel extends JPanel implements  ActionListener{
 	        				                     DirectoryMessageStorage.latestRequest_storage.get(GID).MsgType);
 	      				 }
 				 	}
+				 
 				 if(DirectoryMessageStorage.noping_storage==null)
 				 	System.out.println("DirectoryMessageStorage.noping_storage = null");
 				 else{
@@ -139,6 +157,7 @@ public class DirPanel extends JPanel implements  ActionListener{
 		        				                     DirectoryMessageStorage.noping_storage.get(GID).size());
 		      				 }
 				 	}
+				 		
 				 if(DirectoryMessageStorage.announcement_storage==null)
 				 	System.out.println("DirectoryMessageStorage.announcement_storage = null");
 				 else{
@@ -151,6 +170,7 @@ public class DirPanel extends JPanel implements  ActionListener{
 						                 DirectoryMessageStorage.announcement_storage.get(GID).size());
 						}
 				 	}
+				 
 				 if(DirectoryMessageStorage.ping_storage==null)
 				 	System.out.println("DirectoryMessageStorage.ping_storage = null");
 				 else{
@@ -177,14 +197,29 @@ public class DirPanel extends JPanel implements  ActionListener{
     	JPanel twoPanelsInRow1 = new JPanel(new GridLayout(1,2));
     	peerStatusTablePanel = getPeerStatusTablePanel(); 
     	twoPanelsInRow1.add(peerStatusTablePanel);
+    //	twoPanelsInRow1.add(getConnPeerTablePanel());
     	add(twoPanelsInRow1);
     	JPanel twoPanelsInRow2 = new JPanel(new GridLayout(1,2));
     	historyTablePanel = getHistoryTablePanel();
     	twoPanelsInRow2.add(historyTablePanel);
     	add(twoPanelsInRow2);
+ //   	twoPanelsInRow2.add(getConnPeerTablePanel());
+    	
+//    	connPeerTable = new ConnPeerDirTable(Application.db_dir, this);
+//    	connPeerTableScroll = conPeerTable.getScrollPane();
+//    	historyTable = new HistoryTable(Application.db_dir, this);
+//    	historyTableScroll = historyTable.getScrollPane();
+    	
+ //   	bodyPanel.add(peerStatusPanel);
+//    	bodyPanel.add(connPeerTableScroll);
+//    	bodyPanel.add(historyTableScroll);
+ //   	add(bodyPanel);
+		
     }
+   
     public void showJFrame(){
    		final JFrame frame = new JFrame();
+   		//DirPanel dirPanel = new DirPanel();
    		JPanel p = new JPanel(new BorderLayout());
 		p.add(this);
 		frame.setContentPane(p);
@@ -198,7 +233,9 @@ public class DirPanel extends JPanel implements  ActionListener{
             frame.hide();
            }
         });
+
 		p.add(okBt,BorderLayout.SOUTH);
+   				
     } 
     	public static void main(String args[]) {
 		JFrame frame = new JFrame();
@@ -211,7 +248,13 @@ public class DirPanel extends JPanel implements  ActionListener{
 			frame.setSize(800,300);
 			frame.setVisible(true);
 		} catch (Exception e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+	/*	public JTable getTestersTable() {
+			return this.updateKeysTable;
+		}*/
+	
+    
 }

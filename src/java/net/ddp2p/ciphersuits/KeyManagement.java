@@ -1,24 +1,33 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.ciphersuits;
+
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.util.DD_SK;
 import net.ddp2p.common.util.DD_SK_Entry;
@@ -97,11 +106,13 @@ public class KeyManagement {
 		dde.name = name;
 		dde.type = type;
 		dde.creation = Util.getCalendar(date);
+		
 		dsk.sk.add(dde);
 		System.out.println("KeyManagement: fillsk: Done: "+dsk);
 		return true;
 	}
 	public static SK loadSecretKey(String sk_file, String[] __pk) throws IOException, P2PDDSQLException {
+		
 		return loadSecretKey(sk_file, __pk, null, null);
 	}
 	/**
@@ -128,6 +139,7 @@ public class KeyManagement {
 			sk = sk.trim();
 		}while(sk.length() == 0);
 		if(DEBUG) System.out.println("KeyManagement:loadSecretKey: started");
+		
 		do{
 			pk = br.readLine();
 			if(pk==null){ eof = true; break;}
@@ -159,24 +171,28 @@ public class KeyManagement {
 				pk = i_pk;
 			}
 		}
+
 		if (!eof)
 			do {
 				type = br.readLine();
 				if (type==null) { eof= true; break;}
 				type = type.trim();
 			}while(type.length() == 0);
+
 		if (!eof)
 			do {
 				name = br.readLine();
 				if(name==null){ eof=true; break;}
 				name = name.trim();
 			} while(name.length() == 0);
+		
 		if (!eof)
 			do {
 				date = br.readLine();
 				if(date==null){ eof=true; break;}
 				date = date.trim();
 			} while(date.length() == 0);
+		
 		if(DEBUG) System.out.println("KeyManagement:loadSecretKey: check existance");
 		ArrayList<ArrayList<Object>> p = Application.getDB().select(
 				"SELECT "+net.ddp2p.common.table.key.public_key+" FROM "+net.ddp2p.common.table.key.TNAME+" WHERE "+net.ddp2p.common.table.key.public_key+"=?;",
@@ -193,17 +209,27 @@ public class KeyManagement {
 		if (cipher == null) {
 			System.out.println("KeyManagement: loadSecretKeys null cipher for\n _sk="+_sk+" \n pk="+_pk);
 		}
-		String hash = Util.getGIDhash(pk); 
+		String hash = Util.getGIDhash(pk); //Util.getKeyedIDPKhash(cipher);
 		if ((date==null) || (date.length()==0)) date = Util.getGeneralizedTime();
+//		String sql_selkey = "SELECT "+table.key.key_ID+" FROM "+table.key.TNAME+
+//				" WHERE "+table.key.public_key+"=?;";
+//		if (_DEBUG) System.out.println("KeyManagement:loadSecretKey: select");
+//		ArrayList<ArrayList<Object>> ok = Application.db.select(sql_selkey, new String[]{pk}, _DEBUG);
+//		if (_DEBUG) System.out.println("KeyManagement:loadSecretKey: select #"+ok.size());
+//		if (ok.size() == 0)
 			Application.getDB().insert (net.ddp2p.common.table.key.TNAME,
 					new String[]{net.ddp2p.common.table.key.secret_key,net.ddp2p.common.table.key.public_key,
 					net.ddp2p.common.table.key.type,net.ddp2p.common.table.key.name, net.ddp2p.common.table.key.ID_hash,net.ddp2p.common.table.key.creation_date},
 					new String[]{sk,pk,type,name,hash,date},
 					DEBUG);
+		
 		if (__pk != null) __pk[0] = pk;
 		if (file_data != null) {
+			//if (file_data[0] == null) file_data[0] = new PeerInput();
+			//file_data[0].name = name;
 			file_data[0] = name;
 		}
+		
 		return _sk;
 	}
 }

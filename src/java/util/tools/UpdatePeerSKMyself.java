@@ -1,8 +1,12 @@
 package util.tools;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.io.File;
+
 import net.ddp2p.ciphersuits.KeyManagement;
 import net.ddp2p.ciphersuits.SK;
+
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.common.config.Application;
@@ -10,6 +14,7 @@ import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.HandlingMyself_Peer;
+
 /**
   * @param args
  */
@@ -20,6 +25,8 @@ public class UpdatePeerSKMyself {
 			return;
 		}
 		net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
+		//DEBUG = true;
+		//D_PeerAddress.DEBUG = true;
 		String db = args[0];
 		String sk = args[1];
 		try{
@@ -40,7 +47,8 @@ public class UpdatePeerSKMyself {
 				System.out.println("Usage: prog db sk setMyself\n empty sk");
 				return;
 			}
-			String _pk=__pk[0];
+			//String old_gid = model.getGID(row);
+			String _pk=__pk[0];//Util.stringSignatureFromByte(new_sk.getPK().getEncoder().getBytes());
 			if(_pk==null){
 				System.out.println("null PK");
 				return;
@@ -49,12 +57,16 @@ public class UpdatePeerSKMyself {
 			peer.component_basic_data.globalID = _pk;
 			peer.component_basic_data.globalIDhash=null;
 			peer.setLID(null);
+
 			if ((args.length > 2) && (Util.stringInt2bool(args[2], false))) {
-				HandlingMyself_Peer.setMyself(peer, true, Application.getCurrent_Peer_ID(), false, false); 
+				HandlingMyself_Peer.setMyself(peer, true, Application.getCurrent_Peer_ID(), false, false); // peer is not kept
 				HandlingMyself_Peer.updateAddress(peer);
 			}
 			peer.sign(new_sk);
+			//String peerID = 
 			peer.storeSynchronouslyNoException();
+
 		}catch(Exception e2){e2.printStackTrace();}
 	} 
+	
 }
