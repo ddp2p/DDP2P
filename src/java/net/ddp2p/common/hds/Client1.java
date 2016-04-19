@@ -1,27 +1,21 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
  package net.ddp2p.common.hds;
 import static java.lang.System.out;
 import static java.lang.System.err;
 import static net.ddp2p.common.util.Util.__;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
@@ -33,7 +27,6 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.common.config.Application;
@@ -46,13 +39,12 @@ import net.ddp2p.common.streaming.UpdateMessages;
 import net.ddp2p.common.util.CommEvent;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
 public
 class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClient {
 	static final long PAUSE = 300000;
 	static final int MAX_BUFFER = 1000000;
 	private static final boolean _DEBUG = true;
-	public static boolean recentlyTouched = false; // to avoid stopping
+	public static boolean recentlyTouched = false; 
 	public static int peersAvailable = 0;
 	public static int peersToGo = 0;
 	Socket client_socket=new Socket();
@@ -63,10 +55,8 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
-		//this.setDaemon(true);
 		DD.ed.fireClientUpdate(new CommEvent(this,null,null,"LOCAL","Client Created"));
 	}
-	
 	/**
 	 * This function tried both TCP and UDP connections, based on the DD.ClientUDP and DD.ClientTCP
 	 * @param s_address
@@ -85,7 +75,6 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		ArrayList<Address> adr_addresses;
 		ArrayList<Address_SocketResolved_TCP> tcp_sock_addresses=new ArrayList<Address_SocketResolved_TCP>();
 		ArrayList<Address_SocketResolved_TCP> udp_sock_addresses=new ArrayList<Address_SocketResolved_TCP>();
-		
 		String peer_key = peer_name;
 		String now = Util.getGeneralizedTime();
 		if (ClientSync.DEBUG) out.println("Client: now="+now);
@@ -100,17 +89,14 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 			pc = new Hashtable<String, Hashtable<String,String>>();
 			opc.put(Util.getStringNonNullUnique(null), pc);
 		}
-		
 		if (ClientSync.DEBUG) out.println("Client:try_connect:1 handle");
 		if (Address.DIR.equals(type)) {
 			DD.ed.fireClientUpdate(new CommEvent(this, s_address,null,"DIR REQUEST", peer_name+" ("+global_peer_ID+")"));
 			if (ClientSync.DEBUG) out.println("Client:try_connect:1 will getDir");
-			// can be slow
 			adr_addresses = getDirAddress(s_address, global_peer_ID, peer_name, peer_ID);
 			if (ClientSync.DEBUG) out.println("Client:try_connect:1 did getDir: ");
 			if (adr_addresses == null) {
 				if(ClientSync.DEBUG) out.print(" ");
-				
 				String key = type+":"+s_address;
 				Hashtable<String,String> value = pc.get(key);
 				if (value == null) {
@@ -118,23 +104,18 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 					pc.put(key, value);
 				}
 				value.put("No contact", now);
-				
 				if (ClientSync.DEBUG) out.println("Client:try_connect:1 DIR returns empty");
 				return false;
 			}
 			ClientSync.getSocketAddresses(tcp_sock_addresses, udp_sock_addresses, adr_addresses,
 					global_peer_ID, type, s_address, peer_key, now, pc);
 			s_address=Util.concat(adr_addresses.toArray(), DirectoryServer.ADDR_SEP);
-			
 			if(ClientSync.DEBUG) out.println("Client:try_connect: Will try DIR obtained address: "+s_address);
 			DD.ed.fireClientUpdate(new CommEvent(this, old_address, null,"DIR ANSWER", peer_name+" ("+s_address+")"));
 		}else{
 			if(ClientSync.DEBUG) out.println("Client:try_connect:1 Will try simple address: "+s_address);
 			Address ad = new Address(s_address, type);
-
-			// record for sending plugin messages fast
 			ClientSync.add_to_peer_contacted_addresses(ad, global_peer_ID);
-			
 			String key = type+":"+s_address;
 			Hashtable<String,String> value = pc.get(key);
 			if(value==null){
@@ -144,13 +125,11 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 			value.put(s_address, now);
 			pc.put(type+":"+s_address, value);
 			if(ClientSync.DEBUG) out.println("Client: enum s_adr="+peer_key+":"+type+":"+s_address+" val="+s_address+" "+now);
-			
 			tcp_sock_addresses=new ArrayList<Address_SocketResolved_TCP>();
 			sock_addr=getTCPSockAddress(s_address);
 			if(ClientSync.DEBUG) out.println("Client:try_connect:1 got tcp");
 			if(sock_addr!=null) tcp_sock_addresses.add(new Address_SocketResolved_TCP(sock_addr,ad));
 			udp_sock_addresses=new ArrayList<Address_SocketResolved_TCP>();
-			// can be slow
 			sock_addr = ClientSync.getUDPSockAddress(s_address); 
 			if(sock_addr!=null) udp_sock_addresses.add(new Address_SocketResolved_TCP(sock_addr,ad));
 			if(ClientSync.DEBUG) out.println("Client:try_connect:1 got");
@@ -177,15 +156,15 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 	public boolean try_connect(
 			ArrayList<Address_SocketResolved_TCP> tcp_sock_addresses,
 			ArrayList<Address_SocketResolved_TCP> udp_sock_addresses,
-			String old_address, // a DIR address or some other address
-			String s_address,  // an address or a list of addresses (from a DIR) separated by ","
-			String type,       // type of old_address
+			String old_address, 
+			String s_address,  
+			String type,       
 			String global_peer_ID,
 			String peer_name,
 			ArrayList<InetSocketAddress> peer_directories_udp_sockets,
 			ArrayList<String> peer_directories) {
 		boolean DEBUG = ClientSync.DEBUG || DD.DEBUG_PLUGIN;
-		String instance = null; // TODO decide instance
+		String instance = null; 
 		if(DEBUG) out.println("Client:try_connect:2 start "+s_address);
 		InetSocketAddress sock_addr;
 		String peer_key = peer_name;
@@ -206,20 +185,17 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		if(DD.ClientTCP) {			
 			for(int k=0; k<tcp_sock_addresses.size(); k++) {
 				if(DEBUG) out.println("Client try address["+k+"]"+tcp_sock_addresses.get(k));
-			
-				//address = addresses[k];
 				Address_SocketResolved_TCP sad = tcp_sock_addresses.get(k);
-				sock_addr=sad.isa_tcp;//getSockAddress(address);
+				sock_addr=sad.isa_tcp;
 				DD.ed.fireClientUpdate(new CommEvent(this, null, null,"TRY ADDRESS", sock_addr+""));
 				if(sock_addr.isUnresolved()) {
 					if(DEBUG) out.println("Client: Peer is unresolved!");
 					continue;
 				}
-			
 				if(Server.isMyself(sock_addr)){
 					if(DEBUG) out.println("Client: Peer is Myself!");
 					DD.ed.fireClientUpdate(new CommEvent(this, null, null,"FAIL ADDRESS", sock_addr+" Peer is Myself"));
-					continue; //return false;
+					continue; 
 				}
 				if(ClientSync.isMyself(Application.getPeerTCPPort(), sock_addr,sad)){
 					if(DEBUG) out.println("Client: Peer is myself!");
@@ -231,8 +207,6 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 					client_socket.connect(sock_addr, Server.TIMEOUT_Client_wait_Server);
 					if(DEBUG) out.println("Client: Success connecting Server: "+sock_addr);
 					DD.ed.fireClientUpdate(new CommEvent(this, peer_name, sock_addr,"SERVER", "Connected: "+global_peer_ID));
-					
-					
 					String key = type+":"+old_address;
 					Hashtable<String,String> value = pc.get(key);
 					if(value==null){
@@ -240,40 +214,34 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 						pc.put(key, value);
 					}
 					value.put(sock_addr+":TCP***", now);
-					
 					return true;
 				}
 				catch(SocketTimeoutException e){
 					if(DEBUG) out.println("Client: TIMEOUT connecting: "+sock_addr);
 					DD.ed.fireClientUpdate(new CommEvent(this, null, null,"FAIL ADDRESS", sock_addr+" Connection TIMEOUT"));
-					continue; //return false;
+					continue; 
 				}
 				catch(ConnectException e){
 					if(DEBUG) out.println("Client: Connection Exception: "+e);
 					DD.ed.fireClientUpdate(new CommEvent(this, null, null,"FAIL ADDRESS", sock_addr+" Connection e="+e));
-					continue; //return false;
+					continue; 
 				}
 				catch(Exception e){
 					if(DEBUG) out.println("Client: General exception try-ing: "+sock_addr+" is: "+e);
-					//if(DEBUG) e.printStackTrace();
 					DD.ed.fireClientUpdate(new CommEvent(this, null, null,"FAIL ADDRESS", sock_addr+" Exception="+e));
-					continue; //return false;
+					continue; 
 				}
 			}
 		}
-		//System.out.print("#0");
 		if(DD.ClientUDP) {
 			if(Application.getG_UDPServer() == null){
 				DD.ed.fireClientUpdate(new CommEvent(this, s_address,null,"FAIL: UDP Server not running", peer_name+" ("+global_peer_ID+")"));
 				if(ClientSync._DEBUG) err.println("UClient socket not yet open, no UDP server");
-				//System.out.print("#1");
 				return false;
 			}
 			if(DEBUG) out.println("UClient received addresses #:"+udp_sock_addresses.size());
 			for(int k=0; k<udp_sock_addresses.size(); k++) {
-				//boolean DEBUG = true;
 				if(DEBUG) out.println("UClient try address["+k+"]"+udp_sock_addresses.get(k));
-
 				if (DD.AVOID_REPEATING_AT_PING&&(Application.getG_UDPServer()!=null) && (!Application.getG_UDPServer().hasSyncRequests(global_peer_ID, instance))) {
 					DD.ed.fireClientUpdate(new CommEvent(this, peer_name, null, "LOCAL", "Stop sending: Received ping confirmation already handled from peer"));
 					if(DEBUG) System.out.println("UDPServer Ping already handled for: "+Util.trimmed(global_peer_ID));
@@ -284,46 +252,39 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 							value = new Hashtable<String,String>();
 							pc.put(key, value);
 						}
-						sock_addr=udp_sock_addresses.get(k).isa_tcp;//getSockAddress(address);
+						sock_addr=udp_sock_addresses.get(k).isa_tcp;
 						value.put(sock_addr+" UDP-"+DD.ALREADY_CONTACTED, now);
 					}
-					//System.out.print("#2");
 					return false;					
 				}
 				Address_SocketResolved_TCP sad = udp_sock_addresses.get(k);
-				sock_addr=sad.isa_tcp;//getSockAddress(address);
+				sock_addr=sad.isa_tcp;
 				if(DEBUG) out.println("UClient:try_connect: checkMyself");
-				
 				if(ClientSync.isMyself(Application.getPeerUDPPort(), sock_addr, sad)){
 					if(DEBUG) out.println("Client:try_connect: UPeer "+peer_name+" is myself!"+sock_addr);
-					//System.out.print("#3");
 					continue;
 				}
-				
 				if(DEBUG) out.println("UClient:try_connect: check unresolved");
 				if(sock_addr.isUnresolved()) {
 					if(ClientSync._DEBUG) out.println("Client: try_connect: UPeer "+peer_name+" is unresolved! "+sock_addr);
-					//System.out.print("#4");
 					continue;
 				}
 				if(DEBUG) out.println("UClient:try_connect: sending ping");
-
 				if(DEBUG)System.out.println("Client Sending Ping to: "+sock_addr+" for \""+peer_name+"\"");
 				ASNUDPPing aup = new ASNUDPPing();
 				aup.senderIsPeer=false;
 				aup.senderIsInitiator=true;
-				aup.initiator_domain = Identity.get_a_server_domain();//client.getInetAddress().getHostAddress();
-				aup.initiator_globalID=Application.getCurrent_Peer_ID().getPeerGID(); //dr.initiator_globalID;
-				aup.initiator_port = Application.getPeerUDPPort();//dr.UDP_port;
+				aup.initiator_domain = Identity.get_a_server_domain();
+				aup.initiator_globalID=Application.getCurrent_Peer_ID().getPeerGID(); 
+				aup.initiator_port = Application.getPeerUDPPort();
 				aup.peer_globalID=global_peer_ID;
-				aup.peer_domain=sad.getAddress().domain;//;
+				aup.peer_domain=sad.getAddress().domain;
 				if(DEBUG) System.out.println("Client:try_connect: domain ping = \""+aup.peer_domain+"\" vs \""+Util.getNonBlockingHostName(sock_addr)+"\"");
 				aup.peer_port=sock_addr.getPort();
 				byte[] msg = aup.encode();
 				DatagramPacket dp = new DatagramPacket(msg, msg.length);
 				try{
 					dp.setSocketAddress(sock_addr);
-					
 					if(_DEBUG) out.println("\n\nClient1: Try_connect: pc="+type+":"+old_address+" => "+sock_addr);
 					String key = type+":"+old_address;
 					Hashtable<String,String> value = pc.get(key);
@@ -333,19 +294,17 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 					}
 					value.put(sock_addr+":UDP+++", now);
 					if(_DEBUG) out.println("\n\nClient1:try_connect: set adr="+type+":"+old_address+" val="+sock_addr+":UDP "+now);
-
 				}catch(Exception e){
 					System.err.println("Client is Skipping address: "+sock_addr+ " due to: "+e);
 					continue;
 				}
 				try {
-					//System.out.print("#_"+dp.getSocketAddress());
 					Application.getG_UDPServer().send(dp);
 				} catch (IOException e) {
 					if(DEBUG)System.out.println("Fail to send ping to peer \""+peer_name+"\" at "+sock_addr);
 					continue;
 				}
-				ArrayList<InetSocketAddress> directories = peer_directories_udp_sockets; // Identity.listing_directories_inet
+				ArrayList<InetSocketAddress> directories = peer_directories_udp_sockets; 
 				if((peer_directories.size()!=directories.size()) && (directories.size()==0) )
 					directories = ClientSync.getUDPDirectoriesSockets(peer_directories, directories);
 				if(DEBUG)System.out.println("I have sent to peer the UDP packet: "+aup);
@@ -355,12 +314,10 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 						InetSocketAddress dir_adr = (InetSocketAddress)directories.get(d);
 						if(dir_adr.isUnresolved()) continue;
 						dp.setSocketAddress(dir_adr);
-						//System.out.print("#d");
 						Application.getG_UDPServer().send(dp);
 						if(DEBUG)System.out.println("I requested ping via: "+dp.getSocketAddress()+" ping="+aup);
 					} catch (IOException e) {
 						if(ClientSync._DEBUG)System.out.println("Client: try_connect: EEEEERRRRRRRROOOOOOORRRRR "+e.getMessage());
-						//e.printStackTrace();
 					}
 				}
 				if(DEBUG)System.out.println("I have sent to peer the UDP packet");
@@ -368,7 +325,6 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		}
 		DD.ed.fireClientUpdate(new CommEvent(this, peer_name, null, "SERVER", "Fail for: "+s_address+"("+old_address+")"));
 		if(DEBUG) out.println("Client:try_connect:2 done");
-		//System.out.print("#8");
 		return false;
 	}
 	static InetSocketAddress getTCPSockAddress(String address) {
@@ -378,12 +334,12 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 			if(ClientSync.DEBUG) out.println("Client: Addresses length <=0 for: "+address);
 			return null;
 		}
-		int a=Address.getTCP(addresses[0]);//.lastIndexOf(":");
+		int a=Address.getTCP(addresses[0]);
 		if(a<=0){
 			if(ClientSync.DEBUG) out.println("Client: Address components !=2 for: "+addresses[0]);
 			return null;
 		}
-		String c=Address.getDomain(addresses[0]);//.substring(0, a);
+		String c=Address.getDomain(addresses[0]);
 		return new InetSocketAddress(c,a);		
 	}
 	static ArrayList<Address> getDirAddress(String dir_address, String global_peer_ID, String peer_name, String peer_ID) {
@@ -392,7 +348,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		if(sock_addr == null){
 			if(ClientSync.DEBUG||DD.DEBUG_CHANGED_ORGS) out.println("Client: getDirAddress");
 			ClientSync.reportDa(dir_address, global_peer_ID, peer_name, null, __("Null Socket"));
-			return null;//"";
+			return null;
 		}
 		Socket socket = new Socket();
 		try {
@@ -409,8 +365,6 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 			socket.getOutputStream().write(msg);
 			if(ClientSync.DEBUG) out.println("Client: Sending to Directory Server: "+Util.byteToHexDump(msg, " ")+dr);
 			DirectoryAnswer da = new DirectoryAnswer(socket.getInputStream());
-			// commented out since we moved to DirectoryAnswerMultiIdentities
-			//ClientSync.reportDa(dir_address, global_peer_ID, peer_name, da, null);
 			if(da.addresses.size()==0){
 				if(ClientSync._DEBUG) out.println("Client: Got no addresses!");
 				socket.close();
@@ -423,20 +377,14 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 				return null;
 			}
 			return da.addresses;
-			//InetSocketAddress s= da.address.get(0);
-			//return s.getHostName()+":"+s.getPort();
 		}catch (IOException e) {
 			if(ClientSync.DEBUG) out.println("Client: getDirAddress fail: "+e+" peer: "+peer_name+" DIR addr="+dir_address);
 			ClientSync.reportDa(dir_address, global_peer_ID, peer_name, null, e.getLocalizedMessage());
-			//e.printStackTrace();
-			//Directories.setUDPOn(dir_address, new Boolean(false));
 		} catch (Exception e) {
 			if(ClientSync.DEBUG) out.println("Client: getDirAddress fail: "+e+" peer: "+peer_name+" DIR addr="+dir_address);
 			ClientSync.reportDa(dir_address, global_peer_ID, peer_name, null, e.getLocalizedMessage());
 			e.printStackTrace();
 		}
-		//socket.close();
-		//out.println("Client: getDirAddress: fail");
 		return null;
 	}
 	boolean turnOff = false;
@@ -446,8 +394,6 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		this.interrupt();
 	}
 	synchronized public void _run() {
-		//this.setName("Client 1");
-		//ThreadsAccounting.registerThread();
 		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Start"));
 		try {
 			__run();
@@ -456,7 +402,6 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		}
 		DD.ed.fireClientUpdate(new CommEvent(this, null, null, "LOCAL", "Will Stop"));
 		if(ClientSync.DEBUG) out.println("Client: turned Off");
-		//ThreadsAccounting.unregisterThread();
 	}
 	synchronized public void __run() {
 		ArrayList<D_Peer>  peers = D_Peer.getUsedPeers();
@@ -465,7 +410,6 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		for(int p=0;;p++) {
 			Application_GUI.ThreadsAccounting_ping("Cycle peer "+p);
 			if(turnOff) break;
-			// Avoid asking in parallel too many synchronizations (wait for answers)
 			if((Application.getG_UDPServer()!=null)&&(Application.getG_UDPServer().getThreads() > UDPServer.MAX_THREADS/2))
 				try {
 					System.out.println("Client: run: overloaded threads = "+Application.getG_UDPServer().getThreads());
@@ -473,13 +417,8 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 						this.wait(Client1.PAUSE);
 					}
 				} catch (InterruptedException e2) {
-					//e2.printStackTrace();
 					continue;
 				}
-			
-			//
-			// Will reload peers and restart from the first peer, with "continue";
-			//
 			if(p>=peers.size()){
 				p = -1;
 				try {
@@ -493,43 +432,34 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 					}
 					Client1.peersToGo--;
 					Client1.recentlyTouched = false;
-					peers = D_Peer.getUsedPeers(); //Application.db.select(peers_scan_sql, new String[]{});
-					
+					peers = D_Peer.getUsedPeers(); 
 				} catch (InterruptedException e) {
 					if(ClientSync.DEBUG) e.printStackTrace();
 				}
-				//DD.userver.resetSyncRequests();
 				continue;
 			}
 			if(turnOff) break;
-			String peer_ID = peers.get(p).getLIDstr(); //Util.getString(peers.get(p).get(0));
-			String peer_name =  peers.get(p).getName_MyOrDefault(); // Util.getString(peers.get(p).get(1));
-			String global_peer_ID =  peers.get(p).getGID(); // Util.getString(peers.get(p).get(2));
-			String instance = null; // TODO : decide instance
-			
-			D_Peer peer = D_Peer.getPeerByGID_or_GIDhash(global_peer_ID, null, true, false, false, null);  // not yet used when saving new served orgs
-			
-			String _lastSnapshotString =  peers.get(p).getLastSyncDate(instance); //(String)peers.get(p).get(3);
-			boolean filtered =  peers.get(p).getFiltered(); //"1".equals(Util.getString(peers.get(p).get(4)));
+			String peer_ID = peers.get(p).getLIDstr(); 
+			String peer_name =  peers.get(p).getName_MyOrDefault(); 
+			String global_peer_ID =  peers.get(p).getGID(); 
+			String instance = null; 
+			D_Peer peer = D_Peer.getPeerByGID_or_GIDhash(global_peer_ID, null, true, false, false, null);  
+			String _lastSnapshotString =  peers.get(p).getLastSyncDate(instance); 
+			boolean filtered =  peers.get(p).getFiltered(); 
 			if(ClientSync.DEBUG)System.out.println("Client handling peer: "+Util.trimmed(peer_name));
-			
 			if(UDPServer.transferringPeerMessage(global_peer_ID, instance)){
 				if(ClientSync.DEBUG)System.out.println("Client peer already handled");
 				continue;
 			}
-			
 			ArrayList<ArrayList<Object>> peers_addr = null;
 			try{
 				peers_addr = Application.getDB().select("SELECT "+net.ddp2p.common.table.peer_address.address+", "+net.ddp2p.common.table.peer_address.type+", "+net.ddp2p.common.table.peer_address.peer_address_ID+
 						" FROM "+net.ddp2p.common.table.peer_address.TNAME+" WHERE "+net.ddp2p.common.table.peer_address.peer_ID+" = ? ORDER BY "+net.ddp2p.common.table.peer_address.my_last_connection+" DESC;",
 						new String[]{peer_ID});
-				
 			} catch (P2PDDSQLException e1) {
 				Application_GUI.warning(__("Database: ")+e1, __("Database"));
 				return;
 			}
-			
-			
 			if(Application.getG_UDPServer()!=null) Application.getG_UDPServer().addSyncRequests(global_peer_ID, instance);
 			int p_addresses = peers_addr.size();
 			ArrayList<String> peer_directories = getDirectories(peers_addr);
@@ -538,9 +468,7 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 			Calendar _lastSnapshot=null;
 			if(p_addresses>0) _lastSnapshot = Util.getCalendar(_lastSnapshotString);
 			DD.ed.fireClientUpdate(new CommEvent(this, peer_name, null, "LOCAL", "Attempt to contact peer"));
-			
 			ClientSync.peer_contacted_dirs.put(global_peer_ID, peer_directories);
-
 			if(ClientSync.DEBUG) out.println("Client: Will try #"+p_addresses);
 			for(int a=0; a < p_addresses; a++) {
 				String address = (String) peers_addr.get(a).get(0);
@@ -549,7 +477,6 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 					DD.ed.fireClientUpdate(new CommEvent(this, peer_name, null, "LOCAL", "Stop sending: Received ping confirmation already handled from peer"));
 					if(ClientSync.DEBUG)System.out.println("Client:run: Ping already handled for: "+Util.trimmed(global_peer_ID));
 					if(ClientSync.DEBUG)System.out.println("Client:run: will skip: "+address+":"+type);
-					// PeerContacts keeps track of contacted peers for the debug GUI window
 					String peer_key = peer_name;
 					if(peer_key == null)peer_key = ""+Util.trimmed(global_peer_ID);
 					Hashtable<String, Hashtable<String, String>> pc = D_Peer.peer_contacts.get(peer_key).get(Util.getStringNonNullUnique(null));
@@ -566,20 +493,16 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 						pc.put(key, value);
 					}
 					value.put(DD.ALREADY_CONTACTED, Util.getGeneralizedTime());
-					//PeerContacts.peer_contacts.put(peer_name, pc);
 					Application_GUI.peer_contacts_update();
 					break;					
 				}
-
 				String address_ID = Util.getString(peers_addr.get(a).get(2));
 				SocketAddress peer_sockaddr=null;
 				try{peer_sockaddr=client_socket.getRemoteSocketAddress();}catch(Exception e){
 					e.printStackTrace();
 					continue;
 				}
-			
 				DD.ed.fireClientUpdate(new CommEvent(this, peer_name, peer_sockaddr, "LOCAL", "Try to connect to: "+address));
-				// This function tried both TCP and UDP connections, based on the DD.ClientUDP and DD.ClientTCP, true if TCP
 				if(!try_connect(address, type, global_peer_ID, peer_name, peer_directories_sockets, peer_directories, peer_ID)){
 					if(ClientSync.DEBUG)System.out.println("Client:run: Ping failed for: \""+peer_name+"\" at \""+address+"\" id="+Util.trimmed(global_peer_ID));
 					Application_GUI.peer_contacts_update();
@@ -589,23 +512,13 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 				if(Application.peers!=null) Application.peers.setConnectionState(peer_ID, DD.PEERS_STATE_CONNECTION_TCP);
 				if(ClientSync.DEBUG) out.println("Client: Connected!");
 				DD.ed.fireClientUpdate(new CommEvent(this, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Connected"));
-						
 				ASNSyncRequest sr = ClientSync.buildRequest(_lastSnapshotString, _lastSnapshot, peer_ID);
 				if(filtered) sr.orgFilter=UpdateMessages.getOrgFilter(peer_ID);
 				sr.sign();
 				try {
-					//out.println("Request sent last sync date: "+Encoder.getGeneralizedTime(sr.lastSnapshot)+" ie "+sr.lastSnapshot);
-					//out.println("Request sent last sync date: "+sr);
-
 					byte[] msg = sr.encode();
 					if(ClientSync.DEBUG) out.println("Client: Sync Request sent: "+Util.byteToHexDump(msg, " ")+"::"+sr);
 					client_socket.getOutputStream().write(msg);
-					/*
-					Decoder testDec = new Decoder(msg);
-					ASNSyncRequest asr = new ASNSyncRequest();				
-					asr.decode(testDec);
-					out.println("Request sent last sync date: "+Encoder.getGeneralizedTime(asr.lastSnapshot)+" ie "+asr.lastSnapshot);
-					*/
 					DD.ed.fireClientUpdate(new CommEvent(this, peer_name, client_socket.getRemoteSocketAddress(), "Server", "Request Sent"));
 					byte update[] = new byte[Client1.MAX_BUFFER];
 					if(ClientSync.DEBUG) out.println("Waiting data from socket: "+client_socket+" on len: "+update.length+" timeout ms:"+Server.TIMEOUT_Client_Data);
@@ -622,29 +535,9 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 							continue;
 						}
 						len = dec.getMSGLength();
-						//System.out.println("Got msg size: "+len);//+"  bytes: "+Util.byteToHex(update, 0, len, " "));
 						RequestData rq = new RequestData();
 						integrateUpdate(update,len, (InetSocketAddress)client_socket.getRemoteSocketAddress(), this, global_peer_ID, peer_ID, address_ID, rq, peer);
 						if(ClientSync.DEBUG) err.println("Client: answer received rq: "+rq);
-						/*
-						while(true){
-							try{
-								integrateUpdate(update,len);
-								break;
-							}catch(RuntimeException e) {
-								len+=s.getInputStream().read(update, len, update.length-len);
-								err.println("New length="+len);
-							}
-						}
-						*/
-						// We record the date only if it was fully successful.
-						/*
-						String gdate = Util.getGeneralizedTime();
-						Application.db.update(table.peer.TNAME, new String[]{table.peer.last_sync_date}, new String[]{table.peer.global_peer_ID},
-								new String[]{gdate, global_peer_ID});
-						Application.db.update(table.peer_address.TNAME, new String[]{table.peer_address.my_last_connection}, new String[]{table.peer_address.peer_ID},
-								new String[]{gdate, peer_ID});
-						*/
 					}else{
 						if(ClientSync.DEBUG) out.println("Client: No answered received!");
 						DD.ed.fireClientUpdate(new CommEvent(this, peer_name, client_socket.getRemoteSocketAddress(), "Server", "TIMEOUT_Client_Data may be too short: No Answered Received"));
@@ -686,7 +579,6 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		}
 		return result;
 	}
-
 	static String getString(byte[] bytes){
 		if(bytes==null) return null;
 		return new String(bytes);
@@ -702,11 +594,9 @@ class Client1 extends net.ddp2p.common.util.DDP2P_ServiceThread implements IClie
 		if(ClientSync.DEBUG) out.println("Client: Got answer: "+asa.toString());
 		UpdateMessages.integrateUpdate(asa, s_address, src, global_peer_ID, asa.peer_instance, peer_ID, address_ID, rq, peer, true);
 	}
-
 	public Object get_wait_lock() {
 		return wait_lock;
 	}
-
 	@Override
 	public void wakeUp() {
 		synchronized(get_wait_lock()) {

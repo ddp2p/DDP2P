@@ -1,29 +1,21 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
-
 package net.ddp2p.common.data;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -34,35 +26,20 @@ import net.ddp2p.common.hds.ASNSyncPayload;
 import net.ddp2p.common.streaming.NeighborhoodHandling;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
-/*
- D_FieldValue ::= SEQUENCE {
- field_extra_ID PrintableString,
- value UTF8String,
- fieldID_above PrintableString,
- field_default_next PrintableString,
- value_lang PrintableString,
- neighborhood [0] SEQUENCE OF D_Neighborhood OPTIONAL
-}
- */
-
 public class D_FieldValue extends ASNObj{
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	public String field_extra_GID;//Printable
-	public String value;//OCT STR
-	public String oid;//OCT STR
-	public String field_GID_above;//Printable
-	public String field_GID_default_next;//Printable
-	public String value_lang;//Printable
+	public String field_extra_GID;
+	public String value;
+	public String oid;
+	public String field_GID_above;
+	public String field_GID_default_next;
+	public String value_lang;
 	public String global_neighborhood_ID;
-	
-	// not sent
 	public long field_extra_ID =-1;
 	public long field_ID_above = -1;
 	public long field_ID_default_next = -1;
 	public long neighborhood_ID =-1;
-	
 	public String toString() {
 		String result =
 			"D_FieldValue ["+
@@ -76,9 +53,8 @@ public class D_FieldValue extends ASNObj{
 			"\n ]";
 		return result;
 	}
-	
 	public D_Neighborhood[] neighborhood;
-	public D_OrgParam field_extra; // optional tempurary storage of link to field extra;
+	public D_OrgParam field_extra; 
 	public D_FieldValue instance() throws CloneNotSupportedException{return new D_FieldValue();}
 	@Override
 	public Encoder getEncoder() {
@@ -92,15 +68,11 @@ public class D_FieldValue extends ASNObj{
 		Encoder enc = new Encoder().initSequence();
 		String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, field_extra_GID);
 		enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString));
-		
 		enc.addToSequence(new Encoder(value,Encoder.TAG_OCTET_STRING));
-		
 		repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, field_GID_above);
 		enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString));
-		
 		repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, field_GID_default_next);
 		enc.addToSequence(new Encoder(repl_GID,Encoder.TAG_PrintableString));
-		
 		enc.addToSequence(new Encoder(value_lang,Encoder.TAG_PrintableString));
 		if(neighborhood!=null) enc.addToSequence(Encoder.getEncoder(neighborhood));
 		if(global_neighborhood_ID!=null) {
@@ -109,7 +81,6 @@ public class D_FieldValue extends ASNObj{
 		}
 		return enc;
 	}
-
 	@Override
 	public D_FieldValue decode(Decoder decoder) throws ASN1DecoderFail {
 		Decoder dec = decoder.getContent();
@@ -139,7 +110,6 @@ public class D_FieldValue extends ASNObj{
 	" LEFT JOIN "+net.ddp2p.common.table.neighborhood.TNAME+" AS n ON (n."+net.ddp2p.common.table.neighborhood.global_neighborhood_ID+" = v."+net.ddp2p.common.table.field_value.neighborhood_ID+")" +
 	" WHERE v."+net.ddp2p.common.table.field_value.constituent_ID+" = ?"+
 		" ORDER BY e."+net.ddp2p.common.table.field_extra.global_field_extra_ID+";";
-	
 	static public D_FieldValue[] getFieldValues(String constituentID) throws P2PDDSQLException{
 		D_FieldValue[] result = null;
 		ArrayList<ArrayList<Object>> all = Application.getDB().select(sql_get_const_fields, new String[]{constituentID}, DEBUG);
@@ -147,7 +117,6 @@ public class D_FieldValue extends ASNObj{
 		if(asz==0) return null;
 		result = new D_FieldValue[asz];
 		for(int a=0; a<asz; a++) {
-			//c.postalAddress = new ASNLocationItem[asz];
 			D_FieldValue v = new D_FieldValue();
 			v.value = Util.getString(all.get(a).get(net.ddp2p.common.table.field_value.VAL_COL_VALUE));
 			v.value_lang = Util.getString(all.get(a).get(net.ddp2p.common.table.field_value.VAL_COL_LANG));
@@ -157,15 +126,10 @@ public class D_FieldValue extends ASNObj{
 			v.field_GID_default_next = Util.getString(all.get(a).get(net.ddp2p.common.table.field_value.VAL_COLs+3));
 			v.global_neighborhood_ID = Util.getString(all.get(a).get(net.ddp2p.common.table.field_value.VAL_COLs+4));
 			result[a] = v;
-
 			v.field_extra_ID = Util.lval(all.get(a).get(net.ddp2p.common.table.field_value.VAL_COL_FIELD_EXTRA_ID),-1);
 			v.field_ID_above = Util.lval(all.get(a).get(net.ddp2p.common.table.field_value.VAL_COL_FIELD_ID_ABOVE),-1);
 			v.field_ID_default_next = Util.lval(all.get(a).get(net.ddp2p.common.table.field_value.VAL_COL_FIELD_DEFAULT_NEXT),-1);
 			v.neighborhood_ID = Util.lval(all.get(a).get(net.ddp2p.common.table.field_value.VAL_COL_NEIGH_ID),-1);
-
-			
-			//c.postalAddress[a].hierarchy = "";//fieldID_above||field_default_next||neighborhood
-			//c.postalAddress[a].oid = new int[0];
 			if(DEBUG) System.out.println("D_FieldValue:getFieldValues: New Constituent address = "+result[a]);		
 		}
 		Arrays.sort(result, new FVComparator()); 
@@ -188,22 +152,18 @@ public class D_FieldValue extends ASNObj{
 		String[] params = new String[fields.length];
 		params[net.ddp2p.common.table.field_value.VAL_COL_VALUE] = wf.value;
 		params[net.ddp2p.common.table.field_value.VAL_COL_CONSTITUENT_ID] = constituent_ID;
-		
 		String def_next_LID = org.getFieldExtraID(wf.field_GID_default_next, accept_new_fields);
 		if (def_next_LID == null) def_next_LID = Util.getStringID(wf.field_ID_default_next);
 		params[net.ddp2p.common.table.field_value.VAL_COL_FIELD_DEFAULT_NEXT] = def_next_LID;
-		
 		String extra_LID = org.getFieldExtraID(wf.field_extra_GID, accept_new_fields);
 		if (extra_LID == null) extra_LID = Util.getStringID(wf.field_extra_ID);
 		params[net.ddp2p.common.table.field_value.VAL_COL_FIELD_EXTRA_ID] = extra_LID;
-		
 		String def_abv_LID = org.getFieldExtraID(wf.field_GID_default_next, accept_new_fields);
 		if (def_abv_LID == null) def_abv_LID = Util.getStringID(wf.field_ID_default_next);
 		params[net.ddp2p.common.table.field_value.VAL_COL_FIELD_ID_ABOVE] = def_abv_LID;
-		
 		params[net.ddp2p.common.table.field_value.VAL_COL_LANG] = wf.value_lang;
 		params[net.ddp2p.common.table.field_value.VAL_COL_NEIGH_ID] = D_Neighborhood.getLIDstrFromGID(wf.global_neighborhood_ID, org_ID);
-		if(params[net.ddp2p.common.table.field_value.VAL_COL_NEIGH_ID]==null) // table contraint refuses null;
+		if(params[net.ddp2p.common.table.field_value.VAL_COL_NEIGH_ID]==null) 
 			params[net.ddp2p.common.table.field_value.VAL_COL_NEIGH_ID] = net.ddp2p.common.table.field_extra.NEIGHBORHOOD_ID_NA;
 		long id=Application.getDB().insert(net.ddp2p.common.table.field_value.TNAME, fields, params, DEBUG);
 		if(DEBUG) System.out.println("D_FieldValue:store: end result="+id);
@@ -223,27 +183,13 @@ public class D_FieldValue extends ASNObj{
 		if ( (a1 == null) && (a2 == null) ) return false;
 		if ( (a1 == null) || (a2 == null) ) return true;
 		if (a1.length != a2.length) return true;
-		/*
-		Arrays.sort(a1, new Comparator<D_FieldValue>(){
-
-			@Override
-			public int compare(D_FieldValue o1, D_FieldValue o2) {
-				if (o1.field_extra_GID == o2.field_extra_GID) return 0;
-				if (o1.field_extra_GID == null && o2.field_extra_GID != null) return -1;
-				if (o1.field_extra_GID != null && o2.field_extra_GID == null) return 1;
-				return o1.field_extra_GID.compareTo(o2.field_extra_GID);
-			}}); 
-		*/
-		//Arrays.sort(a1, new FVComparator()); 
 		Arrays.sort(a2, new FVComparator()); 
-		
 		for (int k = 0; k < a1.length; k ++) {
 			if (different(a1[k], a2[k])) return true;
 		}
 		return false;
 	}
 	static class FVComparator implements Comparator<D_FieldValue> {
-
 			@Override
 			public int compare(D_FieldValue o1, D_FieldValue o2) {
 				if (o1.field_extra_GID == o2.field_extra_GID) return 0;
@@ -265,4 +211,3 @@ public class D_FieldValue extends ASNObj{
 		return false;
 	}
 }
-

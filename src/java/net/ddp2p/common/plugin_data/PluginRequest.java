@@ -1,46 +1,34 @@
 package net.ddp2p.common.plugin_data;
 import java.util.*;
-//import javax.swing.Action;
-//import javax.swing.JMenuItem;
-
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 public class PluginRequest {
-	// types
-	public static final int MSG = 0;   				// message to remote peer
-	public static final int STORE = 1; 				// store in database
-	public static final int RETRIEVE = 2; 			// retrieve from database
-	public static final int REGISTER_ACTION = 3; 	// register action	(property "GID" contains peer_GID)
-	public static final int REGISTER_MENU = 4;   	// register menu action (property "GID" contains peer_GID)
-	
+	public static final int MSG = 0;   				
+	public static final int STORE = 1; 				
+	public static final int RETRIEVE = 2; 			
+	public static final int REGISTER_ACTION = 3; 	
+	public static final int REGISTER_MENU = 4;   	
 	public static final int MAX_ENQUEUED_FOR_SENDING = 10;
-	// fields
-	public int type;  // for all types
-	public String key; // for STORE and RETRIEVE
-	public String plugin_GID; // for all types
-	public String peer_GID; // for MSG
-	public byte[] msg; // for MSG, STORE
-	
-	public int column;	// for menus
-	public Object plugin_action; // Action
-	public Object plugin_menuItem; // JMenuItem
+	public int type;  
+	public String key; 
+	public String plugin_GID; 
+	public String peer_GID; 
+	public byte[] msg; 
+	public int column;	
+	public Object plugin_action; 
+	public Object plugin_menuItem; 
 	public String toString(){
 		return "PluginRequest ["+
 		"\n type = "+type+
@@ -54,9 +42,7 @@ public class PluginRequest {
 	}
 	public static String display(Hashtable<String,Object> r) {
 		return new PluginRequest().setHashtable(r).toString();
-		
 	}
-	
 	public Hashtable<String,Object> getHashtable() {
 		Hashtable<String,Object> pd = new Hashtable<String,Object>();
 		pd.put("type", new Integer(type+""));
@@ -69,7 +55,6 @@ public class PluginRequest {
 		if(plugin_menuItem!=null) pd.put("plugin_menuItem", plugin_menuItem);
 		return pd;
 	}
-	
 	public PluginRequest setHashtable(Hashtable<String,Object> pd){
 		type = ((Integer)pd.get("type")).intValue();
 		column = ((Integer)pd.get("column")).intValue();
@@ -81,7 +66,6 @@ public class PluginRequest {
 		plugin_menuItem = ((Object)pd.get("plugin_menuItem")); // JMenuItem
 		return this;
 	}
-	// Utility functions
     static String HEX[]={"0","1","2","3","4","5","6","7","8","9",
 		"A","B","C","D","E","F"};
     public static String byteToHex(byte[] b, String sep){

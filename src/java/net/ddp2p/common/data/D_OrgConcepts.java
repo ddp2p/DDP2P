@@ -1,25 +1,18 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
-
 package net.ddp2p.common.data;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -29,7 +22,6 @@ import net.ddp2p.common.hds.ASNSyncRequest;
 import net.ddp2p.common.util.Util;
 public
 class D_OrgConcepts extends ASNObj {
-	
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
 	public String[] name_forum;
@@ -76,7 +68,7 @@ class D_OrgConcepts extends ASNObj {
 	public static String stringFromStringArray(String[] in){
 		String result = null;
 		if (in == null) return null;
-		byte[] data = new ASN64String_2_StringArray(in).encode(); //Encoder.getStringEncoder(in,Encoder.TAG_UTF8String).getBytes();
+		byte[] data = new ASN64String_2_StringArray(in).encode(); 
 		result = Util.stringSignatureFromByte(data);
 		return result;
 	}
@@ -91,19 +83,7 @@ class D_OrgConcepts extends ASNObj {
 	public static String[] stringArrayFromString(String in, boolean DEBUG){
 		if (DEBUG) System.err.println("OrgConcepts:stringArrayFromString: parsing \""+in);
 		String result[] = null;
-		//if (in == null) return null;
-		//if (in.equals("null")) return null;
-		//byte[] data = Util.byteSignatureFromString(in);
 		try {
-			//if (data == null)  throw new ASN1DecoderFail("Wrong hex for String Array");
-			//Decoder dec = new Decoder(data);
-//			if (dec.getTypeByte() != Encoder.TAG_SEQUENCE) {
-//				 System.err.println("OrgConcepts:stringArrayFromString: parsing \""+in+"\"");
-//				 System.err.println("OrgConcepts:stringArrayFromString: parsing data:\"["+data.length+"]="+Util.byteToHex(data));
-//				throw new ASN1DecoderFail("Wrong tag for String Array");
-//			}
-//			result = dec.getFirstObject(true).getSequenceOf(Encoder.TAG_UTF8String);
-			//result = new ASN_StringArray(dec).getStrsArray();
 			result = new ASN64String_2_StringArray(in).getStrsArray();
 		} catch (ASN1DecoderFail e) {
 			if(DEBUG) System.err.println("OrgConcepts:stringArrayFromString: fail to parse an array out of string \""+in+"\" error:"+e.getMessage());

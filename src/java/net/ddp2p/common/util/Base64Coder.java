@@ -1,12 +1,8 @@
 /**
  * From StackOverflow
  */
-
 package net.ddp2p.common.util;
-
 public class Base64Coder{
-
-	// Mapping table from 6-bit nibbles to Base64 characters.
 	private static final char[] map1                = new char[64];
 	static
 	{
@@ -20,7 +16,6 @@ public class Base64Coder{
 	    map1[i++] = '+';
 	    map1[i++] = '/';
 	}
-	// Mapping table from Base64 characters to 6-bit nibbles.
 	private static final byte[] map2                = new byte[128];
 	static
 	{
@@ -29,10 +24,7 @@ public class Base64Coder{
 	    for (int i = 0; i < 64; i++)
 	        map2[map1[i]] = (byte) i;
 	}
-	// The line separator string of the operating system.
 	private static final String systemLineSeparator = System.getProperty("line.separator");
-
-
 	/**
 	 * Decodes a byte array from Base64 format. No blanks or line breaks are
 	 * allowed within the Base64 encoded input data.
@@ -47,7 +39,6 @@ public class Base64Coder{
 	{
 	    return decode(in, 0, in.length);
 	}
-
 	/**
 	 * Decodes a byte array from Base64 format. No blanks or line breaks are
 	 * allowed within the Base64 encoded input data.
@@ -96,7 +87,6 @@ public class Base64Coder{
 	    }
 	    return out;
 	}
-
 	/**
 	 * Decodes a byte array from Base64 format. No blanks or line breaks are
 	 * allowed within the Base64 encoded input data.
@@ -111,7 +101,6 @@ public class Base64Coder{
 	{
 	    return decode(s.toCharArray());
 	}
-
 	/**
 	 * Decodes a byte array from Base64 format and ignores line separators, tabs
 	 * and blanks. CR, LF, Tab and Space characters are ignored in the input
@@ -135,7 +124,6 @@ public class Base64Coder{
 	    }
 	    return decode(buf, 0, p);
 	}
-
 	/**
 	 * Decodes a string from Base64 format. No blanks or line breaks are allowed
 	 * within the Base64 encoded input data.
@@ -150,7 +138,6 @@ public class Base64Coder{
 	{
 	    return new String(decode(s));
 	}
-
 	/**
 	 * Encodes a byte array into Base64 format. No blanks or line breaks are
 	 * inserted in the output.
@@ -163,7 +150,6 @@ public class Base64Coder{
 	{
 	    return encode(in, 0, in.length);
 	}
-
 	/**
 	 * Encodes a byte array into Base64 format. No blanks or line breaks are
 	 * inserted in the output.
@@ -178,7 +164,6 @@ public class Base64Coder{
 	{
 	    return encode(in, 0, iLen);
 	}
-
 	/**
 	 * Encodes a byte array into Base64 format. No blanks or line breaks are
 	 * inserted in the output.
@@ -218,7 +203,6 @@ public class Base64Coder{
 	    }
 	    return out;
 	}
-
 	/**
 	 * Encodes a byte array into Base 64 format and breaks the output into lines
 	 * of 76 characters. This method is compatible with
@@ -232,7 +216,6 @@ public class Base64Coder{
 	{
 	    return encodeLines(in, 0, in.length, 76, systemLineSeparator);
 	}
-
 	/**
 	 * Encodes a byte array into Base 64 format and breaks the output into
 	 * lines.
@@ -267,7 +250,6 @@ public class Base64Coder{
 	    }
 	    return buf.toString();
 	}
-
 	/**
 	 * Encodes a string into Base64 format. No blanks or line breaks are
 	 * inserted.
@@ -280,8 +262,6 @@ public class Base64Coder{
 	{
 	    return new String(encode(s.getBytes()));
 	}
-
-	// Dummy constructor.
 	private Base64Coder()
 	{
 	}
@@ -289,7 +269,6 @@ public class Base64Coder{
      * Test the decoder and encoder.
      * Call as <code>Base64 [string]</code>.
      */
-
     public static void
     main(String[] args) {
     	String enc = args[0];

@@ -1,7 +1,5 @@
 package net.ddp2p.common.util;
-
 import java.util.ArrayList;
-
 public 
 interface DB_Implementation{
 	public ArrayList<ArrayList<Object>> select(String sql, String[] params, boolean DEBUG) throws P2PDDSQLException;
@@ -23,5 +21,4 @@ interface DB_Implementation{
 	public void tryUpdate(String table, String[] fields, String[] selector,
 			String[] params, boolean dbg) throws P2PDDSQLException;
 	public String getName();
-
 }

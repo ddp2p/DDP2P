@@ -1,7 +1,5 @@
 package net.ddp2p.widgets.peers;
-
 import static net.ddp2p.common.util.Util.__;
-
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.EventQueue;
@@ -13,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Hashtable;
-
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -23,7 +20,6 @@ import javax.swing.JTree;
 import javax.swing.SwingConstants;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.hds.Address;
@@ -38,7 +34,6 @@ import net.ddp2p.common.util.DDP2P_ServiceRunnable;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.components.DebateDecideAction;
-
 class D_PIC_Node implements TreeNode {
 	private static final boolean DEBUG = false;
 	public String text;
@@ -53,44 +48,37 @@ class D_PIC_Node implements TreeNode {
 		if(DEBUG) System.out.println("PeerIContacts: getChildAt: "+this+" return:"+childIndex);
 		return child.get(childIndex);
 	}
-
 	@Override
 	public int getChildCount() {
 		if (DEBUG) System.out.println("PeerIContacts: getChildCount: "+this+" return:"+child.size());
 		return child.size();
 	}
-
 	@Override
 	public TreeNode getParent() {
 		if (DEBUG) System.out.println("PeerIContacts: getParent: "+this+" return:"+parent);
 		return parent;
 	}
-
 	@Override
 	public int getIndex(TreeNode node) {
 		if (DEBUG) System.out.println("PeerIContacts: getIndex: "+this+" node="+node+" return:"+child.indexOf(node));
 		return child.indexOf(node);
 	}
-
 	@Override
 	public boolean getAllowsChildren() {
 		if (DEBUG) System.out.println("PeerIContacts: getAllowsChildren: "+this+" true="+true);
-		return true;//child.size()!=0;
+		return true;
 	}
-
 	@Override
 	public boolean isLeaf() {
 		if (DEBUG) System.out.println("PeerIContacts: isLeaf: "+this+" true="+true);
 		return child.size()==0;
 	}
-
 	@Override
 	public Enumeration children() {
 		if (DEBUG) System.out.println("PeerIContacts: children: "+this);
 		return Collections.enumeration(child);
 	}	
 }
-
 @SuppressWarnings("serial")
 public
 class PeerInstanceContacts  extends JPanel implements MouseListener {
@@ -102,9 +90,7 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 	public static JTree old_jt = null;
 	public static JLabel old_l = null;
 	public boolean refresh = true;
-	//public boolean filter = true;
 	Connections connections;
-	
 	String my_peer_name;
 	D_Peer dpa;
 	/**
@@ -112,14 +98,12 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 	 * Should put all sockets of an instance in a single leaf
 	 */
 	boolean pack_sockets = true;
-	
 	public PeerInstanceContacts() {
 		this.setLayout(new BorderLayout());
 		old_l = new JLabel(__("Current Connections (right click for a menu to update view)"));
 		old_l.setHorizontalTextPosition(SwingConstants.LEFT);
 		this.add(old_l, BorderLayout.NORTH);
 		this.addMouseListener(this);
-		//l.setHorizontalAlignment(JLabel.LEFT);
 	}
 	public void setConnections(Connections c) {
 		connections = c;
@@ -130,15 +114,11 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 			if (_DEBUG) System.out.println("PeerIContacts: update: no connections object");
 			return;
 		};
-		
 		if (DEBUG) System.out.println("PeerIContacts: update: start");
 		if (!refresh) {
 			if (_DEBUG) System.out.println("PeerIContacts: update: norefresh");
 			return;
 		}
-		
-		//System.out.println("PeerInstanceConnections: "+connections._toString());
-		
 		Object[] data = getTree();
 		D_PIC_Node root = new D_PIC_Node(); root.text = "root";
 		for (Object o: data) {
@@ -175,7 +155,6 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 			D_PIC_Node n = new D_PIC_Node();
 			result.add(n);
 			n.text = "\""+peer.getName()+"\" Contacted="+peer.isContactedSinceStart()+" (ok="+peer.isLastContactSuccessful()+")";
-			
 			if (peer.getSharedPeerDirectories().size() > 0) {
 				D_PIC_Node dirs = getAddressesDirNodes(peer.getSharedPeerDirectories());
 				dirs.parent = n;
@@ -186,7 +165,6 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 				socks.parent = n;
 				n.child.add(socks);
 			}
-	
 			for (Connection_Instance ci : peer.instances_AL) {
 				if (DEBUG) System.out.println("PeerIContacts: getTree: peer instance="+ci);
 				D_PIC_Node  da = getInstance(ci);
@@ -249,7 +227,6 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 		}
 		return n;
 	}
-
 	@Override
 	public void mouseClicked(MouseEvent arg0) {
 	}
@@ -269,7 +246,6 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
 	}
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
     	if(!evt.isPopupTrigger()) return;
-    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	JPopupMenu popup = getPopup(evt);
     	if(popup == null) return;
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
@@ -278,40 +254,28 @@ class PeerInstanceContacts  extends JPanel implements MouseListener {
     	ImageIcon reseticon = DDIcons.getResImageIcon(__("reset item"));
     	JPopupMenu popup = new JPopupMenu();
     	PeerInstanceContactsAction prAction;
-    	//
     	prAction = new PeerInstanceContactsAction(this, __("Refresh!"), reseticon,__("Let it refresh."),
     			__("Go refresh!"),KeyEvent.VK_R, PeerInstanceContactsAction.REFRESH);
-    	//prAction.putValue("row", new Integer(model_row));
     	popup.add(new JMenuItem(prAction));
-
     	prAction = new PeerInstanceContactsAction(this, __("No Refresh!"), reseticon,__("Stop refresh."),
     			__("No refresh!"), KeyEvent.VK_S, PeerInstanceContactsAction.NO_REFRESH);
     	popup.add(new JMenuItem(prAction));
-
-
     	prAction = new PeerInstanceContactsAction(this, __("Reset!"), reseticon,__("Reset."),
     			__("Reset!"), KeyEvent.VK_D, PeerInstanceContactsAction.RESET);
     	popup.add(new JMenuItem(prAction));
-
     	prAction = new PeerInstanceContactsAction(this, __("Pack Socket entries!"), reseticon,__("Pack Socket entries."),
     			__("Pack Socket!"), KeyEvent.VK_P, PeerInstanceContactsAction.PACK_SOCKET);
     	popup.add(new JMenuItem(prAction));
-
     	return popup;
 	}
 	public void connectWidget() {
-		// TODO Auto-generated method stub
-		
 	}
 	public void disconnectWidget() {
-		// TODO Auto-generated method stub
-		
 	}
 	public Component getComboPanel() {
 		return this;
 	}
 }
-
 @SuppressWarnings("serial")
 class PeerInstanceContactsAction extends DebateDecideAction {
     public static final int REFRESH = 0;
@@ -332,7 +296,6 @@ class PeerInstanceContactsAction extends DebateDecideAction {
         this.icon = icon;
         this.command = command;
     }
-	//public final JFileChooser filterUpdates = new JFileChooser();
     public void actionPerformed(ActionEvent e) {
     	Object src = e.getSource();
         if (DEBUG) System.err.println("PeerInstanceConnectionsRowAction:command property: " + command);
@@ -355,4 +318,3 @@ class PeerInstanceContactsAction extends DebateDecideAction {
 		}
     }
 }
-    

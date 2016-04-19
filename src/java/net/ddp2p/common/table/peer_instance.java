@@ -1,7 +1,5 @@
 package net.ddp2p.common.table;
-
 import java.util.regex.Pattern;
-
 public class peer_instance {
 	public static final String peer_instance_ID = "peer_instance_ID";
 	public static final String peer_ID = "peer_ID";

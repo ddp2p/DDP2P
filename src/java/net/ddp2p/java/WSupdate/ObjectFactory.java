@@ -1,9 +1,5 @@
-
 package net.ddp2p.java.WSupdate;
-
 import javax.xml.bind.annotation.XmlRegistry;
-
-
 /**
  * This object contains factory methods for each 
  * Java content interface and Java element interface 
@@ -20,15 +16,12 @@ import javax.xml.bind.annotation.XmlRegistry;
  */
 @XmlRegistry
 public class ObjectFactory {
-
-
     /**
      * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: WSupdate
      * 
      */
     public ObjectFactory() {
     }
-
     /**
      * Create an instance of {@link Downloadable }
      * 
@@ -36,7 +29,6 @@ public class ObjectFactory {
     public Downloadable createDownloadable() {
         return new Downloadable();
     }
-
     /**
      * Create an instance of {@link Test }
      * 
@@ -44,7 +36,6 @@ public class ObjectFactory {
     public Test createTest() {
         return new Test();
     }
-
     /**
      * Create an instance of {@link History }
      * 
@@ -52,7 +43,6 @@ public class ObjectFactory {
     public History createHistory() {
         return new History();
     }
-
     /**
      * Create an instance of {@link VersionInfo }
      * 
@@ -60,7 +50,6 @@ public class ObjectFactory {
     public VersionInfo createVersionInfo() {
         return new VersionInfo();
     }
-
     /**
      * Create an instance of {@link TesterInfo }
      * 
@@ -68,7 +57,6 @@ public class ObjectFactory {
     public TesterInfo createTesterInfo() {
         return new TesterInfo();
     }
-
     /**
      * Create an instance of {@link TestDef }
      * 
@@ -76,5 +64,4 @@ public class ObjectFactory {
     public TestDef createTestDef() {
         return new TestDef();
     }
-
 }

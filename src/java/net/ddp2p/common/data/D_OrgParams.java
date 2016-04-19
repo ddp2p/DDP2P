@@ -1,28 +1,20 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
-
 package net.ddp2p.common.data;
-
 import java.util.ArrayList;
 import java.util.Calendar;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -33,9 +25,8 @@ import net.ddp2p.common.hds.ASNSyncRequest;
 import net.ddp2p.common.util.Util;
 public
 class D_OrgParams extends ASNObj {
-	public int certifMethods; //ENUM
-	public String hash_org_alg = net.ddp2p.common.table.organization.hash_org_alg_crt; //Printable
-	//public byte[] hash_org; //OCT STR
+	public int certifMethods; 
+	public String hash_org_alg = net.ddp2p.common.table.organization.hash_org_alg_crt; 
 	public Calendar creation_time;
 	public String creator_global_ID;
 	/**
@@ -43,23 +34,21 @@ class D_OrgParams extends ASNObj {
 	 */
 	public int mWeightsType = net.ddp2p.common.table.organization.WEIGHTS_TYPE_DEFAULT;
 	public int mWeightsMax = net.ddp2p.common.table.organization.WEIGHTS_MAX_DEFAULT;
-	public String category; //UTF8
-	public byte[] certificate; //OCT STR
-	public String[] default_scoring_options; // SEQ OF UTF8
-	public String instructions_new_motions; // UTF8
-	public String instructions_registration; //UTF8
-	public String description; //UTF8
-	public String[] languages; // SEQ of Printable
+	public String category; 
+	public byte[] certificate; 
+	public String[] default_scoring_options; 
+	public String instructions_new_motions; 
+	public String instructions_registration; 
+	public String description; 
+	public String[] languages; 
 	public byte[] icon;
-	public D_OrgParam[] orgParam; // SEQ of 
-	//public String _icon; // undecoded icon
+	public D_OrgParam[] orgParam; 
 	public String toString() {
 		return "Org Params: ["+
 		";\n     mWeightsType="+mWeightsType+
 		";\n     mWeightMax="+mWeightsMax+
 		";\n     certifMethods="+Util.nullDiscrim(certifMethods)+
 		";\n     hash_org_alg="+Util.nullDiscrim(hash_org_alg)+
-		//";\n hash_org="+((hash_org==null)?"NULL":"\""+Util.byteToHex(hash_org, ":")+"\"")+
 		";\n     creation_time="+((creation_time==null)?"null":Encoder.getGeneralizedTime(creation_time))+
 		";\n     creator="+Util.trimmed(creator_global_ID)+
 		";\n     category="+Util.nullDiscrim(category)+
@@ -125,7 +114,6 @@ class D_OrgParams extends ASNObj {
 		if (DEBUG) System.out.println("OrgParamSignHash = 3_p15: "+D_Organization.hashEnc(enc));
 		if (icon != null) enc.addToSequence(new Encoder(icon).setASN1Type(DD.TAG_AC14));
 		if (DEBUG) System.out.println("OrgParamSignHash = 3_p16: "+D_Organization.hashEnc(enc));
-		//enc.addToSequence(new Encoder(hash_org));
 		if (ASNSyncRequest.DEBUG)System.out.println("Encoded OrgParams: "+this);
 		return enc;
 	}
@@ -150,9 +138,7 @@ class D_OrgParams extends ASNObj {
 		if(dec.getTypeByte()==DD.TAG_AC14) icon = dec.getFirstObject(true).getBytesAnyType();
 		if(dec.getFirstObject(false) != null) {
 			if (ASNSyncRequest.DEBUG)  System.out.println("DEcoding OrgParams: Extra objects!");
-			//throw new ASN1DecoderFail("Extra Objects in decoder: "+decoder.dumpHex());
 		}
-		//hash_org= dec.getFirstObject(true).getBytes(Encoder.TAG_OCTET_STRING);
 		if(ASNSyncRequest.DEBUG)System.out.println("DEcoded OrgParams: "+this);
 		return this;
 	}

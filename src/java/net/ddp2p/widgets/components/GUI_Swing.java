@@ -1,7 +1,5 @@
 package net.ddp2p.widgets.components;
-
 import static net.ddp2p.common.util.Util.__;
-
 import java.awt.EventQueue;
 import java.io.File;
 import java.io.IOException;
@@ -9,7 +7,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import javax.swing.Icon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -22,7 +19,6 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
-
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.Application;
@@ -56,18 +52,14 @@ import net.ddp2p.widgets.peers.CreatePeer;
 import net.ddp2p.widgets.peers.DataHashesPanel;
 import net.ddp2p.widgets.peers.PeerContacts;
 import net.ddp2p.widgets.updates.UpdatesPanel;
-
 public class GUI_Swing implements Vendor_GUI_Dialogs {
-
 	public static boolean DEBUG = true;
-	//public static RegistrationServer rs; // Song's server
 	public static ControlPane controlPane;
 	public static ConstituentsPanel constituents;
 	public static Orgs orgs;
 	public static UpdatesPanel panelUpdates;
 	public static PeerContacts peer_contacts;
 	public static DataHashesPanel dataHashesPanel;
-
 	@Override
 	public void fixScriptsBaseDir(String dir) {
 		Object options[] = new Object[]{__("Browse Scripts Folder")
@@ -85,7 +77,6 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 		case 0:
 		{
 			if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: scripts opt="+q);
-
 			SwingUtilities.invokeLater(new net.ddp2p.common.util.DDP2P_ServiceRunnable("Scripts Folder", false, false, dir) {
 				@Override
 				public void _run() {
@@ -121,9 +112,6 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 		case 1:
 		{
 			if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: base opt="+q);
-			//if (DEBUG) System.out.println("GUI_Swing: fixScriptsBaseDir: base browse "+MainFrame.frame);
-			//Util.printCallPath("");
-
 			SwingUtilities.invokeLater(new net.ddp2p.common.util.DDP2P_ServiceRunnable("Scripts Folder", false, false, null) {
 				@Override
 				public void _run() {
@@ -138,13 +126,11 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 			            try {
 							version = file.getCanonicalPath();
 							Directories.setCrtPathsInDB(version);
-							
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
 			        } else {
 			        }
-					
 				}});
 		}
 		break;
@@ -156,21 +142,18 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 			System.exit(-1); break;
 		}
 	}
-
 	@Override
 	public void warning(String war, String title) {
 		JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
 				war,
 				title, JOptionPane.WARNING_MESSAGE);
 	}
-
 	@Override
 	public void info(String inf, String title) {
 		JOptionPane.showMessageDialog(JFrameDropCatch.mframe,
 				inf,
 				title, JOptionPane.INFORMATION_MESSAGE);
 	}
-
 	@Override
 	public int ask(String war, String title, int type) {
 		return
@@ -178,19 +161,15 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 				war,
 				title, type, JOptionPane.QUESTION_MESSAGE);
 	}
-
 	@Override
 	public int ask(String title, String war, Object[] options,
 			Object def_option, Object _icon) {
 		Icon icon = (Icon) _icon;
 		return
-//	JOptionPane.showConfirmDialog(JFrameDropCatch.mframe, war,
-//		title, type, JOptionPane.QUESTION_MESSAGE, options);
 		JOptionPane.showOptionDialog(JFrameDropCatch.mframe, war, title, 
-		        JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, //JOptionPane.PLAIN_MESSAGE,
+		        JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, 
 		        icon, options, options[0]);
 	}
-
 	@Override
 	public String input(String prompt, String title, int type) {
 		String val=
@@ -199,22 +178,18 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 					type);
 		return val;
 	}
-
 	@Override
 	public void setBroadcastServerStatus_GUI(boolean run) {
 		MainFrame.setBroadcastServerStatus_GUI(run);
 	}
-
 	@Override
 	public void setBroadcastClientStatus_GUI(boolean run) {
 		MainFrame.setBroadcastClientStatus_GUI(run);
 	}
-
 	@Override
 	public void setSimulatorStatus_GUI(boolean run) {
 		MainFrame.setSimulatorStatus_GUI(run);
 	}
-
 	@Override
 	public String html2text(String document) {
 	    Html2Text parser = new Html2Text();
@@ -224,13 +199,10 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 	    	System.err.println(e);
 	    }
 	    document = parser.getText();
-	    
 		return null;
 	}
-
 	@Override
 	public String[] getWitnessScores() {
-
     	TreePath tp = null;
 		ConstituentsWitness dialog = new ConstituentsWitness(GUI_Swing.constituents.tree, tp, 0);
     	if (!dialog.accepted) return null;
@@ -238,12 +210,10 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
     	String witness_category_trustworthiness = Util_GUI.getJFieldText(dialog.witness_category_trustworthiness);
 		return new String[]{witness_category, witness_category_trustworthiness};
 	}
-
 	@Override
 	public D_Constituent getMeConstituent() {
 		return MainFrame.status.getMeConstituent();
 	}
-
 	/**
 	 * Sets the functions Calling Swing dialogs
 	 */
@@ -254,12 +224,10 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 	public void registerThread() {
 		ThreadsAccounting.registerThread();
 	}
-
 	@Override
 	public void unregisterThread() {
 		ThreadsAccounting.unregisterThread();
 	}
-
 	@Override
 	public String queryDatabaseFile() {
 		JFileChooser chooser = new JFileChooser();
@@ -268,7 +236,6 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 		chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		chooser.setMultiSelectionEnabled(false);
 		File fileDB = null;
-
 		int returnVal = chooser.showDialog(MainFrame.frame,__("Specify Database"));
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			fileDB = chooser.getSelectedFile();
@@ -287,61 +254,50 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 		}
 		return null;
 	}
-
 	@Override
 	public void updateProgress(Object ctx, String string) {
 		if (ctx == null) ctx = Util_GUI.crtProcessLabel;
 		if (ctx != null) EventQueue.invokeLater(new net.ddp2p.widgets.app.RunnableCmd(string, ctx));
 	}
-
 	@Override
 	public void eventQueue_invokeLater(Runnable rp) {
 		EventQueue.invokeLater(rp);	
 	}
-
 	@Override
 	public void clientUpdates_Start() {
 		if (MainFrame.controlPane != null) MainFrame.controlPane.startClientUpdates.setText(ControlPane.START_CLIENT_UPDATES);
 	}
-
 	@Override
 	public void clientUpdates_Stop() {
 		if (MainFrame.controlPane != null) MainFrame.controlPane.startClientUpdates.setText(ControlPane.STOP_CLIENT_UPDATES);
 	}
-
 	@Override
 	public void ThreadsAccounting_ping(String string) {
 		ThreadsAccounting.ping(string);
 	}
-
 	@Override
 	public void setClientUpdatesStatus(boolean b) {
 		if(MainFrame.controlPane!=null) MainFrame.controlPane.setClientUpdatesStatus(false, false);
 	}
-
 	@Override
 	public void peer_contacts_update() {
 		if (GUI_Swing.peer_contacts != null) GUI_Swing.peer_contacts.update(D_Peer.peer_contacts);
 	}
-
 	@Override
 	public boolean is_crt_peer(D_Peer candidate) {
 		if (MainFrame.status == null) return false;
 		return MainFrame.status.is_crt_peer(candidate);
 	}
-
 	@Override
 	public boolean is_crt_org(D_Organization candidate) {
 		if (MainFrame.status == null) return false;
 		return MainFrame.status.is_crt_org(candidate);
 	}
-	
 	@Override
 	public boolean is_crt_const(D_Constituent candidate) {
 		if (MainFrame.status == null) return false;
 		return MainFrame.status.is_crt_const(candidate);
 	}
-
 	/**
 	 * Set this as me in the GUI status and displays
 	 */
@@ -349,31 +305,25 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 	public void setMePeer(D_Peer me) {
 		if (MainFrame.status != null) MainFrame.status.setMePeer(me);
 	}
-	
 	/**
 	 * Query the user whether the new peer should have the attributes in pi, or other ones.
 	 * The final ones are set in _data.
 	 */
-
 	@Override
 	public D_Peer createPeer(PeerInput pi, PeerInput[] _data) {
-		//
 		CreatePeer dialog = new CreatePeer(MainFrame.frame, pi);
 		PeerInput data = dialog.getData();
 		if ( ! data.valid ) {
 			System.out.println("createPeer: exit since data is not valid");
-			//System.exit(-1);
 			return null;
 		}
 		D_Peer peer = dialog.getDPeer();
 		_data[0] = data;
 		return peer;
 	}
-
 	@Override
 	public void update_broadcast_client_sockets(Long msg_cnter) {
 		Application_GUI.eventQueue_invokeLater(new DDP2P_ServiceRunnable("BroadcastClient:setText1", false, false, msg_cnter){
-			// may be set daemon
 			public void _run() {
 				if (ctx != null)
 					MainFrame.client_sockets_cntr.setText(""+ctx);
@@ -388,16 +338,13 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 			}
 		});
 	}
-
 	@Override
 	public void inform_arrival(Object obj, D_Peer source) {
-		// TODO Auto-generated method stub
 		if (obj == null) {
 			String from = "";
 			if (source != null) from = source.getName()+" <"+source.getEmail()+">";
 			System.out.println("GUI_Swing: inform_arrival: from "+from+" new\n"+obj);			
 		}
-		
 		if (obj instanceof D_Peer) inform_arrival_peer((D_Peer) obj, source);
 		else if (obj instanceof D_Organization) inform_arrival_org((D_Organization) obj, source);
 		else if (obj instanceof D_Constituent) inform_arrival_cons((D_Constituent) obj, source);
@@ -442,7 +389,6 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 	public void inform_arrival_news(D_News obj, D_Peer source) {
 		System.out.println("GUI_Swing: IAP:news GIDH="+obj.global_news_ID+" tit="+obj.getTitle());
 	}
-
 	long lastPlayThanks;
 	@Override
 	public boolean playThanks(){
@@ -450,7 +396,6 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 		long crt = Util.CalendargetInstance().getTimeInMillis();
 		if ((crt - lastPlayThanks) < 10000) return false;
 		lastPlayThanks =  Util.CalendargetInstance().getTimeInMillis();
-		
 		String wav_file = Application.CURRENT_SCRIPTS_BASE_DIR()+Application.WIRELESS_THANKS;
 		int EXTERNAL_BUFFER_SIZE = 524288;
 		File soundFile = new File(wav_file);
@@ -458,22 +403,15 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 		try
 		{audioInputStream = AudioSystem.getAudioInputStream(soundFile);}
 		catch(Exception e) {e.printStackTrace();}
-
 		AudioFormat format = audioInputStream.getFormat();
 		SourceDataLine auline = null;
-		//Describe a desired line
 		DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
 		try
 		{
 			auline = (SourceDataLine) AudioSystem.getLine(info);
-			//Opens the line with the specified format,
-			//causing the line to acquire any required
-			//system resources and become operational.
 			auline.open(format);
 		}
 		catch(Exception e) {e.printStackTrace();}
-
-		//Allows a line to engage in data I/O
 		auline.start();
 		int nBytesRead = 0;
 		byte[] abData = new byte[EXTERNAL_BUFFER_SIZE];
@@ -483,8 +421,6 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 				nBytesRead = audioInputStream.read(abData, 0, abData.length);
 				if (nBytesRead >= 0)
 				{
-					//Writes audio data to the mixer via this source data line
-					//NOTE : A mixer is an audio device with one or more lines
 					auline.write(abData, 0, nBytesRead);
 				}
 			}
@@ -492,23 +428,16 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 		catch(Exception e) {e.printStackTrace();}
 		finally
 		{
-			//Drains queued data from the line
-			//by continuing data I/O until the
-			//data line's internal buffer has been emptied
 			auline.drain();
-			//Closes the line, indicating that any system
-			//resources in use by the line can be released
 			auline.close();
 		}		
 		return true;
 	}
-
 	@Override
 	public SK getCrtIdentityKeys() {
 		net.ddp2p.widgets.identities.IdentityBranch ib = ((net.ddp2p.widgets.identities.IdentityBranch)Identity.current_id_branch);
 		return ib.getKeys();
 	}
-
 	@Override
 	public Cipher getCrtIdentityCipher() {
 		net.ddp2p.widgets.identities.IdentityBranch ib = ((net.ddp2p.widgets.identities.IdentityBranch)Identity.current_id_branch);
@@ -517,22 +446,16 @@ public class GUI_Swing implements Vendor_GUI_Dialogs {
 }
 class Html2Text extends HTMLEditorKit.ParserCallback {
  StringBuffer s;
-
  public Html2Text() {}
-
  public void parse(Reader in) throws IOException {
    s = new StringBuffer();
    ParserDelegator delegator = new ParserDelegator();
-   // the third parameter is TRUE to ignore charset directive
    delegator.parse(in, this, Boolean.TRUE);
  }
-
  public void handleText(char[] text, int pos) {
-	 //System.out.println("pos: "+pos);
 	 s.append(" ");
 	 s.append(text);
  }
-
  public String getText() {
    return s.toString();
  }

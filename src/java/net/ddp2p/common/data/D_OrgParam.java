@@ -1,28 +1,21 @@
 package net.ddp2p.common.data;
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -34,51 +27,29 @@ import net.ddp2p.common.hds.ASNSyncRequest;
 import net.ddp2p.common.table.field_extra;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
 public
 class D_OrgParam extends ASNObj{
-	
 	private static final String V0 = "0";
 	static final boolean DEBUG = false;
 	public long field_LID;
-	public String label; //UTF8
-	public String label_lang; //Printa
+	public String label; 
+	public String label_lang; 
 	public boolean can_be_provided_later;
-	public boolean certificated; // redundant: all field are now certified
+	public boolean certificated; 
 	public int entry_size;
 	public int partNeigh;
 	public boolean required;
-	public String default_value; //UTF8
-	public String default_value_lang; // Printa
-	public String[] list_of_values; //UTF
-	public String list_of_values_lang; // Print
-	public String tip; //UTF
-	public String tip_lang;//Print
+	public String default_value; 
+	public String default_value_lang; 
+	public String[] list_of_values; 
+	public String list_of_values_lang; 
+	public String tip; 
+	public String tip_lang;
 	public BigInteger[] oid;
 	public String global_field_extra_ID;
 	public String version = V0;
 	public String tmp;
 	public boolean dirty;
-	/*
-	public D_OrgParam(D_FieldExtra e){
-		can_be_provided_later = e.can_be_provided_later;
-		certificated = e.certificated;
-		default_value = e.default_val;
-		default_value_lang = e.default_value_lang;
-		entry_size = e.entry_size;
-		global_field_extra_ID = e.global_field_extra_ID;
-		label=e.label;
-		label_lang=e.label_lang;
-		list_of_values=e.list_of_values;
-		list_of_values_lang = getOneLanguage(e.list_of_values_lang);
-		oid=e.oid;
-		partNeigh=e.partNeigh;
-		required=e.required;
-		tip = e.tip;
-		tip_lang = e.tip_lang;
-	}
-	*/
-
 	public D_OrgParam() {}
 	public D_OrgParam(String local_fe_ID) throws P2PDDSQLException {
 		String psql = "SELECT "+net.ddp2p.common.table.field_extra.org_field_extra +
@@ -122,13 +93,11 @@ class D_OrgParam extends ASNObj{
 			op.tmp = Util.getString(fe.get(net.ddp2p.common.table.field_extra.OPARAM_TMP));
 			return op;
 	}
-
 	private String getOneLanguage(String[] list_of_values_lang2) {
 		if(list_of_values_lang2==null) return "en";
 		if(list_of_values_lang2.length==0) return "en";
 		return list_of_values_lang2[0];
 	}
-
 	public String toString() {
 		return "OrgParam: [["+
 		";\n version="+version+
@@ -151,17 +120,14 @@ class D_OrgParam extends ASNObj{
 		"]]";
 	}
 	public D_OrgParam instance() {return new D_OrgParam();}
-	
 	public Encoder getEncoder() {
 		return getEncoder(new ArrayList<String>());
 	}
 	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {
 		if(ASNSyncRequest.DEBUG)System.out.println("Encoding OrgParam: "+this);
 		Encoder enc = new Encoder().initSequence();
-
 		String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, global_field_extra_ID);		
 		enc.addToSequence(new Encoder(repl_GID));
-		
 		enc.addToSequence(new Encoder(can_be_provided_later));
 		enc.addToSequence(new Encoder(certificated));
 		enc.addToSequence(new Encoder(entry_size));
@@ -214,7 +180,6 @@ class D_OrgParam extends ASNObj{
 	 * @return
 	 */
 	public String makeGID(){
-		//return Util.getOrgFieldExtraID(orgGID, label);
 		return makeGID(label, list_of_values, version );
 	}
 	/**
@@ -225,9 +190,7 @@ class D_OrgParam extends ASNObj{
 	 * @return
 	 */
 	public static String makeGID(
-			//String orgGID,
 			String label, String[] list_of_values, String version){
-		//return Util.getOrgFieldExtraID(orgGID, label);
 		Encoder enc;
 		if (version != null) {
 			enc = new Encoder().initSequence();

@@ -1,12 +1,10 @@
 package net.ddp2p.common.hds;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
-
 public class DIR_Terms_Requested extends ASNObj {
 	public int version=0;
 	public String topic;
@@ -27,7 +25,6 @@ public class DIR_Terms_Requested extends ASNObj {
 		payment = null;
 		topic = null;
 		plaintext = 0;
-		//services_available;
 	}
 	@Override
 	public ASNObj instance() throws CloneNotSupportedException{return (ASNObj) new DIR_Terms_Requested();}

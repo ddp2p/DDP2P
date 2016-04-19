@@ -1,42 +1,31 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
  package net.ddp2p.widgets.identities;
-
 import javax.swing.*;
 import javax.swing.tree.*;
 import javax.swing.event.*;
-
 import java.awt.Component;
 import java.awt.event.*;
 import java.awt.*;
 import java.util.*;
-
 import static net.ddp2p.common.util.Util.__;
-
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
-
 import net.ddp2p.widgets.app.Util_GUI;
-
 class MyIdentityData{
 	String OID;
 	String value;
@@ -47,12 +36,11 @@ class MyIdentityData{
 		return "MyIdentityData: OID="+OID+" value="+value+" certificate="+certificate;
 	}
 }
-
 class MyIdentityTreeCellEditor extends AbstractCellEditor
 								implements TreeCellEditor, ActionListener {
 	OIDs oid_items[] = new OIDs[0];
-	MyIdentityData data=new MyIdentityData(); // for leafs
-	String identity; // for branches
+	MyIdentityData data=new MyIdentityData(); 
+	String identity; 
 	JTree tree;
 	MyIdentitiesModel model;
 	JDialog dialog;
@@ -110,7 +98,6 @@ class MyIdentityTreeCellEditor extends AbstractCellEditor
 		dialog.setLayout(new GridBagLayout());
 		c.gridx=0; c.gridy=0;
 		dialog.add(panel,c);
-		//layout.addLayoutComponent(name, comp)
 		c.gridx=0; c.gridy=0;
 		panel.add(new JLabel(__("Property value")),c);
 		c.gridx=1; c.gridy=0; c.fill = GridBagConstraints.HORIZONTAL;
@@ -143,8 +130,6 @@ class MyIdentityTreeCellEditor extends AbstractCellEditor
 	    		data.OID_name = obj.OID;
 	    		data.explain = obj.explanation;
 	    		data.certificate = null;
-				
-				//button.doClick();
 			}
 		});
 		dialog.setModal(true);
@@ -154,7 +139,6 @@ class MyIdentityTreeCellEditor extends AbstractCellEditor
 		identityEditor.addActionListener(this);
 		identityEditor.setActionCommand(EDIT_ID);
 	}
-	// Set an initial value for the editor.
 	public
 	Component getTreeCellEditorComponent(JTree tree,
             Object value,
@@ -181,18 +165,8 @@ class MyIdentityTreeCellEditor extends AbstractCellEditor
 		}
 		return null;
 	}
-	//Implement the one CellEditor method that AbstractCellEditor doesn't.
     public Object getCellEditorValue() {
 		if(in_leaf){
-			/*
-           	if(DEBUG) System.err.println("getCellValue leaf");
-	   		data.value = valueEditor.getText();
-	   		OIDs obj=((OIDs)oidSelector.getSelectedItem());
-    		data.OID = obj.OID;
-    		data.OID_name = obj.OID_name;
-    		data.explain = obj.explanation; 
-    		data.certificate = null;
-    		*/			
 		}else{
 			if(DEBUG) System.err.println("getCellValue branch");
 			data.value = identityEditor.getText();
@@ -210,22 +184,15 @@ class MyIdentityTreeCellEditor extends AbstractCellEditor
     			oidSelector.setSelectedItem(oid_items[k]);
     		}
     		dialog.setVisible(true);
-    		
     		fireEditingStopped();
     	} else if (EDIT_ID.equals(e.getActionCommand())) {
     		if(DEBUG) System.err.println("EDIT_ID actionPerformed: "+e+" data="+data);
-    		//data.value = valueEditor.getText();
-    		//data.OID = oidSelector.getSelectedItem().toString();
-    		//data.certificate = null;
-    		//identityEditor.setText(data.value);
-    		//data.value = identityEditor.getText();
     		fireEditingStopped();
     	}
     }
 	public
      boolean 	isCellEditable(EventObject anEvent) {
 		if(DEBUG) System.err.println("isCellEditable: "+anEvent);
-		//     Asks the editor if it can start editing using anEvent.
       	if (anEvent instanceof MouseEvent) {
       		MouseEvent mouseEvent = (MouseEvent)anEvent;
       		if(mouseEvent.getClickCount() == 2) return true;
@@ -234,26 +201,6 @@ class MyIdentityTreeCellEditor extends AbstractCellEditor
      }
 	public
      boolean 	shouldSelectCell(EventObject anEvent) {
-		// Returns true if the editing cell should be selected, false otherwise.
 		return false;
      }
-	/*
-	public
-	 void 	addCellEditorListener(CellEditorListener l) {
-		// Adds a listener to the list that's notified when the editor stops, or cancels editing.
-	 }
-	public
-     void 	cancelCellEditing() {
-		// Tells the editor to cancel editing and not accept any partially edited value.
-     }
-	public
-     void 	removeCellEditorListener(CellEditorListener l) {
-    	 //     Removes a listener from the list that's notified
-     }
-	public
-     boolean 	stopCellEditing() {
-		//Tells the editor to stop editing and accept any partially edited value as the value of the editor.
-		return false;
-	}
-	*/
 }

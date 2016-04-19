@@ -1,24 +1,18 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.java.db;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -28,38 +22,29 @@ import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Pattern;
-
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.table.SQLITE_MASTER;
 import net.ddp2p.common.util.DBAlter;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
 public class DBAlter_Implementation_JDBC{
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	
 	private static final int SEL_MASTER_TBL_NAME = 0;
-
-	public static String[] __extractDDL(File database_file){//
+	public static String[] __extractDDL(File database_file){
 		ArrayList<String> array=new ArrayList<String>();
 		ArrayList<String> result=new ArrayList<String>();
-	
 		try {
 			DBInterface connection = new DBInterface(database_file);
-			ArrayList<ArrayList<Object>> tables = //connection.select("SELECT * FROM SQLITE_MASTER", new String[]{});
+			ArrayList<ArrayList<Object>> tables = 
 					connection.select("SELECT "+SQLITE_MASTER.tbl_name+" FROM "+SQLITE_MASTER.TNAME+" WHERE "+SQLITE_MASTER.type+"=?;",
 							new String[]{SQLITE_MASTER.TYPE_table});
-			
 			for (int k = 0; k < tables.size(); k ++) {
 				ArrayList<Object> table = tables.get(k);
-				//if(!TABLE.equals(Util.getString(table.get(COL_MASTER_TYPE)))) continue;
-				//String id = Util.getString(table.get(COL_MASTER_TBL_NAME));
 				String id = Util.getString(table.get(SEL_MASTER_TBL_NAME));
 				array.add(id);
 			}
-	
 			for (int j = 0; j < array.size(); j ++) {
 				String tbName = array.get(j);
 				String s = tbName + " " + tbName + " ";
@@ -76,7 +61,6 @@ public class DBAlter_Implementation_JDBC{
 		}
 		return result.toArray(new String[0]);
 	}
-	
 	/**
 	 * Returns false on error.
 	 * 
@@ -90,41 +74,23 @@ public class DBAlter_Implementation_JDBC{
 	 * @throws IOException
 	 * @throws P2PDDSQLException
 	 */
-	public static boolean _copyData(File database_old, File database_new, BufferedReader DDL, String[]_DDL) throws IOException, P2PDDSQLException{//
+	public static boolean _copyData(File database_old, File database_new, BufferedReader DDL, String[]_DDL) throws IOException, P2PDDSQLException{
 		if(_DEBUG) System.out.println("DBAlter:_copyData_JDBC");
 		DB_Implementation_JDBC_SQLite conn_src = null;
 		DB_Implementation_JDBC_SQLite conn_dst = null;
 		try { 
-			//DBInterface conn_src = new DBInterface(database_old);
 			/**
 			 * Try to open old database. If not existing: fail!
 			 */
 			conn_src = new DB_Implementation_JDBC_SQLite();
 			conn_src.open(database_old.getAbsolutePath());
 			conn_src.open_and_keep(true);
-			
 			/**
 			 * Tries to open new database, If not existing: fail!s
 			 */
 			DBInterface db_dst = new DBInterface(database_new);
 			conn_dst = (DB_Implementation_JDBC_SQLite)db_dst.getImplementation();
 			conn_dst.open_and_keep(true);
-//			try{
-//				conn_src._query("BEGIN IMMEDIATE", new String[]{}, DEBUG);
-//			}catch(Exception e){
-//				e.printStackTrace();
-//				System.err.println("Trying:"+database_old);
-//				conn_src.dispose_and_keep();
-//				return false;
-//			}
-//			try{
-//				conn_dst.select("BEGIN IMMEDIATE", new String[]{});
-//			}catch(Exception e){
-//				e.printStackTrace();
-//				System.err.println("Trying:"+database_new);
-//				return false;
-//			}
-
 			PreparedStatement st;
 			/**
 			 * Parse the DDL from the received bufferReader or array of Strings.
@@ -147,31 +113,24 @@ public class DBAlter_Implementation_JDBC{
 				}
 				table_DDL = table_DDL.trim();
 				if (table_DDL.length() == 0) {
-					continue; // skip empty lines
+					continue; 
 				}
-				
 				/**
 				 * split the DDL line into fields
 				 */
 				String []table__DDL = Util.trimmed(table_DDL.split(Pattern.quote(" ")));
-				
 				if(_DEBUG) System.out.println("DBAlter:_copyData_JDBC: next table DDL= "+table__DDL[0]);
-				
 				/**
 				 * Select all attributes, in positional order, from the old table (in table__DDL[0]).
 				 */
 	    		st = conn_src.conn.prepareStatement("SELECT * FROM "+table__DDL[0]+";");
-				//ArrayList<ArrayList<Object>> olddb_all = conn_src.select("SELECT * FROM ?;", new String[]{table__DDL[0]});
-
 	    		ResultSet rs = st.executeQuery();
     			ResultSetMetaData md = rs.getMetaData();
     			int cols_src = md.getColumnCount(); 
-
     			/**
     			 * Number of attributes inserted from old. used to detect number of columns in old (elements in array of parameters to insert).
     			 * Could be taken inside next loop (was there since the count was computed from result of query)
     			 */
-				//int attributes_count_insert = olddb.columnCount();
     			int attributes_count_insert = table__DDL.length - 2;
     			if (cols_src != attributes_count_insert) {
     				System.out.println("DB_Implement_JDBC: _copy: different nb of attributes in source and DDL: "+cols_src+" vs "+ attributes_count_insert);
@@ -181,10 +140,8 @@ public class DBAlter_Implementation_JDBC{
     			 * Using the number in DDL, since that is used in insert!
     			 */
     			String[] values_old = new String[attributes_count_insert];
-    			
     			while (rs.next()) {
     				if(_DEBUG) System.out.print(rs.getRow()+" ");
-	
 					/**
 					 * Also preparing the "values_old" array, to be passed as parameter to insert
 					 */
@@ -193,11 +150,9 @@ public class DBAlter_Implementation_JDBC{
     						System.out.println("DB_Implement_JDBC: _copy: different nb of attributes in source and DDL. Skip: "+j+" -> "+rs.getString(j));
     						continue;
     					}
-    					//for(int j=0; j<attributes_count_insert; j++){
-    					values_old[j-1] = rs.getString(j); // Util.getString(olddb.get(j));
+    					values_old[j-1] = rs.getString(j); 
     				}
     				String[] attr_new = Arrays.copyOfRange(table__DDL, 2, table__DDL.length);
-					
 					/**
 					 * Perform the actual insert
 					 */
@@ -228,8 +183,6 @@ public class DBAlter_Implementation_JDBC{
 					DD.getExactAppText(conn_src, DD.TRUSTED_UPDATES_GID), DEBUG);
 			DD.setAppText(db_dst, DD.APP_LISTING_DIRECTORIES,
 					DD.getExactAppText(conn_src, DD.APP_LISTING_DIRECTORIES), DEBUG);
-			
-			// update peer since this table is skipped...
 			DD.setAppText(db_dst, DD.APP_my_global_peer_ID,
 					DD.getExactAppText(conn_src, DD.APP_my_global_peer_ID), DEBUG);
 			DD.setAppText(db_dst, DD.APP_my_global_peer_ID_hash,
@@ -238,11 +191,8 @@ public class DBAlter_Implementation_JDBC{
 				conn_src._query("COMMIT", new String[]{}, DEBUG);
 				conn_dst._query("COMMIT", new String[]{}, DEBUG);
 			} catch(Exception e){}
-			//conn_src.exec("COMMIT");
-			//conn_dst.exec("COMMIT");
-			conn_src.dispose_and_keep();//.dispose();
+			conn_src.dispose_and_keep();
 			conn_dst.dispose_and_keep();
-			//conn_dst.dispose();
 		} catch(Exception e) {
 			if (conn_src != null) conn_src.dispose_and_keep();
 			if (conn_dst != null) conn_dst.dispose_and_keep();

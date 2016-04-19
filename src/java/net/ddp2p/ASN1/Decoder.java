@@ -1,22 +1,17 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
  package net.ddp2p.ASN1;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.TimeZone;
- 
 public
 class Decoder {
 	public static final boolean DEBUG = false;
@@ -44,11 +38,9 @@ class Decoder {
 	 * The length of the current component being decoded, after which null is returned even if "data" has more data
 	 */
 	int length;
-	
 	public String toString() {
 		byte[] val=new byte[length];
 		Encoder.copyBytes(val, 0, data, length, offset);
-
 		return ASN1_Util.byteToHex(val, " ");
 	}
 	/**
@@ -144,8 +136,6 @@ class Decoder {
 			return new BigInteger(""+tagVal());
 		}
 		assert(this.tagVal() == 0x1f);
-		//byte[] tag = new byte[len -1];
-		//BigInteger bn128 = ASN1_Util.BN128;
 		return ASN1_Util.fromBase128(data, offset + 1, offset + length);
 	}
 	public Decoder removeExplicitASN1Tag() throws ASN1DecoderFail {
@@ -162,39 +152,28 @@ class Decoder {
 		return len;
 	}
 	public int contentLength() {
-		//System.err.println("in ContentLength: length="+length);
 		if (length < 2) {
-			//System.err.println("in ContentLength: 2>length="+length);
 			return 0;
 		}
 		int tlen = typeLen();
-		//System.err.println("in ContentLength: tlen="+tlen);
 		if (tlen < 1) {
 			return 0;
 		}
 		if (ASN1_Util.getUnsignedShort(data[offset+tlen]) < 128) {
-			//System.err.println("in ContentLength: len_len=="+data[offset+tlen]+" off="+offset);
 			return data[offset+tlen];
 		}
-		//System.err.println("Len_len="+data[offset+tlen]+" gs="+gs(data[offset+tlen]));
 		int len_len=ASN1_Util.getUnsignedShort(data[offset+tlen])-128;
-		//System.err.println("actual Len_len="+len_len);
 		if (length < len_len+tlen+1){
-			//System.err.println("in ContentLength: length<1_tlen+len_len="+len_len);
 			return 0;
 		}
 		byte[] len=new byte[len_len];
 		Encoder.copyBytes(len, 0, data, len_len, offset+tlen+1);
-		//System.err.println("len_bytes:"+ASN1_Util.byteToHex(len, " "));
 		BigInteger bi = new BigInteger(len);
 		int ilen = bi.intValue();
-		//System.err.println("done ContentLength: "+ilen);
 		return ilen;
 	}
 	public int lenLen(){
-		//System.err.println("lenLen:"+ASN1_Util.byteToHex(data, offset, 5, " "));
 		int tlen = typeLen();
-		//System.err.println(tlen+"=tlen +length byte="+data[offset+tlen]);
 		if(length<2) return 0;
 		if(ASN1_Util.getUnsignedShort(data[offset+tlen])<128) return 1;
 		return 1+ASN1_Util.getUnsignedShort(data[offset+tlen])-128;
@@ -208,7 +187,7 @@ class Decoder {
 	 */
 	public int objectLen(){
 		int type_len = typeLen();
-		if ((type_len == 0) || (type_len>=length)) return -1; // insufficient to find
+		if ((type_len == 0) || (type_len>=length)) return -1; 
 		int len_len = lenLen();
 		if((len_len==0) || (len_len+type_len>length)) return -(type_len+len_len+1);
 		int content_len = contentLength();
@@ -244,10 +223,8 @@ class Decoder {
 			}
 			if (val == null) {
 				if (DEBUG_TODO) System.out.println("Decoder: transient versions!");
-				//if(_DEBUG)ASN1_Util.printCallPath("Who?");
 				Calendar c = ASN1_Util.CalendargetInstance();
 				c.setTimeInMillis(pos+Encoder.CALENDAR_DISPLACEMENT);
-				//val = DD.EMPTYDATE;
 				val = Encoder.getGeneralizedTime(c);
 			}
 			al.put(k, val);
@@ -335,17 +312,14 @@ class Decoder {
 		int tlen = typeLen();
 		int llen = lenLen();
 		int cLen = contentLength();
-		//System.out.println("Decoder: lens="+tlen+"+"+llen+"+"+cLen+"<="+length +" off="+offset);
 		int new_len = tlen + llen + cLen;
 		if (new_len > length || new_len < 0) throw new ASNLenRuntimeException("ASN1:Decoding:Invalid object length ["+new_len+"]: Too long given available data:"+length);
 		int old_offset = offset;
 		if (extract) {
 			offset += new_len;
 			length -= new_len;
-			//System.out.println("Decoder: remains lens="+tlen+"+"+llen+"+"+cLen+"<="+length +" off="+offset);
 			if (offset < 0 || length < 0) throw new ASNLenRuntimeException("Arrive at negative offset after extracting " + new_len+"/"+length);
 		}
-		//System.out.println("Decoder: extracts lens="+new_len+"<="+length +" off="+old_offset+"/"+data.length);
 		return new Decoder(data, old_offset, new_len);
 	}
 	/**
@@ -381,7 +355,6 @@ class Decoder {
 		new_len = contentLength();
 		if (DEBUG) System.err.println("getContent: new_Length: "+new_len);
 		int new_off = typeLen()+lenLen();
-		//System.err.println("getContent: new offset: "+new_off);
 		if(new_off>length) throw new ASN1DecoderFail("Content "+new_off+":"+new_len+" exceeds container "+length);
 		if(new_off<0) throw new ASN1DecoderFail("Content "+new_off+":"+new_len+" has negative offset in container length "+length);
 		if(new_off+new_len>length) throw new ASN1DecoderFail("Content "+new_off+":"+new_len+" exceeds container "+length);
@@ -391,7 +364,6 @@ class Decoder {
 	}
 	public boolean getBoolean() {
 		if(length<=0) throw new ASNLenRuntimeException("Boolean length");
-		//assert
 		if (!(data[offset]==Encoder.TAG_BOOLEAN))
 			ASN1_Util.printCallPathTop("Encoder: getBoolean: Failed Encoder:"+getTypeByte());
 		assert(data[offset+1]==1);
@@ -400,15 +372,12 @@ class Decoder {
 	public boolean getBoolean(byte type) throws ASN1DecoderFail {
 		if(length<=0) throw new ASNLenRuntimeException("Boolean length");
 		if(data[offset]!=type) throw new ASN1DecoderFail("Wrong boolean type");
-		//assert(data[offset]==type);
 		assert(data[offset+1]==1);
 		return data[offset+2] != 0;
 	}
 	public BigInteger getInteger() {
-		//boolean DEBUG = true;
 		try {
 			if (DEBUG) System.out.println("Decoder: getInteger: type="+data[offset]+" vs="+Encoder.TAG_INTEGER);
-			//assert
 			if (! (data[offset] == Encoder.TAG_INTEGER)) {
 				ASN1_Util.printCallPathTop("Encoder: getInteger: Failed Encoder:"+getTypeByte());
 			}
@@ -435,7 +404,6 @@ class Decoder {
 	 * @return
 	 */
 	public byte[] getBytes() {
-		//assert
 		if (!((data[offset]==Encoder.TAG_OCTET_STRING)||
 				(data[offset]==Encoder.TAG_BIT_STRING)||
 				(data[offset]==Encoder.TAG_NULL))){
@@ -483,7 +451,7 @@ class Decoder {
 			value[k]=0;
 			while (b_value[crt] < 0) {
 				value[k] <<= 7;
-				value[k] += b_value[crt++]+128;//get_u32(b_value[crt++])-128;
+				value[k] += b_value[crt++]+128;
 			}
 			value[k] <<= 7;
 			value[k] += b_value[crt++];
@@ -507,8 +475,6 @@ class Decoder {
 		value[0] = new BigInteger(""+value0);
 		value[1] = new BigInteger(""+value1);
 		for (int k = 2, crt = 1; k < value.length; k ++) {
-			//value[k] = ASN1_Util.fromBase128(b_value, k, this.offset + this.length);
-			
 			value[k] = BigInteger.ZERO;
 			while (b_value[crt] < 0) {
 				value[k] = value[k].shiftLeft(7);
@@ -517,7 +483,6 @@ class Decoder {
 			value[k] = value[k].shiftLeft(7);
 			value[k] = value[k].or(new BigInteger("" + (b_value[crt ++]))); //get_u32(b_value[crt++]);
 			continue;
-			
 		}
 		return value;
 	}
@@ -537,13 +502,10 @@ class Decoder {
 	}
 	public String getString() {
 		if (getTypeByte()==Encoder.TAG_NULL) return null;
-		
-		//assert
 		if(!((data[offset]==Encoder.TAG_IA5String)||
 				(data[offset]==Encoder.TAG_UTF8String)||
 				(data[offset]==Encoder.TAG_PrintableString)))
 			ASN1_Util.printCallPathTop("Encoder: getString: Failed Encoder:String type:"+getTypeByte());
-		
 		byte[] value = new byte[contentLength()];
 		Encoder.copyBytes(value, 0, data, contentLength(),offset+typeLen()+lenLen());
 		try {
@@ -587,7 +549,6 @@ class Decoder {
 		byte[] value = new byte[cLength];
 		Encoder.copyBytes(value, 0, data, contentLength(),offset+typeLen()+lenLen());
 		String str = new String(value);
-		//Calendar result=GregorianCalender(str);
 		return str;
 	}
 	public String getGeneralizedTime(byte type) throws ASN1DecoderFail {
@@ -629,7 +590,6 @@ class Decoder {
 	 * @throws IOException
 	 */
 	public boolean fetchAll(InputStream is) throws IOException {
-		//Decoder dec = new Decoder(sr,0,msglen);
 		while(true) {
 			int asrlen = objectLen();
 			if(DEBUG)System.out.println("Object size="+asrlen+"; Buffer size="+data.length+"; Current size="+length);
@@ -643,7 +603,6 @@ class Decoder {
 				int inc = is.read(data, length, data.length-length);
 				if(inc == 0) return false;
 				length += inc;
-				//dec = new Decoder(data,0,length);
 				continue;
 			}
 			break;
@@ -696,11 +655,7 @@ class Decoder {
 			if (val == null) break;
 			ints.add(val.getInteger());
 		}
-//		BigInteger result[] = BigInteger int[ints.size()];
-//		for(int k = 0; k<ints.size(); k++) {
-//			result[k] = ints.get(k).intValue();
-//		}
-		return ints.toArray(new BigInteger[0]); //result;
+		return ints.toArray(new BigInteger[0]); 
 	}
 	public float[] getFloatsArray() {
 		if (this.getTypeByte() == Encoder.TAG_NULL) return null;
@@ -723,19 +678,14 @@ class Decoder {
 		}
 		return result;
 	}
-	// Test by Andreas Bjoru
-	//@Test
 	public static void encodeDecodeCalendar() throws ASN1DecoderFail {
 	        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-	        
 	        Encoder enc = new Encoder(cal);
 	        Decoder dec = new Decoder(enc.getBytes());
-	        Calendar res = dec.getFirstObject(true).getGeneralizedTimeCalenderAnyType();//.getGeneralizedTimeCalendar();
-
+	        Calendar res = dec.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
 	        int m1 = cal.get(Calendar.MONTH);
 	        int m2 = res.get(Calendar.MONTH);
 	        System.out.println("Compared: "+m1+" vs "+m2);
-	        //Assert.assertEquals(m1, m2);
 	}
 	/**
 	 * compares the parameter tag with the result of getTypeByte() when there is a next object (peeked)
@@ -761,29 +711,21 @@ class Decoder {
 		byte msg[];
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence (new Encoder(new BigInteger("1")));
-		
 		msg = enc.getBytes();
 		if (DEBUG) System.out.println("BN: "+ASN1_Util.byteToHex(msg));
-
 		enc.setASN1Type(Encoder.CLASS_CONTEXT, Encoder.PC_CONSTRUCTED, new BigInteger(nb,16));
-		
 		msg = enc.getBytes();
 		if (DEBUG) System.out.println("BN: "+ASN1_Util.byteToHex(msg));
-		
 		Decoder dec = new Decoder(msg);
 		System.out.println("BN: decoder "+dec);
-
 		System.out.println("BN: decoder tag: "+dec.getTagValueBN());
-		
 		Decoder d = dec.getContent();
 		System.out.println("BN: dec con "+d);
-
 		System.out.println("BN: integer "+d.getFirstObject(true).getInteger());
 	}
     public static void main(String[]args) {
     	try {
     		encodeDecodeBNTAG(args[0]);
-			//encodeDecodeCalendar();
 		} catch (ASN1DecoderFail e) {
 			e.printStackTrace();
 		}

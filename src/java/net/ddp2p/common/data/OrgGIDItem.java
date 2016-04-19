@@ -1,5 +1,4 @@
 package net.ddp2p.common.data;
-
 public class OrgGIDItem {
 	public String gid;
 	public String hash;

@@ -1,30 +1,23 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Khalid Alhamed and Marius Silaghi
 		Author: Khalid Alhamed and Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.data;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
-
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
@@ -33,21 +26,17 @@ import net.ddp2p.common.util.DDP2P_DoubleLinkedList_Node;
 import net.ddp2p.common.util.DDP2P_DoubleLinkedList_Node_Payload;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
 public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_Payload<D_RecommendationOfTester> {
-
 	public static boolean DEBUG = false;
-	
-	public long recommendationID; //the pseudokey (Primary Key)
-	public long senderPeerLID;// source_Peer local id
-	public long testerLID;//tester local id
-	public String weight;   // score
-	public float _weight;   // score
-	public String address; //address where the tester can be contacted
-	public Calendar creation_date; //the timestamp of the given testers rating
-	public Calendar arrival_date; //the timestamp of the given testers rating
-	public byte[] signature; //only for one record at a time
-	
+	public long recommendationID; 
+	public long senderPeerLID;
+	public long testerLID;
+	public String weight;   
+	public float _weight;   
+	public String address; 
+	public Calendar creation_date; 
+	public Calendar arrival_date; 
+	public byte[] signature; 
 	public String toString() {
 		return this.toTXT();
 	}
@@ -65,7 +54,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		try {
 			init(peer_LID, tester_LID);
 		} catch (Exception e) {
-			//e.printStackTrace();
 			if (create) {
 				if (_DEBUG) System.out.println("D_RecommendationOfTester: <init>: create gid="+peer_LID + "," + tester_LID);
 				initNew(peer_LID, tester_LID);
@@ -79,11 +67,9 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		try {
 			init(recommendation_LID);
 		} catch (Exception e) {
-			//e.printStackTrace();
 			throw new P2PDDSQLException(e.getLocalizedMessage());
 		}
 	}
-	
 	private static final String sql_load_all_senderPeerIDs_from_RecOT = 
 			"SELECT DISTINCT "+net.ddp2p.common.table.recommendation_of_tester.senderPeerLID 
 		  + " FROM "+net.ddp2p.common.table.recommendation_of_tester.TNAME+" ;";
@@ -102,19 +88,15 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			e.printStackTrace();
 			return result;
 		}
-		//if (obj.size() <= 0) throw new  Exception("D_RecommendationOfTester: retrieveAllTestersLIDs:");
-		//init(obj.get(0));
 		for(int i=0; i<obj.size(); i++)
 			result.add(Util.lval(obj.get(i).get(SELECT_PEER_LID), -1));
 		if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllRecommendationSenderPeerLID: got="+result.size());//result);
 		return result;
 	}
-	
 	private static final String sql_load_all_testersIDs_from_RecOT = 
 			"SELECT DISTINCT "+net.ddp2p.common.table.recommendation_of_tester.testerLID 
 		  + " FROM "+net.ddp2p.common.table.recommendation_of_tester.TNAME+" ;";
 	final static int SELECT_TESTER_LID = 0;
-	
 	/**
 	 * Returns all recommenderID. (Later one by one get them from cache with getByLID())
 	 * 
@@ -129,8 +111,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			e.printStackTrace();
 			return result;
 		}
-		//if (obj.size() <= 0) throw new  Exception("D_RecommendationOfTester: retrieveAllTestersLIDs:");
-		//init(obj.get(0));
 		for(int i=0; i<obj.size(); i++)
 			result.add(Util.lval(obj.get(i).get(SELECT_TESTER_LID), -1));
 		if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllRecommendationTestersLID: got="+result.size());//result);
@@ -140,7 +120,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			"SELECT "+net.ddp2p.common.table.recommendation_of_tester.recommendationID 
 			+ " FROM "+net.ddp2p.common.table.recommendation_of_tester.TNAME+" ;";
 	final static int SELECT_ID = 0;
-	
 	/**
 	 * Returns all recommenderID. (Later one by one get them from cache with getByLID())
 	 * 
@@ -155,8 +134,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			e.printStackTrace();
 			return result;
 		}
-		//if (obj.size() <= 0) throw new  Exception("D_RecommendationOfTester: retrieveAllTestersLIDs:");
-		//init(obj.get(0));
 		for(int i=0; i<obj.size(); i++)
 			result.add(Util.lval(obj.get(i).get(SELECT_ID), -1));
 		if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllTestersLIDs: got="+result.size());//result);
@@ -167,7 +144,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			+ " FROM "+net.ddp2p.common.table.recommendation_of_tester.TNAME+
 			  " WHERE "+net.ddp2p.common.table.recommendation_of_tester.senderPeerLID+"=?;";
 	static final int SELECT_ID_BYSENDER = 0;
-	
 	public static ArrayList<Long> retrieveAllRecommendationTestersLIDs(String pLID) {
 		ArrayList<Long> result = new ArrayList<Long>();
 		ArrayList<ArrayList<Object>> obj;
@@ -177,22 +153,17 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			e.printStackTrace();
 			return result;
 		}
-		//if (obj.size() <= 0) throw new  Exception("D_RecommendationOfTester: retrieveAllTestersLIDs:");
-		//init(obj.get(0));
 		if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllTestersLIDs: got="+obj.size());
 		for(int i = 0; i < obj.size(); i ++)
 			result.add(Util.lval(obj.get(i).get(SELECT_ID_BYSENDER), -1));
-		//if(DEBUG) System.out.println("D_RecommendationOfTester: retrieveAllTestersLIDs: got="+result.size());//result);
 		if(DEBUG){
 			System.out.println("D_RecommendationOfTester: retrieveAllTestersLIDs: got="+result.size());
 			for(int i=0; i<result.size();i++)
 				System.out.print("D_RecommendationOfTester: retrieveAllTestersLIDs: got[="+result.get(i)+" ,");
 			System.out.println("]");
 		}
-		
 		return result;
 	}
-	
 	public static ArrayList<D_RecommendationOfTester> retrieveAllRecommendationTestersKeep(String pLID) {
 		ArrayList<Long> lids = retrieveAllRecommendationTestersLIDs(pLID);
 		ArrayList<D_RecommendationOfTester> result = new ArrayList<D_RecommendationOfTester>();
@@ -241,7 +212,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		this.signature = Util.byteSignatureFromString(Util.getString(a.get(net.ddp2p.common.table.recommendation_of_tester.F_SIGNATURE))); 
 	}
 	static public D_RecommendationOfTester getRecommendationOfTesterByLID(Long LID, boolean keep) {
-		// boolean DEBUG = true;
 		if (DEBUG) System.out.println("D_RecommendationOfTester: getRecommendationOfTesterByLID: "+LID);
 		if ((LID == null) || (LID <= 0)) {
 			if (DEBUG) System.out.println("D_RecommendationOfTester: getRecommendationOfTesterByLID: null LID = "+LID);
@@ -253,14 +223,12 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			if (DEBUG) System.out.println("D_RecommendationOfTester: getRecommendationOfTesterByLID: got GID cached crt="+crt);
 			return crt;
 		}
-		//crt.releaseReference();
 		synchronized (monitor_object_factory) {
 			crt = D_RecommendationOfTester.getByLID_AttemptCacheOnly(LID, keep);
 			if (crt != null) {
 				if (DEBUG) System.out.println("D_RecommendationOfTester: getRecommendationOfTesterByLID: got sync cached crt="+crt);
 				return crt;
 			}
-
 			try {
 				crt = new D_RecommendationOfTester(LID);
 				if (DEBUG) System.out.println("D_RecommendationOfTester: getRecommendationOfTesterByLID: loaded crt="+crt);
@@ -270,7 +238,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 				}
 			} catch (Exception e) {
 				if (DEBUG) System.out.println("D_RecommendationOfTester: getRecommendationOfTesterByLID: error loading");
-				// e.printStackTrace();
 				return null;
 			}
 			if (DEBUG) System.out.println("D_RecommendationOfTester: getRecommendationOfTesterByLID: Done");
@@ -302,7 +269,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		Long id = new Long(LID);
 		D_RecommendationOfTester crt = D_RecommendationOfTester_Node.loaded_By_LocalID.get(id);
 		if (crt == null) return null;
-		
 		D_RecommendationOfTester_Node.setRecent(crt);
 		return crt;
 	}
@@ -310,7 +276,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			boolean create, boolean keep, D_RecommendationOfTester storage) {
 		boolean load_Globals = true;
 		String GID = getGID(peer_LID, tester_LID);
-		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("D_RecommendationOfTester: getJustByGID: "+GID+" glob="+load_Globals+" cre="+create+" _peer="+peer_LID);
 		if ((GID == null)) {
 			if (_DEBUG) System.out.println("D_RecommendationOfTester: getJustByGID: null GID and GIDH");
@@ -322,14 +287,12 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			if (DEBUG) System.out.println("D_RecommendationOfTester: getJustByGID: got GID cached crt="+crt);
 			return crt;
 		}
-
 		synchronized (monitor_object_factory) {
 			crt = D_RecommendationOfTester.getROTByGID_AttemptCacheOnly(peer_LID, tester_LID, keep);
 			if (crt != null) {
 				if (DEBUG) System.out.println("D_RecommendationOfTester: getJustByGID: got sync cached crt="+crt);
 				return crt;
 			}
-
 			try {
 				if (storage == null)
 					crt = new D_RecommendationOfTester(peer_LID, tester_LID, create);
@@ -359,7 +322,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 	}
 	public static D_RecommendationOfTester getROTByGID_AttemptCacheOnly(
 			long peer_LID, long tester_LID, boolean keep) {
-		//if ((GID == null)) return null;
 		if (keep) {
 			synchronized (monitor_object_factory) {
 				D_RecommendationOfTester  crt = getROTByGID_AttemptCacheOnly(peer_LID, tester_LID);
@@ -367,7 +329,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 					crt.status_references ++;
 					if (crt.status_references > 2) {
 						System.out.println("D_RecommendationOfTester: getROTByGID_AttemptCacheOnly: "+crt.status_references);
-						//Util.printCallPath("");
 						Util.printCallPathTop("Why references increase for GID="+peer_LID+","+tester_LID);
 					}
 				}
@@ -381,24 +342,14 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			long peer_LID, long tester_LID) {
 		D_RecommendationOfTester  crt = null;
 		String GID = getGID(peer_LID, tester_LID);
-		//if ((GID == null)) return null;
-		if ((GID != null)) crt = D_RecommendationOfTester_Node.getByGID(GID); //.loaded_const_By_GID.get(GID);
-		
-				
+		if ((GID != null)) crt = D_RecommendationOfTester_Node.getByGID(GID); 
 		if (crt != null) {
-			//crt.setGID(GID, crt.getOrganizationID());
-			
-//			if (! crt.loaded_globals) {
-//				crt.fillGlobals();
-//				D_RecommendationOfTester_Node.register_fully_loaded(crt);
-//			}
 			D_RecommendationOfTester_Node.setRecent(crt);
 			return crt;
 		}
 		return null;
 	}
 	void storeAct() throws P2PDDSQLException {
-		
 		this.clear_dirty();
 		if (this.isDeleteFlag()) {
 			if(DEBUG)System.out.println("Try to delete:"+ recommendationID);
@@ -408,21 +359,14 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 						new String[]{this.recommendationID+""}, DEBUG);
 			this.releaseReference();
 			D_RecommendationOfTester_Node.dropLoaded(this, true);
-			
 			return;
 		}
-		
 		boolean update;
-		
-		//D_RecommentationOfTester testerRecom = new D_RecommentationOfTester(this.senderPeerLID, this.testerLID);
 		if (recommendationID > 0) {
 			update = true;
-			//recommendationID = testerRecom.recommendationID;
 		}
 		else update = false;
-		
 		String params[] = new String[net.ddp2p.common.table.recommendation_of_tester.F_FIELDS];
-
 		params[net.ddp2p.common.table.recommendation_of_tester.F_SENDER_PEER_LID] = Util.getStringID(this.senderPeerLID);
 		params[net.ddp2p.common.table.recommendation_of_tester.F_TESTER_LID] = Util.getStringID(this.testerLID);
 		params[net.ddp2p.common.table.recommendation_of_tester.F_WEIGH] = this.weight;
@@ -431,22 +375,17 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		params[net.ddp2p.common.table.recommendation_of_tester.F_SIGNATURE] = Util.stringSignatureFromByte(this.signature);
 		params[net.ddp2p.common.table.recommendation_of_tester.F_ARRIVAL_DATE] = Encoder.getGeneralizedTime(this.arrival_date);
 		params[net.ddp2p.common.table.recommendation_of_tester.F_ID] = Util.getStringID(this.recommendationID);
-		
-		
 		if (update) {
 			Application.getDB().update(net.ddp2p.common.table.recommendation_of_tester.TNAME, net.ddp2p.common.table.recommendation_of_tester._fields_recommendationOfTester_no_ID,
 					new String[]{net.ddp2p.common.table.recommendation_of_tester.recommendationID},
 					params,DEBUG);
 		}else{
-			//params[table.tester.F_ID] = Util.getStringID(this.recommendationID);
-			
 			String params2[]=new String[net.ddp2p.common.table.recommendation_of_tester.F_FIELDS_NOID];
 			System.arraycopy(params,0,params2,0,params2.length);
 			if(DEBUG)System.out.println("params2[last]: "+ params2[net.ddp2p.common.table.recommendation_of_tester.F_FIELDS_NOID-1]);
 			setLID_AndLink(Application.getDB().insert(net.ddp2p.common.table.recommendation_of_tester.TNAME, net.ddp2p.common.table.recommendation_of_tester._fields_recommendationOfTester_no_ID,params2, DEBUG));
 			if(DEBUG)System.out.println("this.recommendationID: "+ this.recommendationID);
 		}
-		
 	}
 	private void setLID_AndLink(long recommendationID2) {
 		setLID(recommendationID2);
@@ -459,16 +398,12 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 	public void clear_dirty() {
 		this.dirty_main = false;
 	}
-	//crt.loadRemote(testerRating, this, (k==0)?this.signature:null);
 	public boolean loadRemote(D_TesterRatingByPeer remoteRating,
 			D_RecommendationOfTestersBundle remoteMsg, byte[] signature) {
-		// ignore old recommendations
 		if(remoteMsg.creation_date != null && this.creation_date!=null && !this.creation_date.before(remoteMsg.creation_date)){
-			// keep with no change
 			if(DEBUG) System.out.println("Recom keep with no change: ");
 			return false;
 		}
-		
 		this.weight = remoteRating.weight;
 		this._weight = remoteRating._weight;
 		this.creation_date = remoteMsg.creation_date;
@@ -476,46 +411,24 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		this.signature = signature;
 		this.arrival_date = null;
 		this.dirty_main = true;
-		
 		if(DEBUG) System.out.println("Rget new rec: "+ this);
-		
 		return true;
 	}
 	public void storeRequest() {
-		
-		//Util.printCallPath("Why store?");
-		
 		if (! this.dirty_any()) {
 			Util.printCallPath("Why store when not dirty?");
 			return;
 		}
-
 		if (this.arrival_date == null && (this.getGID() != null)) {
 			this.arrival_date = Util.CalendargetInstance();
 			if (_DEBUG) {
 				System.out.println("D_RecommentationOfTester: storeRequest: missing arrival_date");
 				Util.printCallPath("");
 			}
-						
 		}
-		
 		String save_key = this.getGID();
-		
 		if (save_key == null) {
-			//save_key = ((Object)this).hashCode() + "";
-			//Util.printCallPath("Cannot store null:\n"+this);
-			//return;
 			D_RecommendationOfTester._need_saving_obj.add(this);
-			/*D_RecommendationOfTester renewCrt=null;
-			if((renewCrt = D_RecommendationOfTester_Node.loaded_By_LocalID.get(this.getLID()))!=null){
-				if(!DEBUG)System.out.println(">>>>>>>renew cache msg=" + this.getLID());
-				renewCrt._weight = this._weight;
-				renewCrt.weight = this.weight;
-				renewCrt.signature = this.signature;
-				renewCrt.address = this.address;
-				renewCrt.arrival_date = this.arrival_date;
-				renewCrt.creation_date = this.creation_date;
-			}*/
 			if (DEBUG) System.out.println("D_RecommentationOfTester: storeRequest: added to _need_saving_obj");
 		} else {		
 			if (DEBUG) System.out.println("D_RecommentationOfTester: storeRequest: GIDH="+save_key);
@@ -545,7 +458,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 	public String getTesterName() {
 		return this.getGID();
 	}
-	
 	/**
 	 * Storage segment
 	 */
@@ -559,12 +471,8 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 	private static Object monitor_object_factory = new Object();
 	private static final boolean _DEBUG = true;
 	D_RecommendationOfTester_Node component_node = new D_RecommendationOfTester_Node(null, null);
-
 	private boolean deleted;
-
 	private boolean deleteTest;
-
-	
 	public static class D_RecommendationOfTester_Node {
 		private static final int MAX_TRIES = 30;
 		private static final boolean _DEBUG = false;
@@ -573,17 +481,13 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		private static Hashtable<Long, D_RecommendationOfTester> loaded_By_LocalID = new Hashtable<Long, D_RecommendationOfTester>();
 		private static Hashtable<String, D_RecommendationOfTester> loaded_By_GID = new Hashtable<String, D_RecommendationOfTester>();
 		private static long current_space = 0;
-		
-		//return loaded_const_By_GID.get(GID);
 		private static D_RecommendationOfTester getByGID(String GID) {
 			return loaded_By_GID.get(GID);
 		}
-		//return loaded_const_By_GID.put(GID, c);
 		private static D_RecommendationOfTester putByGID(String GID, D_RecommendationOfTester c) {
 			loaded_By_GID.put(GID, c);
 			return c; 
 		}
-		//return loaded_const_By_GID.remove(GID);
 		private static D_RecommendationOfTester remByGID(String GID) {
 			D_RecommendationOfTester result = null;
 			D_RecommendationOfTester result2 = null;
@@ -596,7 +500,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		/** message is enough (no need to store the Encoder itself) */
 		public byte[] message;
 		public DDP2P_DoubleLinkedList_Node<D_RecommendationOfTester> my_node_in_loaded;
-	
 		public D_RecommendationOfTester_Node(byte[] message,
 				DDP2P_DoubleLinkedList_Node<D_RecommendationOfTester> my_node_in_loaded) {
 			this.message = message;
@@ -606,11 +509,8 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 			assert((crt.component_node.message==null) && (crt.loaded_globals));
 			if(crt.component_node.message != null) return;
 			if(!crt.loaded_globals) return;
-			//if ((crt.getGID() != null) && (! crt.isTemporary())) 
 			{
-				//byte[] message = crt.encode();
 				synchronized(loaded_objects) {
-					//crt.component_node.message = message; // crt.encoder.getBytes();
 					if(crt.component_node.message != null) current_space += crt.component_node.message.length;
 				}
 			}
@@ -625,7 +525,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		public static boolean register_newLID_ifLoaded(D_RecommendationOfTester crt) {
 			if (DEBUG) System.out.println("D_RecommendationOfTester: register_newLID_ifLoaded: start crt = "+crt);
 			synchronized (loaded_objects) {
-				//String gid = crt.getGID();
 				String gid = crt.getGID();
 				long lid = crt.getLID();
 				if (gid == null) {
@@ -637,18 +536,15 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 					Util.printCallPath("Why call without LID="+crt);
 					return false;
 				}
-				
-				D_RecommendationOfTester old = loaded_By_GID.get(gid); //getByGIDH(gidh, );
+				D_RecommendationOfTester old = loaded_By_GID.get(gid); 
 				if (old == null) {
 					if (DEBUG) System.out.println("D_RecommendationOfTester: register_newLID_ifLoaded: was not registered.");
 					return false;
 				}
-				
 				if (old != crt)	{
 					Util.printCallPath("Different linking of: old="+old+" vs crt="+crt);
 					return false;
 				}
-				
 				Long pLID = new Long(lid);
 				D_RecommendationOfTester _old = loaded_By_LocalID.get(pLID);
 				if (_old != null && _old != crt) {
@@ -657,39 +553,21 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 				}
 				loaded_By_LocalID.put(pLID, crt);
 				if (DEBUG) System.out.println("D_RecommendationOfTester: register_newLID_ifLoaded: store lid="+lid+" crt="+crt.getGID());
-
 				return true;
 			}
 		}
-		/*
-		private static void unregister_loaded(D_RecommentationOfTester crt) {
-			synchronized(loaded_orgs) {
-				loaded_orgs.remove(crt);
-				loaded_org_By_LocalID.remove(new Long(crt.getLID()));
-				loaded_org_By_GID.remove(crt.getGID());
-				loaded_org_By_GIDhash.remove(crt.getGIDH());
-			}
-		}
-		*/
 		private static void register_loaded(D_RecommendationOfTester crt) {
 			if (DEBUG) System.out.println("D_RecommentationOfTester: register_loaded: start crt = "+crt);
-			//crt.reloadMessage(); 
 			synchronized (loaded_objects) {
 				String gid = crt.getGID();
-//				String gidh = crt.getGIDH();
 				long lid = crt.getLID();
-//				Long organizationLID = crt.getOrganizationLID();
-				
 				loaded_objects.offerFirst(crt);
 				if (lid > 0) {
-					// section added for duplication control
 					Long oLID = new Long(lid);
 					D_RecommendationOfTester old = loaded_By_LocalID.get(oLID);
 					if (old != null && old != crt) {
 						Util.printCallPath("Double linking of: old="+old+" vs crt="+crt);
-						//return false;
 					}
-					
 					loaded_By_LocalID.put(oLID, crt);
 					if (DEBUG) System.out.println("D_RecommentationOfTester: register_loaded: store lid="+lid+" crt="+crt.getGID());
 				}else{
@@ -700,34 +578,27 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 					if (old != null && old != crt) {
 						Util.printCallPath("D_RecommendationOfTester conflict: gidh old="+old+" crt="+crt);
 					}
-					D_RecommendationOfTester_Node.putByGID(gid, crt); //loaded_const_By_GID.put(gid, crt);
+					D_RecommendationOfTester_Node.putByGID(gid, crt); 
 					if (DEBUG) System.out.println("D_RecommentationOfTester: register_loaded: store gid="+gid);
 				} else {
 					if (DEBUG) System.out.println("D_RecommentationOfTester: register_loaded: no store gid="+gid);
 				}
-				
 				int tries = 0;
 				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_RECOMMENDATIONS_OT)
 						|| (current_space > SaverThreadsConstants.MAX_RECOMMENDATIONS_OT_RAM)) {
-					if (loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_RECOMMENDATIONS_OT) break; // at least _crt_peer and _myself
-	
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_RECOMMENDATIONS_OT) break; 
 					if (tries > MAX_TRIES) break;
 					tries ++;
 					D_RecommendationOfTester candidate = loaded_objects.getTail();
 					if ((candidate.status_references > 0)
-							//||
-							//D_RecommentationOfTester.is_crt_const(candidate)
-							//||
-							//(candidate == HandlingMyself_Peer.get_myself())
 							) 
 					{
 						setRecent(candidate);
 						continue;
 					}
-					
-					D_RecommendationOfTester removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
+					D_RecommendationOfTester removed = loaded_objects.removeTail();
 					loaded_By_LocalID.remove(new Long(removed.getLID())); 
-					D_RecommendationOfTester_Node.remByGID(removed.getGID());//loaded_const_By_GID.remove(removed.getGID());
+					D_RecommendationOfTester_Node.remByGID(removed.getGID());
 					if (DEBUG) System.out.println("D_RecommentationOfTester: register_loaded: remove GIDH="+removed.getGID());
 					if (removed.component_node.message != null) current_space -= removed.component_node.message.length;				
 				}
@@ -749,10 +620,9 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 					System.out.println("D_RecommentationOfTester: dropLoaded: abandon: force="+force+" rem="+removed);
 					return result;
 				}
-				
 				if (loaded_objects.inListProbably(removed)) {
 					try {
-						loaded_objects.remove(removed); // Exception if not loaded
+						loaded_objects.remove(removed); 
 						if (removed.component_node.message != null) current_space -= removed.component_node.message.length;	
 						if (DEBUG) System.out.println("D_RecommentationOfTester: dropLoaded: exit with force="+force+" result="+result);
 					} catch (Exception e) {
@@ -760,24 +630,19 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 					}
 				}
 				if (removed.getLID() > 0) loaded_By_LocalID.remove(new Long(removed.getLID())); 
-				if (removed.getGID() != null) D_RecommendationOfTester_Node.remByGID(removed.getGID()); //loaded_const_By_GID.remove(removed.getGID());
+				if (removed.getGID() != null) D_RecommendationOfTester_Node.remByGID(removed.getGID()); 
 				if (DEBUG) System.out.println("D_RecommentationOfTester: drop_loaded: remove GIDH="+removed.getGID());
 				return result;
 			}
 		}
 	}
-	
 	/**
 	 * Storage Methods
 	 */
-	
 	public void releaseReference() {
 		if (status_references <= 0) Util.printCallPath("Null reference already!");
 		else status_references --;
-		//System.out.println("D_RecommentationOfTester: releaseReference: "+status_references);
-		//Util.printCallPath("");
 	}
-	
 	private static String getGID(long peer_LID, long tester_LID) {
 		return peer_LID+":"+tester_LID;
 	}
@@ -798,7 +663,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 	 */
 	private static HashSet<D_RecommendationOfTester> _need_saving = new HashSet<D_RecommendationOfTester>();
 	private static HashSet<D_RecommendationOfTester> _need_saving_obj = new HashSet<D_RecommendationOfTester>();
-	
 	@Override
 	public DDP2P_DoubleLinkedList_Node<D_RecommendationOfTester> 
 	set_DDP2P_DoubleLinkedList_Node(DDP2P_DoubleLinkedList_Node<D_RecommendationOfTester> node) {
@@ -828,7 +692,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		if (!i.hasNext()) return null;
 		D_RecommendationOfTester c = i.next();
 		if (DEBUG) System.out.println("D_RecommentationOfTester: need_saving_next: next: "+c);
-		//D_RecommentationOfTester r = D_RecommentationOfTester_Node.getConstByGIDH(c, null);//.loaded_const_By_GIDhash.get(c);
 		if (c == null) {
 			if (_DEBUG) {
 				System.out.println("D_RecommentationOfTester Cache: need_saving_next null entry "
@@ -844,7 +707,6 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		if (!i.hasNext()) return null;
 		D_RecommendationOfTester r = i.next();
 		if (DEBUG) System.out.println("D_RecommentationOfTester: need_saving_obj_next: next: "+r);
-		//D_RecommentationOfTester r = D_RecommentationOfTester_Node.loaded_org_By_GIDhash.get(c);
 		if (r == null) {
 			if (_DEBUG) {
 				System.out.println("D_RecommentationOfTester Cache: need_saving_obj_next null entry "
@@ -891,14 +753,12 @@ public class D_RecommendationOfTester  implements  DDP2P_DoubleLinkedList_Node_P
 		this.arrival_date = Util.CalendargetInstance();
 		this.dirty_main = true;
 	}
-
 	public static int getNumberItemsNeedSaving() {
 		return _need_saving.size() + _need_saving_obj.size();
 	}
-	
 }
 class D_RecommendationOfTester_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
-	private static final long SAVER_SLEEP = 5000; // ms to sleep
+	private static final long SAVER_SLEEP = 5000; 
 	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	/**
@@ -909,7 +769,6 @@ class D_RecommendationOfTester_SaverThread extends net.ddp2p.common.util.DDP2P_S
 	private static final boolean DEBUG = false;
 	D_RecommendationOfTester_SaverThread() {
 		super("D_RecommendationOftester Saver", true);
-		//start ();
 	}
 	public void _run() {
 		for (;;) {
@@ -918,35 +777,6 @@ class D_RecommendationOfTester_SaverThread extends net.ddp2p.common.util.DDP2P_S
 			synchronized(saver_thread_monitor) {
 				new D_RecommendationOfTester_SaverThreadWorker().start();
 			}
-			/*
-			synchronized(saver_thread_monitor) {
-				D_RecommentationOfTester de = D_RecommentationOfTester.need_saving_next();
-				if (de != null) {
-					if (DEBUG) System.out.println("D_RecommentationOfTester_Saver: loop saving "+de);
-					ThreadsAccounting.ping("Saving");
-					D_Peer.need_saving_remove(de.getGIDH(), de.instance);
-					// try 3 times to save
-					for (int k = 0; k < 3; k++) {
-						try {
-							de.storeAct();
-							break;
-						} catch (P2PDDSQLException e) {
-							e.printStackTrace();
-							synchronized(this){
-								try {
-									wait(SAVER_SLEEP_ON_ERROR);
-								} catch (InterruptedException e2) {
-									e2.printStackTrace();
-								}
-							}
-						}
-					}
-				} else {
-					ThreadsAccounting.ping("Nothing to do!");
-					//System.out.println("D_RecommentationOfTester_Saver: idle ...");
-				}
-			}
-			*/
 			synchronized(this) {
 				try {
 					long timeout = (D_RecommendationOfTester.getNumberItemsNeedSaving() > 0)?
@@ -960,16 +790,13 @@ class D_RecommendationOfTester_SaverThread extends net.ddp2p.common.util.DDP2P_S
 		}
 	}
 }
-
 class D_RecommendationOfTester_SaverThreadWorker extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	private static final long SAVER_SLEEP = 5000;
 	private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
-	//public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
 	D_RecommendationOfTester_SaverThreadWorker() {
 		super("D_RecommendationOfTester Saver Worker", false);
-		//start ();
 	}
 	public void _run() {
 		synchronized (SaverThreadsConstants.monitor_threads_counts) {SaverThreadsConstants.threads_test ++;}
@@ -982,20 +809,14 @@ class D_RecommendationOfTester_SaverThreadWorker extends net.ddp2p.common.util.D
 			D_RecommendationOfTester de;
 			boolean edited = true;
 			if (DEBUG) System.out.println("D_RecommentationOfTester_Saver: start");
-			
-			 // first try objects being edited
 			de = D_RecommendationOfTester.need_saving_obj_next();
-			
-			// then try remaining objects 
 			if (de == null) { de = D_RecommendationOfTester.need_saving_next(); edited = false; }
-			
 			if (de != null) {
 				if (DEBUG) System.out.println("D_RecommendationOfTester_SaverThread: loop saving "+de.getTesterName());
 				Application_GUI.ThreadsAccounting_ping("Saving");
 				if (edited) D_RecommendationOfTester.need_saving_obj_remove(de);
-				else D_RecommendationOfTester.need_saving_remove(de);//, de.instance);
+				else D_RecommendationOfTester.need_saving_remove(de);
 				if (DEBUG) System.out.println("D_RecommendationOfTester_SaverThread: loop removed need_saving flag");
-				// try 3 times to save
 				for (int k = 0; k < net.ddp2p.common.data.SaverThreadsConstants.ATTEMPTS_ON_ERROR; k++) {
 					try {
 						if (DEBUG) System.out.println("D_RecommendationOfTester_SaverThread: loop will try saving k="+k);

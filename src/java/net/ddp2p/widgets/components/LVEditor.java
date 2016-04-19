@@ -1,38 +1,29 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.components;
-
 import static net.ddp2p.common.util.Util.__;
-
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.EventObject;
-
 import javax.swing.AbstractCellEditor;
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.TableCellEditor;
-
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
@@ -50,8 +41,6 @@ class LVEditor extends AbstractCellEditor implements TableCellEditor, ActionList
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
 	boolean initing = false;
-	//final SpinnerModel model = new javax.swing.SpinnerNumberModel();
-	//final JSpinner spin = new JSpinner(model);
 	JComboBox lv = new JComboBox();
 	JTable extras;
 	int row,col;
@@ -119,9 +108,7 @@ class LVEditor extends AbstractCellEditor implements TableCellEditor, ActionList
 		initing = false;
 		return lv;
 	}
-    // Enables the editor only for double-clicks.
     public boolean isCellEditable(EventObject evt) {
-        //if (evt instanceof MouseEvent) {return ((MouseEvent)evt).getClickCount() >= 2;}
         return true;
     }
 	/**
@@ -129,8 +116,7 @@ class LVEditor extends AbstractCellEditor implements TableCellEditor, ActionList
 	 * @param o
 	 */
 	public void editing_stopped(OrgExtra o) {
-		//o.getModel().setValueAt(spin.getValue(), row, col);
-		fireEditingStopped(); //Make the renderer reappear.
+		fireEditingStopped(); 
 	}
 	@SuppressWarnings("unchecked")
 	@Override
@@ -154,16 +140,7 @@ class LVEditor extends AbstractCellEditor implements TableCellEditor, ActionList
 					if(lv.getItemCount()>0) lv.setSelectedIndex(0);
 					initing = false;
 				}
-				
 			}
 		}
-		/*
-		if(DEBUG) System.out.println("OrgExtra:lveditor:action: "+ev);
-		String old = buildVal();
-		if(DEBUG) System.out.println("OrgExtra:lveditor: old= "+old);
-		if(old==null) old = added;
-		else old += table.field_extra.SEP_list_of_values+added;
-		extras.getModel().setValueAt(old, row, col);
-		*/
 	}
 }

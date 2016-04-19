@@ -1,7 +1,5 @@
 package net.ddp2p.common.util;
-
 import java.util.Calendar;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -9,14 +7,12 @@ import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.DD;
-
 public
 class DD_SK_Entry extends ASNObj {
 	int version = 0;
 	public SK key;
 	public String name, type;
 	public Calendar creation;
-	
 	public String toString() {
 		return "DD_SK_Entry: [ name="+name+" type="+type+"]";
 	}
@@ -45,5 +41,4 @@ class DD_SK_Entry extends ASNObj {
 	public static byte getASN1Tag() {
 		return DD.TAG_AC10;
 	}
-	
 }

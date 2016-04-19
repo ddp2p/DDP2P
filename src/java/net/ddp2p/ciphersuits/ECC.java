@@ -1,32 +1,24 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2013 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.ciphersuits;
-
 import java.math.BigInteger;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.util.Util;
-
 /**
  * Class to implement an Elliptic Curve
  * y^2 = x^3 + ax +b
@@ -42,7 +34,7 @@ class ECC extends ASNObj {
 	BigInteger p;
 	BigInteger a;
 	BigInteger b;
-	int type = ECC_TYPE_WEIERSTRASS; // e.g. P (WEIERSTRASS), GF, MONTGOMERY
+	int type = ECC_TYPE_WEIERSTRASS; 
 	static final BigInteger TWO = new BigInteger("2");
 	static final BigInteger THREE = new BigInteger("3");
 	static final BigInteger MINUS_THREE = new BigInteger("-3");
@@ -129,7 +121,7 @@ class ECC extends ASNObj {
 		b_order_evens_4m = new BigInteger[1];
 	}
 	boolean valid(){
-		return !(a.pow(3)).shiftLeft(2). //4a^3
+		return !(a.pow(3)).shiftLeft(2). 
 		add(modSquare(b).multiply(new BigInteger("27")))//27b^2
 		.mod(p).equals(BigInteger.ZERO);
 	}
@@ -164,7 +156,7 @@ class ECC extends ASNObj {
 		}
 		if(a.getX().equals(b.getX())){
 			if(DEBUG) System.out.println("add inverses");
-			return EC_Point.INFINITY; //infinity
+			return EC_Point.INFINITY; 
 		}
 		if(DEBUG) System.out.println("add differents");
 		return add2(a,b);
@@ -182,7 +174,6 @@ class ECC extends ASNObj {
 						Q.getX().subtract(P.getX())
 				);
 		if(DEBUG) System.out.println("add2: l ="+lambda);
-			
 		BigInteger xR = 
 				(modSquare(lambda)
 						.subtract(P.getX())
@@ -195,12 +186,6 @@ class ECC extends ASNObj {
 								)
 						.subtract(P.getY())
 				).mod(p);
-		/* minus
-		BigInteger yR = (
-				P.getY().add(lambda.multiply(
-						(xR.subtract(P.getX()))))
-		).mod(p);
-		*/
 		return new EC_Point(
 				xR,
 				yxR,
@@ -225,16 +210,13 @@ class ECC extends ASNObj {
 						.subtract(P.getX().shiftLeft(1))
 				).mod(p);
 		if(DEBUG) System.out.println("x2: xR="+xR);
-		// yR is the minus of the answer
 		BigInteger yxR=((lambda.multiply((P.getX().subtract(xR)))).subtract(P.getY())).mod(p);
-		//BigInteger yxR = (P.getY().add(lambda.multiply((xR.subtract(P.getX()))))).mod(p);
 		return new EC_Point(
 				xR,
 				yxR,
 				this
 				);
 	}
-	// double is return y.shiftLeft(1).mod(p);
 	/**
 	 * square of y mod p
 	 * @param y
@@ -255,7 +237,6 @@ class ECC extends ASNObj {
 	}
 	public static EC_Point mul(EC_Point a, BigInteger k) {
 		return ECC.double_add(a, k);
-		// return ECC.double_add_subtract(a, k);
 	}
 	public static EC_Point static_add(EC_Point a1, EC_Point a2) {
 		if ((a1==null) && (a2==null)) return EC_Point.INFINITY;
@@ -337,7 +318,6 @@ class ECC extends ASNObj {
 		if ((elem == null) || elem.inf) return EC_Point.INFINITY;
 		byte[] exp = to_one_minone(k);
 		EC_Point result = EC_Point.INFINITY;
-		
 		for(int i = exp.length - 1; i >= 0; i --) {
 			result = static_add(result,result);
 			switch(exp[i]) {
@@ -394,13 +374,10 @@ class ECC extends ASNObj {
 						in_seq = false;
 						continue;
 					}
-
 					changes = true;
-					
 					bits[k] ++;
 					bits[start] = -1;
 					for(int i = start + 1; i < k; i ++) bits[i] = 0;
-					
 					if(bits[k] != 1) in_seq = false;
 					else start = k;
 				}
@@ -474,7 +451,6 @@ class ECC extends ASNObj {
 				if(x.compareTo(p) >= 0) return;
 			}
 		} while (P == null);
-		
 		System.out.println("P*k = "+P+" * "+k+" = "+P.mul(k));
 		if (Q != null) 
 			System.out.println("P+Q = "+P+" + "+Q+" = "+P.add(P,Q));

@@ -10,38 +10,27 @@
  * Charset: UTF-8
  ***************************************************/
 package net.ddp2p.widgets.market;
-
 import java.io.IOException;
 import java.sql.*;
 import java.text.SimpleDateFormat;
-
 public class DB_Operator {
 	private Connection cn;
 	public Statement stmt;
-
 	public void database(String DB_path) throws IOException {
 		try {
 			Class.forName("org.sqlite.JDBC");
-//			System.out.println("Load sqlite Driver sucess!");
 		} catch (java.lang.ClassNotFoundException e) {
 			System.out.println("Fail to Load sqlite Driver!");
 			System.out.println(e.getMessage());
 		}
-
 		try {
-
 			String connectionString = "jdbc:sqlite:" + DB_path;
 			cn = DriverManager.getConnection(connectionString);
-//			System.out.println("DB Connect sucessfully!");
 			stmt = cn.createStatement();
-
 		} catch (SQLException e) {
 		}
-
 	}
-
 	public void operate_DB(String command) throws IOException, SQLException {
-
 		try {
 			stmt.execute(command);
 		} catch (SQLException e) {
@@ -50,7 +39,6 @@ public class DB_Operator {
 		}
 	}
 	public void clearMarketTabel() throws IOException, SQLException {
-
 		try {
 			stmt.execute("DELETE FROM market");
 		} catch (SQLException e) {
@@ -58,9 +46,7 @@ public class DB_Operator {
 			System.out.println(e.getMessage());
 		}
 	}
-	
 	public ResultSet select_DB(String command) throws IOException, SQLException {
-
 		try {
 			stmt.execute(command);
 		} catch (SQLException e) {
@@ -70,10 +56,7 @@ public class DB_Operator {
 		ResultSet r=stmt.getResultSet();
 		return r;
 	}
-
-	/* debug */
 	public void update(String command) throws IOException, SQLException {
-
 		try {
 			int i = stmt.executeUpdate(command);
 			System.out.println(i);
@@ -82,9 +65,7 @@ public class DB_Operator {
 			System.out.println(e.getMessage());
 		}
 	}
-
 	public void insert(String command) throws IOException, SQLException {
-
 		try {
 			stmt.execute(command);
 		} catch (SQLException e) {
@@ -92,10 +73,7 @@ public class DB_Operator {
 			System.out.println(e.getMessage());
 		}
 	}
-
-	/* debug */
 	public void select(String command) throws IOException, SQLException {
-
 		try {
 			ResultSet rs = stmt.executeQuery(command);
 			while (rs.next()) {
@@ -108,14 +86,12 @@ public class DB_Operator {
 			System.out.println(e.getMessage());
 		}
 	}
-
 	public synchronized String getOperate_DB(String command, String table_name)
 			throws IOException, SQLException {
 		String result = null;
 		try {
 			ResultSet rs = stmt.executeQuery(command);
 			result = "{\n\r\tdatabase_name " + table_name + "\n\r\tdate ";
-
 			java.util.Date date = new java.util.Date();
 			String nowTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 					.format(date);
@@ -135,14 +111,12 @@ public class DB_Operator {
 			result += "\t}\n\r";
 			result += "\tfiled_type {" + this.getTableColumType(table_name)
 					+ "}\n\r\t}\n\r}\n\r";
-
 		} catch (SQLException e) {
 			System.out.println("Fail!");
 			System.out.println(e.getMessage());
 		}
 		return result;
 	}
-
 	public String getTableColum(String Type) {
 		String output = null;
 		if (Type.equals("directory")) {
@@ -163,7 +137,6 @@ public class DB_Operator {
 		}
 		return null;
 	}
-
 	public String getTableColumType(String Type) {
 		String output = null;
 		if (Type.equals("directory")) {
@@ -181,7 +154,6 @@ public class DB_Operator {
 		}
 		return null;
 	}
-
 	public String getTableValue(String Type, ResultSet rs) throws SQLException {
 		String output = "";
 		if (Type.equals("directory")) {
@@ -191,10 +163,8 @@ public class DB_Operator {
 						+ rs.getString("Port") + "\", \""
 						+ rs.getString("Comments") + "\" },\n\r";
 			}
-
 			return output;
 		} else if (Type.equals("peer_address")) {
-
 			while (rs.next()) {
 				output += "\t\t{\"" + rs.getString("Peer_address_ID")
 						+ "\", \"" + rs.getString("peer_ID") + "\", \""
@@ -205,7 +175,6 @@ public class DB_Operator {
 			}
 			return output;
 		} else if (Type.equals("peer")) {
-
 			while (rs.next()) {
 				output += "\t\t{\"" + rs.getString("Peer_ID") + "\", \""
 						+ rs.getString("Global_peer_ID") + "\", \""
@@ -217,7 +186,6 @@ public class DB_Operator {
 			}
 			return output;
 		} else if (Type.equals("organization")) {
-
 			while (rs.next()) {
 				output += "\t\t{\"" + rs.getString("organization_ID")
 						+ "\", \"" + rs.getString("global_organization_ID")
@@ -243,9 +211,7 @@ public class DB_Operator {
 			return output;
 		}
 		return null;
-
 	}
-
 	public int findRowNumber() throws SQLException {
 		int count=0;
 		ResultSet r = stmt.executeQuery("select * from market");
@@ -254,5 +220,4 @@ public class DB_Operator {
 		}
 		return count;
 	}
-
 }

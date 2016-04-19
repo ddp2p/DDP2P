@@ -1,12 +1,8 @@
-
 package net.ddp2p.java.WSupdate;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
-
-
 /**
  * <p>Java class for History complex type.
  * 
@@ -37,13 +33,11 @@ import javax.xml.bind.annotation.XmlType;
     "signature"
 })
 public class History {
-
     @XmlElement(name = "GID")
     protected String gid;
     protected String date;
     protected String url;
     protected String signature;
-
     /**
      * Gets the value of the gid property.
      * 
@@ -55,7 +49,6 @@ public class History {
     public String getGID() {
         return gid;
     }
-
     /**
      * Sets the value of the gid property.
      * 
@@ -67,7 +60,6 @@ public class History {
     public void setGID(String value) {
         this.gid = value;
     }
-
     /**
      * Gets the value of the date property.
      * 
@@ -79,7 +71,6 @@ public class History {
     public String getDate() {
         return date;
     }
-
     /**
      * Sets the value of the date property.
      * 
@@ -91,7 +82,6 @@ public class History {
     public void setDate(String value) {
         this.date = value;
     }
-
     /**
      * Gets the value of the url property.
      * 
@@ -103,7 +93,6 @@ public class History {
     public String getUrl() {
         return url;
     }
-
     /**
      * Sets the value of the url property.
      * 
@@ -115,7 +104,6 @@ public class History {
     public void setUrl(String value) {
         this.url = value;
     }
-
     /**
      * Gets the value of the signature property.
      * 
@@ -127,7 +115,6 @@ public class History {
     public String getSignature() {
         return signature;
     }
-
     /**
      * Sets the value of the signature property.
      * 
@@ -139,5 +126,4 @@ public class History {
     public void setSignature(String value) {
         this.signature = value;
     }
-
 }

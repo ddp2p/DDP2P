@@ -1,25 +1,18 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
-
 package net.ddp2p.common.plugin_data;
-
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
@@ -28,28 +21,18 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
-
-//import javax.swing.Action;
-//import javax.swing.JMenuItem;
-//import javax.swing.table.TableCellEditor;
-//import javax.swing.table.TableCellRenderer;
-
-
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.data.HandlingMyself_Peer;
-
 public class PluginRegistration {
 	public static Hashtable<String,D_PluginInfo> plugin_applets = new Hashtable<String, D_PluginInfo>();
 	public static Hashtable<Integer,Hashtable<String,PluginMenus>> plugin_menus = new Hashtable<Integer,Hashtable<String,PluginMenus>>();
 	public static Hashtable<String,PluginMethods> s_methods = new Hashtable<String,PluginMethods>();
 	private static Hashtable<String,PluginThread> threads =  new Hashtable<String,PluginThread>();
 	private static HashSet<URL> plugin_urls = new HashSet<URL>();
-	
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
-	public static boolean registerPluginMenu(String plugin_ID, String plugin_name, int column, // JMenuItem
+	public static boolean registerPluginMenu(String plugin_ID, String plugin_name, int column, 
 			Object plugin_menu_item) {
 		Integer id = new Integer(column);
 		Hashtable<String,PluginMenus> ms = plugin_menus.get(id);
@@ -87,9 +70,7 @@ public class PluginRegistration {
 	 */
 	public static boolean registerPlugin(
 			String plugin_GID, String plugin_name, String plugin_info, String plugin_url,
-			//TableCellRenderer
 			Object renderer,
-			//TableCellEditor
 			Object editor) {
 		boolean result = false;
 		if (DEBUG) System.out.println("PluginRegistration: plugin="+plugin_GID);
@@ -100,20 +81,15 @@ public class PluginRegistration {
 		D_PluginInfo pd = new D_PluginInfo(plugin_GID,plugin_name,plugin_info,plugin_url,editor,renderer);
 		D_PluginInfo.plugin_data.put(plugin_GID, pd);
 		D_PluginInfo.plugins.add(plugin_GID);
-		//if(plugin!=null)plugin.setSendPipe(data.D_PluginData.getPeerConnection());
 		plugin_applets.put(plugin_GID, pd);
-
 		if (plugin_GID == null){
 			if (DEBUG) System.out.println("PluginRegistration: null ID ="+plugin_GID);
 			return false;
 		}
-		
 		if (Application.peers != null) {
 			PluginRegistration x = new PluginRegistration();
 			RegisterPlugins rp = x.new RegisterPlugins(plugin_GID, plugin_name, plugin_info, plugin_url, renderer, editor);
 			Application_GUI.eventQueue_invokeLater(rp);
-			//EventQueue.invokeLater(rp);
-			//result = Application.peers.registerPlugin(plugin_GID, plugin_name, plugin_info, plugin_url, renderer, editor);
 		}
 		if (DEBUG) System.out.println("StartUpThread:loadPlugins: Plugins Got ="+D_PluginInfo.plugin_data.size());
 		return result;
@@ -123,8 +99,8 @@ public class PluginRegistration {
 		private String plugin_name;
 		private String plugin_info;
 		private String plugin_url;
-		private Object renderer; // TableCellRenderer
-		private Object editor; //TableCellEditor
+		private Object renderer; 
+		private Object editor; 
 		/**
 		 * 
 		 * @param plugin_GID
@@ -157,11 +133,9 @@ public class PluginRegistration {
 			return Application.peers.deregisterPlugin(plugin_GID);
 		return false;
 	}
-
 	public static void loadNewPlugins() {
 		String peer_GID = HandlingMyself_Peer.getMyPeerGID();
 		String peer_name = HandlingMyself_Peer.getMyPeerName();
-		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("PluginRegistration:loadNewPlugins: start");
 		URL[] urls = listFiles();
 		for(URL url : urls) {
@@ -200,7 +174,6 @@ public class PluginRegistration {
 		return false;
 	}
 	public static void loadPlugins(String peer_GID, String peer_name) throws MalformedURLException{
-		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("PluginRegistration:loadPlugins: start");
 		URL[] urls = listFiles();
 		for(URL url : urls) {
@@ -208,62 +181,10 @@ public class PluginRegistration {
 		}
 		if(DEBUG) System.out.println("PluginRegistration:loadPlugins: Plugins main Got ="+D_PluginInfo.plugin_data.size());
 	}
-	/*
-	String[] bjars={"eventbus.jar", 
-	"jME3-desktop.jar", 
-	"jME3-lwjgl-natives.jar",
-	"jME3-plugins.jar",
-	"lwjgl.jar",
-	"stack-alloc.jar",
-	"j-ogg-oggd.jar",
-	"jME3-effects.jar",
-	"jME3-lwjgl.jar",
-	"jME3-terrain.jar",
-	"nifty-default-controls.jar",
-	"vecmath.jar",
-	"j-ogg-vorbisd.jar",
-	"jME3-jbullet.jar",
-	"jME3-networking.jar",
-	"jbullet.jar",
-	"nifty-style-black.jar", 
-	"xmlpull-xpp3.jar",
-	"jME3-core.jar",
-	"jME3-jogg.jar", 
-	"jME3-niftygui.jar",
-	"jinput.jar",
-	"nifty.jar",
-	"MyGame.jar"};
-	URL[]ujars = new URL[bjars.length+2];
-	for(int i = 0; i<bjars.length; i++) {
-		ujars[i+2] = new File(Application.CURRENT_PLUGINS_BASE_DIR()+"BG"+Application.OS_PATH_SEPARATOR+bjars[i]).toURI().toURL();
-	}
-	ujars[0]=url; ujars[1] = dd;
-	URLClassLoader child = new URLClassLoader(ujars, new Object().getClass().getClassLoader());
-			//java.lang.reflect.Method method_getPluginData = null;
-			//java.lang.reflect.Method method_getPluginGID = null;
-			//java.lang.reflect.Method method_getPluginName = null;
-			//java.lang.reflect.Method method_getPeerPlugin = null;
-				//if(DEBUG) System.out.println("StartUpThread:loadPlugins: method modifiers= "+m.getModifiers());
-				//if(DEBUG) System.out.println("StartUpThread:loadPlugins: method params= "+Util.concat(m.getParameterTypes(),""));
-				// if(m.getName() == "getPluginData") if(m.getParameterTypes().length==0){method_getPluginData = m;}
-				//if(m.getName() == "getPluginGID") if(m.getParameterTypes().length==0){method_getPluginGID = m;}
-				//if(m.getName() == "getPluginName") if(m.getParameterTypes().length==0){method_getPluginName = m;}
-				//if(m.getName() == "getPeerPlugin")if(m.getParameterTypes().length==0){method_getPeerPlugin = m;}
-				//if(method_getPluginData==null) method_getPluginData = classToLoad.getDeclaredMethod("getPluginData", new Class[]{});
-				//method_getPluginData.setAccessible(true);
-				//plugin_info = (data.D_PluginInfo) method_getPluginData.invoke(instance);
-				//plugin_GID = (String) method_getPluginGID.invoke(instance);
-				//if(DEBUG) System.out.println("*****StartUpThread:loadPlugins:Got PR:"+result);
-			//p_methods.getPluginGID = method_getPluginGID;
-			//p_methods.getPluginName = method_getPluginName;
-			//p_methods.getPeerPlugin = method_getPeerPlugin;
-			//p_methods.getPluginData = method_getPluginData;
-		//} catch (InstantiationException e) {e.printStackTrace();
-	*/
 	public static boolean loadPlugin(URL url, String peer_GID, String peer_name) throws MalformedURLException {
 		if(_DEBUG) System.out.println("PluginRegistration:loadPlugins: try: "+url);
 		boolean result = false;
-		URL dd = new File(Application.CURRENT_DD_JAR_BASE_DIR()/*+Application.OS_PATH_SEPARATOR*/+Application.DD_JAR).toURI().toURL();
+		URL dd = new File(Application.CURRENT_DD_JAR_BASE_DIR()+Application.DD_JAR).toURI().toURL();
 		if(DEBUG) System.out.println("PluginRegistration:loadPlugins: try: ddjar "+dd);
 		URLClassLoader child = new URLClassLoader(new URL[]{url,dd}, new Object().getClass().getClassLoader());
 		try {
@@ -294,25 +215,22 @@ public class PluginRegistration {
 				if (m.getName() == "confirmStatus")
 					if (m.getParameterTypes().length == 2) {method_confirmStatus = m;}
 			}
-
 			if (DEBUG) System.out.println("PluginRegistration:loadPlugins: invoking init");
 			if (method_init_void == null) method_init_void = classToLoad.getDeclaredMethod("init", new Class[]{});
 			method_init_void.setAccessible(true);
-			method_init_void.invoke(null/*instance*/);
+			method_init_void.invoke(null);
 			String plugin_GID = null;
 			D_PluginInfo plugin_info = null;
 			try {
 				if (DEBUG) System.out.println("PluginRegistration:loadPlugins: invoking setPluginData");
 				if (method_setPluginData == null) method_setPluginData = classToLoad.getDeclaredMethod("setPluginData", new Class[]{String.class,String.class});
 				method_setPluginData.setAccessible(true);
-				method_setPluginData.invoke(null/*instance*/, new Object[]{peer_GID, peer_name});
-
+				method_setPluginData.invoke(null, new Object[]{peer_GID, peer_name});
 				@SuppressWarnings("unchecked")
 				Hashtable<String,Object> data = (Hashtable<String,Object>) method_getPluginDataHashtable.invoke(null);
 				plugin_info = new D_PluginInfo().setHashtable(data);
 				if (_DEBUG) System.out.println("PluginRegistration:loadPlugins: pluginGID="+plugin_info.plugin_GID);
 				if ((plugin_info.plugin_GID == null) || (s_methods.get(plugin_info.plugin_GID) != null)) {
-					//if(_DEBUG)
 						System.out.println("PluginRegistration:loadPlugins: pluginGID in s_methods should be null: LOOKS LIKE A GID CONFLICT: this GID is: "+plugin_info.plugin_GID);
 					return false;
 				}
@@ -333,14 +251,11 @@ public class PluginRegistration {
 			p_methods.confirmStatus = method_confirmStatus;
 			p_methods.handleReceivedMessage = method_handleReceivedMessage;
 			p_methods.answerMessage = method_answerMessage;
-
 			s_methods.put(plugin_GID, p_methods);
-
 			PluginThread pThread = new PluginThread(classToLoad, p_methods, plugin_info.plugin_name, url);
 			pThread.start();
 			if(DEBUG) System.out.println("PluginRegistration:loadPlugins: thread started");
 			PluginRegistration.threads.put(plugin_GID, pThread);
-
 			PluginRegistration.plugin_urls.add(url);
 			result = true;
 		} catch (ClassNotFoundException e) {
@@ -373,11 +288,8 @@ public class PluginRegistration {
 			if (_DEBUG) System.out.println("PluginRegistration:loadPlugins: quit already installed: "+plugin);
 			return result;
 		}
-//		URL dd = new File(Application.CURRENT_DD_JAR_BASE_DIR()/*+Application.OS_PATH_SEPARATOR*/+Application.DD_JAR).toURI().toURL();
-//		if(DEBUG) System.out.println("PluginRegistration:loadPlugins: try: ddjar "+dd);
-//		URLClassLoader child = new URLClassLoader(new URL[]{url,dd}, new Object().getClass().getClassLoader());
 		try {
-			Class<?> classToLoad = plugin; //.getClass(); //Class.forName(Application.PLUGIN_ENTRY_POINT, true, child);
+			Class<?> classToLoad = plugin; 
 			java.lang.reflect.Method[] methods = classToLoad.getDeclaredMethods();
 			java.lang.reflect.Method method_init_void = null;
 			java.lang.reflect.Method method_setPluginData = null;
@@ -423,25 +335,22 @@ public class PluginRegistration {
 				if ("confirmStatus".equals(m.getName()))
 					if (m.getParameterTypes().length == 2) {method_confirmStatus = m;}
 			}
-
 			if (DEBUG) System.out.println("PluginRegistration:loadPlugins: invoking init");
 			if (method_init_void == null) method_init_void = classToLoad.getDeclaredMethod("init", new Class[]{});
 			method_init_void.setAccessible(true);
-			method_init_void.invoke(null/*instance*/);
+			method_init_void.invoke(null);
 			String plugin_GID = null;
 			D_PluginInfo plugin_info = null;
 			try {
 				if (DEBUG) System.out.println("PluginRegistration:loadPlugins: invoking setPluginData");
 				if (method_setPluginData == null) method_setPluginData = classToLoad.getDeclaredMethod("setPluginData", new Class[]{String.class,String.class});
 				method_setPluginData.setAccessible(true);
-				method_setPluginData.invoke(null/*instance*/, new Object[]{peer_GID, peer_name});
-
+				method_setPluginData.invoke(null, new Object[]{peer_GID, peer_name});
 				@SuppressWarnings("unchecked")
 				Hashtable<String,Object> data = (Hashtable<String,Object>) method_getPluginDataHashtable.invoke(null);
 				plugin_info = new D_PluginInfo().setHashtable(data);
 				if (_DEBUG) System.out.println("PluginRegistration:loadPlugins: pluginGID="+plugin_info.plugin_GID);
 				if ((plugin_info.plugin_GID == null) || (s_methods.get(plugin_info.plugin_GID) != null)) {
-					//if(_DEBUG)
 						System.out.println("PluginRegistration:loadPlugins: pluginGID in s_methods should be null: LOOKS LIKE A GID CONFLICT: this GID is: "+plugin_info.plugin_GID);
 					return false;
 				}
@@ -462,19 +371,13 @@ public class PluginRegistration {
 			p_methods.confirmStatus = method_confirmStatus;
 			p_methods.handleReceivedMessage = method_handleReceivedMessage;
 			p_methods.answerMessage = method_answerMessage;
-
 			s_methods.put(plugin_GID, p_methods);
-
 			PluginThread pThread = new PluginThread(classToLoad, p_methods, plugin_info.plugin_name, url);
 			pThread.start();
 			if(DEBUG) System.out.println("PluginRegistration:loadPlugins: thread started");
 			PluginRegistration.threads.put(plugin_GID, pThread);
-
 			PluginRegistration.plugin_urls.add(url);
 			result = true;
-//		} catch (ClassNotFoundException e) {
-//			System.err.println("PluginRegistration:loadPlugin: abandon: try: "+plugin);
-//			e.printStackTrace();
 		} catch (SecurityException e) {
 			System.err.println("PluginRegistration:loadPlugin: abandon: try: "+plugin);
 			e.printStackTrace();
@@ -497,19 +400,15 @@ public class PluginRegistration {
 		return result;
 	}
 	public static URL[] listFiles() {
-		// Directory path here
-		String path = Application.CURRENT_PLUGINS_BASE_DIR(); //+Application.OS_PATH_SEPARATOR+Application.APP_INSTALLED_PLUGINS_ROOT_FOLDER; 
-
+		String path = Application.CURRENT_PLUGINS_BASE_DIR(); 
 		String files;
 		File folder = new File(path);
 		if(!folder.exists()) return new URL[0];
 		File[] listOfFiles = folder.listFiles();
 		if(listOfFiles==null) return new URL[0];
 		ArrayList<URL> urls = new ArrayList<URL>();
-
 		for (int i = 0; i < listOfFiles.length; i++) 
 		{
-
 			if (listOfFiles[i].isFile()) 
 			{
 				files = listOfFiles[i].getName();
@@ -520,7 +419,6 @@ public class PluginRegistration {
 					} catch (MalformedURLException e) {
 						e.printStackTrace();
 					}
-					//System.out.println(files);
 				}
 			}
 		}

@@ -1,6 +1,4 @@
-// change to widgets.updatesTesters;
 package net.ddp2p.widgets.updatesKeys;
-
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.GridBagLayout;
@@ -11,7 +9,6 @@ import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
@@ -23,16 +20,12 @@ import javax.swing.JRadioButton;
 import javax.swing.SwingConstants;
 import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
-
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.data.D_Tester;
 import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.widgets.updatesKeys.*;
-
 public class TesterInfoPanel extends JPanel implements ActionListener {
-	
 	private D_Tester tester;
-
     public TesterInfoPanel(D_Tester t) {
     	super (new BorderLayout());
     	tester = t;
@@ -49,19 +42,16 @@ public class TesterInfoPanel extends JPanel implements ActionListener {
     	return titlePanel2;
     }
     public JPanel bodyPanel(){
-    
     	JPanel bodyPanel2 = new JPanel(new GridBagLayout());
     	GridBagConstraints fieldConstraints = new GridBagConstraints();
         GridBagConstraints labelConstraints = new GridBagConstraints();
         labelConstraints.anchor = GridBagConstraints.WEST;
         labelConstraints.gridwidth = 1;
-        labelConstraints.weightx=0.0; // fixed width
+        labelConstraints.weightx=0.0; 
         fieldConstraints.anchor = GridBagConstraints.WEST;
         fieldConstraints.gridwidth = GridBagConstraints.REMAINDER;
-        fieldConstraints.weightx=1.0; //Give as much space as possible
-        fieldConstraints.insets = new Insets(1, 1, 1, 1); //padding
-
-        
+        fieldConstraints.weightx=1.0; 
+        fieldConstraints.insets = new Insets(1, 1, 1, 1); 
         JLabel nameL = new JLabel("Name: ");
 		labelConstraints.gridx = 0; labelConstraints.gridy = 0;
 		bodyPanel2.add(nameL, labelConstraints);	
@@ -70,21 +60,14 @@ public class TesterInfoPanel extends JPanel implements ActionListener {
 		nameTxt.setColumns(17);
 		fieldConstraints.gridx = 1; fieldConstraints.gridy = 0;
 		bodyPanel2.add(nameTxt, fieldConstraints);
-		
 		JLabel publicKeyL = new JLabel("Public Key: ");
 		labelConstraints.gridx = 0; labelConstraints.gridy = 1;
 		bodyPanel2.add(publicKeyL, labelConstraints);	
-		//JTextArea publicKeyTxt = new JTextArea(tester.public_key);
 		JTextField publicKeyTxt = new JTextField(tester.testerGID);
 		publicKeyTxt.setBackground(new Color(224,224,224));
-		////publicKeyTxt.setLineWrap(true);
-	    //publicKeyTxt.setColumns(15);
-	    //publicKeyTxt.setRows(1);
-	    //JScrollPane publicKeyScl = new JScrollPane(publicKeyTxt);
 	    publicKeyTxt.setColumns(17); 
 		fieldConstraints.gridx = 1; fieldConstraints.gridy = 1;
 		bodyPanel2.add(publicKeyTxt, fieldConstraints);
-		
 		JLabel emailL = new JLabel("Email: ");
 		labelConstraints.gridx = 0; labelConstraints.gridy = 2;
 		bodyPanel2.add(emailL, labelConstraints);	
@@ -93,7 +76,6 @@ public class TesterInfoPanel extends JPanel implements ActionListener {
 		emailTxt.setColumns(17);
 		fieldConstraints.gridx = 1; fieldConstraints.gridy = 2;
 		bodyPanel2.add(emailTxt, fieldConstraints);
-		
 		JLabel urlL = new JLabel("URL: ");
 		labelConstraints.gridx = 0; labelConstraints.gridy = 3;
 		bodyPanel2.add(urlL, labelConstraints);	
@@ -102,28 +84,18 @@ public class TesterInfoPanel extends JPanel implements ActionListener {
 		urlTxt.setColumns(17);
 		fieldConstraints.gridx = 1; fieldConstraints.gridy = 3;
 		bodyPanel2.add(urlTxt, fieldConstraints);
-		
 		JLabel descL = new JLabel("Description: ");
 		labelConstraints.gridx = 0; labelConstraints.gridy = 4;
 		bodyPanel2.add(descL, labelConstraints);	
 		JTextArea descTxt = new JTextArea(tester.description,3,16);
-		//JTextField publicKeyTxt = new JTextField(tester.public_key);
 		descTxt.setLineWrap(true);
 		descTxt.setWrapStyleWord(true);
-	    //descTxt.setColumns(15);
 	    descTxt.setSize(10,10);
 	    descTxt.setBackground(new Color(224,224,224));
-//	    descTxt.setRows(3);
-//	    descTxt.;
 	    JScrollPane descScl = new JScrollPane(descTxt,ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-	   
-	    //publicKeyTxt.setColumns(15); 
 		fieldConstraints.gridx = 1; fieldConstraints.gridy = 4;
 		bodyPanel2.add(descScl, fieldConstraints);
-		
-	//	JLabel nameL = new JLabel(tester.public_key);
 	   bodyPanel2.setBackground(new Color(147,147,147));
-    	
     	return bodyPanel2;
     }
     public void init(){
@@ -131,12 +103,8 @@ public class TesterInfoPanel extends JPanel implements ActionListener {
     	testerPanel.add(titlePanel(),BorderLayout.NORTH );
     	testerPanel.add(bodyPanel());
     	this.add(testerPanel);
-            
     }
         @Override
 	public void actionPerformed(ActionEvent e) {
-
 	}
-  
-    
 }

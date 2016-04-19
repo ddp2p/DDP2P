@@ -1,24 +1,18 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.app;
-
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -30,16 +24,13 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Pattern;
-
 import static net.ddp2p.common.util.Util.__;
-
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.ConstituentListener;
 import net.ddp2p.common.config.DD;
@@ -54,7 +45,6 @@ import net.ddp2p.common.hds.GUIStatusHistory;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.components.DDLanguageSelector;
-
 @SuppressWarnings("serial")
 public class StatusBar extends JPanel implements OrgListener, MotionsListener, MouseListener, PeerListener, ConstituentListener, ActionListener{
 	GUIStatusHistory status;
@@ -66,7 +56,6 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 	JLabel constituent_selected;
 	JLabel motion;
 	DDLanguageSelector language;
-	
 	final static int PEER_ME = 0;
 	final static int PEER_SELECTED = 1;
 	final static int IDENTITY = 2;
@@ -85,7 +74,6 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 	ArrayList<Integer> shown = new ArrayList<Integer>();
 	public StatusBar(GUIStatusHistory status) {
 		super(new FlowLayout(FlowLayout.LEADING, 10, 0));
-		//this.setMinimumSize(new Dimension(100,100));
 		this.status = status;
 		available_labels = new String[]{__("Myself (Peer)"),__("Selected Peer"),__("Identity"),__("Organization"),
 				__("Myself (Constituent)"),__("Selected Constituent"),__("Motion"),__("Language")};
@@ -109,17 +97,15 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 				available_icons[k] = DDIcons.getConImageIcon(available_labels[k]);
 				break;
 			default:
-				available_icons[k] = DDIcons.getStaImageIcon(available_labels[k]); // ideally have appropriate icons for each entry
+				available_icons[k] = DDIcons.getStaImageIcon(available_labels[k]); 
 			}
 		}
 		if (!set_stored_shown())
 			set_default_shown();
-		
 		init_components();
 		design();
 		connectWidget();
 		addMouseListener(this);
-		
 	}
 	public void connectWidget() {
 		MainFrame.status.addPeerMeStatusListener(this);
@@ -149,7 +135,6 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 			e.printStackTrace();
 		}
 	}
-
 	void set_default_shown(){
 		shown.add(new Integer(ORGANIZATION));
 		shown.add(new Integer(CONSTITUENT_ME));
@@ -158,15 +143,14 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 	}
 	JButton back, forward;
 	void init_components() {
-		components[PEER_ME]= peer_me = new JLabel(available_icons[PEER_ME]); peer_me.setToolTipText(available_labels[PEER_ME]); //peer_me.setIcon(available_icons[PEER_ME]);
-		components[PEER_SELECTED]= peer_selected = new JLabel(available_icons[PEER_SELECTED]); peer_selected.setToolTipText(available_labels[PEER_SELECTED]); //peer_selected.setIcon(available_icons[PEER_SELECTED]);
+		components[PEER_ME]= peer_me = new JLabel(available_icons[PEER_ME]); peer_me.setToolTipText(available_labels[PEER_ME]); 
+		components[PEER_SELECTED]= peer_selected = new JLabel(available_icons[PEER_SELECTED]); peer_selected.setToolTipText(available_labels[PEER_SELECTED]); 
 		components[IDENTITY]= identity = new JLabel(available_icons[IDENTITY]); identity.setToolTipText(available_labels[IDENTITY]);
 		components[ORGANIZATION]= organization = new JLabel(available_icons[ORGANIZATION]); organization.setToolTipText(available_labels[ORGANIZATION]);
 		components[CONSTITUENT_ME]= constituent_me = new JLabel(available_icons[CONSTITUENT_ME]); constituent_me.setToolTipText(available_labels[CONSTITUENT_ME]);
 		components[CONSTITUENT_SELECTED]= constituent_selected = new JLabel(available_icons[CONSTITUENT_SELECTED]); constituent_selected.setToolTipText(available_labels[CONSTITUENT_SELECTED]);
 		components[MOTION]= motion =new JLabel(available_icons[MOTION]); motion.setToolTipText(available_labels[MOTION]);
 		components[LANGUAGE]= language =new DDLanguageSelector();
-		
 		this.add(back=new JButton(DDIcons.getBackImageIcon(__("Back"))));
 		this.add(forward=new JButton(DDIcons.getForwImageIcon(__("Forward"))));
 		back.setToolTipText(__("Back"));
@@ -184,8 +168,7 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 		for(Component c:components) c.setVisible(false);;
 	}
 	void design(){
-		//make all invisible
-		closeAll(); //this.removeAll();
+		closeAll(); 
 		for(Integer i : shown){
 			components[i.intValue()].setVisible(true);
 		}
@@ -199,8 +182,6 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 	}
 	@Override
 	public void motion_forceEdit(String motID) {
-		// TODO Auto-generated method stub
-		
 	}
 	@Override
 	public void orgUpdate(String orgID, int col, D_Organization org) {
@@ -211,8 +192,6 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 	}
 	@Override
 	public void org_forceEdit(String orgID, D_Organization org) {
-		// TODO Auto-generated method stub
-		
 	}
 	@Override
 	public void constituentUpdate(D_Constituent c, boolean me, boolean selected) {
@@ -247,7 +226,6 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 		configure(binarySearch(components, e.getSource()));
 	}
 	private int binarySearch(Component[] c, Object s) {
-		//System.out.println("Status source:"+s);
 		for(int k=0; k<c.length; k++)
 			if(c[k]==s) return k;
 		return PEER_ME;
@@ -267,13 +245,9 @@ public class StatusBar extends JPanel implements OrgListener, MotionsListener, M
 	}
 	@Override
 	public void mouseEntered(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 	@Override
 	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 	@Override
 	public void actionPerformed(ActionEvent a) {

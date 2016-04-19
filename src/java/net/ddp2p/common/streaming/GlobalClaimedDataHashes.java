@@ -1,8 +1,6 @@
 package net.ddp2p.common.streaming;
-
 import java.util.ArrayList;
 import java.util.Hashtable;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -34,17 +32,9 @@ public class GlobalClaimedDataHashes extends ASNObj {
 	static public GlobalClaimedDataHashes globalClaimedDataHashes = null;
 	int version = 2;
 	public Hashtable<String,Hashtable<Long,String>> peers=new Hashtable<String,Hashtable<Long,String>>();
-	public Hashtable<String,Hashtable<Long,String>> orgs=new Hashtable<String,Hashtable<Long,String>>(); // not implemented!
+	public Hashtable<String,Hashtable<Long,String>> orgs=new Hashtable<String,Hashtable<Long,String>>(); 
 	public Hashtable<String,Hashtable<Long,String>> news=new Hashtable<String,Hashtable<Long,String>>();
 	public Hashtable<String,Hashtable<Long,String>> tran=new Hashtable<String,Hashtable<Long,String>>();
-	/*
-	private void init(String rd) throws ASN1DecoderFail {
-		byte data[] = Util.byteSignatureFromString(rd);
-		if (data==null) return;
-		Decoder d = new Decoder(data);
-		this.decode(d);
-	}
-	*/
 	private GlobalClaimedDataHashes() {}
 	public GlobalClaimedDataHashes(Decoder dec) throws ASN1DecoderFail {this.decode(dec);}
 	public static GlobalClaimedDataHashes get() {
@@ -54,7 +44,6 @@ public class GlobalClaimedDataHashes extends ASNObj {
 				if (data != null) {
 					globalClaimedDataHashes = new GlobalClaimedDataHashes(new Decoder(data));
 				}
-				
 			} catch (ASN1DecoderFail e) {
 				e.printStackTrace();
 			} catch (P2PDDSQLException e) {
@@ -77,7 +66,6 @@ public class GlobalClaimedDataHashes extends ASNObj {
 		enc.setASN1Type(DD.TAG_AC15);
 		return enc;
 	}
-
 	@Override
 	public GlobalClaimedDataHashes decode(Decoder dec) throws ASN1DecoderFail {
 		if (dec == null) return this;
@@ -92,11 +80,9 @@ public class GlobalClaimedDataHashes extends ASNObj {
 		if (d.getTypeByte() != 0) orgs = OrgPeerDataHashes.decodeData(d.getFirstObject(true));
 		return this;
 	}
-	public void save( //long peer_ID, D_Peer peer
+	public void save( 
 			) throws P2PDDSQLException {
-		//boolean DEBUG = true;
 		if (DEBUG)System.out.println("\nGlobalClaimedDataHashes: save: saving "+this);
-		//Util.printCallPath("Try");
 		byte[] data = this.encode();
 		DD.setAppText(DD.APP_CLAIMED_DATA_HASHES, Util.stringSignatureFromByte(data));
 	}	
@@ -109,7 +95,6 @@ public class GlobalClaimedDataHashes extends ASNObj {
 		result += "]";
 		return result;
 	}
-	
 	private String getStringRepresentationOfHashes(
 			Hashtable<String, Hashtable<Long, String>> data_peers) {
 		String result ="[";
@@ -150,14 +135,12 @@ public class GlobalClaimedDataHashes extends ASNObj {
 	 * @param generalizedTime
 	 */
 	public void addPeers(Hashtable<String, String> n, long _peer_ID, String generalizedTime) {
-		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("\nGlobalClaimedDataHashes: addPeers: add "+n+" to "+this);
 		synchronized (peers) {
 			peers = OrgPeerDataHashes.appendHash(peers, n, _peer_ID, generalizedTime);
 		}
 		if (DEBUG) System.out.println("GlobalClaimedDataHashes: addPeers: Got "+this);
 	}
-	
 	public void addNews(ArrayList<String> n, long _peer_ID, String generalizedTime) {
 		if (DEBUG) System.out.println("\nGlobalClaimedDataHashes: addNews: add "+n+" to "+this);
 		synchronized (peers) {
@@ -210,7 +193,6 @@ public class GlobalClaimedDataHashes extends ASNObj {
 	public void purge(RequestData obtained) {
 		if (obtained == null) return;
 		if (DEBUG) System.out.println("RequestData: purge: Will purge "+this+" with "+obtained);
-		//if(.empty()) return;
 		synchronized (peers) {
 			purgeDated(obtained.peers, peers);
 			purgeDated(obtained.orgs_auth, orgs);
@@ -229,19 +211,15 @@ public class GlobalClaimedDataHashes extends ASNObj {
 	public void updateAfterChanges(RequestData orig_rq, RequestData sol_rq, RequestData new_rq, long peer_ID, String crt_date) {
 		if(DEBUG)System.out.println("RequestData:updateAfterChanges: Will updateAfterChanges by "+peer_ID+" on \n"+this+
 				" with \n new="+new_rq+"\nsolved="+sol_rq);
-		//synchronized(cons) {
 		for(String s : new_rq.peers.keySet()) OrgPeerDataHashes.add(peers, s, peer_ID, crt_date);
 		for(String s : new_rq.orgs_auth.keySet()) OrgPeerDataHashes.add(orgs, s, peer_ID, crt_date);
 			for(String s : new_rq.tran) OrgPeerDataHashes.add(tran, s, peer_ID, crt_date);
 			for(String s : new_rq.news) OrgPeerDataHashes.add(news, s, peer_ID, crt_date);
-			
 			OrgPeerDataHashes.setIntersectionFirstFromSecond(this.peers, sol_rq.peers);
 			OrgPeerDataHashes.setIntersectionFirstFromSecond(this.tran, sol_rq.tran);
 			OrgPeerDataHashes.setIntersectionFirstFromSecond(this.news, sol_rq.news);
-		//}
 		if(DEBUG)System.out.println("RequestData:updateAfterChanges: Got "+this);
 	}
-	
 	public boolean empty() {
 		return 0 ==
 				peers.size()+
@@ -249,5 +227,4 @@ public class GlobalClaimedDataHashes extends ASNObj {
 				tran.size()+
 				news.size();
 	}
-	
 }

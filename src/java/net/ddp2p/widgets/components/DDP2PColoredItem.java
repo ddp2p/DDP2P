@@ -1,12 +1,9 @@
 package net.ddp2p.widgets.components;
-
 import java.awt.Color;
 import java.awt.Component;
-
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JTable;
-
 public interface DDP2PColoredItem {
 	public static class DDP2PColorPair {
 		private Color foreground;
@@ -39,7 +36,5 @@ public interface DDP2PColoredItem {
 			this.icon = icon;
 		}
 	}
-//	public Color getForeground(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column);
-//	public Color getBackground(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column);
 	public DDP2PColorPair getColors(JTable table, Object value, boolean isSelected, boolean hasFocus, int row_view, int column_view, Component component);
 }

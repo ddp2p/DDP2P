@@ -1,33 +1,25 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.hds;
-
 import static java.lang.System.out;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -36,30 +28,20 @@ import net.ddp2p.common.config.DD;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.hds.DirectoryServerCache.D_DirectoryEntry;
 import net.ddp2p.common.util.P2PDDSQLException;
-
-//TODO: Make it a concurrent server for announcements and let it iterative for pings
 public class DirectoryServerUDP extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	DirectoryServer ds;
 	boolean turnOff=false;
-//
-//	Hashtable<String, ArrayList<Message>> noping_storage;
-//	Hashtable<String, ArrayList<Message>> ping_storage;
-//	Hashtable<String, ArrayList<Message>> announcement_storage;
-//	Hashtable<String, Terms> last_terms;
-//	
 	public DirectoryServerUDP(DirectoryServer _ds) {
 		super("Directory Server UDP", false);
 		ds = _ds;
 	}
-	
 	public void turnOff() {
 		turnOff=true;
 		this.interrupt();
 		out.println("Turning DS UDP off");
 	}
-	
 	public void _run () {
 		if(DEBUG) out.println("Enter DS UDP Server Thread");
 		byte buffer[] = new byte[DirectoryServer.MAX_DR];
@@ -83,7 +65,6 @@ public class DirectoryServerUDP extends net.ddp2p.common.util.DDP2P_ServiceThrea
 			InetSocketAddress risa = null;
 			try {
 				risa = (InetSocketAddress)dp.getSocketAddress();
-				// "50.88.84.239"
 				if (DirectoryServer.mAcceptedIPs.size() > 0) {
 					boolean accepted = false;
 					for ( String ip : DirectoryServer.mAcceptedIPs) {
@@ -103,7 +84,6 @@ public class DirectoryServerUDP extends net.ddp2p.common.util.DDP2P_ServiceThrea
 				e.printStackTrace();
 			}
 			if (risa == null) continue;
-			
 			Decoder dec=new Decoder(buffer,0,dp.getLength());
 			if (dec.getTypeByte() == DD.MSGTYPE_EmptyPing){
 				if (DEBUG) out.println("DS UDP EmptyPing");
@@ -111,9 +91,6 @@ public class DirectoryServerUDP extends net.ddp2p.common.util.DDP2P_ServiceThrea
 				DirectoryServer.recordPingMessage(risa, null, DirMessage.UDP, DirMessage.EMPTY_PING);
 				continue;
 			}
-			
-			// Rest should be concurrent ... any taker?
-			
 			if (DEBUG) out.println("DirectoryServerUDP: UDP Decoded: class="+dec.typeClass()+" val="+dec.tagVal());
 			if (dec.typeClass()==Encoder.CLASS_APPLICATION && dec.tagVal()==DirectoryAnnouncement.TAG) {
 				DirectoryAnnouncement da;
@@ -124,9 +101,7 @@ public class DirectoryServerUDP extends net.ddp2p.common.util.DDP2P_ServiceThrea
 					continue;
 				}
 				if(_DEBUG)out.println("\n\nDirectoryServerUDP: Received UDP announcement: "+da.toSummaryString()+"\n from: "+risa+"\n");
-
 				DirectoryServer.recordAnnouncementMessage(risa, da, null, DirMessage.UDP, DirMessage.ANNOUNCEMENT);
-
 				Address detected_sa = DirectoryServer.detectUDP_Address(risa, risa.getPort());
 				if (DEBUG)out.println("DirectoryServerUDP: UDP announcement: detected = "+detected_sa);
 				detected_sa = DirectoryServer.addr_NAT_detection(da, detected_sa);
@@ -154,7 +129,7 @@ public class DirectoryServerUDP extends net.ddp2p.common.util.DDP2P_ServiceThrea
 				if (dec.getTypeByte() == ASNUDPPing.getASN1Tag()) {
 					if (DEBUG) out.println("\nDirectoryServerUDP:run Detected ping request");
 					ASNUDPPing aup = new ASNUDPPing();
-					try { // check if this is a PING
+					try { 
 						aup.decode(dec);
 						if (DEBUG) System.out.println("\nDirectoryServerUDP:run: receives: "+aup);
 						if (_DEBUG) System.out.println("\nDirectoryServerUDP:run: ping req from: "+dp.getSocketAddress());
@@ -201,28 +176,20 @@ public class DirectoryServerUDP extends net.ddp2p.common.util.DDP2P_ServiceThrea
 					}		
 				} else {
 					if (dec.getTypeByte() == net.ddp2p.common.hds.DirectoryRequest.getASN1Tag()) {
-						//boolean DEBUG = true;
 						if (DEBUG) out.println("DirServUDP: Received directory request");
-						// handling terms here
-						DirectoryRequest dr = new DirectoryRequest(dec);//buffer,peek,client.getInputStream());
-						//boolean acceptedTerms = areTermsAccepted(dr);
-						InetSocketAddress isa= risa;//(InetSocketAddress)client.getRemoteSocketAddress();
+						DirectoryRequest dr = new DirectoryRequest(dec);
+						InetSocketAddress isa= risa;
 						if (DEBUG) out.println("DirServUDP: Received directory request: "+dr);
-
 						DirectoryServer.recordRequestMessage(isa, dr, null, DirMessage.UDP, DirMessage.REQUEST);
 						if (DEBUG) out.println("DirServUDP: Looking for: "+
 								D_Peer.getGIDHashFromGID(dr.globalID)+"\n  by "+
-								D_Peer.getGIDHashFromGID(dr.initiator_globalID));//+"\n  with source udp="+dr.UDP_port);
-
-						String globalID = dr.globalID; // looking for peer GID
-						String globalIDhash = dr.globalIDhash; // looking for peer GID hash
-						// de has the look-for-peer and all instances stored in the db
+								D_Peer.getGIDHashFromGID(dr.initiator_globalID));
+						String globalID = dr.globalID; 
+						String globalIDhash = dr.globalIDhash; 
 						D_DirectoryEntry de = DirectoryServerCache.getEntry(globalID, globalIDhash);
 						if (DEBUG) out.println("DirServUDP: From cache got: "+de);
 						ASNObj da = DirectoryServer.getDA(de, dr, dr.version);
-
 						DirectoryServer.recordRequestMessage(isa, dr, da, DirMessage.UDP, DirMessage.REQUEST_ANSWER);
-
 						byte answer[] = da.encode();
 						if (DEBUG) {
 							Decoder deco = new Decoder(answer);
@@ -234,15 +201,6 @@ public class DirectoryServerUDP extends net.ddp2p.common.util.DDP2P_ServiceThrea
 							}
 							System.out.println("DirectoryServerUDP:_run:encode "+da+"\nto "+dami);
 						}
-						//out.println("answer: "+Util.byteToHexDump(msg, " ")+"\n\tI.e.: "+da);
-						/*
-						if(_DEBUG&&(da.addresses.size()>0)){
-							out.println("DirServ: *******");
-							out.println("DirServ: Aanswer: "+client.getRemoteSocketAddress()+" <- "+da.toString());
-						}
-						*/
-						//client.getOutputStream().write(msg);
-						//byte[] answer = aup.encode();
 						DatagramPacket ans = new DatagramPacket(answer, answer.length);
 						ans.setSocketAddress(isa);
 						try {
@@ -259,5 +217,4 @@ public class DirectoryServerUDP extends net.ddp2p.common.util.DDP2P_ServiceThrea
 			}
 		}
 	}
-
 }

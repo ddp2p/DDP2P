@@ -1,5 +1,4 @@
 package net.ddp2p.common.util;
-
 public class DCT {
 	/**
 	 * Super slow implementation of DCT-II (JPEG DCT)
@@ -7,18 +6,13 @@ public class DCT {
 	 * @return
 	 */
 	static double[][] toDCT(double[][] x) {
-		int N = x.length; // N rows
-		int M = x[0].length; // M columns
+		int N = x.length; 
+		int M = x[0].length; 
 		double[][] X = new double[N][M];
 		double[][] tmp = new double[N][M];
-		
-		// first by rows
-		for (int i = 0; i < N; i ++) { // over all rows
-			// DCT for row i
-			for (int k = 0; k < M; k ++) { // over all columns
-				// DCT at position k (for row i)
+		for (int i = 0; i < N; i ++) { 
+			for (int k = 0; k < M; k ++) { 
 				X[i][k] = 0;
-				// on row i go over the M columns
 				for (int n = 0; n < M; n ++) {
 					X[i][k] += x[i][n]*Math.cos(Math.PI/M*(n+0.5)*k);
 				}
@@ -26,15 +20,11 @@ public class DCT {
 			}
 			X[i][0] *= 1/Math.sqrt(2);
 		}
-		//System.out.println("\nAfter rows");
-		//dumpMatrix(X);
 		x = X;
 		X = tmp;
-		// then by cols
-		for (int j = 0; j < M; j ++) { // over all cols
-			for (int k = 0; k < N; k ++) { // over all rows
+		for (int j = 0; j < M; j ++) { 
+			for (int k = 0; k < N; k ++) { 
 				X[k][j] = 0;
-				// on one row go over rows
 				for (int n = 0; n < N; n ++) {
 					X[k][j] += x[n][j]*Math.cos(Math.PI/N*(n+0.5)*k);
 				}
@@ -50,37 +40,26 @@ public class DCT {
 	 * @return
 	 */
 	static double[][] fromDCT(double[][] x) {
-		int N = x.length; // N rows
-		int M = x[0].length; // M columns
+		int N = x.length; 
+		int M = x[0].length; 
 		double[][] X = new double[N][M];
 		double[][] tmp = new double[N][M];
-		
-		// first by rows
-		for (int i = 0; i < N; i ++) { // over all rows
+		for (int i = 0; i < N; i ++) { 
 			x[i][0] *= Math.sqrt(2);
-			// DCT for row i
-			for (int k = 0; k < M; k ++) { // over all columns
-				// DCT at position k (for row i)
+			for (int k = 0; k < M; k ++) { 
 				X[i][k] = 0.5*x[i][0];
-				// on row i go over the M columns
 				for (int n = 1; n < M; n ++) {
 					X[i][k] += x[i][n]*Math.cos(Math.PI/M*n*(k+0.5));
 				}
 				X[i][k] *= Math.sqrt(2.0/M);
 			}
-			//System.out.println("\nAfter row "+i);
-			//dumpMatrix(X);
 		}
-		//System.out.println("\nAfter rows");
-		//dumpMatrix(X);
 		x = X;
 		X = tmp;
-		// then by cols
-		for (int j = 0; j < M; j ++) { // over all cols
+		for (int j = 0; j < M; j ++) { 
 			x[0][j] *= Math.sqrt(2);
-			for (int k = 0; k < N; k ++) { // over all rows
+			for (int k = 0; k < N; k ++) { 
 				X[k][j] = 0.5*x[0][j];
-				// on one row go over rows
 				for (int n = 1; n < N; n ++) {
 					X[k][j] += x[n][j]*Math.cos(Math.PI/N*n*(k+0.5));
 				}
@@ -90,11 +69,10 @@ public class DCT {
 		return X;
 	}
 	public static void dumpMatrix(double[][] x) {
-		int N = x.length; // N rows
-		int M = x[0].length; // M columns
-		for (int i = 0; i < N; i ++) { // over all rows
-			for (int j = 0; j < M; j ++) { // over all columns
-				//System.out.print(x[i][j] + " ");
+		int N = x.length; 
+		int M = x[0].length; 
+		for (int i = 0; i < N; i ++) { 
+			for (int j = 0; j < M; j ++) { 
 				System.out.printf("%.1f ", x[i][j]);
 			}
 			System.out.println("\n ");
@@ -106,10 +84,10 @@ public class DCT {
 	 * @param val
 	 */
 	public static void fillMatrix(double[][] x, double val) {
-		int N = x.length; // N rows
-		int M = x[0].length; // M columns
-		for (int i = 0; i < N; i ++) { // over all rows
-			for (int j = 0; j < M; j ++) { // over all columns
+		int N = x.length; 
+		int M = x[0].length; 
+		for (int i = 0; i < N; i ++) { 
+			for (int j = 0; j < M; j ++) { 
 				x[i][j] = val;
 			}
 			System.out.println("\n ");
@@ -120,12 +98,11 @@ public class DCT {
 	 * @param x
 	 */
 	private static void normalizeToDCT(double[][]x) {
-		int N = x.length; // N rows
-		int M = x[0].length; // M columns
-		for (int i = 0; i < N; i ++) { // over all rows
-			for (int j = 0; j < M; j ++) { // over all columns
+		int N = x.length; 
+		int M = x[0].length; 
+		for (int i = 0; i < N; i ++) { 
+			for (int j = 0; j < M; j ++) { 
 				x[i][j] *= Math.sqrt(2.0/N);
-				//x[i][0] *= 1/Math.sqrt(2);
 			}
 			System.out.println("\n ");
 		}

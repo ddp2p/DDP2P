@@ -1,33 +1,25 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012
 		Author: Khalid Alhamed and Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.data;
-
 import static net.ddp2p.common.util.Util.__;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Hashtable;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -41,39 +33,36 @@ import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Summary;
 import net.ddp2p.common.util.Util;
-
 public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 	private static final boolean _DEBUG = true;
 	public static final String action_update = "update";
 	public static final String action_insert = "insert";
 	public static  boolean DEBUG = false;
-	public D_Tester[] testerDef;     // dragged (optional) it should be read from a mirror 
-	public String public_key;			  // dragged as part of the url (need to be parsed from the url)
-	public String url;                    // dragged
-	public String original_mirror_name;   // dragged
+	public D_Tester[] testerDef;     
+	public String public_key;			  
+	public String url;                    
+	public String original_mirror_name;   
 	public String my_mirror_name;
 	public String last_version;
 	public String last_version_branch;
-	public byte[] last_version_info;  // serializable versionInfo object, obtained form mirror
-	public D_SoftwareUpdatesReleaseInfoByTester[] testerInfo;     // data type can be ArrayList<TesterInfo>
+	public byte[] last_version_info;  
+	public D_SoftwareUpdatesReleaseInfoByTester[] testerInfo;     
 	public boolean used;
-	public D_ReleaseQuality[] releaseQoT; // empty when dragged
+	public D_ReleaseQuality[] releaseQoT; 
 	public long mirror_ID = -1;
 	public Calendar last_contact_date;
 	public String activity;
 	public int version = 0;
-	public String location ;// new field good for faster downloading! 
-	public String protocol ; // new field "http" or "ftp"
-	public String data_version ; // new field, signed fields
-	public Calendar creation_date ; // new field, ??
-	public Calendar preference_date ; // new field, ??
-	
+	public String location ;
+	public String protocol ; 
+	public String data_version ; 
+	public Calendar creation_date ; 
+	public Calendar preference_date ; 
 	public D_MirrorInfo() {
-		
 	}
 	public D_MirrorInfo(String _url, DBInterface db) {
 		String sql = "SELECT "+mirror.fields_updates+" FROM "+mirror.TNAME+" WHERE "+net.ddp2p.common.table.mirror.url+"=?;";
-		String[]params = new String[]{_url};// where clause?
+		String[]params = new String[]{_url};
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = db.select(sql, params, DEBUG);
@@ -85,7 +74,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 	}
 	public D_MirrorInfo(String _url) {
 		String sql = "SELECT "+mirror.fields_updates+" FROM "+mirror.TNAME+" WHERE "+net.ddp2p.common.table.mirror.url+"=?;";
-		String[]params = new String[]{_url};// where clause?
+		String[]params = new String[]{_url};
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = Application.getDB().select(sql, params, DEBUG);
@@ -100,7 +89,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 	}
 	public D_MirrorInfo(long id) {
 		String sql = "SELECT "+mirror.fields_updates+" FROM "+mirror.TNAME+" WHERE "+net.ddp2p.common.table.mirror.mirror_ID+"=?;";
-		String[]params = new String[]{Util.getStringID(id)};// where clause?
+		String[]params = new String[]{Util.getStringID(id)};
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = Application.getDB().select(sql, params, DEBUG);
@@ -144,39 +133,12 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 		}
 		last_contact_date = Util.getCalendar(Util.getString(_u.get(net.ddp2p.common.table.mirror.F_LAST_CONTACT)));
 		activity = Util.getString(_u.get(net.ddp2p.common.table.mirror.F_ACTIVITY));
-		location = Util.getString(_u.get(net.ddp2p.common.table.mirror.F_LOCATION));// new field good for faster downloading! 
-	    protocol = Util.getString(_u.get(net.ddp2p.common.table.mirror.F_PROTOCOL)); // new field "http" or "ftp"
-	    data_version = Util.getString(_u.get(net.ddp2p.common.table.mirror.F_DATA_VERSION)); // how to insert it?
-		creation_date = Util.getCalendar(Util.getString(_u.get(net.ddp2p.common.table.mirror.F_CREATION_DATE))); // how to insert it?
-		preference_date = Util.getCalendar(Util.getString(_u.get(net.ddp2p.common.table.mirror.F_PREFERENCE_DATE))); // how to insert it?
+		location = Util.getString(_u.get(net.ddp2p.common.table.mirror.F_LOCATION));
+	    protocol = Util.getString(_u.get(net.ddp2p.common.table.mirror.F_PROTOCOL)); 
+	    data_version = Util.getString(_u.get(net.ddp2p.common.table.mirror.F_DATA_VERSION)); 
+		creation_date = Util.getCalendar(Util.getString(_u.get(net.ddp2p.common.table.mirror.F_CREATION_DATE))); 
+		preference_date = Util.getCalendar(Util.getString(_u.get(net.ddp2p.common.table.mirror.F_PREFERENCE_DATE))); 
 		if(DEBUG) System.out.println("D_MirrorInfo: <init>: done");
-		/*
-	    releaseQoT = new D_ReleaseQuality[3];
-	    releaseQoT[0]= new D_ReleaseQuality();
-	    releaseQoT[0]._quality= new String[1];
-	    releaseQoT[0]._quality[0]="Security"; 
-//	    	                              releaseQoT[0].subQualities= new String[2];
-//	                                      releaseQoT[0].subQualities[0]="Code";
-//	     	                              releaseQoT[0].subQualities[1]="DoS"; 
-	    releaseQoT[1]= new D_ReleaseQuality();
-	    releaseQoT[1]._quality= new String[2];
-	    releaseQoT[1]._quality[0]="Platform";
-	    releaseQoT[1]._quality[1]="WIN"; 
-	    	
-	    releaseQoT[2]= new D_ReleaseQuality();
-	    releaseQoT[2]._quality= new String[2];
-	    releaseQoT[2]._quality[0]="Platform";
-	    releaseQoT[2]._quality[1]="MAC";	
- 
-	    	                              releaseQoT[1].subQualities= new String[3];
-	                                      releaseQoT[1].subQualities[0]="WIN";
-	                                      releaseQoT[1].subQualities[1]="MAC";
-	                                      releaseQoT[1].subQualities[2]="UNIX";
-	    releaseQoT[2]= new D_ReleaseQuality();                                  
-	    releaseQoT[2].quality="Useability"; releaseQoT[2].subQualities= new String[2];
-	                                        releaseQoT[2].subQualities[0]="Easy";
-	                                        releaseQoT[2].subQualities[1]="ResponseTime";  	
-		*/
 	}
 	public static final String sql_upd = "SELECT "+net.ddp2p.common.table.mirror.url +
 			" FROM "+net.ddp2p.common.table.mirror.TNAME+
@@ -217,10 +179,7 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
     		if(DEBUG) System.err.println(__("No updateInfo record match given url found in table: ")+net.ddp2p.common.table.mirror.TNAME);
     		return result;
     	}
-    	// only one record (updateInfo) to be retrieve
     	result = new D_MirrorInfo(updateInfo.get(0));
-//    	for(int i=0; i<urls.size(); i++)
-//    		result.add((String)urls.get(i).get(0)) ;
    		return result;
 	}
 	@Override
@@ -274,10 +233,8 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 				new String[]{net.ddp2p.common.table.mirror.mirror_ID},
 				params,DEBUG);
 		if(cmd.equals(action_insert)){
-		// check the existance based on PK or url?
 		String params2[]=new String[net.ddp2p.common.table.mirror.F_FIELDS_NOID];
 		System.arraycopy(params,0,params2,0,params2.length);
-		//System.out.println("params2[last]: "+ params2[table.mirror.F_FIELDS_NOID-1]);
 		this.mirror_ID = Application.getDB().insertNoSync(net.ddp2p.common.table.mirror.TNAME, net.ddp2p.common.table.mirror._fields_updates_no_ID,params2);
 		}
 	}
@@ -293,7 +250,6 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 		}
 		return a.size()>0;
 	}
-	// check testers preferances (weight+ number+ Required)
 	public static Hashtable<VersionInfo, Hashtable<String, VersionInfo>> validateVersionInfo(
 			Hashtable<VersionInfo, Hashtable<String, VersionInfo>> versions) {
 		Hashtable<VersionInfo, Hashtable<String, VersionInfo>> result = new Hashtable<VersionInfo, Hashtable<String, VersionInfo>>();
@@ -374,7 +330,6 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 			String testers_count_weight = DD.getAppText(DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_VALUE);
 			if (testers_count_weight == null){
 				return DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT;
-				// testers_count_weight = "" + DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT; 							
 			}
 			return Float.parseFloat(testers_count_weight);
 		} catch (Exception e) {
@@ -443,7 +398,6 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 					}
 					if ((vi.testers_data[i].tester_QoT[_test] < expect[k].mQoT) ||
 							(vi.testers_data[i].tester_RoT[_test] < expect[k].mRoT)) break;
-					
 					if(k==expect.length-1) return true;
 				}
 			}
@@ -475,13 +429,13 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 			for(String url:available.keySet()) {
 				try{	
 					VersionInfo vi = available.get(url);
-					D_MirrorInfo ui = getUpdateInfo(url); // url here used as primary key to find a mirror
+					D_MirrorInfo ui = getUpdateInfo(url); 
 					ui.last_version = vi.version;
 					ui.last_version_branch = vi.branch;
 					ui.last_contact_date = new GregorianCalendar();
 					ui.releaseQoT = vi.releaseQD;
 					ui.testerInfo = vi.testers_data;
-					ui.last_version_info = vi.encode(); // I need to change it to ASN1 encoding
+					ui.last_version_info = vi.encode(); 
 					ui.store(D_MirrorInfo.action_update);
 					if(DEBUG)System.out.println("store_QoTs_and_RoTs()ui.last_version= "+ui.last_version);
 				}catch (P2PDDSQLException e) {
@@ -517,7 +471,6 @@ public class D_MirrorInfo extends net.ddp2p.ASN1.ASNObj implements Summary{
 		}
 		return result;
 	}
-	
 }
 class TestExpectation extends net.ddp2p.ASN1.ASNObj {
 	String test_ID;

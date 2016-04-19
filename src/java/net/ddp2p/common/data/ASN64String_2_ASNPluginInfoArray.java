@@ -1,12 +1,10 @@
 package net.ddp2p.common.data;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.hds.ASNPluginInfo;
 import net.ddp2p.common.util.Util;
-
 public class ASN64String_2_ASNPluginInfoArray extends ASNObj {
 	private ASNPluginInfo[] _plugin_info;
 	public ASN64String_2_ASNPluginInfoArray(ASNPluginInfo[] pi) {
@@ -32,13 +30,11 @@ public class ASN64String_2_ASNPluginInfoArray extends ASNObj {
 	public Encoder getEncoder() {
 		return Encoder.getEncoder(get_PluginInfo());
 	}
-
 	@Override
 	public ASN64String_2_ASNPluginInfoArray decode(Decoder dec) throws ASN1DecoderFail {
 		dec.getSequenceOf(ASNPluginInfo.getASN1Type(), new ASNPluginInfo[0], new ASNPluginInfo());
 		return this;
 	}
-
 	public String get_PluginInfoString() {
 		if (this.get_PluginInfo() == null) return null;
 		return Util.stringSignatureFromByte(encode());
@@ -46,9 +42,7 @@ public class ASN64String_2_ASNPluginInfoArray extends ASNObj {
 	public ASNPluginInfo[] get_PluginInfo() {
 		return _plugin_info;
 	}
-
 	public void set_PluginInfo(ASNPluginInfo[] _plugin_info) {
 		this._plugin_info = _plugin_info;
 	}
-	
 }

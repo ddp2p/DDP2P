@@ -1,31 +1,23 @@
-/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Osamah Dhannoon
 		Author: Osamah Dhannoon: odhannoon2011@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
-
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
-
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
-/* ------------------------------------------------------------------------- */
-
 package net.ddp2p.common.handling_wb;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Calendar;
-
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
@@ -47,13 +39,11 @@ import net.ddp2p.common.streaming.RequestData;
 import net.ddp2p.common.streaming.UpdatePeersTable;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
-
 public class ReceivedBroadcastableMessages {
 	public static long all_msg_received=0;
 	public static long all_myInterest_msg_received=0;
 	public static long all_msg_received_fromMyself=0;
 	public static long all_not_myInterest_msg_received=0;
-	
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
 	private static final int MY_PEER_BAG_MAX_SIZE = 10;
@@ -64,7 +54,6 @@ public class ReceivedBroadcastableMessages {
 	private static long last =  Util.CalendargetInstance().getTimeInMillis()-10000;
 	private static long crt;
 	public static int count_dots = 0;
-	
 	/**
 	 * 
 	 * @param obtained
@@ -87,33 +76,18 @@ public class ReceivedBroadcastableMessages {
 		Decoder dec = new Decoder(obtained);
 		D_Message msg = new D_Message().decode(dec);
 		if(DEBUG)System.out.println("integrateMessage : After Decoding msg : msg.vote.org_ID :"+msg.vote.getOrganizationGID());
-		
-		
-		
-		
-		
 		public_msg = msg;
 		if(obtained!=null)if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage: msg received");
 		try{
 			long added_org=-1,added_motion=-1,added_constituent=-1,
 					added_vote=-1,added_peer=-1,added_witness=-1, added_neigh=-1;
-			check_global_peerID(msg); // play Thanks
-			/*
-			if (check_global_peerID(msg)) {//this condition is useless!  we are using random numbers!
-				if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage: Receive from my self");
-				//all_msg_received_fromMyself++;
-				//if(_DEBUG)System.out.println("So far : Total msg received:"+all_msg_received+" Total myInterest msg received:"+ all_myInterest_msg_received+" Total my own msg received:"+all_msg_received_fromMyself);
-				return;
-				
-			}else */
+			check_global_peerID(msg); 
 			{	
-				//check if the message does not include myInterests
 				all_msg_received++;
 				if(net.ddp2p.common.handling_wb.BroadcastQueueRequested.myInterests!=null && msg.organization!=null)
 				{
 					pm.org_ID_hash = msg.organization.getGIDH();
 					boolean exists = false;
-					
 					if(net.ddp2p.common.handling_wb.BroadcastQueueRequested.myInterests.org_ID_hashes!=null)
 					for(int i=0; i<net.ddp2p.common.handling_wb.BroadcastQueueRequested.myInterests.org_ID_hashes.size(); i++)
 						if(net.ddp2p.common.handling_wb.BroadcastQueueRequested.myInterests.org_ID_hashes.get(i).equals(pm.org_ID_hash))
@@ -126,39 +100,19 @@ public class ReceivedBroadcastableMessages {
 					{
 						all_not_myInterest_msg_received++;
 						if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage: So far : Total msg received:"+all_msg_received+" Total myInterest msg received:"+ all_myInterest_msg_received+" Total msg received not my interest:"+all_not_myInterest_msg_received);
-						//If we want to ignore msgs not of our interests then enable the next line
-						//else just keep it comment out in order to receive everything else.
-						
 						return;
-						//check the QRE check mark on the GUI?
-						//If the QRE is checked then we must return here!!!
-						/*
-						String val =  DD.getAppText("Q_RE");
-						if(val!=null){
-							if(val.equals("1"))
-							{
-								if(DEBUG) System.out.println("ReceivedBroadcastableMessages:integrateMessage: Q_RE is checked!!");
-								return;
-							}
-						}*/
 					}
-					//integrateMessage() returns if the message received is not overlapping with myInterests
 				}
 				if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage: So far : Total msg received:"+all_msg_received+" Total myInterest msg received:"+ all_myInterest_msg_received+" Total msg received not my interest:"+all_not_myInterest_msg_received);
-
 				if((msg.organization!=null)&&(msg.constituent==null)&&(msg.witness==null)&&(msg.vote==null)) { 
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:RECEIVE ORGANIZATION ONLY"); 
 					int result = D_Organization.isOrgAvailableForGIDH(msg.organization.getGIDH(), false);
-					//added_org=handle_org(msg.organization);
 					pm.org_ID_hash = msg.organization.getGIDH();
 					added_org=handle_org(pm, msg.organization);
 					WirelessLog.RCV_logging(WirelessLog.org_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
 					count_dots++;
 				}
-
-				//if(msg.vote != null)System.out.println("Vote is not null!");
-				
 				if((msg.constituent!=null)&&(msg.neighborhoods==null)&&(msg.vote==null)&&(msg.witness==null)) { 
 					if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:RECEIVE CONSTITUENT");
 					long added_Org=-1;
@@ -166,7 +120,6 @@ public class ReceivedBroadcastableMessages {
 					if(msg.organization!=null) {
 						pm.org_ID_hash = msg.organization.getGIDH();
 						added_Org = handle_org(pm, msg.organization); 
-					//goid = GOID_by_local(added_Org);
 					}
 					if(goid == null) {
 						goid = msg.constituent.getOrganizationGID();
@@ -184,7 +137,6 @@ public class ReceivedBroadcastableMessages {
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage: .");
 					count_dots++;
 				}
-
 				if((msg.witness!=null)&&(msg.constituent==null)&&(msg.vote==null)){
 					if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage: RECEIVE Witness : "+msg.witness);
 					long added_Org = -1;
@@ -195,7 +147,6 @@ public class ReceivedBroadcastableMessages {
 						pm.org_ID_hash=msg.organization.getGIDH();
 						added_Org = handle_org(pm, msg.organization); 
 					}
-					//String goid = GOID_by_local(added_Org);
 					goid = msg.witness.global_organization_ID;
 					if(msg.witness.witnessed!=null) added_witnessed_cons = handle_constituent(pm,msg.witness.witnessed,goid,added_Org, __peer);
 					if(msg.witness.witnessing!=null) added_witnessing_cons = handle_constituent(pm, msg.witness.witnessing,goid,added_Org, __peer);
@@ -205,10 +156,8 @@ public class ReceivedBroadcastableMessages {
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
 					count_dots++;
 				}
-
 				if((msg.neighborhoods!=null)&&(msg.witness==null)&&(msg.vote==null)&&(msg.organization==null)) {
 					if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:RECEIVE Neighborhoods hierarchy");
-					// TODO added_org may not have been initialized
 					int result = D_Neighborhood.isGIDavailable(msg.neighborhoods[0].getGID(), added_org, false);
 					for(int i=0;i<msg.neighborhoods.length;i++) {
 						if(DEBUG)System.out.println("Parent_ID : "+msg.neighborhoods[i]);
@@ -219,19 +168,15 @@ public class ReceivedBroadcastableMessages {
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
 					count_dots++;
 				}
-
 				if(msg.vote!=null) { 
 					if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:RECEIVE VOTE in ReceivedBroacastableMessage:integrateMessage"); 
 					if(msg.organization!=null) { 
 						pm.org_ID_hash=msg.organization.getGIDH();
-						//System.out.println("ReceivedBroacastableMessage:integrateMessage(): msg.organization.ID:"+msg.organization.global_organization_ID);				
 						long added_Org = handle_org(pm, msg.organization);
-						//System.exit(1);
 						if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:ORG ID : "+added_Org);
 						long added_cons =  handle_constituent(pm, msg.vote.getConstituent_force(),msg.organization.getGID(),added_Org, __peer);
 						if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:CONS ID : "+added_cons);
 					}
-					//else{System.out.println("ReceivedBroacastableMessage:integrateMessage ms.organization is null");}
 					int result = D_Vote.isGIDavailable(msg.vote.getGID(), false);
 					added_vote = handle_vote(pm, msg.vote, __peer);
 					WirelessLog.RCV_logging(WirelessLog.vote_type,msg.sender.component_basic_data.globalID,pm.raw,length,result,IP,cnt_val,Msg_Time);
@@ -239,7 +184,6 @@ public class ReceivedBroadcastableMessages {
 					if(DEBUG)System.out.print("ReceivedBroadcastableMessages:integrateMessage:.");
 					count_dots++;
 				}
-
 				if(msg.Peer!=null){
 					if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:RECEIVE PEER");
 					int result = D_Peer.isGIDavailable(msg.Peer.component_basic_data.globalIDhash, false);
@@ -253,8 +197,6 @@ public class ReceivedBroadcastableMessages {
 		}catch(SignatureVerificationException e){e.printStackTrace();}
 		if(DEBUG)System.out.println("ReceivedBroadcastableMessages:integrateMessage:So far : Total msg received:"+all_msg_received+" Total myInterest msg received:"+ all_myInterest_msg_received+" Total msg received not my interest:"+all_not_myInterest_msg_received);
 	}
-
-
 	private static String GOID_by_local(long org_id) throws P2PDDSQLException {
 		String sql = "select "+net.ddp2p.common.table.organization.global_organization_ID+
 				" from "+net.ddp2p.common.table.organization.TNAME+" WHERE "+net.ddp2p.common.table.organization.organization_ID+
@@ -264,7 +206,6 @@ public class ReceivedBroadcastableMessages {
 		String GOid = Util.getString(org.get(0).get(0));
 		return GOid;
 	}
-
 	/**
 	 * check the new incoming vote if its new add it and return the ID. if its already exist in
 		the db do not add it just return the ID
@@ -273,29 +214,23 @@ public class ReceivedBroadcastableMessages {
 	 * @throws P2PDDSQLException
 	 * @throws SignatureVerificationException
 	 */
-
 	private static long handle_vote(PreparedMessage pm, D_Vote vote, D_Peer __peer) throws P2PDDSQLException, SignatureVerificationException {
-		//D_Peer __peer = null;
-		long o_ID = -1; // vote.motion.getOrganizationLID();
-		
+		long o_ID = -1; 
 		long motion_id = -1;
 		if (vote.getMotionFromObjOrLID() != null) {
 			if (DEBUG) System.out.println("with MOTION");
 			if (DEBUG) System.out.println("MOTION Data : "+vote.getMotionFromObjOrLID());
-			if (o_ID <= 0) o_ID = D_Organization.getLIDbyGID(vote.getMotionFromObjOrLID().getGID()); //vote.motion.getOrganizationLID();
+			if (o_ID <= 0) o_ID = D_Organization.getLIDbyGID(vote.getMotionFromObjOrLID().getGID()); 
 			RequestData sol_rq = new RequestData();
 			RequestData new_rq = new RequestData();
-			
 			D_Motion m = D_Motion.getMotiByGID(vote.getMotionFromObjOrLID().getGID(), true, true, true, __peer, o_ID, null);
-			m.loadRemote(vote.getMotionFromObjOrLID(), sol_rq, new_rq, __peer); //.store(sol_rq, new_rq);//pm should be passed
+			m.loadRemote(vote.getMotionFromObjOrLID(), sol_rq, new_rq, __peer); 
 			motion_id = m.storeRequest_getID();
 			m.releaseReference();
-			
 			if (DEBUG) System.out.println("MOTION ID : "+motion_id);
 		}
 		else 
 			if (DEBUG) System.out.println("WITHOUT MOTION");
-		
 		long just_id = -1;
 		if(vote.getJustificationFromObjOrLID()!=null) {
 			if(DEBUG)System.out.println("with JUSTIFICATION");
@@ -307,36 +242,30 @@ public class ReceivedBroadcastableMessages {
 				j.loadRemote(vote.getJustificationFromObjOrLID(), sol_rq, new_rq, __peer);
 				just_id = j.storeRequest_getID();
 				j.releaseReference();
-				//just_id =  vote.justification.store(sol_rq, new_rq);//pm should be passed
 			} catch(Exception e){e.printStackTrace();}
 			if(DEBUG)System.out.println("JUST ID : "+just_id);
 		}
 		else 
 			if(DEBUG)System.out.println("without justificatio");
-		
-
 		long vote_id = -1;
 		RequestData sol_rq = new RequestData();
 		RequestData new_rq = new RequestData();
 		try{
-			vote_id =  vote.store(pm, sol_rq, new_rq, __peer);//pm should be passed
+			vote_id =  vote.store(pm, sol_rq, new_rq, __peer);
 		}catch(Exception e){e.printStackTrace();}
 		if(DEBUG)System.out.println("vote ID : "+vote_id);
-
 		return vote_id;
 	}
-
 	private static long handle_witness(PreparedMessage pm, D_Witness witness, D_Peer __peer) throws P2PDDSQLException {
 		long add_witness =-1;
 		RequestData sol_rq = new RequestData();
 		RequestData new_rq = new RequestData();
 		try{
-			add_witness = witness.store(sol_rq, new_rq, __peer);//pm should be passed to this function.
+			add_witness = witness.store(sol_rq, new_rq, __peer);
 			if(DEBUG)System.out.println("handle_witness : after witness.stor");
 		}catch(Exception e){e.printStackTrace();}
 		return add_witness;
 	}
-
 	/**
 	 * check the new incoming constituent if its new add it and return the ID. if its already exist in
 	   the db do not add it just return the ID
@@ -356,23 +285,20 @@ public class ReceivedBroadcastableMessages {
 		constituent.setArrivalDate(now);
 		constituent.setOrganization(goid, added_Org);
 		System.out.println("ReceivedBroadcasted : handle_constituent: should handle new received and detect references, in org");
-		
 		RequestData sol_rq = null; 
-		RequestData new_rq = null; // do something with these (store them in org to request from others)
+		RequestData new_rq = null; 
 		return constituent.storeRemoteThis(pm, sol_rq, new_rq, __peer);
 	}
-
 	private static long handle_Neighborhoods(PreparedMessage pm,D_Neighborhood neigh, long orgLID, D_Peer __peer) {
 		long neigh_id = -1;
 		RequestData sol_rq = new RequestData();
 		RequestData new_rq = new RequestData();
 		String orgGID = null;
 		try{
-			neigh_id = neigh.storeRemoteThis(orgGID, orgLID, Util.getGeneralizedTime(), sol_rq, new_rq, __peer);//pm should be passed to this function.
+			neigh_id = neigh.storeRemoteThis(orgGID, orgLID, Util.getGeneralizedTime(), sol_rq, new_rq, __peer);
 		}catch(Exception e){e.printStackTrace();}
 		return neigh_id;
 	}
-
 	/**
 	 * check the new incoming org if its new add it and return the ID. if its already exist in
 	   the db do not add it just return the ID
@@ -381,7 +307,6 @@ public class ReceivedBroadcastableMessages {
 	 * @throws P2PDDSQLException
 	 * @throws SignatureVerificationException
 	 */
-	//private static long handle_org(D_Organization ORG) throws P2PDDSQLException, SignatureVerificationException {
 	private static long handle_org(PreparedMessage pm, D_Organization ORG) throws P2PDDSQLException, SignatureVerificationException {
 		if(ORG == null) return -1;
 		ArrayList<ArrayList<Object>> orgs = null;
@@ -389,7 +314,6 @@ public class ReceivedBroadcastableMessages {
 				" from "+net.ddp2p.common.table.organization.TNAME+" WHERE "+net.ddp2p.common.table.organization.global_organization_ID+
 				"=?;";
 		orgs = Application.getDB().select(sql, new String[]{ORG.getGID()});
-
 		if(orgs.isEmpty()) 
 		{
 			if(DEBUG)System.out.println("Its a new Organization : "+ORG.creator);
@@ -401,7 +325,6 @@ public class ReceivedBroadcastableMessages {
 			return Integer.parseInt(Util.getString(orgs.get(0).get(0)));
 		}		
 	}
-
 	/**
 	 * insert the new org in the db and return it's id
 	 * @param ORG
@@ -411,71 +334,17 @@ public class ReceivedBroadcastableMessages {
 	 * @throws SignatureVerificationException
 	 */
 	public static long insert_org(D_Organization ORG, boolean needs_verification) throws P2PDDSQLException, SignatureVerificationException {	
-/*
-		Calendar _arrival_date = Util.CalendargetInstance();
-		String arrival_date = Encoder.getGeneralizedTime(_arrival_date);
-		String global_organization_ID = ORG.global_organization_ID;
-		String gIDhash = Util.getGIDhash(global_organization_ID);
-		String name = ORG.name;
-		long peer_id = get_peer(ORG.creator);
-		String creator_ID = ""+peer_id;
-		String Signature = Util.stringSignatureFromByte(ORG.signature);
-		String creation_date = ORG._last_sync_date;
-		int cert_methods = ORG.params.certifMethods;
-		String s_cert_methods = ""+cert_methods;
-		String s_certificate = Util.stringSignatureFromByte(ORG.params.certificate);
-		String hash_org_alg = ORG.params.hash_org_alg;
-		String category = ORG.params.category;
-		String s_default_scoring_options = D_OrgConcepts.stringFromStringArray(ORG.params.default_scoring_options);//, table.organization.ORG_SCORE_SEP, null);
-		String instructions_new_motions = ORG.params.instructions_new_motions;
-		String instructions_registration = ORG.params.instructions_registration;
-		String description = ORG.params.description;
-		String s_languages = D_OrgConcepts.stringFromStringArray(ORG.params.languages);//, table.organization.ORG_LANG_SEP,null);
-		String S_name_forum = D_OrgConcepts.stringFromStringArray(ORG.concepts.name_forum);
-		String s_name_justification = D_OrgConcepts.stringFromStringArray(ORG.concepts.name_justification);
-		String s_name_motion = D_OrgConcepts.stringFromStringArray(ORG.concepts.name_motion);
-		String s_name_organization = D_OrgConcepts.stringFromStringArray(ORG.concepts.name_organization);
-		*/
 		if(DEBUG) System.out.println("ReceivedBroadcastable:insert_org: org="+ORG);
-
 		if(needs_verification) {
 			if(!ORG.verifySignature())  
 				throw new SignatureVerificationException("Invalid Signature");
 		}
 		ORG.broadcasted = true;
 		ORG = D_Organization.storeRemote(ORG, null);
-		long org_id = ORG.getLID_forced(); //.storeVerified();
-		
-		/*
-		long org_id = Application.db.insert(table.organization.TNAME,
-				new String[]{table.organization.global_organization_ID,
-				table.organization.name,//table.organization.description,
-				table.organization.creation_date,table.organization.creator_ID,
-				table.organization.global_organization_ID_hash,
-				table.organization.certification_methods,table.organization.category,
-				table.organization.certificate,table.organization.signature,
-				table.organization.default_scoring_options,
-				table.organization.instructions_new_motions,
-				table.organization.instructions_registration,
-				table.organization.description,
-				table.organization.languages,
-				table.organization.name_forum,table.organization.name_justification,
-				table.organization.name_motion,table.organization.name_organization,
-				table.organization.hash_org_alg,
-				//table.organization.hash_org,
-				table.organization.arrival_date,
-				table.organization.broadcasted},
-				new String[]{global_organization_ID,name,creation_date,creator_ID,gIDhash,
-				s_cert_methods,category,s_certificate,Signature,s_default_scoring_options,
-				instructions_new_motions,instructions_registration,description,s_languages,S_name_forum,
-				s_name_justification,s_name_motion,s_name_organization,hash_org_alg,//s_hash_org,
-				arrival_date,"1"
-		}, DEBUG);
-		*/
+		long org_id = ORG.getLID_forced(); 
 		if(DEBUG)System.out.println("New Org ID is : "+org_id);
 		return org_id;
 	}
-
 	/**
 	 * check the incoming peer who create the org if it's new or already exist
 	 * @param creator
@@ -500,55 +369,20 @@ public class ReceivedBroadcastableMessages {
 			return Integer.parseInt(peers.get(0).get(0).toString());
 		}
 	}
-
-	// add the new peer and return the id
 	public static long add_peer(D_Peer creator, boolean needs_verification) throws P2PDDSQLException, SignatureVerificationException {
-//		String global_peer_id = creator.globalID;
-//		String global_peer_id_hash = Util.getGIDhash(creator.globalID);;
-//		hds.TypedAddress[] peer_address = creator.address;
-//		String creation_date = Encoder.getGeneralizedTime(creator.creation_date);
-//		String slogan = creator.slogan;
-//		String name = creator.name;
 		String signature = Util.stringSignatureFromByte(creator.getSignature());
 		if(DEBUG)System.out.println("SIGNATURE : "+signature);
-//		String broadcastable = creator.broadcastable?"1":"0";
-//		String hash_alg = Util.concat(creator.signature_alg, DD.APP_ID_HASH_SEP);
 		creator.component_local_agent_state.arrival_date=Util.CalendargetInstance();
 		String crt_date = Encoder.getGeneralizedTime(creator.component_local_agent_state.arrival_date);
 		if (needs_verification) {
-			//D_Peer pa = D_Peer.get//new D_Peer(creator, false);
 			if((creator == null) || !creator.verifySignature())
 				if(!DD.ACCEPT_UNSIGNED_PEERS_FROM_TABLES) throw new SignatureVerificationException("Invalid Signature");
 		}
-		//long peer_id =  D_Peer._storeReceived(creator, creator.component_local_agent_state.arrival_date, crt_date); //._storeVerified();
 		D_Peer p = D_Peer.storeReceived(creator, true, false, crt_date);
 		long peer_id = p.getLID_keep_force();
-		/*
-		Calendar adding_date = Util.CalendargetInstance();
-		String s_adding_date = Encoder.getGeneralizedTime(adding_date);
-
-		long peer_id =  Application.db.insert(table.peer.TNAME,
-				new String[]{table.peer.global_peer_ID,table.peer.global_peer_ID_hash,
-				table.peer.arrival_date, table.peer.name, table.peer.slogan, table.peer.signature, 
-				table.peer.creation_date, table.peer.broadcastable, table.peer.hash_alg},
-				new String[]{global_peer_id,global_peer_id_hash, s_adding_date,
-				name, slogan, signature, creation_date, broadcastable, hash_alg});
-		for(int i=0;i<peer_address.length;i++){
-			String address = peer_address[i].address;
-			String type = peer_address[i].type;
-			Application.db.insert(table.peer_address.TNAME,
-					new String[]{table.peer_address.peer_ID,
-					table.peer_address.type,table.peer_address.address,table.peer_address.arrival_date},
-					new String[]{peer_id+"",type, address,creation_date}, DEBUG);
-
-		}
-		D_PeerAddress.integratePeerOrgs(creator.served_orgs, peer_id, s_adding_date);
-		UpdatePeersTable.integratePeerAddresses(peer_id, peer_address, adding_date);
-		*/
 		if(DEBUG)System.out.println("New Peer ID is : "+peer_id);
 		return peer_id;
 	}
-
 	/**
 	 * Check if it should be discarded:
 	 *  - you are receiving from the same machine
@@ -562,20 +396,15 @@ public class ReceivedBroadcastableMessages {
 		String my_GPID = HandlingMyself_Peer.getMyPeerGID();
 		String hash_GID = Util.getGIDhash(msg.sender.component_basic_data.globalID);
 		my_GPIDhash = Util.getGIDhash(my_GPID);
-		
 		if(hash_GID.compareTo(my_GPIDhash)==0)  {
 			if(DEBUG)System.out.println("RCV from myself");
 			return true;
 			}
-		
 		if(CHECK_MESSAGE_SIGNATURES ){
-			// check signature is messages is signed and config requires it.
 		}
 		my_bag_of_peers.remove(hash_GID);
 		my_bag_of_peers.add(hash_GID);
 		if(my_bag_of_peers.size()>MY_PEER_BAG_MAX_SIZE) my_bag_of_peers.remove(0);
-		
-		//play music
 		if ((msg.recent_senders!=null)&&(msg.recent_senders.contains(my_GPIDhash))){
 			net.ddp2p.common.config.Application_GUI.playThanks();
 		}
