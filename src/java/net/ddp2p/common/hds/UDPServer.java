@@ -651,7 +651,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	    	}
 	    }
 	    DatagramPacket dp = new DatagramPacket(umsg.ack, umsg.ack.length,sa);
-	    this.getUDPSocket().send(dp);
+	    UDPServer.getUDPSocket().send(dp);
 	    if(DEBUG)System.out.println("getFragments: Sent ack: "+frag.sequence+"/"+umsg.received+" umsgID="+umsg.msgID+" to: "+sa);
 	    return result;
 	}

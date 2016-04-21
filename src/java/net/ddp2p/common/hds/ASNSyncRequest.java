@@ -13,7 +13,6 @@
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
  package net.ddp2p.common.hds;
-import java.net.SocketAddress;
 import java.util.Calendar;
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
@@ -32,84 +31,6 @@ import net.ddp2p.common.streaming.SpecificRequest;
 import net.ddp2p.common.util.Summary;
 import net.ddp2p.common.util.Util;
 import static net.ddp2p.common.util.Util.__;
-/**
-UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
-	senderID UTF8String,
-	signature OCTET STRING,
-	destinationID UTF8String,
-	msgType INTEGER,
-	msgID UTF8String,
-	fragments INTEGER,
-	sequence INTEGER,
-	data OCTET STRING
-}
-UDPFragmentAck := IMPLICIT [APPLICATION 11] SEQUENCE {
-	senderID UTF8String,
-	signature OCTET STRING,
-	destinationID UTF8String,
-	msgID UTF8String,
-	transmitted OCTET STRING,
-}
-UDPFragmentNAck := IMPLICIT [APPLICATION 15] UDPFragmentNAck;
-UDPReclaim := IMPLICIT [APPLICATION 16] UDPFragmentNAck;
- */
-class UDPMessage {
-	public int type;
-	UDPFragment[] fragment;
-	byte[] transmitted;
-	int[] sent_attempted; 
-	int unacknowledged = 0;
-	long date;
-	int received;
-	public String msgID;
-	SocketAddress sa;
-	UDPFragmentAck uf;
-	byte[] ack;
-	boolean ack_changed=false;
-	Object lock_ack=new Object();
-	public String destination_GID, sender_GID, sender_instance;
-	public int checked = 0; 
-	public String toString() {
-		String res = "UDPMesage:" +
-				" ID="+msgID+
-				"\n type="+type+
-				"\n date: "+date+"ms"+
-				"\n unack: "+unacknowledged+
-				"\n rec="+received+"/"+fragment.length+
-		"\n transmitted=";
-		for(int k=0; k<fragment.length;k++)
-			res+="."+transmitted[k];
-		res += "\n attempts";
-		for(int k=0; k<fragment.length;k++)
-			res+="."+sent_attempted[k];
-		return res;
-	}
-	UDPMessage(int len){
-		fragment = new UDPFragment[len];
-		transmitted = new byte[len];
-		sent_attempted = new int[len];
-		date = Util.CalendargetInstance().getTimeInMillis();
-		uf = new UDPFragmentAck();
-	}
-	public byte[] assemble(){
-		if(received<fragment.length) return null;
-		int MTU = fragment[0].data.length;
-		int msglen =(fragment.length-1)*MTU + 
-			fragment[fragment.length-1].data.length;
-		byte[] msg = new byte[msglen];
-		for(int i=0; i<fragment.length; i++) {
-			Util.copyBytes(msg, i*MTU, fragment[i].data, 
-					fragment[i].data.length, 0);
-		}
-		return msg;
-	}
-	public boolean no_ack_received() {
-		for(int i=0; i<fragment.length; i++) {
-			if(this.transmitted[i] == 1) return false;
-		}
-		return true;
-	}
-}
 /**
 UDPFragmentAck := IMPLICIT [APPLICATION 11] SEQUENCE {
 	senderID UTF8String,
@@ -207,78 +128,6 @@ class UDPFragmentNAck extends UDPFragmentAck{
 		for(int k=0; k<transmitted.length;k++)
 			res+="."+transmitted[k];
 		return res;
-	}
-}
-/**
-UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
-	senderID UTF8String,
-	signature OCTET STRING,
-	destinationID UTF8String,
-	msgType INTEGER,
-	msgID UTF8String,
-	fragments INTEGER,
-	sequence INTEGER,
-	data OCTET STRING
-}
- *
- * @author msilaghi
- *
- */
-class UDPFragment extends ASNObj {
-	String senderID;
-	byte[] signature;
-	String destinationID;
-	String msgID;
-	int sequence, fragments, msgType;
-	byte[] data;
-	/**
-UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
-	senderID UTF8String,
-	signature OCTET STRING,
-	destinationID UTF8String,
-	msgType INTEGER,
-	msgID UTF8String,
-	fragments INTEGER,
-	sequence INTEGER,
-	data OCTET STRING
-}
-	 */
-	@Override
-	public Encoder getEncoder() {
-		Encoder enc = new Encoder().initSequence();
-		enc.addToSequence(new Encoder(senderID));
-		enc.addToSequence(new Encoder(signature));
-		enc.addToSequence(new Encoder(destinationID));
-		enc.addToSequence(new Encoder(msgType));
-		enc.addToSequence(new Encoder(msgID));
-		enc.addToSequence(new Encoder(fragments));
-		enc.addToSequence(new Encoder(sequence));
-		enc.addToSequence(new Encoder(data));
-		enc.setASN1Type(DD.TAG_AC12);
-		return enc;
-	}
-	@Override
-	public UDPFragment decode(Decoder dec) throws ASN1DecoderFail {
-		Decoder content=dec.getContent();
-		senderID = content.getFirstObject(true).getString();
-		signature = content.getFirstObject(true).getBytes();
-		destinationID = content.getFirstObject(true).getString();
-		msgType = content.getFirstObject(true).getInteger().intValue();
-		msgID = content.getFirstObject(true).getString();
-		fragments = content.getFirstObject(true).getInteger().intValue();
-		sequence = content.getFirstObject(true).getInteger().intValue();
-		data = content.getFirstObject(true).getBytes();
-		return this;
-	}
-	public String toString() {
-		return "UDPFragment: sID="+Util.trimmed(senderID)+
-		"\n signature="+Util.byteToHexDump(signature)+
-		"\n dID="+Util.trimmed(destinationID)+
-		"\n type="+msgType+
-		"\n ID="+msgID+
-		"\n fragments="+fragments+
-		"\n sequence="+sequence+
-		"\n data["+data.length+"]="+Util.byteToHexDump(data);
 	}
 }
 /**
