@@ -396,7 +396,7 @@ public class DD {
 	/** Limits Used for security at recipient */
 	public static int UDP_MAX_FRAGMENTS = 10000; 
 	/** Ask only senders for hashes, if true. Else ask everybody */
-	public static final boolean REQUEST_ONLY_SENDERS_FOR_HASHES = false;
+	public static final boolean REQUEST_ONLY_SENDERS_FOR_HASHES = true;
 	public static ArrayList<InetSocketAddress> directories_failed = new ArrayList<InetSocketAddress>();
 	/**
 	 * Use ClientUDP?
