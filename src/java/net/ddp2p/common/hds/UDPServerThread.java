@@ -97,13 +97,13 @@ public class UDPServerThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			msg = null; 
 			try {
 				frag.decode(dec);
-				if (DEBUG) System.out.println("UDPServer:run: receives fragment "+frag.sequence+"/"+frag.fragments+" from:"+pak.getSocketAddress());
-				if (frag.fragments > DD.UDP_MAX_FRAGMENTS) {
-					if (_DEBUG) System.out.println("UDPServer:run: Too Many Fragments: "+frag);
+				if (DEBUG) System.out.println("UDPServer:run: receives fragment "+frag.getSequence()+"/"+frag.getFragments()+" from:"+pak.getSocketAddress());
+				if (frag.getFragments() > DD.UDP_MAX_FRAGMENTS) {
+					if (_DEBUG) System.out.println("UDPServer:run: Too Many Fragments for local security check: max = "+DD.UDP_MAX_FRAGMENTS+" incoming: "+frag);
 					return;
 				}
-				if ((frag.data!=null) && (frag.data.length > DD.UDP_MAX_FRAGMENT_LENGTH)) {
-					if (_DEBUG) System.out.println("UDPServer:run: Too Large Fragments: "+frag.data.length);
+				if ((frag.getData()!=null) && (frag.getData().length > DD.UDP_MAX_FRAGMENT_LENGTH)) {
+					if (_DEBUG) System.out.println("UDPServer:run: Too Large Fragments: "+frag.getData().length);
 					return;
 				}
 				msg = us.getFragment(frag, pak.getSocketAddress());

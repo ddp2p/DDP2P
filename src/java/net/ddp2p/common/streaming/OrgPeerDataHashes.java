@@ -197,13 +197,21 @@ public class OrgPeerDataHashes extends ASNObj{
 		if (DEBUG) System.out.println("\nOrgPeerDataHashes:addFromPeer:  pID="+_peer_ID+" adding to"+Util.concat(result, ";", "null"));
 		for (String h : hashes.keySet()) { 
 			Hashtable <Long, String> p = hashes.get(h); 
-			if (p.containsKey(_peer_ID)) 
-				if (!result.contains(h))
+			if (_peer_ID == null || p.containsKey(_peer_ID)) 
+				if ( ! result.contains(h) )
 					result.add(h);  
 		}
 		if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: Got "+hashes+"\n");
 		return result;
 	}
+	/**
+	 * This version should return both the desired GIDH and the desired date. Since dates are not stored internally for some types, add EMPTYDATE ("")
+	 * as date.
+	 * @param hashes
+	 * @param _peer_ID
+	 * @param result
+	 * @return
+	 */
 	public static Hashtable<String, String> addFromPeer(
 			Hashtable<String, Hashtable<Long, String>> hashes, Long _peer_ID,
 			Hashtable<String, String> result) {
@@ -211,7 +219,7 @@ public class OrgPeerDataHashes extends ASNObj{
 		for (String h : hashes.keySet()) {
 			if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: evaluate " + h);
 			Hashtable<Long, String> p = hashes.get(h);
-			if (p.containsKey(_peer_ID)) {
+			if (_peer_ID == null || p.containsKey(_peer_ID)) {
 				if (! result.containsKey(h)) {
 					result.put(h,DD.EMPTYDATE); 
 					if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: result contained in peer " + _peer_ID);
@@ -232,7 +240,7 @@ public class OrgPeerDataHashes extends ASNObj{
 		for (String h : hashes.keySet()) {
 			if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: evaluate " + h);
 			Hashtable<Long, Object> p = hashes.get(h);
-			if (p.containsKey(_peer_ID)) {
+			if (_peer_ID == null || p.containsKey(_peer_ID)) {
 				if (! result.containsKey(h)) {
 					result.put(h,DD.EMPTYDATE); 
 					if (DEBUG) System.out.println("OrgPeerDataHashes:addFromPeer: result contained in peer " + _peer_ID);

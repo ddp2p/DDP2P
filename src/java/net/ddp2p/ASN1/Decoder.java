@@ -584,7 +584,7 @@ class Decoder {
 		return ASN1_Util.getCalendar(this.getGeneralizedTimeAnyType());
 	}
 	/**
-	 * Currently not expanding the buffer but rather abandon if too small
+	 * Currently not expanding the buffer but rather abandon if too small. Also returns false on end of stream.
 	 * @param is
 	 * @return
 	 * @throws IOException
@@ -593,7 +593,7 @@ class Decoder {
 		while(true) {
 			int asrlen = objectLen();
 			if(DEBUG)System.out.println("Object size="+asrlen+"; Buffer size="+data.length+"; Current size="+length);
-			if((asrlen>0) && (asrlen>data.length)){
+			if ((asrlen > 0) && (asrlen>data.length)) {
 				System.out.println("Object size="+asrlen+"; Buffer size="+data.length);
 				return false;
 			}
@@ -601,7 +601,7 @@ class Decoder {
 				if(DEBUG)System.out.println("Object size="+asrlen+"; Current size="+length);
 				if(length == data.length) return false;
 				int inc = is.read(data, length, data.length-length);
-				if(inc == 0) return false;
+				if (inc <= 0) return false;
 				length += inc;
 				continue;
 			}

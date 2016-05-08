@@ -1,5 +1,6 @@
 package net.ddp2p.common.hds;
 import java.net.SocketAddress;
+import java.util.Hashtable;
 import net.ddp2p.common.util.Util;
 public class UDPMessage {
 	private static final boolean DEBUG = false;
@@ -42,13 +43,13 @@ public class UDPMessage {
 	}
 	public byte[] assemble() {
 		if(received<fragment.length) return null;
-		int MTU = fragment[0].data.length;
+		int MTU = fragment[0].getData().length;
 		int msglen =(fragment.length-1)*MTU + 
-			fragment[fragment.length-1].data.length;
+			fragment[fragment.length-1].getData().length;
 		byte[] msg = new byte[msglen];
 		for(int i = 0; i < fragment.length; i++) {
-			Util.copyBytes(msg, i*MTU, fragment[i].data, 
-					fragment[i].data.length, 0);
+			Util.copyBytes(msg, i*MTU, fragment[i].getData(), 
+					fragment[i].getData().length, 0);
 		}
 		return msg;
 	}
@@ -64,28 +65,31 @@ public class UDPMessage {
 	}
 	public static UDPMessage reconstruct(UDPMessage candidate, UDPFragment frag) {
 		SocketAddress sa = null;
+		return reconstruct(candidate, frag, sa);
+	}
+	public static UDPMessage reconstruct(UDPMessage candidate, UDPFragment frag, SocketAddress sa) {
 	    UDPMessage umsg = candidate;
-	    if (umsg == null || ! Util.equalStrings_null_or_not(umsg.msgID, frag.msgID))
+	    if (umsg == null || ! Util.equalStrings_null_or_not(umsg.msgID, frag.getMsgID()))
 	    	{
 	    		/**
 	    		 * For new messages
 	    		 */
-	    		umsg = new UDPMessage(frag.fragments);
-	    		umsg.uf.msgID = frag.msgID;
-	    		umsg.uf.destinationID = frag.senderID;
+	    		umsg = new UDPMessage(frag.getFragments());
+	    		umsg.uf.msgID = frag.getMsgID();
+	    		umsg.uf.destinationID = frag.getSenderID();
 	    		umsg.uf.transmitted = umsg.transmitted;
-	    		umsg.type = frag.msgType;
+	    		umsg.type = frag.getMsgType();
 	    		umsg.sa = sa;
-	    		umsg.destination_GID = frag.destinationID;
-	    		umsg.sender_GID = frag.senderID;
-	    		umsg.msgID = frag.msgID;
+	    		umsg.destination_GID = frag.getDestinationID();
+	    		umsg.sender_GID = frag.getSenderID();
+	    		umsg.msgID = frag.getMsgID();
 	    		if (DEBUG) System.out.println("Starting new message: "+umsg);
 	    	}
 	    /**
 	     * add new fragment
 	     */
-	    if (frag.sequence >= umsg.fragment.length) {
-	    	if(DEBUG)System.err.println("Failure sequence: "+frag.sequence+" vs. "+umsg.fragment.length);
+	    if (frag.getSequence() >= umsg.fragment.length) {
+	    	if(DEBUG)System.err.println("Failure sequence: "+frag.getSequence()+" vs. "+umsg.fragment.length);
 	    	return null;
 	    }
 	    /**
@@ -95,12 +99,33 @@ public class UDPMessage {
 	    /**
 	     * Set the flag for having received this
 	     */
-	    if (umsg.transmitted[frag.sequence] == 0) {
-	    	umsg.transmitted[frag.sequence] = 1;
+	    if (umsg.transmitted[frag.getSequence()] == 0) {
+	    	umsg.transmitted[frag.getSequence()] = 1;
 	    	umsg.received ++;
 	    	umsg.ack_changed = true;
-	    	umsg.fragment[frag.sequence] = frag;
+	    	umsg.fragment[frag.getSequence()] = frag;
 	    }
 		return umsg;
+	}
+	/**
+	 * Can add a fragment to bag and return a message (if ready to assemble()).
+	 * @param frag
+	 * @param factory
+	 * @param sa
+	 * @return
+	 */
+	public static UDPMessage considerFragment(UDPFragment frag, Hashtable<String, UDPMessage> factory, SocketAddress sa) {
+		UDPMessage msg = factory.get(frag.getMsgID());
+		if (msg == null) {
+			msg = UDPMessage.reconstruct(null, frag, sa);
+			factory.put(frag.getMsgID(), msg);
+		}
+			else
+					UDPMessage.reconstruct(null, frag, sa);
+		if (msg.ready_to_assemble()) {
+			factory.remove(msg.msgID);
+			return msg;
+		}
+		return null;
 	}
 }

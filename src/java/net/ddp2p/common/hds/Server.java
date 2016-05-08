@@ -89,7 +89,7 @@ class ServerThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				DD.ed.fireServerUpdate(new CommEvent(this, null, s.getRemoteSocketAddress(), "Client", "Sync Requested"));
 				if(DEBUG) out.println("server thread: Got: "+Util.byteToHexDump(sr,msglen));
 				Decoder dec = new Decoder(sr,0,msglen);
-				if(!dec.fetchAll(is)){
+				if (! dec.fetchAll(is)) {
 					System.err.println("Buffer too small for receiving request!");
 					continue;
 				}

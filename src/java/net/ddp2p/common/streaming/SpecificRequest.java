@@ -102,6 +102,7 @@ public class SpecificRequest extends ASNObj implements Summary{
 			" FROM "+net.ddp2p.common.table.organization.TNAME+" AS o "+
 			" JOIN "+net.ddp2p.common.table.peer_org.TNAME+" AS p ON(p."+net.ddp2p.common.table.peer_org.organization_ID+"=o."+net.ddp2p.common.table.organization.organization_ID+") "+
 			" WHERE "+net.ddp2p.common.table.peer_org.peer_ID+"=? AND o."+net.ddp2p.common.table.organization.specific_requests+" IS NOT NULL";
+	public static final	String sql_orgs_all_queried = sql_orgs_inferred_queried_for_peer+" UNION "+sql_orgs_queried_for_peer;
 	/**
 	 * // for each org served by this peer, gather the requested data
 	 * @param peer_ID
@@ -109,10 +110,9 @@ public class SpecificRequest extends ASNObj implements Summary{
 	 * @throws P2PDDSQLException
 	 */
 	public static SpecificRequest getPeerRequest(String peer_ID) throws P2PDDSQLException {
-		String sql_orgs_all_queried = sql_orgs_inferred_queried_for_peer+" UNION "+sql_orgs_queried_for_peer;
 		if (DEBUG) System.out.println("SpecificRequest: getPeerRequest: start "+peer_ID);
-		long _peer_ID = Util.lval(peer_ID, -1);
-		if (_peer_ID == -1) return null;
+		Long _peer_ID = null;
+		if ( DD.REQUEST_ONLY_SENDERS_FOR_HASHES ) _peer_ID = Util.Lval(peer_ID);
 		SpecificRequest result = new SpecificRequest();
 		ArrayList<ArrayList<Object>> s = Application.getDB().select(sql_orgs_all_queried, new String[]{peer_ID, peer_ID}, DEBUG);
 		for (ArrayList<Object> o :s) {

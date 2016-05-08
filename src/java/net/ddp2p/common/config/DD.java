@@ -388,7 +388,15 @@ public class DD {
 	public static final String APP_WINDOWS_LOGS_PATH = "APP_WINDOWS_LOGS_PATH";
 	public static final String APP_WINDOWS_DATABASE_PATH = "APP_WINDOWS_DATABASE_PATH";
 	public static final String APP_WINDOWS_DD_JAR_PATH = "APP_WINDOWS_DD_JAR_PATH";
-	public final static int MTU = 32000;
+	public static int MTU = 1472-200;
+	/** Limits Used for security at recipient */
+	public static int UDP_MAX_MSG_LENGTH = 10000000;
+	/** Limits Used for security at recipient */
+	public static int UDP_MAX_FRAGMENT_LENGTH = 100000;
+	/** Limits Used for security at recipient */
+	public static int UDP_MAX_FRAGMENTS = 10000; 
+	/** Ask only senders for hashes, if true. Else ask everybody */
+	public static final boolean REQUEST_ONLY_SENDERS_FOR_HASHES = false;
 	public static ArrayList<InetSocketAddress> directories_failed = new ArrayList<InetSocketAddress>();
 	/**
 	 * Use ClientUDP?
@@ -460,8 +468,6 @@ public class DD {
 	public static boolean DEBUG_LIVE_THREADS = false;
 	public static boolean DEBUG_COMMUNICATION = false;
 	public static boolean DEBUG_COMMUNICATION_LOWLEVEL = false;
-	public static int UDP_MAX_FRAGMENT_LENGTH = 100000;
-	public static int UDP_MAX_FRAGMENTS = 100;
 	public static boolean WARN_ON_IDENTITY_CHANGED_DETECTION = false;
 	public static boolean CONSTITUENTS_ORPHANS_SHOWN_BESIDES_NEIGHBORHOODS = true;
 	public static boolean CONSTITUENTS_ORPHANS_FILTER_BY_ORG = true;

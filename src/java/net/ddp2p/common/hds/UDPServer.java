@@ -216,19 +216,19 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		if(DEBUG)System.out.println("Sending to: "+sa+" msgID="+umsg.msgID+" msg["+msg.length+"]="+Util.byteToHexDump(msg));
 		for(int k=0; k < frags; k++) {
 			UDPFragment uf = new UDPFragment();
-			uf.senderID = Application.getCurrent_Peer_ID().getPeerGID();
-			uf.destinationID = destGID;
-			uf.msgType = type;
-			uf.msgID = umsg.msgID;
-			uf.sequence = k;
-			uf.fragments = frags;
+			uf.setSenderID(Application.getCurrent_Peer_ID().getPeerGID());
+			uf.setDestinationID(destGID);
+			uf.setMsgType(type);
+			uf.setMsgID(umsg.msgID);
+			uf.setSequence(k);
+			uf.setFragments(frags);
 			uf.signature = new byte[0];
 			if(DD.PRODUCE_FRAGMENT_SIGNATURE){
 				uf.signature = Util.sign_peer(uf.getEncoder().getBytes());
 			}
 			int len_this=Math.min(msg.length-MTU*k, MTU);
-			uf.data = new byte[len_this];
-			Util.copyBytes(uf.data, 0, msg, uf.data.length, MTU*k);
+			uf.setData(new byte[len_this]);
+			Util.copyBytes(uf.getData(), 0, msg, uf.getData().length, MTU*k);
 			umsg.fragment[k] = uf;
 		}
 		int messages_to_send_in_parallel = Math.min(DD.FRAGMENTS_WINDOW, frags);
@@ -248,7 +248,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			dp.setSocketAddress(sa);
 			getUDPSocket().send(dp);
 			if(DEBUG)System.out.println("Sent UDPFragment: "+uf+" to "+sa);
-			if(DEBUG)System.out.println("Sent UDPFragment: "+uf.sequence+"/"+uf.fragments+" to "+sa+" of "+uf.msgID);
+			if(DEBUG)System.out.println("Sent UDPFragment: "+uf.getSequence()+"/"+uf.getFragments()+" to "+sa+" of "+uf.getMsgID());
 		}
 	}
 	/**
@@ -467,7 +467,7 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				dp.setSocketAddress(umsg.sa);
 				getUDPSocket().send(dp);
 				if(DEBUG)System.out.println("Sent UDPFragment: "+uf+" to "+umsg.sa);
-				if(DEBUG)System.out.println("ReSent UDPFragment: "+uf.sequence+"/"+uf.fragments+" ID="+umsg.msgID+" to "+umsg.sa);
+				if(DEBUG)System.out.println("ReSent UDPFragment: "+uf.getSequence()+"/"+uf.getFragments()+" ID="+umsg.msgID+" to "+umsg.sa);
 			}
 			return;
 		}
@@ -555,9 +555,9 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		byte[] result = null;
 		if(DD.VERIFY_FRAGMENT_SIGNATURE) {
 			byte[] signature = frag.signature;
-			String senderID = frag.senderID;
+			String senderID = frag.getSenderID();
 			frag.signature = new byte[0];
-			frag.senderID = "";
+			frag.setSenderID("");
 			if((signature == null)||(signature.length==0)){
 				System.err.println("Fragment came unsigned: rejected\n"+frag);
 				return null;
@@ -570,9 +570,9 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				return null;
 			}
 			frag.signature = signature;
-			frag.senderID = senderID;
+			frag.setSenderID(senderID);
 		}
-		String msgID = frag.msgID+"";
+		String msgID = frag.getMsgID()+"";
 		if (DEBUG) {
 			System.out.println("Running messages: "+recvMessages.size());
 			Enumeration<String> e = recvMessages.keys();		   
@@ -591,16 +591,16 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	    		/**
 	    		 * For new messages
 	    		 */
-	    		umsg = new UDPMessage(frag.fragments);
-	    		umsg.uf.msgID = frag.msgID;
-	    		umsg.uf.destinationID = frag.senderID;
+	    		umsg = new UDPMessage(frag.getFragments());
+	    		umsg.uf.msgID = frag.getMsgID();
+	    		umsg.uf.destinationID = frag.getSenderID();
 	    		umsg.uf.transmitted = umsg.transmitted;
-	    		umsg.type = frag.msgType;
+	    		umsg.type = frag.getMsgType();
 	    		umsg.sa = sa;
-	    		umsg.destination_GID = frag.destinationID;
-	    		umsg.sender_GID = frag.senderID;
+	    		umsg.destination_GID = frag.getDestinationID();
+	    		umsg.sender_GID = frag.getSenderID();
 	    		recvMessages.put(msgID, umsg);
-	    		umsg.msgID = frag.msgID;
+	    		umsg.msgID = frag.getMsgID();
 	    		if(DEBUG)System.out.println("Starting new message: "+umsg);
 	    	}else
 	    		if(DEBUG)System.out.println("Located message: "+umsg);
@@ -611,21 +611,21 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	    	/**
 	    	 * add new fragment
 	    	 */
-	    	if(frag.sequence>=umsg.fragment.length){
-	    		if(DEBUG)System.err.println("Failure sequence: "+frag.sequence+" vs. "+umsg.fragment.length);
+	    	if(frag.getSequence()>=umsg.fragment.length){
+	    		if(DEBUG)System.err.println("Failure sequence: "+frag.getSequence()+" vs. "+umsg.fragment.length);
 	    		return null;
 	    	}
 	    	/**
 	    	 * Set the flag for having received this
 	    	 */
-	    	if(umsg.transmitted[frag.sequence]==0) {
-	    		umsg.transmitted[frag.sequence] = 1;
+	    	if(umsg.transmitted[frag.getSequence()]==0) {
+	    		umsg.transmitted[frag.getSequence()] = 1;
 	    		umsg.received++;
 	    		umsg.ack_changed = true;
-	    		umsg.fragment[frag.sequence] = frag;
+	    		umsg.fragment[frag.getSequence()] = frag;
 	    	}
 			if(umsg.received>=umsg.fragment.length){
-				recvMessages.remove(umsg.fragment[0].msgID);
+				recvMessages.remove(umsg.fragment[0].getMsgID());
 			}
 	    }
 		if(umsg.received>=umsg.fragment.length){
@@ -637,23 +637,27 @@ public class UDPServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			if(DEBUG)System.out.println("getFragments. Got: "+umsg.received+"/"+umsg.fragment.length+" received msg="+umsg);
 			result = null;
 		}
-	    synchronized(umsg.lock_ack){
+		ackUDPMessage(umsg);
+	    if(DEBUG)System.out.println("getFragments: Sent ack: "+frag.getSequence()+"/"+umsg.received+" umsgID="+umsg.msgID+" to: "+sa);
+	    return result;
+	}
+	public static void ackUDPMessage(UDPMessage umsg) throws IOException {	    
+	    synchronized(umsg.lock_ack) {
 	    	if(umsg.ack_changed) {
 	    		if(DD.PRODUCE_FRAGMENT_ACK_SIGNATURE) {
 	    			umsg.uf.signature = new byte[0];
 	    			umsg.uf.senderID="";
-	    			umsg.uf.senderID = frag.destinationID;
+	    			umsg.uf.senderID = umsg.destination_GID;
 	    			umsg.uf.signature = Util.sign_peer(umsg.uf);
 	    		}
-	    		if(DEBUG)System.out.println("getFragments: Preparing ack: "+umsg.uf+" umsgID="+umsg.msgID+" to: "+sa);
+	    		if(DEBUG)System.out.println("ackUDPMessage: Preparing ack: "+umsg.uf+" umsgID="+umsg.msgID+" to: "+umsg.sa);
 	    		umsg.ack = umsg.uf.encode();
 	    		umsg.ack_changed = false;
 	    	}
 	    }
-	    DatagramPacket dp = new DatagramPacket(umsg.ack, umsg.ack.length,sa);
+	    DatagramPacket dp = new DatagramPacket(umsg.ack, umsg.ack.length,umsg.sa);
 	    UDPServer.getUDPSocket().send(dp);
-	    if(DEBUG)System.out.println("getFragments: Sent ack: "+frag.sequence+"/"+umsg.received+" umsgID="+umsg.msgID+" to: "+sa);
-	    return result;
+	    if(DEBUG)System.out.println("ackUDPMessage: Sent ack: "+umsg.received+" umsgID="+umsg.msgID+" to: "+umsg.sa);
 	}
 	/**
 	 * The socket is allocated in the parent Server class. Here we only handle it.

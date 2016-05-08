@@ -322,7 +322,7 @@ public class ClientSync{
 				e.printStackTrace();
 			}
 			if(DEBUG)System.out.println("Client: buildRequests: will verify: "+sr.address);
-			if(DD.VERIFY_SENT_SIGNATURES||DD.VERIFY_SIGNATURE_MYPEER_IN_REQUEST) {
+			if ( DD.VERIFY_SENT_SIGNATURES || DD.VERIFY_SIGNATURE_MYPEER_IN_REQUEST) {
 				if(!sr.address.verifySignature()) {
 					System.err.println("Client: buildRequests: Signature failure for: "+sr.address);
 					System.err.println("Client: buildRequests: Signature failure for pk: "+net.ddp2p.ciphersuits.Cipher.getPK(sr.address.component_basic_data.globalID));
