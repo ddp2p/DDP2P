@@ -1,10 +1,12 @@
 package net.ddp2p.common.hds;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
+
 /**
 UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
 	senderID UTF8String,
@@ -16,6 +18,7 @@ UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
 	sequence INTEGER,
 	data OCTET STRING
 }
+
 /**
 UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
 	senderID UTF8String,
@@ -37,6 +40,12 @@ UDPFragmentAck := IMPLICIT [APPLICATION 11] SEQUENCE {
 UDPFragmentNAck := IMPLICIT [APPLICATION 15] UDPFragmentNAck;
 UDPReclaim := IMPLICIT [APPLICATION 16] UDPFragmentNAck;
  */
+
+
+/*
+ * @author msilaghi
+ *
+ */
 public class UDPFragment extends ASNObj {
 	private String senderID;
 	byte[] signature;
@@ -46,6 +55,7 @@ public class UDPFragment extends ASNObj {
 	private int fragments;
 	private int msgType;
 	private byte[] data;
+	//int offset, length;
 	/**
 UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
 	senderID UTF8String,
@@ -72,6 +82,7 @@ UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
 		enc.setASN1Type(DD.TAG_AC12);
 		return enc;
 	}
+
 	@Override
 	public UDPFragment decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder content=dec.getContent();
@@ -95,45 +106,59 @@ UDPFragment := IMPLICIT [APPLICATION 12] SEQUENCE {
 		"\n sequence="+getSequence()+
 		"\n data["+getData().length+"]="+Util.byteToHexDump(getData());
 	}
+
 	public String getMsgID() {
 		return msgID;
 	}
+
 	public void setMsgID(String msgID) {
 		this.msgID = msgID;
 	}
+
 	public int getMsgType() {
 		return msgType;
 	}
+
 	public void setMsgType(int msgType) {
 		this.msgType = msgType;
 	}
+
 	public int getFragments() {
 		return fragments;
 	}
+
 	public void setFragments(int fragments) {
 		this.fragments = fragments;
 	}
+
 	public int getSequence() {
 		return sequence;
 	}
+
 	public void setSequence(int sequence) {
 		this.sequence = sequence;
 	}
+
 	public byte[] getData() {
 		return data;
 	}
+
 	public void setData(byte[] data) {
 		this.data = data;
 	}
+
 	public String getDestinationID() {
 		return destinationID;
 	}
+
 	public void setDestinationID(String destinationID) {
 		this.destinationID = destinationID;
 	}
+
 	public String getSenderID() {
 		return senderID;
 	}
+
 	public void setSenderID(String senderID) {
 		this.senderID = senderID;
 	}

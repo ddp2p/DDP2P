@@ -1,17 +1,22 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
  package net.ddp2p.widgets.constituent;
 import javax.swing.*;
 import javax.swing.event.*;
@@ -21,6 +26,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.ConstituentListener;
 import net.ddp2p.common.config.Language;
@@ -33,12 +39,14 @@ import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.MainFrame;
 import static net.ddp2p.common.util.Util.__;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
 public class ConstituentsPanel extends JPanel implements OrgListener, ActionListener, RefreshListener, ConstituentListener {
     private static final boolean DEBUG = false;
     private static final boolean _DEBUG = true;
@@ -50,6 +58,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 	private JButton refresh_button = new JButton(__("Up to Date"));
 	private D_Organization organization;
 	private D_Constituent me;
+	
     private Component getNorthComponent() {
     	JPanel header = new JPanel();
      	header.setLayout(new BorderLayout());
@@ -57,6 +66,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
      	header.add(refresh_button,BorderLayout.EAST);
 		return header;
 	}
+
     public ConstituentsPanel(DBInterface db, int _organizationID, int _constituentID, String _global_constituentID) {
     	super(new BorderLayout());
     	constituentID = _constituentID;
@@ -79,14 +89,21 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 			}
     	MainFrame.status.addOrgStatusListener(this);
     	MainFrame.status.addConstituentMeStatusListener(this);
+    	//Application.orgs.addListener(this);
     	if (_organizationID < 0) return;
+    	
      	org_label.setText(getLabelText());
      	refresh_button.addActionListener(this);
+     	//refresh_button.setEnabled(false);
      	disableRefresh();
         add(getNorthComponent(), BorderLayout.NORTH);
+   	//_organizationID = 100;
+    	//_constituentID = 100;
+    	//String _global_constituentID = "global_ID_Test";
     	ConstituentsModel cm = new ConstituentsModel(db, _organizationID, _constituentID, _global_constituentID, org, this);
     	tree = new ConstituentsTree( cm );
     	long cID = cm.getConstituentIDMyself();
+    	
     	if (cID != constituentID && cID > 0) {
     		constituentID = cID;
 			me = D_Constituent.getConstByLID(constituentID, true, false);
@@ -95,6 +112,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
         JScrollPane scrollPane = new JScrollPane(tree);
         scrollPane.setPreferredSize(new Dimension(200, 200));
         add(scrollPane, BorderLayout.CENTER);
+        
     }
     private String getLabelText() {
     	String result;
@@ -105,7 +123,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
     	if (me == null)
     		result += tree.getModel().getConstituentMyselfName();
     	else
-    		result += me.getNameFull();
+    		result += me.getNameFull();//getSurname();
 		return result;
 	}
 	public void setOrg(long _orgID, D_Organization org) throws P2PDDSQLException{
@@ -146,6 +164,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
     		add(getNorthComponent(), BorderLayout.NORTH);
     		disableRefresh();
     		this.refresh_button.addActionListener(this);
+    		//add(org_label, BorderLayout.NORTH);
     	}
         add(scrollPane, BorderLayout.CENTER);
     }
@@ -158,6 +177,7 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
         frame.pack();
         frame.setVisible(true);
     }
+ 
     public static void main(String[] args) {
 	if(args.length==0) return;
 	final String dbname = args[0];
@@ -166,11 +186,17 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 		    try {
 		    	final DBInterface db = new DBInterface(dbname);
 		    	DDTranslation.db=db;
+		    	/*
+		    	DDTranslation.preferred_languages=new Language[]{
+			    		new Language("ro", "RO"),new Language("ro", null),	
+			    		new Language("en", "US"),new Language("en", null)};
+			    		*/
 		    	DDTranslation.preferred_languages=new Language[]{
 			    		new Language("ro", "RO")	
 		    	};
 		    	DDTranslation.constituentID=100;
 		    	DDTranslation.organizationID=100;
+		    	//DDTranslation.preferred_charsets=new String[]{"latin","cyrillic","chinese"};
 		    	DDTranslation.preferred_charsets=new String[]{"latin"};
 		    	DDTranslation.authorship_charset="latin";
 		    	DDTranslation.authorship_lang = new Language("ro","RO");
@@ -190,7 +216,9 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 			this.constituentID = c.getLID();
 		else 
 			this.constituentID = -1;
+		
 		this.me = c;
+		
     	if (org_label != null) {
     		org_label.setText(getLabelText());
     	}		
@@ -199,10 +227,12 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 	public void orgUpdate(String orgID, int col, D_Organization org) {
     	if(DEBUG)System.out.println("ConstituentsTest:orgUpdate: id="+orgID+" col="+col);
     	long _orgID = -1;
+    	
     	if (orgID != null) {
     		_orgID = new Integer(orgID).longValue();
 	   		if (org == null) org = D_Organization.getOrgByLID_NoKeep(orgID, true);
 	   		if (org == null) _orgID = -1;
+	   		
     	} else {
     		if (org != null) _orgID = org.getLID_forced();
      	}
@@ -218,16 +248,21 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 	}
 	public void disableRefresh(){
 	   	if(DEBUG)System.out.println("\n********************\nConstituentsTest:disableRefresh start");
+	   	//Util.printCallPath("");
 	   	this.refresh_button.removeActionListener(this);
 		this.refresh_button.setEnabled(false);
+		//this.refresh_button.setVisible(false);//(false);
 		this.refresh_button.setText(__("Up to Date"));
 		this.refresh_button.setBackground(this.org_label.getBackground());
 		this.refresh_button.setForeground(this.org_label.getForeground());
+		//this.refresh_button.set;
 		this.refresh_button.addActionListener(this);
 	   	if(DEBUG)System.out.println("\n********************\nConstituentsTest:disableRefresh done");
 	}
+		
 	public void enableRefresh(){
 	   	if(DEBUG)System.out.println("\n********************\nConstituentsTest:enableRefresh");
+	   	//Util.printCallPath("");
 	   	this.refresh_button.removeActionListener(this);
 		this.refresh_button.setEnabled(true);
 		this.refresh_button.setText(__("Refresh Needed"));
@@ -240,12 +275,21 @@ public class ConstituentsPanel extends JPanel implements OrgListener, ActionList
 		if(DEBUG)System.out.println("ConstituentsPanel:action Refresh \n"+e);
 		if(e.getSource() == this.refresh_button) {
 			if(!this.refresh_button.isEnabled()) return;
+			//disableRefresh();
 			if(tree == null) return;
 			ConstituentsModel model = tree.getModel();
 			if(model == null) return;
 			try {
 				model.doRefreshAll();
+				/*
+			Object oldRoot = model.getRoot();
+			model.init(model.getOrganizationID(), model.getConstituentIDMyself(), model.getConstituentGIDMyself(), model.getOrganization());
+			model.fireTreeStructureChanged(new TreeModelEvent(tree,new Object[]{model.root}));
+			model.refresh(new JTree[]{tree}, oldRoot);
+			model.runCensus();
+				 */
 			} catch (P2PDDSQLException e1) {
+				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}

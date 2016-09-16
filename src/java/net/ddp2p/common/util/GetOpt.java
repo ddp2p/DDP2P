@@ -1,18 +1,30 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2004,2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+//By Marius Calin Silaghi, FIT
+//June, 15 2004
+// Package implementing standard UNIX "getopt" for JAVA
+// To be inherited by main application classes
+// Released under AGPL
+
 package net.ddp2p.common.util;
+
 /**
  * The class to handle options unix style
  * @author msilaghi
@@ -87,12 +99,14 @@ public class GetOpt {
     public static char getopt(String argv[], String optstring) {
     	return getopt(argv,optstring.toCharArray());
     }
+    
     public static char getopt(String argv[], char[] optstring) {
-    	int ind_potential_optarg = 0,crt_opt_ind = 0;  
+    	int ind_potential_optarg = 0,crt_opt_ind = 0;  //o = 0, 
     	if ((optind < argv.length) && (inoptind >= argv[optind].length())) {
     		inoptind = 0;
     		optind ++;
     	} 
+    	// System.out.println("GetOpt END? "+optind+" vs "+argv.length+" "+Util.concat(argv, "__"));
     	if (optind >= argv.length) {
     		return END;
     	}
@@ -109,6 +123,9 @@ public class GetOpt {
 		    	if ((optopt != '-') || (argv[crt_opt_ind].length() == 1)) {
 		    		int index_to_switch = 0;
 		    		for (index_to_switch = crt_opt_ind + 1; index_to_switch < argv.length; index_to_switch ++) {
+		    			// stop searching with success at -xy... or -x
+		    			// I think it should have rather be moved at end of usable options (searching backward)
+		    			// or best one should also bring the next parameter optarg (if any)
 		    			if ((argv[index_to_switch].charAt(0) == '-')
 		    					&& ((argv[index_to_switch].length() > 2) ||
 		    					((argv[index_to_switch].length() == 2)
@@ -119,6 +136,8 @@ public class GetOpt {
 		    				ind_potential_optarg = index_to_switch + 1;
 		    				break;
 		    			} else {
+		    				// here it seems that we switch crt parameter with the found "--"
+		    				// rather we should move it to after "--"
 		    				if ((argv[index_to_switch].length() == 2)
 		    						&& (argv[index_to_switch].charAt(0) == '-')
 		    						&& (argv[index_to_switch].charAt(1) == '-')) {
@@ -130,7 +149,7 @@ public class GetOpt {
 		    				}
 		    			}
 		    		}
-		    		if (index_to_switch == argv.length) {
+		    		if (index_to_switch == argv.length) {//end of options
 		    			optind = crt_opt_ind;
 		    			return (char) -1;
 		    		}
@@ -155,11 +174,13 @@ public class GetOpt {
 		    			optarg = argv[crt_opt_ind + 1];
 		    		}
 		    		inoptind ++;
+		    		//System.out.println("GetOpt: "+optind+"");
 		    		return optopt;
 		    	}
 		    }
 		    if (ind_opt_in_optstring == optstring.length) return '?';
 		}
+    	//System.out.println("GetOpt END of END");
 		return END;
     }
 }

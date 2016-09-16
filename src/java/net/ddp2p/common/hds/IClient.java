@@ -1,10 +1,18 @@
 package net.ddp2p.common.hds;
+
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+
 public interface IClient {
+
 	void turnOff();
+
 	void start();
+
+	//Object get_wait_lock();
+
 	void wakeUp();
+
 	/**
 	 * Called after the socket addresses are known
 	 * @param tcp_sock_addresses
@@ -22,11 +30,12 @@ public interface IClient {
 	boolean try_connect(
 			ArrayList<Address_SocketResolved_TCP> tcp_sock_addresses,
 			ArrayList<Address_SocketResolved_TCP> udp_sock_addresses,
-			String old_address, 
-			String s_address,  
-			String type,       
+			String old_address, // a DIR address or some other address
+			String s_address,  // an address or a list of addresses (from a DIR) separated by ","
+			String type,       // type of old_address
 			String global_peer_ID,
 			String peer_name,
 			ArrayList<InetSocketAddress> peer_directories_udp_sockets,
 			ArrayList<String> peer_directories);
+
 }

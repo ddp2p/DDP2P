@@ -1,33 +1,43 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.ciphersuits;
+
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
+
 class RSA_PK extends PK{
+	//final static String type="RSA";
 	final static String V0="0";
-	String version = V0; 
+	String version = V0; // version to write out, decoding converts to this version
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	String hash_alg=Cipher.SHA256;
+	String hash_alg=Cipher.SHA256;//"MD5";
 	BigInteger N;
 	BigInteger e;
 	static SecureRandom sr = new SecureRandom();
@@ -76,10 +86,12 @@ class RSA_PK extends PK{
 		enc.addToSequence(new Encoder(e));
 		enc.addToSequence(new Encoder(N));
 		enc.addToSequence(new Encoder(hash_alg));
+		//if(comment!=null)enc.addToSequence(new Encoder(comment));
 		return enc;
 	}
 	@Override
 	public RSA_PK decode(Decoder decoder) throws ASN1DecoderFail {
+		//boolean DEBUG = true;
 		String ver=null;
 		if(DEBUG)System.out.println("RSA_PK:decode: start");
 		Decoder dec = decoder.getContent();
@@ -89,6 +101,7 @@ class RSA_PK extends PK{
 		if (dec.getFirstObject(false).getTypeByte() != Encoder.TAG_UTF8String) throw new ASN1DecoderFail("Not RSA");
 		rsa = dec.getFirstObject(true).getString();
 		if (0 != RSA.type.compareTo(rsa)) throw new ASN1DecoderFail("Not RSA");
+		
 		if (DEBUG)System.out.println("RSA_PK:decode: RSA");
 		if (dec.getFirstObject(false).getTypeByte() == DD.TAG_AC0){
 			ver = dec.getFirstObject(true).getString(DD.TAG_AC0);
@@ -107,6 +120,7 @@ class RSA_PK extends PK{
 			if(dec_alg!=null)hash_alg=dec_alg.getString(); else hash_alg=Cipher.SHA256;
 		} else hash_alg = Cipher.SHA256;
 		if(DEBUG)System.out.println("RSA_PK:decode: hash="+hash_alg);
+		//if(dec.getFirstObject(false)!=null) comment=dec.getFirstObject(true).getString();
 		return this;
 	}
 	public boolean verify_unpad(byte[] signature, byte[] unpadded_msg) {
@@ -156,6 +170,7 @@ class RSA_PK extends PK{
 		int j=0;
 		if(msg.length > k-11) throw new RuntimeException("Message too long!");
 		byte[] M = new byte[k-1];
+		//M[j++] = 0;
 		M[j++] = 2;
 		byte ps[] = new byte[k-msg.length-3];
 		sr.nextBytes(ps);
@@ -182,6 +197,7 @@ class RSA_PK extends PK{
 			if(DEBUG)Util.printCallPath("RSA null what?");
 			return false;
 		}
+		
 		MessageDigest digest;
 		try {
 			digest = MessageDigest.getInstance(hash_alg);
@@ -190,7 +206,9 @@ class RSA_PK extends PK{
 		if(DEBUG)System.out.println("RSA:verify_unpad_hash: digest");
 		digest.update(message);
 		byte unpadded_msg[] = digest.digest();
+		
 		if(DEBUG)System.err.println("RSA: verify_unpad_hash: unpadded_msg=["+unpadded_msg.length+"]"+Util.byteToHex(unpadded_msg, ":"));///_DEBUG
+		//if(DEBUG)System.out.println("RSA:verify_unpad_hash:unpadded_msg="+Util.byteToHex(unpadded_msg, " "));
 		boolean result = this.verify_unpad(signature, unpadded_msg);
 		if(DEBUG)System.out.println("RSA:verify_unpad_hash: return "+result);
 		return result;
@@ -205,10 +223,11 @@ class RSA_PK extends PK{
 	}
 }
 class RSA_SK extends SK{
+	//final static String type="RSA";
 	final static String V0="0";
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	String hash_alg=Cipher.SHA256;
+	String hash_alg=Cipher.SHA256;//"SHA-256";//"MD5";
 	BigInteger p;
 	BigInteger q;
 	BigInteger N;
@@ -322,7 +341,7 @@ class RSA_SK extends SK{
 		if(DEBUG)System.out.println("RSA:hash_salt: ha="+hash_alg+", NbL="+N_bitLength);
 		int hLen = 126;
 		int sLen = 10;
-		int emBits=N_bitLength-1; 
+		int emBits=N_bitLength-1; // emBits>8hLen+8sLen+9
 		int emLen = (emBits+7)/8;
 		MessageDigest digest;
 		try {
@@ -341,6 +360,7 @@ class RSA_SK extends SK{
 		}
 		byte salt[] = new byte[sLen];
 		sr.nextBytes(salt);
+		
 		byte[] M1 = new byte[8+hLen+sLen];
 		Util.copyBytes(M1, 0, salt, sLen, 0);
 		Util.copyBytes(M1, sLen, mHash, hLen, 0);
@@ -358,6 +378,7 @@ class RSA_SK extends SK{
 		int k = (sk.N.bitLength()+7)/8;
 		int j=0;
 		if((M.length!=k-1)||((M.length==k-1)&&(M[0]!=2))) return null;
+		//if((M.length<k-1)||(M[k-2]!=2)) return null;
 		for(j=1;j<M.length;j++){
 			if(M[j]==0) break;
 		}
@@ -405,8 +426,8 @@ class RSA_SK extends SK{
 public class RSA extends net.ddp2p.ciphersuits.Cipher {
 	public final static String type = Cipher.RSA;
 	private static final int DD_PRIME_CERTAINTY = 10;
-	RSA_SK sk = null; 
-	RSA_PK pk = null; 
+	RSA_SK sk = null; //new RSA_SK();
+	RSA_PK pk = null; //new RSA_PK();
 	public RSA(){}
 	public RSA(RSA_SK _sk, RSA_PK _pk) {
 		sk = _sk;
@@ -555,6 +576,8 @@ public class RSA extends net.ddp2p.ciphersuits.Cipher {
 		System.out.println("p="+Util.byteToHex(p, " "));
 	}
 	public static void main(String[]args){
+		//RSA_PK pk = new RSA_PK();
+		//RSA_SK sk = new RSA_SK();
 		Cipher rsa = Cipher.getCipher("RSA", "SHA1",null);
 		SK sk= rsa.genKey(2048);
 		PK pk = rsa.getPK();

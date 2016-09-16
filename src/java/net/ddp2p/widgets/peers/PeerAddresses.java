@@ -1,5 +1,7 @@
 package net.ddp2p.widgets.peers;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.awt.Component;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -10,6 +12,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
+
 import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
@@ -24,6 +27,7 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
+
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
@@ -41,7 +45,9 @@ import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.components.DebateDecideAction;
 @SuppressWarnings("serial")
+
 class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBListener {
+
 	private static final Object peers_monitor = new Object();
 	public static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -49,6 +55,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 	D_Peer peer;
 	String global_peer_ID;
 	boolean me;
+	
 	private ArrayList<ArrayList<Object>> __peers;
 	String columnNames[]={__("Instance"),__("Type"),__("Domain"),__("UDP"),__("TCP"),__("Certified"),__("Priority"),__("Transient"),__("Loopback")};
 	protected static String[] columnToolTips = {
@@ -72,6 +79,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 	final int TABLE_COL_TRANSIENT = 7;
 	final int TABLE_COL_LOOPBACK = 8;
 	public boolean for_Myself;
+	
 	PeerAddressesModel() {
 		this.global_peer_ID = Identity.getMyPeerGID();
 		try {
@@ -97,6 +105,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 			e.printStackTrace();
 		}
 	}
+	
 	public void __update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
 		try {
 			init();
@@ -104,11 +113,13 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 			e.printStackTrace();
 		}
 	}
+	
 	@Override
 	public void update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
 		__update(table, info);
 	}
 	void init() throws P2PDDSQLException{
+		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("PeerAddress: init: " +"\n GID="+global_peer_ID+"\n me="+me+"\n peer="+peer);
 		synchronized (this.peers_monitor) {
 			if (global_peer_ID == null) {
@@ -131,7 +142,9 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		}
 		if (DEBUG) System.out.println("PeerAddress: init: done peer="+peer);
 		SwingUtilities.invokeLater(new RefresherSwingThread(this));
+		//this.fireTableDataChanged();
 	}
+
 	@Override
 	public int getColumnCount() {
 		return columnNames.length;
@@ -195,23 +208,34 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 			}
 		}
 	}
+//
+//	private ArrayList<ArrayList<Object>> getPeers() {
+//		synchronized(this.peers_monitor) {
+//			return __peers;
+//		}
+//	}
+
 	@Override
 	public Object getValueAt(int row, int col) {
 		int crt;
 		crt = this.getStoreAddrLen();
 		if(row < crt) return getValueAt_Stored(row, col);
 		row -= crt;
+
 		crt = this.getDirectoriesLen();
 		if(row < crt) return getValueAt_Dirs(row, col);
 		row -= crt;
+		
 		crt = this.getSocketsLen();
 		if(row < crt) return getValueAt_Socks(row, col);
 		row -= crt;
+				
 		crt = this.getLoopbackLen();
 		if(row < crt) return getValueAt_Loopback(row, col);
 		row -= crt;
 		return null;
 	}
+
 	@Override
 	public void setValueAt(Object value, int row, int col) {
 		if (col == TABLE_COL_CERTIFIED) {
@@ -221,6 +245,19 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		crt = this.getStoreAddrLen();
 		if (row < crt) { setValueAt_Stored(value, row, col); return; }
 		row -= crt;
+		/*
+		crt = this.getDirectoriesLen();
+		if(row < crt) { setValueAt_Dirs(value, row, col); return; }
+		row -= crt;
+		
+		crt = this.getSocketsLen();
+		if(row < crt) { setValueAt_Socks(value, row, col); return; }
+		row -= crt;
+				
+		crt = this.getLoopbackLen();
+		if(row < crt) { setValueAt_Loopback(value, row, col); return; }
+		row -= crt;
+		*/
 	}
 	private Object getValueAt_Loopback(int row, int col) {
 		switch (col) {
@@ -290,6 +327,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 			}
 		}
 		Address a = Identity.getListing_directories_addr().get(row);
+		
 		a.setDirType();
 		return a;
 	}
@@ -328,11 +366,11 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 	}
 	public D_PeerInstance getAddressInstance(int row) {
 		int crt = peer.shared_addresses.size();
-		if (row < crt) return null; 
+		if (row < crt) return null; //peer.shared_addresses.get(row);
 		for (D_PeerInstance i : peer._instances.values()) {
 			int old_crt = crt;
 			crt += i.addresses.size();
-			if (row < crt) return i;
+			if (row < crt) return i;//.addresses.get(row-old_crt);
 		}
 		return null;
 	}
@@ -363,6 +401,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 				}
 			}
 		}
+		
 		if ((list == null) ||
 				(!me && obj.certified)) return false;
 		list.remove(obj);
@@ -376,18 +415,24 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 	private void setValueAt_Stored(Object value, int row, int col) {
 		if (col == TABLE_COL_PRIORITY) {
 			Address _address = null;
+			//@Deprecated
+			//Address __address = null;
 			int priority = Integer.parseInt("" + value);
 			D_PeerInstance _dpi = getAddressInstance(row);
 			if (_dpi == null) {if (D_Peer.existsCertifiedAddressPriority(peer.shared_addresses, priority)) return;}
 			else if (D_Peer.existsCertifiedAddressPriority(_dpi.addresses, priority)) return;
+			
+			
 			peer = D_Peer.getPeerByPeer_Keep(peer);
 			if (peer == null) {
 				if (_DEBUG) System.out.println("PeerAddress: setValueAt_Stored: null peer");
 				return;
 			}
+			
 			_dpi = getAddressInstance(row);
 			if (_dpi == null) {if (D_Peer.existsCertifiedAddressPriority(peer.shared_addresses, priority)) return;}
 			else if (D_Peer.existsCertifiedAddressPriority(_dpi.addresses, priority)) return;
+			
 			_address = getAddress(row);
 			try {
 				_address.priority = priority;
@@ -403,11 +448,13 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 				}
 				peer.storeRequest();
 			} catch (Exception e) {e.printStackTrace();}
+			
 			peer.releaseReference();
 		}
 	}
 	private Object getValueAt_Stored(int row, int col) {
 		Address _address= null;
+		//@Deprecated
 		Address __address = null;
 		_address = getAddress(row);
 		if (_address == null) return null;
@@ -416,6 +463,10 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		case TABLE_COL_INSTANCE:
 			return _address.instance;
 		case TABLE_COL_TYPE:
+//			if (_address.pure_protocol == null) {
+//				System.out.println("PeerAddresses:getValueAt_Stored: type="+_address);
+//			}
+//			System.out.println("PeerAddresses:getValueAt_Stored: peer="+peer);
 			return _address.pure_protocol;
 		case TABLE_COL_DOMAIN:
 			if (__address != null) {
@@ -439,36 +490,56 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		}
 		return null;
 	}
+
 	public void setTable(PeerAddresses peerAddresses) {
 		table = peerAddresses;
 	}
+
 	public boolean store_and_certify(int row, Boolean certify) {
 		int crt;
+		
 		if (DEBUG) System.out.println("PeerAddress: store: start row="+row);
 		crt = this.getStoreAddrLen();
 		if (row < crt) return store_Stored(row, certify);
 		row -= crt;
+
 		crt = this.getDirectoriesLen();
 		if (row < crt) return store_Dirs(row, certify);
 		row -= crt;
+		
 		crt = this.getSocketsLen();
 		if (row < crt) return store_Socks(row, certify);
 		row -= crt;
+				
 		crt = this.getLoopbackLen();
 		if (row < crt) return store_Loopback(row, certify);
 		row -= crt;
 		if (DEBUG) System.out.println("PeerAddress: store: exit false row="+row);
 		return false;
 	}
+
 	private boolean store_Stored(int row, Boolean certify) {
+		// TODO Auto-generated method stub
 		return false;
 	}
+
 	private boolean store_Dirs(int row, Boolean value) {
+		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("PeerAddress: store_Dirs: start");
 		Address crt = getAddress_Dirs(row);
 		if (value == null) crt.certified = !crt.certified;
 		else crt.certified = value;
 		if (DEBUG) System.out.println("PeerAddress: store_Dirs: new adr="+crt);
+		/*
+		String type = Address.DIR;
+		Address crt = new Address(
+				(String)getValueAt_Dirs(row,TABLE_COL_DOMAIN),
+				((Integer)getValueAt_Dirs(row,TABLE_COL_TCP)).intValue(),
+				((Integer)getValueAt_Dirs(row,TABLE_COL_UDP)).intValue());
+		*/
+		//String _address = crt.toString();
+		//int ok = Application.ask(_("Do you want to add this globally or to instance:")+" \""+Identity.getMyPeerInstance()+"\"\n"+crt.toLongString(), _("Global?"), JOptionPane.YES_NO_CANCEL_OPTION);
+		//int ok = Application.ask(_("Do you want to add this globally or to instance:")+" \""+Identity.getMyPeerInstance()+"\"\n"+crt.toLongString(), _("Global?"),JOptionPane.YES_NO_CANCEL_OPTION);
 		Object[] options = new Object[]{__("Global"), __("Instance"), __("Cancel")};
 		int ok = Application_GUI.ask(__("Global?"), __("Do you want to add this globally or to instance:")+
 				" \""+Identity.getMyPeerInstance()+"\"\n"+crt.toLongNiceString(),
@@ -503,7 +574,11 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		dpi.agent_version = DD.VERSION;
 		dpi.setCreationDate();
 		peer.dirty_instances = true;
+		// long instID = dpi.get_peer_instance_ID_long();
+		
 		if (DEBUG) System.out.println("PeerAddress: store_Socks: store for instanceID: "+dpi);
+		// if (instID <= 0) instID = D_Peer.getNullInstanceID();
+		
 		try {
 			peer.addAddress(_address, type, _arrival_date, arrival_date, 
 					certified, D_Peer.getMaxCertifiedAddressPriority(dpi.addresses)+1, true,
@@ -519,6 +594,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		if (DEBUG) System.out.println("PeerAddress: store_Socks: done: peer="+peer);
 		return true;
 	}
+
 	private boolean store_Loopback(int row, Boolean value) {
 		Calendar _arrival_date = Util.CalendargetInstance();
 		String arrival_date = Encoder.getGeneralizedTime(_arrival_date);
@@ -542,6 +618,8 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		dpi.agent_version = DD.VERSION;
 		dpi.setCreationDate();
 		peer.dirty_instances = true;
+		// long instID = peer.getInstanceID();
+		//D_PeerInstance dpi = peer.getPeerInstance(peer.getInstance());
 		try {
 			peer.addAddress(_address, type, _arrival_date, arrival_date, 
 					certified, D_Peer.getMaxCertifiedAddressPriority(dpi.addresses)+1, true,
@@ -556,32 +634,42 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		this.fireTableDataChanged();
 		return true;
 	}
+
 	public boolean delete(int row) {
 		int crt;
 		crt = this.getStoreAddrLen();
 		if(row < crt) return delete_Stored(row);
 		row -= crt;
+
 		crt = this.getDirectoriesLen();
 		if(row < crt) return delete_Dirs(row);
 		row -= crt;
+		
 		crt = this.getSocketsLen();
 		if(row < crt) return delete_Socks(row);
 		row -= crt;
+				
 		crt = this.getLoopbackLen();
 		if(row < crt) return delete_Loopback(row);
 		row -= crt;
 		return false;
 	}
+
 	private boolean delete_Loopback(int row) {
 		return false;
 	}
 	private boolean delete_Socks(int row) {
+		// TODO Auto-generated method stub
 		return false;
 	}
+
 	private boolean delete_Dirs(int row) {
+		// TODO Auto-generated method stub
 		return false;
 	}
+
 	private boolean delete_Stored(int row) {
+		//boolean DEBUG = true;
 		try {
 			if (DEBUG) System.out.println("PeerAddresses:deleteStored:orig: #"+this.getStoreAddrLen());
 			if (DEBUG) System.out.println("PeerAddresses:deleteStored:orig: #"+peer);
@@ -598,6 +686,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 			} else {
 				peer.storeRequest();
 			}
+			
 			this.fireTableDataChanged();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -606,6 +695,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		return true;
 	}
 	public void setPeer(D_Peer peer2) {
+		//Util.printCallPath(""+peer2);
 		if (peer2 != null)
 			this.global_peer_ID = peer2.getGID();
 		try {
@@ -615,6 +705,7 @@ class  PeerAddressesModel  extends AbstractTableModel implements TableModel, DBL
 		}
 	}	
 }
+
 class RefresherSwingThread implements Runnable{
 	private PeerAddressesModel model;
 	public RefresherSwingThread(PeerAddressesModel _model){
@@ -691,6 +782,7 @@ class PeerAddressesUpdateThread extends Thread {
 }
 @SuppressWarnings("serial")
 public class PeerAddresses extends JTable implements MouseListener, PeerListener{
+
 	private static final boolean DEBUG = false;
 	public static final int COMMAND_MENU_REFRESH = 0;
 	public static final int COMMAND_MENU_STORE_CERTIFY = 1;
@@ -699,6 +791,7 @@ public class PeerAddresses extends JTable implements MouseListener, PeerListener
 	private JMenuItem certify;
 	private JMenuItem delete;
 	private boolean for_Myself;
+
 	public PeerAddresses(boolean myself) {
 		super(new PeerAddressesModel(myself));
 		for_Myself = myself;
@@ -727,10 +820,13 @@ public class PeerAddresses extends JTable implements MouseListener, PeerListener
     	ImageIcon addicon = DDIcons.getAddImageIcon(__("add an item")); 
     	ImageIcon delicon = DDIcons.getDelImageIcon(__("delete an item")); 
     	ImageIcon reseticon = DDIcons.getResImageIcon(__("reset item"));
+    	//
     	refresh = new JMenuItem(new PeerAddrRowAction(this, __("Refresh!"), reseticon,__("Refresh."),
     			__("Refresh!"),KeyEvent.VK_R, PeerAddresses.COMMAND_MENU_REFRESH));
+    	//
     	certify = new JMenuItem(new PeerAddrRowAction(this, __("Certify!"), addicon,__("Store/Certify."),
     			__("Store/Certify!"),KeyEvent.VK_S, PeerAddresses.COMMAND_MENU_STORE_CERTIFY));
+    	//
     	delete = new JMenuItem(new PeerAddrRowAction(this, __("Delete!"), delicon,__("Delete from storage."),
     			__("Delete!"),KeyEvent.VK_D, PeerAddresses.COMMAND_MENU_DELETE));
 	}
@@ -755,16 +851,20 @@ public class PeerAddresses extends JTable implements MouseListener, PeerListener
         PeerAddressesModel model = this.getModel();
         TableColumn column = null;
         Component comp = null;
+        //Object[] longValues = model.longValues;
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
+ 
         for (int i = 0; i < model.getColumnCount(); i++) {
         	int headerWidth = 0;
         	int cellWidth = 0;
             column = this.getColumnModel().getColumn(i);
+ 
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
+ 
             for(int r=0; r<model.getRowCount(); r++) {
             	comp = this.getDefaultRenderer(model.getColumnClass(i)).
                              getTableCellRendererComponent(
@@ -778,44 +878,65 @@ public class PeerAddresses extends JTable implements MouseListener, PeerListener
                                    + "headerWidth = " + headerWidth
                                    + "; cellWidth = " + cellWidth);
             }
+ 
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
+
 	@Override
 	public void mouseClicked(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
+
 	@Override
 	public void mouseEntered(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
+
 	@Override
 	public void mouseExited(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
+
 	@Override
 	public void mousePressed(MouseEvent arg0) {
     	jtableMouseReleased(arg0, false);
 	}
+
 	@Override
 	public void mouseReleased(MouseEvent arg0) {
     	jtableMouseReleased(arg0, true);
 	}
+
+	
+
 	JMenuItem setRow(JMenuItem item, Integer row){
 		item.getAction().putValue("row", row);
     	return item;
 	}
 	JPopupMenu getPopup(int model_row, int col){
+    	
     	JPopupMenu popup = new JPopupMenu();
     	Integer _model_row = new Integer(model_row);
+
+    	//
     	popup.add(setRow(this.refresh,_model_row));
     	if(_model_row >= getModel().getStoreAddrLen())
     		popup.add(setRow(this.certify,_model_row));
     	if(_model_row < getModel().getStoreAddrLen())
     		popup.add(setRow(this.delete,_model_row));
+
     	return popup;
 	}
+	
 	private void jtableMouseReleased(java.awt.event.MouseEvent evt, boolean release) {
-    	int row; 
-    	int model_row=-1; 
-    	int col; 
+    	int row; //=this.getSelectedRow();
+    	int model_row=-1; //=this.getSelectedRow();
+    	int col; //=this.getSelectedColumn();
+    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
         row=this.rowAtPoint(point);
         if (DEBUG) System.out.println("Peers:jTableMouseRelease: row="+row);
@@ -823,8 +944,13 @@ public class PeerAddresses extends JTable implements MouseListener, PeerListener
         this.getSelectionModel().setSelectionInterval(row, row);
         if (row>=0)
         	model_row=this.convertRowIndexToModel(row);
+        //updateTerms(model_row);
     	if(!evt.isPopupTrigger()){
     		if(release){
+//    			if(getModel().updates_requested){
+//    				getModel().updates_requested = false;
+//    				getModel().__update(null,null);
+//    			}	
 				getModel().__update(null,null);
     			return;
     		}else{
@@ -834,12 +960,16 @@ public class PeerAddresses extends JTable implements MouseListener, PeerListener
     	JPopupMenu popup = getPopup(model_row,col);
     	if(popup != null)
     		popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
+       // dispatchToListeners(model_row);
     }
+
 	@Override
 	public void update_peer(D_Peer peer, String my_peer_name,
 			boolean me, boolean selected) {
+		//Util.printCallPath("selected="+selected+" me="+me+" peer="+peer);
 		if (!selected && !for_Myself) return;
 		if (!me && for_Myself) return;
 		this.getModel().setPeer(peer);
 	}
+	
 }

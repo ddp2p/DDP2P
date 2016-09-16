@@ -1,19 +1,25 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Song Qin
  Author: Song Qin: qsong2008@my.fit.edu
  Florida Tech, Human Decision Support Systems Laboratory
+
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU Affero General Public License as published by
  the Free Software Foundation; either the current version of the License, or
  (at your option) any later version.
+
  This program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
+
  You should have received a copy of the GNU Affero General Public License
  along with this program; if not, write to the Free Software
  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.census;
 import static net.ddp2p.common.util.Util.__;
+
 import java.awt.BorderLayout;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
@@ -24,6 +30,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Hashtable;
+
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.GroupLayout;
@@ -38,6 +45,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+
 import net.ddp2p.common.MCMC.RandomNetworkSimulation;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
@@ -48,7 +56,7 @@ import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.widgets.app.MainFrame;
 public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 	private static final long serialVersionUID = 1L;
-	public CensusFuzzy fuzzy_table;
+	public CensusFuzzy fuzzy_table;//The table widget
 	JLabel fuzzyMetric1ThresholdLabel,c3,c10,c11;
 	static JSlider naiveMetricThresholdSlider,fuzzyMetric1Panel1thresholdSlider,fuzzyMetric1Panel2thresholdSlider,fuzzyMetric1Panel3thresholdSlider;
 	JButton c5;
@@ -83,13 +91,14 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
     	if((organization == null) || (organization.getName() == null)) return __("No current organization!");
 		return __("Current Organization:")+" "+organization.getName();
 	}
+    
     /**
      * 
      * @return A control panel for user to collect statistics for fuzzy metric 1
      */
-	public JSplitPane fuzzyMetric1Panel1() {
+	public JSplitPane fuzzyMetric1Panel1() {//TODO:Add picture description
 		 fuzzyMetric1ThresholdLabel=new JLabel("Threshold");
-		 fuzzyMetric1Panel1thresholdSlider=new JSlider(JSlider.HORIZONTAL,0,100,0);
+		 fuzzyMetric1Panel1thresholdSlider=new JSlider(JSlider.HORIZONTAL,0,100,0);//Value from min=0 to max=1, initial=0
 		 fuzzyMetric1Panel1thresholdSlider.setMajorTickSpacing(10);
 		 fuzzyMetric1Panel1thresholdSlider.setPaintTicks(true);
 		 Hashtable<Integer,JLabel> labelTable = new Hashtable<Integer,JLabel>();  
@@ -106,6 +115,7 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		 labelTable.put(new Integer(0), new JLabel("0.0"));  
 		 fuzzyMetric1Panel1thresholdSlider.setLabelTable( labelTable );
 		 fuzzyMetric1Panel1thresholdSlider.setPaintLabels(true);
+		 //Update the value of threshold in the model
 		 fuzzyMetric1Panel1thresholdSlider.addChangeListener(new ChangeListener(){
 			@Override
 			public void stateChanged(ChangeEvent e) {
@@ -158,9 +168,9 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
      * 
      * @return A control panel for user to collect statistics for fuzzy metric 2
      */
-	public JSplitPane fuzzyMetric1Panel2() {
+	public JSplitPane fuzzyMetric1Panel2() {//TODO:Add picture description
 		 fuzzyMetric1ThresholdLabel=new JLabel("Threshold");
-		 fuzzyMetric1Panel2thresholdSlider=new JSlider(JSlider.HORIZONTAL,0,100,0);
+		 fuzzyMetric1Panel2thresholdSlider=new JSlider(JSlider.HORIZONTAL,0,100,0);//Value from min=0 to max=1, initial=0
 		 fuzzyMetric1Panel2thresholdSlider.setMajorTickSpacing(10);
 		 fuzzyMetric1Panel2thresholdSlider.setPaintTicks(true);
 		 Hashtable<Integer,JLabel> labelTable = new Hashtable<Integer,JLabel>();  
@@ -177,6 +187,7 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		 labelTable.put(new Integer(0), new JLabel("0.0"));  
 		 fuzzyMetric1Panel2thresholdSlider.setLabelTable( labelTable );
 		 fuzzyMetric1Panel2thresholdSlider.setPaintLabels(true);
+		 //Update the value of threshold in the model
 		 fuzzyMetric1Panel2thresholdSlider.addChangeListener(new ChangeListener(){
 			@Override
 			public void stateChanged(ChangeEvent e) {
@@ -224,13 +235,14 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		SplitPanel.setDividerLocation(150);
 		return SplitPanel;
 	}
+	
 	 /**
      * 
      * @return A control panel for user to collect statistics for fuzzy metric 3
      */
-	public JSplitPane fuzzyMetric1Panel3() {
+	public JSplitPane fuzzyMetric1Panel3() {//TODO:Add picture description
 		 fuzzyMetric1ThresholdLabel=new JLabel("Threshold");
-		 fuzzyMetric1Panel3thresholdSlider=new JSlider(JSlider.HORIZONTAL,0,100,0);
+		 fuzzyMetric1Panel3thresholdSlider=new JSlider(JSlider.HORIZONTAL,0,100,0);//Value from min=0 to max=1, initial=0
 		 fuzzyMetric1Panel3thresholdSlider.setMajorTickSpacing(10);
 		 fuzzyMetric1Panel3thresholdSlider.setPaintTicks(true);
 		 Hashtable<Integer,JLabel> labelTable = new Hashtable<Integer,JLabel>();  
@@ -247,6 +259,7 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		 labelTable.put(new Integer(0), new JLabel("0.0"));  
 		 fuzzyMetric1Panel3thresholdSlider.setLabelTable( labelTable );
 		 fuzzyMetric1Panel3thresholdSlider.setPaintLabels(true);
+		 //Update the value of threshold in the model
 		 fuzzyMetric1Panel3thresholdSlider.addChangeListener(new ChangeListener(){
 			@Override
 			public void stateChanged(ChangeEvent e) {
@@ -294,11 +307,12 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		SplitPanel.setDividerLocation(150);
 		return SplitPanel;
 	}
+	
 		/**
 	 * 
 	 * @return
 	 */
-	public JSplitPane naiveMetricPanel() {
+	public JSplitPane naiveMetricPanel() {//TODO:Add picture description
 		pcoLabel=new JLabel("pco");
 		 ncoLabel=new JLabel("nco");
 		 naiveMetrciThresholdLabel= new JLabel("threshold");
@@ -376,6 +390,7 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		try {
 			sip.loadImage("census/m1.jpg");
 		} catch (IOException e1) {
+			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		sip.addComponentListener(new ComponentAdapter(){
@@ -390,6 +405,10 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		SplitPanel.setDividerLocation(150);
 		return SplitPanel;
 	}
+	
+	/*
+	 * A tab widget for user to specify which metric he will use.
+	 */
 	public JTabbedPane buildTabbedControlPanel(){
 		final JTabbedPane tabbedPane = new JTabbedPane();
 		tabbedPane.addTab("Naive Metric 1", naiveMetricPanel());//Metric Value=0
@@ -403,6 +422,7 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		tabbedPane.addChangeListener(new ChangeListener(){
 			@Override
 			public void stateChanged(ChangeEvent e) {
+//				System.out.println("Tab=" + tabbedPane.getSelectedIndex());
 				int tabIndex=tabbedPane.getSelectedIndex();
 				if(tabIndex==0){
 					System.out.println("tabIndex "+tabIndex);
@@ -439,6 +459,7 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		fuzzy_table.getModel().nco=Double.valueOf(ncoSlider.getValue());
 		fuzzy_table.getModel().t0=Double.valueOf(naiveMetricThresholdSlider.getValue());
 		fuzzy_table.getModel().update(null, null);
+		
 		return tabbedPane;
 	}
 	public CensusPanel addComponentsToPane() {
@@ -449,12 +470,14 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		JPanel top = new JPanel();
 		top.add(org_label);
 		simulate = new JButton("Simulate");
+	
 		top.add(simulate);
 		simulate.addActionListener(this);
-		pane.add(top, BorderLayout.PAGE_START);
-		pane.add(SplitPanel, BorderLayout.CENTER);
+		pane.add(top, BorderLayout.PAGE_START);//Indicate the current used/selected organization
+		pane.add(SplitPanel, BorderLayout.CENTER);//Control panel for selecting metrics
 		return this;
 	}
+
 	public static void main(String[] args) {
 		try {
 			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
@@ -469,6 +492,7 @@ public class CensusPanel extends JPanel implements OrgListener, ActionListener {
 		organization = org;
     	if(org_label!=null){
     		org_label.setText(getLabelText());
+    		//add(org_label, BorderLayout.NORTH);
     	}
     	getModel().orgUpdate(orgID, col, org);
     }

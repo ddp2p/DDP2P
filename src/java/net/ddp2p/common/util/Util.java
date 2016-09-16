@@ -1,19 +1,25 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2011 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
  package net.ddp2p.common.util;
 import static java.lang.System.out;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -54,6 +60,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -74,6 +81,7 @@ import net.ddp2p.common.hds.DirectoryServerCache.D_DirectoryEntry;
 import net.ddp2p.common.streaming.RequestData;
 import net.ddp2p.common.updates.ClientUpdates;
 import net.ddp2p.common.util.P2PDDSQLException;
+
 public class Util {
     private static ResourceBundle myResources = Util.getResourceBundle();
     private static final byte[] HEX_R = init_HEX_R();
@@ -84,9 +92,12 @@ public class Util {
 	public static final int MAX_DUMP = 20;
 	public static final int MAX_UPDATE_DUMP = 400;
 	private static final int MAX_CONTAINER_SIZE = 1000000;
-	static Random rnd = new Random(); 
+	static Random rnd = new Random(); // for simulation
+	
     public static String usedCipherGenkey = Cipher.RSA;
     public static String usedMDGenkey = Cipher.SHA256;
+
+    
     /**
      * 
      * @param site
@@ -112,6 +123,7 @@ public class Util {
 	    	        } else {
 	    	        	if (!site) result.add(i);
 	    	        }
+	    	        //System.out.println(i.getHostAddress());
 	    	    }
 	    	}
 		} catch (SocketException e1) {
@@ -233,6 +245,7 @@ public class Util {
 		}
 		return result;
 	}
+
 	public static String concat(long[] array, String sep, String def) {
 		if ((array == null) ) return def;
 		if ((array.length == 0)) return def;
@@ -307,7 +320,7 @@ public class Util {
 	public static <T> String concatNonNull(T[] array, String sep, String def) {
 		if ((array == null)) return def;
 		if ((array.length == 0)) return def;
-		String result = null; 
+		String result = null; //((array[0]==null)?"":array[0].toString());
 		for (int k = 0; k < array.length; k ++) {
 			if (array[k] == null) continue;
 			if (result == null) { result = array[k].toString(); continue; }
@@ -349,6 +362,7 @@ public class Util {
 		for(int k=1; k<array.length; k++) result = result+ sep +((array[k]==null)?"":trimmed(array[k].toString(), itemlen));
 		return result;
 	}
+	
 	public static String concatOrgs(D_PeerOrgs[] array, String sep, String def) {
 		if ((array == null)) return def;
 		if ((array.length == 0)) return def;
@@ -419,7 +433,7 @@ public class Util {
 			int[] _result;
 			_result = new int[comps.length];
 			for(int k=0; k<comps.length; k++){
-				BigInteger bi;
+				BigInteger bi;//new BigInteger(comps[k]);
 				{
 					try{
 						bi = new BigInteger(comps[k]);
@@ -476,6 +490,7 @@ public class Util {
 		return result;
 	}
 	public static void copyBytes(byte[] results, int offset, int int32){
+		//System.err.println("will copy bytes off "+offset);
 		byte[]src=new byte[4];
 		src[0]=(byte) (int32 & 0xff);
 		src[1]=(byte) ((int32>>8) & 0xff);
@@ -489,11 +504,13 @@ public class Util {
 		src[1]=(byte) ((int16>>8) & 0xff);
 		copyBytes(results, offset, src, 2, 0);
 	}
+	
 	public static void copyBytes(byte[] results, int offset, byte[]src, int length, int src_offset){
 		if(results.length<length+offset)
 			System.err.println("Destination too short: "+results.length+" vs "+offset+"+"+length);
 		if(src.length<length+src_offset)
 			System.err.println("Source too short: "+src.length+" vs "+src_offset+"+"+length);
+		
 		for(int k=0; k<length; k++) {
 			results[k+offset] = src[src_offset+k];
 		}
@@ -506,22 +523,28 @@ public class Util {
 			System.out.println("Destination buffer is too small for input: " + source.length + " : " + (destination.length - destinationOffset) );
 			return false;
 		}
+
 		for( int i = 0; i < source.length && i < size; i++ ) {
 			destination[ i + destinationOffset ] = source[ sourceOffset + i ];
 		}
+
 		return true;
 	}
+
 	public static boolean copyBytes( byte[] source, byte[] destination, int destinationOffset, int size ) {
 		return copyBytes_src_dst( source, 0, destination, destinationOffset, size );
 	}
+
 	public static boolean copyBytes( byte source, byte[] destination, int destinationOffset, int size ) {
 		byte[] tmp = ByteBuffer.allocate( 1 ).put( source ).array();
 		return copyBytes( tmp, destination, destinationOffset, size );
 	}
+
 	public static boolean copyBytes( short source, byte[] destination, int destinationOffset, int size ) {
 		byte[] tmp = ByteBuffer.allocate( 2 ).putShort( source ).array();
 		return copyBytes( tmp, destination, destinationOffset, size );
 	}
+
 	public static boolean copyBytes( int source, byte[] destination, int destinationOffset, int size ) {
 		byte[] tmp = ByteBuffer.allocate( 4 ).putInt( source ).array();
 		return copyBytes( tmp, destination, destinationOffset, size );
@@ -534,6 +557,7 @@ public class Util {
 		int16 |= (src[offset+1] & 0xff);
 		int16 <<= 8;
 		int16 |= (src[offset+0] & 0xff);
+		//System.out.println("Extract from: "+Util.byteToHex(src, " ")+" to: "+int16);
 		return int16;
 	}
 	public static int extBytes(byte[] src, int offset, int int32){
@@ -545,6 +569,7 @@ public class Util {
 		int32 |= (src[offset+1] & 0xff);
 		int32 <<= 8;
 		int32 |= (src[offset+0] & 0xff);
+		//System.out.println("Extract from: "+Util.byteToHex(src, " ")+" to: "+int32);
 		return int32;
 	}
     public static ResourceBundle getResourceBundle(){
@@ -555,6 +580,7 @@ public class Util {
     		return null;
     	}
     }
+ 
 	public static String __(String s) {
     	String result;
     	try{
@@ -720,6 +746,7 @@ public class Util {
             s += String.format( "%d ", b & 0xff );
         return s;
     }
+    
     public static String byteToHexDump(byte[] b){
     	if(b==null) return "NULL";
     	return Util.byteToHex(b,0,Math.min(b.length, Util.MAX_DUMP)," ")+((b.length>MAX_DUMP)?"...":"");
@@ -748,13 +775,14 @@ public class Util {
     		MessageDigest digest = MessageDigest.getInstance(DD.APP_ID_HASH);
     		digest.update(type.getBytes());
     		digest.update(body.getBytes());
+    		//digest.update(time.toString().getBytes());
     		md5sum = digest.digest();
     	}catch(Exception e){
     		result = type+":"+body+":"+time;
     		if(DEBUG)System.err.println("DONE Util.getGlobalID: result="+result);
     		return result;
     	}
-    	result = Util.stringSignatureFromByte(md5sum);
+    	result = Util.stringSignatureFromByte(md5sum);//byteToHex(md5sum);
 		if(DEBUG)System.err.println("DONE Util.getGlobalID: result="+result);
     	return result;
     }
@@ -777,7 +805,7 @@ public class Util {
 	 * @return
 	 */
 	public static String getKeyedIDPK(byte[] pk) {
-		return Util.stringSignatureFromByte(pk); 
+		return Util.stringSignatureFromByte(pk); //.byteToHex(pk);
 	}
 	/**
 	 * Returns Public Key for key
@@ -793,11 +821,11 @@ public class Util {
 			return null;
 		}
 		byte[] pk = _pk.encode();
-		return Util.stringSignatureFromByte(pk); 
+		return Util.stringSignatureFromByte(pk); //.byteToHex(pk);
 	}
 	public static String getKeyedIDPK(PK _pk) {
 		byte[] pk = _pk.encode();
-		return Util.stringSignatureFromByte(pk); 
+		return Util.stringSignatureFromByte(pk); //.byteToHex(pk);
 	}
 	/**
 	 * Returns Public Key for key (N,e of RSA)
@@ -822,6 +850,7 @@ public class Util {
 	 * @param keys
 	 * @return
 	 */
+	//@Deprecated
 	public static String getKeyedIDPKhash(Cipher keys) {
 		if(DEBUG) System.err.println("BEGIN Util.getKeyedIDPKhash: keys="+keys);
 		if(keys == null) return null;
@@ -834,6 +863,7 @@ public class Util {
 		if(DEBUG) System.out.println("Util:getKeyedIDPKhash "+_pk);
 		return Util.getGIDhash(pk);
 	}
+	
 	/**
 	 * Returns Secret Key for key 
 	 * @param keys 
@@ -844,7 +874,7 @@ public class Util {
 		if(DEBUG) System.out.println("Util:getKeyedIDSK #"+_sk);
 		byte[] sk = _sk.encode();
 		if(DEBUG) System.out.println("Util:getKeyedIDSK #"+sk.length);
-		return Util.stringSignatureFromByte(sk); 
+		return Util.stringSignatureFromByte(sk); //.byteToHex(sk);
 	}
 	/**
 	 * Get the type of cipher and message digest, separated by a :: (Cipher.separator)
@@ -852,7 +882,7 @@ public class Util {
 	 * @return
 	 */
 	public static String getKeyedIDType(Cipher keys) {
-		return keys.getType();
+		return keys.getType();//"RSA";
 	}
 	/**
 	 * Verify the data signed based on the public key of local_peer_ID.
@@ -918,6 +948,7 @@ public class Util {
 		byte [] message = data.encode();
 		if(DEBUG)System.out.println("Util:verifySign: msg["+message.length+"]"+Util.byteToHexDump(message));
 		return senderPK.verify_unpad_hash(signature, message);
+		//return true;
 	}
 	/**
 	 * Verify the data signed based on the public key senderPK.
@@ -927,6 +958,7 @@ public class Util {
 	 * @return
 	 */
 	public static boolean verifySign(byte[] message, PK senderPK, byte[] signature) {
+		//boolean DEBUG = true;
 		boolean result;
 		if (DEBUG) System.err.println("Util: verifySign: start ");
 		if (senderPK == null){
@@ -935,6 +967,9 @@ public class Util {
 			return false;
 		}
 		try {
+			//if(DEBUG)System.err.println("Util: verifySign: msg["+message.length+"]="+Util.byteToHexDump(message, ":")+"   \n"+Util.getGID_as_Hash(message));
+			//if(DEBUG)System.err.println("Util: verifySign: sign["+signature.length+"]="+Util.byteToHexDump(signature, ":")+"   \n"+Util.getGID_as_Hash(signature));
+
 			if(DEBUG)System.out.println("Util: verifySign: v: sign="+Util.byteToHex(signature)+"\n hash="+Util.byteToHex(Util.simple_hash(signature, Cipher.MD5)));
 			if(DEBUG)System.out.println("Util: verifySign: v: msg="+Util.byteToHex(message)+"\n hash="+Util.byteToHex(Util.simple_hash(message, Cipher.MD5)));
 			if(DEBUG)System.out.println("Util: verifySign: v: pk="+senderPK);
@@ -943,9 +978,11 @@ public class Util {
 			try {
 				if (DEBUG) sg = new ECDSA_Signature(signature);
 			} catch (ASN1DecoderFail e) {
+//				e.printStackTrace();
 			}
 			if(DEBUG)System.out.println("Util: verifySign: s="+sg+"\nv="+result);
 		}catch(Exception e) {
+			//if(DEBUG)
 				e.printStackTrace();
 			return false;
 		}
@@ -996,11 +1033,13 @@ public class Util {
 			Util.printCallPath("Empty key");
 			return new byte[0];
 		}
+		//if(_DEBUG) System.out.println("Util:sign: msg["+msg.length+"]="+Util.byteToHexDump(msg));
 		if (DEBUG) System.err.println("Util: sign: msg["+msg.length+"]="+Util.byteToHexDump(msg, ":")+"   \n"+Util.getGID_as_Hash(msg));
 		byte[] signature = key.sign_pad_hash(msg);
 		if (DEBUG) System.err.println("Util: sign: sign["+signature.length+"]="+Util.byteToHexDump(signature, ":")+"   \n"+Util.getGID_as_Hash(signature));
 		return signature; 
 	}
+
     /**
      * Extract the extension from name, looking at the last dot
      * @param f
@@ -1010,6 +1049,7 @@ public class Util {
         String ext = null;
         String s = f.getName();
         int i = s.lastIndexOf('.');
+
         if (i > 0 &&  i < s.length() - 1) {
             ext = s.substring(i+1).toLowerCase();
         }
@@ -1132,6 +1172,7 @@ public class Util {
 		try{throw new Exception("getCallPath");}catch(Exception e){
 			StackTraceElement[] l = e.getStackTrace();
 			return l;
+			//System.out.println("DDTrace: ["+e.getLocalizedMessage()+"] "+l[1]+"\n"+l[2]+"\n"+l[l.length-1]);
 		}
 	}
 	/**
@@ -1173,6 +1214,7 @@ public class Util {
 				Integer.parseInt(gdate.substring(12, 14)));
 		date.set(Calendar.MILLISECOND, Integer.parseInt(gdate.substring(15, 18)));
 		}catch(Exception e){return def;}
+		//System.out.println("getCalendar "+gdate+" into "+date);
 		return date;
 	}
 	/**
@@ -1236,6 +1278,7 @@ public class Util {
 	 * Return randomly a 0 or a 1
 	 * @return
 	 */
+	//return random integer 0 or 1.
 	public static int get_one_or_zero() {
 		int randomInt4=rnd.nextInt(2);
 		return randomInt4;
@@ -1293,7 +1336,7 @@ public class Util {
 	 */
 	public static String getHash(byte[] bPK, String alg) {
 		byte[] md = simple_hash(bPK, alg);
-		return alg+DD.APP_ID_HASH_SEP+Util.stringSignatureFromByte(md); 
+		return alg+DD.APP_ID_HASH_SEP+Util.stringSignatureFromByte(md); //byteToHex(md);
 	}
 	/**
 	 * Return the hash of msg with the algorithm alg
@@ -1468,8 +1511,11 @@ public class Util {
 		byte[] result = null;
 		if(signature==null) return null;
 		try {
+			//if(!signature.startsWith("")) return _byteSignatureFromString(signature);
 			char[] s = signature.toCharArray();
 			result = Base64Coder.decode(s, 0, s.length);
+			//result = Base64Coder.decode(s, 1, s.length-1);
+			//result = Base64Coder.decode(signature.substring(1));
 		} catch(Exception e) {
 			if (verbose) {
 				System.err.println("Util:byteSignatureFromString:Decoding:\n\""+signature+"\"");
@@ -1533,7 +1579,7 @@ public class Util {
 	 * @return
 	 */
 	public static String getGIDhashFromGID(String globalID, boolean verbose) {
-		byte[] idbytes = Util.byteSignatureFromString(globalID, verbose);
+		byte[] idbytes = Util.byteSignatureFromString(globalID, verbose);//Util.hexToBytes(idstrings);
 		if(idbytes == null){
 			if(DEBUG)System.out.println("Server:update_insert_peer null id bytes");
 			return null;
@@ -1582,6 +1628,7 @@ public class Util {
 		}
 		if (o.size() < 1) return null;
 		String _sk = Util.getString(o.get(0).get(0));
+		//if(DEBUG) System.out.println("Util:getStoredKey: Got secret key: "+_sk);
 		return Cipher.getSK(_sk);
 	}
 	/**
@@ -1705,6 +1752,7 @@ public class Util {
 		if(DEBUG && (in!=null)) out.println("Util:AL_AL_O_2_AL_S: in=#"+in.size());
 		ArrayList<String> result = new ArrayList<String>();
 		if ((in==null)||(in.size()==0)) return result;
+		
 		for(ArrayList<Object> o: in){
 			result.add(Util.getString(o.get(0)));
 		}
@@ -1722,6 +1770,7 @@ public class Util {
 		if (DEBUG && (in != null)) out.println("Util:AL_AL_O_2_HSS_SS: in=#"+in.size());
 		Hashtable<String, String> result = new Hashtable<String, String>();
 		if ((in == null) || (in.size() == 0)) return result;
+		
 		for (ArrayList<Object> o: in) {
 			String value = Util.getString(o.get(1));
 			String key = Util.getString(o.get(0));
@@ -1782,6 +1831,7 @@ public class Util {
 	                    for(Object val : mainAttribs.keySet()){
 	                    	System.out.println("Key: "+val+": "+mainAttribs.get(val));
 	                    }
+	                    
 	                    String version = mainAttribs.getValue("Implementation-Version");
 	                    if(version != null) {
 	                        return version;
@@ -1789,9 +1839,11 @@ public class Util {
 	                }
 	            }
 	            catch (Exception e) {
+	                // Silently ignore wrong manifests on classpath?
 	            }
 	        }
 	    } catch (IOException e1) {
+	        // Silently ignore wrong manifests on classpath?
 	    }
 	    return null; 
 	}
@@ -1808,6 +1860,7 @@ public class Util {
 		}while(true);
 		return result;
 	}
+	
 	/**
 	 * Extracts simple IP ([10,0,0,102]) from "google/10.0.0.102"
 	 * not used
@@ -1837,6 +1890,7 @@ public class Util {
 		String clean = val[0];
 		if(DEBUG)System.out.println("Util:getInetAddressBytes_from_IP_Mask : "+clean);
 		byte[] result = getBytesFromCleanIPString(clean);
+		//if(result == null) result=new byte[]{0,0,0,0};
 		return result;
 	}
 	/**
@@ -1846,14 +1900,18 @@ public class Util {
 	 * @return
 	 */
 	public static byte[] get_broadcastIP_from_IP_and_NETMASK(String ip, String _mask){
+		//if(DEBUG) System.out.println("Util:get_broadcastIP_from_IP_and_NETMASK: broadcast from ip="+ip+" mask="+_mask);
 		byte[] iP = getBytesFromCleanIPString(ip);
+		//if(DEBUG) System.out.println("Util:get_broadcastIP_from_IP_and_NETMASK: ip  =="+Util.byteToHex(iP));
 		byte[] mask = getBytesFromCleanIPString(_mask);
+		//if(DEBUG) System.out.println("Util:get_broadcastIP_from_IP_and_NETMASK: mask=="+Util.byteToHex(mask));
 		byte[] result = new byte[4];
 		byte ff = (byte)0xff;
 		if((iP == null)||(mask==null)) return new byte[]{ff,ff,ff,ff};
 		for(int i=0; i<=3; i++) {
 			result[i] = (mask[i]==ff)?iP[i]:ff;
 		}
+		//if(DEBUG) System.out.println("Util:get_broadcastIP_from_IP_and_NETMASK: broadcast="+Util.byteToHex(result));
 		return result;
 	}
 	/**
@@ -1889,10 +1947,12 @@ public class Util {
 		try{
 			for(int i=0; i<bytes.length; i++){
 				if(DEBUG) System.out.println("Util:getBytesFromCleanIPBaseFromString: parsing base=="+i+" "+bytes[i]);
+				
 				result[i]= (byte)Integer.parseInt(bytes[i]);
 			}
 		}catch(Exception e){
 			System.err.println("Util:getBytesFromCleanIPBaseFromString: Error Message: "+e.getMessage());
+			//e.printStackTrace();
 			return null;
 		}
 		return result;
@@ -2004,10 +2064,10 @@ public class Util {
 	final static Hashtable<String, GetHostIA> hostIA_addresses = new Hashtable<String, GetHostIA>();
 	public static InetAddress getHostIA(String domain) {
 		if(DEBUG) System.out.println("Util:getHostIAxx: start");
-		GetHostIA gh;
+		GetHostIA gh;// = new GetHostIA(domain);
 		synchronized(hostIA_addresses) {
 			gh = hostIA_addresses.get(domain);
-			if (gh == null) 
+			if (gh == null) // may also do it if gh is old (would need a timestamp)
 				hostIA_addresses.put(domain, gh = new GetHostIA(domain));
 		}
 		if(DEBUG) System.out.println("Util:getHostIAxx: inited");
@@ -2249,6 +2309,7 @@ public class Util {
 			return null;
 		}
 		if(ClientUpdates.DEBUG)System.out.println("ClientUpdates newer: server["+concat(parsed_version,",")+"]");
+				
 		int int_version[] = new int[3];
 		for(int k=0; k<3; k++){
 			try{
@@ -2266,7 +2327,9 @@ public class Util {
 		 * @return : true if server is newer than local
 		 */
 		public static boolean isVersionNewer(String version_server, String version_local) {
+			//boolean DEBUG = true; //ClientUpdates.DEBUG
 			if (DEBUG)System.out.println("Util newer: start server="+version_server+" vs local="+version_local);
+			//Util.printCallPath("newer?");
 			boolean result = false;
 			String v_server[];
 			String v_local[];
@@ -2289,7 +2352,9 @@ public class Util {
 				return true;
 			}
 			if (DEBUG) System.out.println("Util newer: server["+concat(v_server,",")+"] ? v_local ["+concat(v_local,",")+"]");
+			
 			result = false;
+			
 			int i_server[] = new int[3];
 			int i_local[] = new int[3];
 			for (int k = 0; k < 3; k ++) {
@@ -2303,10 +2368,31 @@ public class Util {
 					int l = prefixNumber(v_local[k]);
 					if(s<l) return false;
 					if(s>l) return true;
+	
 					if(v_server[k].compareTo(v_local[k]) > 0) return true; 
 					if(v_server[k].compareTo(v_local[k]) < 0) return false; 
 				}
 			}
+			/*
+			if(v_server[0].compareTo(v_local[0]) > 0) {
+				if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[0]+"] > v_local ["+v_local[0]+"]");
+				result = true;
+			}else{
+				if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[0]+"] <= v_local ["+v_local[0]+"]");
+				if(v_server[1].compareTo(v_local[1]) > 0) {
+					if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[1]+"] > v_local ["+v_local[1]+"]");
+					result = true;
+				}else{
+					if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[1]+"] <= v_local ["+v_local[1]+"]");
+					if(v_server[2].compareTo(v_local[2]) > 0) {
+						if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[2]+"] > v_local ["+v_local[2]+"]");
+						result = true;
+					}else{
+						if(DEBUG)System.out.println("ClientUpdates newer: server["+v_server[2]+"] <= v_local ["+v_local[2]+"]");
+					}
+				}	
+			}
+	*/		
 			if (DEBUG) System.out.println("Util: newer: "+result);
 			return result;
 		}
@@ -2385,11 +2471,13 @@ public class Util {
 	}
 	public static int le16_to_cpu(byte[] b, int off) {
 		int r;
+		//if(GIF.DEBUG) System.out.println("Util.le16_to_cpu "+Util.byteToHex(b));
 		r = (byte_to_uint(b[off+1])<<8) + byte_to_uint(b[off]);
 		return r;
 	}
 	public static int be16_to_cpu(byte[] b, int off) {
 		int r;
+		//if(GIF.DEBUG) System.out.println("Util.le16_to_cpu "+Util.byteToHex(b));
 		r = (byte_to_uint(b[off])<<8) + byte_to_uint(b[off+1]);
 		return r;
 	}
@@ -2461,6 +2549,7 @@ public class Util {
 	}
 	public final static BigInteger BN128 = new BigInteger("128");
 	public final static BigInteger BN127 = new BigInteger("127");
+
 	/**
 	 * Convert to base 128 (bigendian), using shifts.
 	 * @param val
@@ -2495,6 +2584,21 @@ public class Util {
 	 * @param i
 	 * @return
 	 */
+	/*
+	public static byte[] toBase128 (BigInteger i) {
+		ArrayList<Byte> result = new ArrayList<Byte>();
+		do {
+			BigInteger bn[] = i.divideAndRemainder(BN128);
+			i = bn[0];
+			// adds remainder in front (obtaining big-endian)
+			result.add(0, bn[1].byteValue());
+		} while (i.compareTo(BigInteger.ZERO) > 0);
+		
+		byte[] r = new byte[result.size()];
+		for (int k = 0; k < r.length ; k ++) r[k] = result.get(k);
+		return r;
+	}
+	*/
 	/**
 	 * Decodes from base 128 under the assumption that it is bigendian, terminated by a byte smaller than 128,
 	 * all other bytes being OR-ed with 128.
@@ -2507,15 +2611,32 @@ public class Util {
 		BigInteger result = BigInteger.ZERO;
 		int k = offset;
 		while ((k < limit) && ((b128[k] & 0x80) != 0)) {
+			// result = result.multiply(Util.BN128).add(new BigInteger("" + (Util.getUnsignedShort(b128[k]) - 128)));
 			result = result.shiftLeft(7).or(new BigInteger(""+(b128[k] & 0x7f)));
+			//len++;
 			k++;
 		}
 		if (k < limit) {
+			// result = result.multiply(Util.BN128).add(new BigInteger("" + Util.getUnsignedShort(b128[k])));
 			if ((b128[k] & 0x80) != 0) {if (_DEBUG) System.out.println("Util: fromBase_128: last byte > 127"); Util.printCallPath("");}
 			result = result.shiftLeft(7).or(new BigInteger(""+(b128[k]))); // here  & 0x7f would be redundant
 		}
 		return result;
+		
 	}
+//	public static BigInteger fromBase_128(byte[] b128, int offset, int limit) {
+//		BigInteger result = BigInteger.ZERO;
+//		int k = offset;
+//		while ((k < limit) && (Util.getUnsignedShort(b128[k]) >= 128)) {
+//			result = result.multiply(Util.BN128).add(new BigInteger("" + (Util.getUnsignedShort(b128[k]) - 128)));
+//			//len++;
+//			k++;
+//		}
+//		if (k < limit)
+//			result = result.multiply(Util.BN128).add(new BigInteger("" + Util.getUnsignedShort(b128[k])));
+//		return result;
+//		
+//	}
 	public static boolean isUpperCase(byte b) {
 		return (b >= 'A') && (b <= 'Z');
 	}
@@ -2589,6 +2710,7 @@ public class Util {
 					if (sys_result > 0) len += sys_result;
 					if (DEBUG) System.out.println("Util: readASN1Message: len="+len+" result="+sys_result+"/"+req_len);
 				} while ((sys_result >= 0) && (len < req_len));
+				// Should be exactly equal since it was allocated so!
 				if (req_len != len) throw new Exception("Not enough bytes received!");
 			}
 			return buffer;
@@ -2635,6 +2757,7 @@ public class Util {
 					if (sys_result > 0) len += sys_result;
 					if (DEBUG) System.out.println("Util: readASN1Message: len="+len+" result="+sys_result+"/"+req_len);
 				} while ((sys_result >= 0) && (len < req_len));
+				// Should be exactly equal since it was allocated so!
 				if (req_len != len) throw new Exception("Not enough bytes received!");
 				dec_da = new Decoder(buffer);
 			}
@@ -2741,10 +2864,13 @@ public class Util {
 			return Util.getProcessOutput(cmd_names, concats, null, null, ctx);
 		}
 		public static BufferedReader getProcessOutput(String[] cmd_names, boolean concats, String[] env, File dir, Object ctx) throws IOException {
+			// boolean DEBUG = true;
 			String cmd = concat(cmd_names, "\" \"");
 			String result = null;
 			synchronized(scripts_monitor){
+				//Util.printCallPath("script");
 				if (DEBUG) System.out.println("Util:getProcessOutput: Calling: \""+cmd+"\" with concats="+concats);
+				//if(crtProcessLabel!=null) EventQueue.invokeLater(new RunnableCmd("Start: \""+cmd+"\""));
 				if (ctx != null) Application_GUI.updateProgress(ctx, "Start: \""+cmd+"\"");
 				Process crtScriptProcess;
 				if (concats) crtScriptProcess =  Runtime.getRuntime().exec(cmd_names[0]);
@@ -2771,6 +2897,7 @@ public class Util {
 					if(_DEBUG)System.out.println("Util:getProcessOutput: cmd="+ cmd + " in dir="+dir +" exit with: "+exit+" output=\n"+result+"\n*******");
 				}
 				if(DEBUG)System.out.println("Util:getProcessOutput: output=\n"+result+"\n*******");
+				//if(crtProcessLabel!=null) EventQueue.invokeLater(new RunnableCmd("Done: \""+cmd+"\""));
 				if (ctx != null) Application_GUI.updateProgress(ctx, "Done: \""+cmd+"\"");
 			}
 			if (result == null) {
@@ -2785,6 +2912,7 @@ public class Util {
 		 * @param prefix
 		 */
 		public static void printPeerContacts(String prefix) {
+			//out.println(prefix+ "crt key="+ peer_key);
 			out.println("Util: printPeerContacts: " + prefix);
 			prefix += "\t";
 			for ( String pc_key : D_Peer.peer_contacts.keySet()) {
@@ -2798,11 +2926,13 @@ public class Util {
 						Hashtable<String,String> _tpce =  _tpc.get(tpc_key);
 						for ( String tpce_key : _tpce.keySet()) {
 							out.println(prefix+ "available tpce_subkey=\t\t"+ tpce_key+" -> "+_tpce.get(tpce_key));
+							//out.println(prefix+ "available tpce_key="+ _tpce.get(tpce_key));
 						}
 					}
 				}
 			}
 		}
+		
 		public static String concat(String prefix,
 				Hashtable<String, ArrayList<Address>> adr_addresses,
 				String sep, String def ) {
@@ -2866,10 +2996,13 @@ public class Util {
 		 */
 		public static String B64Join(String addressASN1B64) {
 			String result;
+			
 			String []chunks = addressASN1B64.split(Pattern.quote(" "));
 			result = Util.concat(chunks, "");
+			
 			chunks = result.split(Pattern.quote("\n"));
 			result = Util.concat(chunks, "");
+			
 			return result;
 		}
 		/**
@@ -2883,9 +3016,11 @@ public class Util {
 			ArrayList<String> results = new ArrayList<String>();
 			String result;
 			int beginIndex = 0;
+			
 			if (size <= 0) return addressASN1B64;
 			if (addressASN1B64 == null) return addressASN1B64;
 			if (addressASN1B64.length() <= size) return addressASN1B64;
+			
 			do {
 				int endIndex = Math.min(size + beginIndex, addressASN1B64.length());
 				results.add(addressASN1B64.substring(beginIndex, endIndex));
@@ -2904,9 +3039,10 @@ public class Util {
 		 * @param mode2
 		 * values in: <p>
 		public static final int CALENDAR_SPACED = 1; <br>
-		public static final int CALENDAR_TIME_ONLY = 2; 
-		public static final int CALENDAR_DAY_ONLY = 3; 
+		public static final int CALENDAR_TIME_ONLY = 2; // for H:M:S.LZ<br>
+		public static final int CALENDAR_DAY_ONLY = 3; // for Y:m:d
 		public static final int CALENDAR_DASHED = 4;
+		
 		 * @return
 		 */
 		public static String renderNicely(Calendar value, int mode2) {
@@ -2958,6 +3094,7 @@ public class Util {
 		public static String getBitString( int integer, boolean useShort ) {
 			String s = "";
 			if( useShort ) {
+				// Zero out the first bits and only take the last 16.
 				s += Integer.toBinaryString( 0xFFFF & integer );
 			}
 			else {
@@ -2965,6 +3102,16 @@ public class Util {
 			}
 			return s;
 		}
+		public static byte[] LZW_Compress(byte[] uncompressed,
+				int initial_code_size, int bits_last_byte, int i,
+				int maxCodeSize) {
+			return LZW.LZW_Compress(uncompressed, initial_code_size, bits_last_byte, i, maxCodeSize);
+		}
+		public static byte[] LZW_Decompress(byte[] compressed,
+				int initial_code_size) {
+			return LZW.LZW_Decompress(compressed, initial_code_size);
+		}
+
 }
 class GetHostName extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	String hostName = null;
@@ -2972,6 +3119,7 @@ class GetHostName extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	InetSocketAddress sock_addr;
 	GetHostName(InetAddress domain, InetSocketAddress sock_addr) {
 		super("GetHostName: "+domain+"::"+sock_addr, true);
+		//System.out.println("Util:GetHostName: "+domain+"::"+sock_addr);
 		this.domain = domain;
 		this.sock_addr = sock_addr;
 		this.start();
@@ -2994,9 +3142,12 @@ class GetHostIA extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	public boolean started = false;
 	String domain = null;
 	InetAddress hostIA = null;
+	//InetSocketAddress sock_addr;
 	GetHostIA(String domain) {
 		super("GetHostIA: "+domain, true);
+		//System.out.println("Util:GetHostIA: "+domain);
 		this.domain = domain;
+		//this.sock_addr = sock_addr;
 		this.start();
 	}
 	public void _run(){
@@ -3010,6 +3161,7 @@ class GetHostIA extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			} catch (Exception e){
 				if(DEBUG)e.printStackTrace();
 			}
+			//System.out.println("Util:GetHostIA: "+domain+"->"+hostIA);
 		}
 		synchronized(this){
 			this.notifyAll();

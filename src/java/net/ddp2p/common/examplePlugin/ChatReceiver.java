@@ -1,26 +1,40 @@
 package net.ddp2p.common.examplePlugin;
+//package chatApp;
+//package dd_p2p.plugin;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 /**
+
 You only need to implement a class "AndroidChatReceiver"
 that implements the interface "ChatReceiver" with its two functions
 to receive a message, and a confirmation.
+
 class AndroidChatReceiver implements ChatReceiver {
+    // see documentation in file ChatReceiver.java
     public void receiveMessage(BigInteger first_in_this_sequence,
             BigInteger sequence, String msgStr, String peerName,
             String peer_GID, byte[] session_id, ChatMessage cmsg) {
+        // TODO ...
     }
+    // see documentation in file ChatReceiver.java
     public void confirmMessages(BigInteger sequence,
             ArrayList<BigInteger> out_of_sequence, String peer_GID,
             byte[] session_id) {
+        // TODO ...
     }
 }
+
 Then somewhere in the initialization of your system, call:
 AndroidChat.Main.receiver = new AndroidChatReceiver();
+
 To send messages, call the function:
+  
 ChatMessage Main.sendMessage(String message, String peerGID, D_Peer peer);
+
 The result of this function contains the "session_id and sequence" of your sent messages. Store them such that
 you can flag in GUI their reception, confirmation that will contain this field.
+
  *
  */
 public
@@ -49,6 +63,7 @@ interface ChatReceiver {
 	public void confirmMessages(BigInteger sequence,
 			ArrayList<BigInteger> out_of_sequence, String peer_GID,
 			byte[] session_id, ChannelDataOut crt);
+	
 	public void jamMessages(BigInteger sequence,
 			String peer_GID,
 			byte[] session_id, ChannelDataOut crt);

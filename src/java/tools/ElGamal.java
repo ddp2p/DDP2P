@@ -1,6 +1,8 @@
 package tools;
+
 import java.math.BigInteger;
 import java.security.SecureRandom;
+
 public class ElGamal {
 	BigInteger p;
 	BigInteger g;
@@ -12,7 +14,9 @@ public class ElGamal {
 		int len = n.bitLength();
 		System.out.println("Size of "+n+" is " + len);
 		SecureRandom random = new SecureRandom();
+
 		BigInteger n1 = n.subtract(BigInteger.ONE);
+
 		for(int k=0; k<0; k++){
 			BigInteger a = new BigInteger(len - 1, random);
 			BigInteger r = a.modPow(n1, n);

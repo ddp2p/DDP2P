@@ -1,17 +1,22 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.hds;
 /**
 -- Answer to DirectoryRequest
@@ -28,10 +33,12 @@ DirectoryAnswer ::= SEQUENCE {
 }
  */
 import static java.lang.System.out;
+
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -49,6 +56,7 @@ public class DirectoryAnswer extends ASNObj {
 	String remote_GIDhash;
 	String instance;
 	public Calendar date;
+	//ArrayList<Address> address=new ArrayList<InetSocketAddress>();
 	public ArrayList<Address> addresses;
 	public DIR_Terms_Requested[] terms;
 	byte[] signature_peer = new byte[0];
@@ -72,6 +80,7 @@ public class DirectoryAnswer extends ASNObj {
 		}
 		return result+"]]";
 	}
+	
 	void init() {
 		date = Util.CalendargetInstance();
 		addresses=new ArrayList<Address>();
@@ -80,6 +89,7 @@ public class DirectoryAnswer extends ASNObj {
 	}
 	void init_is() {
 		known = true;
+		// date = Util.CalendargetInstance(); //encoders always initialize this
 		addresses=new ArrayList<Address>();
 		signature_peer = new byte[0];
 		signature_directory = new byte[0];
@@ -112,6 +122,14 @@ DirectoryAnswer ::= SEQUENCE {
 		default:
 			da = getEncoder_3(da); break;
 		}
+		/*
+		System.out.println("\n\n\nDirectoryAnswer: Encode "+this.toLongString());
+		try {
+			System.out.println(" ->\n\nTo"+new DirectoryAnswer().decode(new Decoder(da.getBytes())).toLongString());
+		} catch (ASN1DecoderFail e) {
+			e.printStackTrace();
+		}
+		*/
 		return da;
 	}
 	/**
@@ -149,19 +167,19 @@ DirectoryAnswer ::= SEQUENCE {
 	}
 	private Encoder getEncoder_1(Encoder da) {
 		da.addToSequence(new Encoder(Util.CalendargetInstance()));
-		if(remote_GIDhash != null) da.addToSequence(new Encoder(remote_GIDhash, false));
+		if(remote_GIDhash != null) da.addToSequence(new Encoder(remote_GIDhash, false));//v1
 		Encoder addresses_enc = new Encoder().initSequence();
 		for(int k=0; k<this.addresses.size(); k++) {
 			Address cA = this.addresses.get(k);
 			Encoder crt = new Encoder().initSequence();
-			crt.addToSequence(new Encoder(cA.domain));
+			crt.addToSequence(new Encoder(cA.domain));//.toString().split(":")[0]));
 			crt.addToSequence(new Encoder(new BigInteger(""+cA.tcp_port)));
 			crt.addToSequence(new Encoder(new BigInteger(""+cA.udp_port)));
 			addresses_enc.addToSequence(crt);
 			if(DEBUG) out.println("Added: "+cA.domain+":"+cA.tcp_port+":"+cA.udp_port);
 		}
 		da.addToSequence(addresses_enc);
-		if((terms!=null)) da.addToSequence(Encoder.getEncoder(terms).setASN1Type(DD.TAG_AC4));
+		if((terms!=null)) da.addToSequence(Encoder.getEncoder(terms).setASN1Type(DD.TAG_AC4));//v1
 		return da;
 	}
 	private Encoder getEncoder_0(Encoder da) {
@@ -170,7 +188,7 @@ DirectoryAnswer ::= SEQUENCE {
 		for(int k=0; k<this.addresses.size(); k++) {
 			Address cA = this.addresses.get(k);
 			Encoder crt = new Encoder().initSequence();
-			crt.addToSequence(new Encoder(cA.domain));
+			crt.addToSequence(new Encoder(cA.domain));//.toString().split(":")[0]));
 			crt.addToSequence(new Encoder(new BigInteger(""+cA.tcp_port)));
 			crt.addToSequence(new Encoder(new BigInteger(""+cA.udp_port)));
 			addresses_enc.addToSequence(crt);
@@ -198,10 +216,13 @@ DirectoryAnswer ::= SEQUENCE {
 			return decode_3(dec_da_content);
 		}
 	}
+	
 	private DirectoryAnswer decode_3(Decoder d) throws ASN1DecoderFail {
 		if(d.isFirstObjectTagByte(DD.TAG_AC2))
 			agent_version = d.getFirstObject(true).getIntsArray();
+		//System.out.println("DirectoryAnswer:decode_3: version="+Util.concat(agent_version, ".", "NULL"));
 		date = d.getFirstObject(true).getGeneralizedTimeCalenderAnyType();
+		//System.out.println("DirectoryAnswer:decode_3: date="+date);
 		addresses = d.getFirstObject(true).getSequenceOfAL(Address.getASN1Type(), new Address());
 		if(d.isFirstObjectTagByte(DD.TAG_AC4))
 			terms = d.getFirstObject(true).getSequenceOf(DIR_Terms_Requested.getASN1Type(), new DIR_Terms_Requested[]{}, new DIR_Terms_Requested());
@@ -233,6 +254,7 @@ DirectoryAnswer ::= SEQUENCE {
 		String gdate = dec_da_content.getFirstObject(true).
 				getGeneralizedTime(Encoder.TAG_GeneralizedTime);
 		if(DEBUG) out.println("Record date: "+gdate);
+		//date.setTime(new Date(gdate));
 		date = Util.getCalendar(gdate);
 		if((dec_da_content.getTypeByte()==Encoder.TAG_PrintableString))
 			remote_GIDhash = dec_da_content.getFirstObject(true).getString();
@@ -247,6 +269,7 @@ DirectoryAnswer ::= SEQUENCE {
 			if(DEBUG) out.println("tcp_port: "+tcp_port);
 			int udp_port = dec_addr.getInteger().intValue();
 			if(DEBUG) out.println("udp_port: "+udp_port);
+			//address.add(new InetSocketAddress(domain, port));
 			addresses.add(new Address(domain, tcp_port,udp_port));
 		}
 		if((dec_da_content.getTypeByte()==DD.TAG_AC4))
@@ -257,6 +280,7 @@ DirectoryAnswer ::= SEQUENCE {
 		String gdate = dec_da_content.getFirstObject(true).
 				getGeneralizedTime(Encoder.TAG_GeneralizedTime);
 		if(DEBUG) out.println("Record date: "+gdate);
+		//date.setTime(new Date(gdate));
 		date = Util.getCalendar(gdate);
 		Decoder dec_addresses = dec_da_content.getFirstObject(true).getContent();
 		while(dec_addresses.type()!=Encoder.TAG_EOC) {
@@ -269,6 +293,7 @@ DirectoryAnswer ::= SEQUENCE {
 			if(DEBUG) out.println("tcp_port: "+tcp_port);
 			int udp_port = dec_addr.getInteger().intValue();
 			if(DEBUG) out.println("udp_port: "+udp_port);
+			//address.add(new InetSocketAddress(domain, port));
 			addresses.add(new Address(domain, tcp_port,udp_port));
 		}
 		return this;
@@ -285,6 +310,33 @@ DirectoryAnswer ::= SEQUENCE {
 		init_is();
 		byte[] buffer = Util.readASN1Message(is, MAX_DA, MAX_LEN); 
 		Decoder dec_da = new Decoder(buffer);
+		/*
+		int result;
+		byte[] buffer = new byte[MAX_DA];
+		int len;
+		result = is.read(buffer);
+		if (result < 0) throw new Exception("Peer Connection Close!");
+		len = result;
+		Decoder dec_da = new Decoder(buffer);
+		int req_len = dec_da.objectLen();
+		if(req_len > MAX_LEN)  throw new Exception("Unacceptable package!");
+		if(req_len < 0) throw new Exception("Not enough bytes received in first package!");
+		if(req_len > len) {
+			if (dec_da.objectLen() > MAX_DA) {
+				byte[] old_buffer = buffer;
+				buffer = new byte[req_len];
+				Encoder.copyBytes(buffer, 0, old_buffer, len, 0);
+			}
+			do {
+				result = is.read(buffer, len, req_len-len);
+				if (result > 0) len += result;
+				System.out.println("DA<init>: len="+len+" result="+result+"/"+req_len);
+			} while((result >= 0) && (len < req_len));
+			
+			if (req_len != len) throw new Exception("Not enough bytes received!");
+			dec_da = new Decoder(buffer);
+		}
+		*/
 		decode(dec_da);
 	}
 }

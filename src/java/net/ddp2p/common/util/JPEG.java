@@ -1,20 +1,27 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.util;
+
 import java.io.File;
 import java.util.ArrayList;
+
 interface JPEG_Chunk {
 	byte getMarker();
 	boolean hasMarker();
@@ -47,15 +54,18 @@ class JPEG_Chunk_Marker_Standalone implements JPEG_Chunk {
 	public byte getMarker() {
 		return marker;
 	}
+
 	@Override
 	public boolean hasMarker() {
 		return true;
 	}
+
 	@Override
 	public int load(byte[] data, int off, int limit) {
 		marker = data[off + 1];
 		return off+2;
 	}
+	//@Override
 	public int save(byte[] data, int off, int limit) {
 		data[off] = JPEG.MARKER;
 		data[off+1] = marker;
@@ -63,8 +73,8 @@ class JPEG_Chunk_Marker_Standalone implements JPEG_Chunk {
 	}
 }
 class DQT_Table {
-	byte _type; 
-	boolean _color; 
+	byte _type; // the type byte
+	boolean _color; // true if it is for Chroma
 	byte _color_ID;
 	boolean _extended;
 	int[][] _dqt_Extended_ZigZag;
@@ -98,6 +108,14 @@ class JPEG_Chunk_Marker_DQT implements JPEG_Chunk {
 		7, 6, 5, 4, 3, 4, 5, 6, 7,
 		7, 6, 5, 6, 7, 7};
 	int length;
+//	private ArrayList<Byte> type = new ArrayList<Byte>();
+//	private ArrayList<Boolean> color = new ArrayList<Boolean>();
+//	private ArrayList<Byte> color_ID = new ArrayList<Byte>();
+//	private ArrayList<Boolean> extended = new ArrayList<Boolean>();
+//	private ArrayList<int[][]> dqt_Extended_ZigZag = new ArrayList<int[][]>();
+//	private ArrayList<byte[][]> dqt_Bytes_ZigZag = new ArrayList<byte[][]>();
+//	private ArrayList<int[][]> dqt_Extended_orig = new ArrayList<int[][]>();
+//	private ArrayList<byte[][]> dqt_Bytes_orig = new ArrayList<byte[][]>();
 	private ArrayList<DQT_Table> qt = new ArrayList<DQT_Table>();
 	@Override
 	public long length() {
@@ -118,25 +136,31 @@ class JPEG_Chunk_Marker_DQT implements JPEG_Chunk {
 	public byte getMarker() {
 		return JPEG.DQT;
 	}
+
 	@Override
 	public boolean hasMarker() {
 		return true;
 	}
+
 	@Override
 	public int load(byte[] data, int off, int limit) {
 		if ((limit-off < 4)) throw new RuntimeException("No length!");
 		length = Util.be16_to_cpu(data, off + 2);
 		if ((limit-off < 2+length)) throw new RuntimeException("No payload!");
+		
 		int offset = off + 4;
 		int idx = 0;
 		for (;;) {
+			// check that there is space for one table
 			if (offset+65 > off + 2+length) break;
 			DQT_Table _qt = new DQT_Table();
 			_qt._type = data[offset++];
 			_qt._color = (_qt._type & 0x1) != 0;
 			_qt._color_ID = (byte) (_qt._type & (byte)0x0F);
 			_qt._extended = (_qt._type & 0x10) != 0;
+			// check that there is space for one extended table
 			if (_qt._extended && offset+128 > off + 2+length) break;
+			
 			if (_qt._extended) {
 				_qt._dqt_Extended_ZigZag = new int[8][8]; 
 				_qt._dqt_Extended_orig = new int[8][8]; 
@@ -144,6 +168,8 @@ class JPEG_Chunk_Marker_DQT implements JPEG_Chunk {
 				_qt._dqt_Bytes_ZigZag = new byte[8][8]; 
 				_qt._dqt_Bytes_orig = new byte[8][8]; 
 			}
+			
+			// should be read in zig0zag
 			for (int i = 0; i < 8; i ++) {
 				for (int j = 0; j < 8; j ++) {
 					if (_qt._extended) {
@@ -157,9 +183,18 @@ class JPEG_Chunk_Marker_DQT implements JPEG_Chunk {
 				}
 			}
 			qt.add(_qt);
+//			type.add(_qt._type);
+//			color.add(_qt._color);
+//			color_ID.add(_qt._color_ID);
+//			extended.add(_qt._extended);
+//			dqt_Extended_ZigZag.add(_qt._dqt_Extended_ZigZag);
+//			dqt_Extended_orig.add(_qt._dqt_Extended_orig);
+//			dqt_Bytes_ZigZag.add(_qt._dqt_Bytes_ZigZag);
+//			dqt_Bytes_orig.add(_qt._dqt_Bytes_orig);			
 		}		
 		return off+2+length;
 	}
+	//@Override
 	public int save(byte[] data, int off, int limit) {
 		data[off] = JPEG.MARKER;
 		data[off+1] = JPEG.DQT;
@@ -168,6 +203,9 @@ class JPEG_Chunk_Marker_DQT implements JPEG_Chunk {
 		for (int k = 0; k < qt.size(); k ++) {
 			DQT_Table _qt = qt.get(k);
 			data[offset ++] = _qt._type;
+//			_extended = extended.get(k);
+//			_dqt_Extended_ZigZag = dqt_Extended_ZigZag.get(k);
+//			_dqt_Bytes_ZigZag = dqt_Bytes_ZigZag.get(k);
 			for (int i=0; i < 8; i++) {
 				for (int j=0; j < 8; j++) {
 					if (_qt._extended) {
@@ -233,10 +271,12 @@ class JPEG_Chunk_Marker_SOF  implements JPEG_Chunk {
 	public byte getMarker() {
 		return marker;
 	}
+
 	@Override
 	public boolean hasMarker() {
 		return true;
 	}
+
 	@Override
 	public int load(byte[] data, int off, int limit) {
 		if ((limit-off < 4)) throw new RuntimeException("No length!");
@@ -259,6 +299,7 @@ class JPEG_Chunk_Marker_SOF  implements JPEG_Chunk {
 		}
 		return off+2+length;
 	}	
+	//@Override
 	public int save(byte[] data, int off, int limit) {
 		data[off] = JPEG.MARKER;
 		data[off+1] = marker;
@@ -300,6 +341,7 @@ class DHT_Table {
 			nb_symbols += Util.byte_to_uint(this.codes[k]);
 		}
 		this.symbols = new byte[nb_symbols];
+		// new byte[length-2-1-16];
 		Util.copyBytes(symbols, 0, data, nb_symbols, offset);
 		return offset+nb_symbols;
 	}
@@ -317,6 +359,7 @@ class JPEG_Chunk_Marker_DHT  implements JPEG_Chunk {
 	byte marker;
 	int length;
 	ArrayList<DHT_Table> tables = new ArrayList<DHT_Table>();
+	
 	@Override
 	public long length() {
 		return 2+length;
@@ -340,10 +383,12 @@ class JPEG_Chunk_Marker_DHT  implements JPEG_Chunk {
 	public byte getMarker() {
 		return marker;
 	}
+
 	@Override
 	public boolean hasMarker() {
 		return true;
 	}
+
 	@Override
 	public int load(byte[] data, int off, int limit) {
 		if ((limit-off < 4)) throw new RuntimeException("No length!");
@@ -361,10 +406,12 @@ class JPEG_Chunk_Marker_DHT  implements JPEG_Chunk {
 		}
 		return off + 2 + length;
 	}
+	//@Override
 	public int save(byte[] data, int off, int limit) {
 		data[off] = JPEG.MARKER;
 		data[off+1] = marker;
 		Util.cpu_to_16be(length, data, off+2);
+
 		int offset = off+4;
 		for (DHT_Table table : tables) {
 			offset = table.save(data, offset, limit);
@@ -395,6 +442,7 @@ class JPEG_Chunk_Marker_SOS implements JPEG_Chunk {
 	byte spectral_selection_start;
 	byte spectral_selection_end;
 	byte approximations;
+	
 	@Override
 	public long length() {
 		return 2+length;
@@ -439,6 +487,7 @@ class JPEG_Chunk_Marker_SOS implements JPEG_Chunk {
 		this.approximations = data[offset++];
 		return off+2+length;
 	}
+	//@Override
 	public int save(byte[] data, int off, int limit) {
 		data[off] = JPEG.MARKER;
 		data[off+1] = marker;
@@ -469,10 +518,12 @@ class JPEG_Chunk_Marker_Payload implements JPEG_Chunk {
 	public byte getMarker() {
 		return marker;
 	}
+
 	@Override
 	public boolean hasMarker() {
 		return true;
 	}
+
 	@Override
 	public int load(byte[] data, int off, int limit) {
 		if ((limit-off < 4)) throw new RuntimeException("No length!");
@@ -483,6 +534,7 @@ class JPEG_Chunk_Marker_Payload implements JPEG_Chunk {
 		Util.copyBytes(buf, 0, data, buf.length, off+4);
 		return off+2+length;
 	}
+	//@Override
 	public int save(byte[] data, int off, int limit) {
 		data[off] = JPEG.MARKER;
 		data[off+1] = marker;
@@ -496,6 +548,7 @@ class JPEG_Chunk_Marker_Payload implements JPEG_Chunk {
 	}
 }
 class JPEG_Chunk_Marker_APP0 implements JPEG_Chunk {
+
 	private int length, x_density, y_density;
 	byte version_major, version_minor, density;
 	byte INCH = 1;
@@ -504,6 +557,7 @@ class JPEG_Chunk_Marker_APP0 implements JPEG_Chunk {
 	byte[] thumbnail_bitmap;
 	byte[] id = new byte[5];
 	private byte th_format;
+
 	@Override
 	public long length() {
 		return 2+length;
@@ -524,10 +578,13 @@ class JPEG_Chunk_Marker_APP0 implements JPEG_Chunk {
 	public byte getMarker() {
 		return JPEG.APP0;
 	}
+
 	@Override
 	public boolean hasMarker() {
 		return true;
 	}
+
+	//@Override
 	public int save(byte[] data, int off, int limit) {
 		data[off] = JPEG.MARKER;
 		data[off+1] = JPEG.APP0;
@@ -605,7 +662,9 @@ class JPEG_Chunk_Bulk implements JPEG_Chunk {
 		result += " ["+buf.length+"]";
 		return result;
 	}
+ 
 	private byte[] buf;
+
 	@Override
 	public byte getMarker() {
 		return 0;
@@ -614,6 +673,7 @@ class JPEG_Chunk_Bulk implements JPEG_Chunk {
 	public boolean hasMarker() {
 		return false;
 	}
+
 	@Override
 	public int load(byte[] data, int off, int limit) {
 		int pos = scanForMarker(data, off, limit);
@@ -622,7 +682,11 @@ class JPEG_Chunk_Bulk implements JPEG_Chunk {
 		Util.copyBytes(buf, 0, data, len, off);
 		return pos;
 	}
+	//@Override
 	public int save(byte[] data, int off, int limit) {
+		//data[off] = JPEG.MARKER;
+		//data[off+1] = marker;
+		//Util.cpu_to_16be(length, data, off+2);
 		Util.copyBytes(data, off, buf, buf.length, 0);
 		return off+buf.length;
 	}
@@ -636,6 +700,7 @@ class JPEG_Chunk_Bulk implements JPEG_Chunk {
 	public long length() {
 		return buf.length;
 	}
+	
 }
 public class JPEG {
 	public static final boolean DEBUG = false;
@@ -663,13 +728,13 @@ public class JPEG {
 	final public static byte SOF11 = (byte) 0xCE;
 	final public static byte SOF12 = (byte) 0xCF;
 	final public static byte DHT = (byte) 0xC4;
-	final public static byte RST0 = (byte) 0xD0; 
+	final public static byte RST0 = (byte) 0xD0; // 8 such
 	final public static byte SOI = (byte) 0xD8;
 	final public static byte EOI = (byte) 0xD9;
 	final public static byte SOS = (byte) 0xDA;
 	final public static byte DQT = (byte) 0xDB;
 	final public static byte DDI = (byte) 0xDD;
-	final public static byte APP0 = (byte) 0xE0; 
+	final public static byte APP0 = (byte) 0xE0; // 16 such
 	final public static byte COM = (byte) 0xFE;
 	ArrayList<JPEG_Chunk> chunks = new ArrayList<JPEG_Chunk>();
 	String filename;
@@ -751,6 +816,7 @@ public class JPEG {
 				off = eoi.load(data, off, cnt);
 				chunks.add(eoi);
 				return;
+				//break;
 			case DQT:
 				if (JPEG.DEBUG) System.out.println(" load DQT");
 				JPEG_Chunk_Marker_DQT dqt = new JPEG_Chunk_Marker_DQT();

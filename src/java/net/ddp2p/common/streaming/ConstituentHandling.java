@@ -1,23 +1,32 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.common.streaming;
+
 import static java.lang.System.out;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Hashtable;
+
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
@@ -30,19 +39,24 @@ import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.hds.ASNSyncRequest;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public class ConstituentHandling {
 	public static boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private static final int BIG_LIMIT = 300;
+	
 	static String sql_get_hashes =
 		"SELECT c."+net.ddp2p.common.table.constituent.global_constituent_ID_hash+", c."+net.ddp2p.common.table.constituent.creation_date+
 		" FROM "+net.ddp2p.common.table.constituent.TNAME+" as c " +
+		//" LEFT JOIN "+table.neighborhood.TNAME+" AS n ON(c."+table.constituent.neighborhood_ID+" = n."+table.neighborhood.neighborhood_ID+") "+
+		//" JOIN "+table.organization.TNAME+" AS o ON(c."+table.constituent.organization_ID+" = o."+table.organization.organization_ID+") "+
 		" WHERE " 
 		+" c."+net.ddp2p.common.table.constituent.organization_ID+" = ? "
 		+" AND c."+net.ddp2p.common.table.constituent.arrival_date+" > ? "
 		+" AND c."+net.ddp2p.common.table.constituent.arrival_date+" <= ?"
 		+" AND c."+net.ddp2p.common.table.constituent.sign+" IS NOT NULL "
 		+ " AND c."+net.ddp2p.common.table.constituent.global_constituent_ID_hash+" IS NOT NULL "
+		//+ " AND o."+table.organization.broadcasted+" <> '0' "
 		+ " AND c."+net.ddp2p.common.table.constituent.broadcasted+" <> '0' "
 		+" ORDER BY c."+net.ddp2p.common.table.constituent.arrival_date
 		;
@@ -64,6 +78,7 @@ public class ConstituentHandling {
 		}
 		ArrayList<ArrayList<Object>> result = Application.getDB().select(sql_get_hashes+" LIMIT "+BIG_LIMIT+";",
 				new String[] {org_id, last_sync_date, maxDate}, DEBUG);
+
 		Hashtable<String, String> retval = Util.AL_AL_O_2_HSS_SS(result);
 		if (DEBUG) out.println("CostituentHandling: getConstituentHashes: got retval="+retval.size());
 		return retval;
@@ -102,15 +117,19 @@ public class ConstituentHandling {
 	 */
 	public static ASNConstituentOP[] getConstituentOPs(ASNSyncRequest asr, String last_sync_date, String gid, String org_id, String[] _maxDate) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("\n************\nConstituentHandling: getConstituentOPs: from date="+last_sync_date+" orgID="+org_id+" to:"+_maxDate[0]);
+		
 		ArrayList<ArrayList<Object>> al = Application.getDB().select(sql_get_const_ops_min_max_no_terminator+" LIMIT "+BIG_LIMIT+";",
 				new String[]{org_id, last_sync_date, _maxDate[0]}, DEBUG);
+		
 		int constits = al.size();
+		
 		ASNConstituentOP[] result = new ASNConstituentOP[constits];
 		for(int k=0; k<result.length; k++) {
 			result[k] = new ASNConstituentOP();
 			result[k].op = Integer.parseInt(Util.getString(al.get(k).get(net.ddp2p.common.table.constituent.CONST_COL_OP)));
 			long LID = Util.lval(al.get(k).get(net.ddp2p.common.table.constituent.CONST_COL_ID));
-			result[k].constituent = D_Constituent.getConstByLID(LID, true, false); 
+			result[k].constituent = D_Constituent.getConstByLID(LID, true, false); // get_WB_Constituent(al.get(k));
+			
 			if(DEBUG)System.out.println("ConstituentHandling: getConstituentOPs: New Constituent = "+result[k].constituent);		
 		}
 		if(DEBUG)System.out.println("ConstituentHandling: getConstituentOPs: result["+result.length+"] = "+Util.concat(result, ";"));		
@@ -139,7 +158,7 @@ public class ConstituentHandling {
 		for(int k=0; k < al.size(); k++) {
 			result[k] = new ASNConstituentOP();
 			long LID = Util.lval(al.get(k).get(net.ddp2p.common.table.constituent.CONST_COL_ID));
-			result[k].constituent = D_Constituent.getConstByLID(LID, true, false); 
+			result[k].constituent = D_Constituent.getConstByLID(LID, true, false); // D_Constituent.get_WB_Constituent(al.get(k));
 		}
 		if(DEBUG) out.println("ConstituentHandling:getConstituentsModifs: result="+result);
 		if(DEBUG) out.println("**************");
@@ -150,6 +169,7 @@ public class ConstituentHandling {
 	 */
 	public static String getConstituentOPsDate(String last_sync_date, String maxDate, OrgFilter ofi, HashSet<String> orgs, int limitConstituentLow) throws P2PDDSQLException {
 		String result;
+		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("\n\n************\nConstituentHandling:getConstituentOPsDate:  Unbounded constituents date = "+last_sync_date+" to "+maxDate);
 		if(maxDate == null){
 			result = getConstituentOPsDate(last_sync_date, ofi, orgs, limitConstituentLow);
@@ -174,17 +194,19 @@ public class ConstituentHandling {
 			+ " AND c."+net.ddp2p.common.table.constituent.broadcasted+" <> '0' "
 			+" AND c."+net.ddp2p.common.table.constituent.organization_ID+" = ? AND c."+net.ddp2p.common.table.constituent.arrival_date+" > ? AND c."+net.ddp2p.common.table.constituent.arrival_date+" <= ? " +
 					" GROUP BY c."+net.ddp2p.common.table.constituent.arrival_date+" LIMIT "+(1+limitConstituentLow)+";";
+	
 		ArrayList<ArrayList<Object>> constit;
 		if(ofi==null){
 			constit = Application.getDB().select(sql_no_filter, new String[]{last_sync_date, maxDate}, DEBUG);			
 		}else{
 			long orgID = D_Organization.getLIDbyGIDorGIDH(ofi.orgGID, ofi.orgGID_hash);
+					//UpdateMessages.getonly_organizationID(ofi.orgGID, ofi.orgGID_hash);
 			constit = Application.getDB().select(sql_filter, new String[]{""+orgID, last_sync_date, maxDate}, DEBUG);
 		}
 		for (ArrayList<Object> a : constit) {
 				orgs.add(Util.getString(a.get(3)));
 		}
-		if (constit.size() <= limitConstituentLow) result = maxDate; 
+		if (constit.size() <= limitConstituentLow) result = maxDate; //null;
 		else {
 			result = Util.getString(constit.get(limitConstituentLow-1).get(0));
 			if(DD.WARN_BROADCAST_LIMITS_REACHED) System.out.println("ConstituentHandling: getConstOPsDate: limits reached: "+limitConstituentLow+" date="+result);
@@ -202,6 +224,7 @@ public class ConstituentHandling {
 	 */
 	public static String getConstituentOPsDate(String last_sync_date, OrgFilter ofi, HashSet<String> orgs, int limitConstituentLow) throws P2PDDSQLException {
 		String result;
+		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("\n\n************\nConstituentHandling: getConstituentOPsDate':  Unbounded constituents date = "+last_sync_date);
 		String sql_no_filter =
 			"SELECT c."+net.ddp2p.common.table.constituent.arrival_date+", COUNT(*) " +", o."+net.ddp2p.common.table.organization.global_organization_ID +", c."+net.ddp2p.common.table.constituent.organization_ID +
@@ -220,6 +243,7 @@ public class ConstituentHandling {
 				+ " AND c."+net.ddp2p.common.table.constituent.broadcasted+" <> '0' "
 			+" AND c."+net.ddp2p.common.table.constituent.organization_ID+" = ? AND c."+net.ddp2p.common.table.constituent.arrival_date+" > ? " +
 					" GROUP BY c."+net.ddp2p.common.table.constituent.arrival_date+" LIMIT "+(1+limitConstituentLow)+";";
+		
 		ArrayList<ArrayList<Object>> constit;
 		if (ofi == null) {
 			if (DEBUG) System.out.println("ConstituentHandling: getConstituentOPsDate':  null ofi");
@@ -227,8 +251,14 @@ public class ConstituentHandling {
 		} else {
 			if (DEBUG) System.out.println("ConstituentHandling: getConstituentOPsDate':  ofi");
 			long orgID = D_Organization.getLIDbyGIDorGIDH(ofi.orgGID, ofi.orgGID_hash);
+			//UpdateMessages.getonly_organizationID(ofi.orgGID, ofi.orgGID_hash);
 			constit = Application.getDB().select(sql_filter, new String[]{""+orgID, last_sync_date}, DEBUG);
 		}
+		/*
+		 * Get the list of involved organization, except for the uppmost, if the limit was reached
+		 * if the limit was reached, then set the uppmost date in to the next date decremented a millisecond...)
+		 * could have used previous date: result = Util.getString(constit.get(limitConstituentLow-1).get(0));
+		 */
 		if (constit.size() <= limitConstituentLow) {
 			if (DEBUG) System.out.println("ConstituentHandling: getConstituentOPsDate':  under limit #"+constit.size()+"/"+limitConstituentLow);
 			result = null;
@@ -281,6 +311,7 @@ public class ConstituentHandling {
 		if (DEBUG) System.out.println("ConstituentHandling: integrateNewData constituents #"+constituents.length);
 		for (int k = 0; k < constituents.length; k ++) {
 			if (DEBUG) System.out.println("ConstituentHandling: integrateNewData constituents k="+k);
+			
 			String submit_ID;
 			if (constituents[k].constituent.isExternal()) {
 				if (DEBUG) System.out.println("ConstituentHandling: integrateNewData constituents external");
@@ -298,13 +329,16 @@ public class ConstituentHandling {
 			String neighborhood_ID;
 			if (constituents[k].constituent.getNeighborhood_LID() != null) neighborhood_ID = constituents[k].constituent.getNeighborhood_LID();
 			else neighborhood_ID = D_Neighborhood.getLIDstrFromGID(constituents[k].constituent.getNeighborhoodGID(), Util.lval(org_local_ID));
+			
 			if ((neighborhood_ID == null) && (constituents[k].constituent.getNeighborhoodGID() != null)) {
 				neighborhood_ID = Util.getStringID(D_Neighborhood
 						.insertTemporaryGID(constituents[k].constituent.getNeighborhoodGID(), Util.lval(org_local_ID), peer, default_blocked));
 				new_rq.neig.add(constituents[k].constituent.getNeighborhoodGID());
 			} else {
+				//rq.neig.remove(constituents[k].constituent.global_neighborhood_ID);
 			}
 			constituents[k].constituent.setNeighborhood_LID(neighborhood_ID);
+
 			result |= integrateNewConstituentOPData(sol_rq, new_rq, constituents[k],
 					orgGID, org_local_ID, arrival_time, orgData, peer);
 		}
@@ -353,6 +387,7 @@ public class ConstituentHandling {
 		boolean default_blocked = false;
 		String result = null;
 		if (c == null) return result;
+		//c.global_organization_ID = orgGID;
 		c.setOrganization(orgGID, Util.lval(org_local_ID));
 		if ( ! c.verifySignature() ) {
 			if (_DEBUG) System.out.println("ConstituentHandling:integrateNewConstituentData:Signature check failed for "+c);
@@ -362,6 +397,11 @@ public class ConstituentHandling {
 			}
 		}
 		D_Constituent lc = D_Constituent.integrateRemote(c, __peer, sol_rq, new_rq, default_blocked, Util.getCalendar(arrival_time));
+		//		D_Constituent.getConstByGID_or_GIDH(c.getGID(), c.getGIDH(), true, true, true, __peer, Util.lval(org_local_ID));
+		//lc.loadRemote(sol_rq, new_rq, c, __peer);
+		//c.fillLocals(new_rq, true, true, true, true);
+		//long _result = c.storeVerified(orgGID, org_local_ID, arrival_time);
+		//if (_result > 0)
 		sol_rq.cons.put(c.getGID(), DD.EMPTYDATE);
 		result = Util.getStringID(c.storeRequest_getID());
 		c.releaseReference();

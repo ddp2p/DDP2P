@@ -1,18 +1,24 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 
 		Author: Osamah Dhannoon
 		Florida Tech, Human Decision Support Systems Laboratory
+
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.wireless;
+
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.DatagramPacket;
@@ -23,12 +29,15 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Calendar;
+
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.handling_wb.BroadcastQueues;
 import net.ddp2p.common.streaming.RequestData;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
+
 public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	private static final int CLIENT_TIMEOUT_MILLISECONDS = 0;
 	private static final boolean _DEBUG = true;
@@ -41,10 +50,11 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	public static long msg_cnter = 0;
 	InetAddress[] addresses;
 	static boolean m_running = true;
-	public static BroadcastQueues msgs = null; 
+	public static BroadcastQueues msgs = null; //new BroadcastableMessages();
 	public static DatagramSocket[] broadcast_client_sockets;
 	int c = -1,x=-1;
 	Refresh START_REFRESH;
+
 	public BroadcastClient() throws SocketException, P2PDDSQLException {
 		super ("Broadcast Client", false);
 		synchronized(msgs_monitor) {
@@ -60,11 +70,15 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				e.printStackTrace();
 			}
 		}
+		//msgs.setMyPeerID(DD.getMyPeerID());
+		//msgs.setMyConstituentID();
 	}
+
 	public BroadcastData updateSockets(BroadcastData old_bcs) {
 		BroadcastData BD = old_bcs;
 		synchronized(BroadcastServer.semaphore_interfaces){
 			if(!BroadcastServer.client_address_updated) return old_bcs;
+
 			if(BroadcastServer.client_address_updated_clear()){
 				addresses=BroadcastServer.load_client_addresses();
 				if(DEBUG)System.out.println("BroadcastClient:updateSockets:addresses len : "+addresses.length);
@@ -75,11 +89,13 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					if(!m_running) break;
 					try {
 						if(DEBUG)System.out.println("BClient: Handling broad interface: ["+i+"]="+addresses[i]);
-						int port = 0; 
+						int port = 0; //20000 + (int)Util.random(1000);
+						//SocketAddress lsa = new InetSocketAddress(BroadcastServer.interfaces_IPs.get(i), port);
 						String iP_Mask = BroadcastServer.interfaces_IP_Masks.get(i);
 						if(DEBUG)System.out.println("BClient : interfaces_names["+i+"] "+BroadcastServer.interfaces_names.get(i));
 						BD.Interfaces_names[i] = BroadcastServer.interfaces_names.get(i);
 						if(DEBUG)System.out.println("BClient: BD.Interfaces_names["+i+"] :"+BD.Interfaces_names[i]); 
+
 						if(DEBUG)System.out.println("BClient : IP: "+iP_Mask);
 						InetAddress ia;
 						try {
@@ -95,25 +111,35 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 							continue;
 						}
 						if(DEBUG)System.out.println("BClient: Handling ip interface: ["+i+"]="+ia);
-						BD.bcs[i] = new DatagramSocket(port, ia);
+						BD.bcs[i] = new DatagramSocket(port, ia);//BROADCAST_SERVER_PORT);
 						BD.bcs[i].setSoTimeout(CLIENT_TIMEOUT_MILLISECONDS);
+						//BD.bcs[i].connect(addresses[i], BroadcastServer.BROADCAST_SERVER_PORT);
 						try {
 							BD.bcs[i].connect(InetAddress.getByAddress(Util.getBytesFromCleanIPString(DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP)), BroadcastServer.BROADCAST_SERVER_PORT);
 							if(_DEBUG)System.out.println(DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP);
+							/*String bip = Util.get_IP_from_SocketAddress(addresses[i].getHostAddress());
+							if(!Util.equalStrings_null_or_not(
+									DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP,
+									bip));
+								System.err.println("BroadcastClient:updateSockets:mismatch Broadcast IP:"+DD.WIRELESS_ADHOC_DD_NET_BROADCAST_IP+" vs "+bip);*/
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
+
 						BD.bcs[i].setBroadcast(true);
-						BD.bcs[i].setTrafficClass(0x10);
+						BD.bcs[i].setTrafficClass(0x10);//IPTOS_LOWDELAY;
 					} catch (SocketException e) {
 						e.printStackTrace();
 						Application_GUI.warning(e.getLocalizedMessage(), Util.__("Failure to get interface"));
+						//System.exit(1);
 					}
 				}
 			}
+			//BroadcastServer.client_address_updated = true;
 		}
 		return BD;
 	}
+
 	/**
 	 * Stop the client thread by setting a boolean to false
 	 */
@@ -128,6 +154,7 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	}
 	public void _run() {
 		boolean DEBUG=false;
+		// start time to measure the broadcast time.
 		if(DEBUG)System.out.println("Start time is : "+System.currentTimeMillis());
 		BroadcastData _BD = new BroadcastData();
 		_BD.bcs = new DatagramSocket[0];
@@ -161,11 +188,15 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				}				
 			}
 			counter++;
+			//if(LIMITED_RUNS)if(counter==MAX_RUNS)	m_running=false; // run only once
 			_BD = updateSockets(_BD);
 			broadcast_client_sockets = _BD.bcs;
+			
 			Application_GUI.update_broadcast_client_sockets(null);
+
 			if ((DD.OS==DD.WINDOWS) && (DD.ADHOC_DD_IP_WINDOWS_DETECTED_ON_EACH_SEND))
 				broadcast_client_sockets = Win_wlan_info.extractValidIPs(_BD);
+
 			if(broadcast_client_sockets.length<=0){
 				synchronized(BroadcastServer.semaphore_interfaces){
 					try {
@@ -192,6 +223,7 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				msg_cnter--;
 				continue;
 			}
+
 			byte[] crt = appendCounter(_crt);
 			DatagramPacket dp = new DatagramPacket(crt, crt.length);
 			Calendar cal = Util.CalendargetInstance();
@@ -203,10 +235,12 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					(cal.get(Calendar.SECOND)<5)
 					) {
 				try {
+					// disconnect DD wireless
 					if(_DEBUG)System.out.println("Sleep");
 					x++;
 					Thread.sleep(DD.ADHOC_SENDER_SLEEP_SECONDS_DURATION_LONG_SLEEP*1000);
 					if(x==7) System.exit(0);
+					// reconnect DD wireless
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -230,14 +264,37 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 						if(DEBUG)System.out.println("sending: ["+j+"] from ="+broadcast_client_sockets[j].getLocalSocketAddress());
 						if(DEBUG)System.out.println("sending: ["+j+"] to ="+broadcast_client_sockets[j].getRemoteSocketAddress());
 						if(DEBUG)System.out.println("sending: "+dp);
+						//if(DEBUG)System.out.println("BroadcastClient: dp address : "+dp.getSocketAddress());
 					}catch(Exception e) {e.printStackTrace();}
-					dp.setSocketAddress(broadcast_client_sockets[j].getRemoteSocketAddress()); 
+					dp.setSocketAddress(broadcast_client_sockets[j].getRemoteSocketAddress()); // needed because dp inherits address from previous sends, if any
 					try{
 						if(DEBUG)System.out.println("sending: ["+j+"] from ="+broadcast_client_sockets[j].getLocalSocketAddress());
 						if(DEBUG)System.out.println("sending: ["+j+"] to ="+broadcast_client_sockets[j].getRemoteSocketAddress());
 					}catch(Exception e) {e.printStackTrace();}
+					//System.out.println("BroadcastClient : Socket calling send");
 					broadcast_client_sockets[j].send(dp);
+					
+					//Stopping the system after some time
+					/*
+					if(i==0) check = true;
+					if(check) start = System.currentTimeMillis();
+					check = false;
+					long elapsed =  System.currentTimeMillis() - start;
+					//System.out.println("Start="+start+"	elapsed="+elapsed);
+					if(elapsed > timeout){
+						inc++;
+						check = true;
+						System.out.println("BroadcastClient Sleeping for 3 mins");
+						Thread.sleep(1800000);
+					}
+					if(inc==10)
+						System.exit(1);
+					*/
+					
+					//System.out.println("BroadcastClient : Socket return from send");
+
 					Application_GUI.update_broadcast_client_sockets(msg_cnter);
+
 					if(DEBUG)System.out.println("BroadcastClient: MESSAGE hash : "+Util.stringSignatureFromByte(Util.simple_hash(dp.getData(), DD.APP_INSECURE_HASH)));
 					if(DEBUG)System.out.println("sending : "+(++c));
 				} catch (Exception e) {
@@ -260,6 +317,7 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		DatagramSocket ds;
 		try {
 			SocketAddress sa = new InetSocketAddress(args[0], 0);
+			//ds.bind(sa);
 			ds = new DatagramSocket(sa);
 			int port = Integer.parseInt(args[2]);
 			SocketAddress ba = new InetSocketAddress(args[1], port);
@@ -269,10 +327,14 @@ public class BroadcastClient extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			DatagramPacket dp = new DatagramPacket(new byte[len], len, ba);
 			for (;;){
 				ds.send(dp);
+				//System.out.println("Sent: "+(++cnt));
 			}
+
 		} catch (SocketException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

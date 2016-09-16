@@ -1,31 +1,41 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.population;
+
 import java.util.ArrayList;
 import java.util.HashSet;
+
 import static net.ddp2p.common.util.Util.__;
+
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.data.D_Constituent;
 import net.ddp2p.common.data.D_Neighborhood;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public
 class ConstituentsCensus extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	public ConstituentsAddressNode root;
+	//public ConstituentsModel model, done_model;
 	public ConstituentsInterfaceInput model;
 	public ConstituentsInterfaceDone done_model;
 	boolean running = true;
@@ -86,8 +96,11 @@ class ConstituentsCensus extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			if(DEBUG) System.err.println("ConstituentsModel:census: start nID="+n_ID+" abandon");		
 			return 0;
 		}
+		
+		
 		long result = 0;
 		int neighborhoods[] = {0};
+		
 		if (crt.isColapsed()) {
 			if(DEBUG) System.err.println("ConstituentsModel:census: this is colapsed");
 			result = censusColapsed(crt, neighborhoods);
@@ -106,10 +119,13 @@ class ConstituentsCensus extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					result ++;
 			}
 		}
+		
 		crt.setNeighborhoods(neighborhoods[0]);
 		crt.getLocation().inhabitants = (int)result;
 		crt.getLocation().censusDone = true;
+		
 		announce(crt);
+		
 		if(DEBUG) System.err.println("ConstituentsModel:censusColapsed: start nID="+n_ID+" got="+result);		
 		return result;
 	}
@@ -127,15 +143,18 @@ class ConstituentsCensus extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		long n_ID = crt.getNeighborhoodData().neighborhoodID;
 		if(DEBUG) System.err.println("ConstituentsModel:censusColapsed: start nID="+n_ID);
 		if(n_ID <= 0) return 0;
-		result = D_Constituent.getConstNBinNeighborhood(n_ID);
+		
+		result = D_Constituent.getConstNBinNeighborhood(n_ID);//c.size();
 		ArrayList<Long> n = D_Neighborhood.getNeighborhoodChildrenIDs(n_ID);
 		neighborhoods[0] += n.size();
+		
 		HashSet<String> visited = new HashSet<String>();
 		visited.add(""+n_ID);
 		for(int k = 0; k < n.size(); k ++) {
 			if (! running) return 0;
 			result += censusHiddenNeighborhoods(Util.lval(n.get(k), -1), visited);
 		}
+		
 		return result;
 	}
 	private long censusHiddenNeighborhoods(long n_ID, HashSet<String> visited) throws P2PDDSQLException {
@@ -147,12 +166,16 @@ class ConstituentsCensus extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		}
 		long result = 0;
 		visited.add(""+n_ID);
+		
 		result = D_Constituent.getConstNBinNeighborhood(n_ID);
+		
 		ArrayList<Long> n = D_Neighborhood.getNeighborhoodChildrenIDs(n_ID);
+		
 		for(int k=0; k<n.size(); k++) {
 			if(!running) return 0;
 			result += censusHiddenNeighborhoods(Util.lval(n.get(k), -1), visited);
 		}
+		
 		return result;
 	}
 	/**

@@ -1,24 +1,32 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Osamah Dhannoon
 		Authors: Osamah Dhanoon: odhanoon2011@my.fit.edu
 				 Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.wireless;
 /**
  * This class ...
  */
+
 import javax.swing.JTable;
+
 import static net.ddp2p.common.util.Util.__;
+
 import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
@@ -34,6 +42,7 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.DBInfo;
@@ -50,6 +59,7 @@ import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.app.MainFrame;
 import net.ddp2p.widgets.components.DebateDecideAction;
 import net.ddp2p.widgets.peers.Peers;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -72,8 +82,11 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Hashtable;
+
+
 @SuppressWarnings("serial")
 public class WLAN_widget extends JTable implements ActionListener, MouseListener {
+	
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	public static final int COL_SELECTED = 3;
@@ -97,6 +110,7 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
 	public Component getComboPanel() {
 		return MainFrame.makeWLanPanel(this);
 	}    
+	
 	void init(){
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
 		initColumnSizes();
@@ -117,6 +131,13 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
         jp.add(scrollPane, BorderLayout.CENTER);
 		return jp;
     }
+    
+	/*
+    public TableCellRenderer getCellRenderer(int row, int col) {
+    	if(col==2)  return cR;
+    	 return super.getCellRenderer(row, col);
+	}
+*/
     protected String[] columnToolTips = {null,null,__("A name you provide")};
     protected JTableHeader createDefaultTableHeader() {
         return new JTableHeader(columnModel) {
@@ -137,16 +158,20 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
         WlanModel model = (WlanModel)this.getModel();
         TableColumn column = null;
         Component comp = null;
+        //Object[] longValues = model.longValues;
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
+
         for (int i = 0; i < model.getColumnCount(); i++) {
         	int headerWidth = 0;
         	int cellWidth = 0;
             column = this.getColumnModel().getColumn(i);
+ 
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
+ 
             for(int r=0; r<model.getRowCount(); r++) {
             	comp = this.getDefaultRenderer(model.getColumnClass(i)).
                              getTableCellRendererComponent(
@@ -160,16 +185,38 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
                                    + "headerWidth = " + headerWidth
                                    + "; cellWidth = " + cellWidth);
             }
+ 
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
+	
 	public void actionPerformed(ActionEvent event) {
+		
 	}
 	public void update() {
 		WlanModel model = getModel();
 		model.update(null, null);
 	}
+	
 	public static void main(String[] args) throws P2PDDSQLException {
+		/*
+		ArrayList<String> os_Names=new ArrayList<String>();
+		os_Names.add("Windows 7");
+		os_Names.add("Linux");
+		String osName= System.getProperty("os.name");
+		
+		int ch=0;
+		if(osName.compareTo(os_Names.get(0))==0) ch=1;
+		else if(osName.compareTo(os_Names.get(1))==0) ch=2;
+		
+		switch(ch){
+		case 1:{ Application.db=new DBInterface("deliberation-app.db");
+				break;}
+		case 2: { Application.db=new DBInterface("deliberation-app.db");
+				break;}
+			default: { System.out.println("Unable to detect OS"); break;}
+		}
+		*/
 		Interfaces.createAndShowGUI(Application.getDB());
 	}
 	@Override
@@ -189,10 +236,12 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
 	public void mouseReleased(MouseEvent arg0) {
     	jtableMouseReleased(arg0);
 	}
+	
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
-    	int row; 
-    	int col; 
+    	int row; //=this.getSelectedRow();
+    	int col; //=this.getSelectedColumn();
     	if(!evt.isPopupTrigger()) return;
+    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
         row=this.rowAtPoint(point);
         if(DEBUG) System.out.println("WLAN_widget:jTableMouseRelease: row="+row);
@@ -205,6 +254,7 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
     }
 	JPopupMenu getPopup(int model_row, int col){
 		JMenuItem menuItem;
+    	
     	ImageIcon addicon = DDIcons.getAddImageIcon(__("add an item")); 
     	ImageIcon delicon = DDIcons.getDelImageIcon(__("delete an item")); 
     	ImageIcon reseticon = DDIcons.getResImageIcon(__("reset item"));
@@ -214,14 +264,17 @@ public class WLAN_widget extends JTable implements ActionListener, MouseListener
      	rAction.putValue("row", new Integer(model_row));
     	menuItem = new JMenuItem(rAction);
     	popup.add(menuItem);
+    	
        	rAction = new WirelessCustomAction(this, __("Unselect"),addicon,__("Unselect."),__("Unselect."), KeyEvent.VK_U, false, WirelessCustomAction.UNSELECT);
      	rAction.putValue("row", new Integer(model_row));
     	menuItem = new JMenuItem(rAction);
     	popup.add(menuItem);
+    	
        	rAction = new WirelessCustomAction(this, __("DisConfigure"),addicon,__("DisConfigure (Linux: restart manager, Windows: dhcp)."),__("Disconfigure."), KeyEvent.VK_D, false, WirelessCustomAction.DISCONFIGURE);
      	rAction.putValue("row", new Integer(model_row));
     	menuItem = new JMenuItem(rAction);
     	popup.add(menuItem);
+
     	return popup;
 	}
 }
@@ -266,6 +319,7 @@ class WirelessCustomAction extends DebateDecideAction {
    		if(DEBUG) System.err.println("WirelessCustomAction:Row selected: " + row);
     	}
     	WlanModel model = (WlanModel)tree.getModel();
+     	//if(row<0) return;
     	switch(cmd) {
     	case REFRESH:
     		WlanModel.refresh();
@@ -279,6 +333,7 @@ class WirelessCustomAction extends DebateDecideAction {
     	}
     }
 }
+
 class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 	/**
 	 * 
@@ -288,6 +343,8 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 	private static final long serialVersionUID = 1L;
 	DBInterface db;
 	String ld;
+	//String _ld[];
+	//String columnNames[]={"Interface Name","IP Address",SSID,"Select Interface"};
 	String columnNames[]={__("Interface Name"),__("Current IP"),__("SSID"),__("Select Interface")};
 	int columns = columnNames.length;
 	private String[][] _table = new String[0][];
@@ -341,12 +398,17 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 	public int getColumnCount() {
 		return columnNames.length;
 	}
+	
 	@Override
 	public int getRowCount() {
 		return _table.length;
+		//if(_ld==null) return 0;
+		//return _ld.length;
 	}
+	// TODO err0r if column 3, no 3 columns
 	@Override
 	public Object getValueAt(int row, int col) {
+		//boolean DEBUG = true;
 		Object result;
 		if((row<0)||(col<0)) return null;
 		if((row>=_table.length)||(col>=_table[row].length)) return null;
@@ -356,21 +418,36 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 			return result;
 		}
 		return _table[row][col];
+//		if((_ld==null)||(_ld.length<=row)) return null;
+//		if(col==3){
+//			String el[]=_ld[row].split(":");
+//			if(el.length>3)
+//				return new Boolean ("1".equals(el[3]));
+//			return null;
+//		}
+//		String[] el = _ld[row].split(":");
+//		if(el.length<=col) return null;
+//		return el[col];
 	}
+	
 	@Override
 	public String getColumnName(int col) {
 		return columnNames[col].toString();
 	}
+
 	@Override
     public boolean isCellEditable(int row, int col)
     { 
     return col==3;	
     }
+	
 	class InterfaceDown extends Thread {
 		private Object interf;
+
 		public InterfaceDown(Object interf) {
 			this.interf = interf;
 		}
+
 		public void run() {
 			try {
 				WirelessSetup.DisconnectInterface(interf);
@@ -383,15 +460,18 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 			catch (InterruptedException e2) {
 				e2.printStackTrace();
 			}
+
 		}
 	}
 	class InterfaceUp extends Thread {
 		private Object interf;
 		boolean configured;
+
 		public InterfaceUp(Object interf, boolean _configured) {
 			this.interf = interf;
 			configured = _configured;
 		}
+
 		public void run() {
 			try {
 				WirelessSetup.interfaceUp(interf, configured);
@@ -404,6 +484,7 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 			catch (InterruptedException e2) {
 				e2.printStackTrace();
 			}
+
 		}
 	}
 	public void disconfigure(int row_model) {
@@ -429,6 +510,7 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 		HashSet<String> selected = new HashSet<String>();
 		try {
 			selected = Detect_interface.getSelectedInterfaces();
+			//_table[row][WLAN_widget.COL_SELECTED] = value;
 			boolean changed = false;
 			if(((Boolean)value).booleanValue()) {
 				if(DEBUG)System.out.println("wlan_widget: setValueAt: Setting true");
@@ -451,6 +533,7 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 				}
 				if(_disconfigure) {
 					new InterfaceDown(interf).start();
+					//	WirelessSetup.interfaceDown(interf);
 				}
 			}
 			_table[row][col] = Util.bool2StringInt(((Boolean)value).booleanValue());
@@ -463,6 +546,25 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 		}
 		fireTableCellUpdated(row, col);
 		if(DEBUG)System.out.println("wlan_widget: setValueAt: done: disconf"+_disconfigure);
+		
+//		
+//		Object interf = new String(_ld[row].substring(0,_ld[row].indexOf(":")));
+//		String el[] = _ld[row].split(":");
+//		String result="";
+//		for(int k=0; k<columns; k++) {
+//			if(k > 0) result = result + ":";
+//			if(k==col) result = result + (new Boolean(true).equals(value)?"1":"0");
+//			else if(k<el.length) result = result + el[k];
+//			else result = result+"";
+//		}
+//		_ld[row] = result;
+//		try {
+//			String dirs = Util.concat(_ld,",");
+//			if(DEBUG)System.out.println("wlan_widget: setValueAt: Setting "+dirs);
+//			DD.setAppTextNoSync(DD.APP_NET_INTERFACES, dirs);
+//		} catch (P2PDDSQLException e) {
+//			e.printStackTrace();
+//		}
 	}
 	private String buildInterfacesDescriptionString(String[][] _table2) {
 		String[]rows = new String[_table2.length];
@@ -473,6 +575,8 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 	}
 	@Override
 	public void update(ArrayList<String> table, Hashtable<String,DBInfo> info) {
+		//boolean DEBUG = true;
+		//Util.printCallPath("update");
 		if(DEBUG)System.out.println("wlan_widget:update: start");
 		try {
 			ld = DD.getAppText(DD.APP_NET_INTERFACES);
@@ -481,17 +585,49 @@ class WlanModel  extends AbstractTableModel implements TableModel, DBListener {
 				if(__table!=null) _table =__table;
 			}
 			if(DEBUG)System.out.println("wlan_widget:update:"+ld);
+			/*
+			if(ld!=null) {
+				_ld=ld.split(",");
+				for(int k=0; k<_ld.length; k++) {
+					if(DEBUG)System.out.println("wlan_widget:update:"+k+" is "+_ld[k]);
+				}
+			}
+			*/
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}		
 		this.fireTableDataChanged();
 	}
+	
 	@Override
 	public Class<?> getColumnClass(int col) {
 		if(col == 3) return Boolean.class;
 		return String.class;	
 	}
 }
+/*
+@SuppressWarnings("serial")
+class Interfaces extends JPanel {
+	WLAN_widget tree;
+    public Interfaces(DBInterface db) {
+    	super(new BorderLayout());
+    	tree = new WLAN_widget( new WlanModel(db));
+        JScrollPane scrollPane = new JScrollPane(tree);
+        scrollPane.setPreferredSize(new Dimension(600, 200));
+        add(scrollPane, BorderLayout.CENTER);
+		tree.setFillsViewportHeight(true);
+    }
+    public static void createAndShowGUI(DBInterface db) {
+        JFrame frame = new JFrame("Wlan Widget");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        Interfaces newContentPane = new Interfaces(db);
+        newContentPane.setOpaque(true);
+        frame.setContentPane(newContentPane);
+        frame.pack();
+        frame.setVisible(true);
+    }
+}
+*/
 class checkR implements TableCellRenderer{
 public Component getTableCellRendererComponent(JTable table,
         Object value,
@@ -499,9 +635,11 @@ public Component getTableCellRendererComponent(JTable table,
         boolean hasFocus,
         int row,
         int column) {
+
 	JCheckBox rendererComponent = new JCheckBox();
 	if(value==null)  rendererComponent.setSelected(false);
 	boolean marked = (Boolean) value;
+	
 	if (marked) {
 		rendererComponent.setSelected(true);
 	}

@@ -1,24 +1,31 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.data;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.regex.Pattern;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -38,6 +45,7 @@ import net.ddp2p.common.util.DDP2P_DoubleLinkedList_Node_Payload;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Summary;
 import net.ddp2p.common.util.Util;
+
 /**
 D_Neighborhood ::= SEQUENCE {
  global_neighborhood_ID PrintableString,
@@ -64,42 +72,58 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	private String name_charset;
 	private String description;
 	private String address;
-	private ASNPoint[] boundary; 
+	private ASNPoint[] boundary; //explanation, GPS coordinates, etc
 	private String name_division;
 	private String[] names_subdivisions;
 	private String name_division_lang;
 	private String name_division_charset;
 	private String name_subdivision_lang;
 	private String name_subdivision_charset;
+	
 	private String parent_global_ID;
-	private String submitter_global_ID; 
+	
+	private String submitter_global_ID; //OPTIONAL
+
 	private String global_organization_ID = null;
+	
 	private Calendar creation_date;
 	private String _creation_date;
+	
 	private byte[] picture;
 	private byte[] signature;
+
 	private Calendar arrival_date;
 	private String _arrival_date;
+
 	private Calendar preferences_date;
 	private String _preferences_date;
+	
 	private String peer_source_ID = null;
 	private boolean blocked=false, requested=false, broadcasted=true;
 	private boolean temporary = true;
+	
 	public D_Neighborhood parent;
-	public D_Constituent submitter; 
+	public D_Constituent submitter; //OPTIONAL
+	
+	// temporary values: may not have been initialized
 	private String parent_ID = null;
-	private String submitter_ID; 
+	private String submitter_ID; // if negative we know it was not yet initialized
 	private long organization_ID = -1;
 	private String neighborhoodID = null;
 	private long _neighborhoodID = -1;
+	
 	public int status_references = 0;
 	private boolean dirty_main = false;
-	private boolean dirty_local = false; 
-	private boolean dirty_mydata = false;  
-	private boolean dirty_preferences = false; 
+	private boolean dirty_local = false; // local to the agent (peer_source, arrival_date)
+	private boolean dirty_mydata = false;  //(may be later merged to preferences)
+	private boolean dirty_preferences = false; // shared among agents of a peer (blocked, requested, broadcasted)
+
 	public boolean loaded_globals = false;
+	
+	//static Object lock_organization_GID_storage = new Object(); // duplicate of the above
 	private static Object monitor_object_factory = new Object();
 	D_Neighborhood_Node component_node = new D_Neighborhood_Node(null, null);
+		
 	public static D_Neighborhood getEmpty() {return new D_Neighborhood();}
 	public D_Neighborhood instance() throws CloneNotSupportedException{return new D_Neighborhood();}
 	private D_Neighborhood() {}
@@ -108,6 +132,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			init(lID);
 			if (load_Globals) this.fillGlobals();
 		} catch (Exception e) {
+			//e.printStackTrace();
 			throw new P2PDDSQLException(e.getLocalizedMessage());
 		}
 	}
@@ -117,6 +142,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			init(gID);
 			if (load_Globals) this.fillGlobals();
 		} catch (Exception e) {
+			//e.printStackTrace();
 			if (create) {
 				this.global_neighborhood_ID = gID;
 				this.organization_ID = p_oLID;
@@ -153,9 +179,11 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			neigh.setName_division(getHead(parent.getNames_subdivisions()));
 			neigh.setName_division_lang(parent.getName_division_lang());
 			neigh.setName_division_charset(parent.getName_division_charset());
+			
 			neigh.setNames_subdivisions(getTail(parent.getNames_subdivisions()));
 			neigh.setNames_subdivisions_lang(parent.getName_subdivision_lang());
 			neigh.setNames_subdivisions_charset(parent.getName_subdivision_charset());
+			
 			neigh.setName_lang(parent.getName_lang());
 			neigh.setName_charset(parent.getName_charset());
 		}
@@ -188,6 +216,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		;
 	static final String sql_neighborhood_cond_ID = sql_neighborhood+" WHERE n."+net.ddp2p.common.table.neighborhood.neighborhood_ID+"=?;";
 	static final String sql_neighborhood_cond_GID = sql_neighborhood+" WHERE n."+net.ddp2p.common.table.neighborhood.global_neighborhood_ID+"=?;";
+
 	private void init(Long lID) throws Exception {
 		ArrayList<ArrayList<Object>> a;
 		a = Application.getDB().select(sql_neighborhood_cond_ID, new String[]{Util.getStringID(lID)});
@@ -203,6 +232,31 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if(DEBUG) System.out.println("D_Neighborhood: init: got="+this);//result);
 	}
 	private void init(ArrayList<Object> N) {
+		/*
+		setBoundary(null);
+		setCreationDate(Util.getCalendar(Util.getString(N.get(table.neighborhood.IDX_CREATION_DATE))));
+		setArrivalDate(Util.getCalendar(Util.getString(N.get(table.neighborhood.IDX_ARRIVAL_DATE))));
+		setGID(Util.getString(N.get(table.neighborhood.IDX_GID)));
+		setLIDstr(Util.getString(N.get(table.neighborhood.IDX_ID)));
+		setDescription(Util.getString(N.get(table.neighborhood.IDX_DESCRIPTION)));
+		setName(Util.getString(N.get(table.neighborhood.IDX_NAME)));
+		setName_lang(Util.getString(N.get(table.neighborhood.IDX_NAME_LANG)));
+		name_charset = Util.getString(N.get(table.neighborhood.IDX_NAME_CHARSET));
+		setName_division(Util.getString(N.get(table.neighborhood.IDX_NAME_DIVISION)));
+		setSubmitterLIDstr(Util.getString(N.get(table.neighborhood.IDX_SUBMITTER_ID)));
+		setParentLIDstr(Util.getString(N.get(table.neighborhood.IDX_PARENT_ID)));
+		setLIDOrg(Util.lval(Util.getString(N.get(table.neighborhood.IDX_ORG_ID)), -1));
+		String subs = Util.getString(N.get(table.neighborhood.IDX_NAMES_DUBDIVISIONS));
+		if (subs!=null) setNames_subdivisions(splitSubDivisions(subs));
+		setParent_GID(Util.getString(N.get(table.neighborhood.IDX_FIELDs+0)));
+		setGIDOrg(D_Organization.getGIDbyLID(getLIDOrg()));//Util.getString(N.get(table.neighborhood.IDX_FIELDs+2));
+		setSubmitter_GID(D_Constituent.getGIDFromLID(getSubmitterLIDstr()));//Util.getString(N.get(table.neighborhood.IDX_FIELDs+1));
+		setPicture(Util.byteSignatureFromString(Util.getString(N.get(table.neighborhood.IDX_PICTURE))));
+		setSignature(Util.byteSignatureFromString(Util.getString(N.get(table.neighborhood.IDX_SIGNATURE))));	
+		setBlocked(Util.stringInt2bool(Util.getString(N.get(table.neighborhood.IDX_BLOCKED)), false));	
+		setRequested(Util.stringInt2bool(Util.getString(N.get(table.neighborhood.IDX_REQUESTED)), false));	
+		setBroadcasted(Util.stringInt2bool(Util.getString(N.get(table.neighborhood.IDX_BROADCASTED)), false));
+		*/
 		address = Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_ADDRESS), null);
 		creation_date = (Util.getCalendar(_creation_date = Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_CREATION_DATE))));
 		global_neighborhood_ID = (Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_GID)));
@@ -212,10 +266,12 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		name_lang = (Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_NAME_LANG)));
 		name_charset = Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_NAME_CHARSET));
 		name_division = (Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_NAME_DIVISION)));
+		
 		name_division_lang = (Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_NAME_DIVISION_LANG)));
 		name_division_charset = Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_NAME_DIVISION_CHARSET));
 		name_subdivision_lang = (Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_NAMES_DUBDIVISIONS_LANG)));
 		name_subdivision_charset = Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_NAMES_DUBDIVISIONS_CHARSET));
+		
 		submitter_ID = (Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_SUBMITTER_ID)));
 		parent_ID = (Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_PARENT_ID)));
 		organization_ID = (Util.lval(Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_ORG_ID)), -1));
@@ -230,7 +286,12 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		requested = (Util.stringInt2bool(Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_REQUESTED)), false));	
 		broadcasted = (Util.stringInt2bool(Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_BROADCASTED)), false));
 		peer_source_ID = (Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_PEER_SOURCE_ID)));
+		
 		this.parent_global_ID = (Util.getString(N.get(net.ddp2p.common.table.neighborhood.IDX_FIELDs+0)));
+		//this.global_organization_ID = (D_Organization.getGIDbyLID(getLIDOrg())); //Util.getString(N.get(table.neighborhood.IDX_FIELDs+2));
+		//this.submitter_global_ID = (D_Constituent.getGIDFromLID(getSubmitterLIDstr())); //Util.getString(N.get(table.neighborhood.IDX_FIELDs+1));
+		//if (DEBUG) System.out.println("D_Neighborhood: init: got="+this);
+		
 		init_my();
 	}
 	private void init_my() {
@@ -254,6 +315,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public String toSummaryString() {
 		return "D_Neighborhood: ["+
+				//";\n creation_date*="+Encoder.getGeneralizedTime(creation_date)+
 		";\n name*="+name+
 		";\n name_division*="+name_division+
 		"]";
@@ -280,16 +342,21 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		";\n signature="+Util.byteToHexDump(signature)+
 		"]";
 	}
+
 	public static class D_Neighborhood_Node {
 		private static final int MAX_TRIES = 30;
 		/** Currently loaded peers, ordered by the access time*/
 		private static DDP2P_DoubleLinkedList<D_Neighborhood> loaded_objects = new DDP2P_DoubleLinkedList<D_Neighborhood>();
 		private static Hashtable<Long, D_Neighborhood> loaded_By_LID = new Hashtable<Long, D_Neighborhood>();
+		//private static Hashtable<String, D_Neighborhood> loaded_const_By_GID = new Hashtable<String, D_Neighborhood>();
+		//private static Hashtable<String, D_Neighborhood> loaded_const_By_GIDhash = new Hashtable<String, D_Neighborhood>();
 		private static Hashtable<String, Hashtable<Long, D_Neighborhood>> loaded_By_GIDH_ORG = new Hashtable<String, Hashtable<Long, D_Neighborhood>>();
 		private static Hashtable<Long, Hashtable<String, D_Neighborhood>> loaded_By_ORG_GIDH = new Hashtable<Long, Hashtable<String, D_Neighborhood>>();
 		private static Hashtable<String, Hashtable<Long, D_Neighborhood>> loaded_By_GID_ORG = new Hashtable<String, Hashtable<Long, D_Neighborhood>>();
 		private static Hashtable<Long, Hashtable<String, D_Neighborhood>> loaded_By_ORG_GID = new Hashtable<Long, Hashtable<String, D_Neighborhood>>();
 		private static long current_space = 0;
+		
+		//return loaded_const_By_GID.get(GID);
 		private static D_Neighborhood getByGID(String GID, Long organizationLID) {
 			if (organizationLID != null && organizationLID > 0) {
 				Hashtable<String, D_Neighborhood> t1 = loaded_By_ORG_GID.get(organizationLID);
@@ -305,24 +372,36 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			}
 			return null;
 		}
+		//return loaded_const_By_GID.put(GID, c);
 		private static D_Neighborhood putByGID(String GID, Long organizationLID, D_Neighborhood c) {
 			Hashtable<Long, D_Neighborhood> v1 = loaded_By_GID_ORG.get(GID);
 			if (v1 == null) loaded_By_GID_ORG.put(GID, v1 = new Hashtable<Long, D_Neighborhood>());
+
+			// section added for duplication control
 			D_Neighborhood old = v1.get(organizationLID);
 			if (old != null && old != c) {
 				Util.printCallPath("D_Neighborhood conflict: old="+old+" crt="+c);
 				return old;
 			}
+			
 			D_Neighborhood result = v1.put(organizationLID, c);
+			
 			Hashtable<String, D_Neighborhood> v2 = loaded_By_ORG_GID.get(organizationLID);
 			if (v2 == null) loaded_By_ORG_GID.put(organizationLID, v2 = new Hashtable<String, D_Neighborhood>());
+			
+			// section added for duplication control
 			old = v2.get(GID);
 			if (old != null && old != c) {
 				Util.printCallPath("D_Neighborhood conflict: old="+old+" crt="+c);
+				//return old; // in this case, for consistency, store the new one
 			}
+			
 			D_Neighborhood result2 = v2.put(GID, c);
-			return c; 
+			
+			//if (result == null) result = result2;
+			return c; //result; 
 		}
+		//return loaded_const_By_GID.remove(GID);
 		private static D_Neighborhood remByGID(String GID, Long organizationLID) {
 			D_Neighborhood result = null;
 			D_Neighborhood result2 = null;
@@ -331,14 +410,20 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				result = v1.remove(organizationLID);
 				if (v1.size() == 0) loaded_By_GID_ORG.remove(GID);
 			}
+			
 			Hashtable<String, D_Neighborhood> v2 = loaded_By_ORG_GID.get(organizationLID);
 			if (v2 != null) {
 				result2 = v2.remove(GID);
 				if (v2.size() == 0) loaded_By_ORG_GID.remove(organizationLID);
 			}
+			
 			if (result == null) result = result2;
 			return result; 
 		}
+//		private static D_Neighborhood getConstByGID(String GID, String organizationLID) {
+//			return getConstByGID(GID, Util.Lval(organizationLID));
+//		}
+		
 		private static D_Neighborhood getByGIDH(String GIDH, Long organizationLID) {
 			if (organizationLID != null && organizationLID > 0) {
 				Hashtable<String, D_Neighborhood> t1 = loaded_By_ORG_GIDH.get(organizationLID);
@@ -357,21 +442,32 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		private static D_Neighborhood putByGIDH(String GIDH, Long organizationLID, D_Neighborhood c) {
 			Hashtable<Long, D_Neighborhood> v1 = loaded_By_GIDH_ORG.get(GIDH);
 			if (v1 == null) loaded_By_GIDH_ORG.put(GIDH, v1 = new Hashtable<Long, D_Neighborhood>());
+			
+			// section added for duplication control
 			D_Neighborhood old = v1.get(organizationLID);
 			if (old != null && old != c) {
 				Util.printCallPath("D_Neighborhood conflict: old="+old+" crt="+c);
 				return old;
 			}
+			
 			D_Neighborhood result = v1.put(organizationLID, c);
+			
 			Hashtable<String, D_Neighborhood> v2 = loaded_By_ORG_GIDH.get(organizationLID);
 			if (v2 == null) loaded_By_ORG_GIDH.put(organizationLID, v2 = new Hashtable<String, D_Neighborhood>());
+			
+			// section added for duplication control
 			old = v2.get(GIDH);
 			if (old != null && old != c) {
 				Util.printCallPath("D_Neighborhood conflict: old="+old+" crt="+c);
+				//return old; // in this case, for consistency, store the new one
 			}
+			
 			D_Neighborhood result2 = v2.put(GIDH, c);
-			return c; 
+			
+			//if (result == null) result = result2;
+			return c; //result; 
 		}
+		//return loaded_const_By_GIDhash.remove(GIDH);
 		private static D_Neighborhood remByGIDH(String GIDH, Long organizationLID) {
 			D_Neighborhood result = null;
 			D_Neighborhood result2 = null;
@@ -380,17 +476,24 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				result = v1.remove(organizationLID);
 				if (v1.size() == 0) loaded_By_GIDH_ORG.remove(GIDH);
 			}
+			
 			Hashtable<String, D_Neighborhood> v2 = loaded_By_ORG_GIDH.get(organizationLID);
 			if (v2 != null) {
 				result2 = v2.remove(GIDH);
 				if (v2.size() == 0) loaded_By_ORG_GIDH.remove(organizationLID);
 			}
+			
 			if (result == null) result = result2;
 			return result; 
 		}
+//		private static D_Neighborhood getConstByGIDH(String GIDH, String organizationLID) {
+//			return getConstByGIDH(GIDH, Util.Lval(organizationLID));
+//		}
+		
 		/** message is enough (no need to store the Encoder itself) */
 		public byte[] message;
 		public DDP2P_DoubleLinkedList_Node<D_Neighborhood> my_node_in_loaded;
+	
 		public D_Neighborhood_Node(byte[] message,
 				DDP2P_DoubleLinkedList_Node<D_Neighborhood> my_node_in_loaded) {
 			this.message = message;
@@ -403,7 +506,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			if ((crt.getGID() != null) && (!crt.temporary)) {
 				byte[] message = crt.encode();
 				synchronized(loaded_objects) {
-					crt.component_node.message = message; 
+					crt.component_node.message = message; // crt.encoder.getBytes();
 					if(crt.component_node.message != null) current_space += crt.component_node.message.length;
 				}
 			}
@@ -418,6 +521,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		private static boolean register_newLID_ifLoaded(D_Neighborhood crt) {
 			if (DEBUG) System.out.println("D_Neighborhood: register_newLID_ifLoaded: start crt = "+crt);
 			synchronized (loaded_objects) {
+				//String gid = crt.getGID();
 				String nGIDH = crt.getGIDH();
 				long nLID = crt.getLID();
 				if (nGIDH == null) {
@@ -429,6 +533,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 					Util.printCallPath("Why call without LID="+crt);
 					return false;
 				}
+				
 				Long organizationLID = crt.getOrgLID();
 				if (organizationLID <= 0) {
 					Util.printCallPath("No orgLID="+crt);
@@ -439,10 +544,12 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 					if (DEBUG) System.out.println("D_Neighborhood: register_newLID_ifLoaded: was not registered.");
 					return false;
 				}
+				
 				if (old != crt)	{
 					Util.printCallPath("Different linking of: old="+old+" vs crt="+crt);
 					return false;
 				}
+				
 				Long o_nLID = new Long(nLID);
 				D_Neighborhood _old = loaded_By_LID.get(o_nLID);
 				if (_old != null && _old != crt) {
@@ -451,6 +558,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				}
 				loaded_By_LID.put(o_nLID, crt);
 				if (DEBUG) System.out.println("D_Neighborhood: register_newLID_ifLoaded: store lid="+nLID+" crt="+crt.getGIDH());
+
 				return true;
 			}
 		}
@@ -470,11 +578,13 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 					Util.printCallPath("Path");}
 					return false;
 				}
+				
 				Long organizationLID = crt.getOrgLID();
 				if (organizationLID <= 0) {
 					Util.printCallPath("No orgLID="+crt);
 					return false;
 				}
+				
 				Long oLID = new Long(lid);
 				D_Neighborhood _old = loaded_By_LID.get(oLID);
 				if (_old == null) {
@@ -485,15 +595,29 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 					Util.printCallPath("Using expired: old="+_old+" vs crt="+crt);
 					return false;
 				}
-				D_Neighborhood_Node.putByGID(gid, crt.getOrgLID(), crt); 
+				
+				D_Neighborhood_Node.putByGID(gid, crt.getOrgLID(), crt); //loaded_const_By_GID.put(gid, crt);
 				if (DEBUG) System.out.println("D_Neighborhood: register_newGID_ifLoaded: store gid="+gid);
-				D_Neighborhood_Node.putByGIDH(gidh, organizationLID, crt);
+				D_Neighborhood_Node.putByGIDH(gidh, organizationLID, crt);//loaded_const_By_GIDhash.put(gidh, crt);
 				if (DEBUG) System.out.println("D_Neighborhood: register_newGID_ifLoaded: store gidh="+gidh);
+				
 				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
+				
 				if (DEBUG) System.out.println("D_Neighborhood: register_newGID_ifLoaded: store lid="+lid+" crt="+crt.getGIDH());
+
 				return true;
 			}
 		}
+		/*
+		private static void unregister_loaded(D_Neighborhood crt) {
+			synchronized(loaded_orgs) {
+				loaded_orgs.remove(crt);
+				loaded_org_By_LocalID.remove(new Long(crt.getLID()));
+				loaded_org_By_GID.remove(crt.getGID());
+				loaded_org_By_GIDhash.remove(crt.getGIDH());
+			}
+		}
+		*/
 		private static boolean register_loaded(D_Neighborhood crt) {
 			if (DEBUG) System.out.println("D_Neighborhood: register_loaded: start crt = "+crt);
 			crt.reloadMessage(); 
@@ -502,48 +626,59 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				String gidh = crt.getGIDH();
 				long lid = crt.getLID();
 				Long organizationLID = crt.getOrgLID();
+				
 				loaded_objects.offerFirst(crt);
 				if (lid > 0) {
+					// section added for duplication control
 					Long oLID = new Long(lid);
 					D_Neighborhood old = loaded_By_LID.get(oLID);
 					if (old != null && old != crt) {
 						Util.printCallPath("Double linking of: old="+old+" vs crt="+crt);
+						//return false;
 					}
+					
 					loaded_By_LID.put(new Long(lid), crt);
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: store lid="+lid+" crt="+crt.getGIDH());
 				}else{
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: no store lid="+lid+" crt="+crt.getGIDH());
 				}
 				if (gid != null) {
-					D_Neighborhood_Node.putByGID(gid, crt.getOrgLID(), crt); 
+					D_Neighborhood_Node.putByGID(gid, crt.getOrgLID(), crt); //loaded_const_By_GID.put(gid, crt);
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: store gid="+gid);
 				} else {
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: no store gid="+gid);
 				}
 				if (gidh != null) {
-					D_Neighborhood_Node.putByGIDH(gidh, organizationLID, crt);
+					D_Neighborhood_Node.putByGIDH(gidh, organizationLID, crt);//loaded_const_By_GIDhash.put(gidh, crt);
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: store gidh="+gidh);
 				} else {
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: no store gidh="+gidh);
 				}
 				if (crt.component_node.message != null) current_space += crt.component_node.message.length;
+				
 				int tries = 0;
 				while ((loaded_objects.size() > SaverThreadsConstants.MAX_LOADED_NEIGHS)
 						|| (current_space > SaverThreadsConstants.MAX_NEIGHS_RAM)) {
-					if (loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_NEIGHS) break; 
+					if (loaded_objects.size() <= SaverThreadsConstants.MIN_LOADED_NEIGHS) break; // at least _crt_peer and _myself
+	
 					if (tries > MAX_TRIES) break;
 					tries ++;
 					D_Neighborhood candidate = loaded_objects.getTail();
 					if ((candidate.status_references > 0)
+							//||
+							//D_Neighborhood.is_crt_const(candidate)
+							//||
+							//(candidate == HandlingMyself_Peer.get_myself())
 							) 
 					{
 						setRecent(candidate);
 						continue;
 					}
-					D_Neighborhood removed = loaded_objects.removeTail();
+					
+					D_Neighborhood removed = loaded_objects.removeTail();//remove(loaded_peers.size()-1);
 					loaded_By_LID.remove(new Long(removed.getLID())); 
-					D_Neighborhood_Node.remByGID(removed.getGID(), removed.getOrgLID());
-					D_Neighborhood_Node.remByGIDH(removed.getGIDH(), removed.getOrgLID()); 
+					D_Neighborhood_Node.remByGID(removed.getGID(), removed.getOrgLID());//loaded_const_By_GID.remove(removed.getGID());
+					D_Neighborhood_Node.remByGIDH(removed.getGIDH(), removed.getOrgLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 					if (DEBUG) System.out.println("D_Neighborhood: register_loaded: remove GIDH="+removed.getGIDH());
 					if (removed.component_node.message != null) current_space -= removed.component_node.message.length;				
 				}
@@ -566,10 +701,11 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 					System.out.println("D_Neighborhood: dropLoaded: abandon: force="+force+" rem="+removed);
 					return result;
 				}
+				
 				loaded_objects.remove(removed);
 				if (removed.getLIDstr() != null) loaded_By_LID.remove(new Long(removed.getLID())); 
-				if (removed.getGID() != null) D_Neighborhood_Node.remByGID(removed.getGID(), removed.getOrgLID()); 
-				if (removed.getGIDH() != null) D_Neighborhood_Node.remByGIDH(removed.getGIDH(), removed.getOrgLID()); 
+				if (removed.getGID() != null) D_Neighborhood_Node.remByGID(removed.getGID(), removed.getOrgLID()); //loaded_const_By_GID.remove(removed.getGID());
+				if (removed.getGIDH() != null) D_Neighborhood_Node.remByGIDH(removed.getGIDH(), removed.getOrgLID()); //loaded_const_By_GIDhash.remove(removed.getGIDH());
 				if (DEBUG) System.out.println("D_Neighborhood: drop_loaded: remove GIDH="+removed.getGIDH());
 				if (removed.component_node.message != null) current_space -= removed.component_node.message.length;	
 				if (DEBUG) System.out.println("D_Neighborhood: dropLoaded: exit with force="+force+" result="+result);
@@ -578,11 +714,12 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		}
 	}
 	static class D_Neighborhood_My {
-		String name;
+		String name;// table.my_organization_data.
 		String category;
 		long row;
 	}
 	D_Neighborhood_My mydata = new D_Neighborhood_My();
+
 	/**
 	 * exception raised on error
 	 * @param ID
@@ -594,6 +731,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		Long id = new Long(ID);
 		D_Neighborhood crt = D_Neighborhood_Node.loaded_By_LID.get(id);
 		if (crt == null) return null;
+		
 		if (load_Globals && !crt.loaded_globals) {
 			crt.fillGlobals();
 			D_Neighborhood_Node.register_fully_loaded(crt);
@@ -626,10 +764,12 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			return getNeighByLID_AttemptCacheOnly(LID.longValue(), load_Globals);
 		}
 	}
+
 	static public D_Neighborhood getNeighByLID(String LID, boolean load_Globals, boolean keep) {
 		return getNeighByLID(Util.Lval(LID), load_Globals, keep);
 	}
 	static public D_Neighborhood getNeighByLID(Long LID, boolean load_Globals, boolean keep) {
+		// boolean DEBUG = true;
 		if (DEBUG) System.out.println("D_Neighborhood: getNeighByLID: "+LID+" glob="+load_Globals);
 		if ((LID == null) || (LID <= 0)) {
 			if (DEBUG) System.out.println("D_Neighborhood: getNeighByLID: null LID = "+LID);
@@ -641,12 +781,14 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			if (DEBUG) System.out.println("D_Neighborhood: getNeighByLID: got GID cached crt="+crt);
 			return crt;
 		}
+
 		synchronized (monitor_object_factory) {
 			crt = D_Neighborhood.getNeighByLID_AttemptCacheOnly(LID, load_Globals, keep);
 			if (crt != null) {
 				if (DEBUG) System.out.println("D_Neighborhood: getNeighByLID: got sync cached crt="+crt);
 				return crt;
 			}
+
 			try {
 				crt = new D_Neighborhood(LID, load_Globals);
 				if (DEBUG) System.out.println("D_Neighborhood: getNeighByLID: loaded crt="+crt);
@@ -656,12 +798,14 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				}
 			} catch (Exception e) {
 				if (DEBUG) System.out.println("D_Neighborhood: getNeighByLID: error loading");
+				// e.printStackTrace();
 				return null;
 			}
 			if (DEBUG) System.out.println("D_Neighborhood: getNeighByLID: Done");
 			return crt;
 		}
 	}	
+	
 	/**
 	 * No keep
 	 * @param GID
@@ -672,8 +816,12 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	static private D_Neighborhood getNeighByGID_AttemptCacheOnly(String GID, Long organizationLID, boolean load_Globals) {
 		D_Neighborhood  crt = null;
 		if ((GID == null)) return null;
-		if ((GID != null)) crt = D_Neighborhood_Node.getByGID(GID, organizationLID); 
+		if ((GID != null)) crt = D_Neighborhood_Node.getByGID(GID, organizationLID); //.loaded_const_By_GID.get(GID);
+		
+				
 		if (crt != null) {
+			//crt.setGID(GID, crt.getOrganizationID());
+			
 			if (load_Globals && !crt.loaded_globals) {
 				crt.fillGlobals();
 				D_Neighborhood_Node.register_fully_loaded(crt);
@@ -690,6 +838,24 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * @param keep : if true, avoid releasing this until calling releaseReference()
 	 * @return
 	 */
+	/*
+	static private D_Neighborhood getOrgByGIDhash_AttemptCacheOnly(String GIDhash, boolean load_Globals, boolean keep) {
+		if (GIDhash == null) return null;
+		if (keep) {
+			synchronized(monitor_object_factory) {
+				D_Neighborhood  crt = getOrgByGID_or_GIDhash_AttemptCacheOnly(null, GIDhash, load_Globals);
+				if (crt != null) {			
+					crt.status_references ++;
+					//System.out.println("D_Organization: getOrgByGIDhash_AttemptCacheOnly: "+crt.status_references);
+					//Util.printCallPath("");
+				}
+				return crt;
+			}
+		} else {
+			return getOrgByGID_or_GIDhash_AttemptCacheOnly(null, GIDhash, load_Globals);
+		}
+	}
+	*/
 	/**
 	 * exception raised on error
 	 * @param GID
@@ -723,6 +889,20 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * @param load_Globals 
 	 * @return
 	 */
+	/*
+	static private D_Neighborhood getOrgByGID_only_AttemptCacheOnly(String GID, boolean load_Globals) {
+		if (GID == null) return null;
+		D_Neighborhood crt = D_Neighborhood_Node.loaded_org_By_GID.get(GID);
+		if (crt == null) return null;
+		
+		if (load_Globals && !crt.loaded_globals){
+			crt.fillGlobals();
+			D_Neighborhood_Node.register_fully_loaded(crt);
+		}
+		D_Neighborhood_Node.setRecent(crt);
+		return crt;
+	}
+	*/
 	@Deprecated
 	static public D_Neighborhood getNeighByGID(String GID, boolean load_Globals, boolean keep) {
 		System.out.println("D_Neighborhood: getNeighByGID: Remove me setting orgID");
@@ -743,6 +923,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * @return
 	 */
 	static public D_Neighborhood getNeighByGID(String GID, boolean load_Globals, boolean create, boolean keep, D_Peer __peer, long p_oLID) {
+		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("D_Neighborhood: getNeighByGID: "+GID+" glob="+load_Globals+" cre="+create+" _peer="+__peer);
 		if ((GID == null)) {
 			if (_DEBUG) System.out.println("D_Neighborhood: getNeighByGID: null GID and GIDH");
@@ -754,12 +935,14 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			if (DEBUG) System.out.println("D_Neighborhood: getNeighByGID: got GID cached crt="+crt);
 			return crt;
 		}
+
 		synchronized (monitor_object_factory) {
 			crt = D_Neighborhood.getNeighByGID_AttemptCacheOnly(GID, p_oLID, load_Globals, keep);
 			if (crt != null) {
 				if (DEBUG) System.out.println("D_Neighborhood: getNeighByGID: got sync cached crt="+crt);
 				return crt;
 			}
+
 			try {
 				crt = new D_Neighborhood(GID, load_Globals, create, __peer, p_oLID);
 				if (DEBUG) System.out.println("D_Neighborhood: getNeighByGID: loaded crt="+crt);
@@ -793,6 +976,8 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				result = neigh;
 				{
 					neigh.status_references ++;
+					//System.out.println("D_Organization: getOrgByOrg_Keep: "+org.status_references);
+					//Util.printCallPath("");
 				}
 			}
 		}
@@ -831,6 +1016,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		}
 		return 0;
 	}
+	
 	public final static String sql_getLeaves = "SELECT n."+net.ddp2p.common.table.neighborhood.neighborhood_ID +
 				" FROM "+net.ddp2p.common.table.neighborhood.TNAME+" AS n " +
 				" LEFT JOIN "+net.ddp2p.common.table.neighborhood.TNAME+" AS d ON(d."+net.ddp2p.common.table.neighborhood.parent_nID+"=n."+net.ddp2p.common.table.neighborhood.neighborhood_ID+") "+
@@ -858,6 +1044,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		}
 		return -1;
 	}
+	
 	/** Storing */
 	public static D_Neighborhood_SaverThread saverThread = new D_Neighborhood_SaverThread();
 	private boolean dirty_any() {
@@ -894,12 +1081,18 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * This returns asynchronously (without waiting for the storing to happen).
 	 */
 	public void storeRequest() {
+		//Util.printCallPath("Why store?");
 		if (!this.dirty_any()) {
 			Util.printCallPath("Why store when not dirty?");
 			return;
 		}
+		
 		String save_key = this.getGIDH();
+		
 		if (save_key == null) {
+			//save_key = ((Object)this).hashCode() + "";
+			//Util.printCallPath("Cannot store null:\n"+this);
+			//return;
 			D_Neighborhood._need_saving_obj.add(this);
 			if (DEBUG) System.out.println("D_Peer:storeRequest: added to _need_saving_obj");
 		} else {		
@@ -944,9 +1137,29 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		}
 		return -1;
 	}
+	
+
 	@Override
 	public D_Neighborhood decode(Decoder decoder) throws ASN1DecoderFail {
 		Decoder dec = decoder.getContent();
+		/*
+		if(dec.getTypeByte()==Encoder.TAG_PrintableString)setGIDOrg(dec.getFirstObject(true).getString());
+		if(dec.getTypeByte()==DD.TAG_AC0)setGID(dec.getFirstObject(true).getString(DD.TAG_AC0));
+		if(dec.getTypeByte()==DD.TAG_AC1)setName(dec.getFirstObject(true).getString(DD.TAG_AC1));
+		if(dec.getTypeByte()==DD.TAG_AC2)setName_lang(dec.getFirstObject(true).getString(DD.TAG_AC2));
+		if(dec.getTypeByte()==DD.TAG_AC3)setDescription(dec.getFirstObject(true).getString(DD.TAG_AC3));
+		if(dec.getTypeByte()==Encoder.TAG_SEQUENCE) setBoundary(dec.getFirstObject(true).getSequenceOf(Encoder.TYPE_SEQUENCE, new ASNPoint[]{}, new ASNPoint()));
+		if(dec.getTypeByte()==DD.TAG_AC4)setName_division(dec.getFirstObject(true).getString(DD.TAG_AC4));
+		if(dec.getTypeByte()==DD.TAG_AC6)setNames_subdivisions(dec.getFirstObject(true).getSequenceOf(DD.TAG_AC5));
+		if(dec.getTypeByte()==DD.TAG_AC7)setParent_GID(dec.getFirstObject(true).getString(DD.TAG_AC7));
+		if(dec.getTypeByte()==DD.TAG_AC8)parent = new D_Neighborhood().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC9)setSubmitter_GID(dec.getFirstObject(true).getString(DD.TAG_AC9));
+		if(dec.getTypeByte()==DD.TAG_AC10)submitter = D_Constituent.getEmpty().decode(dec.getFirstObject(true));
+		if(dec.getTypeByte()==DD.TAG_AC11)setCreationDate(dec.getFirstObject(true).getGeneralizedTimeCalender(DD.TAG_AC11));
+		if(dec.getTypeByte()==DD.TAG_AC12)setPicture(dec.getFirstObject(true).getBytes(DD.TAG_AC12));
+		if(dec.getTypeByte()==DD.TAG_AC13)setSignature(dec.getFirstObject(true).getBytes(DD.TAG_AC13));
+		*/
+		// sets without setters to avoid marking dirty flags;
 		if(dec.getTypeByte()==Encoder.TAG_PrintableString) this.global_organization_ID = (dec.getFirstObject(true).getString());
 		if(dec.getTypeByte()==DD.TAG_AC0) this.global_neighborhood_ID = (dec.getFirstObject(true).getString(DD.TAG_AC0));
 		if(dec.getTypeByte()==DD.TAG_AC1) this.name = (dec.getFirstObject(true).getString(DD.TAG_AC1));
@@ -986,6 +1199,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
 		int new_dependants = dependants;
 		if (dependants > 0) new_dependants = dependants - 1;
+		
 		Encoder enc = new Encoder().initSequence();
 		/**
 		 * May decide to comment encoding of "global_organization_ID" out completely, since the org_GID is typically
@@ -1012,6 +1226,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getParent_GID());
 			enc.addToSequence(new Encoder(repl_GID).setASN1Type(DD.TAG_AC7));
 		}
+		//else if((parent!=null)&&(parent.global_neighborhood_ID!=null)) enc.addToSequence(new Encoder(parent.global_neighborhood_ID).setASN1Type(DD.TAG_AC7));
 		if (dependants != ASNObj.DEPENDANTS_NONE) {
 			if (parent != null) enc.addToSequence(parent.getEncoder(dictionary_GIDs, new_dependants)).setASN1Type(DD.TAG_AC8);
 		}
@@ -1019,6 +1234,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			String repl_GID = ASNSyncPayload.getIdxS(dictionary_GIDs, getSubmitter_GID());
 			enc.addToSequence(new Encoder(repl_GID).setASN1Type(DD.TAG_AC9));
 		}
+		//else if((submitter!=null)&&(submitter.global_ID!=null)) enc.addToSequence(new Encoder(submitter.global_ID).setASN1Type(DD.TAG_AC9));
 		if (dependants != ASNObj.DEPENDANTS_NONE) {
 			if (submitter!=null) enc.addToSequence(submitter.getEncoder(dictionary_GIDs, new_dependants)).setASN1Type(DD.TAG_AC10);
 		}
@@ -1039,10 +1255,13 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if(getNames_subdivisions()!=null) enc.addToSequence(Encoder.getStringEncoder(getNames_subdivisions(), DD.TAG_AC5).setASN1Type(DD.TAG_AC6));
 		if(getParent_GID()!=null) enc.addToSequence(new Encoder(getParent_GID()).setASN1Type(DD.TAG_AC7));
 		else if((parent!=null)&&(parent.getGID()!=null)) enc.addToSequence(new Encoder(parent.getGID()).setASN1Type(DD.TAG_AC7));
+		//if(parent!=null) enc.addToSequence(parent.getEncoder()).setASN1Type(DD.TAG_AC8);
 		if(getSubmitter_GID()!=null) enc.addToSequence(new Encoder(getSubmitter_GID()).setASN1Type(DD.TAG_AC9));
 		else if((submitter!=null)&&(submitter.getGID()!=null)) enc.addToSequence(new Encoder(submitter.getGID()).setASN1Type(DD.TAG_AC9));
+		//if(submitter!=null) enc.addToSequence(submitter.getEncoder()).setASN1Type(DD.TAG_AC10);
 		if(getCreationDate()!=null)enc.addToSequence(new Encoder(getCreationDate()).setASN1Type(DD.TAG_AC11));
 		if(getPicture()!=null) enc.addToSequence(new Encoder(getPicture()).setASN1Type(DD.TAG_AC12));
+		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC13));
 		return enc;
 	}
 	/**
@@ -1053,6 +1272,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	public Encoder getHashEncoder() {
 		Encoder enc = new Encoder().initSequence();
 		enc.addToSequence(new Encoder(this.getOrgGID(),Encoder.TAG_PrintableString));
+		//if(global_neighborhood_ID!=null)enc.addToSequence(new Encoder(global_neighborhood_ID,Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC0));
 		if(getName()!=null) enc.addToSequence(new Encoder(getName()).setASN1Type(DD.TAG_AC1));
 		if(getName_lang()!=null)enc.addToSequence(new Encoder(getName_lang(),Encoder.TAG_PrintableString).setASN1Type(DD.TAG_AC2));
 		if(getDescription()!=null) enc.addToSequence(new Encoder(getDescription()).setASN1Type(DD.TAG_AC3));
@@ -1061,15 +1281,27 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if(getNames_subdivisions()!=null) enc.addToSequence(Encoder.getStringEncoder(getNames_subdivisions(), DD.TAG_AC5).setASN1Type(DD.TAG_AC6));
 		if(getParent_GID()!=null) enc.addToSequence(new Encoder(getParent_GID()).setASN1Type(DD.TAG_AC7));
 		else if((parent!=null)&&(parent.getGID()!=null)) enc.addToSequence(new Encoder(parent.getGID()).setASN1Type(DD.TAG_AC7));
+		//if(parent!=null) enc.addToSequence(parent.getEncoder()).setASN1Type(DD.TAG_AC8);
+		//if(submitter_global_ID!=null) enc.addToSequence(new Encoder(submitter_global_ID).setASN1Type(DD.TAG_AC9));
+		//else if((submitter!=null)&&(submitter.global_constituent_id!=null)) enc.addToSequence(new Encoder(submitter.global_constituent_id).setASN1Type(DD.TAG_AC9));
+		//if(submitter!=null) enc.addToSequence(submitter.getEncoder()).setASN1Type(DD.TAG_AC10);
+		//if(creation_date!=null)enc.addToSequence(new Encoder(creation_date).setASN1Type(DD.TAG_AC11));
 		if(getPicture()!=null) enc.addToSequence(new Encoder(getPicture()).setASN1Type(DD.TAG_AC12));
+		//if(signature!=null)enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC13));
 		return enc;
 	}
+	
 	public byte[] sign(SK sk){
+	//	return sign(sk, this.global_organization_ID);
+	//}
+	//public byte[] sign(SK sk, String orgGID){
 		if(DEBUG) System.out.println("WB_Neighborhood:sign: start");
 		if(DEBUG) System.out.println("WB_Neighborhood:sign: this="+this);
+		//if(DEBUG) System.out.println("WB_Neighborhood:sign: this="+this+"\nsk="+sk+"\norgID=\""+orgGID+"\"");
 		if(DEBUG) System.out.println("WB_Neighborhood:sign: sk="+sk);
 		if(DEBUG) System.out.println("WB_Neighborhood:sign: orgGID=\""+this.getOrgGID()+"\"");
 		if (this.creation_date == null) this.setCreationDate(Util.CalendargetInstance());
+		//this.global_organization_ID = orgGID;
 		if (this.getGID() == null) {
 			this.setGID_AndLink(make_ID());
 			if (DEBUG) System.out.println("WB_Neighborhood:sign: nGID="+this.getGID());
@@ -1083,6 +1315,11 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if(DD.VERIFY_AFTER_SIGNING_NEIGHBORHOOD)if(!verifySignature()) Util.printCallPath("Fail to test signature");
 		return getSignature();
 	}
+	/*
+	public String make_ID(){
+		return make_ID(this.global_organization_ID);
+	}
+	*/
 	/**
 	 * Sets global_neigh_ID = null
 	 * Does not consider submitter,
@@ -1092,9 +1329,39 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * @return
 	 */
 	public String make_ID() {
+		//boolean DEBUG = true;
+		//String orgGID = this.getOrgGID();
+		//if(DEBUG) System.out.println("WB_Neighborhood:make_ID: orgGID=\""+orgGID+"\"");
 		if(DEBUG) System.out.println("WB_Neighborhood:make_ID: this=\""+this+"\"");
 		fillGlobals();
+		
+		/*
+		if ((this.parent_ID != null) && (this.parent_global_ID == null)){
+			try {
+				this.parent_global_ID = D_Neighborhood.getGlobalID(this.parent_ID);
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+			}
+		}
+		*/
+		
+		//Calendar _creation_date=this.creation_date; // date should not differentiate between neighborhoods
+		//String _submitter_global_ID = submitter_global_ID; // submitter should not differentiate between neighborhoods
+		//D_Constituent _submitter = submitter;
+		//String GID = this.global_neighborhood_ID;
+		
+		//this.global_neighborhood_ID  = null; // this will be created as result
+		//this.creation_date = null;
+		//submitter_global_ID=null;
+		//submitter=null;
+		
 		byte[] data = this.getHashEncoder().getBytes();
+		
+		//this.creation_date = _creation_date;
+		//this.submitter_global_ID = _submitter_global_ID;
+		//this.submitter = _submitter;
+		//this.global_neighborhood_ID = GID;
+		
 		if(DEBUG) System.out.println("WB_Neighborhood:make_ID: data="+Util.byteToHex(data));
 		String gid = D_GIDH.d_Neigh + Util.getGID_as_Hash(data);
 		if(DEBUG) System.out.println("WB_Neighborhood:make_ID: gid="+gid);
@@ -1104,8 +1371,11 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		String orgGID = this.getOrgGID();
 		if(DEBUG) System.out.println("D_Neighborhood: verifySign: orgGID=\""+this.getOrgGID()+"\"");
 		String old_orgGID = this.global_organization_ID;
+		
 		fillGlobals();
 		if (DEBUG) System.out.println("D_Neighborhood:verifySign: cmp ORGID neworgGID=\""+this.getOrgGID()+"\" vs "+old_orgGID);
+
+		//Util.printCallPath("recursive?");
 		String old_GID = this.global_neighborhood_ID;
 		String tID = make_ID();
 		if (!tID.equals(old_GID)) {
@@ -1115,6 +1385,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			if (_DEBUG) System.out.println("D_Neighborhood: verifySign: wrong GID for"+this);
 			return false;
 		}
+		
 		String pk_ID = this.submitter_global_ID;
 		if ((pk_ID == null) && (this.submitter != null) && (this.submitter.getGID() != null))
 			pk_ID = this.submitter.getGID();
@@ -1122,6 +1393,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			if(_DEBUG) System.out.println("D_Neighborhood: verifySign: unknown submitter");
 			return false;
 		}
+		//this.global_organization_ID = orgGID;
 		if (DEBUG) System.out.println("D_Neighborhood: verifySign: neigh=\""+this+"\""+"\norgGID="+orgGID);
 		if (DEBUG) System.out.println("D_Neighborhood: verifySign: pk_ID=\""+pk_ID+"\"");
 		if (DEBUG) System.out.println("D_Neighborhood: verifySign: sign=\""+Util.byteToHexDump(signature)+"\"");
@@ -1134,12 +1406,16 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	private void fillGlobals() {
 		if (this.loaded_globals) return;
+
 		if ((this.organization_ID > 0 ) && (this.global_organization_ID == null))
 			this.global_organization_ID = D_Organization.getGIDbyLIDstr(Util.getStringID(this.organization_ID));
+
 		if ((this.submitter_ID != null ) && (this.submitter_global_ID == null))
 			this.submitter_global_ID = D_Constituent.getGIDFromLID(this.submitter_ID);
+
 		if ((this.parent_ID != null ) && (this.parent_global_ID == null))
 			this.parent_global_ID = D_Neighborhood.getGIDFromLID(this.parent_ID);
+		
 		this.loaded_globals = true;
 	}
 	public static String getGIDFromLID(String nlID) {
@@ -1190,6 +1466,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if (c == null) return -1;
 		return c.getLID();
 	}
+
 	/**
 	 * Creation Date
 	 * @return
@@ -1207,7 +1484,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public void setCreationDateStr(String _creation_date) {
 		this._creation_date = _creation_date;
-		this.creation_date = Util.getCalendar(_creation_date); 
+		this.creation_date = Util.getCalendar(_creation_date); //Encoder.getGeneralizedTime(creation_date);
 		this.dirty_main = true;
 	}
 	public void setCreationDate(Calendar creation_date, String _creation_date) {
@@ -1216,6 +1493,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		this.creation_date = creation_date;
 		this._creation_date = _creation_date;
 	}
+
 	/**
 	 * Arrival Date
 	 * @return
@@ -1233,7 +1511,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public void setArrivalDateStr(String _arrival_date) {
 		this._arrival_date = _arrival_date;
-		this.arrival_date = Util.getCalendar(_arrival_date); 
+		this.arrival_date = Util.getCalendar(_arrival_date); //Encoder.getGeneralizedTime(creation_date);
 		this.dirty_local = true;
 	}
 	public void setArrivalDate(Calendar arrival_date, String _arrival_date) {
@@ -1243,6 +1521,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		this._arrival_date = _arrival_date;
 		this.dirty_local = true;
 	}
+	
 	/**
 	 * Arrival Date
 	 * @return
@@ -1261,7 +1540,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public void setPreferencesDateStr(String _preferences_date) {
 		this._preferences_date = _preferences_date;
-		this.preferences_date = Util.getCalendar(_preferences_date); 
+		this.preferences_date = Util.getCalendar(_preferences_date); //Encoder.getGeneralizedTime(creation_date);
 		this.dirty_local = true;
 		this.dirty_preferences = true;
 	}
@@ -1282,23 +1561,30 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * Should be called each time I load a node and when I sign myself.
 	 */
 	private void reloadMessage() {
-		if (this.loaded_globals) this.component_node.message = this.encode(); 
+		if (this.loaded_globals) this.component_node.message = this.encode(); //crt.encoder.getBytes();
 	}
+	
 	/**
 	 * Storage Methods
 	 */
+	
 	public void releaseReference() {
 		if (status_references <= 0) Util.printCallPath("Null reference already!");
 		else status_references --;
+		//System.out.println("D_Neighborhood: releaseReference: "+status_references);
+		//Util.printCallPath("");
 	}
+	
 	public void assertReferenced() {
 		assert (status_references > 0);
 	}
+	
 	/**
 	 * The entries that need saving
 	 */
 	private static HashSet<D_Neighborhood> _need_saving = new HashSet<D_Neighborhood>();
 	private static HashSet<D_Neighborhood> _need_saving_obj = new HashSet<D_Neighborhood>();
+	
 	@Override
 	public DDP2P_DoubleLinkedList_Node<D_Neighborhood> 
 	set_DDP2P_DoubleLinkedList_Node(DDP2P_DoubleLinkedList_Node<D_Neighborhood> node) {
@@ -1328,6 +1614,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if (!i.hasNext()) return null;
 		D_Neighborhood c = i.next();
 		if (DEBUG) System.out.println("D_Neighborhood: need_saving_next: next: "+c);
+		//D_Neighborhood r = D_Neighborhood_Node.getConstByGIDH(c, null);//.loaded_const_By_GIDhash.get(c);
 		if (c == null) {
 			if (_DEBUG) {
 				System.out.println("D_Neighborhood Cache: need_saving_next null entry "
@@ -1343,6 +1630,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if (!i.hasNext()) return null;
 		D_Neighborhood r = i.next();
 		if (DEBUG) System.out.println("D_Neighborhood: need_saving_obj_next: next: "+r);
+		//D_Neighborhood r = D_Neighborhood_Node.loaded_org_By_GIDhash.get(c);
 		if (r == null) {
 			if (_DEBUG) {
 				System.out.println("D_Neighborhood Cache: need_saving_obj_next null entry "
@@ -1410,7 +1698,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public void setGID_AndLink (String gIDH) {
 		setGID(gIDH);
-		if (this.getGID() != null) 
+		if (this.getGID() != null) // && isLoaded())
 			D_Neighborhood_Node.register_newGID_ifLoaded(this);
 	}	
 	public void setGID(String global_neighborhood_ID) {
@@ -1424,9 +1712,9 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if (loaded_in_cache) {
 			Long oID = this.organization_ID;
 			if (this.getGID() != null)
-				D_Neighborhood_Node.putByGID(this.getGID(), oID, this); 
+				D_Neighborhood_Node.putByGID(this.getGID(), oID, this); //.loaded_const_By_GID.put(this.getGID(), this);
 			if (this.getGIDH() != null)
-				D_Neighborhood_Node.putByGIDH(this.getGIDH(), oID, this); 
+				D_Neighborhood_Node.putByGIDH(this.getGIDH(), oID, this); //.loaded_const_By_GIDhash.put(this.getGIDH(), this);
 		}
 	}
 	public boolean isLoaded() {
@@ -1437,10 +1725,10 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if (lID > 0)
 			if ( null != D_Neighborhood_Node.loaded_By_LID.get(new Long(lID)) ) return true;
 		if ((GIDH = this.getGIDH()) != null)
-			if ( null != D_Neighborhood_Node.getByGIDH(GIDH, oID) 
+			if ( null != D_Neighborhood_Node.getByGIDH(GIDH, oID) //.loaded_const_By_GIDhash.get(GIDH)
 			) return true;
 		if ((GID = this.getGID()) != null)
-			if ( null != D_Neighborhood_Node.getByGID(GID, oID)  
+			if ( null != D_Neighborhood_Node.getByGID(GID, oID)  //.loaded_const_By_GID.get(GID)
 			) return true;
 		return false;
 	}
@@ -1597,6 +1885,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 	public void setParentLIDstr(String parent_ID) {
 		this.parent_ID = parent_ID;
+		//this.global_neighborhood_ID = D_Neighborhood.getGIDFromLID(Util.lval(parent_ID));
 		this.dirty_main = true;
 	}
 	public long getPeerSourceLID() {
@@ -1625,6 +1914,8 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * with other methods.
 	 */
 	final Object monitor = new Object();
+	//static final Object monitor = new Object();
+	
 	public long storeAct() throws P2PDDSQLException {
 		synchronized(monitor) {
 			return _storeAct();
@@ -1653,7 +1944,9 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			}
 			param[net.ddp2p.common.table.my_neighborhood_data.COL_NAME] = this.mydata.name;
 			param[net.ddp2p.common.table.my_neighborhood_data.COL_CATEGORY] = this.mydata.category;
+			//param[table.my_neighborhood_data.COL_SUBMITTER] = this.n_my.submitter;
 			param[net.ddp2p.common.table.my_neighborhood_data.COL_NEIGHBORHOOD_LID] = this.getLIDstr();
+			
 			if (this.mydata.row <= 0) {
 				this.mydata.row =
 						Application.getDB().insert(true, net.ddp2p.common.table.my_neighborhood_data.TNAME,
@@ -1673,6 +1966,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		boolean sync = true;
 		String id = this.getLIDstr();
 	   	if (DEBUG) System.err.println("ConstitentsModel:integrateNewverif: old neigh_ID="+ this.getLID()+" id="+id);
+
 	   	String[] fields;
 	   	String[] params;
 	   	fields = net.ddp2p.common.table.neighborhood.fields_neighborhoods_noID_list;
@@ -1681,7 +1975,9 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		} else {
 			params = new String[fields.length + 1];
 		}
+			
 	   	this.dirty_local = this.dirty_main = this.dirty_preferences = false;
+			
 			params[net.ddp2p.common.table.neighborhood.IDX_ADDRESS] = address;
 			params[net.ddp2p.common.table.neighborhood.IDX_CREATION_DATE] = Encoder.getGeneralizedTime(this.getCreationDate());
 			params[net.ddp2p.common.table.neighborhood.IDX_ARRIVAL_DATE] = this.getArrivalDateStr();
@@ -1694,9 +1990,9 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 			params[net.ddp2p.common.table.neighborhood.IDX_NAME_LANG] = this.getName_lang();
 			params[net.ddp2p.common.table.neighborhood.IDX_NAME_CHARSET] = this.getName_charset();
 			params[net.ddp2p.common.table.neighborhood.IDX_NAME_DIVISION] = this.getName_division();
-			params[net.ddp2p.common.table.neighborhood.IDX_NAMES_DUBDIVISIONS] = getNames_subdivisions_str();
+			params[net.ddp2p.common.table.neighborhood.IDX_NAMES_DUBDIVISIONS] = getNames_subdivisions_str();// Util.concat(this.names_subdivisions,table.neighborhood.SEP_names_subdivisions,null);
 			params[net.ddp2p.common.table.neighborhood.IDX_PARENT_ID] = this.getParentLIDstr();
-			params[net.ddp2p.common.table.neighborhood.IDX_SUBMITTER_ID] = this.getSubmitterLIDstr();
+			params[net.ddp2p.common.table.neighborhood.IDX_SUBMITTER_ID] = this.getSubmitterLIDstr();// submit_ID;
 			params[net.ddp2p.common.table.neighborhood.IDX_BLOCKED] = Util.bool2StringInt(this.isBlocked());
 			params[net.ddp2p.common.table.neighborhood.IDX_REQUESTED] = Util.bool2StringInt(this.isRequested());
 			params[net.ddp2p.common.table.neighborhood.IDX_BROADCASTED] = Util.bool2StringInt(this.isBroadcasted());
@@ -1716,10 +2012,16 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				result = this.getLID();
 			} else {
 				if (DEBUG) System.out.println("\nNeighborhoodHandling:integrateNewVerifiedNeighborhoodData: update");
+				//if ((date[0] == null) || (date[0].compareTo(params[table.neighborhood.IDX_CREATION_DATE]) < 0)) {
 				params[net.ddp2p.common.table.neighborhood.IDX_ID] = id;
+				//params[table.neighborhood.IDX_FIELDs] = id;
 				Application.getDB().update(sync, net.ddp2p.common.table.neighborhood.TNAME, fields, new String[]{net.ddp2p.common.table.neighborhood.neighborhood_ID}, params, DEBUG);
-				result = this.getLID(); 
+				//}
+				result = this.getLID(); //id;
 			}
+			//this.setLID(id);
+			//if(result!=null)if(sol_rq!=null)sol_rq.neig.add(this.getGID());
+
 			if (DEBUG) System.out.println("NeighborhoodHandling:integrateNewVerifiedNeighborhoodData:  exit id="+id);
 			return result;
 	}
@@ -1824,6 +2126,23 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		}
 		return result;
 	}
+	/*
+	int k;
+	//String result=table.neighborhood.SEP_names_subdivisions;
+	if(DEBUG) System.out.println("Child Subdivisions: "+names_subdivisions);
+	if (names_subdivisions==null) return null;
+	String[]splits = names_subdivisions.split(table.neighborhood.SEP_names_subdivisions);
+	for(k=1; k<splits.length; k++)
+		if (splits[k].equals(crt)) break;
+	if(k==splits.length) return splits;
+	k++;
+	String[] new_splits = new String[splits.length-k];
+	int i=0;
+	for(; k<splits.length; k++,i++)
+		if(!"".equals(splits[k])) new_splits[i] = splits[k];
+	return new_splits;
+}
+*/
 	public long storeRemoteThis(String orgGID,
 			long orgLID, String arrivalDateStr, RequestData sol_rq,
 			RequestData new_rq, D_Peer source) {
@@ -1831,6 +2150,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if (result.loadRemote(this, sol_rq, new_rq, source))
 			net.ddp2p.common.config.Application_GUI.inform_arrival(result, source);
 		result.fillLocals();
+		
 		result.storeRequest();
 		result.releaseReference();
 		return result.getLID_force();
@@ -1845,7 +2165,9 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if (this.parent_ID == null && this.parent_global_ID != null) {
 			this.parent_ID = D_Neighborhood.getLIDstrFromGID(parent_global_ID, organization_ID);
 		}
+		
 	}
+
 	/**
 	 * Returns the array of parent neighborhoods of global_neighborhood_ID
 	 * @param global_neighborhood_ID
@@ -1856,6 +2178,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * @throws P2PDDSQLException
 	 */
 	public static D_Neighborhood[] getNeighborhoodHierarchy(String global_neighborhood_ID, String nID, int _neighborhoods, long olID) throws P2PDDSQLException {
+		//boolean DEBUG = true;
 		if(DEBUG) System.out.println("D_Neighborhood:getNeighborhoodHierarchy: neighGID="+global_neighborhood_ID+" nID="+nID+" #="+_neighborhoods);
 		if(global_neighborhood_ID==null)
 			global_neighborhood_ID = D_Neighborhood.getGIDFromLID(nID);
@@ -1870,10 +2193,11 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 				awn = new ArrayList<D_Neighborhood>();
 				break;
 			}
+			//neighborhood=new WB_Neighborhood[1];
 			D_Neighborhood crt_neighborhood;
 			try {
 				if (nID != null)
-					crt_neighborhood = D_Neighborhood.getNeighByLID(nID, true, false); 
+					crt_neighborhood = D_Neighborhood.getNeighByLID(nID, true, false); //.getNeighborhood(nID, neigh_next);
 				else
 					crt_neighborhood = D_Neighborhood.getNeighByGID(neigh_next, true, false, olID);
 				if (DEBUG) System.out.println("D_Neighborhood: getNeighborhoodHierarchy: crt = "+crt_neighborhood);
@@ -1901,7 +2225,9 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		boolean default_blocked_org = false;
 		boolean default_blocked_cons = false;
 		boolean default_blocked_mot = false;
+		
 		if (!this.isTemporary() && !newer(r, this)) return false;
+		
 		this._creation_date = r._creation_date;
 		this.creation_date = r.creation_date;
 		this.boundary = r.boundary;
@@ -1914,6 +2240,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		this.picture = r.picture;
 		this.signature = r.picture;
 		if (! Util.equalStrings_null_or_not(this.global_neighborhood_ID, r.global_neighborhood_ID)) {
+			//this.global_neighborhood_ID = r.global_neighborhood_ID;
 			if (this.global_neighborhood_ID != null && r.global_neighborhood_ID != null) {
 				this.neighborhoodID = null;
 				this._neighborhoodID = -1;
@@ -1923,6 +2250,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		if (!Util.equalStrings_null_or_not(this.submitter_global_ID, r.submitter_global_ID)) {
 			this.submitter_global_ID = r.submitter_global_ID;
 			this.setSubmitterLIDstr(D_Constituent.getLIDstrFromGID(submitter_global_ID, this.getOrgLID()));
+			//this.submitter = r.submitter;
 			if (r.getSubmitter_GID() != null && this.getSubmitterLIDstr() == null) {
 				this.submitter = D_Constituent.getConstByGID_or_GIDH(r.submitter_global_ID, null, true, true, false, __peer, this.getOrgLID());
 				this.setSubmitterLIDstr(this.submitter.getLIDstr_force());
@@ -1941,6 +2269,8 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		}
 		if (!Util.equalStrings_null_or_not(this.parent_global_ID, r.parent_global_ID)) {
 			this.setParent_GID(r.getParent_GID());
+			//this.setParentLIDstr(null);
+			//this.parent = r.parent;
 			D_Neighborhood n;
 			long nID = D_Neighborhood.getLIDFromGID(this.parent_global_ID, this.getOrgLID());
 			this.setParentLIDstr(Util.getStringID(nID));
@@ -1988,6 +2318,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 */
 	public void setTemporary() {
 		this.setTemporary(true);
+		//this.setSignature(null);
 	}
 	public void setTemporary(boolean b) {
 		this.temporary = b;
@@ -2020,6 +2351,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 		D_Neighborhood neigh;
 		if ((p_cGID != null)) {
 			neigh = D_Neighborhood.getNeighByGID(p_cGID, true, true, true, __peer, p_oLID);
+			//consts.setName(_name);
 			neigh.setBlocked(default_blocked);
 			neigh.storeRequest();
 			neigh.releaseReference();
@@ -2053,6 +2385,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	    		+ " FROM "+net.ddp2p.common.table.neighborhood.TNAME + " AS n "+
 	    		" LEFT JOIN "+net.ddp2p.common.table.neighborhood.TNAME + " AS p ON(n."+net.ddp2p.common.table.neighborhood.parent_nID+"=p."+net.ddp2p.common.table.neighborhood.neighborhood_ID+") "+
 		    		" WHERE n."+net.ddp2p.common.table.neighborhood.organization_ID+" = ? AND ( n."+net.ddp2p.common.table.neighborhood.parent_nID+" ISNULL OR p."+net.ddp2p.common.table.neighborhood.neighborhood_ID+" ISNULL ) " +
+//		    				" GROUP BY "+table.neighborhood.name+
 		    				" ORDER BY n."+net.ddp2p.common.table.neighborhood.name+" DESC;";
 	public static ArrayList<Long> getNeighborhoodRootsLIDs(long o_ID) {
 		ArrayList<Long> result = new ArrayList<Long>();
@@ -2080,7 +2413,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
     		}
     		sel_c = D_Constituent.getConstInNeighborhood(nID, oID);
     		for (int i = 0; i < sel_c.size(); i ++) {
-    			long c_ID = sel_c.get(i); 
+    			long c_ID = sel_c.get(i); //Util.lval(sel.get(i).get(0),-1);
     			D_Constituent.delConstituent(c_ID);
     		}
     		Application.getDB().delete(net.ddp2p.common.table.neighborhood.TNAME, new String[]{net.ddp2p.common.table.neighborhood.neighborhood_ID}, new String[]{Util.getStringID(nID)});
@@ -2089,15 +2422,48 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
     	}
     }
 	public static void zapp(long neighborhoodID2) {
+		// TODO Auto-generated method stub
 		try {
 			Application.getDB().delete(net.ddp2p.common.table.neighborhood.TNAME,
 					new String[]{net.ddp2p.common.table.neighborhood.neighborhood_ID},
 					new String[]{Util.getStringID(neighborhoodID2)},
 					DEBUG);
+/*			Application.db.delete(table.constituent.TNAME,
+					new String[]{table.constituent.neighborhood_ID},
+					new String[]{Util.getStringID(neighborhoodID2)},
+					DEBUG);
+					*/
 		} catch (P2PDDSQLException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+	/*
+	public static Hashtable<String, String> checkAvailability(
+			Hashtable<String, String> neigh, String orgID, boolean DBG) {
+		Hashtable<String, String> result = new Hashtable<String, String>();
+		for (String cHash : neigh.keySet()) {
+			if(cHash == null) continue;
+			if(!available(cHash, neigh.get(cHash), orgID, DBG)) result.put(cHash, DD.EMPTYDATE);
+		}
+		return result;
+	}
+	private static boolean available(String hash, String creation, String orgID, boolean DBG) {
+		boolean result = true;
+		
+		D_Neighborhood c = D_Neighborhood.getNeighByGID (hash, true, false, Util.Lval(orgID));
+		if (
+				(c == null) 
+				|| (c.getOrgLID() != Util.lval(orgID)) 
+				|| (D_Neighborhood.newer(creation, c.getCreationDateStr()))
+				|| c.isTemporary()
+				) result = false;
+		
+		if ((c != null) && c.isBlocked()) result = true;
+		if (DEBUG || DBG) System.out.println("D_Neighborhood: available: "+hash+" in "+orgID+" = "+result);
+		return result;
+	}
+	*/
 	public static ArrayList<String> checkAvailability(ArrayList<String> cons,
 			String orgID, boolean DBG) throws P2PDDSQLException {
 		ArrayList<String> result = new ArrayList<String>();
@@ -2116,7 +2482,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * @return
 	 */
 	public static String getGIDfromGID(String mHash) {
-		if (mHash.startsWith(D_GIDH.d_Neigh)) return mHash; 
+		if (mHash.startsWith(D_GIDH.d_Neigh)) return mHash; // it is an external
 		return null;
 	}
 	/**
@@ -2127,23 +2493,43 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	 * @throws P2PDDSQLException
 	 */
 	public static boolean available(String hash, String orgID, boolean DBG) throws P2PDDSQLException {
+//		String sql = 
+//			"SELECT "+table.neighborhood.neighborhood_ID+
+//			" FROM "+table.neighborhood.TNAME+
+//			" WHERE "+table.neighborhood.global_neighborhood_ID+"=? "+
+//			" AND "+table.neighborhood.organization_ID+"=? "+
+//			" AND ( "+table.neighborhood.signature + " IS NOT NULL " +
+//			" OR "+table.neighborhood.blocked+" = '1');";
+//		ArrayList<ArrayList<Object>> a = Application.db.select(sql, new String[]{hash, orgID}, DEBUG);
 		boolean result = true;
+//		if(a.size()==0) result = false;
 		D_Neighborhood c = D_Neighborhood.getNeighByGID (hash, true, false, Util.Lval(orgID));
 		if (
 				(c == null) 
 				|| (c.getOrgLID() != Util.lval(orgID)) 
+				//|| (D_Neighborhood.newer(creation, c.getCreationDateStr()))
 				|| ( c.isTemporary() && !c.isBlocked() )
 				) result = false;
+		
+		//if ((c != null) ) result = true;//&& c.isBlocked()
 		if (DEBUG || DBG) System.out.println("D_Neighborhood: available: "+hash+" in "+orgID+" = "+result);
 		return result;
 	}
 	public void setNames_division_lang(String lang) {
+		// TODO Auto-generated method stub
+		
 	}
 	public void setNames_subdivisions_lang(String lang) {
+		// TODO Auto-generated method stub
+		
 	}
 	public void setNames_subdivisions_charset(String flavor) {
+		// TODO Auto-generated method stub 
+		
 	}
 	public void setNames_division_charset(String flavor) {
+		// TODO Auto-generated method stub
+		
 	}
 	public String getAddress() {
 		return address;
@@ -2236,6 +2622,7 @@ class D_Neighborhood extends ASNObj implements   DDP2P_DoubleLinkedList_Node_Pay
 	}
 }
 class D_Neighborhood_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
+	//private static final long SAVER_SLEEP_ON_ERROR = 2000;
 	boolean stop = false;
 	/**
 	 * The next monitor is needed to ensure that two D_Neighborhood_SaverThreadWorker are not concurrently modifying the database,
@@ -2249,6 +2636,7 @@ class D_Neighborhood_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThre
 	}
 	D_Neighborhood_SaverThread() {
 		super("D_Neighborhood Saver", true);
+		//start ();
 	}
 	public void _run() {
 		for (;;) {
@@ -2257,6 +2645,35 @@ class D_Neighborhood_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThre
 			synchronized(saver_thread_monitor) {
 				new D_Neighborhood_SaverThreadWorker().start();
 			}
+			/*
+			synchronized(saver_thread_monitor) {
+				D_Neighborhood de = D_Neighborhood.need_saving_next();
+				if (de != null) {
+					if (DEBUG) System.out.println("D_Neighborhood_Saver: loop saving "+de);
+					ThreadsAccounting.ping("Saving");
+					D_Peer.need_saving_remove(de.getGIDH(), de.instance);
+					// try 3 times to save
+					for (int k = 0; k < 3; k++) {
+						try {
+							de.storeAct();
+							break;
+						} catch (P2PDDSQLException e) {
+							e.printStackTrace();
+							synchronized(this){
+								try {
+									wait(SAVER_SLEEP_ON_ERROR);
+								} catch (InterruptedException e2) {
+									e2.printStackTrace();
+								}
+							}
+						}
+					}
+				} else {
+					ThreadsAccounting.ping("Nothing to do!");
+					//System.out.println("D_Neighborhood_Saver: idle ...");
+				}
+			}
+			*/
 			synchronized(this) {
 				try {
 					long timeout = (D_Neighborhood.getNumberItemsNeedSaving() > 0)?
@@ -2264,16 +2681,20 @@ class D_Neighborhood_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThre
 								SaverThreadsConstants.SAVER_SLEEP_WAITING_NEIGHBORHOOD_MSEC;
 					wait(timeout);
 				} catch (InterruptedException e) {
+					//e.printStackTrace();
 				}
 			}
 		}
 	}
 }
+
 class D_Neighborhood_SaverThreadWorker extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	boolean stop = false;
+	// public static final Object saver_thread_monitor = new Object();
 	private static final boolean DEBUG = false;
 	D_Neighborhood_SaverThreadWorker() {
 		super("D_Neighborhood Saver Worker", false);
+		//start ();
 	}
 	public void _run() {
 		synchronized (SaverThreadsConstants.monitor_threads_counts) {SaverThreadsConstants.threads_neig ++;}
@@ -2286,14 +2707,20 @@ class D_Neighborhood_SaverThreadWorker extends net.ddp2p.common.util.DDP2P_Servi
 			D_Neighborhood de;
 			boolean edited = true;
 			if (DEBUG) System.out.println("D_Neighborhood_Saver: start");
+			
+			 // first try objects being edited
 			de = D_Neighborhood.need_saving_obj_next();
+			
+			// then try remaining objects 
 			if (de == null) { de = D_Neighborhood.need_saving_next(); edited = false; }
+			
 			if (de != null) {
 				if (DEBUG) System.out.println("D_Neighborhood_Saver: loop saving "+de.getName());
 				Application_GUI.ThreadsAccounting_ping("Saving");
 				if (edited) D_Neighborhood.need_saving_obj_remove(de);
-				else D_Neighborhood.need_saving_remove(de);
+				else D_Neighborhood.need_saving_remove(de);//, de.instance);
 				if (DEBUG) System.out.println("D_Neighborhood_Saver: loop removed need_saving flag");
+				// try 3 times to save
 				for (int k = 0; k < net.ddp2p.common.data.SaverThreadsConstants.ATTEMPTS_ON_ERROR; k++) {
 					try {
 						if (DEBUG) System.out.println("D_Neighborhood_Saver: loop will try saving k="+k);
@@ -2331,3 +2758,4 @@ class D_Neighborhood_SaverThreadWorker extends net.ddp2p.common.util.DDP2P_Servi
 		}
 	}
 }
+

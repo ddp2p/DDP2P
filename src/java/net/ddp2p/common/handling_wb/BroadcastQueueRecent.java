@@ -1,6 +1,8 @@
 package net.ddp2p.common.handling_wb;
+
 import java.util.ArrayList;
 import java.util.Calendar;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.ciphersuits.Cipher;
@@ -19,6 +21,7 @@ import net.ddp2p.common.simulator.WirelessLog;
 import net.ddp2p.common.streaming.UpdatePeersTable;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public class BroadcastQueueRecent extends BroadcastQueue {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -39,29 +42,40 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		return Encoder.getGeneralizedTime(getDelay());
 	}
 	void load(){}
+
 	public BroadcastQueueRecent() throws P2PDDSQLException {
 		if(DEBUG)System.out.println("BroadcastQueueRecent() : Constructor ");
 		loadAll();
 	}
+
 	void setMyPeerID(String _my_peer_ID){
 		my_peer_ID = _my_peer_ID;
 	}
+
 	@Override
 	public void loadAll() {
 		if(DEBUG)System.out.println("BroadcastQueueRecent() :  loadAll() ");
+		// LOADER_ADDED START
 				this.m_PreparedMessagesVotes = loadVotes();
 				this.m_iCrtVotes = 0;
+				
 				this.m_PreparedMessagesConstituents = loadConstituents();
 				this.m_iCrtConstituents = 0;
+				
 				this.m_PreparedMessagesPeers = loadPeers();
 				this.m_iCrtPeers = 0;
+				
 				this.m_PreparedMessagesOrgs = loadOrgs();
-				this.m_iCrtOrgs = 0;
+				this.m_iCrtOrgs = 0;//-1;
+				
 				this.m_PreparedMessagesWitnesses = loadWitnesses();
 				this.m_iCrtWitnesses = 0;
+				
 				this.m_PreparedMessagesNeighborhoods = loadNeighborhoods();
 				this.m_iCrtNeighborhoods = 0;
+				// LOADER_ADDED END
 	}
+
 	/**
 	 * load the orgs to the ArrayList<byte[]>
 	 * @param org_msgs
@@ -78,12 +92,14 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 			return -1;
 		}
 	}
+
 	static String sql_orgs = "SELECT "+Util.setDatabaseAlias(net.ddp2p.common.table.organization.field_list,"o")+
 			" FROM "+net.ddp2p.common.table.organization.TNAME+" AS o "+
 			" LEFT JOIN "+net.ddp2p.common.table.peer.TNAME+" AS p ON(p."+net.ddp2p.common.table.peer.peer_ID+"=o."+net.ddp2p.common.table.organization.creator_ID+")"+
 			" LEFT JOIN "+net.ddp2p.common.table.key.TNAME+" AS k ON(k."+net.ddp2p.common.table.key.public_key+"=p."+net.ddp2p.common.table.peer.global_peer_ID+")"+
 			" WHERE" +
 			" k."+net.ddp2p.common.table.key.secret_key+" IS NOT NULL AND ";
+
 	public long _loadOrgs(ArrayList<PreparedMessage> org_msgs, long rowID) throws P2PDDSQLException {
 		long start_row = rowID;
 		boolean wrapped = false;
@@ -101,6 +117,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					" AND o."+net.ddp2p.common.table.organization.broadcasted+" <> '0' " +
 					" ORDER BY o.ROWID "+//table.organization.organization_ID+
 					" LIMIT "+(ORGS_SIZE - retrieved);
+
 			if(DEBUG)System.out.println("Prepared : messages : "+sql);
 			if(rowID==-1) rowID=1;
 			if(DEBUG)System.out.println("ROWID: "+rowID);
@@ -110,9 +127,15 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					last_row = Integer.parseInt(org.get(net.ddp2p.common.table.organization.ORG_COL_ID).toString());
 					byte[]msg = buildOrganizationMessage(org, ""+rowID);
 					if(DEBUG)System.out.println("MSG : "+msg);
+					
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
+					//pm.org_ID_hash = Util.getString(org.get(table.organization.ORG_COL_GID_HASH));
+					// pm.motion_ID = Util.getString(org.get(table.motion.M_MOTION_GID));
+					// pm.constituent_ID_hash = Util.getString(org.get(table.constituent.CONST_COL_GID_HASH));
+					// pm.neighborhood_ID = Util.getString(org.get(table.neighborhood.IDX_GID));
 					org_msgs.add(pm);
+					
 					if(org_msgs.size()>=0)
 						WirelessLog.logging(WirelessLog.log_queue,WirelessLog.Recent_queue,
 								""+(org_msgs.size()-1),WirelessLog.org_type,msg);
@@ -137,6 +160,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		}
 		return last_row;
 	}
+
 	/**
 	 * load the Witnesses to the ArrayList<byte[]>
 	 * @param Witnesses_msgs
@@ -187,7 +211,9 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					" AND s."+net.ddp2p.common.table.constituent.broadcasted+" <> '0' " +
 					" ORDER BY w.ROWID "+
 					" LIMIT "+(WITNESSES_SIZE - retrieved);
+
 			if(DEBUG)System.out.println("_loadWitnesses : sql "+sql);
+
 			witnesses = Application.getDB().select(sql, new String[]{this.getDelayString()});
 			for(ArrayList<Object> witness : witnesses){
 				D_Witness wbw = new D_Witness();
@@ -213,13 +239,20 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 				Encoder enc = asn1.getEncoder();	
 				byte msg [] = enc.getBytes();
 				if(DEBUG)System.out.println("MSG : "+msg);
+				
 				PreparedMessage pm = new PreparedMessage();
 				pm.raw = msg;
+				//if(asn1.organization!=null)pm.org_ID_hash = asn1.organization.global_organization_IDhash; 
 				if(wbw.witnessing!=null){
+						//pm.constituent_ID_hash.add(wbw.witnessing.global_constituent_id_hash); 
+						//for(int i=0; i<wbw.witnessing.neighborhood.length; i++) {pm.neighborhood_ID.add(wbw.witnessing.neighborhood[i].neighborhoodID);}
 				}
 				if(wbw.witnessed!=null){
+						//pm.constituent_ID_hash.add(wbw.witnessed.global_constituent_id_hash); 
+						//for(int i=0; i<wbw.witnessed.neighborhood.length; i++) {pm.neighborhood_ID.add(wbw.witnessed.neighborhood[i].neighborhoodID);}
 				}
 				Witnesses_msgs.add(pm);
+				
 				if(Witnesses_msgs.size()>=0)
 					WirelessLog.logging(WirelessLog.log_queue,WirelessLog.Recent_queue,
 							""+(Witnesses_msgs.size()-1),WirelessLog.wit_type,msg);
@@ -234,11 +267,13 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 				wrapped = true;
 				continue;
 			}
+
 			if(DEBUG)System.out.println("BroadcastQueueRecent() : loadWitnesses() : "+Witnesses_msgs.size()+" loaded");
 			break;
 		}
 		return last_row;
 	}
+
 	/**
 	 * load the Constituents to the ArrayList<byte[]>
 	 * @param constituent_msgs
@@ -260,6 +295,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					" LEFT JOIN "+net.ddp2p.common.table.organization.TNAME+" AS o ON(c."+net.ddp2p.common.table.constituent.organization_ID+" = o."+net.ddp2p.common.table.organization.organization_ID+") "+
 					" WHERE "+ 
 					" k."+net.ddp2p.common.table.key.secret_key+" IS NOT NULL AND";
+
 	@SuppressWarnings("static-access")
 	public long _loadConstituents(ArrayList<PreparedMessage> constituent_msgs, long rowID) {
 		long start_row = rowID;
@@ -279,6 +315,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					" AND c."+net.ddp2p.common.table.constituent.broadcasted+" <> '0' "+
 					" ORDER BY c.ROWID "+
 					" LIMIT "+(CONSTITUENTS_SIZE - retrieved);
+
 			if(DEBUG)System.out.println(sql_get_const);
 			try{
 				constituents = Application.getDB().select(sql_get_const, new String[]{this.getDelayString()});
@@ -294,17 +331,34 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					String org_id = con.getLIDstr();
 					ArrayList<Object> org_data = get_org_db_by_local(org_id);
 					asn1.organization = get_ASN_Organization_by_OrgID(org_data,org_id);
+
+					/*
+					String sql = "SELECT "+table.constituent.constituent_ID
+							+" FROM "+table.constituent.TNAME
+							+" WHERE "+table.constituent.global_constituent_ID
+							+"=?;";
+					ArrayList<ArrayList<Object>> local_id = Application.db.select(sql,
+							new String[]{asn1.constituent.global_constituent_id});
+					if(DEBUG)System.out.println("CONS_ID : "+local_id.get(0).get(0));
+					*/
 					Encoder enc = asn1.getEncoder();	
 					byte msg [] = enc.getBytes();
 					if(DEBUG)System.out.println("MSG : "+msg);
+					
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
+					//if(con.global_organization_ID !=null)pm.org_ID_hash = con.global_organization_ID;
+					//pm.motion_ID = ;
+					//pm.constituent_ID_hash.add(con.global_constituent_id_hash);
 					if(con.getNeighborhood()!=null){
 						for(int i=0; i<con.getNeighborhood().length; i++) 
 						{
+							//pm.neighborhood_ID.add(con.neighborhood[i].neighborhoodID);
 						}
 					}
+					
 					constituent_msgs.add(pm);
+					
 					if(constituent_msgs.size()>=0)
 						WirelessLog.logging(WirelessLog.log_queue,WirelessLog.Recent_queue,
 								""+(constituent_msgs.size()-1),WirelessLog.const_type,msg);
@@ -331,6 +385,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		}
 		return last_row;
 	}
+
 	/**
 	 * load the Peers to the ArrayList<byte[]>
 	 * @param peers_msgs
@@ -347,6 +402,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 			+" AS k ON(k."+net.ddp2p.common.table.key.public_key
 			+"=p."+net.ddp2p.common.table.peer.global_peer_ID+")"
 			+" WHERE" +" k."+net.ddp2p.common.table.key.secret_key+" IS NOT NULL AND";
+
 	public long _loadPeers(ArrayList<PreparedMessage> peers_msgs, long rowID) {
 		long start_row = rowID;
 		boolean wrapped = false;
@@ -363,16 +419,21 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					+" ORDER BY p.ROWID "
 					+" LIMIT "+(PEERS_SIZE - retrieved);
 			if(DEBUG)System.out.println(sql);
+
 			try{
 				peers = Application.getDB().select(sql, new String[]{this.getDelayString()});
 				if(DEBUG)System.out.println("this time we took : "+peers.size());
 				for(ArrayList<Object> peer : peers){
 					last_row = Integer.parseInt(peer.get(net.ddp2p.common.table.peer.PEER_COL_ID).toString());
+					
 					byte[]msg = buildPeerMessage(peer, rowID);
 					if(DEBUG)System.out.println("MSG : "+msg);
+					
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
+					
 					peers_msgs.add(pm);
+					
 					if(peers_msgs.size()>=0)
 						WirelessLog.logging(WirelessLog.log_queue,WirelessLog.Recent_queue,
 								""+(peers_msgs.size()-1),WirelessLog.peer_type,msg);
@@ -402,6 +463,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		}
 		return last_row;
 	}
+
 	/**
 	 * loadVotes
 	 * @param vote_msgs
@@ -414,13 +476,20 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 	}
 	static String sql_votes =
 			"SELECT "+Util.setDatabaseAlias(net.ddp2p.common.table.signature.fields,"v")
+			//+", c."+table.constituent.global_constituent_ID
+			//+", m."+table.motion.global_motion_ID
+			//+", j."+table.justification.global_justification_ID
+			//+", o."+table.organization.global_organization_ID
+			//+", o."+table.organization.organization_ID
 			+" FROM "+net.ddp2p.common.table.signature.TNAME+" AS v "
 			+" LEFT JOIN "+net.ddp2p.common.table.constituent.TNAME+" AS c ON(c."+net.ddp2p.common.table.constituent.constituent_ID+"=v."+net.ddp2p.common.table.signature.constituent_ID+")"
 			+" LEFT JOIN "+net.ddp2p.common.table.motion.TNAME+" AS m ON(m."+net.ddp2p.common.table.motion.motion_ID+"=v."+net.ddp2p.common.table.signature.motion_ID+")"
+			//+" LEFT JOIN "+table.justification.TNAME+" AS j ON(j."+table.justification.justification_ID+"=v."+table.signature.justification_ID+")"
 			+" LEFT JOIN "+net.ddp2p.common.table.organization.TNAME+" AS o ON(o."+net.ddp2p.common.table.organization.organization_ID+"=m."+net.ddp2p.common.table.motion.organization_ID+")"
 			+" LEFT JOIN "+net.ddp2p.common.table.key.TNAME+" AS k ON(k."+net.ddp2p.common.table.key.public_key+"=c."+net.ddp2p.common.table.constituent.global_constituent_ID+")"
 			+" WHERE" 
 			+" k."+net.ddp2p.common.table.key.secret_key+" IS NOT NULL AND";
+
 	public long _loadVotes(ArrayList<PreparedMessage> vote_msgs, long rowID) {
 		long start_row = rowID;
 		boolean wrapped = false;
@@ -435,6 +504,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					" v.ROWID > "+rowID+
 					(wrapped?(" AND v.ROWID <= "+start_row):"")+
 					" AND v."+net.ddp2p.common.table.signature.signature+" IS NOT NULL "+
+					//	" AND j."+table.justification.broadcasted+" <> '0' "+
 					" AND m."+net.ddp2p.common.table.motion.broadcasted+" <> '0' "+
 					" AND o."+net.ddp2p.common.table.organization.broadcasted+" <> '0' "+
 					" AND c."+net.ddp2p.common.table.constituent.broadcasted+" <> '0' "+
@@ -455,11 +525,21 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					ArrayList<Object> org_data = get_org_db_by_local(v.getOrganizationLIDstr());
 					asn1.organization = get_ASN_Organization_by_OrgID(org_data,v.getOrganizationLIDstr());
 					Encoder enc = asn1.getEncoder();	
+					
 					byte msg [] = enc.getBytes();
 					if(DEBUG)System.out.println("MSG : "+msg);
+					
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
+					//if(asn1.organization!=null)pm.org_ID_hash = asn1.organization.global_organization_IDhash;
+					//if(v.motion!=null)pm.motion_ID = v.motion.global_motionID;
+					//if(v.constituent!=null)pm.constituent_ID_hash.add(v.constituent.global_constituent_id_hash);
+					//if(v.justification!=null)pm.justification_ID=v.justification.global_justificationID;
+					//pm.neighborhood_ID = ;
+					
 					vote_msgs.add(pm);	
+					
+					
 					if(vote_msgs.size()>=0)
 						WirelessLog.logging(WirelessLog.log_queue,WirelessLog.Recent_queue,
 								""+(vote_msgs.size()-1),WirelessLog.vote_type,msg);
@@ -486,6 +566,8 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		}
 		return last_row;
 	} 
+
+
 	/**
 	 * loadNeihoborhoods
 	 * @param neigh_msgs
@@ -496,6 +578,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		if(DEBUG)System.out.println("BroadcatQueueRecent : loadNeighborhoods() : START");
 		return _loadNeighborhoods(neighs_msgs, rowID);
 	}
+
 	static String sql_neighs =
 			"SELECT n."
 					+net.ddp2p.common.table.neighborhood.neighborhood_ID
@@ -508,6 +591,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					+" k."+net.ddp2p.common.table.key.secret_key+" IS NOT NULL AND"
 					+" d."+net.ddp2p.common.table.neighborhood.neighborhood_ID+" IS NULL"
 					;
+
 	private long _loadNeighborhoods(ArrayList<PreparedMessage> neighs_msgs, long rowID) {
 		long start_row = rowID;
 		boolean wrapped = false;
@@ -536,6 +620,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					asn1.sender = D_Peer.getEmpty(); 
 					asn1.sender.component_basic_data.globalID = HandlingMyself_Peer.getMyPeerGID();
 					String local_id = Util.getString(neigh.get(0));
+
 					String gid = D_Neighborhood.getGIDFromLID(local_id);
 					D_Neighborhood n[] = new  D_Neighborhood[6];
 					n = D_Neighborhood.getNeighborhoodHierarchy(gid, local_id, 2, olID);
@@ -546,16 +631,34 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 					last_row  = asn1.neighborhoods[0].getLID();
 					long c_id = Long.parseLong(asn1.neighborhoods[0].getSubmitterLIDstr());
 					asn1.constituent = D_Constituent.getConstByLID(c_id, true, false);
+					/*
+					String sql_local = "SELECT "+table.constituent.constituent_ID
+							+" FROM "+table.constituent.TNAME
+							+" WHERE "+table.constituent.global_constituent_ID
+							+"=?;";
+					ArrayList<ArrayList<Object>> cons_local_id = Application.db.select(sql_local,
+							new String[]{asn1.constituent.global_constituent_id});
+					if(DEBUG)System.out.println("CONS_ID : "+cons_local_id.get(0).get(0));
+					*/
 					Encoder enc = asn1.getEncoder();	
+					
 					byte msg [] = enc.getBytes();
 					if(DEBUG)System.out.println("MSG : "+msg.length);					
+					
 					PreparedMessage pm = new PreparedMessage();
 					pm.raw = msg;
+					//pm.org_ID_hash = Util.getString(neighs.get(table.organization.ORG_COL_GID_HASH));
+					//pm.motion_ID = Util.getString(neighs.get(table.motion.M_MOTION_GID));
+					//pm.constituent_ID_hash = Util.getString(neighs.get(table.constituent.CONST_COL_GID_HASH));
+					//pm.neighborhood_ID = Util.getString(neighs.get(table.neighborhood.IDX_GID));
 					if(n!=null){
 						for(int j=0;j< n.length;j++){
+							//pm.neighborhood_ID.add(n[j].global_neighborhood_ID);
 						}
 					}
+					
 					neighs_msgs.add(pm);
+					
 					if(neighs_msgs.size()>=0)
 						WirelessLog.logging(WirelessLog.log_queue,WirelessLog.Recent_queue,
 								""+(neighs_msgs.size()-1),WirelessLog.neigh_type,msg);
@@ -565,12 +668,14 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 				e.printStackTrace();
 				return -1;
 			}
+
 			retrieved = neighs_msgs.size();
 			if(wrapped) {
 				if(DEBUG)System.out.println("BroadcatQueueRecent : loadNeighborhoods() : "
 						+neighs_msgs.size()+" loaded");
 				break;
 			}
+
 			if((neighs.size() < NEIGHS_SIZE)&&(rowID != -1)) {
 				rowID = -1;
 				wrapped = true;
@@ -582,6 +687,8 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		}
 		return last_row;
 	}
+
+
 	/**
 	 * get_org_db_by_local
 	 * @param org_id
@@ -595,6 +702,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		ArrayList<ArrayList<Object>> org_data = Application.getDB().select(sql, new String[]{org_id});
 		return org_data.get(0);
 	}
+
 	/**
 	 * buildPeerMessage() : build the Peer MSG
 	 * @param peer
@@ -610,12 +718,37 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		asn1.sender.component_basic_data.globalID = HandlingMyself_Peer.getMyPeerGID();
 		String GID =  Util.getString(peer.get(net.ddp2p.common.table.peer.PEER_COL_GID));
 		asn1.Peer = D_Peer.getPeerByGID_or_GIDhash(GID, null, true, false, false, null);
+
 		if(DEBUG)System.out.println("PEER DATA : "+asn1.Peer);
 		if(DEBUG)System.out.println("PEER_ID : "+asn1.Peer.getLocalPeerIDforGID(asn1.Peer.component_basic_data.globalID));
 		Encoder enc = asn1.getEncoder();	
 		byte msg [] = enc.getBytes();
 		return msg;
 	}
+/*
+	public static TypedAddress[] get_Paddress(String peer_id) throws P2PDDSQLException {
+		int i=-1;
+		String sql = "SELECT "+table.peer_address.fields_peer_address+
+				" FROM "+table.peer_address.TNAME+
+				" WHERE "+table.peer_address.peer_ID+"=?;";
+		ArrayList<ArrayList<Object>> paddress_data = Application.db.select(sql, new String[]{peer_id});
+		TypedAddress[] p_ad = new TypedAddress[paddress_data.size()];
+		for(ArrayList<Object> pa : paddress_data){
+			p_ad[++i] = new TypedAddress();
+			p_ad[i] = get_TA(pa);
+		}
+		return p_ad;
+	}
+
+	private static TypedAddress get_TA(ArrayList<Object> pa) {
+		TypedAddress pa_ta = new TypedAddress();
+		pa_ta.address = pa.get(0).toString();
+		pa_ta.type = pa.get(1).toString();
+		pa_ta.certified = Util.stringInt2bool(pa.get(2), false);
+		pa_ta.priority = Util.get_int(pa.get(3));
+		return pa_ta;
+	}
+*/
 	/**
 	 * buildOrganizationMessage() : build the Org MSG
 	 * @param org
@@ -624,16 +757,17 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 	 * @throws P2PDDSQLException
 	 * @throws ASN1DecoderFail
 	 */
+
 	@SuppressWarnings("static-access")
 	byte[] buildOrganizationMessage(ArrayList<Object> org, String local_id) throws P2PDDSQLException, ASN1DecoderFail{
 		D_Message asn1=new D_Message();
 		asn1.sender = D_Peer.getEmpty(); 
 		asn1.sender.component_basic_data.globalID = HandlingMyself_Peer.getMyPeerGID();
-		asn1.organization = null; 
+		asn1.organization = null; //new D_Organization();
 		asn1.organization =  get_ASN_Organization_by_OrgID(org,local_id);
 		if(DEBUG){
 			if(_DEBUG)System.out.println("BroadcastQueueMyData:buildOrganizationMessage: org is "+asn1.organization);
-			if(!asn1.organization.verifySignature()) 
+			if(!asn1.organization.verifySignature()) //(asn1.organization.signature))
 				if(_DEBUG)System.out.println("Fail to verify signature!");
 		}
 		if(DEBUG)System.out.println("ORG_ID : "+asn1.organization.getLIDbyGID(asn1.organization.getGID()));
@@ -641,6 +775,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		byte msg [] = enc.getBytes();
 		return msg;
 	}
+
 	/**
 	 * 
 	 * @param _org
@@ -650,10 +785,38 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 	 */
 	public static D_Organization get_ASN_Organization_by_OrgID(ArrayList<Object> _org, String _local_id)
 			throws P2PDDSQLException {
-		D_Organization ASN_Org1 = null; 
+		/*
+		D_Organization ASN_Org = new D_Organization();
+		ASN_Org.params = new D_OrgParams();
+		ASN_Org.concepts = new D_OrgConcepts();
+		// packing organization values into ASN 
+		ASN_Org.global_organization_ID=Util.getString(_org.get(table.organization.ORG_COL_GID));
+		ASN_Org.name=Util.getString(_org.get(table.organization.ORG_COL_NAME));
+		ASN_Org.creator = new D_PeerAddress();
+		ASN_Org.creator	= Get_creatorby_ID(Util.getString(_org.get(table.organization.ORG_COL_CREATOR_ID)));
+		ASN_Org.signature = Util.byteSignatureFromString(Util.getString(_org.get(table.organization.ORG_COL_SIGN)));
+		ASN_Org.setGT(Util.getString(_org.get(table.organization.ORG_COL_CREATION_DATE)));
+		ASN_Org.params.creation_time = Util.getCalendar(Util.getString(_org.get(table.organization.ORG_COL_CREATION_DATE)));
+		ASN_Org.params.certifMethods = Integer.parseInt(Util.getString(_org.get(table.organization.ORG_COL_CERTIF_METHODS)));
+		ASN_Org.params.hash_org_alg = Util.getString(_org.get(table.organization.ORG_COL_HASH_ALG));
+		ASN_Org.params.creator_global_ID = ASN_Org.creator.globalID;
+		ASN_Org.params.category = Util.getString(_org.get(table.organization.ORG_COL_CATEG));
+		ASN_Org.params.certificate = Util.byteSignatureFromString(Util.getString(_org.get(table.organization.ORG_COL_CERTIF_DATA),null));
+		ASN_Org.params.default_scoring_options = D_OrgConcepts.stringArrayFromString(Util.getString(_org.get(table.organization.ORG_COL_SCORES),null));//new String[0];//null;
+		ASN_Org.params.instructions_new_motions = Util.getString(_org.get(table.organization.ORG_COL_INSTRUC_MOTION),null);
+		ASN_Org.params.instructions_registration = Util.getString(_org.get(table.organization.ORG_COL_INSTRUC_REGIS),null);
+		ASN_Org.params.description = Util.getString(_org.get(table.organization.ORG_COL_DESCRIPTION),null);
+		ASN_Org.params.languages = D_OrgConcepts.stringArrayFromString(Util.getString(_org.get(table.organization.ORG_COL_LANG)));
+		ASN_Org.concepts.name_organization = D_OrgConcepts.stringArrayFromString(Util.getString(_org.get(table.organization.ORG_COL_NAME_ORG),null));
+		ASN_Org.concepts.name_forum = D_OrgConcepts.stringArrayFromString(Util.getString(_org.get(table.organization.ORG_COL_NAME_FORUM),null));
+		ASN_Org.concepts.name_motion = D_OrgConcepts.stringArrayFromString(Util.getString(_org.get(table.organization.ORG_COL_NAME_MOTION),null));
+		ASN_Org.concepts.name_justification = D_OrgConcepts.stringArrayFromString(Util.getString(_org.get(table.organization.ORG_COL_NAME_JUST),null));
+		 */
+		D_Organization ASN_Org1 = null; //new D_Organization();
 		try {
 			ASN_Org1 = D_Organization.getOrgByLID_NoKeep(_local_id, true);
 			ASN_Org1.creator = D_Peer.getPeerByLID_NoKeep(Util.getString(_org.get(net.ddp2p.common.table.organization.ORG_COL_CREATOR_ID)),true);
+
 			return ASN_Org1;
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
@@ -662,6 +825,7 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 		}
 		return null;
 	}
+
 	/**
 	 * construct Peer MSG
 	 * @param global_creator_id
@@ -673,6 +837,8 @@ public class BroadcastQueueRecent extends BroadcastQueue {
 	}
 	@Override
 	public byte[] getNext(long msg_c) {
+		// TODO Auto-generated method stub
 		return null;
 	}
+
 }

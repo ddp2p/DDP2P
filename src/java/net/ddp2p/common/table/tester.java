@@ -1,21 +1,30 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 
 		Author: Khalid Alhamed and Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.table;
+
 import java.util.regex.Pattern;
+
 import net.ddp2p.common.util.Util;
+
 public class tester {
+
 	public static final String TNAME = "tester";
 	public static final String tester_ID = "tester_ID";
 	public static final String original_tester_name = "original_tester_name";
@@ -30,14 +39,17 @@ public class tester {
 	public static final String trust_weight = "trust_weight";
 	public static final String reference_tester = "reference_tester";
 	public static final String expected_test_thresholds = "expected_test_thresholds";
+	
 	public static final String revoked = "revoked";
 	public static final String revoked_info = "revoked_info";
 	public static final String revoked_GID_hash = "revoked_GID_hash";
+	
 	public static final String data_version = "data_version";
 	public static final String signature = "signature";
 	public static final String creation_date = "creation_date";
 	public static final String preference_date = "preference_date";
 	public static final String peer_source_LID = "peer_source_LID";
+	
 	public static final String fields_tester_no_ID = 
 			original_tester_name+","+
 			my_name_for_tester+","+
@@ -60,6 +72,7 @@ public class tester {
 			preference_date+","+
 			peer_source_LID
 			;
+//	+","+		last_contact_date+","+	activity;
 	public static final String[] _fields_tester_no_ID = Util.trimmed(fields_tester_no_ID.split(Pattern.quote(",")));
 	public static final String fields_tester = fields_tester_no_ID+","+tester_ID;
 	public static final int F_FIELDS_NOID = _fields_tester_no_ID.length;
@@ -85,4 +98,5 @@ public class tester {
 	public static final int F_PREFERENCE_DATE = 18;
 	public static final int F_PEER_SOURCE_LID = 19;
 	public static final int F_ID = 20;
+	
 }

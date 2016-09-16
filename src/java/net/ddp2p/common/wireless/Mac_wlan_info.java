@@ -1,18 +1,24 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 
 		Author: Marius Silaghi msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.wireless;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -23,10 +29,12 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.util.Util;
 import static net.ddp2p.common.util.Util.__;
+
 class WIFI_Interface_Info{
 	String name = null;
 	String SSID = null;
@@ -36,6 +44,7 @@ class WIFI_Interface_Info{
 	boolean up_set = false;
 	boolean multicast;
 	boolean multicast_set = false;
+
 	public void merge(WIFI_Interface_Info a) {
 		if(name == null) name = a.name;
 		if(SSID == null) SSID = a.SSID;
@@ -54,6 +63,7 @@ class WIFI_Interface_Info{
 public class Mac_wlan_info {
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
+
 	public Hashtable<String,WIFI_Interface_Info> getInterfaces_ifconfig() throws IOException {
 		Hashtable<String,WIFI_Interface_Info> wii = new Hashtable<String,WIFI_Interface_Info>();
 		String line;
@@ -79,6 +89,7 @@ public class Mac_wlan_info {
 		 }
 		return wii;
 	}
+
 	public Hashtable<String,WIFI_Interface_Info> getInterfaces_airport() throws IOException {
 		Hashtable<String,WIFI_Interface_Info> wii = new Hashtable<String,WIFI_Interface_Info>();
 		String line;
@@ -122,20 +133,24 @@ public class Mac_wlan_info {
 			WIFI_Interface_Info value;
 			String _name=null,_ip=null;
 			NetworkInterface networkInterface = interfaces.nextElement();
+			//wlan_name.add(networkInterface.getName());
 			_name=networkInterface.getName();
 			if(DEBUG)System.out.println("Mac_wlan_info: considering "+_name);
 			if (networkInterface.isLoopback()){
 				if(DEBUG)System.out.println("Mac_wlan_info: considering "+_name+" loopback");
 				continue;
 			}
+			
 			value = new WIFI_Interface_Info();
 			value.name = _name;
 			value.up = networkInterface.isUp(); value.up_set = true;
 			value.multicast = networkInterface.supportsMulticast(); value.multicast_set = true;
+			
 			Enumeration<InetAddress> addrList = networkInterface.getInetAddresses();
 			 if (!addrList.hasMoreElements()) {
 		            if(DEBUG)System.out.println("Mac_wlan_info: No addresses for this interface");
 			 }
+			 
 			 while (addrList.hasMoreElements()) {
 				 InetAddress address = addrList.nextElement();
 				 if(DEBUG)System.out.println("Mac_wlan_info: "+_name+" addr="+address);
@@ -151,9 +166,11 @@ public class Mac_wlan_info {
 		     }
 			 wlan_name.add(_name+":"+_ip);
 			 wii.put(_name, value);
+			
 		 }
 		return wii;
 	}
+
 	public ArrayList<WIFI_Interface_Info> getInterfaces(){
 		Hashtable<String,WIFI_Interface_Info> wiis = new Hashtable<String,WIFI_Interface_Info>();
 		try {
@@ -169,6 +186,7 @@ public class Mac_wlan_info {
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
+		
 		try {
 			Hashtable<String,WIFI_Interface_Info> wii_crt = getInterfaces_airport();
 			for(String name: wii_crt.keySet()){
@@ -182,6 +200,7 @@ public class Mac_wlan_info {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
 		try {
 			Hashtable<String,WIFI_Interface_Info> wii_crt = getInterfaces_ifconfig();
 			for(String name: wii_crt.keySet()){
@@ -195,9 +214,11 @@ public class Mac_wlan_info {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
 		ArrayList<WIFI_Interface_Info> wii = new ArrayList<WIFI_Interface_Info>(wiis.values());
 		return wii;
 	}
+
 	public ArrayList<WIFI_Interface_Info> setSSIDs(ArrayList<WIFI_Interface_Info> wiis){
 		for (WIFI_Interface_Info w : wiis) {
 			if(w.SSID != null) continue;
@@ -209,6 +230,7 @@ public class Mac_wlan_info {
 		}
 		return wiis;
 	}
+	
 	private void setSSID(WIFI_Interface_Info w) throws IOException {
 		String _name = w.name;
 		String cmd[];
@@ -220,6 +242,7 @@ public class Mac_wlan_info {
 		if(bri!=null) {
 			while ((line = bri.readLine()) != null) {
 				if(DEBUG) System.out.println("Mac_wlan_info: script returns: " + line);
+				//iwconfig.add(line);
 				if(w.SSID != null){
 					Application_GUI.warning(__("Replacing wlan SSID "+w.SSID+" with "+line), __("SSID for:")+" "+_name);
 				}
@@ -227,7 +250,9 @@ public class Mac_wlan_info {
 			}
 			bri.close();
 		}
+		//wlan_name.set(i,wlan_name.get(i)+":"+iwconfig.get(i));	
 	}
+
 	public ArrayList<String> process() throws IOException{
 		ArrayList<String> wlan_name = new ArrayList<String>();
 		ArrayList<WIFI_Interface_Info> wii = getInterfaces();
@@ -239,8 +264,11 @@ public class Mac_wlan_info {
 		 if(DEBUG)System.out.println("Mac_wlan_info: found "+ wlan_name);
 		 return wlan_name;
 	}
+	
+	
 	public static void main(String args[]) throws IOException{
 		Mac_wlan_info p1=new Mac_wlan_info();
 		p1.process();
 	}
+
 }

@@ -1,10 +1,13 @@
 package net.ddp2p.common.hds;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Hashtable;
+
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.util.Util;
+
 /**
  *  peer (redundant: name, ID, GID, filtered, last_sync_date)
  *  ArrayList<Peer_Directory> peer_directories; //order by last_contact!
@@ -18,6 +21,7 @@ public class Connection_Peer {
 	 * Who are we talking about...
 	 */
 	public D_Peer peer;
+
 	/**
 	 * The address books listing this peer, //order by last_contact!
 	 */
@@ -26,6 +30,8 @@ public class Connection_Peer {
 	 * Known IP addresses for this peer (assumed static) // static addresses, order by contact!
 	 */
 	public ArrayList<Connections_Peer_Socket> shared_peer_sockets; 
+	
+	
 	/**
 	 * list of clones for this peer
 	 */
@@ -37,6 +43,7 @@ public class Connection_Peer {
 	static class Connection_Peer_Status {
 		private boolean contacted_since_start = false;
 		private boolean last_contact_successful = false;
+
 		/**
 		 * If not using TCP, Client2 cannot know if the addresses were just added and not yet tested,
 		 *  therefore will ask them again redundantly.
@@ -45,6 +52,7 @@ public class Connection_Peer {
 		private boolean justRequestedSupernodesAddresses;
 	}
 	Connection_Peer_Status status = new Connection_Peer_Status();
+	
 	public Connection_Peer() {
 		setSharedPeerDirectories(new ArrayList<Connections_Peer_Directory>());
 		shared_peer_sockets = new ArrayList<Connections_Peer_Socket>();
@@ -54,6 +62,7 @@ public class Connection_Peer {
 	 */
 	public void sortInstances() {
 		Collections.sort(instances_AL, new Comparator<Connection_Instance>(){
+
 			@Override
 			public int compare(Connection_Instance arg0,
 					Connection_Instance arg1) {
@@ -76,6 +85,7 @@ public class Connection_Peer {
 	 */
 	public void putInstanceConnection(String instance, Connection_Instance ic) {
 		 this.instances_HT.put(Util.getStringNonNullUnique(instance), ic);
+		 // add the element at the end such that the iterator in update may be able to pass over it, if added from a directory.
 		 instances_AL.add(ic);
 		 sortInstances();
 	}
@@ -86,6 +96,7 @@ public class Connection_Peer {
 	public String getGIDH() {return peer.getGIDH_force();}
 	public long getID() {return peer.getLID_keep_force();}
 	public boolean getFiltered() {return peer.getFiltered();}
+	//public String getLastSyncDate() {return peer.getLastSyncDate(instance);}
 	public String toString() {
 		return "[Peer_Connection: ID = "+getID()+" name = \""+getName()+//" date="+getLastSyncDate()+
 				"\" contact = "+isContactedSinceStart()+
@@ -103,6 +114,7 @@ public class Connection_Peer {
 	 */
 	public String getInstance(Connections_Peer_Socket ps) {
 		System.out.println("Connection_Peer: getInstance: TODO");
+		// TODO Auto-generated method stub
 		return null;
 	}
 	public ArrayList<Connections_Peer_Directory> getSharedPeerDirectories() {

@@ -1,5 +1,6 @@
 package net.ddp2p.common.wireless;
 import java.net.*;
+
 public class BroadcastInterface{
 	public static final InetAddress BROADCAST_ADDRESS = getByAddress(new byte[]{(byte) 255,(byte) 255,(byte) 255,(byte) 255});
     public InetAddress broadcast_address = BROADCAST_ADDRESS;
@@ -15,5 +16,6 @@ public class BroadcastInterface{
     }
     public BroadcastInterface(InetAddress _address){
     	broadcast_address = _address;
+    	
     }
 }

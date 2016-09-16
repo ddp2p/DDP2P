@@ -1,35 +1,50 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.widgets.components;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.EventObject;
+
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
+
+
 @SuppressWarnings("serial")
 public class LVComboBox extends JComboBox {
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
 	boolean initing = false;
+	//final SpinnerModel model = new javax.swing.SpinnerNumberModel();
+	//final JSpinner spin = new JSpinner(model);
+	//JComboBox lv = new JComboBox();
+	//JTable extras;
 	int row,col;
 	@SuppressWarnings("unchecked")
 	public
@@ -51,6 +66,15 @@ public class LVComboBox extends JComboBox {
 	 */
 	String buildVal() {
 		return buildVal(net.ddp2p.common.table.field_extra.SEP_list_of_values);
+		/*
+		int k=getItemCount();
+		if (k==0) return null;
+		String result = Util.getString(getItemAt(0));
+		for(int i = 1; i < k; i++) {
+			result+=table.field_extra.SEP_list_of_values+getItemAt(i);
+		}
+		return result;	
+		*/	
 	}
 	/**
 	 * Use separator sep
@@ -103,6 +127,21 @@ public class LVComboBox extends JComboBox {
 		String val = Util.getString(value);
 		String[] vals = val.split(sep);
 		return setArrayValue(vals);
+		/*
+		this.getEditor().setItem("");
+		this.removeAllItems();
+		if(value==null) return this;
+		String val = Util.getString(value);
+		String[] vals = val.split(sep);
+		initing = true;
+		for(String v: vals){
+			if((v==null) || (v.trim().length()==0)) continue;
+			this.addItem(new FieldItem(v.trim()));
+		}
+		initing = false;
+		this.fireLV();
+		return this;
+		*/
 	}
 	/**
 	 * empty fields, null or "" are discarded
@@ -145,6 +184,8 @@ public class LVComboBox extends JComboBox {
 				return;
 			}
 			if((!initing&&DD.DELETE_COMBOBOX_WITHOUT_CTRL)||((ev.getModifiers()&ActionEvent.CTRL_MASK)!=0)) {
+				//Object item = this.getSelectedItem();
+				//if(item!=null)
 				if(0==Application_GUI.ask(__("Are you sure to delete:")+"\n\""+item+"\"?", __("Delete"),JOptionPane.OK_CANCEL_OPTION)){
 					this.removeItem(item);
 					initing = true;
@@ -167,6 +208,7 @@ public class LVComboBox extends JComboBox {
  	}
 	public void addLVListener(LVListener l) {
 		if(DEBUG) System.out.println("LVComboBox: addLVListener: "+l);
+		//Util.printCallPath("Who adds");
 		if(DEBUG) System.out.println("LVComboBox: addLVListener: set = #"+listeners.size());
 		listeners.add(l);
 		if(DEBUG) System.out.println("LVComboBox: addLVListener: after set = #"+listeners.size());

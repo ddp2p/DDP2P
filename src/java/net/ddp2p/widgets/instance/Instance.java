@@ -1,5 +1,7 @@
 package net.ddp2p.widgets.instance;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -11,6 +13,7 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
+
 import javax.swing.Action;
 import javax.swing.DefaultCellEditor;
 import javax.swing.ImageIcon;
@@ -20,12 +23,15 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+//import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
+//import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
+
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.Application;
@@ -39,8 +45,10 @@ import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.components.DebateDecideAction;
 import net.ddp2p.widgets.components.TableUpdater;
+//import widgets.org.ColorRenderer;
 import net.ddp2p.widgets.instance.KeysCustomAction;
 import net.ddp2p.widgets.instance.KeysModel;
+
 @Deprecated
 @SuppressWarnings("serial")
 public class Instance extends JTable implements MouseListener {
@@ -48,6 +56,7 @@ public class Instance extends JTable implements MouseListener {
 	private static final boolean _DEBUG = true;
 	private static final int DIM_X = 0;
 	private static final int DIM_Y = 50;
+
 	public Instance() {
 		super(new KeysModel(Application.getDB()));
 		if(DEBUG) System.out.println("Orgs: constr from db");
@@ -56,25 +65,33 @@ public class Instance extends JTable implements MouseListener {
 	public JScrollPane getScrollPane() {
         JScrollPane scrollPane = new JScrollPane(this);
 		this.setFillsViewportHeight(true);
+		//this.setMinimumSize(new Dimension(400,200));
+		//scrollPane.setMinimumSize(new Dimension(400,200));
 		return scrollPane;
 	}
 	public JPanel getPanel() {
 	    	JPanel jp = new JPanel(new BorderLayout());
 	    	JScrollPane scrollPane = getScrollPane();
+	        //scrollPane.setPreferredSize(new Dimension(400, 200));
 	        scrollPane.setPreferredSize(new Dimension(DIM_X, DIM_Y));
 	        jp.add(scrollPane, BorderLayout.CENTER);
 			return jp;
 	}
+
 	void init() {
 		getModel().setTable(this);
 		addMouseListener(this);
 		this.setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS);
+		//colorRenderer = new ColorRenderer(getModel());
+		//centerRenderer = new DefaultTableCellRenderer();
+		//centerRenderer.setHorizontalAlignment( JLabel.CENTER );
 		initColumnSizes();
 		this.getTableHeader().setToolTipText(
         __("Click to sort; Shift-Click to sort in reverse order"));
 		this.setAutoCreateRowSorter(true);
 		this.setPreferredScrollableViewportSize(new Dimension(DIM_X, DIM_Y));
 	}
+
 	@Override
 	public TableCellEditor getCellEditor(int row, int columnIndex) {
 		int column = getModel().globalColumn(columnIndex);
@@ -82,25 +99,36 @@ public class Instance extends JTable implements MouseListener {
 	}
 	@Override
 	public void mouseClicked(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
+
 	@Override
 	public void mouseEntered(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
+
 	@Override
 	public void mouseExited(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
+
 	@Override
 	public void mousePressed(MouseEvent e) {
 		jtableMouseReleased(e);		
 	}
+
 	@Override
 	public void mouseReleased(MouseEvent e) {
 		jtableMouseReleased(e);
 	}
     private void jtableMouseReleased(java.awt.event.MouseEvent evt) {
-    	int row; 
-    	int col; 
+    	int row; //=this.getSelectedRow();
+    	int col; //=this.getSelectedColumn();
     	if(!evt.isPopupTrigger()) return;
+    	//if ( !SwingUtilities.isLeftMouseButton( evt )) return;
     	Point point = evt.getPoint();
         row=this.rowAtPoint(point);
         col=this.columnAtPoint(point);
@@ -111,21 +139,30 @@ public class Instance extends JTable implements MouseListener {
     	popup.show((Component)evt.getSource(), evt.getX(), evt.getY());
     }
 	JPopupMenu getPopup(int row, int col){
+		//JMenuItem menuItem;
     	ImageIcon addicon = DDIcons.getAddImageIcon(__("add an item")); 
     	ImageIcon delicon = DDIcons.getDelImageIcon(__("delete an item")); 
+    	//ImageIcon reseticon = DDIcons.getResImageIcon(_("reset item"));
     	JPopupMenu popup = new JPopupMenu();
+    	//KeysModel model = getModel();
     	KeysCustomAction cAction;
+    	
     	cAction = new KeysCustomAction(this, __("Refresh!"), addicon,__("Refresh."), __("Refresh"),KeyEvent.VK_R, KeysCustomAction.C_REFRESH);
     	cAction.putValue("row", new Integer(row));
     	popup.add(new JMenuItem(cAction));
+    	
     	cAction = new KeysCustomAction(this, __("Remove Column!"), delicon,__("Remove Column."), __("Remove Column"), KeyEvent.VK_C, KeysCustomAction.C_RCOLUMN);
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
+    	
     	cAction = new KeysCustomAction(this, __("Add Column!"), addicon,__("Add Column."), __("Add Column"), KeyEvent.VK_A, KeysCustomAction.C_ACOLUMN);
     	cAction.putValue("row", new Integer(col));
     	popup.add(new JMenuItem(cAction));
+    	
     	if (row>=0) {
 	    	popup.addSeparator();
+
+	    	
 	    	cAction = new KeysCustomAction(this, __("Delete!"), delicon,__("Delete."), __("Delete"),KeyEvent.VK_D, KeysCustomAction.C_DELETE);
 	    	cAction.putValue("row", new Integer(row));
 	    	popup.add(new JMenuItem(cAction));
@@ -139,16 +176,20 @@ public class Instance extends JTable implements MouseListener {
         KeysModel model = (KeysModel)this.getModel();
         TableColumn column = null;
         Component comp = null;
+        //Object[] longValues = model.longValues;
         TableCellRenderer headerRenderer =
             this.getTableHeader().getDefaultRenderer();
+ 
         for (int i = 0; i < model.getColumnCount(); i++) {
         	int headerWidth = 0;
         	int cellWidth = 0;
         	column = this.getColumnModel().getColumn(i);
+ 
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
                                  false, false, 0, 0);
             headerWidth = comp.getPreferredSize().width;
+ 
             for(int r=0; r<model.getRowCount(); r++) {
             	comp = this.getDefaultRenderer(model.getColumnClass(i)).
                              getTableCellRendererComponent(
@@ -162,10 +203,12 @@ public class Instance extends JTable implements MouseListener {
                                    + "headerWidth = " + headerWidth
                                    + "; cellWidth = " + cellWidth);
             }
+ 
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
 }
+
 @SuppressWarnings("serial")
 class KeysCustomAction extends DebateDecideAction {
 	public static final int C_REFRESH = 1;
@@ -204,6 +247,7 @@ class KeysCustomAction extends DebateDecideAction {
     	if(command == C_REFRESH) {
     		model.update(null, null);
     		tree.initColumnSizes();
+
         	model.update(null, null);
         }else	if(command == C_DELETE) {
         	model.delete(row);
@@ -221,6 +265,7 @@ class KeysCustomAction extends DebateDecideAction {
         }
     }
 }
+
 @SuppressWarnings("serial")
 class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 	public static final int TABLE_COL_ID = 0;
@@ -234,9 +279,11 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 	public static final int TABLE_COL_CREA_DATE = 8;
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
+	
 	static public boolean inited_statics = false;
 	static String columnNames[];
 	static ArrayList<Integer> _ColumnNames;
+
 	static public ArrayList<Integer> prep(){
 		ArrayList<Integer> _ColumnNames = new ArrayList<Integer>();
 		for(int i=0; i<columnNames.length; i++) _ColumnNames.add(new Integer(i));
@@ -248,6 +295,7 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 		columnNames = new String[]{__("id"),__("instance"),__("Peer"),__("plugin_info"),__("last_sync_date"),__("last_reset"),__("last_contact_date"),__("signature"),__("signature_date")};
 		_ColumnNames = prep();
 	}
+	
 	/**
 	 * Call this to remove a current column
 	 * @param crt_col
@@ -266,6 +314,7 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 		_ColumnNames.add(new Integer(global_col));
 		this.fireTableStructureChanged();
 	}
+	
 	ArrayList<ArrayList<Object>> _instancedata = new ArrayList<ArrayList<Object>>();
 	ArrayList<Component> tables= new ArrayList<Component>();
 	private DBInterface db;
@@ -289,12 +338,13 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 		String name  = Application_GUI.input(__("What name do you want for the peer"), __("Creating peer"),
 				JOptionPane.QUESTION_MESSAGE);
 		peer.component_basic_data.name = name;
-		peer.setCreationDate(); 
+		peer.setCreationDate(); //.component_basic_data.creation_date = Util.CalendargetInstance();
 		SK sk = Cipher.getSK(Util.getString(_instancedata.get(row).get(net.ddp2p.common.table.key.COL_SK)));
 		peer.sign(sk);
 		peer.storeRequest();
 		peer.releaseReference();
 	}
+
 	public void delete(int row) {
 		String ID = Util.getString(_instancedata.get(row).get(net.ddp2p.common.table.key.COL_ID));
 		int v = Application_GUI.ask(__("Are you sure that you want to delete instance: "+ID), __("Delete Key"), JOptionPane.OK_CANCEL_OPTION);
@@ -313,6 +363,7 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 	}
 	static String sql_nohide = 
 			"select" 
+	           
 		    		+ " " 
 				    + "i.peer_instance_id, p.name, i.peer_instance, i.last_sync_date, i.last_reset, i.last_contact_date, i.signature_date, i.signature, i.signature_date"
 		            + " " 
@@ -323,17 +374,22 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 			    	+ "where p.peer_id = i.peer_id"
 		            + ";"
 			;
+
+
 	@Override
 	public void update(ArrayList<String> table, Hashtable<String, DBInfo> info) {
+		
 		ArrayList<ArrayList<Object>> instancedata;
 		try {
 			instancedata = db.select(sql_nohide, new String[]{}, DEBUG);
+			
 			synchronized(monitor_instancedata){
 				_instancedata = instancedata;
 			}
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
+		//this.fireTableDataChanged();
 		new TableUpdater(this, null, tables);
 	}
 	public boolean isCellEditable(int row, int columnIndex) {
@@ -346,22 +402,27 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 		}
 		return false;
 	}
+
 	@Override
 	public int getColumnCount() {
+		//return columnNames.length;
 		return _ColumnNames.size();
 	}
 	@Override
 	public Class<?> getColumnClass(int column) {
 		int col = globalColumn(column);
 		if(col == TABLE_COL_ID) return Integer.class;
+		
 		return String.class;
 	}
 	@Override
 	public int getRowCount() {
 		return _instancedata.size();
 	}
+
 	int globalColumn(int crt_col){
 		return _ColumnNames.get(crt_col).intValue();
+		// return __column.get(_columnNames.get(crt_col)).intValue();
 	}
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
@@ -371,6 +432,7 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 	}
 	private Object s_getValueAt(int rowIndex, int columnIndex) {
 		if(rowIndex>=_instancedata.size()) return null;
+	
 		switch(globalColumn(columnIndex)){
 		case TABLE_COL_ID:
 			return _instancedata.get(rowIndex).get(net.ddp2p.common.table.peer_instance.PI_PEER_ID);
@@ -390,6 +452,7 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 			return _instancedata.get(rowIndex).get(7);
 		case 8:
 			return _instancedata.get(rowIndex).get(8);
+			
 		}
 		return null;
 	}
@@ -400,15 +463,20 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 		}
 	}
 	private void s_setValueAt(Object value, int row, int col) {
+		//switch(col) {
 		switch(globalColumn(col)){
 		case TABLE_COL_ID:
 			set_my_data(net.ddp2p.common.table.key.name, Util.getString(value), row);
+			//set_my_data(table.key.preference_date, Util.getGeneralizedTime(), row);
 			break;
 		case TABLE_COL_HIDE:
 			String val = Util.stringInt2bool(value, false)?"1":"0";
 			set_my_data(net.ddp2p.common.table.key.hide, val, row);
+			//set_my_data(table.key.preference_date, Util.getGeneralizedTime(), row);
 			break;
 		}
+		//fireTableCellUpdated(row, col);
+		//fireTableCellUpdated(row, TABLE_COL_DATE);
 	}
 	private void set_my_data(String field_name, String value, int row) {
 		if(row >= _instancedata.size()) return;
@@ -426,6 +494,8 @@ class KeysModel  extends AbstractTableModel implements TableModel, DBListener {
 	public String getColumnName(int crt_col) {
 		String result = columnNames[globalColumn(crt_col)].toString();
 		if(DEBUG) System.out.println("PeersModel:getColumnName: col Header["+crt_col+"]="+result);
+		//return columnNames[crt_col].toString();
+		//return _columnNames.get(crt_col).toString();
 		return result;
 	}
 }

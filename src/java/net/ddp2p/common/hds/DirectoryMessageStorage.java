@@ -1,18 +1,22 @@
 package net.ddp2p.common.hds;
+
 import java.util.Hashtable;
 import java.util.ArrayList;
+
 import net.ddp2p.common.data.D_DirectoryServerPreapprovedTermsInfo;
+
+
 public class DirectoryMessageStorage{
 	private static final boolean DEBUG = false;
-	public static Hashtable<String, DirMessage> latestRequest_storage; 
-	public static Hashtable<String, ArrayList<DirMessage>> noping_storage; 
-	public static Hashtable<String, ArrayList<DirMessage>> ping_storage; 
+	public static Hashtable<String, DirMessage> latestRequest_storage; // store last req msg for each GID
+	public static Hashtable<String, ArrayList<DirMessage>> noping_storage; // store msg for each GID
+	public static Hashtable<String, ArrayList<DirMessage>> ping_storage; // ping for UDP keep conn.
 	/**
 	 * Storing the last announcement message received from each GID separately (together with its source)
 	 */
-	public static Hashtable<String, ArrayList<DirMessage>> announcement_storage; 
+	public static Hashtable<String, ArrayList<DirMessage>> announcement_storage; // intro of peer (GID,...,+name)
 	public static Hashtable<String, D_DirectoryServerPreapprovedTermsInfo> last_terms;
-	public static Hashtable<String, String> IP_GID; 
+	public static Hashtable<String, String> IP_GID; // mapping IP and GID
 	static int maxMsgStorage = 100;
 	/**
 	 * gets from global IP_GID
@@ -22,13 +26,14 @@ public class DirectoryMessageStorage{
 	public static String getGID(String ip){
 		if (IP_GID == null)
 			return null;
-		return IP_GID.get(ip); 
+		return IP_GID.get(ip); // null if no gid
 	}
 	public static void addLatestRequest_storage(String GID, DirMessage m ){
 		if(latestRequest_storage == null){
 			latestRequest_storage = new Hashtable<String, DirMessage>();
 		}
-		latestRequest_storage.put(GID, m); 
+	//	if(latestRequest_storage.get(GID)==null)
+		latestRequest_storage.put(GID, m); // store the latest value only ??
 	}
 	public static void addNoPingMsg(String GID, DirMessage m ){
 		if (noping_storage == null) {
@@ -62,6 +67,7 @@ public class DirectoryMessageStorage{
 		}
 		addToStorage(announcement_storage, GID, m);
 	}
+	
 	public static void addToStorage(Hashtable<String, ArrayList<DirMessage>> s, String GID, DirMessage m ){	
 		if (DEBUG) System.out.println("DMS:addToStorage() msgType:"+m.MsgType+" msgSourceIP:"+m.sourceIP+" DIR="+GID);
 		ArrayList<DirMessage> msgs = s.get(GID);
@@ -72,7 +78,7 @@ public class DirectoryMessageStorage{
 			return;
 		}
 		if (msgs.size()>= maxMsgStorage) {
-			msgs.remove(0); 
+			msgs.remove(0); //remove oldest
 		}
 		msgs.add(m);
 	}	

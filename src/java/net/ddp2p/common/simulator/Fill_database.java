@@ -1,22 +1,30 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Osamah Dhannoon
 		Author: Osamah Dhannoon: odhannoon2011@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.common.simulator;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Random;
 import java.util.UUID;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.ciphersuits.Cipher;
@@ -40,7 +48,9 @@ import net.ddp2p.common.handling_wb.Prepare_messages;
 import net.ddp2p.common.hds.Address;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_ServiceThread  {
+
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
 	private static final int MAX_ADDED = 1;
@@ -53,14 +63,19 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 	static final int SELECT_MOT = 4;
 	static final int SELECT_VOTE = 5;
 	static final int SELECT_WITN = 6;
+	
+
+
 	public Fill_database() {
 		super("Simulator Fill Database", false);
+	//Application.db=new DBInterface("deliberation-app.db");
 	}
 	int i=-1;
 	int randomInt,randomInt1,randomInt2,randomInt3,randomInt4,randomInt5;
 	public static String org_id_for_motion = null;
 	Random randomGenerator = new Random();
 	private boolean running = true;
+
 	public static void cleanDatabase() throws P2PDDSQLException {
 		Application.getDB().delete("delete from "+net.ddp2p.common.table.application.TNAME+" where "+net.ddp2p.common.table.application.field+"=\"WLAN_INTERESTS\";",new String[]{});
 		Application.getDB().delete("delete from "+net.ddp2p.common.table.organization.TNAME,new String[]{});
@@ -77,8 +92,10 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 							net.ddp2p.common.table.application.field+"=?"+" or "+net.ddp2p.common.table.application.field+"=?"+
 							" or "+net.ddp2p.common.table.application.field+"=?"+" or "+net.ddp2p.common.table.application.field+"=?;",
 							new String[]{"my_global_peer_ID","INTERFACES","my_peer_name","my_global_peer_ID_hash"});
+
 	}
 	public void _run() {
+		//boolean DEBUG = false;
 		int counter = 0, count =0;
 		try{
 			if(_DEBUG)System.out.println("Simulator runing");
@@ -88,13 +105,97 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 				if(ADDED_BOUNDED&&(counter==MAX_ADDED)) running = false;
 				counter++;
 				if(!running) break;
+				//add_constituent();
 				add_witness();
+				//add_motion();
+				//add_organization();
+				//add_vote();
 				if(_DEBUG) System.out.println("everything=	"+i);
+				//add_peer();
+				/*
+				if(DEBUG)System.out.println("6 NEIGHS TO BE ADDED :-");
+				String pID = null;
+				long org_id = select_random_organization();
+				if(DEBUG)System.out.println("ORG_ID : "+org_id);
+				long c_id = select_random_constituent(org_id);
+				if(DEBUG)System.out.println("CON_ID : "+c_id);
+				SK sk = DD.getConstituentSK(c_id);
+				if(DEBUG)System.out.println("sk : "+sk);
+				D_Neighborhood[] Nbre = new D_Neighborhood[6];
+				for(int j=0; j<6; j++) {
+					Nbre[j] = add_neighborhood(org_id,c_id,sk,pID);
+					pID = Nbre[j].neighborhoodID;
+				}
+				
+				*/
+				/*
+				if(DEBUG)System.out.println("Fill_database : START picking a probability for simulation");
+				int choice = Util.pick_randomly(
+						new float[]{SimulationParameters.adding_new_organization,
+								SimulationParameters.adding_new_constituent,
+								SimulationParameters.adding_new_neighbor,
+								SimulationParameters.adding_new_peer,
+								SimulationParameters.adding_new_motion,
+								SimulationParameters.adding_new_vote,
+								SimulationParameters.adding_new_witness});
+				if(DEBUG)System.out.println("Fill_database : END picking a probability for simulation");
+				switch(choice){
+				case SELECT_ORGS: 
+					if(DEBUG)System.out.println("ORG TO BE ADDED :-");
+					add_organization();
+					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
+					break;
+				case SELECT_CONS:
+					if(DEBUG)System.out.println("CONS TO BE ADDED :-");
+					 add_constituent();
+					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
+					break;
+				case SELECT_NEIG:
+					if(DEBUG)System.out.println("6 NEIGHS TO BE ADDED :-");
+					String pID = null;
+					long org_id = select_random_organization();
+					long c_id = select_random_constituent(org_id);
+					SK sk = DD.getConstituentSK(c_id);
+					D_Neighborhood[] Nbre = new D_Neighborhood[6];
+					for(int j=0; j<6; j++) {
+						Nbre[j] = add_neighborhood(org_id,c_id,sk,pID);
+						pID = Nbre[j].neighborhoodID;
+					}
+					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
+					break;
+				case SELECT_PEER:	
+					if(DEBUG)System.out.println("PEER TO BE ADDED :-");
+					add_peer(); 
+					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
+					break;
+				case SELECT_MOT:
+					if(DEBUG)System.out.println("MOTION TO BE ADDED :-");
+					add_motion();
+					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
+					break;
+				case SELECT_VOTE:
+					if(DEBUG)System.out.println("VOTE TO BE ADDED :-");
+					add_vote();
+					if(_DEBUG) System.out.println("everything=	"+i+"	VOTES=	"+(++count));
+					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
+					break;
+				case SELECT_WITN:
+					if(DEBUG)System.out.println("WITNESS TO BE ADDED :-");
+					add_witness();
+					if(DEBUG)System.out.println("---------------------------------------------------------------\n");
+					break;
+				default:
+					break;
+				}
+				*/
 				Thread.sleep(5);
 			}
 		}catch(Exception e){}
 	}
+
+
 	private static long add_vote() throws P2PDDSQLException, ASN1DecoderFail {
+		
 		if(DEBUG)System.out.println("Fill_database : add_vote() : START ");
 		long added_vote = -1;
 		long organization_ID = select_random_organization();
@@ -123,11 +224,13 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		int justification_choice = Util.pick_randomly(new float[]{SimulationParameters.adding_new_justification_in_vote,
 				SimulationParameters.no_justification_vote,SimulationParameters.using_old_justification_in_vote});
 		switch(justification_choice){
-		case 0: 
+
+		case 0: //add a new vote and add a new justification with it
 		{ 
 			if(DEBUG)System.out.println("Fill_database : vote(): VOTE AND JUSTIFICATION");
 			long just_id =-1;
-			long justifications = D_Justification.getCountForMotion(motion_ID); 
+			
+			long justifications = D_Justification.getCountForMotion(motion_ID); //Integer.parseInt(count.get(0).get(0).toString());
 			if(justifications == 0){
 				just_id = add_justification(motion_ID,constituent_ID,organization_ID,false);
 				if(DEBUG)System.out.print(" \"just with no answerID\" \n");
@@ -136,6 +239,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 				int r = Util.get_one_or_zero();
 				just_id = add_justification(motion_ID, constituent_ID,organization_ID, r>0);
 			}
+
 			vote.setJustificationLID(""+just_id);
 			vote.setJustificationGID(D_Justification.getGIDFromLID(vote.getJustificationLIDstr()));
 			vote.setJustification(D_Justification.getJustByLID(just_id, true, false));
@@ -146,7 +250,8 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 			if(DEBUG)System.out.println("Fill_database : add_vote_with_justification : END vote_id="+added_vote);
 			return added_vote;
 		} 
-		case 1: 
+
+		case 1: //add vote and do not add justification with it
 		{ 
 			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE ONLY");
 			vote.setGID(vote.make_ID());
@@ -159,7 +264,8 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 			if(DEBUG)System.out.println("Fill_database : add_vote_only : END vote_id="+added_vote);
 			return added_vote;
 		}
-		case 2: 
+
+		case 2: // refer existing justification
 		{ 
 			if(DEBUG)System.out.println("Fill_database : vote(): adding VOTE AND EXISTING JUSTIFICATION");
 			long just_id =-1;
@@ -179,9 +285,12 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		}
 		return added_vote;
 	}
+
 	private static long select_random_justification(long motion_id,long constituent_id,long org_id) throws P2PDDSQLException, ASN1DecoderFail {
 		long J_ID=-1;
-		long justifications = D_Justification.getCountForMotion(motion_id); 
+//		String sql = "SELECT count(*) FROM "+table.justification.TNAME+" WHERE "+table.justification.motion_ID+"=?;";
+//		ArrayList<ArrayList<Object>> count = Application.db.select(sql, new String[]{""+motion_id});
+		long justifications = D_Justification.getCountForMotion(motion_id); //Integer.parseInt(count.get(0).get(0).toString());
 		if(justifications == 0) return add_justification(motion_id, constituent_id, org_id, false);
 		long selected = (long)Util.random(justifications);
 		String sql_sel = "SELECT "+net.ddp2p.common.table.justification.justification_ID+" FROM "+
@@ -190,6 +299,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		J_ID = Integer.parseInt(j_data.get(0).get(0).toString());
 		return J_ID;
 	}
+
 	/**
 	 * 
 	 * @param motion_id
@@ -206,9 +316,10 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		long ans_id=-1;
 		Calendar creation_date = Util.CalendargetInstance();
 		String uuid = UUID.randomUUID().toString().substring(31);
+		//
 		String randomStrings = new String();
 	    Random random = new Random();
-	        char[] word = new char[300]; 
+	        char[] word = new char[300]; // words of length 3 through 10. (1 and 2 letter words are boring.)
 	        for(int j = 0; j < 300; j++)
 	        {
 	            word[j] = (char)('a' + random.nextInt(26));
@@ -247,7 +358,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 				 ans_id = select_random_justification(motion_id,constituent_id,org_id);
 				 jus.setAnswerToLIDstr(""+ans_id);
 				 jus.setAnswerTo_SetAll(D_Justification.getJustByLID(ans_id, true, false));
-				 jus.setAnswerTo_GID(jus.getAnswerTo().getGID());  
+				 jus.setAnswerTo_GID(jus.getAnswerTo().getGID());  //getJustificationGlobalID(jus.answerTo_ID);
 			}
 			else {
 				jus.setAnswerToLIDstr(null);
@@ -256,10 +367,14 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 			}
 			jus.setGID();
 			jus.setSignature(jus.sign(sk));
+			
 			D_Justification j = D_Justification.getJustByGID(jus.getGID(), true, true, jus.getOrganizationLID(), jus.getMotionLID());
 			j.loadRemote(jus, null, null, null);
 			j_id = j.storeRequest_getID();
 			j.releaseReference();
+			
+	//		j_id = jus.storeVerified();
+	//		if(DEBUG)System.out.println("JUS sig : "+jus.getSignature());
 			if(j.verifySignature()==false){
 				if(DEBUG)System.out.println("WRONG JUSTIFICATION SIG");
 			}
@@ -267,6 +382,18 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		if(DEBUG)System.out.println("Fill_database : add_justification : JUST ADDED jus_id="+j_id);
 		return j_id;
 	}
+	
+//	public static String getJustificationGlobalID(String justification_ID) throws P2PDDSQLException {
+//		if(DEBUG) System.out.println("Fill_database:getJustificationGlobalID: start");
+//		if(justification_ID==null) return null;
+//		String sql = "SELECT "+table.justification.global_justification_ID+
+//		" FROM "+table.justification.TNAME+
+//		" WHERE "+table.justification.justification_ID+"=?;";
+//		ArrayList<ArrayList<Object>> n = Application.db.select(sql, new String[]{justification_ID}, DEBUG);
+//		if(n.size()==0) return null;
+//		return Util.getString(n.get(0).get(0));
+//	}
+
 	private static long select_random_motion(long organization_ID,
 			long constituent_ID) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG)System.out.println("calling select_random_motion...before 1 sel: "+Util.getGeneralizedTime());
@@ -300,12 +427,17 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 					" WHERE nm."+net.ddp2p.common.table.motion.organization_ID+"=?" +
 					" AND s."+net.ddp2p.common.table.signature.constituent_ID+"=?)"
 				+" LIMIT 1 OFFSET "+selected;
+		
+		
 		ArrayList<ArrayList<Object>> m_data = Application.getDB().select(sql_sel, new String[]{""+organization_ID,""+organization_ID,""+constituent_ID});
 		if(DEBUG)System.out.println("Fill_database : select_random_motion : after 2 sel :"+Util.getGeneralizedTime());
 		motion_ID = Integer.parseInt(m_data.get(0).get(0).toString());
 		if(DEBUG)System.out.println("select_random_motion(): motion selected id="+motion_ID);
 		return motion_ID;
 	}
+
+
+	// we can use it when we want to select random motion using only org_id without constituent
 	private static long select_random_motion(long organization_ID) throws P2PDDSQLException, ASN1DecoderFail {
 		long motion_ID = -1;
 		long motions = D_Motion.getCount(organization_ID);
@@ -318,9 +450,11 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		motion_ID = Integer.parseInt(m_data.get(0).get(0).toString());
 		return motion_ID;
 	}
+
 	private static long add_motion() throws P2PDDSQLException, ASN1DecoderFail {
 		return add_motion(-1);
 	}
+
 	private static long add_motion(long org_ID) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG)System.out.println("add_motion : start");
 		long motion_ID = -1;
@@ -331,6 +465,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		if(DEBUG)System.out.println("Cons ID : "+Cons_ID);
 		Calendar creation_date = Util.CalendargetInstance();
 		String uuid = UUID.randomUUID().toString().substring(31);
+		//
 		String randomStrings = new String();
 	    Random random = new Random();
 	        char[] word = new char[1000];
@@ -339,6 +474,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 	            word[j] = (char)('a' + random.nextInt(26));
 	        }
 	        randomStrings = new String(word);
+	        //
 		String motion_title = "MT"+uuid;
 		String motion_text = randomStrings;
 		String motion_format = "MF"+uuid;
@@ -381,13 +517,19 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		m.loadRemote(mot, null, null, null);
 		motion_ID = m.storeRequest_getID();
 		m.releaseReference();
+		//try {
+		//motion_ID = mot.storeVerified();
+		//}catch(Exception e){e.printStackTrace();}
 		if(DEBUG)System.out.println("add_motion : end");
 		if(DEBUG)System.out.println("Fill_database : add_motion : MOTION ADDED ID="+motion_ID);
 		return motion_ID;
 	}
+	
+	
 	private static long add_witness() throws P2PDDSQLException, ASN1DecoderFail  {
 		return add_witness(-1);
 	}
+	
 	public static long add_witness(long org_id) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG)System.out.println("Fill_database : add_witness Start");
 		long witness_id = -1;
@@ -404,13 +546,21 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		Con_witnessing_ID = select_random_constituent(org_id,"0");
 		if(DEBUG)System.out.println("Fill_database : add_witness : after select_random_Cons");
 		SK sk = DD.getConstituentSK(Con_witnessing_ID);
-		if(sk==null) return -1; 
+		if(sk==null) return -1; //trying to generate witness using a receiving constituent
+		
+	//f(COUNT==1) {
+		//ong c=add_constituent(org_id);
+		//
+		//do{
 			Con_witnessed_ID=select_random_constituent_except(org_id,Con_witnessing_ID);
 			if(DEBUG)System.out.println("Fill_database : add_witness : Con_witnessed_ID:"+Con_witnessed_ID+
 					" Con_witnessing_ID:"+Con_witnessing_ID);
+		//}while (Con_witnessing_ID==Con_witnessed_ID);
 		if(DEBUG)System.out.println("Simulator:Fill_database:First (witnessed) con ID="+Con_witnessed_ID);
 		if(DEBUG)System.out.println("Simulator:Fill_database:Second (witnessing) con ID="+Con_witnessing_ID);
 		Calendar creation_date = Util.CalendargetInstance();
+		
+		
 		wbw.global_organization_ID(organizationGID);
 		wbw.witnessed_constituentID = Con_witnessed_ID;
 		wbw.witnessed_global_constituentID = D_Constituent.getGIDFromLID(Con_witnessed_ID);
@@ -427,22 +577,27 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		if(DEBUG)System.out.println("Fill_database : Witness is added wid : "+witness_id);
 		return witness_id;
 	}
+
 	private static long select_random_constituent(long organization_ID, String external) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG)System.out.println("Fill_database : select_random_constituent with external");
 		long p_ID;
 		String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.constituent.TNAME+" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=? AND "+net.ddp2p.common.table.constituent.external+"=?;";
 		ArrayList<ArrayList<Object>> count = Application.getDB().select(sql, new String[]{""+organization_ID,external});
 		long c = Integer.parseInt(count.get(0).get(0).toString());
+		//COUNT = c;
 		if(DEBUG)System.out.println("count : "+c);
-		if(c == 0){ 
+		if(c == 0){ //COUNT = add_constituent(organization_ID);
+			//return COUNT;
 			return add_constituent(organization_ID);
 		}
+		
 		long selected = (long)Util.random(c);
 		String sql_sel = "SELECT "+net.ddp2p.common.table.constituent.constituent_ID+" FROM "+net.ddp2p.common.table.constituent.TNAME+" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=? AND "+net.ddp2p.common.table.constituent.external+"=? LIMIT 1 OFFSET "+selected;
 		ArrayList<ArrayList<Object>> p_data = Application.getDB().select(sql_sel, new String[]{""+organization_ID, external});
 		p_ID = Integer.parseInt(p_data.get(0).get(0).toString());
 		return p_ID;
 	}
+	
 	private static long select_random_constituent_except(long organization_ID,long avoid) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG)System.out.println("Fill_database : select_random_constituent");
 		long p_ID;
@@ -455,6 +610,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		if(DEBUG)System.out.println("Fill_database : select_random_constituent : selected cons="+c);
 		if(c == 0) return add_constituent(organization_ID);
 		long selected = (long)Util.random(c);
+		
 		String sql_sel = "SELECT "+net.ddp2p.common.table.constituent.constituent_ID+" FROM "+net.ddp2p.common.table.constituent.TNAME+
 				" JOIN "+net.ddp2p.common.table.key.TNAME+" ON "+net.ddp2p.common.table.constituent.global_constituent_ID+"="+net.ddp2p.common.table.key.public_key+
 				" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=? AND "+net.ddp2p.common.table.constituent.constituent_ID+"<>?"+
@@ -463,10 +619,14 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		p_data = Application.getDB().select(sql_sel, new String[]{""+organization_ID,""+avoid});
 		}
 		catch(Exception e) {e.printStackTrace();}
+		//if(p_data.size() == 0) return add_constituent(organization_ID);
+		
 		p_ID = Integer.parseInt(p_data.get(0).get(0).toString());
 		if(DEBUG) System.out.println("select_random_constituent(): constituent selected is:"+p_ID);
+		//if(p_ID == 0) return add_constituent(organization_ID);
 		return p_ID;
 	}
+
 	private static long select_random_constituent(long organization_ID) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG)System.out.println("Fill_database : select_random_constituent");
 		long p_ID;
@@ -479,6 +639,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		if(DEBUG)System.out.println("Fill_database : select_random_constituent : selected cons="+c);
 		if(c == 0) return add_constituent(organization_ID);
 		long selected = (long)Util.random(c);
+		
 		String sql_sel = "SELECT "+net.ddp2p.common.table.constituent.constituent_ID+" FROM "+net.ddp2p.common.table.constituent.TNAME+
 				" JOIN "+net.ddp2p.common.table.key.TNAME+" ON "+net.ddp2p.common.table.constituent.global_constituent_ID+"="+net.ddp2p.common.table.key.public_key+
 				" WHERE "+net.ddp2p.common.table.constituent.organization_ID+"=? "+
@@ -487,14 +648,19 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		p_data = Application.getDB().select(sql_sel, new String[]{""+organization_ID});
 		}
 		catch(Exception e) {e.printStackTrace();}
+		//if(p_data.size() == 0) return add_constituent(organization_ID);
+		
 		p_ID = Integer.parseInt(p_data.get(0).get(0).toString());
 		if(DEBUG) System.out.println("select_random_constituent(): constituent selected is:"+p_ID);
+		//if(p_ID == 0) return add_constituent(organization_ID);
 		return p_ID;
 	}
+
 	private static long add_constituent() throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG) System.out.println("simulator: add_constituent()");
 		return add_constituent(-1);
 	}
+
 	public static long add_constituent(long organization_ID2) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG)Util.printCallPath("Fill_database : calling add_constituent") ;
 		if(DEBUG)System.out.println("add_constituent : org ID : "+organization_ID2);
@@ -518,6 +684,7 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		String gcID = Util.getKeyedIDPK(keys);
 		String gcIDhash = D_Constituent.getGIDHashFromGID_NonExternalOnly(gcID);
 		SK sk = keys.getSK();
+	
 		D_Constituent Cons = D_Constituent.getConstByGID_or_GIDH(gcID, gcIDhash, true, true, true, null, organization_ID2);
 		Cons._set_GID(gcID);
 		Cons.setGIDH(gcIDhash);
@@ -529,24 +696,33 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		Cons.setPicture(null);
 		Cons.setExternal(false);
 		Cons.setEmail(email);
+		//Cons.organization_ID = organization_ID;
 		Cons.setOrganizationGID(D_Organization.getGIDbyLIDstr(Cons.getOrganizationLIDstr()));
 		Cons.setPicture(byteArray);
 		Cons.setCreationDate(creation_date);
 		Cons.setHash_alg(net.ddp2p.common.table.constituent.CURRENT_HASH_CONSTITUENT_ALG);
 		Cons.languages = new String[0];
 		Cons.setNeighborhood(null);
+		//String orgGID = D_Organization.getGlobalOrgID(organization_ID2+"");
+		//System.out.println("add_constituent(): before storeVerified()");
 		Cons.setArrivalDate(now);
+		//constituent_ID = Cons.storeVerified(orgGID, ""+organization_ID2, now);
+		//System.out.println("add_constituent(): after storeVerified()");
+		//Cons.neighborhood = new WB_Neighborhood[6];
 		constituent_ID = Cons.storeRequest_getID();
 		Cons.setNeighborhood(select_neighborhood_or_create_by_cID(organization_ID2, constituent_ID, sk));
 		if (Cons.getNeighborhood().length > 0)
 			Cons.setNeighborhoodGID(Cons.getNeighborhood()[0].getGID());
 		Cons.setCreationDate(Util.CalendargetInstance());
 		Cons.sign();
+		//Cons.signature = Cons.sign(Cons.global_organization_ID, Cons.global_constituent_id);
 		constituent_ID = Cons.storeRequest_getID();
 		Cons.releaseReference();
+		//Cons.storeVerified(orgGID, ""+organization_ID2, now);
 		if (DEBUG) System.out.println("Fill_database : add_constituent() : CONS ADDED cons_id="+constituent_ID);
 		return constituent_ID;
 	}
+
    private static D_Neighborhood[] select_neighborhood_or_create_by_cID(
 			long organization_ID2, long cID, SK sk) throws P2PDDSQLException {
 	   D_Neighborhood[] Nbre = new D_Neighborhood[6];
@@ -560,25 +736,35 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		   }
 		   return Nbre;
 	   }
+	  
+	   // select one leaf (who have no descendants)
 		long n_ID = D_Neighborhood.getLeaves(organization_ID2);
 		 if(DEBUG)System.out.println("select_neighborhood_or_create_by_cID : n_ID:"+n_ID);
+//		String sql2 = "SELECT "+table.neighborhood.global_neighborhood_ID+
+//				" FROM "+table.neighborhood.TNAME+" WHERE "+
+//				table.neighborhood.neighborhood_ID+"=?;";
+//		ArrayList<ArrayList<Object>> GID = Application.db.select(sql2, new String[]{Util.getStringID(n_ID)}, DEBUG);
 		D_Neighborhood dn = D_Neighborhood.getNeighByLID(n_ID, true, false);
 		if (dn == null) return null;
-		String global_n_id = dn.getGID(); 
+		String global_n_id = dn.getGID(); //Util.getString(GID.get(0).get(0));
 	   if(DEBUG)System.out.println("NID : "+n_ID);
 	   if(DEBUG)System.out.println("GNID : "+global_n_id);
 	   Nbre = D_Neighborhood.getNeighborhoodHierarchy(global_n_id, Util.getStringID(n_ID), D_Constituent.EXPAND_ALL, organization_ID2);
+		
 	   return Nbre;
 	}
+
    private static D_Neighborhood add_neighborhood(long organization_ID, long cID, SK sk, String pID) throws P2PDDSQLException{
+	
 	   String uuid = UUID.randomUUID().toString().substring(31);
 	   String name = "name "+uuid;
 	   Calendar creation_date = Util.CalendargetInstance();
 	   String now = Encoder.getGeneralizedTime(creation_date);
 	   String name_division = "nd"+uuid;
 	   String name_lang = "nl"+uuid;
-	   String[] _subdivisions = null;
+	   String[] _subdivisions = null;//new String[0];
 	   String n_key =  ""+cID+":"+name_division+"="+name;
+	   //String gID=Util.getGlobalID("neighborhoods", n_key);
 	   D_Neighborhood wbn = D_Neighborhood.getEmpty();
 	   wbn.setBoundary(null);
 	   wbn.setCreationDate(creation_date, now);
@@ -594,13 +780,18 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 	   wbn.submitter = null;
 	   wbn.setSubmitterLIDstr(""+cID);
 	   wbn.setSubmitter_GID(D_Constituent.getGIDFromLID(cID));
+	   //wbn.organization_ID = organization_ID;
 	   wbn.setOrgIDs(D_Organization.getGIDbyLID(organization_ID), organization_ID);
 	   wbn.setGID(wbn.make_ID());
 	  wbn.setSignature(wbn.sign(sk));
+	 // wbn.setLID(wbn.storeVerified(Util.getStringID(cID), wbn.getOrgGID(), ""+organization_ID, now, null, null));
+	  
 	  wbn.storeRemoteThis(wbn.getOrgGID(), organization_ID, now, null, null, null);
+	  
 	  if(DEBUG)System.out.println("Fill_database : add_neighborhood() : NEIGH ADDED Neig_id="+ wbn.getLID());
 	   return wbn;
    }
+	
 	private static long select_random_organization() throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG)System.out.println("calling select_random_organization");
 		long organization_ID = -1;
@@ -617,7 +808,9 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		if(DEBUG)System.out.println("simulator: select_random_organization selected org id :"+organization_ID);
 		return organization_ID;
 	}
+
 	public static long add_organization() throws P2PDDSQLException, ASN1DecoderFail {
+		
 		long p_ID = select_random_peer();
 		String uuid = UUID.randomUUID().toString().substring(31);
 		String name = "ON"+uuid;
@@ -632,11 +825,11 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		String category = "category"+uuid;
 		byte[] certificate = new byte[0];
 		String[] default_scoring_options = new String[0];
-		String s_default_scoring_options = D_OrgConcepts.stringFromStringArray(default_scoring_options);
+		String s_default_scoring_options = D_OrgConcepts.stringFromStringArray(default_scoring_options);//, table.organization.ORG_SCORE_SEP, null);
 		String instructions_new_motions = "inst_new_motin"+uuid;
 		String instructions_registration = "inst_reg"+uuid;
 		String[] languages = new String[]{"en"};
-		String s_languages = D_OrgConcepts.stringFromStringArray(languages);
+		String s_languages = D_OrgConcepts.stringFromStringArray(languages);//, table.organization.ORG_LANG_SEP,null);
 		String[] name_forum = new String[1];
 		String S_name_forum = D_OrgConcepts.stringFromStringArray(name_forum);
 		String[] name_justification = new String[1];
@@ -646,13 +839,14 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		String[] name_organization = new String[1];
 		String s_name_organization = D_OrgConcepts.stringFromStringArray(name_organization);
 		String hash_org_alg = "Horg_alg"+uuid;
-		byte[] hash_org = null; 
+		byte[] hash_org = null; //new byte[0];
 		String s_hash_org = Util.byteToHex(hash_org, net.ddp2p.common.table.organization.ORG_HASH_BYTE_SEP);
 		String sql = "SELECT "+net.ddp2p.common.table.peer.global_peer_ID+" from "+
 				net.ddp2p.common.table.peer.TNAME+" where "+net.ddp2p.common.table.peer.peer_ID+"=?;";
 		ArrayList<ArrayList<Object>> p_data = Application.getDB().select(sql, new String[]{""+p_ID});
 		String creator_global_ID = Util.getString(p_data.get(0).get(0));
-		D_Organization od = D_Organization.getEmpty(); 
+		
+		D_Organization od = D_Organization.getEmpty(); //.getOrgByGID(gID, true, true);
 		od.setGID(gID, null);
 		od.setName(name);
 		od.setLastSyncDate(_creation_date);
@@ -693,14 +887,19 @@ public class Fill_database<org_id_for> extends net.ddp2p.common.util.DDP2P_Servi
 		if(DEBUG)System.out.println("Fill_database : add_organization() : Org is added org_id"+org_id);
 		return org_id;
 	}
+	
 private static D_Peer get_peer_by_ID(long p_id) throws P2PDDSQLException {
+		
 		D_Peer pa = D_Peer.getPeerByLID_NoKeep(p_id, true);
 		return pa;
 	}
+
+	
 	private static long select_random_peer() throws P2PDDSQLException, ASN1DecoderFail {
 		long peer_ID=-1;
 		String sql = "SELECT count(*) FROM "+net.ddp2p.common.table.peer.TNAME;
 		ArrayList<ArrayList<Object>> count = Application.getDB().select(sql, new String[]{});
+		
 		long peers = Integer.parseInt(count.get(0).get(0).toString());
 		if(peers == 0) return add_peer();
 		long selected = (long)Util.random(peers);
@@ -710,7 +909,9 @@ private static D_Peer get_peer_by_ID(long p_id) throws P2PDDSQLException {
 		peer_ID = Integer.parseInt(p_data.get(0).get(0).toString());
 		return peer_ID;
 	}
+	
 	private static long add_peer() throws P2PDDSQLException {
+		
 		long peer_ID = -1;	
 		String uuid = UUID.randomUUID().toString().substring(31);
 		String name = "PN"+uuid;
@@ -721,6 +922,7 @@ private static D_Peer get_peer_by_ID(long p_id) throws P2PDDSQLException {
 		keys.genKey(1024);
 		DD.storeSK(keys, "PEER");
 		String gp_id = Util.getKeyedIDPK(keys); 
+		
 		D_Peer pa = D_Peer.getEmpty();
 		pa.component_basic_data.broadcastable = true;
 		pa.setCreationDateNoDirty(_creation_date, creation_date);
@@ -728,6 +930,7 @@ private static D_Peer get_peer_by_ID(long p_id) throws P2PDDSQLException {
 		pa.component_basic_data.name = name;
 		pa.component_basic_data.slogan = slogan;
 		pa.setSignature(pa.sign(keys.getSK()));
+		//pa.shared_addresses = new TypedAddress[4];
 		for(int i=0;i<4;i++) {
 			Address a = new Address();
 			a.setAddress("163.118.78.4"+i+":25123");
@@ -737,6 +940,7 @@ private static D_Peer get_peer_by_ID(long p_id) throws P2PDDSQLException {
 			pa.shared_addresses.add(a);
 			pa.dirty_addresses = true;
 			D_Peer.storeReceived(pa, true, false, Util.getGeneralizedTime());
+			//pa.storeRequest();
 		}
 		try {
 			peer_ID = net.ddp2p.common.handling_wb.ReceivedBroadcastableMessages.add_peer(pa, false);
@@ -746,9 +950,25 @@ private static D_Peer get_peer_by_ID(long p_id) throws P2PDDSQLException {
 		if(DEBUG)System.out.println("Fill_database : Peer is added peer_id"+peer_ID);
 		return peer_ID;
 	}
+
 	public void stopSimulator() {
 		if(_DEBUG)System.out.println("Simulator stop");
 		running  = false;
 		this.interrupt();
 	}
+
+	/*
+	public static void main(String args[]) throws P2PDDSQLException{
+		if(args[0].compareTo("dl")==0) {
+			Fill_database s=new Fill_database();
+			Fill_database.cleanDatabase();
+			System.out.println("db deleted");
+			//s.run();
+		}
+		else {
+		Fill_database s=new Fill_database();
+		s.run();
+		}
+	}
+	 */
 }

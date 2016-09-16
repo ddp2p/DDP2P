@@ -1,8 +1,11 @@
 package net.ddp2p.common.hds;
+
 import static java.lang.System.out;
 import static net.ddp2p.common.util.Util.__;
+
 import java.io.InputStream;
 import java.util.ArrayList;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -15,6 +18,7 @@ import net.ddp2p.common.table.directory_forwarding_terms;
 import net.ddp2p.common.table.directory_tokens;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 class DirectoryRequestPerInstance extends ASNObj {
 	String instance;
 	public DIR_Terms_Preaccepted[] instance_terms;
@@ -63,24 +67,30 @@ public class DirectoryRequest extends ASNObj{
 	public static boolean DEBUG = false;
 	private static boolean _DEBUG = true;
 	private static int MAX_VERSION_SUPPORTED = V3;
-	public int version = V2; 
+	public int version = V2; //MAX_VERSION_SUPPORTED;
 	public int[] agent_version = DD.getMyVersion();
 	public String branch = DD.BRANCH;
 	public String globalID;
-	public String globalIDhash; 
-	public DIR_Terms_Preaccepted[] terms_default; 
-	public String initiator_globalID; 
-	public String initiator_globalIDhash; 
+	public String globalIDhash; // or this, or GID
+	public DIR_Terms_Preaccepted[] terms_default; // global terms
+	public String initiator_globalID; // used to verify signatures
+	public String initiator_globalIDhash; // used to verify signatures
 	public String initiator_instance;
 	public int UDP_port;
 	public byte[] signature;
 	public String directory_domain;
 	public int director_udp_port;
-	public boolean only_given_instances = true; 
+	
+	//public String instance; // if null check the instance null (original instance)
+	public boolean only_given_instances = true; // if true check only the given instance (String)
 	public ArrayList<DirectoryRequestPerInstance> req_instances;
-	private String dir_address; 
-	private Address _dir_address; 
-	private String peer_ID; 
+	
+	//static byte buffer[] = new byte[DirectoryServer.MAX_DR_DA];
+	
+	private String dir_address; // used to build terms
+	private Address _dir_address; // used to build terms
+	private String peer_ID; // localID
+
 	public String toString() {
 		String result= "[DirectoryRequest:" +
 				"v="+version+" agent_version="+Util.concat(agent_version, ".", "NULL")+" branch="+branch+
@@ -100,6 +110,7 @@ public class DirectoryRequest extends ASNObj{
 					"\n req_inst="+Util.concat(req_instances, "\n  ", "NULL");
 	    return result+"]";
 	}
+	
 	static boolean warned_version = false;
 	@Override
 	public DirectoryRequest decode(Decoder dec) throws ASN1DecoderFail {
@@ -110,6 +121,7 @@ public class DirectoryRequest extends ASNObj{
 			if (DEBUG) System.out.println("DirRequest:decode: decoded _version = "+_version);
 			if (_version > MAX_VERSION_SUPPORTED) {
 				Util.printCallPath("Need to update software. I do not understand Requests v:"+_version+" v="+version);
+				
 				if (!warned_version) {
 					warned_version = true;
 					Application_GUI.warning(__("New version of DirectoryRequest:")+_version, __("New version available"));
@@ -124,6 +136,7 @@ public class DirectoryRequest extends ASNObj{
 		case 1:
 		case 2:
 			return decode_2(dr);
+			
 		case 3:
 		default:
 			return decode_3(dr);
@@ -138,6 +151,7 @@ public class DirectoryRequest extends ASNObj{
 		this.UDP_port = dr.getFirstObject(true).getInteger().intValue();
 		if((version!=0) && (dr.getTypeByte()==Encoder.TAG_OCTET_STRING))
 			signature = dr.getFirstObject(true).getBytesAnyType();
+		
 		if (DEBUG) System.out.println("DirRequest:decode2: obtained:"+this);
 		return this;
 	}
@@ -147,10 +161,12 @@ public class DirectoryRequest extends ASNObj{
 			agent_version = dr.getFirstObject(true).getIntsArray();
 		else
 			System.out.println("DirRequest:decode3: no agent_version in version3!!!");
+		
 		if ((dr.isFirstObjectTagByte(DD.TAG_AC2)))
 			globalID = dr.getFirstObject(true).getString(DD.TAG_AC2);
 		if (dr.isFirstObjectTagByte(DD.TAG_AC3))
 			globalIDhash = dr.getFirstObject(true).getString(DD.TAG_AC3);
+		//if(dr.isFirstObjectTagByte(DD.TAG_AC11))instance = dr.getFirstObject(true).getString();
 		if (dr.isFirstObjectTagByte(DD.TAG_AC12))
 			this.only_given_instances = dr.getFirstObject(true).getBoolean(DD.TAG_AC12);
 		else
@@ -180,6 +196,7 @@ public class DirectoryRequest extends ASNObj{
 		if (DEBUG) System.out.println("DirRequest:decode3: tag sign="+dr.getTypeByte());
 		if((version!=0) && (dr.getTypeByte()==Encoder.TAG_OCTET_STRING))
 			signature = dr.getFirstObject(true).getBytesAnyType();
+		
 		if (DEBUG) System.out.println("DirRequest:decode3: tag final="+dr.getTypeByte());
 		if (DEBUG) System.out.println("DirRequest:decode3: obtained:"+this);
 		return this;
@@ -190,6 +207,7 @@ DirectoryRequest = SEQUENCE { -- probably an old version no longer used
  		initiator_globalID PrintableString,
  		UDP_port INTEGER
  }
+
 DirectoryRequest ::= SEQUENCE { -- V3
 	version INTEGER,
 	agent_version [AC1] IMPLICIT SEQUENCE OF INTEGERS,
@@ -208,6 +226,8 @@ DirectoryRequest ::= SEQUENCE { -- V3
 	 */
 	@Override
 	public Encoder getEncoder() {
+		// System.out.println("DirRequest:getEncoder="+this);
+		// Util.printCallPath("?");
 		Encoder enc;
 		switch(version){
 		case 0:
@@ -220,10 +240,24 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			enc = getEncoder_3();
 			break;
 		}
+		/*
+		Util.printCallPath("");
+		System.out.println("DR: enc: "+this);
+		{
+			try {
+				DirectoryRequest dr = new DirectoryRequest().decode(new Decoder(enc.getBytes()));
+				System.out.println("DR: dec: "+dr);				
+			} catch (ASN1DecoderFail e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		*/
 		enc.setASN1Type(getASN1Tag());
 		return enc;
 	}
 	/**
+
 DirectoryRequest ::= SEQUENCE { -- V2
 	version INTEGER,
 	globalID PrintableString,
@@ -257,6 +291,7 @@ DirectoryRequest ::= SEQUENCE { -- V2
 		return enc;
 	}
 	/**
+
 DirectoryRequest ::= SEQUENCE { -- V3
 	version INTEGER,
 	agent_version [AC1] IMPLICIT SEQUENCE OF INTEGERS,
@@ -280,6 +315,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		if (version >= 3) enc.addToSequence(Encoder.getEncoderArray(agent_version).setASN1Type(DD.TAG_AC1));
 		if (globalID != null) enc.addToSequence(new Encoder(globalID, false).setASN1Type(DD.TAG_AC2));
 		if (globalIDhash != null) enc.addToSequence(new Encoder(globalIDhash, false).setASN1Type(DD.TAG_AC3));
+		//if(instance!=null)enc.addToSequence(new Encoder(instance, false).setASN1Type(DD.TAG_AC11));
 		enc.addToSequence(new Encoder(this.only_given_instances).setASN1Type(DD.TAG_AC12));
 		if (branch != null) enc.addToSequence(new Encoder(branch).setASN1Type(DD.TAG_AC13));
 		if ((version != 0)&&(terms_default!=null)) enc.addToSequence(Encoder.getEncoder(terms_default).setASN1Type(DD.TAG_AC5));
@@ -291,10 +327,13 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		if (this.director_udp_port > 0) enc.addToSequence(new Encoder(this.director_udp_port).setASN1Type(DD.TAG_AP17));
 		enc.addToSequence(Encoder.getEncoder(this.req_instances).setASN1Type(DD.TAG_AC14));
 		if (version!=0) enc.addToSequence(new Encoder(signature));
+		//if (_DEBUG) System.out.println("DirRequest:encode3: obtained:"+this);
 		return enc;
 	}
+	
 	public DirectoryRequest(byte[]_buffer, int peek, InputStream is) throws Exception {
 		assert(DirectoryServer.MAX_DR_DA>=peek);
+		//System.out.println("DirectoryRequest(byte[]_buffer..: decode and encode")
 		Decoder dec = new Decoder(_buffer);
 		if(dec.contentLength()>DirectoryServer.MAX_DR_DA) throw new Exception("Max buffer DirectoryServer.MAX_DR_DA="+DirectoryServer.MAX_DR_DA+
 				" is smaller than request legth: "+dec.contentLength());
@@ -315,6 +354,11 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			e.printStackTrace();
 		}
 	}
+	/*
+	public DirectoryRequest(InputStream is) throws Exception {
+		read(buffer, 0, is);
+	}
+	*/
 	/**
 	 * Build request with pre-approved terms for service.
 	 * The terms are read from the "directory_forwarding_terms" table.
@@ -345,7 +389,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		}
 		this.terms_default = getTerms();
 		this.only_given_instances = false;
-		this.signature=null; 
+		this.signature=null; // optional ?
 	}
 	public DirectoryRequest(
 			String target_GID,
@@ -356,6 +400,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			String target_peer_ID, 
 			Address dir_address) {
 		if (DEBUG) System.out.println("DirectoryRequest<init>: GPID="+target_GID+" inst="+target_instance+" iniID="+initiator_GID+" udp="+initiator_udp+" pID="+target_peer_ID+" adr="+dir_address);
+		//this.branch = DD.BRANCH;
 		if (dir_address != null) {
 			this.directory_domain = dir_address.getIP();
 			this.director_udp_port = dir_address.udp_port;
@@ -375,9 +420,9 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		this.req_instances = new ArrayList<DirectoryRequestPerInstance>();
 		DirectoryRequestPerInstance drpi = new DirectoryRequestPerInstance();
 		drpi.instance = target_instance;
-		drpi.instance_terms = getTerms();
+		drpi.instance_terms = getTerms();//new DIR_Terms_Preaccepted[0];
 		this.req_instances.add(drpi);
-		this.signature=null; 
+		this.signature=null; // optional ?
 	}
 	/**
 	* TODO to use this function one has to:
@@ -390,6 +435,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 	 *  Currently will always return V3 until the problem is solved!
 	 */
 	static int getVersionStructure(Address peer_address){
+		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("DirRequest: getVersionStructure: enter "+peer_address.toLongString());
 		int version;
 		if (Util.isVersionNewer(DirectoryAnnouncement.AGENT_VERSION_V1, peer_address.agent_version)) {
@@ -398,6 +444,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			 *   1. make sure that the directory does understand V2 (not yet tested and probably not working)
 			 *   2. Make sure to store the directory agent version/branch in table "peer_address", not done in 2014
 			 */
+			
 			if (DEBUG) System.out.println("DirRequest: getVersionStructure: V2 (setting V3 until you fix it!): "+peer_address);
 			version = V_LAST;
 		}else {
@@ -412,6 +459,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 		Address adrs;
 		if (this._dir_address != null) adrs = this._dir_address;
 		else adrs = new Address(this.dir_address);
+		// check first for terms specific to this directory address
 		sql = "SELECT "+directory_forwarding_terms.fields_terms+
 			" FROM  "+directory_forwarding_terms.TNAME+
 		    " WHERE "+directory_forwarding_terms.peer_ID+" =? " +
@@ -420,8 +468,10 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			" OR  ("+directory_forwarding_terms.dir_domain+" is NULL "+
 			" AND "+directory_forwarding_terms.dir_tcp_port+" is NULL ))"+
 			" AND " + directory_forwarding_terms.priority_type+" = 1 ;";
+			
 		params = new String[]{this.peer_ID, adrs.domain, ""+adrs.tcp_port};
 		if (DEBUG) System.out.println("DirectoryRequest:getTerms: select directory this.dir_address: "+ this.dir_address);
+		
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = Application.getDB().select(sql, params, DEBUG);
@@ -429,7 +479,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			e.printStackTrace();
 			return null;
 		}
-		if (u == null || u.size() == 0) { 
+		if (u == null || u.size() == 0) { // Global directory
 		    if (DEBUG) System.out.println("DirectoryRequest:getTerms: select for Global directory");
 			sql = "SELECT "+directory_forwarding_terms.fields_terms+
 			" FROM  "+directory_forwarding_terms.TNAME+
@@ -445,6 +495,41 @@ DirectoryRequest ::= SEQUENCE { -- V3
 				return null;
 			}	
 		}
+		/*
+		if(u==null || u.size()==0){
+			sql = "SELECT "+directory_forwarding_terms.fields_terms+
+				" FROM  "+directory_forwarding_terms.TNAME+
+			    " WHERE "+directory_forwarding_terms.peer_ID+" =? " +
+				" AND ("+directory_forwarding_terms.dir_addr+" =? "+
+				" OR  "+directory_forwarding_terms.dir_addr+" is NULL )"+
+				" AND "+directory_forwarding_terms.priority+" = 1 ;";
+			params = new String[]{this.peer_ID, this.dir_address};
+			if(DEBUG) System.out.println("DirectoryRequest:getTerms: select directory this.dir_address: "+ this.dir_address);
+			
+			try {
+				u = Application.db.select(sql, params, DEBUG);
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+		if(u==null || u.size()==0){ // Global directory
+		    if(DEBUG) System.out.println("DirectoryRequest:getTerms: select for Global directory");
+			sql = "SELECT "+directory_forwarding_terms.fields_terms+
+			" FROM  "+directory_forwarding_terms.TNAME+
+		    " WHERE "+directory_forwarding_terms.peer_ID+" =? " +
+			" AND "+directory_forwarding_terms.dir_addr+" is NULL "+
+			" AND ("+directory_forwarding_terms.priority+" = 1);";
+			params = new String[]{"0"};
+			try {
+				u = Application.db.select(sql, params, DEBUG);
+			} catch (P2PDDSQLException e) {
+				e.printStackTrace();
+				return null;
+			}	
+		}
+		*/
+		
 		if (u == null || u.size() == 0) return null;
 		DIR_Terms_Preaccepted[] dir_terms = new DIR_Terms_Preaccepted[u.size()];
 		int i=0; 
@@ -455,7 +540,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 				ArrayList<Object> record = directory_tokens.searchForToken(Util.lval(this.peer_ID, -1), ui.peer_instance_ID,
 						 adrs.domain, adrs.tcp_port+"");
 				if (record != null)
-					dir_terms[i].topic = Util.getString(record.get(net.ddp2p.common.table.directory_tokens.PA_TOKEN)); 
+					dir_terms[i].topic = Util.getString(record.get(net.ddp2p.common.table.directory_tokens.PA_TOKEN)); //DD.getTopic(this.globalID, this.peer_ID);//"any topic"; //ask???
 			}
 			else dir_terms[i].topic = null;
 			if( ui.ad)
@@ -465,7 +550,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 				 dir_terms[i].plaintext = 1;
 			else dir_terms[i].plaintext = 0;
 			if(ui.service!=-1)
-				dir_terms[i].services_acceptable = Integer.toString(ui.service).getBytes(); 
+				dir_terms[i].services_acceptable = Integer.toString(ui.service).getBytes(); // check?
 			if(ui.payment ){
 			   dir_terms[i].payment = new DIR_Payment();
 			   dir_terms[i].payment.amount = 0;
@@ -482,6 +567,8 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			Address dir_address, DIR_Terms_Preaccepted[] terms2) {
 		String sql;
 		String[]params;
+		
+		// check first for terms specific to this directory address
 		sql = "SELECT "+directory_forwarding_terms.fields_terms+
 			" FROM  "+directory_forwarding_terms.TNAME+
 		    " WHERE "+directory_forwarding_terms.peer_ID+" =? " +
@@ -491,6 +578,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 					" ORDER BY "+directory_forwarding_terms.priority_type+";";
 		params = new String[]{this.peer_ID, this.dir_address};
 		if(DEBUG) System.out.println("DirectoryRequest:getTerms: select directory this.dir_address: "+ this.dir_address);
+		
 		ArrayList<ArrayList<Object>> u;
 		try {
 			u = Application.getDB().select(sql, params, DEBUG);
@@ -498,7 +586,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			e.printStackTrace();
 			return null;
 		}
-		if(u==null || u.size()==0){ 
+		if(u==null || u.size()==0){ // Global directory
 		    if(DEBUG) System.out.println("DirectoryRequest:getTerms: select for Global directory");
 			sql = "SELECT "+directory_forwarding_terms.fields_terms+
 			" FROM  "+directory_forwarding_terms.TNAME+
@@ -514,11 +602,15 @@ DirectoryRequest ::= SEQUENCE { -- V3
 				return null;
 			}	
 		}
+
 		if(u==null || u.size()==0) return null;
 		ArrayList<DIR_Terms_Preaccepted> _dir_terms = new ArrayList<DIR_Terms_Preaccepted>();
-		DIR_Terms_Preaccepted[] dir_terms; 
+		DIR_Terms_Preaccepted[] dir_terms; // = new DIR_Terms_Preaccepted[u.size()];
 		int i=0; 
-		ArrayList<Object> record = null; 
+		
+		ArrayList<Object> record = null; //TermsPanel.searchForToken(Util.lval(this.peer_ID, -1), ui.peer_instance_ID, 
+		                                 //dir_address.domain, dir_address.tcp_port+"");
+		
 		for(ArrayList<Object> _u :u){
 			D_DirectoryServerPreapprovedTermsInfo ui = new D_DirectoryServerPreapprovedTermsInfo(_u);
 			DIR_Terms_Preaccepted dir_terms_i = new DIR_Terms_Preaccepted();
@@ -527,6 +619,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 					record = directory_tokens.searchForToken(Util.lval(this.peer_ID, -1), ui.peer_instance_ID,
 						 dir_address.domain, dir_address.tcp_port+"");			
 				 dir_terms_i.topic = Util.getString(record.get(net.ddp2p.common.table.directory_tokens.PA_TOKEN));
+				//DD.getTopic(this.globalID, this.peer_ID);//"any topic"; //ask???
 			}
 			else dir_terms_i.topic = null;
 			if( ui.ad)
@@ -536,7 +629,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 				 dir_terms_i.plaintext = 1;
 			else dir_terms_i.plaintext = 0;
 			if(ui.service!=-1)
-				dir_terms_i.services_acceptable = Integer.toString(ui.service).getBytes(); 
+				dir_terms_i.services_acceptable = Integer.toString(ui.service).getBytes(); // check?
 			if(ui.payment ){
 			   dir_terms_i.payment = new DIR_Payment();
 			   dir_terms_i.payment.amount = 0;
@@ -551,6 +644,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			i++;
 		}
 		dir_terms = _dir_terms.toArray(new DIR_Terms_Preaccepted[0]);
+		// should only send the minimum ones...
 		return dir_terms;
 	}
 	/**
@@ -562,6 +656,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 	private boolean sufficientTerms(
 			ArrayList<DIR_Terms_Preaccepted> _dir_terms,
 			DIR_Terms_Requested[] terms2) {
+		// TODO Auto-generated method stub
 		return false;
 	}
 	void read(byte[]buffer, int peek, InputStream is)  throws Exception{
@@ -612,6 +707,7 @@ DirectoryRequest ::= SEQUENCE { -- V3
 			buffer_all = new byte[request_length];
 			Encoder.copyBytes(buffer_all, 0, buffer, bytes);
 			do {
+				//if(is.available()<=0)  throw new Exception("Data not available for length!");;
 				bytes += is.read(buffer_all,bytes,request_length - bytes);
 			} while(bytes < request_length);
 		}

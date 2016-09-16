@@ -1,4 +1,5 @@
 package util.tools;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.hds.DirectoryRequest;
@@ -10,8 +11,10 @@ import net.ddp2p.common.util.DBInterface;
 import net.ddp2p.common.util.GetOpt;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public class DumpOrgPeerHashes {
 	private static final boolean DEBUG = false;
+
 	static public void main(String args[]) {
 		net.ddp2p.java.db.Vendor_JDBC_EMAIL_DB.initJDBCEmail();
 		System.out.println("Running DumpOrgPeerHashes parameters="+args.length);
@@ -19,6 +22,7 @@ public class DumpOrgPeerHashes {
 		try {
 			Application.setDB(new DBInterface(Application.DELIBERATION_FILE));
 			long oLID = -1;
+			
 			char c;
 			opts:
 			while ((c = GetOpt.getopt(args, "d:O:h")) != GetOpt.END) {
@@ -30,7 +34,9 @@ public class DumpOrgPeerHashes {
 							+ "\n\t -d file     Use file as current database (dir database in the same folder)"
 							+ "\n\t -O oLID     organization LID"
 							);
-					System.exit(-1);
+					//printHELP();
+					//break;
+					System.exit(-1);//return;
 				case 'd':
 					if (DEBUG) System.out.println("Option d: "+GetOpt.optarg);
 					Application.DIRECTORY_FILE = GetOpt.optarg;
@@ -51,16 +57,22 @@ public class DumpOrgPeerHashes {
 				default:
 					System.out.println("DumpOrgPeerHashes: unknown option error: \""+c+"\"");
 					break opts;
+					//return;
 				}
 			}
+			
 			if (oLID <= 0) {
+				// System.out.println("DumpOrgPeerHashes: unknown organization error: \""+oLID+"\"");
 				GlobalClaimedDataHashes o = net.ddp2p.common.streaming.GlobalClaimedDataHashes.get();
 				System.out.println("DumpOrgPeerHashes: Globals: \""+o+"\"");
 				return;
 			}
+			
 			D_Organization org = D_Organization.getOrgByLID(oLID, true, false);
 			OrgPeerDataHashes sp = org.getSpecificRequest();
 			System.out.println("DumpOrgPeerHashes: requests: \""+sp+"\"");
+			
+			
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}

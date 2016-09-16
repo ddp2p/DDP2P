@@ -1,11 +1,14 @@
 package net.ddp2p.simulator;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+
 public class InterfaceSupplier {
 	static ArrayList<String> ready_list = new ArrayList<String>();  
 	static ArrayList<String> busy_list = new ArrayList<String>();
+	
 	/**
 	 * Loads a list of IPs for the alias interfaces from a file into ready_list
 	 * 
@@ -18,6 +21,7 @@ public class InterfaceSupplier {
 	    try {
 	        String sCurrentLine;
 	        br = new BufferedReader(new FileReader(interface_list));
+
 	        while ((sCurrentLine = br.readLine()) != null) {
 	        	String[] arr = sCurrentLine.split(" ");
 	        	ready_list.add(arr[1]);
@@ -32,6 +36,7 @@ public class InterfaceSupplier {
 	        }
 	    }
 	}
+	
 	/**
 	 * Moves the first element in ready_list to busy_list
 	 * 
@@ -40,8 +45,10 @@ public class InterfaceSupplier {
 	public static String getVacant() {
 		if (ready_list.size() == 0)
 			return null;
+		
 		String response = ready_list.remove(0);
 		busy_list.add(response);
+		
 		return response;
 	}
 }

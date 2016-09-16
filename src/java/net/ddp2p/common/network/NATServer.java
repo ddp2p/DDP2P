@@ -1,24 +1,32 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2015 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.common.network;
+
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.data.D_Peer;
 import net.ddp2p.common.data.HandlingMyself_Peer;
@@ -31,6 +39,7 @@ import net.ddp2p.common.network.upnp.AddressPortMapping;
 import net.ddp2p.common.network.upnp.Client_UPNP;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	public NATServer() {
 		super("NATServer", true, null);
@@ -45,19 +54,33 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	 */
 	private static final long MAP_MULT = 4; 
 	/**
+
 	 */
 	String m_crt_internal_IP;
 	String m_crt_NAT_IP;
 	String m_crt_external_IP;
 	String address_external;
+	
 	int m_crt_external_port_UDP;
 	int m_crt_external_port_TCP;
 	private boolean stop;
+		
+	/*
+	public void run() {
+		try {
+			_run();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (_DEBUG) System.out.println("NATServer: main: exit");
+	}
+	*/
 	public void _run() {
 		boolean first = true;
 		for (;!stop;) {
 	    	if (DEBUG) System.out.println("NATServer: run: loop");
 			synchronized(this) {
+				//go to sleep
 				try {
 					if (! first) {
 				    	if (DEBUG) System.out.println("NATServer: main: will wait");
@@ -68,6 +91,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 					}
 					first = false;
 				} catch (InterruptedException e) {
+					//e.printStackTrace();
 					return;
 				}
 			}
@@ -78,10 +102,15 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 		    	if (DEBUG) System.out.println("NATServer: run: non_sites="+Util.concat(non_site, " ", "N"));
 				continue;
 			}
+
+			// try upnp	(or pcp?)
 			if (try_getting_address()) {
 		    	if (DEBUG) System.out.println("NATServer: main: will announce");
+								
+				// wait for myself
 				D_Peer me = net.ddp2p.common.data.HandlingMyself_Peer.get_myself_or_null();
 				if (me == null) continue;
+				
 				Address addr = new Address();
 				addr.domain = this.m_crt_external_IP;
 				addr.tcp_port = this.m_crt_external_port_TCP;
@@ -92,19 +121,23 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 				me = D_Peer.getPeerByPeer_Keep(me);
 				if (me == null) continue;
 				try {
-					HandlingMyself_Peer.updateAddress(me, addrs); 
+					HandlingMyself_Peer.updateAddress(me, addrs); // currently adds new addresses besides old, but may want to drop old ones!
 				} catch (P2PDDSQLException e) {
 					me.releaseReference();
 					e.printStackTrace();
 					continue;
 				}
 				me.releaseReference();
+				//on success, add address to myself
 				UDPServer.announceMyselfToDirectories();
 			}
 	    	if (DEBUG) System.out.println("NATServer: main: loop");
+				
 		}
 	}
+
 	private boolean try_getting_address() {
+		
     	if (DEBUG) System.out.println("NATSErver: try_address: Start");
 		if (try_upnp()) {
 	    	if (DEBUG) System.out.println("NATSErver: try_address: upnp End true");
@@ -128,7 +161,9 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
         	if (_DEBUG) System.out.println("NATSErver: try_upnp: No router description");
         	return false;
         }
+
         AddressPortMapping mapping = new AddressPortMapping();
+        
         address_external = client.getExternalIPAddress( mapping );
         if (address_external == null) {
         	if (_DEBUG) System.out.println("NATSErver: try_upnp: No external");
@@ -136,7 +171,9 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
         }
         try {
 			InetAddress address_external_inet =  InetAddress.getByName(address_external);
+			
 			this.m_crt_external_IP = mapping.getExternalIPAddress();
+			
 			if (address_external_inet.isSiteLocalAddress() || address_external_inet.isLinkLocalAddress()) {
 	        	if (_DEBUG) System.out.println("NATServer: try_upnp: Multilevel: "+address_external_inet);
 				return false;
@@ -145,9 +182,11 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			e.printStackTrace();
 			return false;
 		}
+
         String protocol;
         int internalPortToMap;
         int externalPortToMap;
+
         internalPortToMap = Application.getPeerUDPPort();
         if (internalPortToMap <= 0) internalPortToMap = net.ddp2p.common.hds.Server.PORT;
         if (internalPortToMap > 0) {
@@ -158,7 +197,10 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	                , mapping )) return false;
 	        this.m_crt_external_port_UDP = mapping.getExternalPort();
 	        this.m_crt_external_IP = mapping.getExternalIPAddress();
+
+	        //client.getExternalIPMapping(mapping, externalPortToMap, protocol);
         }
+        
         internalPortToMap = Application.getPeerTCPPort();
         if (internalPortToMap <= 0) internalPortToMap = net.ddp2p.common.hds.Server.PORT;
         if (internalPortToMap > 0) {
@@ -169,19 +211,27 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	                , mapping )) return false;
 	        this.m_crt_external_port_TCP = mapping.getExternalPort();
 	        this.m_crt_external_IP = mapping.getExternalIPAddress();
+
+	        //client.getExternalIPMapping(mapping, externalPortToMap, protocol);
         }
+        
+
 		return true;
 	}
 	public static void main(String args[]) {
 		NATServer server = new NATServer();
-		server.run();
+		server.run();//try_upnp();//server.try_natpmp();		
 	}
+
 	public boolean try_natpmp() {
+        // General setup.
         Client_PCP client = new Client_PCP();
         AddressPortMapping mapping = new AddressPortMapping();
-        String natpmpDeviceAddress = address_external; 
+        
+        String natpmpDeviceAddress = address_external; //"10.0.0.1";
         if (natpmpDeviceAddress == null) natpmpDeviceAddress = proposeGateway();
         if (natpmpDeviceAddress == null) return false;
+
         int portToMap = Application.getPeerUDPPort();
         if (portToMap > 0) {
 	        if(client.natpmpMapWrapper( natpmpDeviceAddress
@@ -191,6 +241,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	                ,SLEEP_SEC*MAP_MULT
 	                ,mapping) < 0 ) return false;
         }
+        
         this.m_crt_external_port_UDP = mapping.getExternalPort();
         portToMap = Application.getPeerTCPPort();
         if (portToMap > 0) {
@@ -216,18 +267,21 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
 			if (s instanceof Inet6Address) continue;
 			Inet4Address s4 = (Inet4Address)s;
 			byte[] b = Util.getInetAddressBytes_from_HostName_IP(s4.getHostAddress());
-			if (b[b.length-1] == 1) continue; 
+			if (b[b.length-1] == 1) continue; // likely a virtual network (wmware, android)
 			b[b.length-1] = 1;
 			return Util.concat(b, ".", "");
 		}
 		return null;
 	}
 	public boolean try_pcp() {
+        // General setup.
         Client_PCP client = new Client_PCP();
         AddressPortMapping mapping = new AddressPortMapping();
-        String natpmpDeviceAddress = address_external; 
+        
+        String natpmpDeviceAddress = address_external; //"10.0.0.1";
         if (natpmpDeviceAddress == null) natpmpDeviceAddress = proposeGateway();
         if (natpmpDeviceAddress == null) return false;
+
         int portToMap = Application.getPeerUDPPort();
         if (portToMap > 0) {
         	if (client.pcpMap( natpmpDeviceAddress
@@ -239,6 +293,7 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
                 ,mapping ) < 0) return false;
         }
         this.m_crt_external_port_UDP = mapping.getExternalPort();
+        
         portToMap = Application.getPeerTCPPort();
         if (portToMap > 0) {
         	if (client.pcpMap( natpmpDeviceAddress
@@ -253,8 +308,10 @@ public class NATServer extends net.ddp2p.common.util.DDP2P_ServiceThread {
         this.m_crt_external_IP = mapping.getExternalIPAddress();
         return true;
 	}
+
 	public void turnOff() {
 		stop = true;
 		this.interrupt();
 	}
 }
+

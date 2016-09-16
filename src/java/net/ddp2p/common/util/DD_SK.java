@@ -1,9 +1,12 @@
 package net.ddp2p.common.util;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -24,6 +27,7 @@ import net.ddp2p.common.data.D_Vote;
 import net.ddp2p.common.data.D_Witness;
 import net.ddp2p.common.streaming.RequestData;
 import net.ddp2p.common.streaming.WB_Messages;
+
 class SK_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
 	private static final boolean DEBUG = false;
 	DD_SK ds;
@@ -57,6 +61,28 @@ class SK_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
     			e.printStackTrace();
     		}
      	}
+    	/*
+    	for (D_Peer p : ds.peer) {
+			if (DEBUG) System.out.println("WB_Messages: store: handle peer: "+p);
+			if (! p.verifySignature()) {
+				if (DEBUG) System.out.println("WB_Messages: store: failed signature for: "+p);
+				continue;
+			}
+			p.fillLocals(null, null);
+			if (DEBUG) System.out.println("WB_Messages: store: nou="+p);
+			D_Peer old = D_Peer.getPeerByGID_or_GIDhash(p.getGID(), null, true, true, true, ds.sender);
+			if (DEBUG) System.out.println("WB_Messages: store: old="+old);
+			if (old.loadRemote(p, null, null)) {
+				if (old.dirty_any()) {
+					old.setArrivalDate();
+					old.storeRequest();
+					
+					config.Application_GUI.inform_arrival(old, null);
+				}
+			}
+			old.releaseReference();
+    	}
+    	*/
     	WB_Messages wm = new WB_Messages();
     	wm.peers.addAll(ds.peer);
     	if (ds.sender != null) wm.peers.add(0, ds.sender);
@@ -69,20 +95,24 @@ class SK_SaverThread extends net.ddp2p.common.util.DDP2P_ServiceThread {
       	wm.sign.addAll(ds.vote);
       	wm.news.addAll(ds.news);
       	wm.tran.addAll(ds.tran);
+      	
 		Hashtable<String, RequestData> missing_sr = new Hashtable<String, RequestData>();
 		Hashtable<String, RequestData> obtained_sr = new Hashtable<String, RequestData>();
 		HashSet<String> orgs = new HashSet<String>();
 		String dbg_msg = __("Importing manually!");
-		D_Peer myself = ds.sender; 
+		D_Peer myself = ds.sender; //data.HandlingMyself_Peer.get_myself_or_null();
 		WB_Messages.store(null, myself, wm, missing_sr, obtained_sr, orgs, dbg_msg);
 	}
 }
+
 public class DD_SK extends ASNObj implements StegoStructure {
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	public final int V0 = 0;
 	int version = V0;
+	
 	public D_Peer sender;
+	
 	public ArrayList<DD_SK_Entry> sk = new ArrayList<DD_SK_Entry>();
 	public ArrayList<D_Peer> peer = new ArrayList<D_Peer>();
 	public ArrayList<D_Organization> org = new ArrayList<D_Organization>();
@@ -95,6 +125,7 @@ public class DD_SK extends ASNObj implements StegoStructure {
 	public ArrayList<D_News> news = new ArrayList<D_News>();
 	public ArrayList<D_Translations> tran = new ArrayList<D_Translations>();
 	private byte[] signature;
+	
 	public boolean empty() {
 		return sk.size() == 0 
 				&& peer.size() == 0
@@ -108,7 +139,9 @@ public class DD_SK extends ASNObj implements StegoStructure {
 				&& news.size() == 0
 				&& tran.size() == 0
 				&& sender == null;
+		// return false;
 	}
+	
 	public String toString() {
 		String result = "";
 		result += "SK[: sk="+Util.concat(sk, ";;;", "NULL");
@@ -124,22 +157,27 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		result += "]";
 		return result;
 	}
+
 	@Override
 	public void save() throws P2PDDSQLException {
 		if (DEBUG) System.out.println("DD_SK: save");
 		new SK_SaverThread(this).start();
     	if (true) {
     		Application_GUI.warning(__("Work Launched to Add Objects:")+" \n"+this.getNiceDescription(), __("Import DD_SK"));
+    		//return;
     	}
 	}
+	
 	@Override
 	public void saveSync() throws P2PDDSQLException {
 		if (DEBUG) System.out.println("DD_SK: save");
 		new SK_SaverThread(this).run();
     	if (false) {
     		Application_GUI.warning(__("Work Launched to Add Objects:")+" \n"+this.getNiceDescription(), __("Import DD_SK"));
+    		//return;
     	}
 	}
+
 	@Override
 	public void setBytes(byte[] asn1) throws ASN1DecoderFail {
 		if (DEBUG) System.out.println("DD_SK: setBytes "+asn1.length);
@@ -147,10 +185,12 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		if (this.empty()) throw new net.ddp2p.ASN1.ASNLenRuntimeException("Empty object!");
 		if (DEBUG) System.out.println("DD_SK: setBytes");
 	}
+
 	@Override
 	public byte[] getBytes() {
 		return encode();
 	}
+
 	@Override
 	public String getNiceDescription() {
 		String result = "";
@@ -172,10 +212,12 @@ public class DD_SK extends ASNObj implements StegoStructure {
 			result += " News=["+_news.getTitleStrOrMy()+"]";
 		for (D_Vote _vote : vote)
 			result += " Vote=["+_vote.getChoice()+" "+_vote.getMotionGID()+"]";
+		// to implement
 		if (tran.size() > 0) result += " tran="+Util.concat(tran, ",,,", "NULL");
 		result += "]";
 		return result;
 	}
+
 	@Override
 	public String getString() {
 		String result = "";
@@ -192,10 +234,13 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		result += "]";
 		return result;
 	}
+
 	@Override
 	public boolean parseAddress(String content) {
+		// TODO Auto-generated method stub
 		return false;
 	}
+
 	@Override
 	public short getSignShort() {
 		if(DEBUG) System.out.println("DD_SK: get_sign=:"+DD.STEGO_SK);
@@ -204,6 +249,7 @@ public class DD_SK extends ASNObj implements StegoStructure {
 	public static BigInteger getASN1Tag() {
 		return new BigInteger(DD.getPositive(DD.STEGO_SK)+"");
 	}
+
 	/**
 	 * sender has its own signature, so needs not be signed. Its PK has to match anyhow.
 	 * @return
@@ -224,6 +270,7 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		if (tran.size() > 0) enc.addToSequence(Encoder.getEncoder(tran).setASN1Type(DD.TAG_AC10));
 		return enc;
 }
+
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = getSignEncoder();
@@ -287,6 +334,7 @@ public class DD_SK extends ASNObj implements StegoStructure {
 			signature = null;
 			return;
 		}
+		//signature = null;
 		byte[] msg = this.getSignEncoder().getBytes();
 		signature = Util.sign(msg, me.getSK());
 		this.sender = me;
@@ -301,6 +349,7 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		byte[] msg = this.getSignEncoder().getBytes();
 		return Util.verifySign(msg, sender.getPK(), signature);
 	}
+	
 	public static void addOrganizationToDSSK(DD_SK d_SK, D_Organization crt_org) {
 		if (crt_org == null) return;
 		for (D_Organization c : d_SK.org) {
@@ -316,6 +365,7 @@ public class DD_SK extends ASNObj implements StegoStructure {
 			if (n.getLID() == neighborhood.getLID()) return;
 		}
 		d_SK.neigh.add(neighborhood);
+		//new D_Witness(a,b,c,e);// must avoid recursive adding of neighborhoods from constituents
 	}
 	public static void addConstituentToDSSK(DD_SK d_SK, D_Constituent constituent) {
 		if (constituent == null) return;
@@ -323,15 +373,19 @@ public class DD_SK extends ASNObj implements StegoStructure {
 			if (c == constituent) return;
 			if (c.getLID() == constituent.getLID()) return;
 		}
+		
 		d_SK.constit.add(constituent);
 		addOrganizationToDSSK(d_SK, constituent.getOrganization());
+		
 		constituent.loadNeighborhoods(D_Constituent.EXPAND_ALL);
 		D_Neighborhood[] n = constituent.getNeighborhood();
 		if (n != null) {
 			for (D_Neighborhood _n : n) {
+				// could also add a witness for the neighborhood (with its source... if it is me)
 				addNeighborhoodToDSSK(d_SK, _n);
 			}
 		}
+		//constituent.setNeighborhood(null);
 	}
 	/**
 	 * This does not add a vote
@@ -340,14 +394,18 @@ public class DD_SK extends ASNObj implements StegoStructure {
 	 */
 	public static void addJustificationToDSSK(DD_SK d_SK, D_Justification crt_justification) {
 		if (crt_justification != null) {
+			// skip if no GID
 			String jGID = crt_justification.getGID();
 			if (jGID == null) return;
+			// skip if already in
 			for (D_Justification old_j : d_SK.just) {
 				if (Util.equalStrings_and_not_null(old_j.getGID(), jGID)) return;
 			}
+			
 			d_SK.just.add(crt_justification);
 			addConstituentToDSSK(d_SK, crt_justification.getConstituentForce());
 			addMotionToDSSK(d_SK, crt_justification.getMotionForce());
+			
 		}
 	}
 	/**
@@ -368,23 +426,34 @@ public class DD_SK extends ASNObj implements StegoStructure {
 		}		
 	}
 	public static boolean addMotionToDSSK(DD_SK d_SK, D_Motion crt_motion) {
+		
 		if (crt_motion == null) return false;
+		// skip if no GID
 		String mGID = crt_motion.getGID();
 		if (mGID == null) return false;
+		// skip if already in
 		for (D_Motion old_m : d_SK.moti) {
 			if (Util.equalStrings_and_not_null(old_m.getGID(), mGID)) return false;
 		}
+		
 		D_Organization org = crt_motion.getOrganization();
 		if (org == null) return false;
+		
 		d_SK.moti.add(crt_motion);
+		
 		D_Constituent constituent = crt_motion.getConstituent();
 		addConstituentToDSSK(d_SK, constituent);
+		
 		addOrganizationToDSSK(d_SK, org);
+		
+		// identify myself
 		D_Constituent crt_constituent = DD.getCrtConstituent(crt_motion.getOrganizationLID());
 		long _constituentID_myself = -1;
 		if (crt_constituent != null) {
 			_constituentID_myself = crt_constituent.getLID();
 		}
+		
+		// find a vote by me or supporters
 		D_Vote my_vote = null;
 		if (_constituentID_myself > 0) {
 			try {
@@ -393,20 +462,24 @@ public class DD_SK extends ASNObj implements StegoStructure {
 				e.printStackTrace();
 			}
 		}
+		// if I did not vote this, find any support by someone else
 		if (my_vote == null) {
 			my_vote = D_Vote.getOneBroadcastedSupportForMotion(crt_motion, null, crt_motion.getSupportChoice());
 		}
+		
 		if (my_vote != null) {
 			addVoteIfNew(d_SK, my_vote);
-			addConstituentToDSSK(d_SK, my_vote.getConstituent_force());
+			addConstituentToDSSK(d_SK, my_vote.getConstituent_force());//crt_constituent);
 			D_Justification j = my_vote.getJustificationFromObjOrLID();
 			addJustificationToDSSK(d_SK, j);
 		}
 		return true;
 	}
+
 	private static void addVoteIfNew(DD_SK d_SK, D_Vote my_vote) {
 		String vGID = my_vote.getGID();
 		if (vGID == null) return;
+		// skip if already in
 		for (D_Vote old_v : d_SK.vote) {
 			if (Util.equalStrings_and_not_null(old_v.getGID(), vGID)) return;
 		}

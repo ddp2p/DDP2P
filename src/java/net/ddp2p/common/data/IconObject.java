@@ -1,8 +1,10 @@
 package net.ddp2p.common.data;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.DD;
+
 /**
  * A class to describe ASN serializable icons to be stored with a constituent
  * @author msilaghi
@@ -18,6 +20,7 @@ public class IconObject extends net.ddp2p.ASN1.ASNObj {
 		setID(_id);
 		setURL(_url);
 	}
+	//@Override
 	public static byte getASN1Type() {
 		return DD.TAG_AC10;
 	}
@@ -29,6 +32,7 @@ public class IconObject extends net.ddp2p.ASN1.ASNObj {
 		if (getImage() != null) enc.addToSequence(new Encoder(getImage()).setASN1Type(DD.TAG_AP2));
 		return enc.setASN1Type(getASN1Type());
 	}
+
 	@Override
 	public IconObject decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();

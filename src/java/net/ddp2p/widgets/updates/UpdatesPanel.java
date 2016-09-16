@@ -1,4 +1,5 @@
 package net.ddp2p.widgets.updates;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
@@ -9,6 +10,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
+
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
@@ -21,6 +23,7 @@ import javax.swing.JRadioButton;
 import javax.swing.SwingConstants;
 import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
@@ -32,6 +35,7 @@ import net.ddp2p.widgets.components.GUI_Swing;
 import net.ddp2p.widgets.dir_management.DirPanel;
 import net.ddp2p.widgets.updatesKeys.*;
 import static net.ddp2p.common.util.Util.__;
+
 public class UpdatesPanel extends JPanel implements ActionListener, FocusListener {
     private static final boolean DEBUG = false;
 	String numberString=__("Number");
@@ -47,7 +51,7 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 	public JCheckBox absoluteCheckBox =  new JCheckBox();
 	private UpdatesKeysTable updateKeysTable;
 	public UpdatesPanel() {
-    	super( new GridLayout(2,1));
+    	super( new GridLayout(2,1));// hold two tables (UpdateTatble+QualitiesTable)
     	numberTxt.setText(""+DD.UPDATES_TESTERS_THRESHOLD_COUNT_DEFAULT);
     	percentageTxt.setText(""+DD.UPDATES_TESTERS_THRESHOLD_WEIGHT_DEFAULT);
     	init();
@@ -57,21 +61,30 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 		JButton recalculateTestersRating = new JButton(__("Recalculate Testers Rating"));
 		JButton ConsultRecommender = new JButton(__("Consult the Recommender System"));
 		JButton sendRecommendations = new JButton(__("Send Recommendations"));
+	   
 		JPanel testerControls = new JPanel(new BorderLayout());
+		//testerControls.setBackground(Color.DARK_GRAY);
 		testerControls.add(buildThresholdPanel() , BorderLayout.WEST);
+		
 		JPanel buttonsPanel = new JPanel();
 		buttonsPanel.add(recalculateTestersRating);
 		recalculateTestersRating.addActionListener(this);
 		recalculateTestersRating.setActionCommand("recalculate");
+		
 		buttonsPanel.add(sendRecommendations);
 		buttonsPanel.setBackground(Color.DARK_GRAY);
 		sendRecommendations.addActionListener(this);
 		sendRecommendations.setActionCommand("sendRecommendations");
+		
 		buttonsPanel.add(ConsultRecommender);
 		buttonsPanel.setBackground(Color.DARK_GRAY);
 		ConsultRecommender.addActionListener(this);
 		ConsultRecommender.setActionCommand("Consult");
+		
+		
+		
 		testerControls.add(buttonsPanel, BorderLayout.EAST);
+		 
 		return testerControls;
 	}
    public JPanel buildAutoManualPanel() {
@@ -83,6 +96,7 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 	}  
    	   JLabel ratingL = new JLabel("Testers Rating  : ");
    	   ratingL.setFont(new Font("Times New Roman",Font.BOLD,14));
+   	
        manualRatingButton.setMnemonic(KeyEvent.VK_M);
        manualRatingButton.setActionCommand(manualRatingString);
        manualRatingButton.setSelected(!autoSeleced);
@@ -90,45 +104,62 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
        manualRatingButton.setFont(new Font(null,Font.BOLD,12));
        JLabel spaceL = new JLabel("       ");
        JLabel space2L = new JLabel("       ");
+   	
        autoRatingButton.setMnemonic(KeyEvent.VK_A);
        autoRatingButton.setActionCommand(autoRatingString);
        autoRatingButton.setSelected(autoSeleced);
        autoRatingButton.setFont(new Font(null,Font.BOLD,12));
        autoRatingButton.addActionListener(this);
+       
        JPanel autoManualPanel = new JPanel();
        autoManualPanel.add(ratingL);
        autoManualPanel.add(autoRatingButton);
        autoManualPanel.add(spaceL);   
        autoManualPanel.add(manualRatingButton);
        autoManualPanel.add(space2L);
+ 
+   	
+   	//Group the radio buttons.
        ButtonGroup group = new ButtonGroup();
        group.add(manualRatingButton);
        group.add(autoRatingButton);
+
+   	
    	JPanel autoManualPanel2 = new JPanel(new BorderLayout());
    	autoManualPanel2.add(autoManualPanel,BorderLayout.WEST );
    	return autoManualPanel2;
    }
     public JPanel buildThresholdPanel() {
+    
     	JLabel thresholdL = new JLabel("Threshold  : ");
     	thresholdL.setFont(new Font("Times New Roman",Font.BOLD,14));
+    	
         numberButton.setMnemonic(KeyEvent.VK_N);
         numberButton.setActionCommand(numberString);
         numberButton.setSelected(true);
         numberButton.addActionListener(this);
         numberButton.setFont(new Font(null,Font.BOLD,12));
         JLabel spaceL = new JLabel("       ");
+//    	numberL.setFont(new Font(null,Font.BOLD,12));
+    	
         numberTxt.addActionListener(this);
         numberTxt.addFocusListener(this);
         numberTxt.setActionCommand(numberString);
     	JPanel thresholdPanel = new JPanel();
+    	
     	thresholdPanel.add(thresholdL);
     	thresholdPanel.add(numberButton);
     	thresholdPanel.add(numberTxt);
     	thresholdPanel.add(spaceL);
+    	
+    	
         percentageButton.setMnemonic(KeyEvent.VK_P);
         percentageButton.setActionCommand(percentageString);
         percentageButton.addActionListener(this);
+        
         JLabel percentageL = new JLabel(" %");
+//    	percentageL.setFont(new Font(null,Font.BOLD,12));
+    	
     	percentageTxt.addActionListener(this);
     	percentageTxt.addFocusListener(this);
     	percentageTxt.setActionCommand(percentageString);
@@ -136,15 +167,20 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
     	thresholdPanel.add(percentageButton);
     	thresholdPanel.add(percentageTxt);
     	thresholdPanel.add(percentageL);
+    	
+    	//Group the radio buttons.
         ButtonGroup group = new ButtonGroup();
         group.add(numberButton);
         group.add(percentageButton);
+
+    	
     	JPanel thresholdPanel2 = new JPanel(new BorderLayout());
     	thresholdPanel2.add(thresholdPanel,BorderLayout.WEST );
     	return thresholdPanel2;
     }
     public void init(){
         JPanel updatePanel = new JPanel(new BorderLayout());
+        
         JLabel updateMirrorsTitleL = new JLabel(" Update Mirrors Preferences ");
         updateMirrorsTitleL.setFont(new Font("Times New Roman",Font.BOLD,20));
         updateMirrorsTitleL.setHorizontalAlignment(SwingConstants.CENTER);
@@ -153,14 +189,20 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
         mirrorsTitilePanel.add(new JPanel(), BorderLayout.NORTH);
         mirrorsTitilePanel.add(updateMirrorsTitleL);
         mirrorsTitilePanel.add(new JPanel(), BorderLayout.SOUTH);
+        
+        
     	updatePanel.add(mirrorsTitilePanel,BorderLayout.NORTH );
+    	
     	UpdatesTable updateTable = new UpdatesTable(this);
     	JPanel updateTablePanel = new JPanel(new BorderLayout());
 		updateTablePanel.add(updateTable.getTableHeader(),BorderLayout.NORTH);
 		updateTablePanel.add(updateTable.getScrollPane());
         updatePanel.add(updateTablePanel);
+        
         updatePanel.add(new JPanel(), BorderLayout.SOUTH);
         this.add(updatePanel);
+        
+        
         JPanel updateKeysPanel = new JPanel(new BorderLayout());
         JLabel updateKeysTitleL = new JLabel(" Testers Preferences ");
         updateKeysTitleL.setHorizontalAlignment(SwingConstants.CENTER);
@@ -171,6 +213,7 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
         titilePanel.add(buildAutoManualPanel(), BorderLayout.SOUTH);
     	updateKeysTitleL.setFont(new Font("Times New Roman",Font.BOLD,20));
     	updateKeysPanel.add(titilePanel,BorderLayout.NORTH );
+    	
         updateKeysTable = new UpdatesKeysTable();
     	JPanel updateKeysTablePanel = new JPanel(new BorderLayout());
 		updateKeysTablePanel.add(updateKeysTable.getTableHeader(),BorderLayout.NORTH);
@@ -178,9 +221,11 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
         updateKeysPanel.add(updateKeysTablePanel );
         updateKeysPanel.add(buildTesterControlsPanel(), BorderLayout.SOUTH);
         this.add(updateKeysPanel);
+            
     }
     @Override
     public void focusGained(FocusEvent e) {
+     
     }
     @Override
     public void focusLost(FocusEvent e) {
@@ -190,7 +235,9 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
            handleTxtFiled(percentageString);
     }
     public void handleTxtFiled(String txtType){
+    //	System.out.println("e.getSource() instanceof JTextField : "+ numberTxt.getText());
        	if(txtType.equals(numberString)){
+       		// System.out.println("numberTxt.getText() : "+ numberTxt.getText());
     		try {
     			String text = numberTxt.getText();
  				try{if(text != null)text = ""+Integer.parseInt(text);}
@@ -203,6 +250,7 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 			}
     	}
        	if(txtType.equals(percentageString)){
+      // 		System.out.println("percentageTxt.getText() : "+percentageTxt.getText());
     		try {
     			String text = percentageTxt.getText();
  				try{if(text != null)text = ""+Float.parseFloat(text);}
@@ -235,11 +283,13 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
         			refreshRecommendations();
         			updateKeysTable.getModel().update(null, null);
         			updateKeysTable.repaint();
+        			
         		}
         		if(r.getActionCommand().equals(manualRatingString)&& r.isSelected()){
         			DD.setAppBoolean(DD.AUTOMATIC_TESTERS_RATING_BY_SYSTEM, false);
         			updateKeysTable.setColumnBackgroundColor(Color.WHITE);
         			updateKeysTable.getModel().update(null, null);
+        			//updateKeysTable.repaint();
         		}
         	}
         	if(e.getSource() instanceof JTextField){
@@ -254,6 +304,8 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
         		}else if(b.getActionCommand().equals("sendRecommendations")){
         			sendRecommendations();
         		}
+        		
+        			
         	}
         }
     	private void sendRecommendations() {
@@ -261,9 +313,13 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 				Application_GUI.warning("You need to click on recalculate ratings first!!", "No Data to Show");
 				return;
 			}
+    		//RecommenderOfTesters.runningRecommender.recommendTesters();
     		RecommendationOfTestersSender.announceRecommendation(RecommenderOfTesters.knownTestersList_global, RecommenderOfTesters.usedTestersList_global);
+			
 		}
 		private void refreshRecommendations() {
+//    		RecommenderOfTesters rt = new RecommenderOfTesters(false);
+//			rt.recommendTesters();
 			if (RecommenderOfTesters.runningRecommender == null) {
 				Application_GUI.warning("Recommender Process Not Started Yet!", "Failure to Refresh Recommender Data!");
 				return;
@@ -271,17 +327,39 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 			RecommenderOfTesters.runningRecommender.recommendTesters();
 			updateKeysTable.getModel().update(null, null);
 			updateKeysTable.repaint();
+			
 		}
 		private void showConsultingPanel() {
+			//if(knownTestersList == null)
+			//	RecommenderOfTesters.startRecommenders(true);
+//			if(knownTestersList == null){
+//				if(!DEBUG) System.out.println("UpdatesPanel:showConsultingPanel(): knownTestersList = null ?");
+//				return;
+//			}
+//			if(usedTestersList == null){
+//				if(!DEBUG) System.out.println("UpdatesPanel:showConsultingPanel(): usedTestersList = null ?");
+//				return;
+//			}
+//			
+//			if(scoreMatrix == null){
+//				if(!DEBUG) System.out.println("UpdatesPanel:showConsultingPanel(): scoreMatrix = null ?");
+//				return;
+//			}
+//			RecommenderOfTesters rt = new RecommenderOfTesters(false);
+//			rt.recommendTesters();
+//			
 			if(RecommenderOfTesters.knownTestersList_global == null){
 				Application_GUI.warning("You need to click on recalculate ratings first!!", "No Data to Show");
 				return;
 			}
+			
 			TestersListsTable knownTestersTable = new TestersListsTable(new TestersListsModel(RecommenderOfTesters.knownTestersList_global)) ;
 			TestersListsTable usedTestersTable = new TestersListsTable(new TestersListsModel(RecommenderOfTesters.usedTestersList_global)) ;
 			RecommendationsTable recommendationsTable = new RecommendationsTable(new RecommendationsModel(RecommenderOfTesters.scoreMatrix_global, RecommenderOfTesters.sourcePeers_global, RecommenderOfTesters.receivedTesters_global)) ;
 			ConsultingRecommendationsPanel p = new ConsultingRecommendationsPanel(knownTestersTable, usedTestersTable, recommendationsTable);
+			//p.setSize(200, 300);
 			JOptionPane.showMessageDialog(null,p,"Consulting Recommendations", JOptionPane.DEFAULT_OPTION, null);
+			//JOptionPane.showMessageDialog(null,p);
     	}
 		public static void main(String args[]) {
 		JFrame frame = new JFrame();
@@ -294,10 +372,12 @@ public class UpdatesPanel extends JPanel implements ActionListener, FocusListene
 			frame.setSize(800,300);
 			frame.setVisible(true);
 		} catch (Exception e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 		public JTable getTestersTable() {
 			return this.updateKeysTable;
 		}
+    
 }

@@ -1,24 +1,33 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Khalid Alhamed and Marius Silaghi
 		Author: Khalid Alhamed and Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.data;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
+
+
+// comes with a new VersionInfo
 public class D_SoftwareUpdatesReleaseInfoByTester extends ASNObj{
 	public static final String TEST_SEP = ";";
 	public static boolean DEBUG = false;
@@ -26,7 +35,7 @@ public class D_SoftwareUpdatesReleaseInfoByTester extends ASNObj{
 	public String public_key_hash;
 	public float[] tester_QoT;
 	public float[] tester_RoT;
-	public byte[] signature; 
+	public byte[] signature; // of signed structure
 	public static D_SoftwareUpdatesReleaseInfoByTester[] reconstructArrayFromString(String s) throws ASN1DecoderFail {
 		if (s==null) return null;
 		byte[] data = net.ddp2p.common.util.Base64Coder.decode(s);
@@ -50,6 +59,7 @@ public class D_SoftwareUpdatesReleaseInfoByTester extends ASNObj{
 	public static String encodeArray(D_SoftwareUpdatesReleaseInfoByTester[] a) {
 		if (a == null)	return null;
 		Encoder enc = Encoder.getEncoder(a);
+	//	enc.setASN1Type(getASNType());
 		byte[] b = enc.getBytes();
 		return new String(net.ddp2p.common.util.Base64Coder.encode(b));
 	}

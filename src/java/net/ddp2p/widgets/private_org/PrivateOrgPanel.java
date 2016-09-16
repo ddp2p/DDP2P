@@ -1,4 +1,5 @@
 package net.ddp2p.widgets.private_org;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.GridLayout;
@@ -9,6 +10,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
+
 import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -23,6 +25,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.OrgListener;
 import net.ddp2p.common.config.PeerListener;
@@ -36,16 +39,26 @@ import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
 import net.ddp2p.widgets.app.MainFrame;
 import net.ddp2p.widgets.components.GUI_Swing;
+
 import java.util.ArrayList; 
+
+//import data.D_TermsInfo;
+
+
 import static net.ddp2p.common.util.Util.__;
+
 @SuppressWarnings("serial")
 public class PrivateOrgPanel extends JPanel implements  OrgListener{
+	
 	private JLabel org_label = new JLabel("");
 	private static final boolean _DEBUG = true;
 	static boolean DEBUG = false;
+	
 	PrivateOrgTable privateOrgTable;
+	
 	public JScrollPane privateOrgTableScroll;
 	private D_Organization organization = null;
+
 	/**
 	 * Listener to changes in widget.org.Orgs
 	 */
@@ -70,11 +83,14 @@ public class PrivateOrgPanel extends JPanel implements  OrgListener{
     	MainFrame.status.addOrgStatusListener(this);
     	if(organization==null)
         	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: null org");    	
+    	//organization = Application.orgs.getCurrentOrg();
     	if(organization==null)
         	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: null org");    	
+     	//org_label.setText(getLabelText());
     	new LabelUpdater();
     	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: done");    	
 	}
+
 	/**
 	 * This uses the org object rather than status
 	 * Listener to changes in widget.org.Orgs
@@ -89,8 +105,10 @@ public class PrivateOrgPanel extends JPanel implements  OrgListener{
     	GUI_Swing.orgs.addOrgListener(this);
     	if(organization==null)
         	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: null org");    	
+    	//organization = Application.orgs.getCurrentOrg();
     	if(organization==null)
         	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: null org");    	
+     	//org_label.setText(getLabelText());
     	new LabelUpdater();
     	if(DEBUG)System.out.println("PrivateOrgPanel:addOrgListener: done");    	
 	}
@@ -105,6 +123,8 @@ public class PrivateOrgPanel extends JPanel implements  OrgListener{
     public PrivateOrgPanel() {
     	super( new BorderLayout());
     	if(DEBUG)System.out.println("PrivateOrgPanel:<init>: start");    	
+    	//if(organization!=null) _organizationID = organization._organization_ID;
+    	//if(_organizationID <0)return;
      	org_label.setText(getLabelText());
     	init();
     	if(DEBUG)System.out.println("PrivateOrgPanel:<init>: done");
@@ -116,6 +136,9 @@ public class PrivateOrgPanel extends JPanel implements  OrgListener{
 	    	privateOrgTable = new PrivateOrgTable(Application.getDB(), this);
 	    	privateOrgTableScroll = privateOrgTable.getScrollPane();
 	    	add(privateOrgTableScroll);
+			//addMouseListener(privateOrgTable);
+			//privateOrgTableScroll.addMouseListener(privateOrgTable);
+	    	//add(privateOrgTable);
     	}catch(Exception e){
     		e.printStackTrace();
     	}
@@ -125,8 +148,10 @@ public class PrivateOrgPanel extends JPanel implements  OrgListener{
     	String result;
     	if((organization  == null) || (organization.getName() == null)) return __("No current organization!");
     	result = __("Current Organization:")+" \""+organization.getName()+"\"";
+    	//result += " || " + _("I am :")+" "+tree.getModel().getConstituentMyselfName();
 		return result;
 	}
+	
     private Component getNorthComponent() {
     	JPanel header = new JPanel();
      	header.setLayout(new BorderLayout());
@@ -141,11 +166,13 @@ public class PrivateOrgPanel extends JPanel implements  OrgListener{
 			organization = D_Organization.getOrgByLID_NoKeep(orgID, true);
 			if(_DEBUG)System.out.println("PrivateOrgPanel:orgUpdate: null object for valid ID");
 		}
+     	//org_label.setText(getLabelText());	
     	new LabelUpdater();
      	if(this.privateOrgTable!=null)
      		this.privateOrgTable.setOrg(org);
      	else{
         	if(_DEBUG)System.out.println("PrivateOrgPanel:orgUpdate: null");
+
      	}
     	if(DEBUG)System.out.println("PrivateOrgUpdate:orgUpdate: done");
 	}
@@ -164,4 +191,6 @@ public class PrivateOrgPanel extends JPanel implements  OrgListener{
 	public Component getTable() {
 		return privateOrgTable;
 	}
+
+    
 }

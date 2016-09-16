@@ -1,8 +1,10 @@
 package net.ddp2p.common.data;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -16,15 +18,18 @@ import net.ddp2p.common.hds.Address;
 import net.ddp2p.common.plugin_data.D_PluginInfo;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public class D_PeerInstance extends ASNObj {
 	static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	private String peer_instance_ID;
 	private long peer_ID;
 	private String _peer_ID;
+	
 	public String peer_instance;
 	public String branch;
 	public String agent_version;
+	
 	private String plugin_info;
 	private ASNPluginInfo[] plugin_info_array;
 	private String _last_sync_date;
@@ -35,18 +40,22 @@ public class D_PeerInstance extends ASNObj {
 	private Calendar last_contact_date;
 	private int objects_synchronized;
 	public boolean createdLocally = false;
-	public ArrayList<Address> addresses = new ArrayList<Address>(); 
-	public ArrayList<Address> addresses_orig = new ArrayList<Address>(); 
+	
+	public ArrayList<Address> addresses = new ArrayList<Address>(); // addresses of this instance (socket)
+	public ArrayList<Address> addresses_orig = new ArrayList<Address>(); // addresses of this instance (socket)
 	public Calendar creation_date;
 	public String _creation_date;
 	public byte[] signature;
+
 	public boolean dirty = false;
+
 	/**
 	 * Not yet implemented flags
 	 */
 	public boolean deleted = false;
 	private long _peer_instance_ID;
 	private int version = 1;
+	
 	public String toString() {
 		String result = "";
 		result += " v="+version;
@@ -69,7 +78,17 @@ public class D_PeerInstance extends ASNObj {
 	}
 	public ASNPluginInfo[] getPluginInfo() {
 		return get_PluginInfoArray();
+//		try {
+//			ASNPluginInfo[] _info = new Decoder(Util.byteSignatureFromString(plugin_info)).getSequenceOf(ASNPluginInfo.getASN1Type(), new ASNPluginInfo[0], new ASNPluginInfo());
+//			ASNPluginInfo[] result = _info; //"+Util.concat(_info, ":");
+//			return result;
+//		} catch (ASN1DecoderFail e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}		
+//		return null;
 	}
+
 	static String sql_peer = 
 			"SELECT "+net.ddp2p.common.table.peer_instance.fields+
 			" FROM "+net.ddp2p.common.table.peer_instance.TNAME+
@@ -78,6 +97,22 @@ public class D_PeerInstance extends ASNObj {
 			"SELECT "+net.ddp2p.common.table.peer_instance.fields+
 			" FROM "+net.ddp2p.common.table.peer_instance.TNAME+
 			" WHERE "+net.ddp2p.common.table.peer_instance.peer_ID+" = ? AND "+net.ddp2p.common.table.peer_instance.peer_instance+"=?;";
+	/*
+	static void store(String _peer_ID, ArrayList<D_PeerInstance> instances){
+		if(_peer_ID==null) return;
+		try {
+			Application.db.delete(table.peer_instance.TNAME,
+					new String[]{table.peer_instance.peer_ID},
+					new String[]{_peer_ID}, DEBUG);
+			if(instances == null) return;
+			for(D_PeerInstance i : instances){
+				i.store();
+			}
+		} catch (P2PDDSQLException e) {
+			e.printStackTrace();
+		}
+	}
+	*/
 	static void store(String _peer_ID, long peer_ID, Hashtable<String,D_PeerInstance> instances){
 		if (DEBUG) System.out.println("D_PeerInstance: store peer_ID="+_peer_ID);
 		if (_peer_ID == null) return;
@@ -88,7 +123,7 @@ public class D_PeerInstance extends ASNObj {
 			if (instances == null) return;
 			for (D_PeerInstance i : instances.values()) {
 				i.setLID(_peer_ID, peer_ID);
-				i.set_peer_instance_ID(null, -1); 
+				i.set_peer_instance_ID(null, -1); // to avoid an update
 				i.store();
 			}
 		} catch (P2PDDSQLException e) {
@@ -100,7 +135,9 @@ public class D_PeerInstance extends ASNObj {
 		this.peer_instance_ID = ID;
 	}
 	long store() throws P2PDDSQLException {
+		//boolean DEBUG = true;
 		if (DEBUG) System.out.println("D_PeerInstance: store starts");
+		
 		String[] params;
 		if (this.peer_instance_ID == null)
 			params = new String[net.ddp2p.common.table.peer_instance.FIELDS_NOID];
@@ -118,6 +155,7 @@ public class D_PeerInstance extends ASNObj {
 		params[net.ddp2p.common.table.peer_instance.PI_SIGNATURE_DATE] = this._creation_date;
 		params[net.ddp2p.common.table.peer_instance.PI_SIGNATURE] = Util.stringSignatureFromByte(signature);		
 		params[net.ddp2p.common.table.peer_instance.PI_CREATED_LOCALLY] = Util.bool2StringInt(this.createdLocally);
+
 		try {
 			if (this.peer_instance_ID == null) {
 				this._peer_instance_ID =
@@ -125,9 +163,11 @@ public class D_PeerInstance extends ASNObj {
 								net.ddp2p.common.table.peer_instance.fields_noID_list,
 								params, DEBUG);
 				this.peer_instance_ID = Util.getStringID(this._peer_instance_ID);
+	
 			} else {
 				params[net.ddp2p.common.table.peer_instance.PI_PEER_INSTANCE_ID] = this.peer_instance_ID;
 				this._peer_instance_ID = Util.lval(this.peer_instance_ID);
+				
 				Application.getDB().update(net.ddp2p.common.table.peer_instance.TNAME,					
 						net.ddp2p.common.table.peer_instance.fields_noID_list,
 						new String[]{net.ddp2p.common.table.peer_instance.peer_instance_ID},
@@ -142,8 +182,10 @@ public class D_PeerInstance extends ASNObj {
 								net.ddp2p.common.table.peer_instance.fields_noID_list,
 								params, _DEBUG);
 				this.peer_instance_ID = Util.getStringID(this._peer_instance_ID);
+	
 			} else {
 				params[net.ddp2p.common.table.peer_instance.PI_PEER_INSTANCE_ID] = this.peer_instance_ID;
+				
 				Application.getDB().update(net.ddp2p.common.table.peer_instance.TNAME,					
 						net.ddp2p.common.table.peer_instance.fields_noID_list,
 						new String[]{net.ddp2p.common.table.peer_instance.peer_instance_ID},
@@ -163,15 +205,21 @@ public class D_PeerInstance extends ASNObj {
 		branch = Util.getString(k.get(net.ddp2p.common.table.peer_instance.PI_PEER_BRANCH));
 		agent_version = Util.getString(k.get(net.ddp2p.common.table.peer_instance.PI_PEER_AGENT_VERSION));
 		set_PluginInfo(Util.getString(k.get(net.ddp2p.common.table.peer_instance.PI_PLUGIN_INFO)));
+		
 		_last_sync_date = Util.getString(k.get(net.ddp2p.common.table.peer_instance.PI_LAST_SYNC_DATE));
 		last_sync_date = Util.getCalendar(_last_sync_date);
+		
 		objects_synchronized = Util.ival(k.get(net.ddp2p.common.table.peer_instance.PI_OBJECTS_SYNCH), 0);
+		
 		_last_reset = Util.getString(k.get(net.ddp2p.common.table.peer_instance.PI_LAST_RESET));
 		last_reset = Util.getCalendar(_last_reset);
+		
 		_last_contact_date = Util.getString(k.get(net.ddp2p.common.table.peer_instance.PI_LAST_CONTACT_DATE));
 		last_contact_date = Util.getCalendar(_last_contact_date);
+		
 		this._creation_date = Util.getString(k.get(net.ddp2p.common.table.peer_instance.PI_SIGNATURE_DATE));
 		this.creation_date = Util.getCalendar(this._creation_date);
+		
 		this.signature = Util.byteSignatureFromString(Util.getString(k.get(net.ddp2p.common.table.peer_instance.PI_SIGNATURE)));
 	}
 	public D_PeerInstance() {
@@ -210,10 +258,13 @@ public class D_PeerInstance extends ASNObj {
 		set_PluginInfoArray_(d.get_PluginInfoArray());
 		_peer_ID = d._peer_ID;
 		peer_ID = d.peer_ID;
+		
 		_last_sync_date = d._last_sync_date;
 		last_sync_date = d.last_sync_date;
+		
 		_last_reset = d._last_reset;
 		last_reset = d.last_reset;
+		
 		_last_contact_date = d._last_contact_date;
 		last_contact_date = d.last_contact_date;
 	}
@@ -234,6 +285,7 @@ public class D_PeerInstance extends ASNObj {
 	}
 	public static long getInstance(String peer_ID, String instance) {
 		D_PeerInstance dPeerInstance = getPeerInstance(peer_ID, instance);
+		
 		return Util.lval(dPeerInstance.peer_instance_ID);
 	}
 	public void set_last_sync_date_str(String string) {
@@ -275,6 +327,7 @@ public class D_PeerInstance extends ASNObj {
 		} else {
 			this._peer_ID = _peer_ID2;
 		}
+		
 		if (peer_ID2 <= 0) {
 			this.peer_ID = Util.lval(_peer_ID2);
 		} else {
@@ -299,6 +352,7 @@ public class D_PeerInstance extends ASNObj {
 		this._creation_date = Encoder.getGeneralizedTime(creation_date);
 	}
 	public byte[] sign(SK sk) {
+		//signature = null;
 		Encoder enc = getSignatureEncoder();
 		byte []msg = enc.getBytes();
 		signature = Util.sign(msg, sk);
@@ -306,10 +360,13 @@ public class D_PeerInstance extends ASNObj {
 		return signature;
 	}
 	public boolean verifySignature(PK pk) {
+		//byte[] _signature = signature;
+		//signature = null;
 		if (signature == null) return false;
 		Encoder enc = getSignatureEncoder();
 		byte []msg = enc.getBytes();
 		boolean s = Util.verifySign(msg, pk, signature);
+		//signature = _signature;
 		return s;
 	}
 	/**
@@ -341,7 +398,7 @@ D_PeerInstance := [AC11] SEQUENCE {
 		enc.addToSequence(Encoder.getEncoder(addresses));
 		enc.addToSequence(new Encoder(get_PluginInfo()));
 		byte[] _signature = null;
-		enc.addToSequence(new Encoder(_signature)); 
+		enc.addToSequence(new Encoder(_signature)); //signature
 		return enc.setASN1Type(getASN1Type());
 	}
 	public Encoder getSignatureEncoder_1() {
@@ -353,6 +410,7 @@ D_PeerInstance := [AC11] SEQUENCE {
 		enc.addToSequence(new Encoder(agent_version));
 		if ((addresses != null) && (addresses.size() > 0)) enc.addToSequence(Encoder.getEncoder(addresses).setASN1Type(DD.TAG_AC1));
 		if (get_PluginInfo() != null) enc.addToSequence(new Encoder(get_PluginInfo()).setASN1Type(DD.TAG_AP2));
+		//if ((signature != null) && (signature.length > 0)) enc.addToSequence(new Encoder(signature).setASN1Type(DD.TAG_AC3));
 		return enc.setASN1Type(getASN1Type());
 	}
 	@Override
@@ -417,6 +475,8 @@ D_PeerInstance := [AC11] SEQUENCE {
 	public void joinOld(D_PeerInstance in) {
 		if (peer_instance == null) peer_instance = in.peer_instance;
 		if (creation_date == null) creation_date = in.creation_date;
+		//branch = in.branch;
+		//agent_version = in.agent_version;
 		if (addresses == null) addresses = in.addresses;
 		if (get_PluginInfo() == null) {
 			set_PluginInfo_(in.get_PluginInfo());
@@ -501,7 +561,7 @@ D_PeerInstance := [AC11] SEQUENCE {
 	 */
 	public void set_PluginInfoArray(ASNPluginInfo[] plugin_info_array) {
 		this.plugin_info_array = plugin_info_array;
-		this.plugin_info = D_PluginInfo.getPluginInfoFromArray(plugin_info_array);
+		this.plugin_info = D_PluginInfo.getPluginInfoFromArray(plugin_info_array);// Util.stringSignatureFromByte(Encoder.getEncoder(plugin_info_array).getBytes());
 	}
 	public void set_PluginInfoAndArray(String plugin_info, ASNPluginInfo[] plugin_info_array) {
 		this.plugin_info_array = plugin_info_array;

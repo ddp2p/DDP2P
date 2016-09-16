@@ -1,21 +1,29 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2014 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.util;
+
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
+
+
 public
 class LZW {
 	/**
@@ -47,40 +55,49 @@ class LZW {
 	 * @return : offset of next empty after result
 	 */
 	public static int _LZW_Decompress(byte[] output, int off, byte[] compressed, int initial_code_size, int DICT, int MAX_CODE_SIZE) {
+		// int MAX_CODE_SIZE = 12;
 		int code_end, code_clr;
 		if((compressed == null)||(compressed.length==0)){
 			if(LZW_Code.DEBUG_LZW) System.out.println("Decompress null");
 			return 0;
 		}
 		if(LZW_Code.DEBUG_LZW) System.out.println("LZW_Decompress: in_len="+compressed.length+" out_len="+output.length);
+
 		String[] rdict = new String[DICT];
+		//Hashtable<String, LZW_Code> dict = new Hashtable<String, LZW_Code>();
 		int nextcode = 1<<initial_code_size;
 		long idx = 0;
 		int result = off;
 		int crt_code_size = initial_code_size;
-		for(int i = 0; i < nextcode; i++) { rdict[i] = ":"+i;}
+		
+		for(int i = 0; i < nextcode; i++) {/*dict.put(":"+i, new LZW_Code(crt_code_size, i));*/ rdict[i] = ":"+i;}
 		crt_code_size = Math.min(crt_code_size + 1, MAX_CODE_SIZE);
-		 rdict[code_clr = nextcode] = "CLR"; nextcode ++;
-		 rdict[code_end = nextcode] = "END"; nextcode ++;
+		/*dict.put("CLR", new LZW_Code(crt_code_size, nextcode));*/ rdict[code_clr = nextcode] = "CLR"; nextcode ++;
+		/*dict.put("END", new LZW_Code(crt_code_size, nextcode));*/ rdict[code_end = nextcode] = "END"; nextcode ++;
+
 		LZW_Code last_code = new LZW_Code();
-		idx = last_code.bit_extract(compressed, idx, crt_code_size); 
+		idx = last_code.bit_extract(compressed, idx, crt_code_size); //read code code_size
 		if(LZW_Code.DEBUG_LZW) System.out.println("Extracted initial: "+last_code);
 		if(LZW_Code.DEBUG_LZW) System.out.println("Extracted dict=: "+rdict[last_code.code]);
+		
 		if(last_code.code == code_clr){
+			//dict = new Hashtable<String, LZW_Code>();
 			nextcode = 1<<initial_code_size;
 			crt_code_size = initial_code_size;
 			rdict = new String[DICT];
-			for(int i = 0; i < nextcode; i++) { rdict[i] = ":"+i;}
+			for(int i = 0; i < nextcode; i++) {/*dict.put(":"+i, new LZW_Code(crt_code_size, i));*/ rdict[i] = ":"+i;}
 			crt_code_size++;
-			 rdict[code_clr=nextcode] = "CLR"; nextcode ++;
-			 rdict[code_end=nextcode] = "END"; nextcode ++;
+			/*dict.put("CLR", new LZW_Code(crt_code_size, nextcode));*/ rdict[code_clr=nextcode] = "CLR"; nextcode ++;
+			/*dict.put("END", new LZW_Code(crt_code_size, nextcode));*/ rdict[code_end=nextcode] = "END"; nextcode ++;
+			
 			last_code = new LZW_Code();
 			idx = last_code.bit_extract(compressed, idx, crt_code_size); 
 			if(LZW_Code.DEBUG_LZW) System.out.println("Extracted after initial CLR: "+last_code);
 			if(LZW_Code.DEBUG_LZW) System.out.println("Extracted dict=: "+rdict[last_code.code]);
+
 			String[] v = rdict[last_code.code].split(Pattern.quote(":"));
 			for(int k=1; k<v.length; k++){
-				output[result++] = (byte)Integer.parseInt(v[k]);
+				output[result++] = (byte)Integer.parseInt(v[k]);//Byte.parseByte(v[k]);
 				if(LZW_Code.DEBUG_LZW) System.out.println("OUT["+(result-1)+"] = "+Util.byteToHex(output[result-1]));
 			}
 		}
@@ -90,47 +107,57 @@ class LZW {
 		else {
 			String[] v = rdict[last_code.code].split(Pattern.quote(":"));
 			for(int k=1; k<v.length; k++){
-				output[result++] = (byte)Integer.parseInt(v[k]);
+				output[result++] = (byte)Integer.parseInt(v[k]);//Byte.parseByte(v[k]);
 				if(LZW_Code.DEBUG_LZW) System.out.println("OUT["+(result-1)+"] = "+Util.byteToHex(output[result-1]));
 			}
 		}
+		
 		while(idx>=0) {
+			
 			LZW_Code code = new LZW_Code();
-			idx = code.bit_extract(compressed, idx, crt_code_size); 
+			idx = code.bit_extract(compressed, idx, crt_code_size); //read code code_size
 			if(LZW_Code.DEBUG_LZW) System.out.println("Extracted: "+code);
 			if(LZW_Code.DEBUG_LZW) System.out.println("Extracted dict=: "+rdict[code.code]);
 			if(code.code == code_clr){
+				//dict = new Hashtable<String, LZW_Code>();
 				nextcode = 1<<initial_code_size;
 				crt_code_size = initial_code_size;
 				rdict = new String[DICT];
-				for(int i = 0; i < nextcode; i++) { rdict[i] = ":"+i;}
+				for(int i = 0; i < nextcode; i++) {/*dict.put(":"+i, new LZW_Code(crt_code_size, i));*/ rdict[i] = ":"+i;}
 				crt_code_size = Math.min(crt_code_size + 1, MAX_CODE_SIZE);
-				 rdict[nextcode] = "CLR"; nextcode ++;
-				 rdict[nextcode] = "END"; nextcode ++;
+				/*dict.put("CLR", new LZW_Code(crt_code_size, nextcode));*/ rdict[nextcode] = "CLR"; nextcode ++;
+				/*dict.put("END", new LZW_Code(crt_code_size, nextcode));*/ rdict[nextcode] = "END"; nextcode ++;
+
+				//idx--;
 				last_code = new LZW_Code();
 				idx = last_code.bit_extract(compressed, idx, crt_code_size); 
 				if(LZW_Code.DEBUG_LZW) System.out.println("Extracted after CLR: "+last_code);
 				if(LZW_Code.DEBUG_LZW) System.out.println("Extracted dict=: "+rdict[last_code.code]);
 				String[] v = rdict[last_code.code].split(Pattern.quote(":"));
 				for(int k=1; k<v.length; k++){
-					output[result++] = (byte)Integer.parseInt(v[k]); 
+					output[result++] = (byte)Integer.parseInt(v[k]); //Byte.parseByte(v[k]);
 					if(LZW_Code.DEBUG_LZW) System.out.println("OUT["+(result-1)+"] = "+Util.byteToHex(output[result-1]));
 				}
+				
 				continue;
 			}
 			else if(code.code == code_end){
 				idx = -1;
 				continue;
 			}
+
 			if (code.code<nextcode) {
 				String[] _v = rdict[code.code].split(Pattern.quote(":"));
 				for(int k=1; k<_v.length; k++) {
-					output[result++] = (byte)Integer.parseInt(_v[k]); 
+					output[result++] = (byte)Integer.parseInt(_v[k]); //Byte.parseByte(_v[k]);
 					if(LZW_Code.DEBUG_LZW) System.out.println("OUT["+(result-1)+"] = "+Util.byteToHex(output[result-1]));
 				}
+
+				//if(nextcode >= (1<<crt_code_size)) crt_code_size++;
 				if(LZW_Code.DEBUG_LZW) System.out.println("Code="+code+"="+rdict[code.code]);
 				String ov = rdict[code.code].split(Pattern.quote(":"))[1];
 				String ad = rdict[last_code.code]+":"+ov;
+				//dict.put(ad, new LZW_Code(crt_code_size, nextcode));
 				rdict[nextcode] = ad;
 				if(LZW_Code.DEBUG_LZW) System.out.println("AddToDict_1 "+nextcode+":\""+ad+"\"");
 				nextcode++;
@@ -138,15 +165,18 @@ class LZW {
 					crt_code_size = Math.min(crt_code_size + 1, MAX_CODE_SIZE);
 				if(LZW_Code.OLD_CODE) if(nextcode+1 >= (1<<crt_code_size))
 					crt_code_size = Math.min(crt_code_size + 1, MAX_CODE_SIZE);
+				//if(LZW_Code.OLD_CODE) idx++;
 				last_code = code;
 			}else{
 				if(code.code>nextcode){
 					if(LZW_Code.DEBUG_LZW) System.out.println("Unknown "+nextcode+":\""+code+"\"");
 					return GIF.ERROR;
 				}
+				//if(nextcode >= (1<<crt_code_size)) crt_code_size++;
 				if(LZW_Code.DEBUG_LZW) System.out.println("Code="+last_code+"="+rdict[last_code.code]);
 				String ov = rdict[last_code.code].split(Pattern.quote(":"))[1];
 				String ad = rdict[last_code.code]+":"+ov;
+				//dict.put(ad, new LZW_Code(crt_code_size, nextcode));
 				rdict[nextcode] = ad;
 				if(LZW_Code.DEBUG_LZW) System.out.println("AddToDict_2 "+nextcode+":\""+ad+"\"");
 				nextcode++;
@@ -154,11 +184,13 @@ class LZW {
 					crt_code_size = Math.min(crt_code_size + 1, MAX_CODE_SIZE);
 				if(LZW_Code.OLD_CODE) if(nextcode+1 >= (1<<crt_code_size))
 					crt_code_size = Math.min(crt_code_size + 1, MAX_CODE_SIZE);
+
 				String[] _v = rdict[code.code].split(Pattern.quote(":"));
 				for(int k=1; k<_v.length; k++){
-					output[result++] = (byte)Integer.parseInt(_v[k]);
+					output[result++] = (byte)Integer.parseInt(_v[k]);//Byte.parseByte(_v[k]);
 					if(LZW_Code.DEBUG_LZW) System.out.println("OUT["+(result-1)+"] = "+Util.byteToHex(output[result-1]));
 				}
+				
 				last_code = code;
 			}
 		}
@@ -177,6 +209,7 @@ class LZW {
 		for (int k=0; k<_uncompressed.length; k++) {
 			int M = 8/initial_code_size;
 			if(k ==_uncompressed.length-1) M = bits_last_byte/initial_code_size;
+			//if(DEBUG_LZW) System.out.println("M="+M);
 			for (int i = 0; i < M; i++) {
 				uncompressed[k*M + i] = (byte) ((byte)(_uncompressed[k]>>(i*initial_code_size))&((1<<initial_code_size) - 1));
 			}
@@ -188,16 +221,19 @@ class LZW {
 		byte output[] = new byte[uncompressed.length*2];
 		long result = 0;
 		int crt_code_size = initial_code_size;
+		
 		for(int i = 0; i < nextcode; i++) {dict.put(":"+i, new LZW_Code(crt_code_size, i)); rdict[i] = ":"+i;}
 		crt_code_size ++;
 		dict.put("CLR", new LZW_Code(crt_code_size, nextcode)); rdict[nextcode] = "CLR"; nextcode ++;
 		dict.put("END", new LZW_Code(crt_code_size, nextcode)); rdict[nextcode] = "END"; nextcode ++;
 		result = dict.get("CLR").bit_append(output, result, crt_code_size);
+		
 		String laststring = "";
 		for(int i = 0; i<uncompressed.length; i++) {
 			if(LZW_Code.DEBUG_LZW) System.out.println("LZW "+i+": "+uncompressed[i]);
 			String currentstring = laststring + ":" + uncompressed[i];
 			LZW_Code code = dict.get(currentstring);
+			// done in old code
 			if(LZW_Code.OLD_CODE)
 				if(nextcode >= (1 << crt_code_size)){
 					if(crt_code_size >= MAX_CODE_SIZE) {
@@ -213,10 +249,12 @@ class LZW {
 					} else
 						crt_code_size++;
 				}
+			
 			if(code == null) {
 				LZW_Code _code = dict.get(laststring);
 				if(_code != null)
 					result = _code.bit_append(output, result, crt_code_size);
+				
 				if(!LZW_Code.OLD_CODE)
 					if(nextcode >= (1 << crt_code_size)){
 						if(crt_code_size >= MAX_CODE_SIZE) {
@@ -232,11 +270,14 @@ class LZW {
 						}else
 							crt_code_size++;
 					}
+				
 				dict.put(currentstring, new LZW_Code(crt_code_size, nextcode));
 				rdict[nextcode] = currentstring;
 				if(LZW_Code.DEBUG_LZW) System.out.println("AddToDict "+nextcode+":\""+currentstring+"\"");
+				
 				nextcode ++;
 				laststring = ":"+uncompressed[i];
+				
 			}else{
 				laststring = currentstring;
 			}
@@ -245,6 +286,7 @@ class LZW {
 		if(code != null)
 			result = code.bit_append(output, result, crt_code_size);
 		result = dict.get("END").bit_append(output, result, crt_code_size);
+		
 		int bytes = (int) Math.ceil(result/8.0);
 		byte compressed[] = new byte[bytes];
 		Util.copyBytes(compressed, 0, output, bytes, 0);
@@ -265,6 +307,7 @@ class LZW {
 		for (int k=0; k<_uncompressed.length; k++) {
 			int M = 8/initial_code_size;
 			if(k ==_uncompressed.length-1) M = bits_last_byte/initial_code_size;
+			//if(DEBUG_LZW) System.out.println("M="+M);
 			for (int i = 0; i < M; i++) {
 				uncompressed[k*M + i] = (byte) ((byte)(_uncompressed[k]>>(i*initial_code_size))&((1<<initial_code_size) - 1));
 			}
@@ -276,11 +319,13 @@ class LZW {
 		int crt_code_size = initial_code_size;
 		crt_code_size ++;
 		result = LZW.bit_append(dict.getCLR(), output, result, crt_code_size); 
+		
 		String laststring = "";
 		for(int i = 0; i<uncompressed.length; i++) {
 			if(LZW_Code.DEBUG_LZW) System.out.println("LZW "+i+": "+uncompressed[i]);
 			String currentstring = laststring + ":" + uncompressed[i];
 			int code = dict.search(currentstring);
+			// done in old code
 			if(LZW_Code.OLD_CODE)
 				if(dict.nextcode >= (1 << crt_code_size)){
 					if(crt_code_size >= MAX_CODE_SIZE) {
@@ -291,10 +336,12 @@ class LZW {
 					} else
 						crt_code_size++;
 				}
+			
 			if(code < 0) {
 				int _code = dict.search(laststring);
 				if(_code >= 0)
 					result = LZW.bit_append(_code, output, result, crt_code_size);
+				
 				if(!LZW_Code.OLD_CODE)
 					if(dict.nextcode >= (1 << crt_code_size)){
 						if(crt_code_size >= MAX_CODE_SIZE) {
@@ -304,9 +351,12 @@ class LZW {
 						}else
 							crt_code_size++;
 					}
+				
 				dict.add(currentstring);
 				if(LZW_Code.DEBUG_LZW) System.out.println("AddToDict "+(dict.nextcode-1)+":\""+currentstring+"\"");
+				
 				laststring = ":"+uncompressed[i];
+				
 			}else{
 				laststring = currentstring;
 			}
@@ -315,6 +365,7 @@ class LZW {
 		if(code >= 0)
 			result = LZW.bit_append(code, output, result, crt_code_size);
 		result = LZW.bit_append(dict.getEND(), output, result, crt_code_size);
+		
 		int bytes = (int) Math.ceil(result/8.0);
 		byte compressed[] = new byte[bytes];
 		Util.copyBytes(compressed, 0, output, bytes, 0);
@@ -332,28 +383,34 @@ class LZW {
 	 * @return : offset of next empty after result
 	 */
 	public static int LZW_Decompress_Dict(byte[] output, int off, byte[] compressed, int initial_code_size, int DICT, int MAX_CODE_SIZE) {
+		// int MAX_CODE_SIZE = 12;
 		if((compressed == null)||(compressed.length==0)){
 			if(LZW_Code.DEBUG_LZW) System.out.println("Decompress null");
 			return 0;
 		}
 		if(LZW_Code.DEBUG_LZW) System.out.println("LZW_Decompress: in_len="+compressed.length+" out_len="+output.length);
+	
 		LZW_Dictionary_Code_Bytes_Decompress dict = new LZW_Dictionary_Code_Bytes_Decompress(initial_code_size, DICT);
 		long idx = 0;
 		int result = off;
 		int crt_code_size = initial_code_size;
 		crt_code_size = Math.min(crt_code_size + 1, MAX_CODE_SIZE);
+	
 		int last_code[] = new int[]{-1};
-		idx = LZW.bit_extract(last_code, compressed, idx, crt_code_size); 
+		idx = LZW.bit_extract(last_code, compressed, idx, crt_code_size); //read code code_size
 		if(LZW_Code.DEBUG_LZW) System.out.println("Extracted initial: "+last_code[0]);
 		if(LZW_Code.DEBUG_LZW) System.out.println("Extracted dict=: "+dict.get(last_code[0]));
+		
 		if(last_code[0] == dict.searchCLR()){
 			dict.init();
 			crt_code_size = initial_code_size;
 			crt_code_size++;
+			
 			last_code = new int[]{-1};
 			idx = LZW.bit_extract(last_code, compressed, idx, crt_code_size); 
 			if(LZW_Code.DEBUG_LZW) System.out.println("Extracted after initial CLR: "+last_code[0]);
 			if(LZW_Code.DEBUG_LZW) System.out.println("Extracted dict=: "+dict.get(last_code[0]));
+	
 			result = dict.output(last_code[0], output, result);
 		}
 		else if(last_code[0] == dict.searchEND()){
@@ -362,10 +419,12 @@ class LZW {
 		else {
 			result = dict.output(last_code[0], output, result);
 		}
+		
 		int crt_code_size_max = 1<<crt_code_size;
 		while(idx>=0) {
+			
 			int[] code = new int[]{-1};
-			idx = LZW.bit_extract(code, compressed, idx, crt_code_size); 
+			idx = LZW.bit_extract(code, compressed, idx, crt_code_size); //read code code_size
 			if(LZW_Code.DEBUG_LZW) System.out.println("Extracted: "+code[0]);
 			if(LZW_Code.DEBUG_LZW) System.out.println("Extracted dict=: "+dict.get(code[0]));
 			if(code[0] == dict.searchCLR()){
@@ -373,19 +432,23 @@ class LZW {
 				crt_code_size = initial_code_size;
 				crt_code_size = Math.min(crt_code_size + 1, MAX_CODE_SIZE);
 				crt_code_size_max = 1<<crt_code_size;
+	
 				last_code = new int[]{-1};
 				idx = LZW.bit_extract(last_code, compressed, idx, crt_code_size); 
 				if(LZW_Code.DEBUG_LZW) System.out.println("Extracted after CLR: "+last_code[0]);
 				if(LZW_Code.DEBUG_LZW) System.out.println("Extracted dict=: "+dict.get(last_code[0]));
 				result = dict.output(last_code[0], output, result);
+				
 				continue;
 			}
 			else if(code[0] == dict.searchEND()){
 				idx = -1;
 				continue;
 			}
+	
 			if (code[0]<dict.nextcode) {
 				result = dict.output(code[0], output, result);
+	
 				if(LZW_Code.DEBUG_LZW) System.out.println("Code="+code+"="+dict.get(code[0]));
 				Object ad = dict.append(dict.get(last_code[0]), dict.first(code[0]));
 				dict.add(ad);
@@ -403,7 +466,8 @@ class LZW {
 					return GIF.ERROR;
 				}
 				if(LZW_Code.DEBUG_LZW) System.out.println("Code="+last_code+"="+dict.get(last_code[0]));
-				Object ad = dict.appendFirst(dict.get(last_code[0]));
+				Object ad = dict.appendFirst(dict.get(last_code[0]));//, dict.first(last_code[0]));
+				
 				dict.add(ad);
 				if(LZW_Code.DEBUG_LZW) System.out.println("AddToDict_2 "+(dict.nextcode-1)+":\""+ad+"\"");
 				if(!LZW_Code.OLD_CODE) if(dict.nextcode >= (crt_code_size_max)) {
@@ -414,6 +478,7 @@ class LZW {
 					crt_code_size = Math.min(crt_code_size + 1, MAX_CODE_SIZE);
 					crt_code_size_max = 1<<crt_code_size;
 				}
+	
 				result = dict.output(code[0], output, result);				
 				last_code[0] = code[0];
 			}
@@ -439,20 +504,31 @@ class LZW {
 	 * @return : index_next_code
 	 */
 	public static long bit_extract_2(int[] __code, byte[] compressed, long bit_idx, int crt_code_size) {
+		//System.out.println("extract:"+Util.byteToHex(compressed[crtbyte_idx])+" "+Util.byteToHex(compressed[crtbyte_idx+1])+" "+Util.byteToHex(compressed[crtbyte_idx+2])+" ");
 		if(bit_idx==0) {
 			LZW.crtbyte = compressed[0]&0x000000ff;
 			LZW.crtbyte_idx = 0;
 			LZW.crtbyte_bits = 8;
 		}
-		int code = LZW.crtbyte; 
+		//System.out.println("extract: code="+_code[0]+" bit_idx="+bit_idx+" Bidx="+crtbyte_idx+" bits="+crtbyte_bits+" byte="+crtbyte);
+		int code = LZW.crtbyte; // first byte
+		
+		//System.out.println("extract: code="+_code[0]+" bit_idx="+bit_idx+" Bidx="+crtbyte_idx+" bits="+crtbyte_bits+" byte="+crtbyte);
+		//2nd
 		int rem = crt_code_size - LZW.crtbyte_bits;
 		LZW.crtbyte_idx ++;
+		//if(crtbyte_idx >= compressed.length) return -1;
 		LZW.crtbyte = (compressed[LZW.crtbyte_idx])&0x000000ff;
+		
+		//System.out.println("extract: code="+_code[0]+" bit_idx="+bit_idx+" Bidx="+crtbyte_idx+" bits="+crtbyte_bits+" byte="+crtbyte);
 		if(rem<=8){
 			code |= (LZW.crtbyte<<LZW.crtbyte_bits);
+			//System.out.println("extract: code="+_code[0]+" bit_idx="+bit_idx+" Bidx="+crtbyte_idx+" bits="+crtbyte_bits+" byte="+crtbyte);
 			code &= ((1<<crt_code_size)-1);
+			//System.out.println("extract: code="+_code[0]+" bit_idx="+bit_idx+" Bidx="+crtbyte_idx+" bits="+crtbyte_bits+" byte="+crtbyte);
 			LZW.crtbyte >>= rem;
 			LZW.crtbyte_bits = 8 - rem;
+			//System.out.println("extract: code="+_code[0]+" bit_idx="+bit_idx+" Bidx="+crtbyte_idx+" bits="+crtbyte_bits+" byte="+crtbyte);
 		}else{
 			code |= (LZW.crtbyte<<LZW.crtbyte_bits);
 			LZW.crtbyte_idx ++;
@@ -464,6 +540,8 @@ class LZW {
 			LZW.crtbyte_bits = 8 - rem;
 		}
 		__code[0] = code;
+		//System.out.println("extract: code="+_code[0]+" bit_idx="+bit_idx+" Bidx="+crtbyte_idx+" bits="+crtbyte_bits+" byte="+crtbyte);
+		
 		return bit_idx + crt_code_size;
 	}
 	/**
@@ -487,6 +565,7 @@ class LZW {
 			if(byte_idx >= compressed.length) {
 				code = -1;
 				_code[0] = code;
+				//size = -1;
 				if(LZW_Code.DEBUG_LZW) System.out.println("Extracted "+code+" from "+bit_idx+"("+crt_code_size+") : "+Util.byteToHexDump(compressed, byte_idx));
 				return -1;
 			}
@@ -521,7 +600,8 @@ class LZW {
 		if(LZW_Code.DEBUG_LZW) System.out.println("Util:ap "+code+"/"+crt_code_size+" to "+result+"/"+Util.byteToHexDump(output, (int) result/8+1));
 		int crt_byte = (int)Math.floor(result/8.0);
 		int rem = (int)(result % 8);
-		int available = crt_code_size; 
+		
+		int available = crt_code_size; //size;
 		int val = code;
 		while(available > 0) {
 			int available_here_bits = 8-rem;
@@ -535,6 +615,7 @@ class LZW {
 			result += Math.min(available, available_here_bits);
 			available = Math.max(available - available_here_bits, 0);
 		}
+		
 		if(LZW_Code.DEBUG_LZW) System.out.println("Util:ap got "+result+"/"+Util.byteToHexDump(output, (int) result/8+1));
 		return result;
 	}
@@ -549,14 +630,16 @@ class LZW {
 class LZW_Code{
 	public final static boolean DEBUG_LZW = false;
 	public static final boolean OLD_CODE = false;
+	//int size;
 	int code;
 	LZW_Code(int s, int c){
+			//size = s;
 			code = c;
 	}
 	public LZW_Code() {
 	}
 	public String toString(){
-		return "["+code+"]";
+		return "["+code/*+"/"+size*/+"]";
 	}
 	/**
 		 * LSB-mode packing alignment
@@ -569,7 +652,8 @@ class LZW_Code{
 			if(LZW_Code.DEBUG_LZW) System.out.println("Util:ap "+this+"/"+crt_code_size+" to "+result+"/"+Util.byteToHexDump(output, (int) result/8+1));
 			int crt_byte = (int)Math.floor(result/8.0);
 			int rem = (int)(result % 8);
-			int available = crt_code_size; 
+			
+			int available = crt_code_size; //size;
 			int val = code;
 			while(available > 0) {
 				int available_here_bits = 8-rem;
@@ -583,6 +667,7 @@ class LZW_Code{
 				result += Math.min(available, available_here_bits);
 				available = Math.max(available - available_here_bits, 0);
 			}
+			
 			if(LZW_Code.DEBUG_LZW) System.out.println("Util:ap got "+result+"/"+Util.byteToHexDump(output, (int) result/8+1));
 			return result;
 	}
@@ -699,7 +784,7 @@ class LZW_Dictionary_String {
 	public int output(int code, byte[] output, int result) {
 		byte[] v = getBytes(code);
 		for(int k=0; k<v.length; k++){
-			output[result++] = v[k]; 
+			output[result++] = v[k]; //(byte)Integer.parseInt(v[k]);//Byte.parseByte(v[k]);
 			if(LZW_Code.DEBUG_LZW) System.out.println("OUT["+(result-1)+"] = "+Util.byteToHex(output[result-1]));
 		}
 		return result;
@@ -764,7 +849,9 @@ class LZW_Dictionary_Code_Bytes_String {
 		Code cod;
 		if(rdict==null) 
 			rdict = new Code[DICT];
+		//if(dict==null)
 			dict = new Hashtable<String, Code>(DICT*4/3+10);
+		//else dict.clear();
 		this.initial_code_size = initial_code_size;
 		nextcode = 1<<initial_code_size;
 		for(int i = 0; i < nextcode; i++) {cod =  new Code(":"+i, i, (byte)i); dict.put(cod.s_val, cod); rdict[i] = cod;}
@@ -810,10 +897,24 @@ class LZW_Dictionary_Code_Bytes_String {
 	public int searchEND() {
 		return search("END");
 	}
+	/*
+	private String[] getStrings(int i) {
+		return get(i).split(Pattern.quote(":"));
+	}
+	private byte[] getBytes(int i) {
+		ArrayList<Byte> A = rdict[i].a_val;
+		byte[] r = new byte[A.size()];
+		int k=0;
+		for(Byte a : A) {
+			r[k++]=a;
+		}
+		return r;
+	}
+	*/
 	public int output(int code, byte[] output, int result) {
 		ArrayList<Byte> A = rdict[code].a_val;
 		for(Byte a : A){
-			output[result++] = a; 
+			output[result++] = a; //(byte)Integer.parseInt(v[k]);//Byte.parseByte(v[k]);
 			if(LZW_Code.DEBUG_LZW) System.out.println("OUT["+(result-1)+"] = "+Util.byteToHex(output[result-1]));
 		}
 		return result;
@@ -880,7 +981,9 @@ class LZW_Dictionary_Code_Bytes {
 	void init(int initial_code_size, int DICT) {
 		Code cod;
 		if(rdict==null) rdict = new Code[DICT];
+		//if(dict==null)
 			dict = new Hashtable<Object, Code>(DICT*4/3+10);
+		//else dict.clear();
 		this.initial_code_size = initial_code_size;
 		nextcode = 1<<initial_code_size;
 		for(int i = 0; i < nextcode; i++) {cod =  new Code(i, (byte)i); dict.put(cod.a_val, cod); rdict[i] = cod;}
@@ -921,15 +1024,29 @@ class LZW_Dictionary_Code_Bytes {
 		return first(get(code));
 	}
 	public int searchCLR() {
-		return code_clr; 
+		return code_clr; //search("CLR");
 	}
 	public int searchEND() {
-		return code_end; 
+		return code_end; //search("END");
 	}
+	/*
+	private String[] getStrings(int i) {
+		return get(i).split(Pattern.quote(":"));
+	}
+	private byte[] getBytes(int i) {
+		ArrayList<Byte> A = rdict[i].a_val;
+		byte[] r = new byte[A.size()];
+		int k=0;
+		for(Byte a : A) {
+			r[k++]=a;
+		}
+		return r;
+	}
+	*/
 	public int output(int code, byte[] output, int result) {
 		ArrayList<Byte> A = rdict[code].a_val;
 		for(Byte a : A){
-			output[result++] = a; 
+			output[result++] = a; //(byte)Integer.parseInt(v[k]);//Byte.parseByte(v[k]);
 			if(LZW_Code.DEBUG_LZW) System.out.println("OUT["+(result-1)+"] = "+Util.byteToHex(output[result-1]));
 		}
 		return result;
@@ -952,7 +1069,9 @@ class LZW_Dictionary_Code_Bytes {
 	public int getEND() {
 		return dict.get("END").code;
 	}
+
 }
+
 /**
  * Decoding class without hashtables (to be used only for decompressing).
  * The values is stored here as an arraylist of Byte
@@ -985,6 +1104,7 @@ class LZW_Dictionary_Code_Bytes_Decompress {
 		}
 	}
 	public Code rdict[];
+	//public Hashtable<Object, Code> dict;
 	public int nextcode;
 	public int initial_code_size;
 	public int code_clr;
@@ -995,11 +1115,12 @@ class LZW_Dictionary_Code_Bytes_Decompress {
 	void init(int initial_code_size, int DICT) {
 		Code cod;
 		if(rdict==null) rdict = new Code[DICT];
+		//	dict = new Hashtable<Object, Code>(DICT*4/3+10);
 		this.initial_code_size = initial_code_size;
 		nextcode = 1<<initial_code_size;
-		for(int i = 0; i < nextcode; i++) {cod =  new Code(i, (byte)i); rdict[i] = cod;}
-		cod =  new Code(code_clr=nextcode); rdict[nextcode] = cod; nextcode ++;
-		cod =  new Code(code_end=nextcode); rdict[nextcode] = cod; nextcode ++;
+		for(int i = 0; i < nextcode; i++) {cod =  new Code(i, (byte)i);/* dict.put(cod.a_val, cod);*/ rdict[i] = cod;}
+		cod =  new Code(code_clr=nextcode);/* dict.put("CLR", cod);*/ rdict[nextcode] = cod; nextcode ++;
+		cod =  new Code(code_end=nextcode);/* dict.put("END", cod);*/ rdict[nextcode] = cod; nextcode ++;
 	}
 	boolean init() {
 		if(rdict == null) return false;
@@ -1008,11 +1129,13 @@ class LZW_Dictionary_Code_Bytes_Decompress {
 	}
 	boolean add(Object val, int code) {
 		if(code != nextcode) return false;
+		//dict.put(((Code)val).a_val, ((Code)val).setCode(code));
 		rdict[code] = (Code)val;
 		nextcode++;
 		return true;
 	}
 	boolean add(Object val) {
+		//dict.put(((Code)val).a_val, ((Code)val).setCode(nextcode));
 		rdict[nextcode] = (Code)val;
 		nextcode++;
 		return true;
@@ -1020,6 +1143,14 @@ class LZW_Dictionary_Code_Bytes_Decompress {
 	Code get(int code) {
 		return rdict[code];
 	}
+	/*
+	int search(Code val){
+		return dict.get(val.a_val).code;
+	}
+	private int search(String val){
+		return dict.get(val).code;
+	}
+	*/
 	Byte first(Code val){
 		return ((Code)val).a_val.get(0);
 	}
@@ -1027,15 +1158,29 @@ class LZW_Dictionary_Code_Bytes_Decompress {
 		return first(get(code));
 	}
 	public int searchCLR() {
-		return code_clr; 
+		return code_clr; //search("CLR");
 	}
 	public int searchEND() {
-		return code_end; 
+		return code_end; //search("END");
 	}
+	/*
+	private String[] getStrings(int i) {
+		return get(i).split(Pattern.quote(":"));
+	}
+	private byte[] getBytes(int i) {
+		ArrayList<Byte> A = rdict[i].a_val;
+		byte[] r = new byte[A.size()];
+		int k=0;
+		for(Byte a : A) {
+			r[k++]=a;
+		}
+		return r;
+	}
+	*/
 	public int output(int code, byte[] output, int result) {
 		ArrayList<Byte> A = rdict[code].a_val;
 		for(Byte a : A){
-			output[result++] = a; 
+			output[result++] = a; //(byte)Integer.parseInt(v[k]);//Byte.parseByte(v[k]);
 			if(LZW_Code.DEBUG_LZW) System.out.println("OUT["+(result-1)+"] = "+Util.byteToHex(output[result-1]));
 		}
 		return result;
@@ -1053,10 +1198,10 @@ class LZW_Dictionary_Code_Bytes_Decompress {
 		return new Code(a);
 	}
 	public int getCLR() {
-		return code_clr;
+		return code_clr;//dict.get("CLR").code;
 	}
 	public int getEND() {
-		return code_end;
+		return code_end;//dict.get("END").code;
 	}
 }
 /**
@@ -1090,6 +1235,7 @@ class LZW_Dictionary_Code_Bytes_Compress {
 			return this;
 		}
 	}
+	//public Code rdict[];
 	public Hashtable<Object, Code> dict;
 	public int nextcode;
 	public int initial_code_size;
@@ -1102,28 +1248,37 @@ class LZW_Dictionary_Code_Bytes_Compress {
 	}
 	void init(int initial_code_size, int DICT) {
 		Code cod;
+		//if(rdict==null) rdict = new Code[DICT];
 		dict = new Hashtable<Object, Code>(DICT*4/3+10);
 		this.initial_code_size = initial_code_size;
 		nextcode = 1<<initial_code_size;
-		for(int i = 0; i < nextcode; i++) {cod =  new Code(i, (byte)i); dict.put(cod.a_val, cod); }
-		cod =  new Code(code_clr=nextcode); dict.put("CLR", cod);  nextcode ++;
-		cod =  new Code(code_end=nextcode); dict.put("END", cod);  nextcode ++;
+		for(int i = 0; i < nextcode; i++) {cod =  new Code(i, (byte)i); dict.put(cod.a_val, cod); /*rdict[i] = cod;*/}
+		cod =  new Code(code_clr=nextcode); dict.put("CLR", cod); /*rdict[nextcode] = cod;*/ nextcode ++;
+		cod =  new Code(code_end=nextcode); dict.put("END", cod); /*rdict[nextcode] = cod;*/ nextcode ++;
 	}
 	boolean init() {
+		//if(rdict == null) return false;
 		init(initial_code_size, LZW_Dictionary_Code_Bytes_Compress.DICT);
 		return true;
 	}
 	boolean add(Object val, int code) {
 		if(code != nextcode) return false;
 		dict.put(((Code)val).a_val, ((Code)val).setCode(code));
+		//rdict[code] = (Code)val;
 		nextcode++;
 		return true;
 	}
 	boolean add(Object val) {
 		dict.put(((Code)val).a_val, ((Code)val).setCode(nextcode));
+		//rdict[nextcode] = (Code)val;
 		nextcode++;
 		return true;
 	}
+	/*
+	Code get(int code) {
+		return rdict[code];
+	}
+	*/
 	int search(Code val){
 		return dict.get(val.a_val).code;
 	}
@@ -1133,12 +1288,41 @@ class LZW_Dictionary_Code_Bytes_Compress {
 	Byte first(Code val){
 		return ((Code)val).a_val.get(0);
 	}
+	/*
+	Byte first(int code) {
+		return first(get(code));
+	}
+	*/
 	public int searchCLR() {
-		return code_clr; 
+		return code_clr; //search("CLR");
 	}
 	public int searchEND() {
-		return code_end; 
+		return code_end; //search("END");
 	}
+	/*
+	private String[] getStrings(int i) {
+		return get(i).split(Pattern.quote(":"));
+	}
+	private byte[] getBytes(int i) {
+		ArrayList<Byte> A = rdict[i].a_val;
+		byte[] r = new byte[A.size()];
+		int k=0;
+		for(Byte a : A) {
+			r[k++]=a;
+		}
+		return r;
+	}
+	*/
+	/*
+	public int output(int code, byte[] output, int result) {
+		ArrayList<Byte> A = rdict[code].a_val;
+		for(Byte a : A){
+			output[result++] = a; //(byte)Integer.parseInt(v[k]);//Byte.parseByte(v[k]);
+			if(LZW_Code.DEBUG_LZW) System.out.println("OUT["+(result-1)+"] = "+Util.byteToHex(output[result-1]));
+		}
+		return result;
+	}
+	*/
 	public Code append(Code head, Byte tail) {
 		ArrayList<Byte> bytes = new ArrayList<Byte>(((Code)head).a_val);
 		bytes.add((Byte)tail);

@@ -1,6 +1,8 @@
 package net.ddp2p.common.util;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
+
 abstract public class DDP2P_ServiceThread extends Thread {
 	public Object ctx = null;
 	public boolean stop = false;

@@ -1,5 +1,7 @@
 package net.ddp2p.widgets.updates;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -13,6 +15,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.ActionEvent;
 import java.awt.Point;
+
 import javax.swing.Action;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
@@ -24,6 +27,7 @@ import javax.swing.ImageIcon;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Identity;
 import net.ddp2p.common.data.D_MirrorInfo;
@@ -35,6 +39,7 @@ import net.ddp2p.widgets.app.DDIcons;
 import net.ddp2p.widgets.components.BulletRenderer;
 import net.ddp2p.widgets.components.DebateDecideAction;
 import net.ddp2p.widgets.updatesKeys.UpdatesKeysTable;
+
 public class ImportData {
 	private static final boolean DEBUG = false;
 	public static final String START = "START";
@@ -46,21 +51,25 @@ public class ImportData {
 	 * @param f
 	 */
 	public void importMirrorFromFile(File f){
+			//boolean DEBUG = true;
 		BufferedReader in =null;
 		try{in = new BufferedReader(new FileReader(f));} catch(IOException e){}
 		ArrayList<D_Tester> testerDef = new ArrayList<D_Tester>();
 		D_MirrorInfo result = new D_MirrorInfo();
+	//	ArrayList<Downloadable> datas = new ArrayList<Downloadable>();
+		//String inputLine = "";
 		String tmp_inputLine = null;
 		int line = 0;
 		try {
 			D_Tester t=null;
 			while ((tmp_inputLine = in.readLine()) != null && !tmp_inputLine.equals(STOP) ) {
+				//inputLine += tmp_inputLine;
 				if(DEBUG)System.out.println("ImportUpdatesMirror gets: "+tmp_inputLine);
 				tmp_inputLine = tmp_inputLine.trim();
 				if((line==0)&&(!START.equals(tmp_inputLine))) continue;
 				switch(line)
 				{
-				case 0: line++; break; 
+				case 0: line++; break; //START
 				case 1: result.original_mirror_name = tmp_inputLine; line++; break;
 				case 2: result.url = tmp_inputLine; line++; break;
 				case 3: if(tmp_inputLine.equals(STOP)) continue ;
@@ -78,6 +87,7 @@ public class ImportData {
 			    case 10: if(tmp_inputLine.equals(TESTERINFO_STOP)){
 			    	     if(DEBUG) System.out.println("Tester_STOP");
 			    			try{	
+				    			//t.store();
 				    			testerDef.add(t);
 				    			D_Tester ukeys = new D_Tester();
 				    			ukeys.name = t.name;
@@ -87,15 +97,20 @@ public class ImportData {
 				    			ukeys.url=t.url;
 				    			ukeys.description = t.description;
 				    			ukeys.store();
+//				    			if(ukeys.existsInDB()) ukeys.store("update"); 
+//				    			else ukeys.store("insert");
 				    			line=3;
 				    			Application.getDB().sync(new ArrayList<String>(Arrays.asList(net.ddp2p.common.table.tester.TNAME)));
 			    			}catch(P2PDDSQLException e){}
 			             }
-				}
-			}
+				}//switch
+			}// loop
 			if(testerDef.size()!=0)result.testerDef = testerDef.toArray(new D_Tester[0]);
+			
 			if(result.existsInDB(Application.getDB())) result.store(D_MirrorInfo.action_update); 
 			else result.store(D_MirrorInfo.action_insert);
+			
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}catch ( P2PDDSQLException e) {
@@ -107,8 +122,11 @@ public class ImportData {
 			e.printStackTrace();
 		}
 		if(DEBUG)System.out.println("Mirror Import Done :  "+result);
+		
+	//	return result;
 	}
 	public void importTesterFromFile(File f){
+			//boolean DEBUG = true;
 		BufferedReader in =null;
 		try{in = new BufferedReader(new FileReader(f));} catch(IOException e){}
 		String tmp_inputLine = null;
@@ -116,12 +134,13 @@ public class ImportData {
 		int line = 0;
 		try {
 			while ((tmp_inputLine = in.readLine()) != null ) {
+				//inputLine += tmp_inputLine;
 				if(DEBUG)System.out.println("ImportUpdatesMirror gets: "+tmp_inputLine);
 				tmp_inputLine = tmp_inputLine.trim();
 				if((line==0)&&(!TESTERINFO_START.equals(tmp_inputLine))) continue;
 				switch(line)
 				{
-				case 0: line++; break; 
+				case 0: line++; break; //TESTERINFO_START
 				case 1: t.name = tmp_inputLine; line++; break;
 				case 2: t.testerGID = tmp_inputLine; line++; break;
 				case 3: t.email = tmp_inputLine; line++; break;
@@ -132,13 +151,22 @@ public class ImportData {
 			    case 7: if(tmp_inputLine.equals(TESTERINFO_STOP)){
 			    	     if(DEBUG) System.out.println("Tester_STOP");
 			    			try{	
+				    			//t.store();
+				    			//D_UpdatesKeysInfo ukeys = new D_UpdatesKeysInfo();
+				    			//ukeys.original_tester_name = t.name;
+				    			//ukeys.public_key = t.public_key;
 				    			t.testerGIDH = Util.getGIDhashFromGID(t.testerGID, false);
+//				    			if(t.existsInDB()) t.store("update"); 
+//				    			else t.store("insert");
 				    			t.store();
 				    			line=0;
 			    			}catch(P2PDDSQLException e){}
 			             }
-				}
-			}
+				}//switch
+			}// loop
+			
+			
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -148,5 +176,6 @@ public class ImportData {
 			e.printStackTrace();
 		}
 		if(DEBUG)System.out.println("TesterImpor Done:"+t);
+	//	return result;
 	}
 }

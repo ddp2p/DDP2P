@@ -1,5 +1,7 @@
 package net.ddp2p.common.handling_wb;
+
 import java.util.ArrayList;
+
 public class PreparedMessage{
 	public byte[] raw;
 	public String org_ID_hash = new String();
@@ -8,4 +10,6 @@ public class PreparedMessage{
 	public ArrayList<String> neighborhood_ID = new ArrayList<String>();
 	public String justification_ID= new String();;
 	boolean sent_flag = false;
+	
+	
 }

@@ -1,21 +1,28 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2013 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.ciphersuits;
+
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Hashtable;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
@@ -23,16 +30,24 @@ import net.ddp2p.common.config.DD;
 import net.ddp2p.common.util.Util;
 class ECDSA_PK extends PK {
 	final static String V0="0";
-	String version = V0; 
+	String version = V0; // version to write out, decoding converts to this version
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	int ECC_curve_ID;
 	ECC curve;
+	//BigInteger p;
+	//BigInteger a;
+	//BigInteger b;
 	EC_Point x;
+	//BigInteger x1; // base point
+	//BigInteger y1;
 	EC_Point y;
+	//BigInteger xn; // public key
+	//BigInteger yn;
 	BigInteger n;
 	String hash_alg = Cipher.SHA1;
 	public boolean _equals(PK _pk){
+		//boolean DEBUG = true;
 		if(DEBUG)System.out.println("ECDSA_PK:_equal: start");
 		if(!(_pk instanceof ECDSA_PK)) return false;
 		ECDSA_PK pk = (ECDSA_PK)_pk;
@@ -81,6 +96,7 @@ class ECDSA_PK extends PK {
 	}
 	@Override
 	public boolean __equals(PK __pk){
+		//if (!(__pk instanceof PK)) return false;
 		PK _pk = (PK) __pk;
 		if(DEBUG)System.out.println("ECDSA_PK:__equal: start");
 		boolean result = _equals(_pk);
@@ -93,6 +109,8 @@ class ECDSA_PK extends PK {
 		return "ECDSA_PK[ID="+this.ECC_curve_ID+"\n"
 				+ " y="+EC_Point.toString(y,curve)+" \n"
 				+ " x="+EC_Point.toString(x,curve)+" \n"
+//				+ " y="+y+"\n"
+//				+ " x="+x+"\n"
 				+ " curve="+curve+"\n"
 				+ "]";
 	}
@@ -158,14 +176,19 @@ class ECDSA_PK extends PK {
 		y._curve = curve;
 		this.n = ecs.n;
 	}
+	
 	@Override
 	public byte[] encrypt(byte[] m) {
+		// TODO Auto-generated method stub
 		return null;
 	}
+
 	@Override
 	public byte[] encrypt_pad(byte[] m) {
+		// TODO Auto-generated method stub
 		return null;
 	}
+
 	/**
 	 * Assumes parameter is already hashed
 	 */
@@ -198,12 +221,14 @@ class ECDSA_PK extends PK {
 	public boolean verify_unpad_hash(byte[] signature, byte[] message) {
 		return verify(signature, CryptoUtils.digest(message, this.hash_alg));
 	}
+
 	@Override
 	public Encoder getEncoder() {
 		Encoder r = new Encoder().initSequence();
 		r.addToSequence(new Encoder(ECDSA.type));
 		r.addToSequence(new Encoder(version).setASN1Type(DD.TAG_AC0));
 		if(this.ECC_curve_ID < 0) return getEncoderRaw(r);
+		
 		r.addToSequence(new Encoder(ECC_curve_ID));
 		r.addToSequence(y.getEncoder());
 		r.addToSequence(new Encoder(hash_alg));
@@ -217,6 +242,7 @@ class ECDSA_PK extends PK {
 			r.addToSequence(new Encoder(hash_alg));
 			return r;
 	}
+
 	@Override
 	public ECDSA_PK decode(Decoder dec) throws ASN1DecoderFail {
 		String ver;
@@ -244,6 +270,7 @@ class ECDSA_PK extends PK {
 			hash_alg = d.getFirstObject(true).getString();
 		return this;
 	}
+
 	@Override
 	public CipherSuit getCipherSuite() {
 		CipherSuit result = new CipherSuit();
@@ -252,18 +279,28 @@ class ECDSA_PK extends PK {
 		result.hash_alg = hash_alg;
 		return result;
 	}
+	
 }
 class ECDSA_SK extends SK{
 	final static String V0="0";
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
-	String version = V0; 
+	String version = V0; // version to write out, decoding converts to this version
 	int ECC_curve_ID;
+	//BigInteger p;
+	//BigInteger a;
+	//BigInteger b;
 	ECC curve;
-	EC_Point x; 
-	BigInteger m; 
-	EC_Point y; 
-	BigInteger n; 
+	EC_Point x; // base point
+	//BigInteger x1; // base point
+	//BigInteger y1;
+	//boolean _y1;
+	BigInteger m; // secret key
+	EC_Point y; //public key
+	//BigInteger xm; // public key
+	//BigInteger ym;
+	//boolean _ym;
+	BigInteger n; // order of x
 	String hash_alg = Cipher.SHA1;
 	public String toString() {
 		return "ECDSA_SK[ID="+ECC_curve_ID+"\n"
@@ -274,6 +311,7 @@ class ECDSA_SK extends SK{
 				+ " hash="+hash_alg+"\n"
 				+ "]";
 	}
+
 	public ECDSA_SK(Decoder d) throws ASN1DecoderFail{
 		decode(d);
 	}
@@ -286,6 +324,8 @@ class ECDSA_SK extends SK{
 		init(id);
 		m = _m;
 		y = ECC.mul(x, m);
+		//System.out.println("m="+m.toString(16));
+		//System.out.println("y="+y);
 	}
 	public ECDSA_SK(int curve_ID) {
 		init(curve_ID);
@@ -306,33 +346,58 @@ class ECDSA_SK extends SK{
 		this.n = n2;
 		y = ECC.mul(x, m);
 	}
+
 	void init(int curve_ID) {
 		ECC_curve_ID = ECC.getCurveID(curve_ID);
 		ECS ecs = ECS.getECS(curve_ID);
 		if (ecs == null) {
 			Util.printCallPath("curveID: "+curve_ID);
+			//return;
 			throw new RuntimeException("ECDSA_SK: no curveID: "+curve_ID);
 		}
 		curve = ecs.curve;
 		x = ecs.g;
 		n = ecs.n;
+		
+//		System.out.println("a="+curve.a);
+//		System.out.println("b="+curve.b.toString(16));
+//		System.out.println("p="+curve.p);
+//		System.out.println("n="+n);
+//		System.out.println("x="+x);
+
+		
 		EC_Point test = new EC_Point(x);
 		test.compress();
 		test.y = null;
+		
 		test.decompress();
+
+		//System.out.println("Test4: "+test+" vs "+x);
+		
 		if(!test.getY().equals(x.getY())) {
 			System.out.println("Wrong base point Gx: "+x);
 			throw new RuntimeException("Wrong base point Gx-> "+test); 
+			//x = test;
 		}else{
 			if (DEBUG) System.out.println("Right x: "+test+" vs "+x);
 		}
+		//p = curve.curve.p;
+		//a = curve.curve.a;
+		//b = curve.curve.b;
+		//x1 = curve.g.x;
+		//y1 = curve.g.getY();
+		//_y1 = curve.g.getCompressedY();
 	}
+	
 	@Override
 	public byte[] decrypt(byte[] c) {
+		// TODO Auto-generated method stub
 		return null;
 	}
+
 	@Override
 	public byte[] decrypt_unpad(byte[] c) {
+		// TODO Auto-generated method stub
 		return null;
 	}
 	/**
@@ -358,6 +423,8 @@ class ECDSA_SK extends SK{
 	 */
 	@Override
 	public byte[] sign(byte[] hashed) {
+		//SecureRandom random = new SecureRandom();
+		//BigInteger k = new BigInteger (n.bitLength(), random);
 		byte[][]el = new byte[][]{hashed, m.toByteArray()};
 		byte[] hash = CryptoUtils.digest(el, RSA.SHA256);
 		BigInteger k = Util.bigIntegerFromUnsignedBytes(hash);
@@ -370,12 +437,14 @@ class ECDSA_SK extends SK{
 	public byte[] sign_pad_hash(byte[] message) {
 		return sign(CryptoUtils.digest(message, this.hash_alg));
 	}
+
 	@Override
 	public ECDSA_PK getPK() {
 		ECDSA_PK e = new ECDSA_PK(ECC_curve_ID, curve, x, y, n);
 		e.hash_alg = hash_alg;
 		return e;
 	}
+
 	@Override
 	public boolean sameAs(SK myPeerSK) {
 		if(!(myPeerSK instanceof ECDSA_SK)) return false;
@@ -384,10 +453,13 @@ class ECDSA_SK extends SK{
 		if(!this.m.equals(esk.m)) return false;
 		return true;
 	}
+
 	@Override
 	public Object getType() {
 		return ECDSA.type;
 	}
+
+
 	@Override
 	public Encoder getEncoder() {
 		Encoder r = new Encoder().initSequence();
@@ -395,7 +467,9 @@ class ECDSA_SK extends SK{
 		r.addToSequence(new Encoder(version).setASN1Type(DD.TAG_AC0));
 		if (hash_alg != null) r.addToSequence(new Encoder(hash_alg).setASN1Type(DD.TAG_AC1));
 		if (this.ECC_curve_ID < 0) return getEncoderRaw(r);
+		
 		r.addToSequence(new Encoder(ECC_curve_ID));
+		//r.addToSequence(x.getEncoder());
 		r.addToSequence(new Encoder(m));
 		r.addToSequence(y.getEncoder());
 		if (comment!=null) r.addToSequence(new Encoder(comment));
@@ -410,9 +484,11 @@ class ECDSA_SK extends SK{
 			if (comment!=null) r.addToSequence(new Encoder(comment));
 			return r;
 	}
+
 	@Override
 	public ECDSA_SK decode(Decoder dec) throws ASN1DecoderFail {
 		String ver;
+		//byte tag;
 		Decoder d = dec.getContent();
 		if (0 != ECDSA.type.compareTo(d.getFirstObject(true).getString()))
 			throw new ASN1DecoderFail("Not ECC");
@@ -423,15 +499,19 @@ class ECDSA_SK extends SK{
 		if (d.getFirstObject(false).getTypeByte()==DD.TAG_AC1) {
 			hash_alg = d.getFirstObject(true).getString(DD.TAG_AC1);
 		}
+		// could test ver with version... if there are more versions
 		if (d.getFirstObject(false).getTypeByte() != Encoder.TAG_INTEGER)
 			return decodeRaw(d);
 		ECC_curve_ID = d.getFirstObject(true).getInteger().intValue();
 		init(ECC_curve_ID);
+		//x = new EC_Point(curve, d.getFirstObject(true));
 		m = d.getFirstObject(true).getInteger();
 		if ((d.getFirstObject(false) != null) && (d.getTypeByte() == EC_Point.getASN1TAG() )) {
 			if (DEBUG) System.out.println("ECDSA: decode: y");
 			y = new EC_Point(curve, d.getFirstObject(true));
 			if (DEBUG) System.out.println("ECDSA: decode: y ="+y);
+			//y = x.mul(m);
+			//if (_DEBUG) System.out.println("ECDSA: decode: y?="+y);
 		} else {
 			y = x.mul(m);
 			if (DEBUG) System.out.println("ECDSA: decode: y<="+y);
@@ -452,7 +532,9 @@ class ECDSA_SK extends SK{
 		} else comment = null;
 		return this;
 	}
+	
 }
+
 /**
  * A class for standard elliptic curves.
  * @author msilaghi
@@ -471,18 +553,31 @@ class ECS {
 			Gx = Util.cleanInnerSpaces(s[6]);
 			Gy = Util.cleanInnerSpaces(s[7]);
 			a = Util.cleanInnerSpaces(s[8]);
+			//System.out.println("s="+s[1]);
+			//System.out.println("p="+p);
 		}
 		String name;
 		String p;
 		String n;
-		String SEED; 
-		String c; 
+		String SEED; // seed of SHA-1
+		String c; // output of SHA-1
 		String b;
 		String Gx;
 		String Gy;
 		String a;
 	}
 	static String[][] standards = {
+//		{
+//			"P-192",
+//			"6277101735386680763835789423207666416083908700390324961279",
+//			"6277101735386680763835789423176059013767194773182842284081",
+//			"3045ae6fc8422f64ed579528d38120eae12196d5",
+//			"3099d2bbbfcb2538542dcd5fb078b6ef5f3d6fe2c745de65",
+//			"64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1",
+//			"188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012",
+//			"07192b95ffc8da78631011ed6b24cdd573f977a11e794811",
+//			"-3"
+//		},
 			{
 				"P-192", // p = 2^192 - 2^64 - 1
 				"6277101735386680763835789423207666416083908700390324961279",
@@ -505,6 +600,17 @@ class ECS {
 				"bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34",
 				"-3"
 			},
+//			{
+//				"P-224", // p = 2^224 - 2^96 + 1
+//				"26959946667150639794667015087019630673557916260026308143510066298881",
+//				"26959946667150639794667015087019625940457807714424391721682722368061",
+//				"bd713447 99d5c7fc dc45b59f a3b9ab8f 6a948bc5",
+//				"5b056c7e 11dd68f4 0469ee7f 3c7a7d74 f7d12111 6506d031 218291fb",
+//				"b4050a85 0c04b3ab f5413256 5044b0b7 d7bfd8ba 270b3943 2355ffb4",
+//				"b70e0cbd 6bb4bf7f 321390b9 4a03c1d3 56c21122 343280d6 115c1d21",
+//				"bd376388 b5f723fb 4c22dfe6 cd4375a0 5a074764 44d58199 85007e34",
+//				"-3"
+//			},
 			{
 				"P-256", // p=2^256 - 2^224 +2^192 + 2^96 - 1
 				"115792089210356248762697446949407573530086143415290314195533631308867097853951",
@@ -575,7 +681,9 @@ class ECS {
 		case 384: ID = ECDSA.P_384; break;
 		case 521: ID = ECDSA.P_521; break;
 		}
+		
 		switch (ID) {
+		// First Handle some IDs not in the list of standards!
 		case ECDSA.Curve25519:
 			ecs = curves.get(new Integer(ID));
 			if(ecs == null) {
@@ -593,6 +701,7 @@ class ECS {
 			}
 			return ecs;
 			default:
+				
 				/**
 				 * In the end, get the curve from the list of standards!s
 				 */
@@ -617,6 +726,13 @@ class ECS {
 							n=new BigInteger(ed.n)
 							);
 					curves.put(new Integer(ID), ecs);
+//					System.out.println("Test P- ="+ecs.curve.b.multiply(ecs.curve.b).multiply(new BigInteger(ed.c, 16)).add(new BigInteger("27")).mod(ecs.curve.p));
+//					System.out.println(" y^2=\n"+ec.evaluate_y2(x.getX())+" = \n" +
+//							""+x.getY().multiply(x.getY()).mod(p));
+//					x.compress(); x.y = null; x.decompress();
+//					System.out.println(x.y.multiply(x.y).mod(p));
+//					verifySummarilyPrimality(p);
+//					verifySummarilyPrimality(n);
 				};
 				return ecs;
 		}
@@ -632,9 +748,11 @@ class ECS {
 		System.out.println("Primality succeeds for "+p);
 		return true;
 	}
+	
 }
 public class ECDSA extends net.ddp2p.ciphersuits.Cipher{
-	public final static String type=Cipher.ECDSA; 
+	public final static String type=Cipher.ECDSA; //"ECC";
+	
 	public static final int P_119 = 0;
 	public static final int P_224 = 1;
 	public static final int P_256 = 2;
@@ -643,22 +761,33 @@ public class ECDSA extends net.ddp2p.ciphersuits.Cipher{
 	public static final int Curve25519 = 101;
 	ECDSA_SK sk;
 	ECDSA_PK pk;
+	/*
+	EC curve;
+	ECP q;
+	BigInteger secret, g;
+	int curve_ID;
+	*/
+	
 	public ECDSA(ECDSA_SK sk2, ECDSA_PK pk2) {
 		sk = sk2;
 		pk = pk2;
 	}
+
 	public ECDSA() {
 	}
+
 	@Override
 	public SK genKey(int size) {
 		sk = new ECDSA_SK(size);
 		sk.hash_alg = hash_alg;
 		return sk;
 	}
+
 	@Override
 	public String getType() {
 		return type;
 	}
+
 	@Override
 	public PK getPK() {
 		if (pk != null)
@@ -666,28 +795,37 @@ public class ECDSA extends net.ddp2p.ciphersuits.Cipher{
 		if (sk != null) return sk.getPK();
 		return null;
 	}
+
 	@Override
 	public SK getSK() {
 		if (sk != null) return sk;
 		return null;
 	}
+
 	@Override
 	public byte[] padding(byte[] toencryption) {
+		// TODO Auto-generated method stub
 		return null;
 	}
+
 	@Override
 	public byte[] unpad(byte[] decrypted) {
+		// TODO Auto-generated method stub
 		return null;
 	}
+
 	@Override
 	public byte[] hash_salt(byte[] msg) {
+		// TODO Auto-generated method stub
 		return null;
 	}
+
 	@Override
 	public byte[] sign(byte[] m) {
 		if(sk == null) return null;
 		return sk.sign(m);
 	}
+
 	@Override
 	public boolean verify(byte[] signature, byte[] message) {
 		if ((pk == null) && (sk !=null))
@@ -699,9 +837,9 @@ public class ECDSA extends net.ddp2p.ciphersuits.Cipher{
 		Cipher c = Cipher.getCipher(Cipher.ECDSA, Cipher.SHA1, "Test");
 		SK sk = c.genKey(P_521);
 		byte message[] = new byte[]{1,2,3};
-		byte sign[] = sk.sign(message);
+		byte sign[] = sk.sign(message);// sk.sign_pad_hash(message);
 		PK pk = sk.getPK();
-		boolean v = pk.verify(sign, message);
+		boolean v = pk.verify(sign, message);// pk.verify_unpad_hash(sign, message);
 		System.out.println("ECDSA: s="+Util.byteToHexDump(sign)+"\nv="+v);
 	}
 	public static void __main(String[] args) {
@@ -724,16 +862,22 @@ public class ECDSA extends net.ddp2p.ciphersuits.Cipher{
 		}
 		PK pk = sk.getPK();
 		System.out.println("ECDSA: pk="+pk);
-		boolean v = pk.verify(sign, message);
+		boolean v = pk.verify(sign, message);// pk.verify_unpad_hash(sign, message);
 		System.out.println("ECDSA: s="+sg+" ="+Util.byteToHexDump(sign)+"\nv="+v);
 	}
 	public static void main(String[] args) {
 		int id = Integer.parseInt(args[0]);
 		BigInteger d = new BigInteger(args[1],10);
-		byte[] msg = Util._byteSignatureFromString(args[3]);
+		//BigInteger k = new BigInteger(args[2],16);
+		byte[] msg = Util._byteSignatureFromString(args[3]);//new BigInteger(args[3],16);
+		//Cipher c = Cipher.getCipher(Cipher.ECDSA, Cipher.SHA1, "Test");
 		ECDSA_SK sk = new ECDSA_SK(id, d);
 		sk.hash_alg = Cipher.SHA384;
-		byte message[] = msg;
+		//EC_Point ecp = new EC_Point(sk.x.getX(),true, sk.curve);
+		//ecp.decompress();
+		//System.out.println("ECDSA: point: ="+ecp+"\n minus="+ecp.minus());
+		byte message[] = msg;//new byte[]{1,2,3};
+		//byte sign[] = sk.sign(message, k);
 		byte sign[] = sk.sign_pad_hash(message);
 		System.out.println("ECDSA: sign="+Util.byteToHex(sign));
 		ECDSA_Signature sg = null;
@@ -743,6 +887,7 @@ public class ECDSA extends net.ddp2p.ciphersuits.Cipher{
 			e.printStackTrace();
 		}
 		PK pk = sk.getPK();
+		//boolean v = pk.verify(sign, message);
 		System.out.println("ECDSA: v: sign="+Util.byteToHex(sign)+"\n hash="+Util.byteToHex(Util.simple_hash(sign, Cipher.MD5)));
 		System.out.println("ECDSA: v: msg="+Util.byteToHex(msg)+"\n hash="+Util.byteToHex(Util.simple_hash(msg, Cipher.MD5)));
 		System.out.println("ECDSA: v: pk="+pk);

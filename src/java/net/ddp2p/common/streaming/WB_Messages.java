@@ -1,24 +1,33 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.common.streaming;
+
 import static java.lang.System.err;
 import static net.ddp2p.common.util.Util.__;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Hashtable;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -42,12 +51,14 @@ import net.ddp2p.common.hds.ASNSyncRequest;
 import net.ddp2p.common.hds.SyncAnswer;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 /**
  * The structure containing ArrayLists with various types of data
  * @author msilaghi
  *
  */
 public class WB_Messages extends ASNObj{
+
 	static final boolean _DEBUG = true;
 	public static final String NEWS_POOL = "NEWS_POOL";
 	public static final String TRAN_POOL = "TRAN_POOL";
@@ -82,6 +93,7 @@ public class WB_Messages extends ASNObj{
 		if (peers.size() > 0) enc.addToSequence(Encoder.getEncoder(peers.toArray(new D_Peer[0]), dictionary_GIDs).setASN1Type(DD.TAG_AC1));
 		return enc;
 	}
+
 	@Override
 	public WB_Messages decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();
@@ -112,6 +124,7 @@ public class WB_Messages extends ASNObj{
 		result += "\n]";
 		return result;
 	}
+
 	public String toSummaryString() {
 		String result = "\n WB_Messages[";
 		if((peers != null) && (peers.size()>0)) result += "\n  peer = "+ Util.concatSummary(peers, "\n", "null");
@@ -146,15 +159,18 @@ public class WB_Messages extends ASNObj{
 			return null;
 		}
 		WB_Messages result = new WB_Messages();
+		
 		fillPeers(asr.request.peers, result.peers, sa);
 		fillNews(asr.request.news, result.news, sa);
 		fillTran(asr.request.tran, result.tran, sa);
+		
 		if(asr.request.rd==null){
 			if(DEBUG) System.out.println("WB_Messages: getRequestedData: exit no data request content");
 			return null;
 		}
 		ArrayList<RequestData> rd = asr.request.rd;
 		if(DEBUG) System.out.println("WB_Messages: getRequestedData: data request content #"+rd.size());
+		
 		for(RequestData r: rd) {
 			long p_oLID = -1;
 			if (r.global_organization_ID_hash != null) 
@@ -164,7 +180,9 @@ public class WB_Messages extends ASNObj{
 				String gid = D_GIDH.getGID(gid_or_hash);
 				String gidh = D_GIDH.getGIDH(gid_or_hash);
 				String org_id = Util.getStringID(D_Organization.getLocalOrgID(gid, gidh));
+
 				if(!OrgHandling.serving(asr, org_id)) continue;
+				
 				if((sa!=null)&&sa.hasOrg(gid)) continue;
 				try {
 					D_Organization o = D_Organization.getOrgByGID_or_GIDhash_NoCreate(gid, gidh, true, false);
@@ -173,10 +191,12 @@ public class WB_Messages extends ASNObj{
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got org");
 				} catch (Exception e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested org: "+gid_or_hash);
+					//e.printStackTrace();
 				}
 			}
 			for (String gid_or_hash: r.cons.keySet()) {
 				if (DEBUG) System.out.println("WB_Messages: getRequestedData: cons gid="+gid_or_hash);
+				// TODO if gid is sa, then skip to avoid duplicating work 
 				String gid = D_GIDH.getGID(gid_or_hash);
 				String gidh = D_GIDH.getGIDH(gid_or_hash);
 				if ((sa != null) && (gid != null) && sa.hasConstituent(gid, r.cons.get(gid))) continue;
@@ -193,6 +213,7 @@ public class WB_Messages extends ASNObj{
 					result.cons.add(c);
 				} catch(Exception e) {
 					if (DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested const: "+gid_or_hash);
+					//e.printStackTrace();
 				}
 				if(DEBUG) System.out.println("WB_Messages: getRequestedData: got cons");
 			}
@@ -206,9 +227,11 @@ public class WB_Messages extends ASNObj{
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: got neig");
 				} catch (Exception e) {
 					if(DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested neig: "+gid);
+					//e.printStackTrace();
 				}
 			}
 			for (String gid: r.witn) {
+				//boolean DEBUG = true;
 				if (DEBUG) System.out.println("WB_Messages: getRequestedData: witn gid="+gid);
 				if ((sa != null) && sa.hasWitness(gid)) continue;
 				D_Witness w = null;
@@ -245,6 +268,7 @@ public class WB_Messages extends ASNObj{
 					}
 					result.moti.add(m);
 					if (_DEBUG) System.out.println("WB_Messages: getRequestedData: shipping moti:"+m.getGIDH()+" "+m.getTitleStrOrMy());
+					//if (DEBUG) System.out.println("WB_Messages: getRequestedData: got moti");
 				}
 				catch (net.ddp2p.common.data.D_NoDataException e) {
 					if (_DEBUG) System.out.println("WB_Messages: getRequestedData: I don't have requested motion: "+gid);
@@ -262,6 +286,7 @@ public class WB_Messages extends ASNObj{
 					if ((j == null) || ! j.readyToSend()) continue;
 					if (! OrgHandling.serving(asr, j.getOrganizationLIDstr())) continue;
 					result.just.add(j);
+					//if (DEBUG) System.out.println("WB_Messages: getRequestedData: got just");
 					if (DEBUG) System.out.println("WB_Messages: getRequestedData: shipping just:"+j.getGIDH()+" "+j.getTitleStrOrMy());
 				}
 				catch (net.ddp2p.common.data.D_NoDataException e) {
@@ -293,6 +318,7 @@ public class WB_Messages extends ASNObj{
 		}
 		return result;
 	}
+
 	private static void fillTran(ArrayList<String> request,
 			ArrayList<D_Translations> result, SyncAnswer sa) {
 		for (String gid: request) {
@@ -313,6 +339,7 @@ public class WB_Messages extends ASNObj{
 			if(DEBUG) System.out.println("WB_Messages: fillPeers: peer gid="+gid_or_hash);
 			String gid = D_GIDH.getGID(gid_or_hash);
 			String gidh = D_GIDH.getGIDH(gid_or_hash);
+			// TODO if gid is sa, then skip to avoid duplicating work 
 			if ((sa != null) && (gid != null) && sa.hasPeer(gid, request.get(gid))) continue;
 			if ((sa != null) && (gidh != null) && sa.hasPeer(gidh, request.get(gidh))) continue;
 			try{ 
@@ -336,7 +363,9 @@ public class WB_Messages extends ASNObj{
 	/**
 	 * 	Hashtable<String, RequestData> obtained_sr = new Hashtable<String, RequestData>();
 		Hashtable<String, RequestData> sq_sr = new Hashtable<String, RequestData>();
+
 	 eventually, we should get mostly org_hash rather than orgGID....
+
 	 * @param _asa : the incoming message (or null if manually added)
 	 * @param peer : the peer sending the message (to be used to tag the temporary items)
 	 * @param r : the set of messages to store
@@ -353,13 +382,16 @@ public class WB_Messages extends ASNObj{
 		boolean default_const_blocked = false;
 		RequestData obtained;
 		RequestData rq, sol_rq, new_rq; 
-		Calendar arrival_time = Util.CalendargetInstance();
+		Calendar arrival_time = Util.CalendargetInstance();//.getGeneralizedTime();
+		
 		if (DEBUG) System.out.println("WB_Messages: store: start");
 		if (r == null) {
 			if(DEBUG) System.out.println("WB_Messages: store: exit null requested");
 			return;
 		}
+		
 		if (DEBUG || DD.DEBUG_CHANGED_ORGS) err.println("WB_Messages: store: srs: obtained="+obtained_sr.size()+" - missing="+missing_sr.size());
+		
 		try {
 			for (D_Peer p: r.peers) {
 				if (DEBUG) System.out.println("WB_Messages: store: handle peer: "+p);
@@ -375,32 +407,44 @@ public class WB_Messages extends ASNObj{
 				if (DEBUG) System.out.println("WB_Messages: store: nou="+p);
 				D_Peer old = D_Peer.getPeerByGID_or_GIDhash(p.getGID(), null, true, true, true, null);
 				if (DEBUG) System.out.println("WB_Messages: store: old="+old);
+				//old = D_Peer.getPeerByPeer_Keep(p);
 				if (old.loadRemote(p, sol_rq, new_rq)) {
 					if (old.dirty_any()) {
 						old.setArrivalDate();
 						old.storeRequest();
+						
 						net.ddp2p.common.config.Application_GUI.inform_arrival(old, peer);
 					}
 					rq.update(sol_rq, new_rq);
 					missing_sr.put(PEER_POOL, rq);			
+					
 					obtained = obtained_sr.get(PEER_POOL);
 					if (obtained == null) obtained = new RequestData();
-					obtained.peers.put(p.getGID(), Util.getNonNullDate(p.getCreationDate()));
-					obtained.peers.put(p.getGIDH_force(), Util.getNonNullDate(p.getCreationDate()));
+					obtained.peers.put(p.getGID(), Util.getNonNullDate(p.getCreationDate()));//DD.EMPTYDATE);
+					obtained.peers.put(p.getGIDH_force(), Util.getNonNullDate(p.getCreationDate()));//DD.EMPTYDATE);
 					obtained_sr.put(PEER_POOL, obtained);
 				}
 				old.releaseReference();
 				orgs.add(PEER_POOL);
 			}
 		} catch(Exception e) {e.printStackTrace();}
-		for (D_Organization org: r.orgs) { 
+
+		
+		for (D_Organization org: r.orgs) { // should we store new orgs like that?
 			if (DEBUG) System.out.println("WB_Messages: store: handle org: "+org);
+			//org.store(rq);
+			///_obtained.orgs.add(org.global_organization_ID);
+			//obtained.orgs.add(org.global_organization_ID_hash);
 			orgs.add(org.getGID());
+
 			boolean _changed[] = new boolean[1];
+			//RequestData _new_rq = missing_sr.get(org.getGID());
 			rq = missing_sr.get(org.getGID());
 			if (rq == null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
+			//if (_new_rq == null) { _new_rq = new RequestData(org.getGIDH()); missing_sr.put(org.getGID(), _new_rq); }
+			//long id = org.store(peer, _changed, sol_rq, new_rq); // should set blocking new orgs
 			long id = D_Organization.storeRemote(org, _changed, sol_rq, new_rq, peer);
 			rq.update(sol_rq, new_rq);
 			missing_sr.put(org.getGID(), rq);			
@@ -435,7 +479,8 @@ public class WB_Messages extends ASNObj{
 			if (rq==null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
-			D_Constituent _c = D_Constituent.integrateRemote(c, peer, sol_rq, new_rq, default_const_blocked, arrival_time); 
+			
+			D_Constituent _c = D_Constituent.integrateRemote(c, peer, sol_rq, new_rq, default_const_blocked, arrival_time); //c.store(sol_rq, new_rq);
 			if (_c == null) {
 				if (_DEBUG) System.out.println("WB_Messages: store: failed to handled const: "+c+" "+dbg_msg);
 				continue;
@@ -443,12 +488,14 @@ public class WB_Messages extends ASNObj{
 			long lid = _c.getLID();
 			rq.update(sol_rq, new_rq);
 			missing_sr.put(c.getOrganizationGID(), rq);			
+			
 			obtained = obtained_sr.get(c.getOrganizationGID());
 			if(obtained==null) obtained = new RequestData();
 			obtained.cons.put(c.getGID(), DD.EMPTYDATE);
 			obtained.cons.put(c.getGIDH(), DD.EMPTYDATE);
 			obtained_sr.put(c.getOrganizationGID(), obtained);
 			orgs.add(c.getOrganizationGID());
+			//orgs.add(c.global_organization_ID_hash);
 		}
 		for (D_Neighborhood n: r.neig) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle neig: "+n);
@@ -462,18 +509,21 @@ public class WB_Messages extends ASNObj{
 				continue;
 			}
 			long lid = n.storeRemoteThis(n.getOrgGID(), oLID, Util.getGeneralizedTime(), sol_rq, new_rq, peer);
+			//long lid=n.store(sol_rq, new_rq);
 			if (lid <= 0) {
 				if (_DEBUG) System.out.println("WB_Messages: store: failed to handled neigh: "+n+" "+dbg_msg);
 				continue;
 			}
 			rq.update(sol_rq, new_rq);
 			missing_sr.put(n.getOrgGIDH(), rq);			
+			
 			obtained = obtained_sr.get(n.getOrgGIDH());
 			if (obtained == null) obtained = obtained_sr.get(n.getOrgGID());
 			if (obtained == null) obtained = new RequestData();
 			obtained.neig.add(n.getGID());
 			obtained_sr.put(n.getOrgGIDH(), obtained);
 			orgs.add(n.getOrgGIDH());
+			
 			obtained_sr.put(n.getOrgGID(), obtained);
 			orgs.add(n.getOrgGID());
 		}
@@ -490,6 +540,7 @@ public class WB_Messages extends ASNObj{
 			}
 			rq.update(sol_rq, new_rq);
 			missing_sr.put(w.global_organization_ID, rq);			
+			
 			obtained = obtained_sr.get(w.global_organization_ID);
 			if(obtained==null) obtained = new RequestData();
 			obtained.witn.add(w.global_witness_ID);
@@ -499,6 +550,7 @@ public class WB_Messages extends ASNObj{
 		for (D_Motion m: r.moti) {
 			if(DEBUG) System.out.println("WB_Messages: store: handle moti: "+m);
 			if(DEBUG) System.out.println("WB_Messages: store: handle moti: "+m.getGID()+" "+m.getMotionTitle());
+
 			String oGID = m.getOrganizationGID_force();
 			if (oGID == null) {
 				if (_DEBUG) System.out.println("WB_Messages: store: no GID handling moti: "+m);
@@ -510,19 +562,21 @@ public class WB_Messages extends ASNObj{
 			if (rq == null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
+			
 			long p_oLID = m.getOrganizationLID();
 			if (p_oLID <= 0) p_oLID = D_Organization.getLIDbyGIDH(m.getOrganizationGIDH());
 			if (p_oLID <= 0) {
 				if (_DEBUG) System.out.println("WB_Messages: store: moti: organization not found for: "+m.getOrganizationGIDH());
 				continue;
 			}
+			
 			D_Motion mot = D_Motion.getMotiByGID(m.getGID(), true, true, true, peer, p_oLID, null);
 			if (mot.loadRemote(m, sol_rq, new_rq, peer)) {
 				net.ddp2p.common.config.Application_GUI.inform_arrival(mot, peer);
 			}
 			long lid;
 			if (mot.dirty_any() || (mot.getLIDstr() == null))
-				lid = mot.storeRequest_getID(); 
+				lid = mot.storeRequest_getID(); //m.store(sol_rq, new_rq);
 			else lid = mot.getLID();
 			mot.releaseReference();
 			if (lid <= 0) {
@@ -531,14 +585,19 @@ public class WB_Messages extends ASNObj{
 			}
 			rq.update(sol_rq, new_rq);
 			missing_sr.put(m.getOrganizationGIDH(), rq);			
+			
 			obtained = obtained_sr.get(m.getOrganizationGIDH());
 			if (obtained == null) obtained_sr.get(m.getOrganizationGID_force());
 			if (obtained == null) obtained = new RequestData();
+			
 			obtained.moti.add(m.getGIDH());
+
 			obtained_sr.put(m.getOrganizationGIDH(), obtained);
 			orgs.add(m.getOrganizationGIDH());
+
 			obtained_sr.put(m.getOrganizationGID_force(), obtained);
 			orgs.add(m.getOrganizationGID_force());
+
 			if(DEBUG) System.out.println("WB_Messages: store: handled moti: "+m.getGID()+" "+m.getMotionTitle());
 		}
 		for (D_Justification j: r.just) {
@@ -560,14 +619,18 @@ public class WB_Messages extends ASNObj{
 				if (_DEBUG) System.out.println("WB_Messages: store: justif: motion not found for: "+j.getMotionGID());
 				continue;
 			}
+			
 			if (! j.isGIDValidAndNotBlocked()) {
 				if (_DEBUG) System.out.println("WB_Messages: store: justif: invalid or blocked: "+j);
 				continue;
 			}
+			// preparing management of missing/obtained GIDH
 			rq = missing_sr.get(j.getOrgGIDH());
 			if (rq == null) rq = new RequestData();
 			sol_rq = new RequestData();
 			new_rq = new RequestData();
+			
+			// actual integration
 			D_Justification jus = D_Justification.getJustByGID(j.getGID(), true, true, true, peer, p_oLID, p_mLID, j);
 			long lid = jus.getLID();
 			if (jus == j) {
@@ -580,7 +643,8 @@ public class WB_Messages extends ASNObj{
 				if (jus.loadRemote(j, sol_rq, new_rq, peer)) {
 					net.ddp2p.common.config.Application_GUI.inform_arrival(jus, peer);
 					jus.storeRequest();
-					lid = jus.storeRequest_getID(); 
+					// the following is just for debugging but could be eventually commented out
+					lid = jus.storeRequest_getID(); //j.store(sol_rq, new_rq);
 					if (DEBUG) System.out.println("WB_Messages: store: go lid=: "+lid+" for "+j+" "+dbg_msg);
 				} else {
 					if (DEBUG) System.out.println("WB_Messages: store: skipped just: "+j+" "+dbg_msg);
@@ -591,20 +655,27 @@ public class WB_Messages extends ASNObj{
 				if (_DEBUG) System.out.println("WB_Messages: store: failed to handled just: "+j+" "+dbg_msg);
 				continue;
 			}
+			
+			// management of new and missing GIDH
 			rq.update(sol_rq, new_rq);
 			missing_sr.put(j.getOrgGIDH(), rq);			
+			
 			obtained = obtained_sr.get(j.getOrgGIDH());
 			if (obtained == null) obtained_sr.get(j.getOrgGID());
 			if (obtained == null) obtained = new RequestData();
+			
 			obtained.just.add(j.getGIDH());
+			
 			obtained_sr.put(j.getOrgGIDH(), obtained);
 			orgs.add(j.getOrgGIDH());
+
 			obtained_sr.put(j.getOrgGID(), obtained);
 			orgs.add(j.getOrgGID());
 		}
 		for (D_Vote v: r.sign) {
 			if (DEBUG) System.out.println("WB_Messages: store: handle vote: "+v);
 			try {
+				//String oGID = v.getOrganizationGID();
 				String oGIDH = v.getOrganizationGIDH();
 				if (oGIDH == null){
 					v.setOrganizationGID(oGIDH = v.guessOrganizationGIDH());
@@ -613,6 +684,7 @@ public class WB_Messages extends ASNObj{
 						continue;
 					}
 				}
+
 				rq = missing_sr.get(oGIDH);
 				if (rq == null) rq = new RequestData();
 				sol_rq = new RequestData();
@@ -626,6 +698,7 @@ public class WB_Messages extends ASNObj{
 				if(DEBUG) System.out.println("WB_Messages: store: handled vote: new="+new_rq+" sol="+sol_rq);
 				rq.update(sol_rq, new_rq);
 				missing_sr.put(oGIDH, rq);			
+				
 				obtained = obtained_sr.get(oGIDH);
 				if (obtained == null) obtained = new RequestData();
 				obtained.sign.put(v.getGID(), DD.EMPTYDATE);
@@ -649,6 +722,7 @@ public class WB_Messages extends ASNObj{
 			}
 			rq.update(sol_rq, new_rq);
 			missing_sr.put(newsGID(w.global_organization_ID), rq);			
+			
 			obtained = obtained_sr.get(newsGID(w.global_organization_ID));
 			if(obtained==null) obtained = new RequestData();
 			obtained.news.add(w.global_news_ID);
@@ -668,6 +742,7 @@ public class WB_Messages extends ASNObj{
 			}
 			rq.update(sol_rq, new_rq);
 			missing_sr.put(tranGID(t.global_organization_ID), rq);			
+			
 			obtained = obtained_sr.get(tranGID(t.global_organization_ID));
 			if(obtained==null) obtained = new RequestData();
 			obtained.news.add(t.global_translation_ID);
@@ -677,6 +752,7 @@ public class WB_Messages extends ASNObj{
 		if(DEBUG) System.out.println("WB_Messages: store: done");
 		return;
 	}
+
 	private static String newsGID(String global_organization_ID) {
 		if (global_organization_ID == null) return NEWS_POOL;
 		return global_organization_ID;
@@ -696,6 +772,9 @@ public class WB_Messages extends ASNObj{
 				tran.size()+
 				news.size();
 	}
+
 	public void add(WB_Messages requested) {
+		// TODO Auto-generated method stub
+		
 	}
 }

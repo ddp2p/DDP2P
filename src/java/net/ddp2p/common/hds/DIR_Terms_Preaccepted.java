@@ -1,9 +1,11 @@
 package net.ddp2p.common.hds;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.config.DD;
+
 public
 class DIR_Terms_Preaccepted extends ASNObj{
 	public int version=0;
@@ -11,6 +13,7 @@ class DIR_Terms_Preaccepted extends ASNObj{
 	public DIR_Payment payment;
 	public byte[] services_acceptable;
 	public int ad=-1, plaintext=-1;
+	
 	@Override
 	public String toString() {
 		return  "version= "+version+
@@ -20,6 +23,7 @@ class DIR_Terms_Preaccepted extends ASNObj{
 	            "\nad= "+ad+
 	            "\nplaintext= "+plaintext +"\n";
 	}
+			
 	@Override
 	public ASNObj instance() throws CloneNotSupportedException{return (ASNObj) new DIR_Terms_Preaccepted();}
 	/**
@@ -32,13 +36,16 @@ DIR_Terms_Preaccepted ::= SEQUENCE {
 	plaintext [AP5] IMPLICIT INTEGER OPTIONAL DEFAULT (0),
 }
 	 */
+	
 	public DIR_Terms_Preaccepted setExpectFree() {
 		ad = 0;
 		payment = null;
 		topic = null;
 		plaintext = 0;
+		//services_available;
 		return this;
 	}
+	
 	@Override
 	public Encoder getEncoder() {
 		Encoder enc = new Encoder().initSequence();

@@ -1,10 +1,14 @@
+//package dd_p2p.plugin;
 package net.ddp2p.common.examplePlugin;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
+//import dd_p2p.plugin.*;
 import java.util.Hashtable;
+
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.util.Util;
+
 /**
  * 
  * @author msilaghi
@@ -20,12 +24,15 @@ import net.ddp2p.common.util.Util;
 	 byte[] session_ID;
 	 BigInteger next_sequence;
 	 BigInteger firstInSequence;
-	 String peerName;  
-	 BigInteger sequence_ack;  
-	 Calendar time; 
-	 ArrayList<DatedChatMessage> messages = new ArrayList<DatedChatMessage>(); 
-	 ArrayList<Boolean> received = new ArrayList<Boolean>();   
-	 ArrayList<Boolean> jam = new ArrayList<Boolean>();  		
+	 
+	 String peerName;  // last name known for the peer
+	 BigInteger sequence_ack;  // last acknowledged in sequence
+	 Calendar time; // time when the session info was created
+	 
+	 ArrayList<DatedChatMessage> messages = new ArrayList<DatedChatMessage>(); // the list of all messages on this channel & session
+	 ArrayList<Boolean> received = new ArrayList<Boolean>();   // boolean array to signal what was confirmed
+	 ArrayList<Boolean> jam = new ArrayList<Boolean>();  		// boolean array to signal what could not be sent (buffers full)
+	 
 	 public String toString() {
 		 return 
 				 "ChannelDataOut["
@@ -40,6 +47,7 @@ import net.ddp2p.common.util.Util;
 				 + "\n recv = "+Util.concat(received, ", ", null)
 				 + "\n]";
 	 }
+    	
 	 /**
 	  * Returns crt next_sequence value, then increments the value.
 	  * @return
@@ -63,6 +71,7 @@ import net.ddp2p.common.util.Util;
 			 ch.session_ID = ChatMessage.createSessionID();
 			 ch.next_sequence = ch.firstInSequence = BigInteger.ONE;
 			 ch.time = Util.CalendargetInstance();
+			 //ch.messages = new ArrayList<DatedChatMessage>();
 			 channels.put(peerGID, ch);
 		 }
 		 return ch;

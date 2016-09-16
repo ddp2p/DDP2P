@@ -175,36 +175,42 @@ public class AttackerClient{
 	public static String randomTimeStamp(){
 		int yr = randomNumberRange(2000, 2015);
 		String yr1=yr+"";
+		
 		int mm = randomNumberRange(1, 12);
 		String m;
 		if (mm <= 9) 
 			m = "0" + mm;
 		else 
 			m = mm + "";
+		
 		int dd = randomNumberRange(1, 28);
 		String d;
 		if (dd <= 9) 
 			d = "0" + dd;
 		else 
 			d = dd + "";
+		
 		int hh = randomNumberRange(0, 23);
 		String h;
 		if (hh <= 9) 
 			h = "0" + hh;
 		else 
 			h = hh + "";
+		
 		int mi = randomNumberRange(0, 59);
 		String mi1;
 		if (mi <= 9) 
 			mi1 = "0" + mi;
 		else 
 			mi1 = mi + "";
+		
 		int ss = randomNumberRange(0, 59);
 		String s;
 		if (ss <= 9) 
 			s = "0" + ss;
 		else
 			s = ss + "";
+		
 		int rn = randomNumberRange(0, 999);
 		String rn1;
 		if (rn <= 9) 
@@ -216,9 +222,13 @@ public class AttackerClient{
 		String output=yr1+m+d+h+mi1+s+"."+rn1+"Z";
 		return output;
 	}
+
+	// function to generate random number 1 to 9
 	public static int randomNumber() {
 		return randomNumberRange(1, 9);
 	}
+
+	// function to generate random alphabet
 	public static char randomAlphabet() {
 		String alphabet = "abcdefghijklmnopqrstuvwxyz";
 		int length = alphabet.length();
@@ -226,11 +236,15 @@ public class AttackerClient{
 		char output = alphabet.charAt(random.nextInt(length));
 		return output;
 	}
+
+	// function to generate random number in range
 	public static int randomNumberRange(int min, int max) {
 		Random random = new Random();
 		int randomNum = random.nextInt((max - min) + 1) + min;
 		return randomNum;
 	}
+
+	// function to generate alphanumeric
 	public static String randomAlphaNumberic(String alphabet, int len) {
 		int length = alphabet.length();
 		Random random = new Random();
@@ -240,6 +254,8 @@ public class AttackerClient{
 		}
 		return output;
 	}
+
+	// function to generate SSH
 	public static String randomPeerStringGen() {
 		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 		int len = 27;
@@ -247,6 +263,7 @@ public class AttackerClient{
 		String output = "P:SHA-1:" + gen + "=";
 		return output;
 	}
+	
 	public static String randomMotionStringGen() {
 		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 		int len = 27;
@@ -254,6 +271,7 @@ public class AttackerClient{
 		String output = "M:SHA-1:" + gen + "=";
 		return output;
 	}
+	
 	public static String randomConstituentStringGen() {
 		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 		int len = 27;
@@ -261,6 +279,7 @@ public class AttackerClient{
 		String output = "R:SHA-1:" + gen + "=";
 		return output;
 	}
+	
 	public static String randomWitnessStringGen() {
 		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 		int len = 27;
@@ -268,6 +287,7 @@ public class AttackerClient{
 		String output = "W:SHA-1:" + gen + "=";
 		return output;
 	}
+	
 	public static String randomNewsGlobalStringGen() {
 		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 		int len = 27;
@@ -275,6 +295,7 @@ public class AttackerClient{
 		String output = "E:SHA-1:" + gen + "=";
 		return output;
 	}
+	
 	public static String randomOrganizationStringGen() {
 		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 		int len = 43;
@@ -282,6 +303,9 @@ public class AttackerClient{
 		String output = "G:" + gen + "=";
 		return output;
 	}
+	
+	
+	
 	public static void _main(String[] args) throws Exception 
 	{
 		ArrayList<String> potentialDatabases = new ArrayList<String>();
@@ -312,9 +336,15 @@ public class AttackerClient{
 				return;
 			}
 		}
+		
+		
 		request.pushChanges = new ASNSyncPayload();	
 		request.pushChanges.advertised = new SpecificRequest();		
+		//System.out.println(randomTimeStamp());
+		//System.out.println(randomStringGen());
+		
 		RequestData rd = new RequestData();
+		
 		request.pushChanges.advertised.peers.put(randomPeerStringGen(),randomTimeStamp());	
 		request.pushChanges.advertised.news.add(randomNewsGlobalStringGen());
 		request.pushChanges.advertised.news.add(randomNewsGlobalStringGen());
@@ -324,6 +354,10 @@ public class AttackerClient{
 		rd.orgs.add(randomOrganizationStringGen());
 		rd.news.add(randomNewsGlobalStringGen());
 		rd.moti.add(randomMotionStringGen());
+		//rd.tran.add("uvwx");
+		//rd.neig.add("yzabcd");
+		
+		
 		rd.global_organization_ID_hash = OrgGIDHash;		
 		request.pushChanges.advertised.rd.add(rd);	
 		request.address = me;
@@ -368,4 +402,6 @@ public class AttackerClient{
 		clientSocket.close();
 		System.out.println("m");
 		}
+	
 }
+

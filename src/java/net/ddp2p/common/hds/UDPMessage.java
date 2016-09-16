@@ -1,24 +1,31 @@
 package net.ddp2p.common.hds;
+
 import java.net.SocketAddress;
 import java.util.Hashtable;
+
 import net.ddp2p.common.util.Util;
+
+
 public class UDPMessage {
 	private static final boolean DEBUG = false;
 	public int type;
 	UDPFragment[] fragment;
 	byte[] transmitted;
-	int[] sent_attempted; 
+	int[] sent_attempted; //not packed (used only at sender)
 	int unacknowledged = 0;
 	long date;
 	int received;
 	public String msgID;
 	SocketAddress sa;
+	
+	//Acknowledgment data
 	UDPFragmentAck uf;
 	byte[] ack;
 	boolean ack_changed=false;
 	Object lock_ack=new Object();
+	
 	public String destination_GID, sender_GID, sender_instance;
-	public int checked = 0; 
+	public int checked = 0; // how many requests are dropped waiting to send a message
 	public String toString() {
 		String res = "UDPMesage:" +
 				" ID="+msgID+
@@ -39,6 +46,7 @@ public class UDPMessage {
 		transmitted = new byte[len];
 		sent_attempted = new int[len];
 		date = Util.CalendargetInstance().getTimeInMillis();
+		
 		uf = new UDPFragmentAck();
 	}
 	public byte[] assemble() {
@@ -79,6 +87,7 @@ public class UDPMessage {
 	    		umsg.uf.destinationID = frag.getSenderID();
 	    		umsg.uf.transmitted = umsg.transmitted;
 	    		umsg.type = frag.getMsgType();
+	    		
 	    		umsg.sa = sa;
 	    		umsg.destination_GID = frag.getDestinationID();
 	    		umsg.sender_GID = frag.getSenderID();
@@ -88,6 +97,7 @@ public class UDPMessage {
 	    /**
 	     * add new fragment
 	     */
+	    // if the fragment longer then length of previous fragment: strange => drop
 	    if (frag.getSequence() >= umsg.fragment.length) {
 	    	if(DEBUG)System.err.println("Failure sequence: "+frag.getSequence()+" vs. "+umsg.fragment.length);
 	    	return null;
@@ -96,6 +106,7 @@ public class UDPMessage {
 	     * Update date of last contact
 	     */
 	    umsg.date = Util.CalendargetInstance().getTimeInMillis();
+
 	    /**
 	     * Set the flag for having received this
 	     */
@@ -103,9 +114,26 @@ public class UDPMessage {
 	    	umsg.transmitted[frag.getSequence()] = 1;
 	    	umsg.received ++;
 	    	umsg.ack_changed = true;
+	    	
 	    	umsg.fragment[frag.getSequence()] = frag;
 	    }
 		return umsg;
+//	    if(umsg.received>=umsg.fragment.length){
+//	    	recvMessages.remove(umsg.fragment[0].msgID);
+//	    }
+	//}
+	    /*
+		byte[] result;
+		if(umsg.received>=umsg.fragment.length){
+			byte[] msg = umsg.assemble();
+			if(DEBUG)System.out.println("Removing received message: "+umsg.msgID);
+			if(DEBUG)System.out.println("getFragments: Got message completely: "+umsg.msgID+" msg="+Util.byteToHexDump(msg));
+			result = msg;
+		}else{
+			if(DEBUG)System.out.println("getFragments. Got: "+umsg.received+"/"+umsg.fragment.length+" received msg="+umsg);
+			result = null;//umsg.assemble();
+		}
+		*/
 	}
 	/**
 	 * Can add a fragment to bag and return a message (if ready to assemble()).

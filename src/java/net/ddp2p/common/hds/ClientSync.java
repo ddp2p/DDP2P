@@ -1,24 +1,33 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2013 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.common.hds;
+
 import static java.lang.System.out;
 import static net.ddp2p.common.util.Util.__;
+
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
+
 import net.ddp2p.common.config.Application;
 import net.ddp2p.common.config.Application_GUI;
 import net.ddp2p.common.config.DD;
@@ -33,8 +42,10 @@ import net.ddp2p.common.streaming.RequestData;
 import net.ddp2p.common.streaming.SpecificRequest;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public class ClientSync{
 	public static long PAUSE = 40000;	
+
 	public static boolean DEBUG = false;
 	static final boolean _DEBUG = true;
 	private static final String CLASS = "ClassSync";
@@ -47,6 +58,8 @@ public class ClientSync{
 	public static final boolean USE_PAYLOAD_REQUESTED = false;
 	public static final int CYCLES_PAYLOAD = 8;
 	public static int MAX_ITEMS_PER_TYPE_PAYLOAD = 10;
+	// cache for peer addresses contacted (to avoid latency from db disk accesses for plugins)
+	// private static final boolean SIGN_PEER_ADDRESS_SEPARATELY = false;
 	public static Hashtable<String,net.ddp2p.common.hds.ASNSyncRequest> peer_scheduled_requests = new Hashtable<String, ASNSyncRequest>();
 	/**
 	 * This is used by the plugin threads to contact fast remote peers when sending the messages.
@@ -101,7 +114,7 @@ public class ClientSync{
 	static public IClient startClient() {
 		if(DEBUG) System.out.println("ClientSync:startClient: start Client2");
 		IClient r;
-		r = new Client2(); 
+		r = new Client2(); // Change to Client1 on bugs
 		r.start();
 		if (DEBUG) System.out.println("ClientSync:startClient: started Client2");
 		return r;
@@ -120,6 +133,7 @@ public class ClientSync{
 		Hashtable<String,DirectoryAnswerMultipleIdentities> old_bag = DD.dir_data.get(key);
 		if (da == null) {
 			da = new DirectoryAnswerMultipleIdentities();
+			//da.addresses=new ArrayList<Address>();
 			peer_name=peer_name+": error: "+err;
 		}
 		if(old_bag == null) old_bag = new Hashtable<String,DirectoryAnswerMultipleIdentities>();
@@ -132,6 +146,7 @@ public class ClientSync{
 			if(ClientSync.DEBUG) out.println("Client:reportDa: cannot report to anybody");				
 		}		
 	}
+
 	/**
 	 * Adding an address to the list of recent addresses  ClientSync.peer_contacted_addresses<GID,ArrayList<Address>>
 	 * 
@@ -153,7 +168,9 @@ public class ClientSync{
 		}
 		return false;
 	}
+
 	static public boolean isMyself(int port, InetSocketAddress sock_addr, Address ad){
+		//boolean DEBUG = true;
 		if(ClientSync.DEBUG) out.println("ClientSync:isMyself: start");
 		if(sock_addr.getPort()!=port){
 			if(ClientSync.DEBUG) out.println("ClientSync: Peer has different port! "+sock_addr+"!="+port);
@@ -174,12 +191,15 @@ public class ClientSync{
 						||"127.0.0.1".equals(haddress)
 				){
 			if(ClientSync.DEBUG) out.println("ClientSync: Peer is Myself lo! "+sock_addr);
+			//DD.ed.fireClientUpdate(new CommEvent(this, null, null,"FAIL ADDRESS", sock_addr+" Peer is LOOPBACK myself!"));
 			return true;
 		}else
 			if(ClientSync.DEBUG)out.println("ClientSync: Peer is not Myself lo! \""+phost+
 				"\""+haddress+"\""+port);
+		//if(DEBUG) out.println("UClient:isMyself: done");
 		return false;
 	}
+
 	static public boolean isMyself(int port, InetSocketAddress sock_addr, Address_SocketResolved_TCP sad){
 		if(sad == null) 
 			return isMyself(port, sock_addr, sad);
@@ -202,6 +222,7 @@ public class ClientSync{
 		value.plugin_msg.addMsg(msg);
 		if(DD.DEBUG_PLUGIN) System.out.println(CLASS+":schedule_for_sending: stop");
 	}
+	
 	/**
 	 * Called from PluginThread to immediately jumpstart sending plugin data
 	 * Extracts addresses from pca and attempts to contact them
@@ -240,6 +261,7 @@ public class ClientSync{
 		}
 		if(DD.DEBUG_PLUGIN) System.out.println(CLASS+":try_send: will try_connect");
 		c.try_connect(tcp_sock_addresses, udp_sock_addresses, null, null, null, msg.peer_GID, null, peer_directories_sockets, peer_directories);
+		//System.out.print("c");
 		if(DD.DEBUG_PLUGIN) System.out.println(CLASS+":try_send: done");
 	}
 	public static ArrayList<ResetOrgInfo> getChangedOrgs(String peer_ID){
@@ -306,22 +328,26 @@ public class ClientSync{
 		if (DEBUG||DD.DEBUG_CHANGED_ORGS) out.println("lastSnapshot = "+_lastSnapshotString);
 		sr.lastSnapshot = _lastSnapshot;
 		sr.tableNames=SR.tableNames;
+		
 		sr.pushChanges = getSyncReqPayload(peer_ID);
+		
 		try {
 			sr.request = net.ddp2p.common.streaming.SpecificRequest.getPeerRequest(peer_ID);
 		} catch (P2PDDSQLException e) {
 			e.printStackTrace();
 		}
 		if (DEBUG) System.out.println("Client: buildRequests: request=: "+sr);
+		// version, globalID, name, slogan, creation_date, address*, broadcastable, signature_alg, served_orgs, signature*
 		if (
 				(Identity.getAmIBroadcastableToMyPeers())) {
 			try {
-				sr.address = HandlingMyself_Peer.get_myself_with_wait();
+				sr.address = HandlingMyself_Peer.get_myself_with_wait();//new D_PeerAddress(global_peer_ID, 0, true, false, true);
 				sr.dpi = sr.address.getPeerInstance(sr.address.getInstance());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			if(DEBUG)System.out.println("Client: buildRequests: will verify: "+sr.address);
+			//sr.address.setSignature(sr.address.sign(sk)); // not needed as encompassed by request signature
 			if ( DD.VERIFY_SENT_SIGNATURES || DD.VERIFY_SIGNATURE_MYPEER_IN_REQUEST) {
 				if(!sr.address.verifySignature()) {
 					System.err.println("Client: buildRequests: Signature failure for: "+sr.address);
@@ -330,9 +356,47 @@ public class ClientSync{
 					if(DEBUG)System.out.println("Client: buildRequests: Signature success for: "+sr.address);				
 				}
 			}
+			
+			/*
+			int dir_len=0;
+			if(Identity.listing_directories_string!=null)
+				dir_len = Identity.listing_directories_string.size();
+			String my_server_address = Identity.current_server_addresses();
+			if(my_server_address==null) {
+				try {
+					Server.detectDomain(Identity.udp_server_port);
+				} catch (SocketException e) {
+					e.printStackTrace();
+				}
+				my_server_address = Identity.current_server_addresses();
+			}
+			int server_addresses = 0;
+			String[] server_addr = null;
+			if (my_server_address!=null) {
+				server_addr = my_server_address.split(Pattern.quote(DirectoryServer.ADDR_SEP));
+				if (server_addr!=null) server_addresses = server_addr.length;
+			}
+			sr.address.address = new TypedAddress[dir_len + server_addresses];
+			for(int k=0; k<dir_len; k++) {
+				sr.address.address[k] = new TypedAddress();
+				sr.address.address[k].address = Identity.listing_directories_string.get(k);
+				sr.address.address[k].type = Server.DIR;
+			}
+			for(int k=0; k<server_addresses; k++) {
+				sr.address.address[dir_len+k] = new TypedAddress();
+				sr.address.address[dir_len+k].address = server_addr[k];
+				sr.address.address[dir_len+k].type = Server.SOCKET;
+			}
+			*/
+			
+		/*
+		if ((Identity.listing_directories_string!=null)&&(Identity.listing_directories_string.size()>0))
+		sr.directory = new Address(Identity.listing_directories_string.get(Identity.preferred_directory_idx));
+		 */
 		}else{
 			out.println("Not broadcastable: "+Application.getG_TCPServer());
 		}
+		//sr.sign(); //signed before encoding
 		try {
 			if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("Client: buildRequest: will get plugin data for peerID="+peer_ID);			
 			sr.plugin_msg = D_PluginData.getPluginMessages(peer_ID);
@@ -342,6 +406,7 @@ public class ClientSync{
 		}
 		return sr;
 	}
+
 	/**
 	 * puts in pc: <type:server_address, Hashtable(address, now)>
 	 * @param ad
@@ -353,6 +418,7 @@ public class ClientSync{
 			String key,
 			String now,
 			Hashtable<String, Hashtable<String,String>> pc)
+	
 	{
 			Hashtable<String,String> value = pc.get(key);
 			if (value == null) {
@@ -364,6 +430,7 @@ public class ClientSync{
 			else
 				value.put(DD.NO_CONTACT, now);
 	}
+
 	/**
 	 * calls peerContactAdd(ad, type:s_address, now, pc);
 	 * @param ad
@@ -375,10 +442,12 @@ public class ClientSync{
 	 static void peerContactAdd(Address ad, String type, String s_address,
 			String now,
 			Hashtable<String, Hashtable<String,String>> pc)
+	 
 	 {
 		 String key = type+":"+s_address;
 		 peerContactAdd(ad, key, now, pc);
 	 }
+
 	/**
 	 *  parse adr_addresses and fills tcp and udp sockets,
 	 *  fills report to pc
@@ -417,7 +486,10 @@ public class ClientSync{
 		for (int k=0;k<sizes;k++) {
 			Address ad = adr_addresses.get(k);
 			if(DEBUG) out.print(" "+k+"+"+ad+" ");
+
+			// record for sending plugin messages fast
 			add_to_peer_contacted_addresses(ad, global_peer_ID);
+			
 			if(pc!=null) {
 				if(DEBUG) System.out.println(CLASS+":getSocketAddresses:  add to peer contact");
 				peerContactAdd(ad, type, s_address, now, pc);
@@ -426,12 +498,12 @@ public class ClientSync{
 			InetSocketAddress ta=null,ua=null;
 			try{
 				if(ad.tcp_port>0)
-					ta=new InetSocketAddress(ad.domain,ad.tcp_port); 
+					ta=new InetSocketAddress(ad.domain,ad.tcp_port); // can be slow
 			}catch(Exception e){e.printStackTrace();}
 			if(ta!=null)tcp_sock_addresses.add(new Address_SocketResolved_TCP(ta,ad));
 			try{
 				if(ad.udp_port>0)
-					ua=new InetSocketAddress(ad.domain,ad.udp_port); 
+					ua=new InetSocketAddress(ad.domain,ad.udp_port); // can be slow
 			}catch(Exception e){e.printStackTrace();}
 			if(ua!=null)udp_sock_addresses.add(new Address_SocketResolved_TCP(ua,ad));
 			if(DEBUG) System.out.println(CLASS+":getSocketAddresses: Done handling "+ad);
@@ -462,6 +534,7 @@ public class ClientSync{
 	public static void buildStaticPayload() throws P2PDDSQLException{
 		payload.changed_orgs = D_Organization.buildResetPayload();
 	}
+
 	/**
 	 *  ChangedOrgs from OrgDistribution (resetDates) are added to payload
 	 *  May use/modify input
@@ -487,6 +560,7 @@ public class ClientSync{
 			if(old != null) {
 				if(old.reset_date.before(a.reset_date))
 					old.reset_date = a.reset_date;
+				//else ok
 			}else{
 				existing.add(a);
 			}
@@ -526,6 +600,7 @@ public class ClientSync{
 		}
 		return r;
 	}
+
 	/**
 	 * Can be slow
 	 * @param address
@@ -538,16 +613,18 @@ public class ClientSync{
 			if(DEBUG) out.println("Client:getUDPSockAddress: Addresses length <=0 for: "+address);
 			return null;
 		}
-		int a=Address.getUDP(addresses[0]);
+		int a=Address.getUDP(addresses[0]);//.lastIndexOf(":");
 		if(a<=0) a= Address.getTCP(addresses[0]);
 		if(a<=0){
 			if(DEBUG) out.println("Client:getUDPSockAddress: Address components !=2 for: "+addresses[0]);
 			return null;
 		}
-		String c=Address.getDomain(addresses[0]);
+		String c=Address.getDomain(addresses[0]);//.substring(0, a);
+		
 		if(DEBUG) out.println("Client:getUDPSockAddress: will");
 		InetSocketAddress r = 
-			new InetSocketAddress(c,a); 
+			//	InetSocketAddress.createUnresolved(c, a);
+			new InetSocketAddress(c,a); // can be slow
 		if(DEBUG) out.println("Client:getUDPSockAddress: done:"+r);
 		return 	r;
 	}
@@ -557,6 +634,17 @@ public class ClientSync{
 	 * @return
 	 * @throws P2PDDSQLException
 	 */
+	/*
+	public static String getLastSnapshot(String peerID) throws P2PDDSQLException {
+		ArrayList<ArrayList<Object>> peers;
+		peers = Application.db.select("SELECT "+table.peer.peer_ID+", "+table.peer.name+", "+table.peer.last_sync_date +
+				" FROM "+ table.peer.TNAME +	
+				" WHERE "+table.peer.used+" = 1 AND "+table.peer.global_peer_ID+" = ?;",
+				new String[]{peerID});
+		if (peers.size() <= 0) return null;
+		return (String)peers.get(0).get(2);
+	}
+	*/
 	/**
 	 * Add new items to advertisements
 	 * this touches the client
@@ -575,6 +663,7 @@ public class ClientSync{
 			target = new RequestData();
 			payload_recent.rd.add(target);
 		}
+		
 		if (date == null) {
 			if (target.addHashIfNewTo(hash, type, MAX_ITEMS_PER_TYPE_PAYLOAD))
 				try {

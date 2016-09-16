@@ -1,22 +1,30 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
+
 package net.ddp2p.common.data;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Hashtable;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
@@ -77,22 +85,28 @@ class Msg extends ASNObj{
 	}
 }
 public class D_PluginData extends ASNObj implements PeerConnection{
+
 	private static final boolean DEBUG = false;
 	private ArrayList<Msg> msgs_queue = new ArrayList<Msg>();
+	
 	private static String sync="";
 	private static D_PluginData connection = new D_PluginData();
+	
 	public boolean empty() {
 		return (msgs_queue==null)||(msgs_queue.size()==0);
 	}
 	public String toString() {
 		String result = "D_PluginData: ";
+		//if(msgs_queue==null) return result + "msgs_queue=null ";
 		result += toStringMsg(msgs_queue);
 		return result;
 	}
 	public static String toStringMsg(ArrayList<Msg> msgs_queue){
 		if(msgs_queue==null) return "msgs_queue=null ";
 		return "msgs_queue=["+Util.nullDiscrimArray(msgs_queue.toArray(new Msg[0]), "---")+"] ";
+
 	}
+	
 	public D_PluginData() {}
 	public D_PluginData(ArrayList<Msg> m) {
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: constructor: start");
@@ -102,12 +116,15 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 		}
 		msgs_queue = m;
 	}
+
 	public void addMsg(PluginRequest msg) {
 		msgs_queue.add(new Msg(msg));
 	}
+	
 	public static PeerConnection getPeerConnection() {
 		return connection;
 	}
+
 	/**
 	 * D_PluginData ::= SEQUENCE {
 	 *   msgs_queue SEQUENCE OF Msg OPTIONAL
@@ -119,6 +136,7 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 		if(msgs_queue!=null) enc.addToSequence(Encoder.getEncoder(msgs_queue.toArray(new Msg[0])));
 		return enc;
 	}
+
 	@Override
 	public D_PluginData decode(Decoder dec) throws ASN1DecoderFail {
 		Decoder d = dec.getContent();
@@ -190,6 +208,8 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 	 */
 	public static void distributeToPlugins(Decoder d, String peer_GID) throws ASN1DecoderFail{
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nD_PluginData: distributeToPlugins: start");
+		
+		
 		ArrayList<Msg> msgs = d.getSequenceOfAL(Encoder.TAG_SEQUENCE, new Msg());
 		if(msgs==null){
 			if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("\nD_PluginData: distributeToPlugins: null queue");
@@ -273,6 +293,13 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 		peer.setPluginsMessage(p);
 		peer.storeRequest();
 		peer.releaseReference();
+		/*
+		Application.db.updateNoSync(table.peer.TNAME,
+				new String[]{table.peer.plugins_msg},
+				new String[]{table.peer.peer_ID},
+				new String[]{p,peerID},
+				DEBUG || DD.DEBUG_PLUGIN);
+		*/
 	}
 	/**
 	 *  Gets data from the database (put there by some plugin) that should be sent to peer
@@ -283,6 +310,13 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 	 */
 	private static  ArrayList<Msg> getEnqueuedMessages(String peerID) throws P2PDDSQLException, ASN1DecoderFail {
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: getEnqueuedMessages: for peerID="+peerID);
+		//String sql="SELECT "+table.peer.plugins_msg+" FROM "+table.peer.TNAME+" WHERE "+table.peer.peer_ID+"=?;";
+		//ArrayList<ArrayList<Object>> p = Application.db.select(sql, new String[]{peerID}, DEBUG || DD.DEBUG_PLUGIN);
+//		if(p.size()==0){
+//			if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: getEnqueuedMessages: quit: not found peerID="+peerID);
+//			return null;
+//		}
+//		String msgs = Util.getString(p.get(0).get(0));
 		D_Peer peer = D_Peer.getPeerByLID_NoKeep(peerID, true);
 		if (peer == null) {
 			if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: getEnqueuedMessages: quit: not found peerID="+peerID);
@@ -305,6 +339,7 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 		if(DEBUG || DD.DEBUG_PLUGIN) System.out.println("D_PluginData: getEnqueuedMessages: retrieved #"+result.size()+" val="+toStringMsg(result)+" from peerID="+peerID);
 		return result;
 	}
+	
 	/**
 	 * To be used by plugins to store data associated with a key
 	 */
@@ -317,12 +352,14 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 			if(key==null) return false;
 			if(pluginGID==null) return false;
 			String ID = getLocalPluginIDforGID(pluginGID);
+			
 			if(data == null){
 				Application.getDB().delete(net.ddp2p.common.table.plugin_local_storage.TNAME,
 						new String[]{net.ddp2p.common.table.plugin_local_storage.plugin_ID, net.ddp2p.common.table.plugin_local_storage.plugin_key},
 						new String[]{ID, key},
 						DEBUG);
 			}
+			
 			String _data = Util.stringSignatureFromByte(data);
 			String sql=
 				"SELECT "+net.ddp2p.common.table.plugin_local_storage.data+
@@ -334,6 +371,7 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 						new String[]{net.ddp2p.common.table.plugin_local_storage.data}, 
 						new String[]{net.ddp2p.common.table.plugin_local_storage.plugin_ID,net.ddp2p.common.table.plugin_local_storage.plugin_key}, 
 						new String[]{_data, ID, key}, DEBUG);
+				
 				return true;
 			}else{
 				Application.getDB().insert(net.ddp2p.common.table.plugin_local_storage.TNAME,
@@ -346,6 +384,7 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 		}
 		return true;
 	}
+
 	private static String getLocalPluginIDforGID(String pluginGID) throws P2PDDSQLException {
 		String sql = "SELECT "+net.ddp2p.common.table.plugin.plugin_ID+" FROM "+net.ddp2p.common.table.plugin.TNAME+
 		" WHERE "+net.ddp2p.common.table.plugin.global_plugin_ID+"=?;";
@@ -392,4 +431,5 @@ public class D_PluginData extends ASNObj implements PeerConnection{
 		String data = Util.getString(d.get(0).get(0));
 		return Util.byteSignatureFromString(data);
 	}
+
 }

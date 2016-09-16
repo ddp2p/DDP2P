@@ -1,22 +1,30 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2013 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.ciphersuits;
+
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
 import net.ddp2p.common.util.Util;
+
 class CryptoUtils{
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
@@ -67,6 +75,7 @@ class CryptoUtils{
 				p.subtract(BigInteger.ONE)
 				.multiply(q.subtract(BigInteger.ONE));
 		BigInteger d = e.modInverse(totient);
+		//if(_DEBUG) System.out.println(" d="+d);
 		BigInteger r = msg.modPow(d, n);
 		if(_DEBUG) System.out.println("blind sign: "+msg+"^"+d+" mod "+n+"="+r);
 		return r;
@@ -99,6 +108,7 @@ class CryptoUtils{
 		BigInteger order = p.subtract(BigInteger.ONE);
 		for(int k=0; k<f.length; k++) {
 			int _e = e[k].intValue();
+			// could do binary search on e
 			for(int i=0; i<_e; i++) {
 				BigInteger exponent = order.divide(f[k]);
 				BigInteger test = a.modPow(exponent, p);
@@ -164,6 +174,7 @@ class CryptoUtils{
 							toBigInts(new long[]{2,13}),
 							toBigInts(new long[]{2,1}));
 			System.out.println("2. Order("+a_prim+") = "+order);
+			
 			BigInteger[] DH_A =
 					DiffieHellman(
 							new BigInteger("11"),
@@ -191,6 +202,7 @@ class CryptoUtils{
 					" K_A="+DH_A2[1]+
 					" K_B="+DH_B[1]
 					);
+			
 			System.out.println("5.");
 			BigInteger p = new BigInteger("11");
 			BigInteger q = new BigInteger("13");
@@ -199,9 +211,11 @@ class CryptoUtils{
 			BigInteger msg = BlindPrepRSA(n, e, a_prim, beta);
 			BigInteger sgn_blind = BlindSignRSA(msg, p, q, n, e);
 			BigInteger sgn = BlindFinishRSA(n, sgn_blind, a_prim);
+			
 			System.out.println(" Blinded = "+msg);
 			System.out.println(" Signed_blind = "+sgn_blind);
 			System.out.println(" Signed = "+sgn+" verif="+sgn.modPow(e, n));
+	
 			ECC ec = new ECC(p, alpha, beta);
 			EC_Point P=null, Q=null;
 			System.out.println("7.a Valid = "+ec.valid());
@@ -213,10 +227,13 @@ class CryptoUtils{
 				Q = new EC_Point(new BigInteger("2"), true, ec);
 				System.out.println("7.c Q = "+Q+" "+Q.minus());
 			}catch(Exception e1){System.out.println("7.c "+e1);}
+	
 			if((P!=null) && (Q!=null))
 				System.out.println("7.d P+Q = "+(ec.add(P,Q)));
+			
 			if((P!=null)&&(Q==null))
 				System.out.println("7.d P+P = "+(ec.add(P,P)));
+			
 			if((P==null)&&(Q!=null))
 				System.out.println("7.d Q+Q = "+(ec.add(Q,Q)));
 			if((P==null)&&(Q==null)){
@@ -234,6 +251,21 @@ class CryptoUtils{
 					break;
 				}
 			}
+			/*
+			BigInteger a= new BigInteger(args[0]);
+			BigInteger b= new BigInteger(args[1]);
+			BigInteger p= new BigInteger(args[2]);
+	
+			BigInteger Qx= new BigInteger(args[3]);
+			BigInteger Qy= new BigInteger(args[4]);
+	
+			BigInteger Px= new BigInteger(args[5]);
+			BigInteger Py= new BigInteger(args[6]);
+			
+			EC ec = new EC(p,a,b);
+			ECP r = ec.add(new ECP(Qx, Qy, ec), new ECP(Px, Py, ec));
+			System.out.println("Got: "+r);
+			*/
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -247,7 +279,7 @@ class CryptoUtils{
 	public static byte[] digest(byte[] message, String hash_alg) {
 		MessageDigest digest;
 		try {
-			digest = MessageDigest.getInstance(hash_alg); 
+			digest = MessageDigest.getInstance(hash_alg); //Cipher.SHA256
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace(); return null;}
 		if(DEBUG) System.out.println("ECC:digest");
@@ -258,7 +290,7 @@ class CryptoUtils{
 	public static byte[] digest(byte[][] messages, String hash_alg) {
 		MessageDigest digest;
 		try {
-			digest = MessageDigest.getInstance(hash_alg); 
+			digest = MessageDigest.getInstance(hash_alg); //Cipher.SHA256
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace(); return null;}
 		if(DEBUG) System.out.println("ECC:digest");
@@ -302,7 +334,9 @@ class CryptoUtils{
 			} while(!bp);
 			_b_order_evens_4m[0] = b_order_evens_4m;
 		}
+		
 		BigInteger i = m2, j = BigInteger.ZERO;
+		
 		do {
 			i = i.shiftRight(1);
 			j = j.shiftRight(1);
@@ -310,6 +344,7 @@ class CryptoUtils{
 			if (aibj.equals(p_1))
 				j = j.add(m2);
 		} while (!i.testBit(0));
+		
 		i.add(BigInteger.ONE);
 		i = i.shiftRight(1);
 		j = j.shiftRight(1);
@@ -320,7 +355,7 @@ class CryptoUtils{
 	}
 	public static BigInteger modSquareRoot(BigInteger a, BigInteger p, BigInteger[] b_order_evens_4m) {
 		BigInteger m = p.shiftRight(2);
-		if(p.testBit(1)){ 
+		if(p.testBit(1)){ //3
 			BigInteger r = a.modPow(m.add(BigInteger.ONE), p);
 			if(ECC.DEBUG) System.out.println("sqrt: "+a+"^("+m+"+1) mod "+p+"="+r);
 			return r;

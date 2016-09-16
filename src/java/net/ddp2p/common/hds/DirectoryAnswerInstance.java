@@ -1,11 +1,14 @@
 package net.ddp2p.common.hds;
+
 import java.util.ArrayList;
 import java.util.Calendar;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.ASNObj;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.util.Util;
+
 /**
 DirectoryAnswerInstance SEQUENCE {
 	instance UTF8String,
@@ -29,6 +32,7 @@ class DirectoryAnswerInstance extends ASNObj {
 	 * addresses filled only if terms met (pre-approved)
 	 */
 	public ArrayList<Address> addresses = new ArrayList<Address>();
+	
 	@Override
 	public String toString () {
 		String r = "DirAnsInst [";

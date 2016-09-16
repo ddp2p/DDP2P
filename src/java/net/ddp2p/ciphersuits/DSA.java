@@ -1,17 +1,21 @@
 package net.ddp2p.ciphersuits;
+
 import net.ddp2p.ASN1.ASN1DecoderFail;
 import net.ddp2p.ASN1.Decoder;
 import net.ddp2p.ASN1.Encoder;
 import net.ddp2p.common.util.Util;
+
 class DSA_PK extends PK {
 	final static String V0="0";
-	String version = V0; 
+	String version = V0; // version to write out, decoding converts to this version
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
 	String hash_alg=Cipher.SHA256;
+
 	public DSA_PK(Decoder decoder) throws ASN1DecoderFail {
 		decode(decoder);
 	}
+
 	/**
 	 * Not applicable
 	 */
@@ -20,18 +24,22 @@ class DSA_PK extends PK {
 		Util.printCallPath("N/A");
 		throw new RuntimeException("Not Applicable");
 	}
+
 	@Override
 	public byte[] encrypt_pad(byte[] m) {
 		Util.printCallPath("N/A");
 		throw new RuntimeException("Not Applicable");
 	}
+
 	/**
 	 * This is the "academic" version without hashing/padding of messages
 	 */
 	@Override
 	public boolean verify(byte[] signature, byte[] hashed) {
+		// TODO Auto-generated method stub
 		return false;
 	}
+
 	/**
 	 * This is the method that performs the whole verification from a message
 	 */
@@ -39,10 +47,12 @@ class DSA_PK extends PK {
 	public boolean verify_unpad_hash(byte[] signature, byte[] message) {
 		return verify(signature, CryptoUtils.digest(message, this.hash_alg));
 	}
+
 	@Override
 	public CipherSuit getCipherSuite() {
 		CipherSuit result = new CipherSuit();
 		result.cipher = Cipher.DSA;
+		//result.ciphersize = p.bitLength();
 		result.hash_alg = hash_alg;
 		return result;
 	}
@@ -51,6 +61,7 @@ class DSA_PK extends PK {
 	 */
 	@Override
 	public boolean __equals(PK o) {
+		// TODO Auto-generated method stub
 		return false;
 	}
 	/**
@@ -58,6 +69,7 @@ class DSA_PK extends PK {
 	 */
 	@Override
 	public Encoder getEncoder() {
+		// TODO Auto-generated method stub
 		return null;
 	}
 	/**
@@ -65,10 +77,13 @@ class DSA_PK extends PK {
 	 */
 	@Override
 	public DSA_PK decode(Decoder dec) throws ASN1DecoderFail {
+		// TODO Auto-generated method stub
 		return this;
 	}
 }
+
 class DSA_SK extends SK {
+	//final static String type="DSA";
 	final static String V0="0";
 	private static final boolean DEBUG = false;
 	private static final boolean _DEBUG = true;
@@ -79,6 +94,7 @@ class DSA_SK extends SK {
 	 * @param ddPrimeCertainty
 	 */
 	public DSA_SK(int size, int ddPrimeCertainty) {
+		// TODO Auto-generated constructor stub
 	}
 	public DSA_SK(Decoder d) throws ASN1DecoderFail {
 		decode(d);
@@ -101,6 +117,7 @@ class DSA_SK extends SK {
 	 */
 	@Override
 	public byte[] sign(byte[] message) {
+		// TODO Auto-generated method stub
 		return null;
 	}
 	/**
@@ -115,6 +132,7 @@ class DSA_SK extends SK {
 	 */
 	@Override
 	public DSA_PK getPK() {
+		// TODO Auto-generated method stub
 		return null;
 	}
 	/**
@@ -122,6 +140,7 @@ class DSA_SK extends SK {
 	 */
 	@Override
 	public boolean sameAs(SK myPeerSK) {
+		// TODO Auto-generated method stub
 		return false;
 	}
 	@Override
@@ -133,6 +152,7 @@ class DSA_SK extends SK {
 	 */
 	@Override
 	public Encoder getEncoder() {
+		// TODO Auto-generated method stub
 		return null;
 	}
 	/**
@@ -140,19 +160,36 @@ class DSA_SK extends SK {
 	 */
 	@Override
 	public DSA_SK decode(Decoder dec) throws ASN1DecoderFail {
+		// TODO Auto-generated method stub
 		return this;
 	}
+//	/**
+//	 * hash and add salt to the message
+//	 * @param msg
+//	 * @return
+//	 */
+//	public byte[] hash_salt(byte[] msg) {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+//	public static byte[] unpad(byte[] m, DSA_SK sk) {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
 }
+
 public class DSA extends net.ddp2p.ciphersuits.Cipher {
 	public final static String type = Cipher.DSA;
 	private static final int DD_PRIME_CERTAINTY = 10;
-	DSA_SK sk = null; 
-	DSA_PK pk = null; 
+	DSA_SK sk = null; //new RSA_SK();
+	DSA_PK pk = null; //new RSA_PK();
 	public DSA(){}
+
 	public DSA(DSA_SK sk2, DSA_PK pk2) {
 		sk = sk2;
 		pk = pk2;
 	}
+
 	@Override
 	public SK genKey(int size) {
 		this.genKey(size, DD_PRIME_CERTAINTY);
@@ -166,12 +203,15 @@ public class DSA extends net.ddp2p.ciphersuits.Cipher {
 	private DSA_SK genKey(int size, int ddPrimeCertainty) {
 		sk = new DSA_SK(size, ddPrimeCertainty);
 		sk.hash_alg = hash_alg;
+		// TODO
 		return sk;
 	}
+
 	@Override
 	public String getType() {
 		return Cipher.DSA + Cipher.cipherTypeSeparator + this.hash_alg;
 	}
+
 	@Override
 	public PK getPK() {
 		if (pk != null)
@@ -179,32 +219,39 @@ public class DSA extends net.ddp2p.ciphersuits.Cipher {
 		if (sk != null) return sk.getPK();
 		return null;
 	}
+
 	@Override
 	public SK getSK() {
 		return sk;
 	}
+
 	@Override
 	public byte[] padding(byte[] msg) {
 		Util.printCallPath("N/A");
 		throw new RuntimeException("Not Applicable");
 	}
+
 	@Override
 	public byte[] unpad(byte[] m) {
 		Util.printCallPath("N/A");
 		throw new RuntimeException("Not Applicable");
 	}
+
 	@Override
 	public byte[] hash_salt(byte[] msg) {
 		Util.printCallPath("N/A");
 		throw new RuntimeException("Not Applicable");
 	}
+
 	@Override
 	public byte[] sign(byte[] m) {
 		if(sk == null) return null;
 		return sk.sign(m);
 	}
+
 	@Override
 	public boolean verify(byte[] signature, byte[] message) {
+		//return pk.verify_unpad_hash(signature, message);
 		if ((pk == null) && (sk !=null))
 			pk = sk.getPK();
 		if(pk == null) return false;

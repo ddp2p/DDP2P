@@ -1,18 +1,24 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2012 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.table;
+
 public class neighborhood {
 	public static final String neighborhood_ID = "neighborhood_ID";
 	/**
@@ -45,6 +51,7 @@ public class neighborhood {
 	public static String blocked = "blocked";
 	public static String requested = "requested";
 	public static String broadcasted = "broadcasted";
+
 	public static final String fields_neighborhoods_noID =
 		 address+
 		 ","+global_neighborhood_ID+
@@ -68,6 +75,7 @@ public class neighborhood {
 		 ","+requested+
 		 ","+broadcasted;
 	public static final String fields_neighborhoods = fields_neighborhoods_noID + ","+neighborhood_ID;
+	 
 	public static final String SEP_names_subdivisions = ":"; // stops working if replaced with ";"!
 	public static final int IDX_ADDRESS = 0;
 	public static final int IDX_GID = 1;
@@ -95,8 +103,9 @@ public class neighborhood {
 	public static final int IDX_BROADCASTED = 23;
 	public static final int IDX_ID = 24;
 	public static final String FIELDS_SEP = ",";
+	//public static int IDX_FIELDs=fields_neighborhoods.split(FIELDS_SEP).length;
 	public static String[] fields_neighborhoods_list = fields_neighborhoods.split(","); //23;
-	public static int IDX_FIELDs = fields_neighborhoods_list.length; 
+	public static int IDX_FIELDs = fields_neighborhoods_list.length; //23;
 	public static String[] fields_neighborhoods_noID_list = fields_neighborhoods_noID.split(","); //23;
-	public static int IDX_FIELD_noIDs = fields_neighborhoods_noID_list.length; 
+	public static int IDX_FIELD_noIDs = fields_neighborhoods_noID_list.length; //.split(Pattern.quote(FIELDS_SEP));
 }

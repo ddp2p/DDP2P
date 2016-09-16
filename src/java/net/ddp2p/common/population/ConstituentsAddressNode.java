@@ -1,20 +1,28 @@
+/* ------------------------------------------------------------------------- */
 /*   Copyright (C) 2015 Marius C. Silaghi
 		Author: Marius Silaghi: msilaghi@fit.edu
 		Florida Tech, Human Decision Support Systems Laboratory
+   
        This program is free software; you can redistribute it and/or modify
        it under the terms of the GNU Affero General Public License as published by
        the Free Software Foundation; either the current version of the License, or
        (at your option) any later version.
+   
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
+  
       You should have received a copy of the GNU Affero General Public License
       along with this program; if not, write to the Free Software
       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.              */
+/* ------------------------------------------------------------------------- */
 package net.ddp2p.common.population;
+
 import static net.ddp2p.common.util.Util.__;
+
 import java.util.ArrayList;
+
 import net.ddp2p.ciphersuits.Cipher;
 import net.ddp2p.ciphersuits.SK;
 import net.ddp2p.common.config.Application;
@@ -27,6 +35,7 @@ import net.ddp2p.common.data.D_Organization;
 import net.ddp2p.common.hds.ClientSync;
 import net.ddp2p.common.util.P2PDDSQLException;
 import net.ddp2p.common.util.Util;
+
 public class ConstituentsAddressNode extends ConstituentsBranch {
 	private static final boolean _DEBUG = true;
 	private static final boolean DEBUG = false;
@@ -38,6 +47,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 	String sql_params[] = new String[0];
 	private Constituents_AddressAncestors[] next_ancestors;
 	private Constituents_NeighborhoodData n_data;
+	
 	public ConstituentsAddressNode (ConstituentsInterfaceInput _model, ConstituentsBranch _parent, 
 			Constituents_NeighborhoodData nd, Constituents_AddressAncestors[] _ancestors) {
 		super(_model, _parent, _ancestors, 1);
@@ -59,9 +69,11 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 			if((getLevel()>0)&&(getLevel()<getFieldIDs().length+1))
 				getLocation().fieldID_above = getFieldIDs()[getLevel()-1];
 			else getLocation().fieldID_above = 0;
+			
 			if((getLevel()+1>=0)&&(getLevel()+1<getFieldIDs().length))
 				getLocation().setFieldID_default_next(getFieldIDs()[getLevel()+1]);
 			else getLocation().setFieldID_default_next(0);
+			//((nd.description==null)?"":nd.description)+" "+
 			String tr = DDTranslation.translate(nd.name_division,nd.name_division_lang);
 			getLocation().tip = ((tr==null)?"":tr)
 					+" sd="+
@@ -80,15 +92,19 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 				for(int k=0; k<ancestors.length; k++) getNextAncestors()[k] = ancestors[k];				
 				getNextAncestors()[ancestors.length] = new Constituents_AddressAncestors(0,nd.name);
 			}
+				
 		}
 		try {
 			populateAddress(true);
+			//nchildren = 1;
 		}catch(Exception e){
+			//JOptionPane.showMessageDialog(null,"populate: "+e.toString());
 			e.printStackTrace();
 			return;			
 		}
 		if(DEBUG) System.err.println("Creating ConstituentsAddress: "+getLocation());
 	}
+	
 	public ConstituentsAddressNode (ConstituentsInterfaceInput _model, ConstituentsBranch _parent, Constituents_LocationData _data,
 			String _sql_children, String[] _sql_params,
 			Constituents_AddressAncestors[] _ancestors, long[] _fieldIDs, int _level, long parent_nID, Constituents_NeighborhoodData _n_data) {
@@ -104,13 +120,17 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 			setNeighborhoodData(_n_data);
 			if(getNeighborhoodData() == null)
 				setNeighborhoodData(new Constituents_NeighborhoodData(_data.organizationID, parent_nID, _model.getOrganizationID()));
+				//n_data = new NeighborhoodData(_data.value, parent_nID, _model.getOrganizationID());
 		}else{
+			
 		   	if(DEBUG) System.err.println("ConstituentsModel:ConstituentsAddressNode: null location for: "+_n_data);
+		   	//Util.printCallPath("null location");
 			setNeighborhoodData(_n_data);
 			if(getNeighborhoodData() == null){
 				setNeighborhoodData(new Constituents_NeighborhoodData(null,parent_nID,_model.getOrganizationID()));
 				getNeighborhoodData().names_subdivisions=model.getSubDivisions();
 				getNeighborhoodData().name_subdivisions_lang=DDTranslation.org_language;
+				//org_language=new Language("en","US");//organization language
 			}
 		}
 		if(ancestors == null) {
@@ -120,10 +140,14 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 			for(int k=0; k<ancestors.length; k++) getNextAncestors()[k] = ancestors[k];
 			getNextAncestors()[ancestors.length] = new Constituents_AddressAncestors(getLocation().fieldID,getLocation().value);
 		}
+		
 		if(getLocation() != null) {
+			//ArrayList<ArrayList<Object>> identities;
 			try {
 				populateAddress(true);
+				//nchildren = 1;
 			}catch(Exception e){
+				//JOptionPane.showMessageDialog(null,"populate: "+e.toString());
 				e.printStackTrace();
 				return;			
 			}
@@ -137,18 +161,35 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 	public void addEmptyNeighborhood() {
 		if(DEBUG) System.err.println("ConstituentsModel:ConstituentsAddressNode:addEmptyNeighborhood: start");
 		ConstituentsAddressNode child;
+		
 		String arrival_time = Util.getGeneralizedTime();
 		String submitter_ID = Util.getStringID(model.getConstituentIDMyself());
-		SK sk = Application_GUI.getCrtIdentityKeys();
+		SK sk = Application_GUI.getCrtIdentityKeys();// ib.getKeys();
 		Cipher keys;
-		keys = Application_GUI.getCrtIdentityCipher();
+		keys = Application_GUI.getCrtIdentityCipher();// ib.getCipher();
 		if (keys == null || sk == null) return;
 		String orgGID = D_Organization.getGIDbyLIDstr(Util.getStringID(model.getOrganizationID()));
 	    try {
 			String subdivision = getNeighborhoodData().getChildSubDivision(0);
 			String division = getNeighborhoodData().getChildDivision(0);
 			String gID = null;
+			//Util.getGlobalID("neighborhood", ""+((location!=null)?location.value:"")+model.constituentID);
+			//if(null==WB_Neighborhood.localForNeighborhoodGID(gID)) return;
 			String parent_nID = Util.getStringID(getNeighborhoodData().neighborhoodID);
+			/*
+			long nID=model.db.insert(table.neighborhood.TNAME,
+					new String[]{table.neighborhood.global_neighborhood_ID, table.neighborhood.parent_nID, table.neighborhood.name, 
+					table.neighborhood.name_lang, table.neighborhood.name_charset,
+					table.neighborhood.name_division,table.neighborhood.name_division_lang,table.neighborhood.name_division_charset,
+					table.neighborhood.names_subdivisions,table.neighborhood.name_subdivisions_lang,table.neighborhood.name_subdivisions_charset,
+					table.neighborhood.submitter_ID,table.neighborhood.organization_ID},
+					new String[]{gID, parent_nID, __("Not initialized"),
+					DDTranslation.authorship_lang.lang, DDTranslation.authorship_lang.flavor,
+					division,n_data.name_subdivisions_lang.lang,n_data.name_subdivisions_lang.flavor,
+					subdivision,n_data.name_subdivisions_lang.lang,n_data.name_subdivisions_lang.flavor,
+					Util.getStringID(model.getConstituentIDMyself()),
+					Util.getStringID(model.getOrganizationID())}, DEBUG);
+			*/
 	    	D_Neighborhood dn = D_Neighborhood.getEmpty();
 	    	dn.setGID(gID);
 	    	dn.setParentLIDstr(parent_nID);
@@ -163,11 +204,13 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 	    	dn.setNames_subdivisions_charset(getNeighborhoodData().name_subdivisions_lang.flavor);
 	    	dn.setSubmitterLIDstr(submitter_ID);
 	    	dn.setOrgIDs(orgGID, model.getOrganizationID());
+
 	    	if (DD.NEIGHBORHOOD_SIGNED_WHEN_CREATED_EMPTY) {
 	    		if (sk != null) {
 	    			dn.setArrivalDateStr(arrival_time);
 	    			dn.setGID(dn.make_ID());
 	    			dn.sign(sk);
+	    			//D_Neighborhood.readSignStore(nID, sk, orgGID, parent_nID, submitter_ID, arrival_time);
 	    		} else {
 	    			Application_GUI.warning(__("No key found in Identity!")+" "+
 	    					__("Probably not yet implemented signature of empty Neighborhoods"),
@@ -185,6 +228,9 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 				tp=getParent().getPath();
 			}
 			model.updateCensusInserted(this, getPath(), new int[]{0},new Object[]{child});
+			//}else{
+			//model.fireTreeStructureChanged(new TreeModelEvent(this,tp));
+			//}
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -233,14 +279,27 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     			if(((ConstituentsIDNode)child).get_constituentID() == 
     				((ConstituentsIDNode)getChildren()[i]).get_constituentID()) return i;
     		}
+    		/*
+    		if(child instanceof ConstituentsAddressNode) {
+    			if(((ConstituentsAddressNode)child).get_constituentID() == 
+    				((ConstituentsAddressNode)children[i]).get_constituentID()) return i;
+    		}
+    		*/
     	}
     	if(DEBUG) System.err.println("Index of: "+child+" in: "+this);
     		for(int i=0; i<getChildren().length; i++)
     			if(DEBUG) System.err.println("Here of: "+getChildren()[i]);
     	return -1;
     }
+    /*
+    public long get_constituentID(){
+    	if(location == null) return -1;
+    	return location.field_valuesID;
+    }
+    */
     public String getTip() {
 		if ((getLocation() == null)||(getLocation().tip == null)) return null;
+    	//String tip=DDTranslation.translate(location.label,n_data.name_division_lang);
     	return getLocation().getLabel()+" ("+getLocation().tip+")";
     }
     /**
@@ -277,6 +336,8 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     	populateIDs(true);
     }
     void populateIDs(boolean resetCnt) {
+    	//boolean DEBUG = true;
+    	//if(true)return;
     	if(DEBUG) System.err.println("ConstituentsModel:ConstituentsAddressNode:populateIDs start "+this);
     	if(resetCnt){
     		setChildren(new ConstituentsNode[0]);
@@ -293,6 +354,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     	}
     	int final_params = 0;
    		if(getNeighborhoodData().neighborhoodID>=0) {
+   			////final_params=1;
    		}
    		int ancestors_nb = 0;
    		if(ancestors!=null) ancestors_nb = ancestors.length;
@@ -308,9 +370,13 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     			where = where + " AND fv"+k+"."+net.ddp2p.common.table.field_value.value+" = ? AND fv"+k+"."+net.ddp2p.common.table.field_value.field_extra_ID+" = ? ";
      			param[2*k+static_params] = ancestors[k].getValue();
      			param[2*k+static_params+1] = ancestors[k].getFieldID()+"";
+    			//where = where + "AND fv"+k+".value = ? AND fv"+k+".fieldID = ? AND fv"+k+".constituentID = ?";
+     			//param[2*k+1] = ancestors[k].constituentID;
     		}
     		if(getNeighborhoodData().neighborhoodID>=0) {
     			where = where + " AND fv."+net.ddp2p.common.table.field_value.neighborhood_ID+" ISNULL ";
+    			////where = " ( " + where + " ) OR fv.neighborhoodID = ? ";
+    			////param[param.length-1] = ""+n_data.neighborhoodID;
     		}
     		sql = "SELECT " +
     				"fv."+net.ddp2p.common.table.constituent.name+
@@ -324,9 +390,14 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 		        ", fv."+net.ddp2p.common.table.constituent.blocked +
 		        ", fv."+net.ddp2p.common.table.constituent.broadcasted +
     				" FROM "+net.ddp2p.common.table.constituent.TNAME+" AS fv " +
+    						
 				tables+" WHERE fv."+net.ddp2p.common.table.constituent.organization_ID+" = ? "+where+" GROUP BY fv."+net.ddp2p.common.table.constituent.constituent_ID+";";
+     		
     		if(DEBUG) System.err.print("F: populateIDs will select");
+    		
     		identities = Application.getDB().select(sql, param, DEBUG);
+    		
+    		
     		String sql_additional=
     			"SELECT " +
     			" fv."+net.ddp2p.common.table.constituent.name+
@@ -341,10 +412,12 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 		        ", fv."+net.ddp2p.common.table.constituent.broadcasted +
    				" FROM "+net.ddp2p.common.table.constituent.TNAME+" as fv WHERE " +
     				net.ddp2p.common.table.constituent.neighborhood_ID+" = ?;";
+    		//// using this instead of similar commented lines above
     		identities.addAll(
     				Application.getDB().select(sql_additional, new String[]{""+getNeighborhoodData().neighborhoodID}));
     		if(DEBUG) System.err.print("F: populateIDs selected");
     	}catch(Exception e) {
+    		//JOptionPane.showMessageDialog(null,"populate: "+e.toString());
     		e.printStackTrace();
     		return;
     	}
@@ -368,13 +441,17 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
        		boolean blocked = "1".equals(Util.getString(identities_i.get(8)));
        		boolean broadcasted = "1".equals(Util.getString(identities_i.get(9)));
        		boolean external = "1".equals(Util.getString(identities_i.get(3)));
+       		//boolean external = Util.ival(identities.get(i).get(3),-1);
        		long submitterID = Util.lval(identities_i.get(5),-1);
-       		D_Constituent c = null;
+       		
+       		D_Constituent c = null;//D_Constituent.getConstByLID(constituentID, false, false);
     		ConstituentData data = new ConstituentData(c);
+    		
     		data.setC_GID(Util.sval(identities_i.get(4),null));
     		data.setC_LID(Integer.parseInt(constituentID));
     		data.setGivenName(forename);
     		data.setSurname(name);
+    		//data.inserted_by_me=(model.constituentID == external);
     		data.inserted_by_me=(model.getConstituentIDMyself() == submitterID);
     		data.external = external;
     		data.blocked = blocked;
@@ -425,12 +502,63 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     		String q="fv."+net.ddp2p.common.table.field_value.constituent_ID;
     		String g="";
     		identities=child.getDynamicNeighborhoods(q,g);
+    		/*
+    		String param[];
+        	if(this.parent!=null){
+        		String tables = " ";
+        		String where = " ";
+        		int static_params=4;
+        		if(ancestors==null) {
+        			if(DEBUG) System.err.print("Empty ancestors in "+this);
+        			return;
+        		}
+        		param = new String[static_params+3*(ancestors.length)-1];
+        		param[0] = ""+this.location.fieldID; //fv.fieldID>?
+        		param[1] = ""+this.location.fieldID; //fv.fieldID_above=?
+        		param[2] = ""+child.location.value; //f.value
+        		param[3] = ""+child.location.fieldID; //f.fieldID
+        		long fieldID_above = -1;
+        		int par_idx = static_params;
+        		for(int k=0; k < ancestors.length; k++) {
+        			tables = tables + " JOIN field_value AS fv"+k+" ON fv.constituent_ID=fv"+k+".constituent_ID ";
+        			where = where + " AND fv"+k+".value = ? AND fv"+k+".field_extra_ID = ? ";
+         			param[par_idx++] = ancestors[k].value;
+         			param[par_idx++] = ancestors[k].fieldID+"";
+        			if(fieldID_above >=0) {
+        				where = where + " AND fv"+k+".fieldID_above = ? ";
+        				param[par_idx++] = ancestors[k].field_extra_ID+"";
+        			}else{
+        				where = where + " AND fv"+k+".fieldID_above ISNULL ";
+        			}
+        			fieldID_above = ancestors[k].field_extra_ID;
+        		}
+        		sql = "select fv.constituentID " +
+         				" from field_value AS fv " +
+         				//" JOIN field_value AS f ON f.constituent_ID = fv.constituent_ID " +
+         				//" JOIN constituent AS c ON c.constituent_ID = fv.constituent_ID "+
+         				tables+
+         				" WHERE fv.field_extra_ID > ? AND fv.fieldID_above = ? " +
+         				" AND fv.value = ? AND fv.field_extra_ID = ? "+where + 
+         				";";
+        	}else{
+        		param = new String[3];
+        		param[0]=model.organization_ID+"";
+        		param[1]=child.location.field_extra_ID+"";
+        		param[2]=child.location.value;
+        		sql = "select fv.constituent_ID from field_value AS fv " +_
+        				" JOIN constituent AS c ON c.constituent_ID=fv.constituentID " +
+        				" WHERE c.organization_ID = ? AND " +
+        				" fv.field_extra_ID = ? AND fv.fieldID_above ISNULL AND fv.value = ?;";
+        	}
+        	identities = model.db.select(sql, param);
+        	*/
     		if(DEBUG) System.err.println("Records= "+identities.size());
         	for(int i=0; i<identities.size(); i++) {   		
         			constituentID = Util.ival(identities.get(i).get(0), -1);
         			D_Constituent.delConstituent(constituentID);
         	}
     	}catch(Exception e){
+    		//JOptionPane.showMessageDialog(null,"delete: "+e.toString());
     		e.printStackTrace();
     	}
     }
@@ -443,6 +571,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     	if (DEBUG) System.err.println("ConstituentsModel:ConstituentsAddressNode:populateAddress: "+this);
     	setChildren(new ConstituentsNode[0]);
     	ArrayList<ArrayList<Object>> identities;
+    	//ArrayList<ArrayList<Object>> nei=new ArrayList<ArrayList<Object>>();
     	ArrayList<Long> subnei = new ArrayList<Long>();
     	if (ancestors == null) {
     		if (DEBUG) System.err.print("ConstituentsModel:ConstituentsAddressNode:populateAddress: Empty ancestors in "+this);
@@ -454,7 +583,17 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
      		identities = getDynamicNeighborhoods(query,group);
     		if ((getNeighborhoodData() != null) && (getNeighborhoodData().neighborhoodID >= 0)) {
     			subnei = D_Neighborhood.getNeighborhoodChildrenIDs(getNeighborhoodData().neighborhoodID);
-    		}
+    			/*
+    			String neighborhoods_sql =
+    				"SELECT "+table.neighborhood.name+", "+table.neighborhood.neighborhood_ID+
+    				" FROM "+table.neighborhood.TNAME +
+    				" WHERE "+table.neighborhood.organization_ID+" = ? AND "+table.neighborhood.parent_nID+" = ? " +
+    						//" GROUP BY "+table.neighborhood.name+
+    						" ORDER BY "+table.neighborhood.name+" DESC;";
+    			nei = model.db.select(neighborhoods_sql,
+    					new String[]{""+model.getOrganizationID(), ""+n_data.neighborhoodID}, DEBUG);
+    			*/
+    		}//else nei = null;
     		if (counting) {
     			int _nchildren=0;
     			if (subnei.size() == 0) {
@@ -465,12 +604,13 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     				return identities.size() > 0;
     			}
     			int n = 0;
+    			//if(identities.size()==0) _nchildren = nei.size();
     			for (int i = 0; i < identities.size(); i ++) {
     				String value = Util.sval(identities.get(i).get(0),null);
     				_nchildren++;
     		    	for (; n < subnei.size(); n ++) {
     		    		D_Neighborhood dn = D_Neighborhood.getNeighByLID(subnei.get(n), true, false);
-    		    		String n_name = dn.getName(); 
+    		    		String n_name = dn.getName(); // Util.sval(nei.get(n).get(0), "");
     		    		int cmp = value.compareToIgnoreCase(n_name);
     		    		if (cmp > 0) break; 
     		    		if (cmp < 0) _nchildren ++;
@@ -484,6 +624,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     			return hasChildren;
     		}
     	}catch(Exception e){
+    		//JOptionPane.showMessageDialog(null,"populate: "+e.toString());
     		e.printStackTrace();
     		return false;
     	}
@@ -498,13 +639,15 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 		    if ((value != null) && (subnei != null)) {
 		    	for (; n < subnei.size(); n++) {
 		    		D_Neighborhood dn = D_Neighborhood.getNeighByLID(subnei.get(n), true, false);
-		    		String n_name = dn.getName(); 
+		    		String n_name = dn.getName(); // Util.sval(nei.get(n).get(0), "");
+		    		//String n_name = //Util.sval(nei.get(n).get(0), "");
 		    		int cmp = value.compareToIgnoreCase(n_name);
 		    		if(DEBUG) System.err.println("Neigh= "+n_name+" :"+cmp);
 		    		if (cmp>0) break; 
 		    		if (cmp<0) {
-		    			long nID = subnei.get(n); 
+		    			long nID = subnei.get(n); //Util.lval(nei.get(n).get(1), -1);
 		    			if(DEBUG) System.err.println("...nID = "+getNeighborhoodData().neighborhoodID);
+		    			//NeighborhoodData nd=new NeighborhoodData(n_name, n_data.neighborhoodID, model.getOrganizationID());
 		    			Constituents_NeighborhoodData nd=new Constituents_NeighborhoodData(nID, getNeighborhoodData().neighborhoodID, model.getOrganizationID());
 		    			addChild(
 		    					new ConstituentsAddressNode(model, this, nd, getNextAncestors()),
@@ -512,6 +655,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 		    		}
 		    	}
 		    }			
+			
 			obj = identities.get(i).get(1);
     		if(obj!=null) count = obj.toString();else count = "0";
     		obj = identities.get(i).get(2);
@@ -522,6 +666,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     		Constituents_LocationData data = new Constituents_LocationData();
     		data.value = value;
     		data.fieldID = Util.lval(fieldID,-1);
+    		//if(data.fieldID <= location.fieldID) continue;
     		data.inhabitants = Util.ival(count,0);
     		data.organizationID = getLocation().organizationID;
     		data.partNeigh = Util.ival(identities.get(i).get(4),0);
@@ -535,13 +680,16 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     	}
 	    for (; n < subnei.size(); n++) {
     		D_Neighborhood dn = D_Neighborhood.getNeighByLID(subnei.get(n), true, false);
-    		String n_name = dn.getName(); 
-	    	long nID = subnei.get(n); 
+    		String n_name = dn.getName(); // Util.sval(nei.get(n).get(0), "");
+	   	    //String n_name = Util.sval(nei.get(n).get(0), "");
+	    	long nID = subnei.get(n); //Util.lval(nei.get(n).get(1), -1);
 	    	if(DEBUG) System.err.println("nID = "+getNeighborhoodData().neighborhoodID);
 	    	Constituents_NeighborhoodData nd=new Constituents_NeighborhoodData(nID, getNeighborhoodData().neighborhoodID, model.getOrganizationID());
+	    	//NeighborhoodData nd=new NeighborhoodData(n_name, n_data.neighborhoodID, model.getOrganizationID());
 	    	addChild(new ConstituentsAddressNode(model, this, nd, getNextAncestors()), 0);
 	    	_nchildren++;
 	    }
+    	//if(identities.size()!=nchildren) setNChildren(identities.size());
     	if(_nchildren!=getNchildren()) setNChildren(_nchildren);
     	Object[] mypath = getPath();
     	if(DEBUG) {
@@ -555,6 +703,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
     	model.updateCensusStructure(model,getPath());
     	return true;
     }
+    // fv is field_values of next child, fe is field_extra 
     ArrayList<ArrayList<Object>> getDynamicNeighborhoods(String query, String group) throws P2PDDSQLException {
 		if(DEBUG) System.err.println("ConstituentsModel:ConstituentsAddressNode:getDynamicNeighborhoods: start");
     	ArrayList<ArrayList<Object>> identities;
@@ -586,6 +735,7 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
        	identities = Application.getDB().select(sql, param);
        	return identities;
     }
+
     /**
      * Return language string for instances of children nodes using this value
      * @return
@@ -595,24 +745,30 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 		if(getNeighborhoodData().name_lang==null) return "en";
 		return getNeighborhoodData().name_lang.lang;
 	}
-	public void advertise(String orgGIDH) { 
+
+	public void advertise(String orgGIDH) { //ConstituentsTree tree
 		String hash = D_Constituent.getGIDHashFromGID(this.getNeighborhoodData().global_nID);
-		String org_hash = orgGIDH; 
+		String org_hash = orgGIDH; // tree.getModel().getOrganization().getGIDH();
+	//	String org_hash = D_Organization.getOrgGIDHashGuess(tree.getModel().getOrgGID());
 		ClientSync.addToPayloadFix(net.ddp2p.common.streaming.RequestData.NEIG, hash, org_hash, ClientSync.MAX_ITEMS_PER_TYPE_PAYLOAD);
 	}
-	public void block() { 
+
+	public void block() { //ConstituentsTree tree
 		try {
 			D_Neighborhood dn = D_Neighborhood.getNeighByLID(this.getNeighborhoodData().neighborhoodID, true, true);
 			dn.setBlocked(! dn.isBlocked());
 			this.getNeighborhoodData().blocked = dn.isBlocked();
 			dn.storeRequest();
 			dn.releaseReference();
+			//boolean blocked = D_Neighborhood.toggleBlock(this.n_data.neighborhoodID);
+			//this.n_data.blocked = blocked;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return;
 		}
 	}
-	public void broadcast() { 
+			//boolean broadcast = D_Neighborhood.toggleBroadcast(this.n_data.neighborhoodID);
+	public void broadcast() { //ConstituentsTree tree
 		try {
 			D_Neighborhood dn = D_Neighborhood.getNeighByLID(this.getNeighborhoodData().neighborhoodID, true, true);
 			dn.setBroadcasted(! dn.isBroadcasted());
@@ -624,36 +780,47 @@ public class ConstituentsAddressNode extends ConstituentsBranch {
 			return;
 		}
 	}
-	public void zapp() { 
+
+	public void zapp() { // ConstituentsTree tree
 		D_Neighborhood.zapp(this.getNeighborhoodData().neighborhoodID);
 	}
+
 	public Constituents_NeighborhoodData getNeighborhoodData() {
 		return n_data;
 	}
+
 	public void setNeighborhoodData(Constituents_NeighborhoodData n_data) {
 		this.n_data = n_data;
 	}
+
 	public Constituents_LocationData getLocation() {
 		return location;
 	}
+
 	public void setLocation(Constituents_LocationData location) {
 		this.location = location;
 	}
+
 	public long[] getFieldIDs() {
 		return fieldIDs;
 	}
+
 	public void setFieldIDs(long fieldIDs[]) {
 		this.fieldIDs = fieldIDs;
 	}
+
 	public Constituents_AddressAncestors[] getNextAncestors() {
 		return next_ancestors;
 	}
+
 	public void setNextAncestors(Constituents_AddressAncestors[] next_ancestors) {
 		this.next_ancestors = next_ancestors;
 	}
+
 	public int getLevel() {
 		return level;
 	}
+
 	public void setLevel(int level) {
 		this.level = level;
 	}
