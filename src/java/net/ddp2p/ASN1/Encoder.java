@@ -777,7 +777,7 @@ class Encoder {
 		}
 		Encoder enc = new Encoder().initSequence();
 		for(int k=0; k<param.size(); k++) {
-			if(param.get(k)!=null) enc.addToSequence(((ASNObj)param.get(k)).getEncoder());
+			if(param.get(k)!=null) enc.addToSequence(((ASNObjArrayable)param.get(k)).getEncoder());
 			else enc.addToSequence(Encoder.getNullEncoder());
 		}
 		return enc;
@@ -788,7 +788,7 @@ class Encoder {
 		}
 		Encoder enc = new Encoder().initSequence();
 		for (int k = 0 ; k < param.length ; k ++) {
-			if (param[k] != null) enc.addToSequence(((ASNObj)param[k]).getEncoder());
+			if (param[k] != null) enc.addToSequence(((ASNObjArrayable)param[k]).getEncoder());
 			else enc.addToSequence(Encoder.getNullEncoder());
 		}
 		return enc;
@@ -799,7 +799,7 @@ class Encoder {
 		}
 		Encoder enc = new Encoder().initSequence();
 		for (int k = 0 ; k < param.length ; k ++) {
-			if (param[k] != null) enc.addToSequence(((ASNObj)param[k]).getEncoder(dictionary_GIDs));
+			if (param[k] != null) enc.addToSequence(((ASNObjArrayable)param[k]).getEncoder(dictionary_GIDs));
 			else enc.addToSequence(Encoder.getNullEncoder());
 		}
 		return enc;
@@ -810,7 +810,7 @@ class Encoder {
 		}
 		Encoder enc = new Encoder().initSequence();
 		for (int k = 0 ; k < param.length ; k ++) {
-			if (param[k] != null) enc.addToSequence(((ASNObj)param[k]).getEncoder(dictionary_GIDs, dependants));
+			if (param[k] != null) enc.addToSequence(((ASNObjArrayable)param[k]).getEncoder(dictionary_GIDs, dependants));
 			else enc.addToSequence(Encoder.getNullEncoder());
 		}
 		return enc;
