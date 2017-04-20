@@ -148,9 +148,11 @@ class Decoder {
 		//BigInteger bn128 = ASN1_Util.BN128;
 		return ASN1_Util.fromBase128(data, offset + 1, offset + length);
 	}
-	public Decoder removeExplicitASN1Tag() throws ASN1DecoderFail {
-		Decoder d = this.getContent();
-		return d.getFirstObject(true);
+	public boolean hasType(int ASN1class, int ASN1type, BigInteger tag) {
+		if (this.typeClass() != ASN1class) return false;
+		if (this.typePC() != ASN1type) return false;
+		if (!this.getTagValueBN().equals(tag)) return false;
+		return true;
 	}
 	public int typeLen(){
 		if (length <= 0) return 0;
@@ -191,7 +193,7 @@ class Decoder {
 		//System.err.println("done ContentLength: "+ilen);
 		return ilen;
 	}
-	public int lenLen(){
+	public int lenLen() {
 		//System.err.println("lenLen:"+ASN1_Util.byteToHex(data, offset, 5, " "));
 		int tlen = typeLen();
 		//System.err.println(tlen+"=tlen +length byte="+data[offset+tlen]);
@@ -206,7 +208,7 @@ class Decoder {
 	 * 		   larger than 0: returns length of the buffer needed to store the whole first ASN1 object
 	 * 
 	 */
-	public int objectLen(){
+	public int objectLen() {
 		int type_len = typeLen();
 		if ((type_len == 0) || (type_len>=length)) return -1; // insufficient to find
 		int len_len = lenLen();
@@ -370,11 +372,19 @@ class Decoder {
 		return new Decoder(data,old_offset,new_len);
 	}
 	/**
-	 * Lets this unchanged and returns a new Decoder.
+	 * Default is to consider the tag was implicit.
 	 * @return
 	 * @throws ASN1DecoderFail
 	 */
 	public Decoder getContent() throws ASN1DecoderFail {
+		return getContentImplicit();
+	}	
+	/**
+	 * Lets this unchanged and returns a new Decoder.
+	 * @return
+	 * @throws ASN1DecoderFail
+	 */
+	public Decoder getContentImplicit() throws ASN1DecoderFail {
 		if (DEBUG) System.err.println("getContent: Length: "+length);
 		if (length <= 0) throw new ASNLenRuntimeException("Container length 0");
 		int new_len;
@@ -389,12 +399,31 @@ class Decoder {
 		if(new_len < 0) throw new ASN1DecoderFail("Negative length");
 		return new Decoder(data,offset+new_off,new_len);
 	}
+	/**
+	 * 
+	 * @return
+	 * @throws ASN1DecoderFail
+	 */
+	public Decoder getContentExplicit() throws ASN1DecoderFail {
+		Decoder d = this.getContent();
+		return d.getFirstObject(true).getContent();
+	}
+	/**
+	 * Just remove an explicit tag, leaving the (default) implicit one.
+	 * @return
+	 * @throws ASN1DecoderFail
+	 */
+	public Decoder removeExplicitASN1Tag() throws ASN1DecoderFail {
+		Decoder d = this.getContent();
+		return d.getFirstObject(true);
+	}
 	public boolean getBoolean() {
 		if(length<=0) throw new ASNLenRuntimeException("Boolean length");
 		//assert
 		if (!(data[offset]==Encoder.TAG_BOOLEAN))
 			ASN1_Util.printCallPathTop("Encoder: getBoolean: Failed Encoder:"+getTypeByte());
 		assert(data[offset+1]==1);
+		assert(data[offset+2] == 0 || data[offset+2] == -1);
 		return data[offset+2] != 0;
 	}
 	public boolean getBoolean(byte type) throws ASN1DecoderFail {
@@ -402,6 +431,7 @@ class Decoder {
 		if(data[offset]!=type) throw new ASN1DecoderFail("Wrong boolean type");
 		//assert(data[offset]==type);
 		assert(data[offset+1]==1);
+		assert(data[offset+2] == 0 || data[offset+2] == -1);
 		return data[offset+2] != 0;
 	}
 	public BigInteger getInteger() {
@@ -623,30 +653,31 @@ class Decoder {
 		return ASN1_Util.getCalendar(this.getGeneralizedTimeAnyType());
 	}
 	/**
-	 * Currently not expanding the buffer but rather abandon if too small. Also returns false on end of stream.
+	 * Currently not expanding the buffer but rather abandon if too small. 
+	 * Also returns false on end of stream.
 	 * @param is
 	 * @return
 	 * @throws IOException
 	 */
 	public boolean fetchAll(InputStream is) throws IOException {
 		//Decoder dec = new Decoder(sr,0,msglen);
-		while(true) {
+		while (true) {
 			int asrlen = objectLen();
 			if(DEBUG)System.out.println("Object size="+asrlen+"; Buffer size="+data.length+"; Current size="+length);
-			if ((asrlen > 0) && (asrlen>data.length)) {
-				System.out.println("Object size="+asrlen+"; Buffer size="+data.length);
-				return false;
+			if ((asrlen > 0) && (asrlen > data.length - offset)) {
+				if (DEBUG) System.err.println("Object size="+asrlen+"; Buffer size="+data.length);
+				return false; // not enough space
 			}
-			if ((asrlen<0) || (length < asrlen)) {
-				if(DEBUG)System.out.println("Object size="+asrlen+"; Current size="+length);
-				if(length == data.length) return false;
+			if ((asrlen < 0) || (length < asrlen)) {
+				if (DEBUG)System.out.println("Object size="+asrlen+"; Current size="+length);
+				if (length == data.length - offset) return false; // at end
 				int inc = is.read(data, length, data.length-length);
 				if (inc <= 0) return false;
 				length += inc;
 				//dec = new Decoder(data,0,length);
 				continue;
 			}
-			break;
+			break; // enough data
 		}
 		return true;
 	}

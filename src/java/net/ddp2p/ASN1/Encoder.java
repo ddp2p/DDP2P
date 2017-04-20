@@ -277,12 +277,38 @@ class Encoder {
 	 * @param tagASN1
 	 * @return
 	 */
-	public Encoder setASN1Type(byte tagASN1){
+	public Encoder setASN1TypeImplicit(byte tagASN1) {
 		int old_len_len = this.header_type.length;
-		header_type=new byte[]{tagASN1};
+		header_type = new byte[]{tagASN1};
 		bytes += header_type.length - old_len_len;
 		return this;
 	}
+	
+	/**
+	 * sets the byte is header_type 
+	 * @param tagASN1
+	 * @return
+	 */
+	public Encoder setASN1TypeExplicit(byte tagASN1) {
+		return new Encoder().
+			initSequence().
+			addToSequence(this).setASN1Type(tagASN1);
+	}
+	public Encoder setASN1TagExplicit(int _classASN1, int _privateASN1, BigInteger tag_number) {
+		Encoder e = new Encoder().initSequence();
+		e.addToSequence(this);
+		e.setASN1Type(_classASN1, _privateASN1, tag_number);
+		return e;
+	}
+	/**
+	 * The default is implicit.
+	 * @param tagASN1
+	 * @return
+	 */
+	public Encoder setASN1Type(byte tagASN1) {
+		return setASN1TypeImplicit(tagASN1);
+	}
+
 	/**
 	 * 
 	 * @param classASN1  The ASN1 Class (UNIVERSAL/APPLICATION/CONTEXT/PRIVATE)
@@ -330,9 +356,33 @@ class Encoder {
 	 * @param tag_number
 	 * @return returns this
 	 */
-	public Encoder setASN1Type(int classASN1, int PCASN1, byte tag_number){
+	public Encoder setASN1Type(int classASN1, int PCASN1, byte tag_number) {
 		return setASN1Type(buildASN1byteType(classASN1, PCASN1, tag_number));
 	}
+	public Encoder setASN1TypeImplicit(int classASN1, int PCASN1, byte tag_number) {
+		return setASN1TypeImplicit(buildASN1byteType(classASN1, PCASN1, tag_number));
+	}
+	/**
+	 * 
+	 * @param classASN1  The ASN1 Class (UNIVERSAL/APPLICATION/CONTEXT/PRIVATE)
+	 * @param PCASN1	Is this PRIMITIVE or CONSTRUCTED
+	 * @param tag_number
+	 * @return returns this
+	 */
+	public Encoder setASN1TypeExplicit(int classASN1, int PCASN1, byte tag_number) {
+		return setASN1TypeExplicit(buildASN1byteType(classASN1, PCASN1, tag_number));
+	}
+	/**
+	 * The defaut is implicit
+	 * @param classASN1
+	 * @param PCASN1
+	 * @param tag_number
+	 * @return
+	 */
+	public Encoder setASN1Type(int classASN1, int PCASN1, BigInteger tag_number) {
+		return setASN1TypeImplicit(classASN1, PCASN1, tag_number);
+	}
+
 	/**
 	 * 
 	 * @param classASN1  The ASN1 Class (UNIVERSAL/APPLICATION/CONTEXT/PRIVATE)
@@ -340,9 +390,22 @@ class Encoder {
 	 * @param tag_number a big integer
 	 * @return returns this
 	 */
-	public Encoder setASN1Type(int classASN1, int PCASN1, BigInteger tag_number) {
+	public Encoder setASN1TypeExplicit(int classASN1, int PCASN1, BigInteger tag_number) {
+		return new Encoder().
+				initSequence().
+				addToSequence(this).setASN1Type(classASN1, PCASN1, tag_number);
+	}	
+	/**
+	 * 
+	 * @param classASN1  The ASN1 Class (UNIVERSAL/APPLICATION/CONTEXT/PRIVATE)
+	 * @param PCASN1	Is this PRIMITIVE or CONSTRUCTED
+	 * @param tag_number a big integer
+	 * @return returns this
+	 */
+	public Encoder setASN1TypeImplicit(int classASN1, int PCASN1, BigInteger tag_number) {
 		if (DEBUG) System.out.println("Encoder: setASN1Type: BN"+tag_number+" bytes="+bytes);
-		if (new BigInteger("31").compareTo(tag_number) > 0) return this.setASN1Type(classASN1, PCASN1, tag_number.byteValue());
+		if (new BigInteger("31").compareTo(tag_number) > 0)
+			return this.setASN1Type(classASN1, PCASN1, tag_number.byteValue());
 		
 		// if the tag is 31 or bigger
 		int old_header_type_len = this.header_type.length;
@@ -471,7 +534,7 @@ class Encoder {
 		bytes=2+data.length;
 	}
 	public Encoder(boolean b){
-		data=new byte[]{b?(byte)1:(byte)0};
+		data=new byte[]{b?(byte)255:(byte)0};
 		setASN1Type(Encoder.TAG_BOOLEAN);
 		setASN1Length(1);
 		bytes=2+data.length;
@@ -576,10 +639,11 @@ class Encoder {
 	}
 	/**
 	 * Create a BIT_STRING padded Encoder
+	 * In the last byte, the usegul bits are in the most significant 8-padding_bits bits
 	 * @param s
 	 * @param padding_bits
 	 */
-	public Encoder(byte padding_bits, byte[] s){
+	public Encoder(byte padding_bits, byte[] s) {
 		if (s == null) {
 			this.setNull();
 			return;
@@ -594,10 +658,11 @@ class Encoder {
 	}
 	/**
 	 * Create a BIT_STRING like padded Encoder
+	 * In the last byte, the usegul bits are in the most significant 8-padding_bits bits
 	 * @param s
 	 * @param padding_bits
 	 */
-	public Encoder( byte padding_bits, byte[] s,byte type){
+	public Encoder( byte padding_bits, byte[] s, byte type) {
 		if (s == null) {
 			this.setNull();
 			return;
@@ -641,7 +706,7 @@ class Encoder {
 	 * and OCTETSTRING otherwise
 	 * @param s
 	 */
-	public Encoder(byte[] s){
+	public Encoder(byte[] s) {
 		if (s == null) {
 			this.setNull();
 			return;
@@ -658,7 +723,7 @@ class Encoder {
 	 * @param ascii_vs_printable : if true IA5String else PrintableString
 	 */
 	public Encoder(String s, boolean ascii_vs_printable){
-		if(s==null){
+		if (s == null) {
 			this.setNull();
 			return;
 		}
@@ -686,12 +751,6 @@ class Encoder {
 		setASN1Length(data.length);
 		bytes+=data.length;
 		assert(bytes==this.header_type.length+this.header_length.length+data.length);
-	}
-	public Encoder setExplicitASN1Tag(int _classASN1, int _privateASN1, BigInteger tag_number) {
-		Encoder e = new Encoder().initSequence();
-		e.addToSequence(this);
-		e.setASN1Type(_classASN1, _privateASN1, tag_number);
-		return e;
 	}
 	
 	/**
