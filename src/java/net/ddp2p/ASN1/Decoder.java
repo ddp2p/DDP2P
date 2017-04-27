@@ -134,6 +134,27 @@ class Decoder {
 		if (length <= 0) return 0;
 		return (data[offset]&0x20)>>5;
 	}
+	public boolean isType(Class<? extends ASNObjArrayable> c) {
+		ASN1Type a = c.getAnnotation(ASN1Type.class);
+		if (a == null) throw new RuntimeException("Missing Annotation");
+		
+		int _class = a._class()+a._CLASS().ordinal();
+		if (_class != typeClass()) return false;
+		
+		int _pc = a._pc()+a._PC().ordinal();
+		if (_pc != typePC()) return false;
+		
+		// here if class and pc match
+		if ((a._tag() < 31) && (a._tag() >= 0) && (a._tag() == tagVal())) return true;
+		BigInteger lTag = null; // only extract local BN tag once
+		if ((!"".equals(a._stag())) && (new BigInteger(a._stag()).equals(lTag = this.getTagValueBN()))) return true;
+		if (this.tagVal() < 31) return false;
+		if (a._tag() >= 31) {
+			if (lTag == null) lTag = this.getTagValueBN();
+			if (new BigInteger(""+a._tag()).equals(lTag)) return true;
+		}
+		return false;
+	}
 	/**
 	 * Can use tagVal() if it is less than 31;
 	 * @return

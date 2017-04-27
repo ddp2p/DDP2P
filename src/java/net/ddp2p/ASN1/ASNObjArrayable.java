@@ -19,6 +19,7 @@
 /* ------------------------------------------------------------------------- */
  package net.ddp2p.ASN1;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 
 /**
@@ -33,6 +34,8 @@ public abstract class ASNObjArrayable {
 		return getEncoder().getBytes();
 	}
 	public abstract Object decode(Decoder dec) throws ASN1DecoderFail;
+	
+	
 	public Encoder getEncoder(ArrayList<String> dictionary_GIDs) {ASN1_Util.printCallPath("getEncoder: you need to implement getEncoder(dictionaries) for objects of type: "+this); return getEncoder();}
 	/**
 	 * Must be implemented whenever this object is encoded in a sequence (array/list)
@@ -52,4 +55,5 @@ public abstract class ASNObjArrayable {
 	 */
 	public Encoder getEncoder(ArrayList<String> dictionary_GIDs, int dependants) {
 		ASN1_Util.printCallPath("getEncoder: you need to implement getEncoder(dictionaries, dependants) for objects of type: "+this); return getEncoder(dictionary_GIDs);}
+
 }

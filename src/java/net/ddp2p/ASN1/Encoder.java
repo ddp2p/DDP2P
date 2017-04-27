@@ -31,6 +31,14 @@ import java.util.Hashtable;
 
 public 
 class Encoder {
+	public static enum CLASS {
+		UNIVERSAL, APPLICATION, CONTEXT, PRIVATE;
+		public static CLASS __(int i) {return CLASS.values()[i];}
+	};
+	public static enum PC {
+		PRIMITIVE, CONSTRUCTED;
+		public static PC __(int i) {return PC.values()[i];}
+	};
 	public static final byte PC_PRIMITIVE=0;
 	public static final byte PC_CONSTRUCTED=1;
 	public static final byte CLASS_UNIVERSAL=0;
@@ -225,6 +233,45 @@ class Encoder {
 		copyBytes(result,0,header_length,header_length.length-1,1);
 		return new BigInteger(result);
 	}
+	/**
+	 * Sets the type declared with annotation
+	 * @param c
+	 */
+	public Encoder setASN1Type(Class<? extends ASNObjArrayable> c) {
+		return setASN1TypeImplicit(c);
+	}
+	public Encoder setASN1TypeExplicit(Class<? extends ASNObjArrayable> c) {
+		return new Encoder().initSequence().addToSequence(this).setASN1TypeImplicit(c);
+	}
+	public Encoder setASN1TypeImplicit(Class<? extends ASNObjArrayable> c) {
+		ASN1Type a = c.getAnnotation(ASN1Type.class);
+		if (a == null) throw new RuntimeException("Missing Annotation");
+		
+		int _class = a._class()+a._CLASS().ordinal();
+		int _pc = a._pc()+a._PC().ordinal();
+		
+		if (a._tag() <= 30 && a._tag() >= 0) {
+			this.setASN1Type(
+					_class,
+					_pc,
+					(byte) a._tag());
+			return this;
+		}
+		if (! "".equals(a._stag())) {
+			this.setASN1Type(
+					_class,
+					_pc,
+					new BigInteger(a._stag()));
+			return this;
+		}
+		if (a._tag() > 30) {
+			this.setASN1Type(
+					_class,
+					_pc,
+					new BigInteger(""+a._tag()));
+		}
+		return this;
+	}	
 	void setASN1Length(BigInteger len){
 		//System.err.println("set len="+bytes);
 		//this.bytes = bytes;
